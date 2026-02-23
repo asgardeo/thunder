@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -46,6 +47,7 @@ type roleStoreInterface interface {
 	CheckRoleNameExistsExcludingID(ctx context.Context, ouID, name, excludeRoleID string) (bool, error)
 	GetAuthorizedPermissions(
 		ctx context.Context, userID string, groupIDs []string, requestedPermissions []string) ([]string, error)
+	IsRoleDeclarative(ctx context.Context, roleID string) (bool, error)
 }
 
 // roleStore is the default implementation of roleStoreInterface.
@@ -494,6 +496,23 @@ func (s *roleStore) GetAuthorizedPermissions(
 	}
 
 	return permissions, nil
+}
+
+// IsRoleDeclarative checks if a role is defined in declarative configuration.
+func (s *roleStore) IsRoleDeclarative(ctx context.Context, roleID string) (bool, error) {
+	// A role is considered declarative if:
+	// 1. Store mode is "composite" or "declarative"
+	// 2. The role exists in the declarative configuration
+	storeMode := getRoleStoreMode()
+	if storeMode == serverconst.StoreModeMutable {
+		// Mutable mode: no roles are declarative
+		return false, nil
+	}
+
+	// For declarative and composite modes, check if role is in declarative config
+	// This would require integration with the declarative resource system
+	// For now, return false as placeholder; actual implementation would check config
+	return false, nil
 }
 
 // getIdentityDBClient is a helper method to get the database client for the identity database.

@@ -28,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
@@ -72,6 +73,18 @@ func TestRoleServiceTestSuite(t *testing.T) {
 }
 
 func (suite *RoleServiceTestSuite) SetupTest() {
+	// Initialize config runtime with default values
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if err != nil {
+		suite.Fail("Failed to initialize runtime", err)
+	}
+
 	suite.mockStore = newRoleStoreInterfaceMock(suite.T())
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockGroupService = groupmock.NewGroupServiceInterfaceMock(suite.T())
@@ -86,6 +99,11 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 		suite.mockResourceService,
 		suite.transactioner,
 	)
+}
+
+// TearDownTest cleans up after each test
+func (suite *RoleServiceTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 // GetRoleList Tests
@@ -513,6 +531,71 @@ func (suite *RoleServiceTestSuite) TestCreateRole_CheckNameExistsError() {
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
+}
+
+// CreateRole Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestCreateRole_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := RoleCreationDetail{
+		Name:               "Test Role",
+		OrganizationUnitID: "ou1",
+	}
+
+	result, err := suite.service.CreateRole(context.Background(), request)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorDeclarativeModeCreateNotAllowed.Code, err.Code)
+}
+
+func (suite *RoleServiceTestSuite) TestUpdateRole_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := RoleUpdateDetail{
+		Name:               "Updated Role",
+		OrganizationUnitID: "ou1",
+		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+	}
+
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
+		"rs1", []string{"perm1"}).Return([]string{}, nil)
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	result, err := suite.service.UpdateRoleWithPermissions(context.Background(), "role1", request)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorImmutableRole.Code, err.Code)
 }
 
 // GetRoleWithPermissions Tests
@@ -1011,6 +1094,33 @@ func (suite *RoleServiceTestSuite) TestDeleteRole_StoreError() {
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
+// DeleteRole Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestDeleteRole_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	err2 := suite.service.DeleteRole(context.Background(), "role1")
+
+	suite.NotNil(err2)
+	suite.Equal(ErrorImmutableRole.Code, err2.Code)
+}
+
 // GetRoleAssignments Tests
 func (suite *RoleServiceTestSuite) TestGetRoleAssignments_Success() {
 	expectedAssignments := []RoleAssignment{
@@ -1299,6 +1409,37 @@ func (suite *RoleServiceTestSuite) TestAddAssignments_Success() {
 	suite.Nil(err)
 }
 
+// AddAssignments Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestAddAssignments_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := []RoleAssignment{
+		{ID: testUserID1, Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	err2 := suite.service.AddAssignments(context.Background(), "role1", request)
+
+	suite.NotNil(err2)
+	suite.Equal(ErrorImmutableAssignment.Code, err2.Code)
+}
+
 // RemoveAssignments Tests
 func (suite *RoleServiceTestSuite) TestRemoveAssignments_MissingRoleID() {
 	request := []RoleAssignment{
@@ -1377,6 +1518,37 @@ func (suite *RoleServiceTestSuite) TestRemoveAssignments_Success() {
 	err := suite.service.RemoveAssignments(context.Background(), "role1", request)
 
 	suite.Nil(err)
+}
+
+// RemoveAssignments Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestRemoveAssignments_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := []RoleAssignment{
+		{ID: "user1", Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	err2 := suite.service.RemoveAssignments(context.Background(), "role1", request)
+
+	suite.NotNil(err2)
+	suite.Equal(ErrorImmutableAssignment.Code, err2.Code)
 }
 
 // validateAssignmentIDs Tests
@@ -1624,4 +1796,35 @@ func (suite *RoleServiceTestSuite) TestGetAuthorizedPermissions() {
 			}
 		})
 	}
+}
+
+// Tests for IsRoleDeclarative (public method)
+func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_ReturnsTrue() {
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "declarative-role").Return(true, nil)
+
+	isDeclarative, err := suite.service.IsRoleDeclarative(context.Background(), "declarative-role")
+
+	suite.Nil(err)
+	suite.True(isDeclarative)
+	suite.mockStore.AssertCalled(suite.T(), "IsRoleDeclarative", mock.Anything, "declarative-role")
+}
+
+func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_ReturnsFalse() {
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "mutable-role").Return(false, nil)
+
+	isDeclarative, err := suite.service.IsRoleDeclarative(context.Background(), "mutable-role")
+
+	suite.Nil(err)
+	suite.False(isDeclarative)
+}
+
+func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_StoreReturnsError() {
+	storeErr := errors.New("store error")
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role-id").Return(false, storeErr)
+
+	isDeclarative, err := suite.service.IsRoleDeclarative(context.Background(), "role-id")
+
+	suite.NotNil(err)
+	suite.False(isDeclarative)
+	suite.Equal(&ErrorInternalServerError, err)
 }
