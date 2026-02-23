@@ -29,6 +29,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
 
 	"gopkg.in/yaml.v3"
 )
@@ -197,7 +198,7 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 	}
 
 	// Validate organization unit exists
-	_, err := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
+	_, err := ouService.GetOrganizationUnit(security.WithRuntimeContext(context.TODO()), schemaDTO.OrganizationUnitID)
 	if err != nil {
 		return fmt.Errorf("organization unit '%s' not found for user schema '%s'",
 			schemaDTO.OrganizationUnitID, schemaDTO.Name)

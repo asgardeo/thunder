@@ -930,12 +930,15 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_UserAndGroupOpe
 // TestMergeAndDeduplicateOUs tests the merge helper function for OUs.
 func (suite *CompositeStoreCoverageTestSuite) TestMergeAndDeduplicateOUs() {
 	suite.Run("marks DB OUs as mutable and file OUs as immutable", func() {
+		const db1 = "db-1"
+		const db2 = "db-2"
+		const file1 = "file-1"
 		dbOUs := []OrganizationUnitBasic{
-			{ID: "db-1", Handle: "db1", Name: "DB 1"},
-			{ID: "db-2", Handle: "db2", Name: "DB 2"},
+			{ID: db1, Handle: "db1", Name: "DB 1"},
+			{ID: db2, Handle: "db2", Name: "DB 2"},
 		}
 		fileOUs := []OrganizationUnitBasic{
-			{ID: "file-1", Handle: "file1", Name: "File 1"},
+			{ID: file1, Handle: "file1", Name: "File 1"},
 			{ID: "file-2", Handle: "file2", Name: "File 2"},
 		}
 
@@ -944,9 +947,9 @@ func (suite *CompositeStoreCoverageTestSuite) TestMergeAndDeduplicateOUs() {
 
 		// Verify IsReadOnly flags
 		for _, ou := range result {
-			if ou.ID == "db-1" || ou.ID == "db-2" {
+			if ou.ID == db1 || ou.ID == db2 {
 				suite.False(ou.IsReadOnly, "DB OU %s should have IsReadOnly=false", ou.ID)
-			} else if ou.ID == "file-1" || ou.ID == "file-2" {
+			} else if ou.ID == file1 || ou.ID == "file-2" {
 				suite.True(ou.IsReadOnly, "File OU %s should have IsReadOnly=true", ou.ID)
 			}
 		}
@@ -1062,5 +1065,75 @@ func (suite *CompositeStoreCoverageTestSuite) TestMergeAndDeduplicateChildren() 
 				suite.True(child.IsReadOnly, "File child %s should have IsReadOnly=true", child.ID)
 			}
 		}
+	})
+}
+
+// TestCompositeStore_GetOrganizationUnitsByIDs tests retrieving OUs by IDs.
+func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganizationUnitsByIDs() {
+	suite.Run("returns empty slice when ids are empty", func() {
+		result, err := suite.compositeStore.GetOrganizationUnitsByIDs([]string{})
+		suite.NoError(err)
+		suite.Empty(result)
+	})
+
+	suite.Run("merges OUs from both stores", func() {
+		// Setup DB OUs
+		dbOUs := []OrganizationUnitBasic{
+			{ID: "db-1", Handle: "db1", Name: "DB 1"},
+			{ID: "db-2", Handle: "db2", Name: "DB 2"},
+		}
+
+		// Setup file store OU
+		err := suite.fileStore.CreateOrganizationUnit(OrganizationUnit{
+			ID:     "file-1",
+			Handle: "file1",
+			Name:   "File 1",
+		})
+		suite.NoError(err)
+
+		ids := []string{"db-1", "db-2", "file-1", "non-existent"}
+
+		suite.dbStoreMock.On("GetOrganizationUnitsByIDs", ids).
+			Return(dbOUs, nil).
+			Once()
+
+		result, err := suite.compositeStore.GetOrganizationUnitsByIDs(ids)
+		suite.NoError(err)
+		suite.Len(result, 3) // 2 from DB + 1 from File
+
+		// Verify IsReadOnly flags
+		hasDB1, hasDB2, hasFile1 := false, false, false
+		for _, ou := range result {
+			if ou.ID == "db-1" {
+				hasDB1 = true
+				suite.False(ou.IsReadOnly)
+			}
+			if ou.ID == "db-2" {
+				hasDB2 = true
+				suite.False(ou.IsReadOnly)
+			}
+			if ou.ID == "file-1" {
+				hasFile1 = true
+				suite.True(ou.IsReadOnly)
+			}
+		}
+		suite.True(hasDB1)
+		suite.True(hasDB2)
+		suite.True(hasFile1)
+	})
+
+	suite.Run("propagates DB error", func() {
+		suite.SetupTest() // Fresh setup
+		dbErr := errors.New("db query error")
+		ids := []string{"ou-1"}
+
+		suite.dbStoreMock.On("GetOrganizationUnitsByIDs", ids).
+			Return([]OrganizationUnitBasic{}, dbErr).
+			Once()
+
+		result, err := suite.compositeStore.GetOrganizationUnitsByIDs(ids)
+		suite.Error(err)
+		suite.Equal(dbErr, err)
+		suite.Empty(result)
 	})
 }

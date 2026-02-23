@@ -53,6 +53,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/mcp"
 	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -89,7 +90,12 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Add to exporters list (must be done after initializing list)
 	exporters = append(exporters, i18nExporter)
 
-	ouService, ouExporter, err := ou.Initialize(mux)
+	ouAuthzService, err := sysauthz.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize system authorization service", log.Error(err))
+	}
+
+	ouService, ouExporter, err := ou.Initialize(mux, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
 	}

@@ -163,6 +163,40 @@ func (f *fileBasedStore) GetOrganizationUnitListCount() (int, error) {
 	return count, nil
 }
 
+// GetOrganizationUnitsByIDs implements organizationUnitStoreInterface.
+func (f *fileBasedStore) GetOrganizationUnitsByIDs(ids []string) ([]OrganizationUnitBasic, error) {
+	if len(ids) == 0 {
+		return []OrganizationUnitBasic{}, nil
+	}
+
+	idSet := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		idSet[id] = struct{}{}
+	}
+
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []OrganizationUnitBasic
+	for _, item := range list {
+		if ou, ok := item.Data.(*OrganizationUnit); ok {
+			if _, found := idSet[ou.ID]; found {
+				result = append(result, OrganizationUnitBasic{
+					ID:          ou.ID,
+					Handle:      ou.Handle,
+					Name:        ou.Name,
+					Description: ou.Description,
+					LogoURL:     ou.LogoURL,
+				})
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // IsOrganizationUnitExists implements organizationUnitStoreInterface.
 func (f *fileBasedStore) IsOrganizationUnitExists(id string) (bool, error) {
 	_, err := f.GetOrganizationUnit(id)

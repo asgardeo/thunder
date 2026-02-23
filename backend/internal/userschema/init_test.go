@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -683,13 +684,13 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 
 			// Mock the GetOrganizationUnit call that happens in Initialize()
 			if tc.ouServiceError != nil {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{}, tc.ouServiceError).Once()
 			} else if tc.ouExists {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{ID: tc.ouID}, (*serviceerror.ServiceError)(nil)).Once()
 			} else {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 						Code:             "OUS-1002",
 						Type:             serviceerror.ClientErrorType,
@@ -699,7 +700,7 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 			}
 
 			// Simulate the OU validation logic from Initialize()
-			_, svcErr := mockOUService.GetOrganizationUnit(tc.ouID)
+			_, svcErr := mockOUService.GetOrganizationUnit(context.Background(), tc.ouID)
 
 			switch tc.expectedResult {
 			case "success":
@@ -953,7 +954,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Mock OU service to return an error
-	mockOUService.On("GetOrganizationUnit", "550e8400-e29b-41d4-a716-446655440000").
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "550e8400-e29b-41d4-a716-446655440000").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 			Code:             "OUS-1002",
 			Type:             serviceerror.ClientErrorType,
