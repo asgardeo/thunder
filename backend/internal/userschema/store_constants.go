@@ -30,28 +30,31 @@ var (
 	// queryGetUserSchemaList retrieves a paginated list of user schemas.
 	queryGetUserSchemaList = dbmodel.DBQuery{
 		ID: "ASQ-USER_SCHEMA-002",
-		Query: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION FROM USER_SCHEMAS ` +
+		Query: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, DISPLAY_ATTRIBUTE FROM USER_SCHEMAS ` +
 			`WHERE DEPLOYMENT_ID = $3 ORDER BY NAME LIMIT $1 OFFSET $2`,
 	}
 
 	// queryCreateUserSchema creates a new user schema.
 	queryCreateUserSchema = dbmodel.DBQuery{
 		ID: "ASQ-USER_SCHEMA-003",
-		Query: `INSERT INTO USER_SCHEMAS (SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, SCHEMA_DEF, DEPLOYMENT_ID)
-			VALUES ($1, $2, $3, $4, $5, $6)`,
+		Query: `INSERT INTO USER_SCHEMAS ` +
+			`(SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, DISPLAY_ATTRIBUTE, SCHEMA_DEF, DEPLOYMENT_ID) ` +
+			`VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 	}
 
 	// queryGetUserSchemaByID retrieves a user schema by its ID.
 	queryGetUserSchemaByID = dbmodel.DBQuery{
 		ID: "ASQ-USER_SCHEMA-004",
-		Query: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, SCHEMA_DEF FROM USER_SCHEMAS ` +
+		Query: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, ` +
+			`DISPLAY_ATTRIBUTE, SCHEMA_DEF FROM USER_SCHEMAS ` +
 			`WHERE SCHEMA_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetUserSchemaByName retrieves a user schema by its name.
 	queryGetUserSchemaByName = dbmodel.DBQuery{
 		ID: "ASQ-USER_SCHEMA-005",
-		Query: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, SCHEMA_DEF FROM USER_SCHEMAS ` +
+		Query: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION, ` +
+			`DISPLAY_ATTRIBUTE, SCHEMA_DEF FROM USER_SCHEMAS ` +
 			`WHERE NAME = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
@@ -59,8 +62,8 @@ var (
 	queryUpdateUserSchemaByID = dbmodel.DBQuery{
 		ID: "ASQ-USER_SCHEMA-006",
 		Query: `UPDATE USER_SCHEMAS
-			SET NAME = $1, OU_ID = $2, ALLOW_SELF_REGISTRATION = $3, SCHEMA_DEF = $4
-			WHERE SCHEMA_ID = $5 AND DEPLOYMENT_ID = $6`,
+			SET NAME = $1, OU_ID = $2, ALLOW_SELF_REGISTRATION = $3, DISPLAY_ATTRIBUTE = $4, SCHEMA_DEF = $5
+			WHERE SCHEMA_ID = $6 AND DEPLOYMENT_ID = $7`,
 	}
 
 	// queryDeleteUserSchemaByID deletes a user schema by its ID.

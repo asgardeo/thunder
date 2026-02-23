@@ -264,6 +264,7 @@ func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
 		Name:                  sanitizedName,
 		OrganizationUnitID:    sanitizedOrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		DisplayAttribute:      sysutils.SanitizeString(request.DisplayAttribute),
 		Schema:                request.Schema,
 	}
 }
@@ -288,6 +289,7 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 		Name:                  sanitizedName,
 		OrganizationUnitID:    sanitizedOrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		DisplayAttribute:      sysutils.SanitizeString(request.DisplayAttribute),
 		Schema:                request.Schema,
 	}
 }

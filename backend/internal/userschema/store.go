@@ -119,6 +119,7 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
+		nullableString(userSchema.DisplayAttribute),
 		string(userSchema.Schema),
 		s.deploymentID,
 	)
@@ -180,6 +181,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
+		nullableString(userSchema.DisplayAttribute),
 		string(userSchema.Schema),
 		schemaID,
 		s.deploymentID,
@@ -244,11 +246,14 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to parse schema_def as string")
 	}
 
+	displayAttribute := parseNullableString(row["display_attribute"])
+
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		DisplayAttribute:      displayAttribute,
 		Schema:                json.RawMessage(schemaDef),
 	}
 
@@ -277,14 +282,37 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		return UserSchemaListItem{}, err
 	}
 
+	displayAttribute := parseNullableString(row["display_attribute"])
+
 	userSchemaListItem := UserSchemaListItem{
 		ID:                    schemaID,
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		DisplayAttribute:      displayAttribute,
 	}
 
 	return userSchemaListItem, nil
+}
+
+// nullableString converts an empty string to nil for nullable DB columns.
+func nullableString(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// parseNullableString extracts a string from a nullable DB column, returning "" for NULL.
+func parseNullableString(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	default:
+		return ""
+	}
 }
 
 func parseBool(value interface{}, fieldName string) (bool, error) {

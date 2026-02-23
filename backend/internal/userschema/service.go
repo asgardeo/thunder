@@ -156,6 +156,7 @@ func (us *userSchemaService) CreateUserSchema(
 		Name:                  request.Name,
 		OrganizationUnitID:    request.OrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		DisplayAttribute:      request.DisplayAttribute,
 		Schema:                request.Schema,
 	}
 
@@ -264,6 +265,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		Name:                  request.Name,
 		OrganizationUnitID:    request.OrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		DisplayAttribute:      request.DisplayAttribute,
 		Schema:                request.Schema,
 	}
 
