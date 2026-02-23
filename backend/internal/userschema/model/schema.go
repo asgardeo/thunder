@@ -39,6 +39,10 @@ const (
 	TypeArray = "array"
 )
 
+// CredentialTypeNames contains the attribute names that represent credential types.
+// These attributes receive special handling (e.g., hashing) and are not eligible as display attributes.
+var CredentialTypeNames = []string{"password", "pin", "secret", "passkey"}
+
 type property interface {
 	isRequired() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)

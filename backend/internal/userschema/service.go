@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
@@ -132,6 +133,12 @@ func (us *userSchemaService) CreateUserSchema(
 		return nil, validationErr
 	}
 
+	// Validate display attribute against the schema definition.
+	displayAttribute := request.DisplayAttribute
+	if validationErr := validateDisplayAttribute(&displayAttribute, request.Schema); validationErr != nil {
+		return nil, validationErr
+	}
+
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(request.OrganizationUnitID, logger); svcErr != nil {
 		return nil, svcErr
@@ -156,7 +163,7 @@ func (us *userSchemaService) CreateUserSchema(
 		Name:                  request.Name,
 		OrganizationUnitID:    request.OrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
-		DisplayAttribute:      request.DisplayAttribute,
+		DisplayAttribute:      displayAttribute,
 		Schema:                request.Schema,
 	}
 
@@ -238,6 +245,12 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		return nil, validationErr
 	}
 
+	// Validate display attribute against the schema definition.
+	displayAttribute := request.DisplayAttribute
+	if validationErr := validateDisplayAttribute(&displayAttribute, request.Schema); validationErr != nil {
+		return nil, validationErr
+	}
+
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(request.OrganizationUnitID, logger); svcErr != nil {
 		return nil, svcErr
@@ -265,7 +278,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		Name:                  request.Name,
 		OrganizationUnitID:    request.OrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
-		DisplayAttribute:      request.DisplayAttribute,
+		DisplayAttribute:      displayAttribute,
 		Schema:                request.Schema,
 	}
 
@@ -514,6 +527,61 @@ func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError 
 	}
 
 	return nil
+}
+
+// validateDisplayAttribute validates the display attribute against the schema definition.
+// Rules:
+//   - If provided, it must reference a top-level string attribute that is not a credential type.
+//   - If not provided and only one eligible attribute exists, it is auto-set.
+//   - If not provided and multiple eligible attributes exist, an error is returned.
+//   - If no eligible attributes exist, it is left empty (fallback to user ID at display time).
+func validateDisplayAttribute(displayAttribute *string, schemaDef json.RawMessage) *serviceerror.ServiceError {
+	var schemaMap map[string]json.RawMessage
+	if err := json.Unmarshal(schemaDef, &schemaMap); err != nil {
+		return invalidSchemaRequestError("failed to parse schema for display attribute validation")
+	}
+
+	// Collect eligible attributes: top-level string attributes not in credential types.
+	eligible := make([]string, 0, len(schemaMap))
+	for attrName, attrRaw := range schemaMap {
+		var attrDef struct {
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(attrRaw, &attrDef); err != nil {
+			continue
+		}
+
+		if attrDef.Type != model.TypeString {
+			continue
+		}
+
+		if slices.Contains(model.CredentialTypeNames, attrName) {
+			continue
+		}
+		eligible = append(eligible, attrName)
+	}
+
+	if *displayAttribute != "" {
+		// Validate the provided display attribute is in the eligible set.
+		if !slices.Contains(eligible, *displayAttribute) {
+			return &ErrorInvalidDisplayAttribute
+		}
+		return nil
+	}
+
+	// Display attribute not provided — auto-set or require explicit choice.
+	switch len(eligible) {
+	case 0:
+		// No eligible attributes; leave empty (fallback to user ID).
+		return nil
+	case 1:
+		// Single eligible attribute; auto-set.
+		*displayAttribute = eligible[0]
+		return nil
+	default:
+		// Multiple eligible attributes; require explicit choice.
+		return &ErrorMissingDisplayAttribute
+	}
 }
 
 func invalidSchemaRequestError(detail string) *serviceerror.ServiceError {

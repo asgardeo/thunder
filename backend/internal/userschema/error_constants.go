@@ -75,6 +75,22 @@ var (
 		Error:            "User validation failed",
 		ErrorDescription: "User attributes do not conform to the required schema",
 	}
+	// ErrorInvalidDisplayAttribute is the error returned when the display attribute is invalid.
+	ErrorInvalidDisplayAttribute = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1008",
+		Error: "Invalid display attribute",
+		ErrorDescription: "Display attribute must reference a top-level string attribute " +
+			"that is not a credential type",
+	}
+	// ErrorMissingDisplayAttribute is the error returned when a display attribute must be explicitly specified.
+	ErrorMissingDisplayAttribute = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1009",
+		Error: "Missing display attribute",
+		ErrorDescription: "A display attribute must be explicitly specified when the schema " +
+			"has multiple eligible string attributes",
+	}
 )
 
 // Server errors for user schema management operations.
