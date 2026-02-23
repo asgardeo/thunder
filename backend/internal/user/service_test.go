@@ -389,6 +389,35 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 		userSchemaService *userschemamock.UserSchemaServiceInterfaceMock
 	}
 
+	setupParentCheckError := func(t *testing.T, errCode string) (*userService, testMocks) {
+		parentOU := "0a08d914-d223-48c2-8939-55d719739a17"
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		ouServiceMock.On("IsOrganizationUnitExists",
+			mock.Anything, "d9e12416-58d3-4c17-a4e4-cc4d96122598").
+			Return(true, (*serviceerror.ServiceError)(nil)).
+			Once()
+		ouServiceMock.On("IsParent", mock.Anything, parentOU,
+			"d9e12416-58d3-4c17-a4e4-cc4d96122598").Return(false, &serviceerror.ServiceError{
+			Code: errCode,
+		}).Once()
+
+		userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		userSchemaMock.
+			On("GetUserSchemaByName", mock.Anything, testUserType).
+			Return(&userschema.UserSchema{
+				OrganizationUnitID: parentOU,
+			}, (*serviceerror.ServiceError)(nil)).
+			Once()
+
+		return &userService{
+				ouService:         ouServiceMock,
+				userSchemaService: userSchemaMock,
+			}, testMocks{
+				ouService:         ouServiceMock,
+				userSchemaService: userSchemaMock,
+			}
+	}
+
 	testCases := []struct {
 		name        string
 		userType    string
@@ -421,7 +450,9 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.On("IsOrganizationUnitExists",
-					"4d8b40d6-3a17-4c19-9a94-5866df9b6bf5").Return(false, (*serviceerror.ServiceError)(nil)).Once()
+					mock.Anything, "4d8b40d6-3a17-4c19-9a94-5866df9b6bf5").
+					Return(false, (*serviceerror.ServiceError)(nil)).
+					Once()
 
 				return &userService{
 						ouService: ouServiceMock,
@@ -438,7 +469,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.On("IsOrganizationUnitExists",
-					"6c8f5afd-8884-4ea0-a317-3d8579346d86").Return(false, &serviceerror.ServiceError{
+					mock.Anything, "6c8f5afd-8884-4ea0-a317-3d8579346d86").Return(false, &serviceerror.ServiceError{
 					Type: serviceerror.ClientErrorType,
 					Code: oupkg.ErrorOrganizationUnitNotFound.Code,
 				}).Once()
@@ -458,7 +489,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.On("IsOrganizationUnitExists",
-					"8d0c2f4e-8bb1-40bc-a0e1-ca5c4aacff63").Return(false, &serviceerror.ServiceError{
+					mock.Anything, "8d0c2f4e-8bb1-40bc-a0e1-ca5c4aacff63").Return(false, &serviceerror.ServiceError{
 					Type: serviceerror.ClientErrorType,
 					Code: oupkg.ErrorInvalidRequestFormat.Code,
 				}).Once()
@@ -479,9 +510,11 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 				parentOU := "a88cbecc-53a3-4c3e-958f-7ee4bf2d7a28"
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.On("IsOrganizationUnitExists",
-					"f4e7c7b2-0b11-46a4-83be-4b43a7f69c7e").Return(true, (*serviceerror.ServiceError)(nil)).Once()
+					mock.Anything, "f4e7c7b2-0b11-46a4-83be-4b43a7f69c7e").
+					Return(true, (*serviceerror.ServiceError)(nil)).
+					Once()
 				ouServiceMock.
-					On("IsParent", parentOU, "f4e7c7b2-0b11-46a4-83be-4b43a7f69c7e").
+					On("IsParent", mock.Anything, parentOU, "f4e7c7b2-0b11-46a4-83be-4b43a7f69c7e").
 					Return(false, (*serviceerror.ServiceError)(nil)).
 					Once()
 
@@ -511,8 +544,10 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 				parentOU := "c7e99c3b-e563-4c47-981f-1f7f755c8c68"
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.On("IsOrganizationUnitExists",
-					"1b5c7208-0d6f-4d5d-8fb9-6e8573549533").Return(true, (*serviceerror.ServiceError)(nil)).Once()
-				ouServiceMock.On("IsParent", parentOU,
+					mock.Anything, "1b5c7208-0d6f-4d5d-8fb9-6e8573549533").
+					Return(true, (*serviceerror.ServiceError)(nil)).
+					Once()
+				ouServiceMock.On("IsParent", mock.Anything, parentOU,
 					"1b5c7208-0d6f-4d5d-8fb9-6e8573549533").Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
@@ -538,30 +573,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			userType: testUserType,
 			ouID:     "d9e12416-58d3-4c17-a4e4-cc4d96122598",
 			setup: func(t *testing.T) (*userService, testMocks) {
-				parentOU := "0a08d914-d223-48c2-8939-55d719739a17"
-				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-				ouServiceMock.On("IsOrganizationUnitExists",
-					"d9e12416-58d3-4c17-a4e4-cc4d96122598").Return(true, (*serviceerror.ServiceError)(nil)).Once()
-				ouServiceMock.On("IsParent", parentOU,
-					"d9e12416-58d3-4c17-a4e4-cc4d96122598").Return(false, &serviceerror.ServiceError{
-					Code: oupkg.ErrorOrganizationUnitNotFound.Code,
-				}).Once()
-
-				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-				userSchemaMock.
-					On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{
-						OrganizationUnitID: parentOU,
-					}, (*serviceerror.ServiceError)(nil)).
-					Once()
-
-				return &userService{
-						ouService:         ouServiceMock,
-						userSchemaService: userSchemaMock,
-					}, testMocks{
-						ouService:         ouServiceMock,
-						userSchemaService: userSchemaMock,
-					}
+				return setupParentCheckError(t, oupkg.ErrorOrganizationUnitNotFound.Code)
 			},
 			expectedErr: &ErrorOrganizationUnitNotFound,
 		},
@@ -570,30 +582,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			userType: testUserType,
 			ouID:     "d9e12416-58d3-4c17-a4e4-cc4d96122598",
 			setup: func(t *testing.T) (*userService, testMocks) {
-				parentOU := "0a08d914-d223-48c2-8939-55d719739a17"
-				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-				ouServiceMock.On("IsOrganizationUnitExists",
-					"d9e12416-58d3-4c17-a4e4-cc4d96122598").Return(true, (*serviceerror.ServiceError)(nil)).Once()
-				ouServiceMock.On("IsParent", parentOU,
-					"d9e12416-58d3-4c17-a4e4-cc4d96122598").Return(false, &serviceerror.ServiceError{
-					Code: oupkg.ErrorInternalServerError.Code,
-				}).Once()
-
-				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-				userSchemaMock.
-					On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{
-						OrganizationUnitID: parentOU,
-					}, (*serviceerror.ServiceError)(nil)).
-					Once()
-
-				return &userService{
-						ouService:         ouServiceMock,
-						userSchemaService: userSchemaMock,
-					}, testMocks{
-						ouService:         ouServiceMock,
-						userSchemaService: userSchemaMock,
-					}
+				return setupParentCheckError(t, oupkg.ErrorInternalServerError.Code)
 			},
 			expectedErr: &ErrorInternalServerError,
 		},
@@ -604,7 +593,9 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.On("IsOrganizationUnitExists",
-					"e5c3aa8a-d7df-46f8-9f3f-bb3245c95d7c").Return(true, (*serviceerror.ServiceError)(nil)).Once()
+					mock.Anything, "e5c3aa8a-d7df-46f8-9f3f-bb3245c95d7c").
+					Return(true, (*serviceerror.ServiceError)(nil)).
+					Once()
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userSchemaMock.
@@ -632,7 +623,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			service, _ := tc.setup(t)
 			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserServiceTest"))
 
-			err := service.validateOrganizationUnitForUserType(context.TODO(), tc.userType, tc.ouID, logger)
+			err := service.validateOrganizationUnitForUserType(context.Background(), tc.userType, tc.ouID, logger)
 			if tc.expectedErr == nil {
 				require.Nil(t, err)
 				return
@@ -655,7 +646,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 			setup: func(t *testing.T) *userService {
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.
-					On("GetOrganizationUnitByPath", "root").
+					On("GetOrganizationUnitByPath", mock.Anything, "root").
 					Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: oupkg.ErrorInvalidHandlePath.Code,
@@ -673,11 +664,11 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 			setup: func(t *testing.T) *userService {
 				ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 				ouServiceMock.
-					On("GetOrganizationUnitByPath", "root").
+					On("GetOrganizationUnitByPath", mock.Anything, "root").
 					Return(oupkg.OrganizationUnit{ID: "ou-id"}, (*serviceerror.ServiceError)(nil)).
 					Once()
 				ouServiceMock.
-					On("GetOrganizationUnitUsers", "ou-id", 10, 0).
+					On("GetOrganizationUnitUsers", mock.Anything, "ou-id", 10, 0).
 					Return((*oupkg.UserListResponse)(nil), &serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: oupkg.ErrorInvalidLimit.Code,
@@ -708,7 +699,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 func TestUserService_CreateUserByPath_HandlesOUServiceErrors(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	ouServiceMock.
-		On("GetOrganizationUnitByPath", "root/engineering").
+		On("GetOrganizationUnitByPath", mock.Anything, "root/engineering").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 			Type: serviceerror.ClientErrorType,
 			Code: oupkg.ErrorInvalidHandlePath.Code,
@@ -729,7 +720,9 @@ func TestUserService_CreateUserByPath_HandlesOUServiceErrors(t *testing.T) {
 
 func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
@@ -786,7 +779,9 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 	storeErr := errors.New("store failure")
 
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
@@ -833,7 +828,9 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 
 func TestUserService_CreateUser_TransactionerError(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
@@ -1675,7 +1672,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 	})).Return(nil).Once()
 
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
@@ -1732,7 +1731,8 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	}, nil).Once()
 
 	// Mock validation calls
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
@@ -1816,7 +1816,8 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 			Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-		ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+			Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
@@ -1858,7 +1859,8 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 			Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-		ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+			Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
@@ -1894,7 +1896,8 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 			Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
-		ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+			Return(true, (*serviceerror.ServiceError)(nil)).Once()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
 		userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
@@ -1930,7 +1933,8 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 			Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-		ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+			Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Maybe()
 		// Validation fails - schema validation error
@@ -1964,7 +1968,8 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 			Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-		ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+			Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
@@ -2005,7 +2010,8 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 			Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-		ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+			Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Maybe()
 		userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
@@ -2090,7 +2096,7 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 	txMock := &fakeTransactioner{}
 
 	// Mock OU validation
-	ouServiceMock.On("IsOrganizationUnitExists", testOU).
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOU).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 	ouServiceMock.On("IsParent", mock.Anything, testOU).
 		Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
@@ -2554,8 +2560,8 @@ func TestUserService_GetUsersByPath(t *testing.T) {
 	service := &userService{ouService: mockOU}
 	ctx := context.Background()
 
-	mockOU.On("GetOrganizationUnitByPath", "root").Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
-	mockOU.On("GetOrganizationUnitUsers", "ou-1", 10, 0).Return(&oupkg.UserListResponse{
+	mockOU.On("GetOrganizationUnitByPath", mock.Anything, "root").Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
+	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0).Return(&oupkg.UserListResponse{
 		TotalResults: 20,
 		Users:        []oupkg.User{{ID: "u1"}},
 	}, nil).Once()
@@ -2584,13 +2590,13 @@ func TestUserService_Validation_EdgeCases(t *testing.T) {
 	service := &userService{}
 
 	t.Run("ValidateOU_InvalidUUID", func(t *testing.T) {
-		err := service.validateOrganizationUnitForUserType(context.TODO(), "customer", "invalid-uuid", nil)
+		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "invalid-uuid", nil)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
 	})
 
 	t.Run("ValidateOU_EmptyOU", func(t *testing.T) {
-		err := service.validateOrganizationUnitForUserType(context.TODO(), "customer", "", nil)
+		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "", nil)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
 	})
@@ -2685,8 +2691,8 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 		// Mock all validation steps in the transaction with broad matches to ensure they hit
 		userSchemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything).
 			Return([]string{}, (*serviceerror.ServiceError)(nil)).Maybe()
-		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything).Return(true, nil).Maybe()
-		ouServiceMock.On("IsParent", mock.Anything, mock.Anything).Return(true, nil).Maybe()
+		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, mock.Anything).Return(true, nil).Maybe()
+		ouServiceMock.On("IsParent", mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Maybe()
 		userSchemaMock.On("GetUserSchemaByName", mock.Anything, mock.Anything).
 			Return(&userschema.UserSchema{}, nil).Maybe()
 		userSchemaMock.On(
@@ -3025,7 +3031,8 @@ func TestCredentialType_Methods(t *testing.T) {
 
 func TestUserService_CreateUser_SchemaNotFound(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
@@ -3058,7 +3065,8 @@ func TestUserService_CreateUser_SchemaNotFound(t *testing.T) {
 
 func TestUserService_CreateUser_GetCredentialAttributesInternalError(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).

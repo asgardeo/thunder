@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -190,7 +191,7 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		slices.Contains(userAttributes, oauth2const.ClaimOUHandle)
 	if ouAttributesConfigured && ctx.AuthenticatedUser.OrganizationUnitID != "" {
 		if err := a.appendOUDetailsToClaims(
-			ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
+			ctx.Context, ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
 			return "", err
 		}
 	}
@@ -355,10 +356,10 @@ func (a *authAssertExecutor) getUserAttributes(userID string, token string, requ
 // appendOUDetailsToClaims appends organization unit details to the JWT claims.
 // Only adds attributes that are configured in userAttributes.
 func (a *authAssertExecutor) appendOUDetailsToClaims(
-	ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
+	ctx context.Context, ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
 	logger := a.logger.With(log.String(ouIDKey, ouID))
 
-	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ouID)
+	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ctx, ouID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch organization unit details",
 			log.String(ouIDKey, ouID), log.Any("error", svcErr))

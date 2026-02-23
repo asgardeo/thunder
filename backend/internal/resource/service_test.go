@@ -174,7 +174,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_Success() {
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -237,7 +237,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUNotFound() {
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound)
 
 	result, err := suite.service.CreateResourceServer(context.Background(), rs)
@@ -254,7 +254,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUServiceError()
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.InternalServerError)
 
 	result, err := suite.service.CreateResourceServer(context.Background(), rs)
@@ -270,7 +270,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_NameConflict() {
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -290,7 +290,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_StoreError() {
 		Identifier:         "", // Empty identifier - no need to check
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -314,7 +314,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_IdentifierConfli
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -336,7 +336,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckNameError()
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -356,7 +356,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckIdentifierE
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -461,7 +461,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"updated-rs").
@@ -548,7 +548,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUNotFound() {
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound)
 
 	result, err := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
@@ -572,7 +572,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUServiceError()
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.InternalServerError)
 
 	result, err := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
@@ -596,7 +596,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NameConflict() {
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything,
 		"test-rs").
@@ -625,7 +625,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierConfli
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", mock.Anything,
 		"test-identifier").
@@ -654,7 +654,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_CheckIdentifierE
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", mock.Anything,
 		"test-identifier").
@@ -681,7 +681,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_StoreError() {
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("UpdateResourceServer", mock.Anything,
 		"rs-123", mock.Anything).

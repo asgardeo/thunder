@@ -20,6 +20,7 @@
 package userinfo
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -40,7 +41,7 @@ const serviceLoggerComponentName = "UserInfoService"
 
 // userInfoServiceInterface defines the interface for OIDC UserInfo endpoint.
 type userInfoServiceInterface interface {
-	GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)
+	GetUserInfo(ctx context.Context, accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)
 }
 
 // userInfoService implements the userInfoServiceInterface.
@@ -69,7 +70,9 @@ func newUserInfoService(
 }
 
 // GetUserInfo validates the access token and returns user information based on authorized scopes.
-func (s *userInfoService) GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
+func (s *userInfoService) GetUserInfo(
+	ctx context.Context, accessToken string,
+) (*UserInfoResponse, *serviceerror.ServiceError) {
 	if accessToken == "" {
 		return nil, &errorInvalidAccessToken
 	}
@@ -104,7 +107,7 @@ func (s *userInfoService) GetUserInfo(accessToken string) (*UserInfoResponse, *s
 	}
 
 	// Fetch user attributes with groups and default claims
-	userAttributes, err := tokenservice.FetchUserAttributes(s.userService, s.ouService,
+	userAttributes, err := tokenservice.FetchUserAttributes(ctx, s.userService, s.ouService,
 		sub, allowedUserAttributes)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))

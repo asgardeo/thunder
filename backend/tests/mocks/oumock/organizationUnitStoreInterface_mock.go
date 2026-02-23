@@ -973,6 +973,68 @@ func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitUsersList_Call) 
 	return _c
 }
 
+// GetOrganizationUnitsByIDs provides a mock function for the type organizationUnitStoreInterfaceMock
+func (_mock *organizationUnitStoreInterfaceMock) GetOrganizationUnitsByIDs(ids []string) ([]ou.OrganizationUnitBasic, error) {
+	ret := _mock.Called(ids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOrganizationUnitsByIDs")
+	}
+
+	var r0 []ou.OrganizationUnitBasic
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func([]string) ([]ou.OrganizationUnitBasic, error)); ok {
+		return returnFunc(ids)
+	}
+	if returnFunc, ok := ret.Get(0).(func([]string) []ou.OrganizationUnitBasic); ok {
+		r0 = returnFunc(ids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ou.OrganizationUnitBasic)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func([]string) error); ok {
+		r1 = returnFunc(ids)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOrganizationUnitsByIDs'
+type organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call struct {
+	*mock.Call
+}
+
+// GetOrganizationUnitsByIDs is a helper method to define mock.On call
+//   - ids []string
+func (_e *organizationUnitStoreInterfaceMock_Expecter) GetOrganizationUnitsByIDs(ids interface{}) *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call {
+	return &organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call{Call: _e.mock.On("GetOrganizationUnitsByIDs", ids)}
+}
+
+func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call) Run(run func(ids []string)) *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 []string
+		if args[0] != nil {
+			arg0 = args[0].([]string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call) Return(organizationUnitBasics []ou.OrganizationUnitBasic, err error) *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call {
+	_c.Call.Return(organizationUnitBasics, err)
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call) RunAndReturn(run func(ids []string) ([]ou.OrganizationUnitBasic, error)) *organizationUnitStoreInterfaceMock_GetOrganizationUnitsByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsOrganizationUnitDeclarative provides a mock function for the type organizationUnitStoreInterfaceMock
 func (_mock *organizationUnitStoreInterfaceMock) IsOrganizationUnitDeclarative(id string) bool {
 	ret := _mock.Called(id)
