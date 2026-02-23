@@ -36,8 +36,8 @@ func Initialize(
 ) AuthorizeServiceInterface {
 	authzCodeStore := newAuthorizationCodeStore()
 	authzReqStore := newAuthorizationRequestStore()
-	authzService := newAuthorizeService(authzCodeStore)
-	authzHandler := newAuthorizeHandler(applicationService, jwtService, authzCodeStore, authzReqStore, flowExecService)
+	authzService := newAuthorizeService(applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore)
+	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)
 	return authzService
 }

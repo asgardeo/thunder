@@ -62,6 +62,20 @@ type AuthZPostResponse struct {
 	RedirectURI string `json:"redirect_uri"`
 }
 
+// AuthorizationInitResult holds the result of a successful initial authorization request processing.
+type AuthorizationInitResult struct {
+	QueryParams map[string]string
+}
+
+// AuthorizationError holds structured error info for authorization failures.
+type AuthorizationError struct {
+	Code              string
+	Message           string
+	SendErrorToClient bool   // if true, redirect error to client's redirect_uri rather than the error page
+	ClientRedirectURI string // populated when SendErrorToClient is true
+	State             string // from the original request
+}
+
 // assertionClaims represents the claims extracted from the flow assertion JWT.
 type assertionClaims struct {
 	userID                string
