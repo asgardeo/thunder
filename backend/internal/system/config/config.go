@@ -239,6 +239,12 @@ type UserConfig struct {
 // ResourceConfig holds the resource management configuration details.
 type ResourceConfig struct {
 	DefaultDelimiter string `yaml:"default_delimiter" json:"default_delimiter"`
+	// Store defines the storage mode for resource servers.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
 }
 
 // OrganizationUnitConfig holds the organization unit service configuration.

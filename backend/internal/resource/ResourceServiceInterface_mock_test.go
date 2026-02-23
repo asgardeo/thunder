@@ -941,6 +941,57 @@ func (_c *ResourceServiceInterfaceMock_GetResourceServerList_Call) RunAndReturn(
 	return _c
 }
 
+// IsResourceServerDeclarative provides a mock function for the type ResourceServiceInterfaceMock
+func (_mock *ResourceServiceInterfaceMock) IsResourceServerDeclarative(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsResourceServerDeclarative")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsResourceServerDeclarative'
+type ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsResourceServerDeclarative is a helper method to define mock.On call
+//   - id string
+func (_e *ResourceServiceInterfaceMock_Expecter) IsResourceServerDeclarative(id interface{}) *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call {
+	return &ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call{Call: _e.mock.On("IsResourceServerDeclarative", id)}
+}
+
+func (_c *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call) Run(run func(id string)) *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call) Return(b bool) *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call) RunAndReturn(run func(id string) bool) *ResourceServiceInterfaceMock_IsResourceServerDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateAction provides a mock function for the type ResourceServiceInterfaceMock
 func (_mock *ResourceServiceInterfaceMock) UpdateAction(ctx context.Context, resourceServerID string, resourceID *string, id string, action Action) (*Action, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, resourceServerID, resourceID, id, action)

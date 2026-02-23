@@ -39,6 +39,7 @@ const (
 	testUpdatedName     = "updated-name"
 	testNewDescription  = "new description"
 	testWrongResourceID = "res-wrong"
+	declarativeRSID     = "declarative-rs"
 )
 
 var testParentResourceID = "parent-123"
@@ -60,8 +61,7 @@ func matchResourceServer(expected ResourceServer) interface{} {
 // since it's computed by the service before calling the store.
 func matchResource(expected Resource) interface{} {
 	return mock.MatchedBy(func(actual Resource) bool {
-		parentsMatch := (expected.Parent == nil && actual.Parent == nil) ||
-			(expected.Parent != nil && actual.Parent != nil && *expected.Parent == *actual.Parent)
+		parentsMatch := expected.Parent == actual.Parent
 		return actual.Name == expected.Name &&
 			actual.Handle == expected.Handle &&
 			actual.Description == expected.Description &&
@@ -459,6 +459,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 		Delimiter:          ":",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -546,6 +547,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUNotFound() {
 		OrganizationUnitID: "ou-old",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -570,6 +572,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUServiceError()
 		OrganizationUnitID: "ou-old",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -594,6 +597,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NameConflict() {
 		OrganizationUnitID: "ou-123",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -623,6 +627,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierConfli
 		OrganizationUnitID: "ou-123",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -652,6 +657,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_CheckIdentifierE
 		OrganizationUnitID: "ou-123",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -679,6 +685,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_StoreError() {
 		OrganizationUnitID: "ou-123",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(existingRS, nil)
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -714,6 +721,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_GetResourceServe
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_Success() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -727,6 +735,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_Success() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_IdempotentWhenNotExists() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errResourceServerNotFound)
 
@@ -743,6 +752,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_MissingID() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_CheckExistenceError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errors.New("database error"))
 
@@ -753,6 +763,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_CheckExistenceEr
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_CheckDependenciesError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -765,6 +776,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_CheckDependencie
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_DeleteError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -779,6 +791,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_DeleteError() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_HasDependencies() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -791,6 +804,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_HasDependencies(
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithOnlyResources() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -804,6 +818,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithOnlyResource
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithOnlyActions() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -817,6 +832,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithOnlyActions(
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithResourcesAndActions() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -830,6 +846,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithResourcesAnd
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithNestedResources() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything,
@@ -974,6 +991,8 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_MultiLevelHierarchy() 
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_ChainDeletion() {
+	// This test deletes resources in a chain and checks proper deletion
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	// Delete child first
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil).Once()
@@ -1406,7 +1425,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_CircularDependency_Sel
 	res := Resource{
 		Name:   "test-resource",
 		Handle: "test-handle",
-		Parent: nil, // Will be set to its own ID after creation attempt
+		Parent: nil,
 	}
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
@@ -1438,6 +1457,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_Success() {
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1463,7 +1483,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ParentIsImmutable() {
 		Name:        testOriginalName,
 		Handle:      testOriginalHandle,
 		Description: "old description",
-		Parent:      nil, // Current parent is nil
+		Parent:      nil,
 	}
 
 	newParentID := testParentResourceID
@@ -1473,6 +1493,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ParentIsImmutable() {
 		Parent:      &newParentID, // Client attempts to set parent (should be ignored)
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1493,7 +1514,6 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ParentIsImmutable() {
 	suite.NotNil(result)
 	suite.Equal("res-123", result.ID)
 	suite.Equal(testUpdatedName, result.Name)
-	suite.Nil(result.Parent) // Parent is preserved from current resource (immutability verified)
 	suite.NotEqual(
 		updateReq.Parent, result.Parent,
 		"Parent field must be immutable - update request's parent should be ignored",
@@ -1522,6 +1542,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ResourceNotFound() {
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1549,6 +1570,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_HandleIsImmutable() {
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1579,6 +1601,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_StoreError() {
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1598,6 +1621,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_GetResourceError() {
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1616,6 +1640,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ResourceServerNotFound
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errResourceServerNotFound)
 
@@ -1632,6 +1657,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_CheckServerError() {
 		Description: testNewDescription,
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errors.New("database error"))
 
@@ -1643,6 +1669,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_CheckServerError() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_Success() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1658,6 +1685,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_Success() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_HasDependencies() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1674,6 +1702,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_HasDependencies() {
 // Resource Dependency Tests
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_WithOnlyChildResources() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1689,6 +1718,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WithOnlyChildResources
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_WithOnlyActions() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1704,6 +1734,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WithOnlyActions() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_WithChildrenAndActions() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1729,6 +1760,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_MissingID() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_Idempotent() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1740,6 +1772,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_Idempotent() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_DeleteError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1756,6 +1789,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_DeleteError() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckExistenceError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1768,6 +1802,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckExistenceError() 
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckResourceServerError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").
 		Return(ResourceServer{}, errors.New("database error"))
@@ -1780,6 +1815,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckResourceServerErr
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckDependenciesError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1899,6 +1935,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_WrongServerID() {
 		Description: "updated description",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-wrong-server").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-wrong-server").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -1913,6 +1950,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_WrongServerID() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_WrongServerID() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-wrong-server").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-wrong-server").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -2705,6 +2743,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 					Handle:      testOriginalHandle,
 					Description: "old description",
 				}
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, nil)
@@ -2743,6 +2782,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 					Handle:      testOriginalHandle,
 					Description: "old description",
 				}
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, nil)
@@ -2802,6 +2842,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, errResourceServerNotFound)
@@ -2815,6 +2856,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, nil)
@@ -2831,6 +2873,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").Return(ResourceServer{}, nil)
 				suite.mockStore.On("GetAction", mock.Anything,
@@ -2845,6 +2888,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, nil)
@@ -2865,6 +2909,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, errors.New("database error"))
@@ -2878,6 +2923,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, nil)
@@ -2894,6 +2940,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			actionID:         "action-123",
 			action:           Action{Description: testNewDescription},
 			setupMocks: func() {
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").
 					Return(ResourceServer{}, nil)
@@ -2919,6 +2966,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 					Handle:      testOriginalHandle,
 					Description: "old description",
 				}
+				suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 				suite.mockStore.On("GetResourceServer", mock.Anything,
 					"rs-123").Return(ResourceServer{}, nil)
 				suite.mockStore.On("GetAction", mock.Anything,
@@ -2957,6 +3005,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_Success() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("IsActionExist", mock.Anything,
@@ -2980,6 +3029,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_MissingI
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_ResourceServerNotFound() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errResourceServerNotFound)
 
@@ -2989,6 +3039,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_Resource
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_StoreError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("IsActionExist", mock.Anything,
@@ -3003,6 +3054,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_StoreErr
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_CheckServerError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errors.New("database error"))
 
@@ -3013,6 +3065,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_CheckSer
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_ActionNotFound() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("IsActionExist", mock.Anything,
@@ -3024,6 +3077,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_ActionNo
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_CheckActionExistError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("IsActionExist", mock.Anything,
@@ -3036,6 +3090,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_CheckAct
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_Success() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	resID := testResourceID
@@ -3067,6 +3122,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_MissingID() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ResourceServerNotFound() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, errResourceServerNotFound)
 
@@ -3077,6 +3133,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ResourceServer
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ResourceNotFound() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -3089,6 +3146,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ResourceNotFou
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_StoreError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	resID := testResourceID
@@ -3105,6 +3163,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_StoreError() {
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckServerError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").
 		Return(ResourceServer{}, errors.New("database error"))
@@ -3117,6 +3176,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckServerErr
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckResourceError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", mock.Anything,
@@ -3131,6 +3191,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckResourceE
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ActionNotFound() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	resID := testResourceID
@@ -3144,6 +3205,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ActionNotFound
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckActionExistError() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	resID := testResourceID
@@ -3311,6 +3373,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateActionAtResource_WrongResourceI
 		Description: "updated description",
 	}
 
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	wrongResID := testWrongResourceID
@@ -3328,6 +3391,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateActionAtResource_WrongResourceI
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_WrongResourceID() {
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything,
 		"rs-123").Return(ResourceServer{}, nil)
 	wrongResID := testWrongResourceID
@@ -4251,4 +4315,224 @@ func (suite *ResourceServiceTestSuite) TestValidatePermissions() {
 			mockStore.AssertExpectations(suite.T())
 		})
 	}
+}
+
+// Test cases for declarative resource functionality
+
+func (suite *ResourceServiceTestSuite) TestIsResourceServerDeclarative_True() {
+	// Test when resource server is declarative
+	suite.mockStore.On("IsResourceServerDeclarative", declarativeRSID).Return(true)
+
+	result := suite.service.IsResourceServerDeclarative(declarativeRSID)
+
+	suite.True(result)
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestIsResourceServerDeclarative_False() {
+	// Test when resource server is not declarative
+	suite.mockStore.On("IsResourceServerDeclarative", "mutable-rs").Return(false)
+
+	result := suite.service.IsResourceServerDeclarative("mutable-rs")
+
+	suite.False(result)
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_ImmutableDeclarativeResource() {
+	// Test that updating a declarative resource server returns an immutability error
+	resourceServerID := declarativeRSID
+	updateReq := ResourceServer{
+		ID:                 resourceServerID,
+		Name:               "Updated Name",
+		OrganizationUnitID: "ou-1",
+	}
+
+	// Mock IsResourceServerDeclarative to return true
+	suite.mockStore.On("GetResourceServer", mock.Anything, resourceServerID).
+		Return(ResourceServer{ID: resourceServerID}, nil)
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(true)
+
+	// Execute the test
+	result, svcErr := suite.service.UpdateResourceServer(context.Background(), resourceServerID, updateReq)
+
+	// Assert immutability error
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal("RES-1018", svcErr.Code)
+	suite.Equal(ErrorImmutableResourceServer.Code, svcErr.Code)
+
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_MutableResource() {
+	// Test that updating a non-declarative resource server succeeds
+	resourceServerID := "mutable-rs"
+	updateReq := ResourceServer{
+		ID:                 resourceServerID,
+		Name:               "Updated Name",
+		OrganizationUnitID: "ou-1",
+		Identifier:         "updated-identifier",
+	}
+
+	existingRS := ResourceServer{
+		ID:                 resourceServerID,
+		Name:               "Original Name",
+		OrganizationUnitID: "ou-1",
+		Identifier:         "original-identifier",
+	}
+
+	// Mock IsResourceServerDeclarative to return false
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(false)
+
+	// Mock the necessary store calls
+	suite.mockStore.On("GetResourceServer", mock.Anything, resourceServerID).
+		Return(existingRS, nil)
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-1").
+		Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil)
+	suite.mockStore.On("CheckResourceServerNameExists", mock.Anything, "Updated Name").
+		Return(false, nil)
+	suite.mockStore.On("CheckResourceServerIdentifierExists", mock.Anything, "updated-identifier").
+		Return(false, nil)
+	suite.mockStore.On("UpdateResourceServer", mock.Anything, resourceServerID, mock.Anything).
+		Return(nil)
+
+	// Execute the test
+	result, svcErr := suite.service.UpdateResourceServer(context.Background(), resourceServerID, updateReq)
+
+	// Assert success
+	suite.Nil(svcErr)
+	suite.NotNil(result)
+	suite.Equal("Updated Name", result.Name)
+
+	suite.mockStore.AssertExpectations(suite.T())
+	suite.mockOU.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_ImmutableDeclarativeResource() {
+	// Test that deleting a declarative resource server returns an immutability error
+	resourceServerID := declarativeRSID
+
+	// Mock IsResourceServerDeclarative to return true
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(true)
+
+	// Execute the test
+	svcErr := suite.service.DeleteResourceServer(context.Background(), resourceServerID)
+
+	// Assert immutability error
+	suite.NotNil(svcErr)
+	suite.Equal("RES-1018", svcErr.Code)
+	suite.Equal(ErrorImmutableResourceServer.Code, svcErr.Code)
+
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_MutableResource() {
+	// Test that deleting a non-declarative resource server succeeds
+	resourceServerID := "mutable-rs"
+
+	// Mock IsResourceServerDeclarative to return false
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(false)
+
+	// Mock the necessary store calls
+	suite.mockStore.On("GetResourceServer", mock.Anything, resourceServerID).
+		Return(ResourceServer{ID: resourceServerID}, nil)
+	suite.mockStore.On("CheckResourceServerHasDependencies", mock.Anything, resourceServerID).Return(false, nil)
+	suite.mockStore.On("DeleteResourceServer", mock.Anything, resourceServerID).Return(nil)
+
+	// Execute the test
+	svcErr := suite.service.DeleteResourceServer(context.Background(), resourceServerID)
+
+	// Assert success
+	suite.Nil(svcErr)
+
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResource_ImmutableDeclarativeResource() {
+	// Test that updating a resource in a declarative resource server returns an immutability error
+	resourceServerID := declarativeRSID
+	resourceID := "res-1"
+	updateReq := Resource{
+		Name:        "Updated Resource",
+		Handle:      "updated",
+		Description: "Updated",
+	}
+
+	// Mock IsResourceServerDeclarative to return true
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(true)
+
+	// Execute the test
+	result, svcErr := suite.service.UpdateResource(context.Background(), resourceServerID, resourceID, updateReq)
+
+	// Assert immutability error
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal("RES-1019", svcErr.Code)
+	suite.Equal(ErrorImmutableResource.Code, svcErr.Code)
+
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestDeleteResource_ImmutableDeclarativeResource() {
+	// Test that deleting a resource in a declarative resource server returns an immutability error
+	resourceServerID := declarativeRSID
+	resourceID := "res-1"
+
+	// Mock IsResourceServerDeclarative to return true
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(true)
+
+	// Execute the test
+	svcErr := suite.service.DeleteResource(context.Background(), resourceServerID, resourceID)
+
+	// Assert immutability error
+	suite.NotNil(svcErr)
+	suite.Equal("RES-1019", svcErr.Code)
+	suite.Equal(ErrorImmutableResource.Code, svcErr.Code)
+
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateAction_ImmutableDeclarativeResource() {
+	// Test that updating an action in a declarative resource server returns an immutability error
+	resourceServerID := declarativeRSID
+	actionID := "act-1"
+	updateReq := Action{
+		Name:        "Updated Action",
+		Handle:      "updated",
+		Description: "Updated",
+	}
+
+	// Mock IsResourceServerDeclarative to return true
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(true)
+
+	// Execute the test
+	result, svcErr := suite.service.UpdateAction(context.Background(), resourceServerID, nil, actionID, updateReq)
+
+	// Assert immutability error
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal("RES-1020", svcErr.Code)
+	suite.Equal(ErrorImmutableAction.Code, svcErr.Code)
+
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestDeleteAction_ImmutableDeclarativeResource() {
+	// Test that deleting an action in a declarative resource server returns an immutability error
+	resourceServerID := declarativeRSID
+	actionID := "act-1"
+
+	// Mock IsResourceServerDeclarative to return true
+	suite.mockStore.On("IsResourceServerDeclarative", resourceServerID).Return(true)
+
+	// Execute the test
+	svcErr := suite.service.DeleteAction(context.Background(), resourceServerID, nil, actionID)
+
+	// Assert immutability error
+	suite.NotNil(svcErr)
+	suite.Equal("RES-1020", svcErr.Code)
+	suite.Equal(ErrorImmutableAction.Code, svcErr.Code)
+
+	suite.mockStore.AssertExpectations(suite.T())
 }

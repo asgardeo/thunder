@@ -39,6 +39,7 @@ type resourceStoreInterface interface {
 	CheckResourceServerNameExists(ctx context.Context, name string) (bool, error)
 	CheckResourceServerIdentifierExists(ctx context.Context, identifier string) (bool, error)
 	CheckResourceServerHasDependencies(ctx context.Context, resServerID string) (bool, error)
+	IsResourceServerDeclarative(id string) bool
 
 	// Resource operations
 	CreateResource(ctx context.Context, uuid string, resServerID string, parentID *string, res Resource) error
@@ -251,6 +252,12 @@ func (s *resourceStore) CheckResourceServerHasDependencies(ctx context.Context, 
 		return err
 	})
 	return hasDeps, err
+}
+
+// IsResourceServerDeclarative checks if a resource server is declarative (immutable).
+// For database store, all resource servers are mutable, so this always returns false.
+func (s *resourceStore) IsResourceServerDeclarative(id string) bool {
+	return false
 }
 
 // Resource Store Methods

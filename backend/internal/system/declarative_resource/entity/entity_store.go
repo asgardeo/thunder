@@ -39,6 +39,9 @@ const (
 	KeyTypeTranslation        KeyType = "translation"
 	KeyTypeTheme              KeyType = "theme"
 	KeyTypeLayout             KeyType = "layout"
+	KeyTypeResourceServer     KeyType = "resource-server"
+	KeyTypeResource           KeyType = "resource"
+	KeyTypeAction             KeyType = "action"
 	KeyTypeRole               KeyType = "role"
 )
 
@@ -51,7 +54,8 @@ func (kt KeyType) String() string {
 func (kt KeyType) IsValid() bool {
 	switch kt {
 	case KeyTypeApplication, KeyTypeNotification, KeyTypeIDP, KeyTypeNotificationSender,
-		KeyTypeUserSchema, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation, KeyTypeTheme, KeyTypeLayout, KeyTypeRole:
+		KeyTypeUserSchema, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation, KeyTypeTheme, KeyTypeLayout,
+		KeyTypeResourceServer, KeyTypeResource, KeyTypeAction, KeyTypeRole:
 		return true
 	default:
 		return false
