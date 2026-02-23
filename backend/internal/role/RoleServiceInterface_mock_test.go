@@ -548,6 +548,74 @@ func (_c *RoleServiceInterfaceMock_GetRoleWithPermissions_Call) RunAndReturn(run
 	return _c
 }
 
+// IsRoleDeclarative provides a mock function for the type RoleServiceInterfaceMock
+func (_mock *RoleServiceInterfaceMock) IsRoleDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsRoleDeclarative")
+	}
+
+	var r0 bool
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// RoleServiceInterfaceMock_IsRoleDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsRoleDeclarative'
+type RoleServiceInterfaceMock_IsRoleDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsRoleDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *RoleServiceInterfaceMock_Expecter) IsRoleDeclarative(ctx interface{}, id interface{}) *RoleServiceInterfaceMock_IsRoleDeclarative_Call {
+	return &RoleServiceInterfaceMock_IsRoleDeclarative_Call{Call: _e.mock.On("IsRoleDeclarative", ctx, id)}
+}
+
+func (_c *RoleServiceInterfaceMock_IsRoleDeclarative_Call) Run(run func(ctx context.Context, id string)) *RoleServiceInterfaceMock_IsRoleDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *RoleServiceInterfaceMock_IsRoleDeclarative_Call) Return(b bool, serviceError *serviceerror.ServiceError) *RoleServiceInterfaceMock_IsRoleDeclarative_Call {
+	_c.Call.Return(b, serviceError)
+	return _c
+}
+
+func (_c *RoleServiceInterfaceMock_IsRoleDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) (bool, *serviceerror.ServiceError)) *RoleServiceInterfaceMock_IsRoleDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RemoveAssignments provides a mock function for the type RoleServiceInterfaceMock
 func (_mock *RoleServiceInterfaceMock) RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError {
 	ret := _mock.Called(ctx, id, assignments)
