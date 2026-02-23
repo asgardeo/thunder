@@ -146,6 +146,12 @@ const (
 	RuntimeKeyUserEligibleForProvisioning = "userEligibleForProvisioning"
 	// RuntimeKeySkipProvisioning indicates whether to skip provisioning
 	RuntimeKeySkipProvisioning = "skipProvisioning"
+	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
+	RuntimeKeyRequestedPermissions = "requested_permissions"
+	// RuntimeKeyRequiredAttributes holds the space-separated user attributes required for the flow.
+	RuntimeKeyRequiredAttributes = "required_attributes"
+	// RuntimeKeyRequiredLocales holds the space-separated locales requested for claims.
+	RuntimeKeyRequiredLocales = "required_locales"
 )
 
 // TODO: Define a go type for InputType when formalizing input types
