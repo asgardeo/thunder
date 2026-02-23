@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -66,7 +67,7 @@ func (e *NotificationSenderExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all notification sender IDs.
-func (e *NotificationSenderExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *NotificationSenderExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	senders, err := e.service.ListSenders()
 	if err != nil {
 		return nil, err
@@ -79,7 +80,9 @@ func (e *NotificationSenderExporter) GetAllResourceIDs() ([]string, *serviceerro
 }
 
 // GetResourceByID retrieves a notification sender by its ID.
-func (e *NotificationSenderExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *NotificationSenderExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	sender, err := e.service.GetSender(id)
 	if err != nil {
 		return nil, "", err

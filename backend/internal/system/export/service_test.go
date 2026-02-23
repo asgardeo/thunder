@@ -19,6 +19,7 @@
 package export
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -122,7 +123,7 @@ func TestExportServiceTestSuite(t *testing.T) {
 
 // TestExportResources_NilRequest tests ExportResources with nil request.
 func (suite *ExportServiceTestSuite) TestExportResources_NilRequest() {
-	result, err := suite.exportService.ExportResources(nil)
+	result, err := suite.exportService.ExportResources(context.Background(), nil)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -134,7 +135,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_NilRequest() {
 func (suite *ExportServiceTestSuite) TestExportResources_EmptyRequest() {
 	request := &ExportRequest{}
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -157,7 +158,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_DefaultOptions() {
 
 	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -183,7 +184,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_ApplicationNotFound() {
 
 	suite.appServiceMock.EXPECT().GetApplication(appID).Return(nil, appError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -246,7 +247,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 
 	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -289,7 +290,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MultipleApplications() 
 	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
 	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -322,7 +323,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure() {
 	suite.appServiceMock.EXPECT().GetApplication(app1ID).Return(mockApp1, nil)
 	suite.appServiceMock.EXPECT().GetApplication(app2ID).Return(nil, appError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -376,7 +377,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications() 
 	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
 	suite.appServiceMock.EXPECT().GetApplication(testApp3ID).Return(mockApp3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -402,7 +403,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Li
 
 	suite.appServiceMock.EXPECT().GetApplicationList().Return(nil, listError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -427,7 +428,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Em
 
 	suite.appServiceMock.EXPECT().GetApplicationList().Return(mockAppList, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -476,7 +477,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Pa
 	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(nil, appError)
 	suite.appServiceMock.EXPECT().GetApplication(testApp3ID).Return(mockApp3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -509,7 +510,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Succes
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -547,7 +548,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Multip
 		IdentityProviders: []string{"idp1", "idp2"},
 		Options:           &ExportOptions{Format: "yaml"},
 	}
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	suite.assertMultipleResourcesExport(result, err, 2, "identity_provider")
 }
@@ -586,7 +587,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(mockIDP2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -621,7 +622,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_Mixed_ApplicationsAndID
 	suite.appServiceMock.EXPECT().GetApplication(testAppID).Return(mockApp, nil)
 	suite.idpServiceMock.EXPECT().GetIdentityProvider(testIDPID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -649,7 +650,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NotFou
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("non-existent-idp").Return(nil, idpError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should return error since no valid resources found
 	assert.NotNil(suite.T(), err)
@@ -698,7 +699,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(nil, idpError)
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp3").Return(mockIDP3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -729,7 +730,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NoProp
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp-no-props").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should succeed even with no properties
 	assert.Nil(suite.T(), err)
@@ -758,7 +759,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_EmptyN
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp-no-name").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should return error since name is required
 	assert.NotNil(suite.T(), err)
@@ -796,7 +797,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -855,7 +856,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 
 	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -915,7 +916,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure_Detailed
 	suite.appServiceMock.EXPECT().GetApplication(app1ID).Return(mockApp1, nil)
 	suite.appServiceMock.EXPECT().GetApplication(app2ID).Return(nil, appError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Verify successful export
 	assert.Nil(suite.T(), err)
@@ -970,7 +971,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Partia
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2-not-found").Return(nil, idpError)
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp3").Return(mockIDP3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Verify partial success
 	assert.Nil(suite.T(), err)
@@ -1035,7 +1036,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2-not-found").Return(nil, idpError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Verify partial success
 	assert.Nil(suite.T(), err)
@@ -1093,7 +1094,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_FileSizeCalculation() {
 	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
 	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1167,7 +1168,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 	// Create a new export service with the mock parameterizer
 	exportServiceWithMock := newExportService(exporters, mockParameterizer)
 
-	result, err := exportServiceWithMock.ExportResources(request)
+	result, err := exportServiceWithMock.ExportResources(context.Background(), request)
 
 	// When all resources fail template generation, service returns error
 	assert.NotNil(suite.T(), err)
@@ -1198,7 +1199,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithCustomFolderStructu
 
 	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1243,7 +1244,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithGroupByTypeStructur
 	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
 	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1286,7 +1287,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Success() {
 
 	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1324,7 +1325,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Multiple() {
 		NotificationSenders: []string{"sender1", "sender2"},
 		Options:             &ExportOptions{Format: "yaml"},
 	}
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	suite.assertMultipleResourcesExport(result, err, 2, "notification_sender")
 }
@@ -1360,7 +1361,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Wildcard() {
 	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
 	suite.mockNotificationService.EXPECT().GetSender("sender2").Return(mockSender2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1384,7 +1385,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NotFound() {
 
 	suite.mockNotificationService.EXPECT().GetSender("non-existent-sender").Return(nil, senderError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1410,7 +1411,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_EmptyName() {
 
 	suite.mockNotificationService.EXPECT().GetSender("sender-no-name").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1435,7 +1436,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NoProperties(
 
 	suite.mockNotificationService.EXPECT().GetSender("sender-no-props").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should succeed even with no properties
 	assert.Nil(suite.T(), err)
@@ -1477,7 +1478,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_WildcardParti
 	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
 	suite.mockNotificationService.EXPECT().GetSender("sender3").Return(mockSender3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1505,7 +1506,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1545,7 +1546,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(mockSchema2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1592,7 +1593,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(mockSchema2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1616,7 +1617,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "non-existent-schema").Return(nil, schemaError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1642,7 +1643,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema-no-name").Return(mockSchema, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1668,7 +1669,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema-no-def").Return(mockSchema, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should succeed even with no schema definition
 	assert.Nil(suite.T(), err)
@@ -1723,7 +1724,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(nil, schemaError)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema3").Return(mockSchema3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1768,7 +1769,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Success() {
 		Format: formatYAML,
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -1810,7 +1811,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleRes
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{app1ID, app2ID, app3ID}, options)
 
 	assert.Len(suite.T(), files, 3)
@@ -1833,7 +1834,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_ResourceNot
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -1866,7 +1867,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_PartialSucc
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{validAppID, invalidAppID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -1906,7 +1907,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardSuc
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 2)
@@ -1927,7 +1928,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFai
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -1947,7 +1948,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardEmp
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -1973,7 +1974,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithGroupBy
 		},
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2000,7 +2001,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithCustomF
 		},
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2024,7 +2025,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_IdentityPro
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{idpID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2052,7 +2053,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Notificatio
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{senderID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2080,7 +2081,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema(
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{schemaID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2095,7 +2096,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_EmptyResour
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -2118,7 +2119,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_JSONFormatF
 		Format: formatJSON, // JSON not yet implemented
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2163,7 +2164,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Flow() {
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{flowID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2257,7 +2258,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowWithCom
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{flowID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2302,7 +2303,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleFlo
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{testFlow1ID, testFlow2ID}, options)
 
 	assert.Len(suite.T(), files, 2)
@@ -2323,7 +2324,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowNotFoun
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{flowID}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -2388,7 +2389,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 2)
@@ -2406,7 +2407,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -2439,7 +2440,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_FlowOnly() {
 		},
 	}
 
-	response, err := suite.exportService.ExportResources(request)
+	response, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -2484,7 +2485,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedWithFlows() {
 		},
 	}
 
-	response, err := suite.exportService.ExportResources(request)
+	response, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)

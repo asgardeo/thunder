@@ -19,6 +19,7 @@
 package thememgt
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -105,7 +106,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_Success() {
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.Nil(svcErr)
@@ -123,7 +124,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_ServiceError
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.NotNil(svcErr)
@@ -138,7 +139,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_EmptyList() 
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.Nil(svcErr)
@@ -160,7 +161,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceByID_Success() {
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	resource, displayName, svcErr := exporter.GetResourceByID("theme-001")
+	resource, displayName, svcErr := exporter.GetResourceByID(context.Background(), "theme-001")
 
 	// Assert
 	s.Nil(svcErr)
@@ -181,7 +182,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceByID_NotFound() {
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	resource, displayName, svcErr := exporter.GetResourceByID("non-existent")
+	resource, displayName, svcErr := exporter.GetResourceByID(context.Background(), "non-existent")
 
 	// Assert
 	s.NotNil(svcErr)

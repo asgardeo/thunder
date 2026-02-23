@@ -19,6 +19,7 @@
 package notification_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,7 +72,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_Success() {
 
 	s.mockService.EXPECT().ListSenders().Return(expectedSenders, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -87,7 +88,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_Error() {
 
 	s.mockService.EXPECT().ListSenders().Return(nil, expectedError)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -98,7 +99,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_EmptyList() 
 
 	s.mockService.EXPECT().ListSenders().Return(expectedSenders, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -112,7 +113,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetResourceByID_Success() {
 
 	s.mockService.EXPECT().GetSender("sender1").Return(expectedSender, nil)
 
-	resource, name, err := s.exporter.GetResourceByID("sender1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "sender1")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Sender", name)
@@ -127,7 +128,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetResourceByID_Error() {
 
 	s.mockService.EXPECT().GetSender("sender1").Return(nil, expectedError)
 
-	resource, name, err := s.exporter.GetResourceByID("sender1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "sender1")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)

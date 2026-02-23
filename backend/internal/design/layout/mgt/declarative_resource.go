@@ -19,6 +19,7 @@
 package layoutmgt
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -56,7 +57,7 @@ func (e *layoutExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all layout IDs.
-func (e *layoutExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *layoutExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	layoutList, err := e.service.GetLayoutList(100, 0) // Get a large number to fetch all
 	if err != nil {
 		return nil, err
@@ -69,7 +70,9 @@ func (e *layoutExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceErr
 }
 
 // GetResourceByID retrieves a layout by its ID.
-func (e *layoutExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *layoutExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	layout, err := e.service.GetLayout(id)
 	if err != nil {
 		return nil, "", err

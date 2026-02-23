@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -64,7 +65,7 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceByID() {
 
 	s.mockService.EXPECT().GetOrganizationUnit("test-ou-1").Return(ou, (*serviceerror.ServiceError)(nil))
 
-	resource, name, err := s.exporter.GetResourceByID("test-ou-1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "test-ou-1")
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test OU", name)
 	assert.NotNil(s.T(), resource)
@@ -267,7 +268,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_NoOUs() {
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Empty(s.T(), ids)
 }
@@ -302,7 +303,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_RootOUsOnly() {
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
 	assert.Contains(s.T(), ids, "root-1")
@@ -351,7 +352,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_WithChildren() {
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 3)
 	assert.Contains(s.T(), ids, "root-1")
@@ -410,7 +411,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithCh
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 4)
 	assert.Contains(s.T(), ids, "root-1")
@@ -426,7 +427,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_ErrorGettingList() 
 		&serviceerror.InternalServerError,
 	)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.NotNil(s.T(), err)
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), serviceerror.InternalServerError.Code, err.Code)
@@ -452,7 +453,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_ErrorGettingChildre
 		&serviceerror.InternalServerError,
 	)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.NotNil(s.T(), err)
 	assert.Nil(s.T(), ids)
 }
@@ -500,7 +501,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_DeepNesting() {
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 5)
 	for i := 1; i <= 5; i++ {
@@ -560,7 +561,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleChildrenPer
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 4)
 	assert.Contains(s.T(), ids, "root-1")

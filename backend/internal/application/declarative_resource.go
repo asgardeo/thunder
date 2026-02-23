@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -65,7 +66,7 @@ func (e *ApplicationExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all application IDs.
 // In composite mode, this excludes declarative (YAML-based) applications.
-func (e *ApplicationExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *ApplicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	apps, err := e.service.GetApplicationList()
 	if err != nil {
 		return nil, err
@@ -81,7 +82,9 @@ func (e *ApplicationExporter) GetAllResourceIDs() ([]string, *serviceerror.Servi
 }
 
 // GetResourceByID retrieves an application by its ID.
-func (e *ApplicationExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *ApplicationExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	app, err := e.service.GetApplication(id)
 	if err != nil {
 		return nil, "", err

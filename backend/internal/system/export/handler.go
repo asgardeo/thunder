@@ -58,7 +58,7 @@ func (eh *exportHandler) HandleExportRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Export resources using the export service
-	exportResponse, svcErr := eh.service.ExportResources(exportRequest)
+	exportResponse, svcErr := eh.service.ExportResources(r.Context(), exportRequest)
 	if svcErr != nil {
 		eh.handleError(w, svcErr)
 		return
@@ -98,7 +98,7 @@ func (eh *exportHandler) HandleExportJSONRequest(w http.ResponseWriter, r *http.
 	}
 
 	// Export resources using the export service
-	exportResponse, svcErr := eh.service.ExportResources(exportRequest)
+	exportResponse, svcErr := eh.service.ExportResources(r.Context(), exportRequest)
 	if svcErr != nil {
 		eh.handleError(w, svcErr)
 		return
@@ -124,7 +124,7 @@ func (eh *exportHandler) HandleExportZipRequest(w http.ResponseWriter, r *http.R
 	}
 
 	// Export resources using the export service
-	exportResponse, svcErr := eh.service.ExportResources(exportRequest)
+	exportResponse, svcErr := eh.service.ExportResources(r.Context(), exportRequest)
 	if svcErr != nil {
 		eh.handleError(w, svcErr)
 		return
