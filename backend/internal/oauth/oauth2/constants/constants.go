@@ -297,6 +297,11 @@ const (
 	DefaultGroupListLimit = 20
 )
 
+// Standard OIDC scope names.
+const (
+	ScopeOpenID = "openid"
+)
+
 // GetSupportedResponseTypes returns all supported OAuth2 response types.
 func GetSupportedResponseTypes() []string {
 	result := make([]string, len(supportedResponseTypes))

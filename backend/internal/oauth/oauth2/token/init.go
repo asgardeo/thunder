@@ -37,7 +37,8 @@ func Initialize(
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 ) TokenHandlerInterface {
-	tokenHandler := newTokenHandler(appService, grantHandlerProvider, scopeValidator, observabilitySvc)
+	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc)
+	tokenHandler := newTokenHandler(tokenSvc, observabilitySvc)
 	registerRoutes(mux, tokenHandler, appService)
 	return tokenHandler
 }
