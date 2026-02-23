@@ -118,8 +118,8 @@ type AssignmentListResponse struct {
 
 // ResourcePermissions represents permissions grouped by resource server.
 type ResourcePermissions struct {
-	ResourceServerID string   `json:"resourceServerId"`
-	Permissions      []string `json:"permissions"`
+	ResourceServerID string   `json:"resourceServerId" yaml:"resource_server_id"`
+	Permissions      []string `json:"permissions" yaml:"permissions"`
 }
 
 // RoleCreationDetail represents the parameters for creating a role.
@@ -143,8 +143,8 @@ type RoleWithPermissionsAndAssignments struct {
 
 // RoleAssignment represents an assignment used internally by the service layer.
 type RoleAssignment struct {
-	ID   string
-	Type AssigneeType
+	ID   string       `yaml:"id"`
+	Type AssigneeType `yaml:"type"`
 }
 
 // RoleAssignmentWithDisplay represents an assignment used internally by the service layer.
