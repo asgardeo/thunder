@@ -23,6 +23,10 @@ import type {NavigateFunction} from 'react-router';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
 
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
 // Mock the dependencies
 vi.mock('../../api/useGetApplications');
 vi.mock('react-router', async () => {
@@ -122,6 +126,15 @@ vi.mock('../ApplicationDeleteDialog', () => ({
     ) : null,
 }));
 
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
 const {default: useGetApplications} = await import('../../api/useGetApplications');
 const {useNavigate} = await import('react-router');
 const {default: useDataGridLocaleText} = await import('../../../../hooks/useDataGridLocaleText');
@@ -158,6 +171,7 @@ describe('ApplicationsList', () => {
 
   beforeEach(() => {
     mockNavigate = vi.fn();
+    mockLoggerError.mockReset();
     vi.mocked(useNavigate).mockReturnValue(mockNavigate as unknown as NavigateFunction);
     vi.mocked(useDataGridLocaleText).mockReturnValue({});
   });
@@ -499,5 +513,72 @@ describe('ApplicationsList', () => {
     // Should display "-" for missing client_id
     const dashes = screen.getAllByText('-');
     expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it('should navigate to application when Edit action button is clicked', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(0);
+    await user.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
+    });
+  });
+
+  it('should navigate to correct application when Edit action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(1);
+    await user.click(editButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-2');
+    });
+  });
+
+  it('should log error when Edit button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    await user.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to application',
+        expect.objectContaining({
+          error: navigationError,
+          applicationId: 'app-1',
+        }),
+      );
+    });
   });
 });

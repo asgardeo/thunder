@@ -24,6 +24,10 @@ import {DataGrid} from '@wso2/oxygen-ui';
 import UsersList from '../UsersList';
 import type {UserListResponse, ApiUserSchema, ApiError} from '../../types/users';
 
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
 const mockDeleteUser = vi.fn();
@@ -147,6 +151,15 @@ vi.mock('react-router', async () => {
     useNavigate: () => mockNavigate,
   };
 });
+
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 // Mock hooks
 interface UseGetUsersReturn {
@@ -634,6 +647,67 @@ describe('UsersList', () => {
     });
   });
 
+  it('should navigate to user when View action button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(0);
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
+    });
+  });
+
+  it('should navigate to correct user when View action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(1);
+    await user.click(viewButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/user2');
+    });
+  });
+
+  it('should log error when View button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to user details',
+        expect.objectContaining({
+          error: navigationError,
+          userId: 'user1',
+        }),
+      );
+    });
+  });
+
   it('renders schema without avatar when name fields are not present', async () => {
     const schemaWithoutNameFields: ApiUserSchema = {
       id: 'schema1',
@@ -1025,7 +1099,7 @@ describe('UsersList', () => {
     });
   });
 
-  it('opens delete dialog for multiple users independently', async () => {
+  it('renders independent inline delete buttons for each user row', async () => {
     render(<UsersList selectedSchema="schema1" />);
 
     await waitFor(() => {

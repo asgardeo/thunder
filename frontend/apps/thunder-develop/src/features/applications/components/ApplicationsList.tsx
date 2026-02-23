@@ -20,7 +20,7 @@ import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
 import {Box, Avatar, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
-import {AppWindow, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../api/useGetApplications';
@@ -43,6 +43,17 @@ export default function ApplicationsList(): JSX.Element {
     setSelectedAppId(appId);
     setDeleteDialogOpen(true);
   }, []);
+
+  const handleEditClick = useCallback(
+    (appId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/applications/${appId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to application', {error: _error, applicationId: appId});
+      });
+    },
+    [logger, navigate],
+  );
 
   const handleDeleteDialogClose = (): void => {
     setDeleteDialogOpen(false);
@@ -141,7 +152,7 @@ export default function ApplicationsList(): JSX.Element {
       {
         field: 'actions',
         headerName: t('applications:listing.columns.actions'),
-        width: 100,
+        width: 150,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
@@ -149,6 +160,17 @@ export default function ApplicationsList(): JSX.Element {
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
           <ListingTable.RowActions visibility="hover">
+            <Tooltip title={t('common:actions.edit')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(params.row.id);
+                }}
+              >
+                <Pencil size={16} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title={t('common:actions.delete')}>
               <IconButton
                 size="small"
@@ -165,7 +187,7 @@ export default function ApplicationsList(): JSX.Element {
         ),
       },
     ],
-    [handleDeleteClick, t, theme],
+    [handleDeleteClick, handleEditClick, t, theme],
   );
 
   if (error) {
@@ -190,12 +212,7 @@ export default function ApplicationsList(): JSX.Element {
             columns={columns}
             getRowId={(row): string => (row as BasicApplication).id}
             onRowClick={(params) => {
-              const applicationId = (params.row as BasicApplication).id;
-              (async (): Promise<void> => {
-                await navigate(`/applications/${applicationId}`);
-              })().catch((_error: unknown) => {
-                logger.error('Failed to navigate to application', {error: _error, applicationId});
-              });
+              handleEditClick((params.row as BasicApplication).id);
             }}
             initialState={{
               pagination: {

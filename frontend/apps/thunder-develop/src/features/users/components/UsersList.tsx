@@ -35,7 +35,7 @@ import {
   Button,
   DataGrid,
 } from '@wso2/oxygen-ui';
-import {Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
@@ -86,6 +86,17 @@ export default function UsersList(props: UsersListProps) {
     setSelectedUserId(userId);
     setDeleteDialogOpen(true);
   }, []);
+
+  const handleViewClick = useCallback(
+    (userId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/users/${userId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to user details', {error: _error, userId});
+      });
+    },
+    [logger, navigate],
+  );
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -259,7 +270,7 @@ export default function UsersList(props: UsersListProps) {
     schemaColumns.push({
       field: 'actions',
       headerName: t('users:actions'),
-      width: 100,
+      width: 150,
       align: 'center',
       headerAlign: 'center',
       sortable: false,
@@ -267,6 +278,17 @@ export default function UsersList(props: UsersListProps) {
       hideable: false,
       renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
         <ListingTable.RowActions visibility="hover">
+          <Tooltip title={t('common:actions.view')}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewClick(params.row.id);
+              }}
+            >
+              <Eye size={16} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={t('common:actions.delete')}>
             <IconButton
               size="small"
@@ -284,7 +306,7 @@ export default function UsersList(props: UsersListProps) {
     });
 
     return schemaColumns;
-  }, [defaultUserSchema, handleDeleteClick, t]);
+  }, [defaultUserSchema, handleDeleteClick, handleViewClick, t]);
 
   // Calculate initial column visibility: show first 4 columns, hide the rest
   const initialColumnVisibility = useMemo(() => {
@@ -313,17 +335,11 @@ export default function UsersList(props: UsersListProps) {
       <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
         <ListingTable.Container disablePaper>
           <ListingTable.DataGrid
-            rows={userData?.users}
+            rows={userData?.users ?? []}
             columns={columns}
             getRowId={(row) => (row as UserWithDetails).id}
             onRowClick={(params) => {
-              const userId = (params.row as UserWithDetails).id;
-
-              (async () => {
-                await navigate(`/users/${userId}`);
-              })().catch((_error: unknown) => {
-                logger.error('Failed to navigate to user details', {error: _error, userId});
-              });
+              handleViewClick((params.row as UserWithDetails).id);
             }}
             initialState={{
               pagination: {

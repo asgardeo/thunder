@@ -18,6 +18,7 @@
 
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Avatar,
   Box,
@@ -37,7 +38,7 @@ import {
   DataGrid,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
+import {Eye, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetUserTypes from '../api/useGetUserTypes';
@@ -53,6 +54,7 @@ export default function UserTypesList() {
   const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('UserTypesList');
   const dataGridLocaleText = useDataGridLocaleText();
 
   const {
@@ -101,6 +103,17 @@ export default function UserTypesList() {
     setSelectedUserTypeId(userTypeId);
     setDeleteDialogOpen(true);
   }, []);
+
+  const handleViewClick = useCallback(
+    (userTypeId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/user-types/${userTypeId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to user type', {error: _error, userTypeId});
+      });
+    },
+    [logger, navigate],
+  );
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -205,7 +218,7 @@ export default function UserTypesList() {
       {
         field: 'actions',
         headerName: t('users:actions'),
-        width: 100,
+        width: 150,
         align: 'center',
         headerAlign: 'center',
         sortable: false,
@@ -213,6 +226,17 @@ export default function UserTypesList() {
         hideable: false,
         renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
           <ListingTable.RowActions visibility="hover">
+            <Tooltip title={t('common:actions.view')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewClick(params.row.id);
+                }}
+              >
+                <Eye size={16} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title={t('common:actions.delete')}>
               <IconButton
                 size="small"
@@ -229,7 +253,7 @@ export default function UserTypesList() {
         ),
       },
     ],
-    [organizationUnitMap, t, handleDeleteClick, theme],
+    [organizationUnitMap, t, handleDeleteClick, handleViewClick, theme],
   );
 
   return (
@@ -241,12 +265,7 @@ export default function UserTypesList() {
             columns={columns}
             getRowId={(row) => (row as UserSchemaListItem).id}
             onRowClick={(params) => {
-              const userTypeId = (params.row as UserSchemaListItem).id;
-              (async (): Promise<void> => {
-                await navigate(`/user-types/${userTypeId}`);
-              })().catch(() => {
-                // Navigation error silently handled
-              });
+              handleViewClick((params.row as UserSchemaListItem).id);
             }}
             initialState={{
               pagination: {

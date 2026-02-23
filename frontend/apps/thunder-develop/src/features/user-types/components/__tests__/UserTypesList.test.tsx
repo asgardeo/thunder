@@ -26,6 +26,10 @@ import type useGetUserTypesHook from '../../api/useGetUserTypes';
 import type useDeleteUserTypeHook from '../../api/useDeleteUserType';
 import type {UserSchemaListResponse, ApiError, UserSchemaListItem} from '../../types/user-types';
 
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn<() => Promise<void>>();
 const mockDeleteUserType = vi.fn();
@@ -139,7 +143,14 @@ vi.mock('react-router', async () => {
     useNavigate: () => mockNavigate,
   };
 });
-
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 // Mock hooks
 type UseGetUserTypesReturn = ReturnType<typeof useGetUserTypesHook>;
 type UseDeleteUserTypeReturn = ReturnType<typeof useDeleteUserTypeHook>;
@@ -526,19 +537,52 @@ describe('UserTypesList', () => {
     });
   });
 
-  it('handles navigation error when View menu item is clicked', async () => {
+  it('should navigate to user type when View action button is clicked', async () => {
     const user = userEvent.setup();
-    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
 
     render(<UserTypesList />);
 
-    // Row click triggers navigation
-    const row = screen.getByTestId('row-schema1');
-    await user.click(row);
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(0);
+    await user.click(viewButtons[0]);
 
-    // Navigation was called but failed - the catch handler silently handles the error
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
+    });
+  });
+
+  it('should navigate to correct user type when View action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    render(<UserTypesList />);
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(1);
+    await user.click(viewButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema2');
+    });
+  });
+
+  it('should log error when View button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    render(<UserTypesList />);
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to user type',
+        expect.objectContaining({
+          error: navigationError,
+          userTypeId: 'schema1',
+        }),
+      );
     });
   });
 });
