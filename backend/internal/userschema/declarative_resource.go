@@ -64,8 +64,8 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all user schema IDs.
-func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(context.TODO(), serverconst.MaxPageSize, 0)
+func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +77,10 @@ func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.Servic
 }
 
 // GetResourceByID retrieves a user schema by its ID.
-func (e *UserSchemaExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	schema, err := e.service.GetUserSchema(context.TODO(), id)
+func (e *UserSchemaExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
+	schema, err := e.service.GetUserSchema(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}

@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -66,7 +67,7 @@ func (e *OUExporter) GetParameterizerType() string {
 // GetAllResourceIDs retrieves all organization unit IDs from the database store.
 // Note: This only exports DB-backed OUs (runtime OUs). YAML-based declarative resources
 // are not included in the export as they are already defined in YAML files.
-func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all OUs by requesting a large limit from the service
 	// In composite mode, this returns OUs from both file-based and database stores
 	ous, err := e.service.GetOrganizationUnitList(serverconst.MaxPageSize, 0)
@@ -129,7 +130,7 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 }
 
 // GetResourceByID retrieves an organization unit by its ID.
-func (e *OUExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *OUExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
 	ou, err := e.service.GetOrganizationUnit(id)
 	if err != nil {
 		return nil, "", err

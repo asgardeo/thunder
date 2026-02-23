@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -60,7 +61,7 @@ func (e *FlowGraphExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all flow graph IDs.
-func (e *FlowGraphExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *FlowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	flows, err := e.service.ListFlows(10000, 0, common.FlowType(""))
 	if err != nil {
 		return nil, err
@@ -73,7 +74,9 @@ func (e *FlowGraphExporter) GetAllResourceIDs() ([]string, *serviceerror.Service
 }
 
 // GetResourceByID retrieves a flow graph by its ID.
-func (e *FlowGraphExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *FlowGraphExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	flow, err := e.service.GetFlow(id)
 	if err != nil {
 		return nil, "", err

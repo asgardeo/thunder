@@ -19,6 +19,7 @@
 package export
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -118,12 +119,12 @@ func (m *mockResourceExporter) GetParameterizerType() string {
 	return m.paramType
 }
 
-func (m *mockResourceExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (m *mockResourceExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	return m.getAllIDs, m.getAllErr
 }
 
 func (m *mockResourceExporter) GetResourceByID(
-	id string,
+	ctx context.Context, id string,
 ) (interface{}, string, *serviceerror.ServiceError) {
 	return m.resourceByID, m.resourceNameByID, m.getByIDErr
 }

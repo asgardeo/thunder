@@ -19,6 +19,7 @@
 package mgt
 
 import (
+	"context"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
@@ -55,7 +56,7 @@ func (e *TranslationExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all languages from the database store.
 // One file per language.
-func (e *TranslationExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *TranslationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all translations from store
 	languages, err := e.store.GetDistinctLanguages()
 	if err != nil {
@@ -69,7 +70,9 @@ func (e *TranslationExporter) GetAllResourceIDs() ([]string, *serviceerror.Servi
 }
 
 // GetResourceByID retrieves all translations for a specific language.
-func (e *TranslationExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *TranslationExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	translations, err := e.store.GetTranslations()
 	if err != nil {
 		return nil, "", &serviceerror.ServiceError{
