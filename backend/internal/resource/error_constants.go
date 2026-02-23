@@ -146,6 +146,27 @@ var (
 		Error:            "Delimiter conflict in handle",
 		ErrorDescription: "Handle cannot contain the delimiter character",
 	}
+	// ErrorImmutableResourceServer is returned when attempting to modify a declarative resource server.
+	ErrorImmutableResourceServer = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1018",
+		Error:            "Cannot modify declarative resource server",
+		ErrorDescription: "Resource server %s is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorImmutableResource is returned when attempting to modify a declarative resource.
+	ErrorImmutableResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1019",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "Resource %s is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorImmutableAction is returned when attempting to modify a declarative action.
+	ErrorImmutableAction = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1020",
+		Error:            "Cannot modify declarative action",
+		ErrorDescription: "Action %s is defined in declarative configuration and cannot be modified",
+	}
 )
 
 // Internal error constants.
