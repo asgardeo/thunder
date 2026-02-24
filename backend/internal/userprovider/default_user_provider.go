@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
@@ -39,7 +40,7 @@ func newDefaultUserProvider(userSvc user.UserServiceInterface) UserProviderInter
 
 // IdentifyUser identifies a user based on the given filters.
 func (p *defaultUserProvider) IdentifyUser(filters map[string]interface{}) (*string, *UserProviderError) {
-	userID, err := p.userSvc.IdentifyUser(context.Background(), filters)
+	userID, err := p.userSvc.IdentifyUser(security.WithRuntimeContext(context.Background()), filters)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code {
 			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
@@ -52,7 +53,7 @@ func (p *defaultUserProvider) IdentifyUser(filters map[string]interface{}) (*str
 
 // GetUser retrieves a user based on the given user ID.
 func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError) {
-	userResult, err := p.userSvc.GetUser(context.Background(), userID)
+	userResult, err := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), userID)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code {
 			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
@@ -71,7 +72,8 @@ func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError)
 // GetUserGroups retrieves the groups associated with a user based on the given user ID.
 func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse,
 	*UserProviderError) {
-	userGroupListResponse, err := p.userSvc.GetUserGroups(context.Background(), userID, limit, offset)
+	userGroupListResponse, err := p.userSvc.GetUserGroups(
+		security.WithRuntimeContext(context.Background()), userID, limit, offset)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code || err.Code == user.ErrorMissingUserID.Code {
 			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
@@ -118,7 +120,7 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 		Attributes:       userUpdateConfig.Attributes,
 	}
 
-	userResult, err := p.userSvc.UpdateUser(context.Background(), userID, updatedUser)
+	userResult, err := p.userSvc.UpdateUser(security.WithRuntimeContext(context.Background()), userID, updatedUser)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorUserNotFound.Code, user.ErrorMissingUserID.Code:
@@ -153,7 +155,7 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 		Attributes:       userCreateConfig.Attributes,
 	}
 
-	userResult, err := p.userSvc.CreateUser(context.Background(), newUser)
+	userResult, err := p.userSvc.CreateUser(security.WithRuntimeContext(context.Background()), newUser)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorInvalidRequestFormat.Code:
@@ -181,7 +183,7 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 
 // UpdateUserCredentials updates the credentials of a user based on the given user ID and credentials.
 func (p *defaultUserProvider) UpdateUserCredentials(userID string, credentials json.RawMessage) *UserProviderError {
-	err := p.userSvc.UpdateUserCredentials(context.Background(), userID, credentials)
+	err := p.userSvc.UpdateUserCredentials(security.WithRuntimeContext(context.Background()), userID, credentials)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorInvalidRequestFormat.Code:
@@ -202,7 +204,7 @@ func (p *defaultUserProvider) UpdateUserCredentials(userID string, credentials j
 
 // DeleteUser deletes a user based on the given user ID.
 func (p *defaultUserProvider) DeleteUser(userID string) *UserProviderError {
-	err := p.userSvc.DeleteUser(context.Background(), userID)
+	err := p.userSvc.DeleteUser(security.WithRuntimeContext(context.Background()), userID)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorUserNotFound.Code, user.ErrorMissingUserID.Code:

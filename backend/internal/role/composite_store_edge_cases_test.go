@@ -21,6 +21,7 @@ package role
 import (
 	"context"
 	"errors"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -415,7 +416,11 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_C
 	)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), []string{"perm1", "perm2"}, result)
+	expected := []string{"perm1", "perm2"}
+	// Sort both slices to make the comparison order-insensitive
+	sort.Strings(expected)
+	sort.Strings(result)
+	assert.Equal(suite.T(), expected, result)
 }
 
 // Test GetAuthorizedPermissions merges permissions from both stores (union)

@@ -33,6 +33,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -70,6 +72,7 @@ type UserServiceInterface interface {
 
 // userService is the default implementation of the UserServiceInterface.
 type userService struct {
+	authzService      sysauthz.SystemAuthorizationServiceInterface
 	userStore         userStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
@@ -79,6 +82,7 @@ type userService struct {
 
 // newUserService creates a new instance of userService with injected dependencies.
 func newUserService(
+	authzService sysauthz.SystemAuthorizationServiceInterface,
 	userStore userStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
@@ -86,6 +90,7 @@ func newUserService(
 	transactioner transaction.Transactioner,
 ) UserServiceInterface {
 	return &userService{
+		authzService:      authzService,
 		userStore:         userStore,
 		ouService:         ouService,
 		userSchemaService: userSchemaService,
@@ -104,6 +109,27 @@ func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 		return nil, err
 	}
 
+	// Resolve the set of organization units the caller is authorized to list users from.
+	accessible, svcErr := us.authzService.GetAccessibleResources(
+		ctx, security.ActionListUsers, security.ResourceTypeOU)
+	if svcErr != nil {
+		logger.Error("Failed to resolve accessible resources for listing users", log.Any("error", svcErr))
+		return nil, &ErrorInternalServerError
+	}
+
+	// Unfiltered path: system-level caller — return all users.
+	if accessible.AllAllowed {
+		return us.listAllUsers(ctx, limit, offset, filters, logger)
+	}
+
+	// Filtered path: return users belonging to the accessible OUs.
+	return us.listUsersByOUIDs(ctx, accessible.IDs, limit, offset, filters, logger)
+}
+
+// listAllUsers retrieves users without OU filtering.
+func (us *userService) listAllUsers(
+	ctx context.Context, limit, offset int, filters map[string]interface{}, logger *log.Logger,
+) (*UserListResponse, *serviceerror.ServiceError) {
 	totalCount, err := us.userStore.GetUserListCount(ctx, filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
@@ -114,15 +140,39 @@ func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	response := &UserListResponse{
+	return buildUserListResponse(users, totalCount, limit, offset), nil
+}
+
+// listUsersByOUIDs retrieves users scoped to the given organization unit IDs.
+func (us *userService) listUsersByOUIDs(
+	ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{}, logger *log.Logger,
+) (*UserListResponse, *serviceerror.ServiceError) {
+	if len(ouIDs) == 0 {
+		return buildUserListResponse([]User{}, 0, limit, offset), nil
+	}
+
+	totalCount, err := us.userStore.GetUserListCountByOUIDs(ctx, ouIDs, filters)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
+	}
+
+	users, err := us.userStore.GetUserListByOUIDs(ctx, ouIDs, limit, offset, filters)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
+	}
+
+	return buildUserListResponse(users, totalCount, limit, offset), nil
+}
+
+// buildUserListResponse constructs a paginated UserListResponse.
+func buildUserListResponse(users []User, totalCount, limit, offset int) *UserListResponse {
+	return &UserListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(users),
 		Users:        users,
 		Links:        buildPaginationLinks("/users", limit, offset, totalCount),
 	}
-
-	return response, nil
 }
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
@@ -151,6 +201,11 @@ func (us *userService) GetUsersByPath(
 		)
 	}
 	organizationUnitID := ou.ID
+
+	// Check if caller is authorized to list users in the resolved OU.
+	if svcErr := us.checkUserAccess(ctx, security.ActionListUsers, organizationUnitID, ""); svcErr != nil {
+		return nil, svcErr
+	}
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
@@ -197,6 +252,11 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 
 	if user == nil {
 		return nil, &ErrorInvalidRequestFormat
+	}
+
+	// Check if caller is authorized to create users in the target OU.
+	if svcErr := us.checkUserAccess(ctx, security.ActionCreateUser, user.OrganizationUnit, ""); svcErr != nil {
+		return nil, svcErr
 	}
 
 	if svcErr := us.validateOrganizationUnitForUserType(ctx, user.Type, user.OrganizationUnit, logger); svcErr != nil {
@@ -374,6 +434,11 @@ func (us *userService) GetUser(ctx context.Context, userID string) (*User, *serv
 		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
 	}
 
+	// Check authz using the user's OU ID (fetched from store).
+	if svcErr := us.checkUserAccess(ctx, security.ActionReadUser, user.OrganizationUnit, userID); svcErr != nil {
+		return nil, svcErr
+	}
+
 	logger.Debug("Successfully retrieved user", log.String("id", userID))
 	return &user, nil
 }
@@ -391,15 +456,19 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 		return nil, err
 	}
 
-	invalidUserIDs, err := as.userStore.ValidateUserIDs(ctx, []string{userID})
+	// Fetch user to resolve the OU ID for the authorization check.
+	user, err := as.userStore.GetUser(ctx, userID)
 	if err != nil {
-		logger.Error("Failed to validate user IDs", log.String("error", err.Error()))
-		return nil, &ErrorInternalServerError
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
 	}
 
-	if len(invalidUserIDs) > 0 {
-		logger.Debug("User not found", log.String("id", userID))
-		return nil, &ErrorUserNotFound
+	// Check authz using the user's OU ID.
+	if svcErr := as.checkUserAccess(ctx, security.ActionReadUser, user.OrganizationUnit, userID); svcErr != nil {
+		return nil, svcErr
 	}
 
 	totalCount, err := as.userStore.GetGroupCountForUser(ctx, userID)
@@ -439,6 +508,30 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 
 	if user == nil {
 		return nil, &ErrorInvalidRequestFormat
+	}
+
+	// Fetch the existing user to obtain its OU ID for the authorization check.
+	existingUser, err := us.userStore.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
+	}
+
+	// Check authz using the existing user's OU ID.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		return nil, svcErr
+	}
+
+	// If the user is moving to a different OU, require authorization for the destination OU as well.
+	if user.OrganizationUnit != existingUser.OrganizationUnit {
+		if svcErr := us.checkUserAccess(
+			ctx, security.ActionUpdateUser, user.OrganizationUnit, userID); svcErr != nil {
+			return nil, svcErr
+		}
 	}
 
 	// Ensure the user object has the correct ID
@@ -561,15 +654,16 @@ func (us *userService) UpdateUserAttributes(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
+	// Check authz outside the transaction so a denial is returned directly without a rollback.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		return nil, svcErr
+	}
+
 	var updatedUser User
 	var capturedSvcErr *serviceerror.ServiceError
 
 	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		existingUser, err := us.userStore.GetUser(txCtx, userID)
-		if err != nil {
-			return err
-		}
-
 		existingUser.Attributes = attributes
 
 		if svcErr := us.validateUserAndUniqueness(txCtx, existingUser.Type,
@@ -578,7 +672,7 @@ func (us *userService) UpdateUserAttributes(
 			return errors.New("rollback for validation error")
 		}
 
-		err = us.userStore.UpdateUser(txCtx, &existingUser)
+		err := us.userStore.UpdateUser(txCtx, &existingUser)
 		if err != nil {
 			return err
 		}
@@ -675,9 +769,25 @@ func (us *userService) batchUpdateUserCredentials(
 		log.String("userID", userID),
 		log.Int("credentialTypesCount", len(credentialsMap)))
 
+	// Fetch user outside the transaction to resolve the OU ID for the authorization check.
+	existingUser, err := us.userStore.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("userID", userID))
+	}
+
+	// Check authz outside the transaction so a denial is returned directly without a rollback.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		return svcErr
+	}
+
 	var capturedSvcErr *serviceerror.ServiceError
 
-	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		// Get existing credentials and user info
 		existingUser, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
 		if err != nil {
@@ -915,7 +1025,23 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *serviceer
 		return &ErrorMissingUserID
 	}
 
-	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+	// Fetch the user to resolve the OU ID for the authorization check.
+	existingUser, err := us.userStore.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
+	}
+
+	// Check authz using the user's OU ID.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionDeleteUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		return svcErr
+	}
+
+	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		return us.userStore.DeleteUser(txCtx, userID)
 	})
 
@@ -1346,6 +1472,25 @@ func mapOUServiceError(
 	logFields = append(logFields, log.Any("error", svcErr))
 	logger.Error(fmt.Sprintf("Organization unit service error while %s", context), logFields...)
 	return &ErrorInternalServerError
+}
+
+// checkUserAccess validates that the caller is authorized to perform the given action on a user.
+func (us *userService) checkUserAccess(
+	ctx context.Context, action security.Action, ouID string, resourceID string,
+) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	allowed, svcErr := us.authzService.IsActionAllowed(ctx, action,
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUser, OuID: ouID, ResourceID: resourceID})
+	if svcErr != nil {
+		logger.Error("Failed to check authorization for action",
+			log.String("action", string(action)), log.Any("error", svcErr))
+		return &ErrorInternalServerError
+	}
+	if !allowed {
+		return &serviceerror.ErrorUnauthorized
+	}
+	return nil
 }
 
 // buildPaginationLinks builds pagination links for the response.

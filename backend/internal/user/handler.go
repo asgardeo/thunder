@@ -454,6 +454,8 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 			statusCode = http.StatusBadRequest
 		case ErrorAuthenticationFailed.Code:
 			statusCode = http.StatusUnauthorized
+		case serviceerror.ErrorUnauthorized.Code:
+			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
 		}

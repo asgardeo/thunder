@@ -143,21 +143,87 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			wantAllowed: true,
 		},
 		{
-			// Step 5: Insufficient permissions → denied (also exercises IsDebugEnabled branch).
+			// Step 5: Resource owner accessing own resource → allowed (self-service).
+			name:   "ResourceOwner_UserType_SubjectMatchesResourceID_Allowed",
+			ctx:    buildCtx(""),
+			action: security.ActionReadUser,
+			actionCtx: &ActionContext{
+				ResourceType: security.ResourceTypeUser,
+				ResourceID:   "user123",
+			},
+			wantAllowed: true,
+		},
+		{
+			// Step 5: Resource owner updating own resource → allowed (self-service).
+			name:   "ResourceOwner_UserType_SubjectMatchesResourceID_UpdateAllowed",
+			ctx:    buildCtx(""),
+			action: security.ActionUpdateUser,
+			actionCtx: &ActionContext{
+				ResourceType: security.ResourceTypeUser,
+				ResourceID:   "user123",
+			},
+			wantAllowed: true,
+		},
+		{
+			// Step 5: Resource owner deleting their own record → allowed (self-deletion is intentional).
+			name:   "ResourceOwner_UserType_SubjectMatchesResourceID_DeleteAllowed",
+			ctx:    buildCtx(""),
+			action: security.ActionDeleteUser,
+			actionCtx: &ActionContext{
+				ResourceType: security.ResourceTypeUser,
+				ResourceID:   "user123",
+			},
+			wantAllowed: true,
+		},
+		{
+			// Step 5: ResourceID does not match subject → falls through to permission check → denied.
+			name:   "ResourceOwner_UserType_SubjectMismatch_FallsThrough_Denied",
+			ctx:    buildCtx(""),
+			action: security.ActionReadUser,
+			actionCtx: &ActionContext{
+				ResourceType: security.ResourceTypeUser,
+				ResourceID:   "other-user",
+			},
+			wantAllowed: false,
+		},
+		{
+			// Step 5: Non-user resource type with matching ResourceID → not applicable → falls through.
+			name:   "ResourceOwner_NonUserType_FallsThrough_Denied",
+			ctx:    buildCtx(""),
+			action: security.ActionReadOU,
+			actionCtx: &ActionContext{
+				ResourceType: security.ResourceTypeOU,
+				ResourceID:   "user123",
+			},
+			wantAllowed: false,
+		},
+		{
+			// Step 5: Empty ResourceID → not applicable → falls through to permission check.
+			name:   "ResourceOwner_EmptyResourceID_FallsThrough_Denied",
+			ctx:    buildCtx(""),
+			action: security.ActionReadUser,
+			actionCtx: &ActionContext{
+				ResourceType: security.ResourceTypeUser,
+				ResourceID:   "",
+			},
+			wantAllowed: false,
+		},
+		{
+			// Step 6: Insufficient permissions → denied (also exercises IsDebugEnabled branch).
 			name:        "InsufficientScopes_Denied",
 			ctx:         buildCtx("users:read groups:manage"),
 			action:      security.ActionDeleteUser,
 			wantAllowed: false,
 		},
 		{
-			// Step 5: Empty permission set → denied.
+			// Step 6: Empty permission set → denied.
 			name:        "EmptyScopes_Denied",
 			ctx:         buildCtx(""),
 			action:      security.ActionReadUser,
 			wantAllowed: false,
 		},
 		{
-			// Step 5: Unmapped action without system permission falls back to "system" requirement.
+			// Step 6: Unmapped action without system permission falls back to "system" requirement.
 			name:        "UnmappedAction_InsufficientScope_Denied",
 			ctx:         buildCtx("users:read"),
 			action:      security.Action("custom:action"),
@@ -171,7 +237,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			wantAllowed: true,
 		},
 		{
-			// Step 6: Has required permission, nil actionCtx → policy NotApplicable → allowed.
+			// Step 7: Has required permission, nil actionCtx → policy NotApplicable → allowed.
 			// Also exercises the final IsDebugEnabled("Authorization granted") branch.
 			name:        "RequiredPermission_NilActionCtx_PolicyNotApplicable_Allowed",
 			ctx:         buildCtx("system:user"),
@@ -180,7 +246,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			wantAllowed: true,
 		},
 		{
-			// Step 6: Has required permission, actionCtx OU matches context OU → policy Allowed.
+			// Step 7: Has required permission, actionCtx OU matches context OU → policy Allowed.
 			name:        "RequiredPermission_MatchingOU_PolicyAllowed",
 			ctx:         buildCtxWithOU("system:ou", "ou1"),
 			action:      security.ActionCreateOU,
@@ -188,7 +254,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			wantAllowed: true,
 		},
 		{
-			// Step 6: Has required permission, actionCtx OU differs from context OU → policy Denied.
+			// Step 7: Has required permission, actionCtx OU differs from context OU → policy Denied.
 			// Also exercises the IsDebugEnabled("Authorization denied: policy evaluation failed") branch.
 			name:        "RequiredPermission_MismatchedOU_PolicyDenied",
 			ctx:         buildCtxWithOU("system:ou", "ou1"),
@@ -197,7 +263,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			wantAllowed: false,
 		},
 		{
-			// Step 6: Policy returns a ServiceError → propagated to caller.
+			// Step 7: Policy returns a ServiceError → propagated to caller.
 			name:        "PolicyError_PropagatedToCallerAsServiceError",
 			ctx:         buildCtx("system:user"),
 			action:      security.ActionCreateUser,
