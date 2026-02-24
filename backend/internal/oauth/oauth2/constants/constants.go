@@ -30,6 +30,8 @@ const (
 	RequestParamGrantType           string = "grant_type"
 	RequestParamClientID            string = "client_id"
 	RequestParamClientSecret        string = "client_secret"
+	RequestParamClientAssertion     string = "client_assertion"
+	RequestParamClientAssertionType string = "client_assertion_type"
 	RequestParamRedirectURI         string = "redirect_uri"
 	RequestParamUsername            string = "username"
 	RequestParamPassword            string = "password"
@@ -148,6 +150,9 @@ const (
 	TokenEndpointAuthMethodClientSecretBasic TokenEndpointAuthMethod = "client_secret_basic"
 	// TokenEndpointAuthMethodClientSecretPost represents the client secret post authentication method.
 	TokenEndpointAuthMethodClientSecretPost TokenEndpointAuthMethod = "client_secret_post"
+	// TokenEndpointAuthMethodPrivateKeyJWT represents the private key JWT authentication method.
+	// #nosec G101 - This is not a hardcoded credential, but a constant representing an authentication method.
+	TokenEndpointAuthMethodPrivateKeyJWT TokenEndpointAuthMethod = "private_key_jwt"
 	// TokenEndpointAuthMethodNone represents no authentication method.
 	TokenEndpointAuthMethodNone TokenEndpointAuthMethod = "none"
 )
@@ -157,6 +162,7 @@ const (
 var supportedTokenEndpointAuthMethods = []TokenEndpointAuthMethod{
 	TokenEndpointAuthMethodClientSecretBasic,
 	TokenEndpointAuthMethodClientSecretPost,
+	TokenEndpointAuthMethodPrivateKeyJWT,
 	TokenEndpointAuthMethodNone,
 }
 
@@ -299,6 +305,11 @@ const (
 // Standard OIDC scope names.
 const (
 	ScopeOpenID = "openid"
+)
+
+const (
+	// SupportedClientAssertionType is the constant for supported client assertion type.
+	SupportedClientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 )
 
 // GetSupportedResponseTypes returns all supported OAuth2 response types.

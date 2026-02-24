@@ -34,16 +34,17 @@ import (
 
 // oAuthConfig is the structure for unmarshaling OAuth configuration JSON.
 type oAuthConfig struct {
-	RedirectURIs            []string            `json:"redirect_uris"`
-	GrantTypes              []string            `json:"grant_types"`
-	ResponseTypes           []string            `json:"response_types"`
-	TokenEndpointAuthMethod string              `json:"token_endpoint_auth_method"`
-	PKCERequired            bool                `json:"pkce_required"`
-	PublicClient            bool                `json:"public_client"`
-	Token                   *oAuthTokenConfig   `json:"token,omitempty"`
-	Scopes                  []string            `json:"scopes,omitempty"`
-	UserInfo                *userInfoConfig     `json:"user_info,omitempty"`
-	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
+	RedirectURIs            []string                      `json:"redirect_uris"`
+	GrantTypes              []string                      `json:"grant_types"`
+	ResponseTypes           []string                      `json:"response_types"`
+	TokenEndpointAuthMethod string                        `json:"token_endpoint_auth_method"`
+	PKCERequired            bool                          `json:"pkce_required"`
+	PublicClient            bool                          `json:"public_client"`
+	Token                   *oAuthTokenConfig             `json:"token,omitempty"`
+	Scopes                  []string                      `json:"scopes,omitempty"`
+	UserInfo                *userInfoConfig               `json:"user_info,omitempty"`
+	ScopeClaims             map[string][]string           `json:"scope_claims,omitempty"`
+	Certificate             *model.ApplicationCertificate `json:"certificate,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
@@ -308,6 +309,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		Scopes:                  oAuthConfig.Scopes,
 		UserInfo:                userInfoConfig,
 		ScopeClaims:             scopeClaims,
+		Certificate:             oAuthConfig.Certificate,
 	}, nil
 }
 

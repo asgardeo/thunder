@@ -28,6 +28,8 @@ const (
 	CertificateReferenceTypeApplication CertificateReferenceType = "APPLICATION"
 	// CertificateReferenceTypeIDP represents a certificate reference for an identity provider.
 	CertificateReferenceTypeIDP CertificateReferenceType = "IDP"
+	// CertificateReferenceTypeOAuthApp represents a certificate reference for an OAuth client.
+	CertificateReferenceTypeOAuthApp CertificateReferenceType = "OAUTH_APP"
 )
 
 // CertificateType represents the type of certificates in the system.

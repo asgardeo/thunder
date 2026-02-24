@@ -68,6 +68,7 @@ type OAuthAppConfig struct {
 	Token                   *OAuthTokenConfig   `json:"token,omitempty"`
 	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
 	UserInfo                *UserInfoConfig     `json:"user_info,omitempty"`
+	Certificate             *ApplicationCert    `json:"certificate,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.
@@ -273,6 +274,20 @@ func (app *Application) equals(expectedApp Application) bool {
 					}
 				}
 				// If expected UserInfo is nil, we accept any value in actual (including empty object)
+
+				// Compare OAuth certificate - allow nil expected when actual is default empty
+				if oauth.Certificate != nil && expectedOAuth.Certificate == nil {
+					if oauth.Certificate.Type != "NONE" || oauth.Certificate.Value != "" {
+						return false
+					}
+				} else if oauth.Certificate == nil && expectedOAuth.Certificate != nil {
+					return false
+				} else if oauth.Certificate != nil && expectedOAuth.Certificate != nil {
+					if oauth.Certificate.Type != expectedOAuth.Certificate.Type ||
+						oauth.Certificate.Value != expectedOAuth.Certificate.Value {
+						return false
+					}
+				}
 			} else if (cfg.OAuthAppConfig == nil && expectedCfg.OAuthAppConfig != nil) ||
 				(cfg.OAuthAppConfig != nil && expectedCfg.OAuthAppConfig == nil) {
 				return false
