@@ -86,7 +86,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 	suite.mockOIDCService.On("BuildAuthorizeURL", "idp-123").
 		Return("https://oidc.provider.com/authorize?client_id=abc&scope=openid", nil)
 
-	suite.mockIDPService.On("GetIdentityProvider", "idp-123").
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
 		Return(&idp.IDPDTO{ID: "idp-123", Name: "TestOIDCProvider"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)

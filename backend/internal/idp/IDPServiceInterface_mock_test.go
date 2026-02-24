@@ -5,6 +5,8 @@
 package idp
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *IDPServiceInterfaceMock) EXPECT() *IDPServiceInterfaceMock_Expecter {
 }
 
 // CreateIdentityProvider provides a mock function for the type IDPServiceInterfaceMock
-func (_mock *IDPServiceInterfaceMock) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
-	ret := _mock.Called(idp)
+func (_mock *IDPServiceInterfaceMock) CreateIdentityProvider(ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idp)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateIdentityProvider")
@@ -46,18 +48,18 @@ func (_mock *IDPServiceInterfaceMock) CreateIdentityProvider(idp *IDPDTO) (*IDPD
 
 	var r0 *IDPDTO
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*IDPDTO) (*IDPDTO, *serviceerror.ServiceError)); ok {
-		return returnFunc(idp)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idp)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*IDPDTO) *IDPDTO); ok {
-		r0 = returnFunc(idp)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *IDPDTO) *IDPDTO); ok {
+		r0 = returnFunc(ctx, idp)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*IDPDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*IDPDTO) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idp)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *IDPDTO) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idp)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -72,19 +74,25 @@ type IDPServiceInterfaceMock_CreateIdentityProvider_Call struct {
 }
 
 // CreateIdentityProvider is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idp *IDPDTO
-func (_e *IDPServiceInterfaceMock_Expecter) CreateIdentityProvider(idp interface{}) *IDPServiceInterfaceMock_CreateIdentityProvider_Call {
-	return &IDPServiceInterfaceMock_CreateIdentityProvider_Call{Call: _e.mock.On("CreateIdentityProvider", idp)}
+func (_e *IDPServiceInterfaceMock_Expecter) CreateIdentityProvider(ctx interface{}, idp interface{}) *IDPServiceInterfaceMock_CreateIdentityProvider_Call {
+	return &IDPServiceInterfaceMock_CreateIdentityProvider_Call{Call: _e.mock.On("CreateIdentityProvider", ctx, idp)}
 }
 
-func (_c *IDPServiceInterfaceMock_CreateIdentityProvider_Call) Run(run func(idp *IDPDTO)) *IDPServiceInterfaceMock_CreateIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_CreateIdentityProvider_Call) Run(run func(ctx context.Context, idp *IDPDTO)) *IDPServiceInterfaceMock_CreateIdentityProvider_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *IDPDTO
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*IDPDTO)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *IDPDTO
+		if args[1] != nil {
+			arg1 = args[1].(*IDPDTO)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -95,22 +103,22 @@ func (_c *IDPServiceInterfaceMock_CreateIdentityProvider_Call) Return(iDPDTO *ID
 	return _c
 }
 
-func (_c *IDPServiceInterfaceMock_CreateIdentityProvider_Call) RunAndReturn(run func(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_CreateIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_CreateIdentityProvider_Call) RunAndReturn(run func(ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_CreateIdentityProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteIdentityProvider provides a mock function for the type IDPServiceInterfaceMock
-func (_mock *IDPServiceInterfaceMock) DeleteIdentityProvider(idpID string) *serviceerror.ServiceError {
-	ret := _mock.Called(idpID)
+func (_mock *IDPServiceInterfaceMock) DeleteIdentityProvider(ctx context.Context, idpID string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, idpID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteIdentityProvider")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, idpID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -125,19 +133,25 @@ type IDPServiceInterfaceMock_DeleteIdentityProvider_Call struct {
 }
 
 // DeleteIdentityProvider is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
-func (_e *IDPServiceInterfaceMock_Expecter) DeleteIdentityProvider(idpID interface{}) *IDPServiceInterfaceMock_DeleteIdentityProvider_Call {
-	return &IDPServiceInterfaceMock_DeleteIdentityProvider_Call{Call: _e.mock.On("DeleteIdentityProvider", idpID)}
+func (_e *IDPServiceInterfaceMock_Expecter) DeleteIdentityProvider(ctx interface{}, idpID interface{}) *IDPServiceInterfaceMock_DeleteIdentityProvider_Call {
+	return &IDPServiceInterfaceMock_DeleteIdentityProvider_Call{Call: _e.mock.On("DeleteIdentityProvider", ctx, idpID)}
 }
 
-func (_c *IDPServiceInterfaceMock_DeleteIdentityProvider_Call) Run(run func(idpID string)) *IDPServiceInterfaceMock_DeleteIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_DeleteIdentityProvider_Call) Run(run func(ctx context.Context, idpID string)) *IDPServiceInterfaceMock_DeleteIdentityProvider_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -148,14 +162,14 @@ func (_c *IDPServiceInterfaceMock_DeleteIdentityProvider_Call) Return(serviceErr
 	return _c
 }
 
-func (_c *IDPServiceInterfaceMock_DeleteIdentityProvider_Call) RunAndReturn(run func(idpID string) *serviceerror.ServiceError) *IDPServiceInterfaceMock_DeleteIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_DeleteIdentityProvider_Call) RunAndReturn(run func(ctx context.Context, idpID string) *serviceerror.ServiceError) *IDPServiceInterfaceMock_DeleteIdentityProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetIdentityProvider provides a mock function for the type IDPServiceInterfaceMock
-func (_mock *IDPServiceInterfaceMock) GetIdentityProvider(idpID string) (*IDPDTO, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpID)
+func (_mock *IDPServiceInterfaceMock) GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetIdentityProvider")
@@ -163,18 +177,18 @@ func (_mock *IDPServiceInterfaceMock) GetIdentityProvider(idpID string) (*IDPDTO
 
 	var r0 *IDPDTO
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*IDPDTO, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*IDPDTO, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *IDPDTO); ok {
-		r0 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *IDPDTO); ok {
+		r0 = returnFunc(ctx, idpID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*IDPDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -189,19 +203,25 @@ type IDPServiceInterfaceMock_GetIdentityProvider_Call struct {
 }
 
 // GetIdentityProvider is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
-func (_e *IDPServiceInterfaceMock_Expecter) GetIdentityProvider(idpID interface{}) *IDPServiceInterfaceMock_GetIdentityProvider_Call {
-	return &IDPServiceInterfaceMock_GetIdentityProvider_Call{Call: _e.mock.On("GetIdentityProvider", idpID)}
+func (_e *IDPServiceInterfaceMock_Expecter) GetIdentityProvider(ctx interface{}, idpID interface{}) *IDPServiceInterfaceMock_GetIdentityProvider_Call {
+	return &IDPServiceInterfaceMock_GetIdentityProvider_Call{Call: _e.mock.On("GetIdentityProvider", ctx, idpID)}
 }
 
-func (_c *IDPServiceInterfaceMock_GetIdentityProvider_Call) Run(run func(idpID string)) *IDPServiceInterfaceMock_GetIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_GetIdentityProvider_Call) Run(run func(ctx context.Context, idpID string)) *IDPServiceInterfaceMock_GetIdentityProvider_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -212,14 +232,14 @@ func (_c *IDPServiceInterfaceMock_GetIdentityProvider_Call) Return(iDPDTO *IDPDT
 	return _c
 }
 
-func (_c *IDPServiceInterfaceMock_GetIdentityProvider_Call) RunAndReturn(run func(idpID string) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_GetIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_GetIdentityProvider_Call) RunAndReturn(run func(ctx context.Context, idpID string) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_GetIdentityProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetIdentityProviderByName provides a mock function for the type IDPServiceInterfaceMock
-func (_mock *IDPServiceInterfaceMock) GetIdentityProviderByName(idpName string) (*IDPDTO, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpName)
+func (_mock *IDPServiceInterfaceMock) GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetIdentityProviderByName")
@@ -227,18 +247,18 @@ func (_mock *IDPServiceInterfaceMock) GetIdentityProviderByName(idpName string) 
 
 	var r0 *IDPDTO
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*IDPDTO, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*IDPDTO, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *IDPDTO); ok {
-		r0 = returnFunc(idpName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *IDPDTO); ok {
+		r0 = returnFunc(ctx, idpName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*IDPDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpName)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpName)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -253,19 +273,25 @@ type IDPServiceInterfaceMock_GetIdentityProviderByName_Call struct {
 }
 
 // GetIdentityProviderByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpName string
-func (_e *IDPServiceInterfaceMock_Expecter) GetIdentityProviderByName(idpName interface{}) *IDPServiceInterfaceMock_GetIdentityProviderByName_Call {
-	return &IDPServiceInterfaceMock_GetIdentityProviderByName_Call{Call: _e.mock.On("GetIdentityProviderByName", idpName)}
+func (_e *IDPServiceInterfaceMock_Expecter) GetIdentityProviderByName(ctx interface{}, idpName interface{}) *IDPServiceInterfaceMock_GetIdentityProviderByName_Call {
+	return &IDPServiceInterfaceMock_GetIdentityProviderByName_Call{Call: _e.mock.On("GetIdentityProviderByName", ctx, idpName)}
 }
 
-func (_c *IDPServiceInterfaceMock_GetIdentityProviderByName_Call) Run(run func(idpName string)) *IDPServiceInterfaceMock_GetIdentityProviderByName_Call {
+func (_c *IDPServiceInterfaceMock_GetIdentityProviderByName_Call) Run(run func(ctx context.Context, idpName string)) *IDPServiceInterfaceMock_GetIdentityProviderByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -276,14 +302,14 @@ func (_c *IDPServiceInterfaceMock_GetIdentityProviderByName_Call) Return(iDPDTO 
 	return _c
 }
 
-func (_c *IDPServiceInterfaceMock_GetIdentityProviderByName_Call) RunAndReturn(run func(idpName string) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_GetIdentityProviderByName_Call {
+func (_c *IDPServiceInterfaceMock_GetIdentityProviderByName_Call) RunAndReturn(run func(ctx context.Context, idpName string) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_GetIdentityProviderByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetIdentityProviderList provides a mock function for the type IDPServiceInterfaceMock
-func (_mock *IDPServiceInterfaceMock) GetIdentityProviderList() ([]BasicIDPDTO, *serviceerror.ServiceError) {
-	ret := _mock.Called()
+func (_mock *IDPServiceInterfaceMock) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetIdentityProviderList")
@@ -291,18 +317,18 @@ func (_mock *IDPServiceInterfaceMock) GetIdentityProviderList() ([]BasicIDPDTO, 
 
 	var r0 []BasicIDPDTO
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func() ([]BasicIDPDTO, *serviceerror.ServiceError)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]BasicIDPDTO, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() []BasicIDPDTO); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []BasicIDPDTO); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]BasicIDPDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() *serviceerror.ServiceError); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -317,13 +343,20 @@ type IDPServiceInterfaceMock_GetIdentityProviderList_Call struct {
 }
 
 // GetIdentityProviderList is a helper method to define mock.On call
-func (_e *IDPServiceInterfaceMock_Expecter) GetIdentityProviderList() *IDPServiceInterfaceMock_GetIdentityProviderList_Call {
-	return &IDPServiceInterfaceMock_GetIdentityProviderList_Call{Call: _e.mock.On("GetIdentityProviderList")}
+//   - ctx context.Context
+func (_e *IDPServiceInterfaceMock_Expecter) GetIdentityProviderList(ctx interface{}) *IDPServiceInterfaceMock_GetIdentityProviderList_Call {
+	return &IDPServiceInterfaceMock_GetIdentityProviderList_Call{Call: _e.mock.On("GetIdentityProviderList", ctx)}
 }
 
-func (_c *IDPServiceInterfaceMock_GetIdentityProviderList_Call) Run(run func()) *IDPServiceInterfaceMock_GetIdentityProviderList_Call {
+func (_c *IDPServiceInterfaceMock_GetIdentityProviderList_Call) Run(run func(ctx context.Context)) *IDPServiceInterfaceMock_GetIdentityProviderList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -333,14 +366,14 @@ func (_c *IDPServiceInterfaceMock_GetIdentityProviderList_Call) Return(basicIDPD
 	return _c
 }
 
-func (_c *IDPServiceInterfaceMock_GetIdentityProviderList_Call) RunAndReturn(run func() ([]BasicIDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_GetIdentityProviderList_Call {
+func (_c *IDPServiceInterfaceMock_GetIdentityProviderList_Call) RunAndReturn(run func(ctx context.Context) ([]BasicIDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_GetIdentityProviderList_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateIdentityProvider provides a mock function for the type IDPServiceInterfaceMock
-func (_mock *IDPServiceInterfaceMock) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpID, idp)
+func (_mock *IDPServiceInterfaceMock) UpdateIdentityProvider(ctx context.Context, idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID, idp)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateIdentityProvider")
@@ -348,18 +381,18 @@ func (_mock *IDPServiceInterfaceMock) UpdateIdentityProvider(idpID string, idp *
 
 	var r0 *IDPDTO
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpID, idp)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID, idp)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *IDPDTO) *IDPDTO); ok {
-		r0 = returnFunc(idpID, idp)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *IDPDTO) *IDPDTO); ok {
+		r0 = returnFunc(ctx, idpID, idp)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*IDPDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *IDPDTO) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpID, idp)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *IDPDTO) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID, idp)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -374,25 +407,31 @@ type IDPServiceInterfaceMock_UpdateIdentityProvider_Call struct {
 }
 
 // UpdateIdentityProvider is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
 //   - idp *IDPDTO
-func (_e *IDPServiceInterfaceMock_Expecter) UpdateIdentityProvider(idpID interface{}, idp interface{}) *IDPServiceInterfaceMock_UpdateIdentityProvider_Call {
-	return &IDPServiceInterfaceMock_UpdateIdentityProvider_Call{Call: _e.mock.On("UpdateIdentityProvider", idpID, idp)}
+func (_e *IDPServiceInterfaceMock_Expecter) UpdateIdentityProvider(ctx interface{}, idpID interface{}, idp interface{}) *IDPServiceInterfaceMock_UpdateIdentityProvider_Call {
+	return &IDPServiceInterfaceMock_UpdateIdentityProvider_Call{Call: _e.mock.On("UpdateIdentityProvider", ctx, idpID, idp)}
 }
 
-func (_c *IDPServiceInterfaceMock_UpdateIdentityProvider_Call) Run(run func(idpID string, idp *IDPDTO)) *IDPServiceInterfaceMock_UpdateIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_UpdateIdentityProvider_Call) Run(run func(ctx context.Context, idpID string, idp *IDPDTO)) *IDPServiceInterfaceMock_UpdateIdentityProvider_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 *IDPDTO
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*IDPDTO)
+			arg1 = args[1].(string)
+		}
+		var arg2 *IDPDTO
+		if args[2] != nil {
+			arg2 = args[2].(*IDPDTO)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -403,7 +442,7 @@ func (_c *IDPServiceInterfaceMock_UpdateIdentityProvider_Call) Return(iDPDTO *ID
 	return _c
 }
 
-func (_c *IDPServiceInterfaceMock_UpdateIdentityProvider_Call) RunAndReturn(run func(idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_UpdateIdentityProvider_Call {
+func (_c *IDPServiceInterfaceMock_UpdateIdentityProvider_Call) RunAndReturn(run func(ctx context.Context, idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)) *IDPServiceInterfaceMock_UpdateIdentityProvider_Call {
 	_c.Call.Return(run)
 	return _c
 }

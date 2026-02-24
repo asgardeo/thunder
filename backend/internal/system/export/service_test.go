@@ -508,7 +508,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Succes
 		Properties:  []cmodels.Property{*mockProperty},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -541,8 +541,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Multip
 		Properties: []cmodels.Property{*mockProperty2},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(mockIDP2, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2").Return(mockIDP2, nil)
 
 	request := &ExportRequest{
 		IdentityProviders: []string{"idp1", "idp2"},
@@ -583,9 +583,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 		Properties: []cmodels.Property{*mockProperty2},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProviderList().Return(mockIDPList, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(mockIDP2, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProviderList(mock.Anything).Return(mockIDPList, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2").Return(mockIDP2, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -620,7 +620,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_Mixed_ApplicationsAndID
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(testAppID).Return(mockApp, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(testIDPID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, testIDPID).Return(mockIDP, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -648,7 +648,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NotFou
 		Error: "Identity provider not found",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("non-existent-idp").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "non-existent-idp").Return(nil, idpError)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -694,10 +694,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 		Error: "Identity provider not found",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProviderList().Return(mockIDPList, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(nil, idpError)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp3").Return(mockIDP3, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProviderList(mock.Anything).Return(mockIDPList, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp3").Return(mockIDP3, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -709,6 +709,17 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 	assert.Len(suite.T(), result.Summary.Errors, 1) // One error recorded
 	assert.Equal(suite.T(), "identity_provider", result.Summary.Errors[0].ResourceType)
 	assert.Equal(suite.T(), "idp2", result.Summary.Errors[0].ResourceID)
+}
+
+func (suite *ExportServiceTestSuite) assertExportNoProperties(request *ExportRequest, expectedContent string) {
+	result, err := suite.exportService.ExportResources(context.Background(), request)
+
+	// Should succeed even with no properties
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Len(suite.T(), result.Files, 1)
+	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
+	assert.Contains(suite.T(), result.Files[0].Content, expectedContent)
 }
 
 // TestExportResources_IdentityProvider_NoProperties tests exporting IDP with no properties.
@@ -728,16 +739,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NoProp
 		Properties: []cmodels.Property{}, // Empty properties
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp-no-props").Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp-no-props").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(context.Background(), request)
-
-	// Should succeed even with no properties
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Files, 1)
-	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Files[0].Content, "name: Empty IDP")
+	suite.assertExportNoProperties(request, "name: Empty IDP")
 }
 
 // TestExportResources_IdentityProvider_EmptyName tests validation for IDP with empty name.
@@ -757,7 +761,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_EmptyN
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp-no-name").Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp-no-name").Return(mockIDP, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -795,7 +799,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 		},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -854,7 +858,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 		},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -967,9 +971,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Partia
 		Error: "Identity provider not found",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2-not-found").Return(nil, idpError)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp3").Return(mockIDP3, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2-not-found").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp3").Return(mockIDP3, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1033,8 +1037,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 
 	suite.appServiceMock.EXPECT().GetApplication("app1").Return(mockApp1, nil)
 	suite.appServiceMock.EXPECT().GetApplication("app2-not-found").Return(nil, appError)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2-not-found").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2-not-found").Return(nil, idpError)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1242,7 +1246,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithGroupByTypeStructur
 
 	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
 	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1436,14 +1440,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NoProperties(
 
 	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender-no-props").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(context.Background(), request)
-
-	// Should succeed even with no properties
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Files, 1)
-	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Files[0].Content, "name: Empty Sender")
+	suite.assertExportNoProperties(request, "name: Empty Sender")
 }
 
 // TestExportNotificationSenders_WildcardPartialFailure tests wildcard export with partial failures.
@@ -2018,7 +2015,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_IdentityPro
 		Description: "Test IDP Description",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeIdentityProvider)
 	assert.True(suite.T(), exists, "IDP exporter should be registered")

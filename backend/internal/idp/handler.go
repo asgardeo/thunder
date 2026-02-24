@@ -44,6 +44,7 @@ func newIDPHandler(idpService IDPServiceInterface) *idpHandler {
 
 // HandleIDPPostRequest handles the create identity provider request.
 func (ih *idpHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	createRequest, err := sysutils.DecodeJSONBody[idpRequest](r)
@@ -70,7 +71,7 @@ func (ih *idpHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Reques
 		Type:        IDPType(sysutils.SanitizeString(createRequest.Type)),
 		Properties:  properties,
 	}
-	createdIDP, svcErr := ih.idpService.CreateIdentityProvider(idpDTO)
+	createdIDP, svcErr := ih.idpService.CreateIdentityProvider(ctx, idpDTO)
 	if svcErr != nil {
 		writeServiceErrorResponse(w, svcErr)
 		return
@@ -88,7 +89,8 @@ func (ih *idpHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Reques
 
 // HandleIDPListRequest handles the list identity providers request.
 func (ih *idpHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Request) {
-	idpList, svcErr := ih.idpService.GetIdentityProviderList()
+	ctx := r.Context()
+	idpList, svcErr := ih.idpService.GetIdentityProviderList(ctx)
 	if svcErr != nil {
 		writeServiceErrorResponse(w, svcErr)
 		return
@@ -109,6 +111,7 @@ func (ih *idpHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Reques
 
 // HandleIDPGetRequest handles the get identity provider request.
 func (ih *idpHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	id := r.PathValue("id")
@@ -122,7 +125,7 @@ func (ih *idpHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	idp, svcErr := ih.idpService.GetIdentityProvider(id)
+	idp, svcErr := ih.idpService.GetIdentityProvider(ctx, id)
 	if svcErr != nil {
 		writeServiceErrorResponse(w, svcErr)
 		return
@@ -140,6 +143,7 @@ func (ih *idpHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request
 
 // HandleIDPPutRequest handles the update identity provider request.
 func (ih *idpHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 	id := r.PathValue("id")
 	if strings.TrimSpace(id) == "" {
@@ -178,7 +182,7 @@ func (ih *idpHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request
 	}
 	idpDTO.ID = id
 
-	idp, svcErr := ih.idpService.UpdateIdentityProvider(id, idpDTO)
+	idp, svcErr := ih.idpService.UpdateIdentityProvider(ctx, id, idpDTO)
 	if svcErr != nil {
 		writeServiceErrorResponse(w, svcErr)
 		return
@@ -196,6 +200,7 @@ func (ih *idpHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request
 
 // HandleIDPDeleteRequest handles the delete identity provider request.
 func (ih *idpHandler) HandleIDPDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
 	if strings.TrimSpace(id) == "" {
 		errResp := apierror.ErrorResponse{
@@ -207,7 +212,7 @@ func (ih *idpHandler) HandleIDPDeleteRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	svcErr := ih.idpService.DeleteIdentityProvider(id)
+	svcErr := ih.idpService.DeleteIdentityProvider(ctx, id)
 	if svcErr != nil {
 		writeServiceErrorResponse(w, svcErr)
 		return

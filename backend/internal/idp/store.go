@@ -19,6 +19,7 @@
 package idp
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
@@ -30,12 +31,12 @@ import (
 
 // idpStoreInterface defines the interface for identity provider store operations.
 type idpStoreInterface interface {
-	CreateIdentityProvider(idp IDPDTO) error
-	GetIdentityProviderList() ([]BasicIDPDTO, error)
-	GetIdentityProvider(idpID string) (*IDPDTO, error)
-	GetIdentityProviderByName(idpName string) (*IDPDTO, error)
-	UpdateIdentityProvider(idp *IDPDTO) error
-	DeleteIdentityProvider(idpID string) error
+	CreateIdentityProvider(ctx context.Context, idp IDPDTO) error
+	GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, error)
+	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, error)
+	GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, error)
+	UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error
+	DeleteIdentityProvider(ctx context.Context, idpID string) error
 }
 
 // idpStore is the default implementation of IDPStoreInterface.
@@ -53,7 +54,7 @@ func newIDPStore() idpStoreInterface {
 }
 
 // CreateIdentityProvider handles the IdP creation in the database.
-func (s *idpStore) CreateIdentityProvider(idp IDPDTO) error {
+func (s *idpStore) CreateIdentityProvider(ctx context.Context, idp IDPDTO) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -67,7 +68,7 @@ func (s *idpStore) CreateIdentityProvider(idp IDPDTO) error {
 		}
 	}
 
-	_, err = dbClient.Execute(
+	_, err = dbClient.ExecuteContext(ctx,
 		queryCreateIdentityProvider, idp.ID, idp.Name, idp.Description, idp.Type, propertiesJSON, s.deploymentID,
 	)
 	if err != nil {
@@ -78,13 +79,13 @@ func (s *idpStore) CreateIdentityProvider(idp IDPDTO) error {
 }
 
 // GetIdentityProviderList retrieves a list of IdPs from the database.
-func (s *idpStore) GetIdentityProviderList() ([]BasicIDPDTO, error) {
+func (s *idpStore) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetIdentityProviderList, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetIdentityProviderList, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -102,23 +103,23 @@ func (s *idpStore) GetIdentityProviderList() ([]BasicIDPDTO, error) {
 }
 
 // GetIdentityProvider retrieves a specific idp by its ID from the database.
-func (s *idpStore) GetIdentityProvider(id string) (*IDPDTO, error) {
-	return s.getIDP(queryGetIdentityProviderByID, id)
+func (s *idpStore) GetIdentityProvider(ctx context.Context, id string) (*IDPDTO, error) {
+	return s.getIDP(ctx, queryGetIdentityProviderByID, id)
 }
 
 // GetIdentityProviderByName retrieves a specific idp by its name from the database.
-func (s *idpStore) GetIdentityProviderByName(name string) (*IDPDTO, error) {
-	return s.getIDP(queryGetIdentityProviderByName, name)
+func (s *idpStore) GetIdentityProviderByName(ctx context.Context, name string) (*IDPDTO, error) {
+	return s.getIDP(ctx, queryGetIdentityProviderByName, name)
 }
 
 // getIDP retrieves an IDP based on the provided query and identifier.
-func (s *idpStore) getIDP(query dbmodel.DBQuery, identifier string) (*IDPDTO, error) {
+func (s *idpStore) getIDP(ctx context.Context, query dbmodel.DBQuery, identifier string) (*IDPDTO, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, identifier, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, query, identifier, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -167,7 +168,7 @@ func (s *idpStore) getIDP(query dbmodel.DBQuery, identifier string) (*IDPDTO, er
 }
 
 // UpdateIdentityProvider updates the idp in the database.
-func (s *idpStore) UpdateIdentityProvider(idp *IDPDTO) error {
+func (s *idpStore) UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -182,7 +183,7 @@ func (s *idpStore) UpdateIdentityProvider(idp *IDPDTO) error {
 	}
 
 	// Update the IDP in the database
-	_, err = dbClient.Execute(queryUpdateIdentityProviderByID, idp.ID, idp.Name,
+	_, err = dbClient.ExecuteContext(ctx, queryUpdateIdentityProviderByID, idp.ID, idp.Name,
 		idp.Description, idp.Type, propertiesJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -192,7 +193,7 @@ func (s *idpStore) UpdateIdentityProvider(idp *IDPDTO) error {
 }
 
 // DeleteIdentityProvider deletes the idp from the database.
-func (s *idpStore) DeleteIdentityProvider(id string) error {
+func (s *idpStore) DeleteIdentityProvider(ctx context.Context, id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPStore"))
 
 	dbClient, err := s.dbProvider.GetConfigDBClient()
@@ -200,7 +201,7 @@ func (s *idpStore) DeleteIdentityProvider(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteIdentityProviderByID, id, s.deploymentID)
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryDeleteIdentityProviderByID, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}

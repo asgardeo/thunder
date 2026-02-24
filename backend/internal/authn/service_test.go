@@ -608,7 +608,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOAuthSucc
 		Type: idp.IDPTypeOAuth,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", idpID).Return(redirectURL, nil)
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc", mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -629,7 +629,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOIDCSucce
 		Type: idp.IDPTypeOIDC,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOIDCService.On("BuildAuthorizeURL", idpID).Return(redirectURL, nil)
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc", mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -649,7 +649,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGoogleSuc
 		Type: idp.IDPTypeGoogle,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockGoogleService.On("BuildAuthorizeURL", idpID).Return(redirectURL, nil)
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc", mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -669,7 +669,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGitHubSuc
 		Type: idp.IDPTypeGitHub,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockGithubService.On("BuildAuthorizeURL", idpID).Return(redirectURL, nil)
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc", mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -698,7 +698,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationIDPNotFou
 		ErrorDescription: "The identity provider was not found",
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(nil, svcErr)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(nil, svcErr)
 
 	result, err := suite.service.StartIDPAuthentication(idp.IDPTypeOAuth, idpID)
 
@@ -714,7 +714,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationInvalidID
 		Type: idp.IDPTypeGoogle,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 
 	result, err := suite.service.StartIDPAuthentication(idp.IDPTypeGitHub, idpID)
 
@@ -731,7 +731,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationCrossType
 		Type: idp.IDPTypeOAuth,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", idpID).Return(redirectURL, nil)
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc", mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
@@ -750,7 +750,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 		Type: idp.IDPTypeOAuth,
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", idpID).Return(redirectURL, nil)
 	suite.mockJWTService.On("GenerateJWT", "auth-svc", "auth-svc", mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
@@ -1110,7 +1110,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationBuildURLE
 		ErrorDescription: "Missing redirect URI",
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(identityProvider, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", idpID).Return("", svcErr)
 
 	result, err := suite.service.StartIDPAuthentication(idp.IDPTypeOAuth, idpID)
