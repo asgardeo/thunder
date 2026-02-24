@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -38,8 +39,8 @@ var otpUseOnlyNumericChars = true
 
 // OTPServiceInterface defines the interface for OTP operations.
 type OTPServiceInterface interface {
-	SendOTP(request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)
-	VerifyOTP(request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
+	SendOTP(ctx context.Context, request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)
+	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
 }
 
 // otpService implements the OTPServiceInterface.
@@ -60,7 +61,8 @@ func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
 }
 
 // SendOTP sends an OTP to the specified recipient using the provided sender.
-func (s *otpService) SendOTP(otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError) {
+func (s *otpService) SendOTP(
+	ctx context.Context, otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService"))
 	logger.Debug("Sending OTP", log.String("recipient", log.MaskString(otpDTO.Recipient)),
 		log.String("channel", otpDTO.Channel), log.String("senderId", otpDTO.SenderID))
@@ -69,7 +71,7 @@ func (s *otpService) SendOTP(otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO
 		return nil, err
 	}
 
-	sender, svcErr := s.senderMgtService.GetSender(otpDTO.SenderID)
+	sender, svcErr := s.senderMgtService.GetSender(ctx, otpDTO.SenderID)
 	if svcErr != nil {
 		if svcErr.Code == ErrorSenderNotFound.Code {
 			return nil, &ErrorSenderNotFound
@@ -122,7 +124,8 @@ func (s *otpService) SendOTP(otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO
 }
 
 // VerifyOTP verifies the provided OTP against the session token.
-func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError) {
+func (s *otpService) VerifyOTP(
+	ctx context.Context, otpDTO common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService"))
 	logger.Debug("Verifying OTP")
 

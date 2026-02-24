@@ -20,6 +20,7 @@
 package authn
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -54,9 +55,9 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 type AuthenticationServiceInterface interface {
 	AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
 		skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
-	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (
+	SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
-	VerifyOTP(sessionToken string, skipAssertion bool, existingAssertion, otp string) (
+	VerifyOTP(ctx context.Context, sessionToken string, skipAssertion bool, existingAssertion, otp string) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
 	StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
 		*IDPAuthInitData, *serviceerror.ServiceError)
@@ -175,18 +176,18 @@ func (as *authenticationService) AuthenticateWithCredentials(identifiers, creden
 }
 
 // SendOTP sends an OTP to the specified recipient for authentication.
-func (as *authenticationService) SendOTP(senderID string, channel notifcommon.ChannelType,
+func (as *authenticationService) SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType,
 	recipient string) (string, *serviceerror.ServiceError) {
-	return as.otpService.SendOTP(senderID, channel, recipient)
+	return as.otpService.SendOTP(ctx, senderID, channel, recipient)
 }
 
 // VerifyOTP verifies an OTP and returns the authenticated user.
-func (as *authenticationService) VerifyOTP(sessionToken string, skipAssertion bool,
+func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken string, skipAssertion bool,
 	existingAssertion, otpCode string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
-	user, svcErr := as.otpService.VerifyOTP(sessionToken, otpCode)
+	user, svcErr := as.otpService.VerifyOTP(ctx, sessionToken, otpCode)
 	if svcErr != nil {
 		return nil, svcErr
 	}

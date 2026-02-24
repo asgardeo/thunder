@@ -5,6 +5,8 @@
 package notification
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/notification/common"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,16 +39,16 @@ func (_m *notificationStoreInterfaceMock) EXPECT() *notificationStoreInterfaceMo
 }
 
 // createSender provides a mock function for the type notificationStoreInterfaceMock
-func (_mock *notificationStoreInterfaceMock) createSender(sender common.NotificationSenderDTO) error {
-	ret := _mock.Called(sender)
+func (_mock *notificationStoreInterfaceMock) createSender(ctx context.Context, sender common.NotificationSenderDTO) error {
+	ret := _mock.Called(ctx, sender)
 
 	if len(ret) == 0 {
 		panic("no return value specified for createSender")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(common.NotificationSenderDTO) error); ok {
-		r0 = returnFunc(sender)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, common.NotificationSenderDTO) error); ok {
+		r0 = returnFunc(ctx, sender)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -59,298 +61,17 @@ type notificationStoreInterfaceMock_createSender_Call struct {
 }
 
 // createSender is a helper method to define mock.On call
+//   - ctx context.Context
 //   - sender common.NotificationSenderDTO
-func (_e *notificationStoreInterfaceMock_Expecter) createSender(sender interface{}) *notificationStoreInterfaceMock_createSender_Call {
-	return &notificationStoreInterfaceMock_createSender_Call{Call: _e.mock.On("createSender", sender)}
+func (_e *notificationStoreInterfaceMock_Expecter) createSender(ctx interface{}, sender interface{}) *notificationStoreInterfaceMock_createSender_Call {
+	return &notificationStoreInterfaceMock_createSender_Call{Call: _e.mock.On("createSender", ctx, sender)}
 }
 
-func (_c *notificationStoreInterfaceMock_createSender_Call) Run(run func(sender common.NotificationSenderDTO)) *notificationStoreInterfaceMock_createSender_Call {
+func (_c *notificationStoreInterfaceMock_createSender_Call) Run(run func(ctx context.Context, sender common.NotificationSenderDTO)) *notificationStoreInterfaceMock_createSender_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 common.NotificationSenderDTO
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(common.NotificationSenderDTO)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_createSender_Call) Return(err error) *notificationStoreInterfaceMock_createSender_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_createSender_Call) RunAndReturn(run func(sender common.NotificationSenderDTO) error) *notificationStoreInterfaceMock_createSender_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// deleteSender provides a mock function for the type notificationStoreInterfaceMock
-func (_mock *notificationStoreInterfaceMock) deleteSender(id string) error {
-	ret := _mock.Called(id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for deleteSender")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(id)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// notificationStoreInterfaceMock_deleteSender_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'deleteSender'
-type notificationStoreInterfaceMock_deleteSender_Call struct {
-	*mock.Call
-}
-
-// deleteSender is a helper method to define mock.On call
-//   - id string
-func (_e *notificationStoreInterfaceMock_Expecter) deleteSender(id interface{}) *notificationStoreInterfaceMock_deleteSender_Call {
-	return &notificationStoreInterfaceMock_deleteSender_Call{Call: _e.mock.On("deleteSender", id)}
-}
-
-func (_c *notificationStoreInterfaceMock_deleteSender_Call) Run(run func(id string)) *notificationStoreInterfaceMock_deleteSender_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_deleteSender_Call) Return(err error) *notificationStoreInterfaceMock_deleteSender_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_deleteSender_Call) RunAndReturn(run func(id string) error) *notificationStoreInterfaceMock_deleteSender_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// getSenderByID provides a mock function for the type notificationStoreInterfaceMock
-func (_mock *notificationStoreInterfaceMock) getSenderByID(id string) (*common.NotificationSenderDTO, error) {
-	ret := _mock.Called(id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for getSenderByID")
-	}
-
-	var r0 *common.NotificationSenderDTO
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*common.NotificationSenderDTO, error)); ok {
-		return returnFunc(id)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) *common.NotificationSenderDTO); ok {
-		r0 = returnFunc(id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*common.NotificationSenderDTO)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(id)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// notificationStoreInterfaceMock_getSenderByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'getSenderByID'
-type notificationStoreInterfaceMock_getSenderByID_Call struct {
-	*mock.Call
-}
-
-// getSenderByID is a helper method to define mock.On call
-//   - id string
-func (_e *notificationStoreInterfaceMock_Expecter) getSenderByID(id interface{}) *notificationStoreInterfaceMock_getSenderByID_Call {
-	return &notificationStoreInterfaceMock_getSenderByID_Call{Call: _e.mock.On("getSenderByID", id)}
-}
-
-func (_c *notificationStoreInterfaceMock_getSenderByID_Call) Run(run func(id string)) *notificationStoreInterfaceMock_getSenderByID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_getSenderByID_Call) Return(notificationSenderDTO *common.NotificationSenderDTO, err error) *notificationStoreInterfaceMock_getSenderByID_Call {
-	_c.Call.Return(notificationSenderDTO, err)
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_getSenderByID_Call) RunAndReturn(run func(id string) (*common.NotificationSenderDTO, error)) *notificationStoreInterfaceMock_getSenderByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// getSenderByName provides a mock function for the type notificationStoreInterfaceMock
-func (_mock *notificationStoreInterfaceMock) getSenderByName(name string) (*common.NotificationSenderDTO, error) {
-	ret := _mock.Called(name)
-
-	if len(ret) == 0 {
-		panic("no return value specified for getSenderByName")
-	}
-
-	var r0 *common.NotificationSenderDTO
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*common.NotificationSenderDTO, error)); ok {
-		return returnFunc(name)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) *common.NotificationSenderDTO); ok {
-		r0 = returnFunc(name)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*common.NotificationSenderDTO)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// notificationStoreInterfaceMock_getSenderByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'getSenderByName'
-type notificationStoreInterfaceMock_getSenderByName_Call struct {
-	*mock.Call
-}
-
-// getSenderByName is a helper method to define mock.On call
-//   - name string
-func (_e *notificationStoreInterfaceMock_Expecter) getSenderByName(name interface{}) *notificationStoreInterfaceMock_getSenderByName_Call {
-	return &notificationStoreInterfaceMock_getSenderByName_Call{Call: _e.mock.On("getSenderByName", name)}
-}
-
-func (_c *notificationStoreInterfaceMock_getSenderByName_Call) Run(run func(name string)) *notificationStoreInterfaceMock_getSenderByName_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_getSenderByName_Call) Return(notificationSenderDTO *common.NotificationSenderDTO, err error) *notificationStoreInterfaceMock_getSenderByName_Call {
-	_c.Call.Return(notificationSenderDTO, err)
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_getSenderByName_Call) RunAndReturn(run func(name string) (*common.NotificationSenderDTO, error)) *notificationStoreInterfaceMock_getSenderByName_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// listSenders provides a mock function for the type notificationStoreInterfaceMock
-func (_mock *notificationStoreInterfaceMock) listSenders() ([]common.NotificationSenderDTO, error) {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for listSenders")
-	}
-
-	var r0 []common.NotificationSenderDTO
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() ([]common.NotificationSenderDTO, error)); ok {
-		return returnFunc()
-	}
-	if returnFunc, ok := ret.Get(0).(func() []common.NotificationSenderDTO); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.NotificationSenderDTO)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// notificationStoreInterfaceMock_listSenders_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'listSenders'
-type notificationStoreInterfaceMock_listSenders_Call struct {
-	*mock.Call
-}
-
-// listSenders is a helper method to define mock.On call
-func (_e *notificationStoreInterfaceMock_Expecter) listSenders() *notificationStoreInterfaceMock_listSenders_Call {
-	return &notificationStoreInterfaceMock_listSenders_Call{Call: _e.mock.On("listSenders")}
-}
-
-func (_c *notificationStoreInterfaceMock_listSenders_Call) Run(run func()) *notificationStoreInterfaceMock_listSenders_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_listSenders_Call) Return(notificationSenderDTOs []common.NotificationSenderDTO, err error) *notificationStoreInterfaceMock_listSenders_Call {
-	_c.Call.Return(notificationSenderDTOs, err)
-	return _c
-}
-
-func (_c *notificationStoreInterfaceMock_listSenders_Call) RunAndReturn(run func() ([]common.NotificationSenderDTO, error)) *notificationStoreInterfaceMock_listSenders_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// updateSender provides a mock function for the type notificationStoreInterfaceMock
-func (_mock *notificationStoreInterfaceMock) updateSender(id string, sender common.NotificationSenderDTO) error {
-	ret := _mock.Called(id, sender)
-
-	if len(ret) == 0 {
-		panic("no return value specified for updateSender")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, common.NotificationSenderDTO) error); ok {
-		r0 = returnFunc(id, sender)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// notificationStoreInterfaceMock_updateSender_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'updateSender'
-type notificationStoreInterfaceMock_updateSender_Call struct {
-	*mock.Call
-}
-
-// updateSender is a helper method to define mock.On call
-//   - id string
-//   - sender common.NotificationSenderDTO
-func (_e *notificationStoreInterfaceMock_Expecter) updateSender(id interface{}, sender interface{}) *notificationStoreInterfaceMock_updateSender_Call {
-	return &notificationStoreInterfaceMock_updateSender_Call{Call: _e.mock.On("updateSender", id, sender)}
-}
-
-func (_c *notificationStoreInterfaceMock_updateSender_Call) Run(run func(id string, sender common.NotificationSenderDTO)) *notificationStoreInterfaceMock_updateSender_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 common.NotificationSenderDTO
 		if args[1] != nil {
@@ -364,12 +85,330 @@ func (_c *notificationStoreInterfaceMock_updateSender_Call) Run(run func(id stri
 	return _c
 }
 
+func (_c *notificationStoreInterfaceMock_createSender_Call) Return(err error) *notificationStoreInterfaceMock_createSender_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_createSender_Call) RunAndReturn(run func(ctx context.Context, sender common.NotificationSenderDTO) error) *notificationStoreInterfaceMock_createSender_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// deleteSender provides a mock function for the type notificationStoreInterfaceMock
+func (_mock *notificationStoreInterfaceMock) deleteSender(ctx context.Context, id string) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for deleteSender")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// notificationStoreInterfaceMock_deleteSender_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'deleteSender'
+type notificationStoreInterfaceMock_deleteSender_Call struct {
+	*mock.Call
+}
+
+// deleteSender is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *notificationStoreInterfaceMock_Expecter) deleteSender(ctx interface{}, id interface{}) *notificationStoreInterfaceMock_deleteSender_Call {
+	return &notificationStoreInterfaceMock_deleteSender_Call{Call: _e.mock.On("deleteSender", ctx, id)}
+}
+
+func (_c *notificationStoreInterfaceMock_deleteSender_Call) Run(run func(ctx context.Context, id string)) *notificationStoreInterfaceMock_deleteSender_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_deleteSender_Call) Return(err error) *notificationStoreInterfaceMock_deleteSender_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_deleteSender_Call) RunAndReturn(run func(ctx context.Context, id string) error) *notificationStoreInterfaceMock_deleteSender_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// getSenderByID provides a mock function for the type notificationStoreInterfaceMock
+func (_mock *notificationStoreInterfaceMock) getSenderByID(ctx context.Context, id string) (*common.NotificationSenderDTO, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for getSenderByID")
+	}
+
+	var r0 *common.NotificationSenderDTO
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*common.NotificationSenderDTO, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *common.NotificationSenderDTO); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.NotificationSenderDTO)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// notificationStoreInterfaceMock_getSenderByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'getSenderByID'
+type notificationStoreInterfaceMock_getSenderByID_Call struct {
+	*mock.Call
+}
+
+// getSenderByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *notificationStoreInterfaceMock_Expecter) getSenderByID(ctx interface{}, id interface{}) *notificationStoreInterfaceMock_getSenderByID_Call {
+	return &notificationStoreInterfaceMock_getSenderByID_Call{Call: _e.mock.On("getSenderByID", ctx, id)}
+}
+
+func (_c *notificationStoreInterfaceMock_getSenderByID_Call) Run(run func(ctx context.Context, id string)) *notificationStoreInterfaceMock_getSenderByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_getSenderByID_Call) Return(notificationSenderDTO *common.NotificationSenderDTO, err error) *notificationStoreInterfaceMock_getSenderByID_Call {
+	_c.Call.Return(notificationSenderDTO, err)
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_getSenderByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*common.NotificationSenderDTO, error)) *notificationStoreInterfaceMock_getSenderByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// getSenderByName provides a mock function for the type notificationStoreInterfaceMock
+func (_mock *notificationStoreInterfaceMock) getSenderByName(ctx context.Context, name string) (*common.NotificationSenderDTO, error) {
+	ret := _mock.Called(ctx, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for getSenderByName")
+	}
+
+	var r0 *common.NotificationSenderDTO
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*common.NotificationSenderDTO, error)); ok {
+		return returnFunc(ctx, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *common.NotificationSenderDTO); ok {
+		r0 = returnFunc(ctx, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.NotificationSenderDTO)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// notificationStoreInterfaceMock_getSenderByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'getSenderByName'
+type notificationStoreInterfaceMock_getSenderByName_Call struct {
+	*mock.Call
+}
+
+// getSenderByName is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+func (_e *notificationStoreInterfaceMock_Expecter) getSenderByName(ctx interface{}, name interface{}) *notificationStoreInterfaceMock_getSenderByName_Call {
+	return &notificationStoreInterfaceMock_getSenderByName_Call{Call: _e.mock.On("getSenderByName", ctx, name)}
+}
+
+func (_c *notificationStoreInterfaceMock_getSenderByName_Call) Run(run func(ctx context.Context, name string)) *notificationStoreInterfaceMock_getSenderByName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_getSenderByName_Call) Return(notificationSenderDTO *common.NotificationSenderDTO, err error) *notificationStoreInterfaceMock_getSenderByName_Call {
+	_c.Call.Return(notificationSenderDTO, err)
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_getSenderByName_Call) RunAndReturn(run func(ctx context.Context, name string) (*common.NotificationSenderDTO, error)) *notificationStoreInterfaceMock_getSenderByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// listSenders provides a mock function for the type notificationStoreInterfaceMock
+func (_mock *notificationStoreInterfaceMock) listSenders(ctx context.Context) ([]common.NotificationSenderDTO, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for listSenders")
+	}
+
+	var r0 []common.NotificationSenderDTO
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]common.NotificationSenderDTO, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []common.NotificationSenderDTO); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]common.NotificationSenderDTO)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// notificationStoreInterfaceMock_listSenders_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'listSenders'
+type notificationStoreInterfaceMock_listSenders_Call struct {
+	*mock.Call
+}
+
+// listSenders is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *notificationStoreInterfaceMock_Expecter) listSenders(ctx interface{}) *notificationStoreInterfaceMock_listSenders_Call {
+	return &notificationStoreInterfaceMock_listSenders_Call{Call: _e.mock.On("listSenders", ctx)}
+}
+
+func (_c *notificationStoreInterfaceMock_listSenders_Call) Run(run func(ctx context.Context)) *notificationStoreInterfaceMock_listSenders_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_listSenders_Call) Return(notificationSenderDTOs []common.NotificationSenderDTO, err error) *notificationStoreInterfaceMock_listSenders_Call {
+	_c.Call.Return(notificationSenderDTOs, err)
+	return _c
+}
+
+func (_c *notificationStoreInterfaceMock_listSenders_Call) RunAndReturn(run func(ctx context.Context) ([]common.NotificationSenderDTO, error)) *notificationStoreInterfaceMock_listSenders_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// updateSender provides a mock function for the type notificationStoreInterfaceMock
+func (_mock *notificationStoreInterfaceMock) updateSender(ctx context.Context, id string, sender common.NotificationSenderDTO) error {
+	ret := _mock.Called(ctx, id, sender)
+
+	if len(ret) == 0 {
+		panic("no return value specified for updateSender")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common.NotificationSenderDTO) error); ok {
+		r0 = returnFunc(ctx, id, sender)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// notificationStoreInterfaceMock_updateSender_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'updateSender'
+type notificationStoreInterfaceMock_updateSender_Call struct {
+	*mock.Call
+}
+
+// updateSender is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+//   - sender common.NotificationSenderDTO
+func (_e *notificationStoreInterfaceMock_Expecter) updateSender(ctx interface{}, id interface{}, sender interface{}) *notificationStoreInterfaceMock_updateSender_Call {
+	return &notificationStoreInterfaceMock_updateSender_Call{Call: _e.mock.On("updateSender", ctx, id, sender)}
+}
+
+func (_c *notificationStoreInterfaceMock_updateSender_Call) Run(run func(ctx context.Context, id string, sender common.NotificationSenderDTO)) *notificationStoreInterfaceMock_updateSender_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 common.NotificationSenderDTO
+		if args[2] != nil {
+			arg2 = args[2].(common.NotificationSenderDTO)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
 func (_c *notificationStoreInterfaceMock_updateSender_Call) Return(err error) *notificationStoreInterfaceMock_updateSender_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *notificationStoreInterfaceMock_updateSender_Call) RunAndReturn(run func(id string, sender common.NotificationSenderDTO) error) *notificationStoreInterfaceMock_updateSender_Call {
+func (_c *notificationStoreInterfaceMock_updateSender_Call) RunAndReturn(run func(ctx context.Context, id string, sender common.NotificationSenderDTO) error) *notificationStoreInterfaceMock_updateSender_Call {
 	_c.Call.Return(run)
 	return _c
 }

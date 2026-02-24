@@ -1285,7 +1285,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Success() {
 		Properties:  []cmodels.Property{*mockProperty},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1318,8 +1318,8 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Multiple() {
 		Properties: []cmodels.Property{*mockProperty2},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender2").Return(mockSender2, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender1, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender2").Return(mockSender2, nil)
 
 	request := &ExportRequest{
 		NotificationSenders: []string{"sender1", "sender2"},
@@ -1357,9 +1357,9 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Wildcard() {
 
 	mockSenderList := []common.NotificationSenderDTO{*mockSender1, *mockSender2}
 
-	suite.mockNotificationService.EXPECT().ListSenders().Return(mockSenderList, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender2").Return(mockSender2, nil)
+	suite.mockNotificationService.EXPECT().ListSenders(mock.Anything).Return(mockSenderList, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender1, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender2").Return(mockSender2, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1383,7 +1383,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NotFound() {
 		Error: "Notification sender not found",
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("non-existent-sender").Return(nil, senderError)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "non-existent-sender").Return(nil, senderError)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1409,7 +1409,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_EmptyName() {
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender-no-name").Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender-no-name").Return(mockSender, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1434,7 +1434,7 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NoProperties(
 		Properties: []cmodels.Property{}, // Empty properties
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender-no-props").Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender-no-props").Return(mockSender, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -1474,9 +1474,9 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_WildcardParti
 	// Create list with 3 senders but sender2 will fail to retrieve
 	mockSenderList := []common.NotificationSenderDTO{*mockSender1, *mockSender3}
 
-	suite.mockNotificationService.EXPECT().ListSenders().Return(mockSenderList, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender3").Return(mockSender3, nil)
+	suite.mockNotificationService.EXPECT().ListSenders(mock.Anything).Return(mockSenderList, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender1, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender3").Return(mockSender3, nil)
 
 	result, err := suite.exportService.ExportResources(context.Background(), request)
 
@@ -2046,7 +2046,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Notificatio
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender(senderID).Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, senderID).Return(mockSender, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeNotificationSender)
 	assert.True(suite.T(), exists, "Notification sender exporter should be registered")

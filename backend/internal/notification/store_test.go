@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -89,19 +90,20 @@ func (suite *StoreTestSuite) TestCreateSender() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
 	propsJSON, err := cmodels.SerializePropertiesToJSONArray([]cmodels.Property{*p})
 	suite.NoError(err)
-	suite.mockDBClient.EXPECT().Execute(
+	suite.mockDBClient.EXPECT().ExecuteContext(
+		context.TODO(),
 		queryCreateNotificationSender, sender.Name, sender.ID, sender.Description,
 		string(sender.Type), string(sender.Provider), propsJSON, testDeploymentID,
 	).Return(int64(1), nil).Once()
 
-	err = suite.store.createSender(sender)
+	err = suite.store.createSender(context.TODO(), sender)
 	suite.NoError(err)
 }
 
 func (suite *StoreTestSuite) TestCreateSender_GetConfigDBClientError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("db err")).Once()
 	sender := common.NotificationSenderDTO{ID: "s1"}
-	err := suite.store.createSender(sender)
+	err := suite.store.createSender(context.TODO(), sender)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to get database client")
 }
@@ -118,11 +120,11 @@ func (suite *StoreTestSuite) TestCreateSender_DBExecuteError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
 	propsJSON, err := cmodels.SerializePropertiesToJSONArray([]cmodels.Property{*p})
 	suite.NoError(err)
-	suite.mockDBClient.EXPECT().Execute(queryCreateNotificationSender, sender.Name, sender.ID,
+	suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryCreateNotificationSender, sender.Name, sender.ID,
 		sender.Description, string(sender.Type), string(sender.Provider), propsJSON, testDeploymentID).Return(
 		int64(0), errors.New("exec fail")).Once()
 
-	err = suite.store.createSender(sender)
+	err = suite.store.createSender(context.TODO(), sender)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to execute query")
 }
@@ -141,7 +143,7 @@ func (suite *StoreTestSuite) TestCreateSender_SerializeError() {
 
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
 
-	err = suite.store.createSender(sender)
+	err = suite.store.createSender(context.TODO(), sender)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to serialize properties to JSON")
 }
@@ -173,10 +175,10 @@ func (suite *StoreTestSuite) TestListSenders_WithPropertiesStringAndBytes() {
 	}
 
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetAllNotificationSenders, testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetAllNotificationSenders, testDeploymentID).Return(
 		[]map[string]interface{}{row1, row2}, nil).Once()
 
-	senders, err := suite.store.listSenders()
+	senders, err := suite.store.listSenders(context.TODO())
 	suite.NoError(err)
 	suite.Len(senders, 2)
 	suite.Len(senders[0].Properties, 1)
@@ -185,7 +187,7 @@ func (suite *StoreTestSuite) TestListSenders_WithPropertiesStringAndBytes() {
 
 func (suite *StoreTestSuite) TestListSenders_GetConfigDBClientError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("db err")).Once()
-	res, err := suite.store.listSenders()
+	res, err := suite.store.listSenders(context.TODO())
 	suite.Error(err)
 	suite.Nil(res)
 	suite.Contains(err.Error(), "failed to get database client")
@@ -193,20 +195,20 @@ func (suite *StoreTestSuite) TestListSenders_GetConfigDBClientError() {
 
 func (suite *StoreTestSuite) TestListSenders_WithError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetAllNotificationSenders, testDeploymentID).
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetAllNotificationSenders, testDeploymentID).
 		Return(nil, errors.New("query fail")).Once()
 
-	res, err := suite.store.listSenders()
+	res, err := suite.store.listSenders(context.TODO())
 	suite.Error(err)
 	suite.Nil(res)
 	suite.Contains(err.Error(), "failed to execute query")
 
 	badRow := map[string]interface{}{"name": "n1"}
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetAllNotificationSenders, testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetAllNotificationSenders, testDeploymentID).Return(
 		[]map[string]interface{}{badRow}, nil).Once()
 
-	res2, err := suite.store.listSenders()
+	res2, err := suite.store.listSenders(context.TODO())
 	suite.Error(err)
 	suite.Nil(res2)
 	suite.Contains(err.Error(), "failed to build sender from result row")
@@ -221,10 +223,10 @@ func (suite *StoreTestSuite) TestListSenders_WithError() {
 		"properties":  "not-json",
 	}
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetAllNotificationSenders, testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetAllNotificationSenders, testDeploymentID).Return(
 		[]map[string]interface{}{row}, nil).Once()
 
-	res3, err := suite.store.listSenders()
+	res3, err := suite.store.listSenders(context.TODO())
 	suite.Error(err)
 	suite.Nil(res3)
 	suite.Contains(err.Error(), "failed to deserialize properties from JSON")
@@ -241,41 +243,44 @@ func (suite *StoreTestSuite) TestGetSenderByID() {
 		"properties":  "",
 	}
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s1", testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+		"s1", testDeploymentID).Return(
 		[]map[string]interface{}{row}, nil).Once()
 
-	s, err := suite.store.getSenderByID("s1")
+	s, err := suite.store.getSenderByID(context.TODO(), "s1")
 	suite.NoError(err)
 	suite.NotNil(s)
 	suite.Equal("s1", s.ID)
 
 	// not found
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s-x", testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+		"s-x", testDeploymentID).Return(
 		[]map[string]interface{}{}, nil).Once()
-	s2, err := suite.store.getSenderByID("s-x")
+	s2, err := suite.store.getSenderByID(context.TODO(), "s-x")
 	suite.NoError(err)
 	suite.Nil(s2)
 
 	// multiple results -> error
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s-multi", testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+		"s-multi", testDeploymentID).Return(
 		[]map[string]interface{}{row, row}, nil).Once()
-	s3, err := suite.store.getSenderByID("s-multi")
+	s3, err := suite.store.getSenderByID(context.TODO(), "s-multi")
 	suite.Error(err)
 	suite.Nil(s3)
 }
 
 func (suite *StoreTestSuite) TestGetSenderByID_GetConfigDBClientError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("db err")).Once()
-	res, err := suite.store.getSenderByID("s1")
+	res, err := suite.store.getSenderByID(context.TODO(), "s1")
 	suite.Error(err)
 	suite.Nil(res)
 }
 
 func (suite *StoreTestSuite) TestGetSenderByName_GetConfigDBClientError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("db err")).Once()
-	res, err := suite.store.getSenderByName("n1")
+	res, err := suite.store.getSenderByName(context.TODO(), "n1")
 	suite.Error(err)
 	suite.Nil(res)
 }
@@ -290,7 +295,8 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 			name: "query error",
 			setup: func(t *testing.T) {
 				suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s1", testDeploymentID).
+				suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+					"s1", testDeploymentID).
 					Return(nil, errors.New("query fail")).Once()
 			},
 			wantErr: "failed to execute query",
@@ -306,7 +312,8 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 					"provider":    "twilio",
 				}
 				suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s1", testDeploymentID).
+				suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+					"s1", testDeploymentID).
 					Return([]map[string]interface{}{row, row}, nil).Once()
 			},
 			wantErr: "multiple senders",
@@ -316,7 +323,8 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 			setup: func(t *testing.T) {
 				badRow := map[string]interface{}{"name": "n1"}
 				suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s1", testDeploymentID).
+				suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+					"s1", testDeploymentID).
 					Return([]map[string]interface{}{badRow}, nil).Once()
 			},
 			wantErr: "failed to build sender",
@@ -333,7 +341,8 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 					"properties":  "not-json",
 				}
 				suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s1", testDeploymentID).
+				suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+					"s1", testDeploymentID).
 					Return([]map[string]interface{}{row}, nil).Once()
 			},
 			wantErr: "failed to deserialize properties",
@@ -343,7 +352,7 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			tc.setup(t)
-			s, err := suite.store.getSenderByID("s1")
+			s, err := suite.store.getSenderByID(context.TODO(), "s1")
 			suite.Error(err)
 			suite.Nil(s)
 			suite.Contains(err.Error(), tc.wantErr)
@@ -366,10 +375,11 @@ func (suite *StoreTestSuite) TestGetSender_WithProperties() {
 		"properties":  propsJSON,
 	}
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Query(queryGetNotificationSenderByID, "s1", testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().QueryContext(context.TODO(), queryGetNotificationSenderByID,
+		"s1", testDeploymentID).Return(
 		[]map[string]interface{}{row}, nil).Once()
 
-	s, err := suite.store.getSender(queryGetNotificationSenderByID, "s1")
+	s, err := suite.store.getSender(context.TODO(), queryGetNotificationSenderByID, "s1")
 	suite.NoError(err)
 	suite.NotNil(s)
 	suite.Len(s.Properties, 1)
@@ -379,10 +389,11 @@ func (suite *StoreTestSuite) TestUpdateSender() {
 	sender := common.NotificationSenderDTO{ID: "s1", Name: "n1", Provider: common.MessageProviderTypeTwilio}
 
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Execute(queryUpdateNotificationSender, sender.Name, sender.Description,
+	suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryUpdateNotificationSender,
+		sender.Name, sender.Description,
 		string(sender.Provider), "", "s1", string(sender.Type), testDeploymentID).Return(int64(1), nil).Once()
 
-	err := suite.store.updateSender("s1", sender)
+	err := suite.store.updateSender(context.TODO(), "s1", sender)
 	suite.NoError(err)
 }
 
@@ -395,16 +406,17 @@ func (suite *StoreTestSuite) TestUpdateSender_WithProperties() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
 	propsJSON, err := cmodels.SerializePropertiesToJSONArray([]cmodels.Property{*p})
 	suite.NoError(err)
-	suite.mockDBClient.EXPECT().Execute(queryUpdateNotificationSender, sender.Name, sender.Description,
+	suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryUpdateNotificationSender,
+		sender.Name, sender.Description,
 		string(sender.Provider), propsJSON, "s1", string(sender.Type), testDeploymentID).Return(int64(1), nil).Once()
 
-	err = suite.store.updateSender("s1", sender)
+	err = suite.store.updateSender(context.TODO(), "s1", sender)
 	suite.NoError(err)
 }
 
 func (suite *StoreTestSuite) TestUpdateSender_GetConfigDBClientError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("db err")).Once()
-	err := suite.store.updateSender("s1", common.NotificationSenderDTO{})
+	err := suite.store.updateSender(context.TODO(), "s1", common.NotificationSenderDTO{})
 	suite.Error(err)
 }
 
@@ -426,7 +438,7 @@ func (suite *StoreTestSuite) TestUpdateSender_WithError() {
 			setup: func(t *testing.T) {
 				sender := common.NotificationSenderDTO{Name: "n1", Provider: common.MessageProviderTypeTwilio}
 				suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.EXPECT().Execute(queryUpdateNotificationSender, sender.Name,
+				suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryUpdateNotificationSender, sender.Name,
 					sender.Description, string(sender.Provider), "", "s1", string(sender.Type), testDeploymentID).
 					Return(int64(0), errors.New("exec fail")).Once()
 			},
@@ -440,7 +452,7 @@ func (suite *StoreTestSuite) TestUpdateSender_WithError() {
 			// use a sender without properties for these failure-case checks
 			sender := common.NotificationSenderDTO{ID: "s1", Name: "n1",
 				Provider: common.MessageProviderTypeTwilio}
-			err := suite.store.updateSender("s1", sender)
+			err := suite.store.updateSender(context.TODO(), "s1", sender)
 			suite.Error(err)
 			suite.Contains(err.Error(), tc.wantErr)
 		})
@@ -450,11 +462,12 @@ func (suite *StoreTestSuite) TestUpdateSender_WithError() {
 func (suite *StoreTestSuite) TestUpdateSender_ExecuteError() {
 	sender := common.NotificationSenderDTO{ID: "s1", Name: "n1", Provider: common.MessageProviderTypeTwilio}
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Execute(queryUpdateNotificationSender, sender.Name, sender.Description,
+	suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryUpdateNotificationSender,
+		sender.Name, sender.Description,
 		string(sender.Provider), "", "s1", string(sender.Type), testDeploymentID).
 		Return(int64(0), errors.New("exec fail")).Once()
 
-	err := suite.store.updateSender("s1", sender)
+	err := suite.store.updateSender(context.TODO(), "s1", sender)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to execute query")
 }
@@ -473,7 +486,7 @@ func (suite *StoreTestSuite) TestUpdateSender_SerializeError() {
 
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
 
-	err = suite.store.updateSender("s1", sender)
+	err = suite.store.updateSender(context.TODO(), "s1", sender)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to serialize properties to JSON")
 }
@@ -481,25 +494,26 @@ func (suite *StoreTestSuite) TestUpdateSender_SerializeError() {
 func (suite *StoreTestSuite) TestDeleteSender_NoRows() {
 	// delete with 0 rows affected (should not return error)
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Execute(queryDeleteNotificationSender, "s1", testDeploymentID).
+	suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryDeleteNotificationSender, "s1", testDeploymentID).
 		Return(int64(0), nil).Once()
 
-	err := suite.store.deleteSender("s1")
+	err := suite.store.deleteSender(context.TODO(), "s1")
 	suite.NoError(err)
 }
 
 func (suite *StoreTestSuite) TestDeleteSender_GetConfigDBClientError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("db err")).Once()
-	err := suite.store.deleteSender("s1")
+	err := suite.store.deleteSender(context.TODO(), "s1")
 	suite.Error(err)
 }
 
 func (suite *StoreTestSuite) TestDeleteSender_ExecuteError() {
 	suite.mockDBProvider.EXPECT().GetConfigDBClient().Return(suite.mockDBClient, nil).Once()
-	suite.mockDBClient.EXPECT().Execute(queryDeleteNotificationSender, "s1", testDeploymentID).Return(
+	suite.mockDBClient.EXPECT().ExecuteContext(context.TODO(), queryDeleteNotificationSender,
+		"s1", testDeploymentID).Return(
 		int64(0), errors.New("exec fail")).Once()
 
-	err := suite.store.deleteSender("s1")
+	err := suite.store.deleteSender(context.TODO(), "s1")
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to execute delete query")
 }

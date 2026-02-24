@@ -19,6 +19,7 @@
 package authn
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -452,10 +453,10 @@ func (suite *AuthenticationServiceTestSuite) TestSendOTPSuccess() {
 	recipient := "+1234567890"
 	sessionToken := testSessionTkn
 
-	suite.mockOTPService.On("SendOTP", senderID, notifcommon.ChannelTypeSMS, recipient).
+	suite.mockOTPService.On("SendOTP", mock.Anything, senderID, notifcommon.ChannelTypeSMS, recipient).
 		Return(sessionToken, nil)
 
-	result, err := suite.service.SendOTP(senderID, notifcommon.ChannelTypeSMS, recipient)
+	result, err := suite.service.SendOTP(context.Background(), senderID, notifcommon.ChannelTypeSMS, recipient)
 
 	suite.Nil(err)
 	suite.Equal(sessionToken, result)
@@ -471,10 +472,10 @@ func (suite *AuthenticationServiceTestSuite) TestSendOTPServiceError() {
 		ErrorDescription: "Failed to send OTP",
 	}
 
-	suite.mockOTPService.On("SendOTP", senderID, notifcommon.ChannelTypeSMS, recipient).
+	suite.mockOTPService.On("SendOTP", mock.Anything, senderID, notifcommon.ChannelTypeSMS, recipient).
 		Return("", svcErr)
 
-	result, err := suite.service.SendOTP(senderID, notifcommon.ChannelTypeSMS, recipient)
+	result, err := suite.service.SendOTP(context.Background(), senderID, notifcommon.ChannelTypeSMS, recipient)
 
 	suite.Empty(result)
 	suite.NotNil(err)
@@ -504,7 +505,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 			existingAssertion: "",
 			expectAssertion:   false,
 			setupMocks: func() {
-				suite.mockOTPService.On("VerifyOTP", sessionToken, otpCode).Return(testUser, nil).Once()
+				suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil).Once()
 			},
 			validateAssertion: func(result *common.AuthenticationResponse) {
 				suite.Empty(result.Assertion)
@@ -516,7 +517,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 			existingAssertion: "",
 			expectAssertion:   true,
 			setupMocks: func() {
-				suite.mockOTPService.On("VerifyOTP", sessionToken, otpCode).Return(testUser, nil).Once()
+				suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil).Once()
 				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -542,7 +543,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 			expectAssertion:   true,
 			setupMocks: func() {
 				existingAssertion := suite.createTestAssertion(testUserID)
-				suite.mockOTPService.On("VerifyOTP", sessionToken, otpCode).Return(testUser, nil).Once()
+				suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil).Once()
 				suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
@@ -569,7 +570,8 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 		suite.Run(tc.name, func() {
 			tc.setupMocks()
 
-			result, err := suite.service.VerifyOTP(sessionToken, tc.skipAssertion, tc.existingAssertion, otpCode)
+			result, err := suite.service.VerifyOTP(context.Background(), sessionToken, tc.skipAssertion,
+				tc.existingAssertion, otpCode)
 
 			suite.Nil(err)
 			suite.NotNil(result)
@@ -589,9 +591,9 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPServiceError() {
 		ErrorDescription: "The provided OTP is incorrect",
 	}
 
-	suite.mockOTPService.On("VerifyOTP", sessionToken, otpCode).Return(nil, svcErr)
+	suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(nil, svcErr)
 
-	result, err := suite.service.VerifyOTP(sessionToken, false, "", otpCode)
+	result, err := suite.service.VerifyOTP(context.Background(), sessionToken, false, "", otpCode)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1544,7 +1546,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 		OrganizationUnitID: testOrgUnit,
 	}
 
-	suite.mockOTPService.On("VerifyOTP", sessionToken, otpCode).Return(testUser, nil)
+	suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil)
 	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 		&assert.AssertionResult{
 			Context: &assert.AssuranceContext{
@@ -1560,7 +1562,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 			ErrorDescription: "Failed to generate JWT token",
 		})
 
-	result, err := suite.service.VerifyOTP(sessionToken, false, "", otpCode)
+	result, err := suite.service.VerifyOTP(context.Background(), sessionToken, false, "", otpCode)
 
 	suite.Nil(result)
 	suite.NotNil(err)

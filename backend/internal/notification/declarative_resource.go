@@ -68,7 +68,7 @@ func (e *NotificationSenderExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all notification sender IDs.
 func (e *NotificationSenderExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
-	senders, err := e.service.ListSenders()
+	senders, err := e.service.ListSenders(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (e *NotificationSenderExporter) GetAllResourceIDs(ctx context.Context) ([]s
 func (e *NotificationSenderExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
-	sender, err := e.service.GetSender(id)
+	sender, err := e.service.GetSender(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}

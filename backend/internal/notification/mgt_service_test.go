@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -48,6 +49,7 @@ func TestNotificationSenderMgtServiceTestSuite(t *testing.T) {
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) SetupSuite() {
+	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
@@ -61,22 +63,27 @@ func (suite *NotificationSenderMgtServiceTestSuite) SetupSuite() {
 	}
 }
 
+func (suite *NotificationSenderMgtServiceTestSuite) TearDownSuite() {
+	config.ResetThunderRuntime()
+}
+
 func (suite *NotificationSenderMgtServiceTestSuite) SetupTest() {
 	suite.mockStore = newNotificationStoreInterfaceMock(suite.T())
 	suite.service = &notificationSenderMgtService{
 		notificationStore: suite.mockStore,
+		transactioner:     &fakeTransactioner{},
 	}
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender() {
 	sender := suite.getValidTwilioSender()
 
-	suite.mockStore.EXPECT().getSenderByName(sender.Name).Return(nil, nil).Once()
-	suite.mockStore.EXPECT().createSender(mock.MatchedBy(func(s common.NotificationSenderDTO) bool {
+	suite.mockStore.EXPECT().getSenderByName(mock.Anything, sender.Name).Return(nil, nil).Once()
+	suite.mockStore.EXPECT().createSender(mock.Anything, mock.MatchedBy(func(s common.NotificationSenderDTO) bool {
 		return s.Name == sender.Name && s.ID != ""
 	})).Return(nil).Once()
 
-	result, err := suite.service.CreateSender(sender)
+	result, err := suite.service.CreateSender(context.TODO(), sender)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(sender.Name, result.Name)
@@ -98,7 +105,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
 				existing := s
 				existing.ID = "existing-id"
-				m.EXPECT().getSenderByName(s.Name).Return(&existing, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, s.Name).Return(&existing, nil).Once()
 			},
 			expectedErrCode: ErrorDuplicateSenderName.Code,
 		},
@@ -108,7 +115,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 				return s
 			},
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
-				m.EXPECT().getSenderByName(s.Name).Return(nil, errors.New("database error")).Once()
+				m.EXPECT().getSenderByName(mock.Anything, s.Name).Return(nil, errors.New("database error")).Once()
 			},
 			expectedErrCode: ErrorInternalServerError.Code,
 		},
@@ -118,8 +125,8 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 				return s
 			},
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
-				m.EXPECT().getSenderByName(s.Name).Return(nil, nil).Once()
-				m.EXPECT().createSender(mock.Anything).Return(errors.New("database error")).Once()
+				m.EXPECT().getSenderByName(mock.Anything, s.Name).Return(nil, nil).Once()
+				m.EXPECT().createSender(mock.Anything, mock.Anything).Return(errors.New("database error")).Once()
 			},
 			expectedErrCode: ErrorInternalServerError.Code,
 		},
@@ -146,7 +153,10 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			mockStore := newNotificationStoreInterfaceMock(t)
-			svc := &notificationSenderMgtService{notificationStore: mockStore}
+			svc := &notificationSenderMgtService{
+				notificationStore: mockStore,
+				transactioner:     &fakeTransactioner{},
+			}
 
 			sender := suite.getValidTwilioSender()
 			sender = tc.inputMod(sender)
@@ -155,7 +165,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 				tc.setupMock(mockStore, sender)
 			}
 
-			result, err := svc.CreateSender(sender)
+			result, err := svc.CreateSender(context.TODO(), sender)
 			require := require.New(t)
 			require.Nil(result)
 			require.NotNil(err)
@@ -173,27 +183,27 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders() {
 	senders[0].ID = "id1"
 	senders[1].ID = "id2"
 
-	suite.mockStore.EXPECT().listSenders().Return(senders, nil).Once()
+	suite.mockStore.EXPECT().listSenders(mock.Anything).Return(senders, nil).Once()
 
-	result, err := suite.service.ListSenders()
+	result, err := suite.service.ListSenders(context.TODO())
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Len(result, 2)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders_EmptyList() {
-	suite.mockStore.EXPECT().listSenders().Return([]common.NotificationSenderDTO{}, nil).Once()
+	suite.mockStore.EXPECT().listSenders(mock.Anything).Return([]common.NotificationSenderDTO{}, nil).Once()
 
-	result, err := suite.service.ListSenders()
+	result, err := suite.service.ListSenders(context.TODO())
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Len(result, 0)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders_StoreError() {
-	suite.mockStore.EXPECT().listSenders().Return(nil, errors.New("database error")).Once()
+	suite.mockStore.EXPECT().listSenders(mock.Anything).Return(nil, errors.New("database error")).Once()
 
-	result, err := suite.service.ListSenders()
+	result, err := suite.service.ListSenders(context.TODO())
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -202,24 +212,24 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders_StoreError()
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender() {
 	sender := suite.getValidTwilioSender()
 	sender.ID = testSenderID
-	suite.mockStore.EXPECT().getSenderByID(testSenderID).Return(&sender, nil).Once()
+	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&sender, nil).Once()
 
-	result, err := suite.service.GetSender(testSenderID)
+	result, err := suite.service.GetSender(context.TODO(), testSenderID)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(testSenderID, result.ID)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_NotFound() {
-	suite.mockStore.EXPECT().getSenderByID(testSenderID).Return(nil, nil).Once()
+	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, nil).Once()
 
-	result, err := suite.service.GetSender(testSenderID)
+	result, err := suite.service.GetSender(context.TODO(), testSenderID)
 	suite.Nil(err)
 	suite.Nil(result)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_EmptyID() {
-	result, err := suite.service.GetSender("")
+	result, err := suite.service.GetSender(context.TODO(), "")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -227,9 +237,9 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_EmptyID() {
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_StoreError() {
-	suite.mockStore.EXPECT().getSenderByID(testSenderID).Return(nil, errors.New("database error")).Once()
+	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, errors.New("database error")).Once()
 
-	result, err := suite.service.GetSender(testSenderID)
+	result, err := suite.service.GetSender(context.TODO(), testSenderID)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -248,7 +258,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 			setup: func(m *notificationStoreInterfaceMock) {
 				sender := suite.getValidTwilioSender()
 				sender.ID = testSenderID
-				m.EXPECT().getSenderByName("Test Twilio Sender").Return(&sender, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, "Test Twilio Sender").Return(&sender, nil).Once()
 			},
 			arg:      "Test Twilio Sender",
 			wantName: "Test Twilio Sender",
@@ -256,7 +266,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 		{
 			name: "SenderNotFound",
 			setup: func(m *notificationStoreInterfaceMock) {
-				m.EXPECT().getSenderByName("NonExistent").Return(nil, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, "NonExistent").Return(nil, nil).Once()
 			},
 			arg:      "NonExistent",
 			wantName: "",
@@ -266,13 +276,16 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			mockStore := newNotificationStoreInterfaceMock(t)
-			svc := &notificationSenderMgtService{notificationStore: mockStore}
+			svc := &notificationSenderMgtService{
+				notificationStore: mockStore,
+				transactioner:     &fakeTransactioner{},
+			}
 
 			if tc.setup != nil {
 				tc.setup(mockStore)
 			}
 
-			result, err := svc.GetSenderByName(tc.arg)
+			result, err := svc.GetSenderByName(context.TODO(), tc.arg)
 			require := require.New(t)
 			require.Nil(err)
 			if tc.wantName == "" {
@@ -303,7 +316,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName_WithFail
 			name: "StoreError",
 			arg:  "Test",
 			setup: func(m *notificationStoreInterfaceMock) {
-				m.EXPECT().getSenderByName("Test").Return(nil, errors.New("database error")).Once()
+				m.EXPECT().getSenderByName(mock.Anything, "Test").Return(nil, errors.New("database error")).Once()
 			},
 			expectedErrCode: ErrorInternalServerError.Code,
 		},
@@ -312,13 +325,16 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName_WithFail
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			mockStore := newNotificationStoreInterfaceMock(t)
-			svc := &notificationSenderMgtService{notificationStore: mockStore}
+			svc := &notificationSenderMgtService{
+				notificationStore: mockStore,
+				transactioner:     &fakeTransactioner{},
+			}
 
 			if tc.setup != nil {
 				tc.setup(mockStore)
 			}
 
-			result, err := svc.GetSenderByName(tc.arg)
+			result, err := svc.GetSenderByName(context.TODO(), tc.arg)
 			require := require.New(t)
 			require.Nil(result)
 			require.NotNil(err)
@@ -338,8 +354,8 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
 				existing := s
 				existing.ID = testSenderID
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
-				m.EXPECT().updateSender(testSenderID, s).Return(nil).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().updateSender(mock.Anything, testSenderID, s).Return(nil).Once()
 			},
 		},
 		{
@@ -348,9 +364,9 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 				existing := s
 				existing.ID = testSenderID
 				existing.Name = testSenderOldName
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
-				m.EXPECT().getSenderByName(testSenderUpdatedName).Return(nil, nil).Once()
-				m.EXPECT().updateSender(testSenderID, s).Return(nil).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, testSenderUpdatedName).Return(nil, nil).Once()
+				m.EXPECT().updateSender(mock.Anything, testSenderID, s).Return(nil).Once()
 			},
 		},
 		{
@@ -361,9 +377,9 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 				existing.Name = testSenderOldName
 				same := s
 				same.ID = testSenderID
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
-				m.EXPECT().getSenderByName(testSenderUpdatedName).Return(&same, nil).Once()
-				m.EXPECT().updateSender(testSenderID, s).Return(nil).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, testSenderUpdatedName).Return(&same, nil).Once()
+				m.EXPECT().updateSender(mock.Anything, testSenderID, s).Return(nil).Once()
 			},
 		},
 	}
@@ -371,7 +387,10 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			mockStore := newNotificationStoreInterfaceMock(t)
-			svc := &notificationSenderMgtService{notificationStore: mockStore}
+			svc := &notificationSenderMgtService{
+				notificationStore: mockStore,
+				transactioner:     &fakeTransactioner{},
+			}
 
 			sender := suite.getValidTwilioSender()
 			if tc.name != "NoNameChange" {
@@ -380,7 +399,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 
 			tc.setupMock(mockStore, sender)
 
-			result, err := svc.UpdateSender(testSenderID, sender)
+			result, err := svc.UpdateSender(context.TODO(), testSenderID, sender)
 			require := require.New(t)
 			require.Nil(err)
 			require.NotNil(result)
@@ -409,8 +428,8 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				another := s
 				another.ID = "another-id"
 				another.Name = testSenderUpdatedName
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
-				m.EXPECT().getSenderByName(testSenderUpdatedName).Return(&another, nil).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, testSenderUpdatedName).Return(&another, nil).Once()
 			},
 			expectedErrCode: ErrorDuplicateSenderName.Code,
 		},
@@ -420,7 +439,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				return s
 			},
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
-				m.EXPECT().getSenderByID(testSenderID).Return(nil, nil).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, nil).Once()
 			},
 			expectedErrCode: ErrorSenderNotFound.Code,
 		},
@@ -442,7 +461,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				existing := s
 				existing.ID = testSenderID
 				existing.Type = common.NotificationSenderType("legacy-type")
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
 			},
 			expectedErrCode: ErrorSenderTypeUpdateNotAllowed.Code,
 		},
@@ -454,8 +473,8 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
 				existing := s
 				existing.ID = testSenderID
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
-				m.EXPECT().updateSender(testSenderID, s).Return(errors.New("database error")).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().updateSender(mock.Anything, testSenderID, s).Return(errors.New("database error")).Once()
 			},
 			expectedErrCode: ErrorInternalServerError.Code,
 		},
@@ -465,7 +484,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				return s
 			},
 			setupMock: func(m *notificationStoreInterfaceMock, s common.NotificationSenderDTO) {
-				m.EXPECT().getSenderByID(testSenderID).Return(nil, errors.New("database error")).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, errors.New("database error")).Once()
 			},
 			expectedErrCode: ErrorInternalServerError.Code,
 		},
@@ -479,8 +498,9 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				existing := s
 				existing.ID = testSenderID
 				existing.Name = testSenderOldName
-				m.EXPECT().getSenderByID(testSenderID).Return(&existing, nil).Once()
-				m.EXPECT().getSenderByName(testSenderUpdatedName).Return(nil, errors.New("database error")).Once()
+				m.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&existing, nil).Once()
+				m.EXPECT().getSenderByName(mock.Anything, testSenderUpdatedName).
+					Return(nil, errors.New("database error")).Once()
 			},
 			expectedErrCode: ErrorInternalServerError.Code,
 		},
@@ -498,13 +518,16 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			mockStore := newNotificationStoreInterfaceMock(t)
-			svc := &notificationSenderMgtService{notificationStore: mockStore}
+			svc := &notificationSenderMgtService{
+				notificationStore: mockStore,
+				transactioner:     &fakeTransactioner{},
+			}
 
 			sender := suite.getValidTwilioSender()
 			sender = tc.inputMod(sender)
 
 			if tc.name == "EmptyID" {
-				result, err := svc.UpdateSender("", sender)
+				result, err := svc.UpdateSender(context.TODO(), "", sender)
 				require := require.New(t)
 				require.Nil(result)
 				require.NotNil(err)
@@ -516,7 +539,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				tc.setupMock(mockStore, sender)
 			}
 
-			result, err := svc.UpdateSender(testSenderID, sender)
+			result, err := svc.UpdateSender(context.TODO(), testSenderID, sender)
 			require := require.New(t)
 			require.Nil(result)
 			require.NotNil(err)
@@ -527,20 +550,20 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender() {
-	suite.mockStore.EXPECT().deleteSender(testSenderID).Return(nil).Once()
-	err := suite.service.DeleteSender(testSenderID)
+	suite.mockStore.EXPECT().deleteSender(mock.Anything, testSenderID).Return(nil).Once()
+	err := suite.service.DeleteSender(context.TODO(), testSenderID)
 	suite.Nil(err)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_EmptyID() {
-	err := suite.service.DeleteSender("")
+	err := suite.service.DeleteSender(context.TODO(), "")
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidSenderID.Code, err.Code)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_StoreError() {
-	suite.mockStore.EXPECT().deleteSender(testSenderID).Return(errors.New("database error")).Once()
-	err := suite.service.DeleteSender(testSenderID)
+	suite.mockStore.EXPECT().deleteSender(context.TODO(), testSenderID).Return(errors.New("database error")).Once()
+	err := suite.service.DeleteSender(context.TODO(), testSenderID)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
@@ -557,7 +580,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_Declarative
 	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
-	result, err := suite.service.CreateSender(sender)
+	result, err := suite.service.CreateSender(context.TODO(), sender)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -576,7 +599,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_Declarative
 	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
-	result, err := suite.service.UpdateSender(testSenderID, sender)
+	result, err := suite.service.UpdateSender(context.TODO(), testSenderID, sender)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -594,7 +617,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_Declarative
 	// Enable declarative resources
 	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
-	err := suite.service.DeleteSender(testSenderID)
+	err := suite.service.DeleteSender(context.TODO(), testSenderID)
 
 	suite.NotNil(err)
 	suite.Equal("DCR-1003", err.Code)
@@ -631,4 +654,16 @@ func (suite *NotificationSenderMgtServiceTestSuite) getValidVonageSender() commo
 			createTestProperty("sender_id", "TestSender", false),
 		},
 	}
+}
+
+// fakeTransactioner is a light-weight test double to capture transaction usage without sql mock plumbing.
+type fakeTransactioner struct {
+	err error
+}
+
+func (f *fakeTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	if f.err != nil {
+		return f.err
+	}
+	return txFunc(ctx)
 }

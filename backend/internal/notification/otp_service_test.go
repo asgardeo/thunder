@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	cryptorand "crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -99,7 +100,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_EmptyRecipient() {
 		Channel:   "sms",
 	}
 
-	result, err := suite.service.SendOTP(request)
+	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -113,7 +114,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_EmptySenderID() {
 		Channel:   "sms",
 	}
 
-	result, err := suite.service.SendOTP(request)
+	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -127,7 +128,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_EmptyChannel() {
 		Channel:   "",
 	}
 
-	result, err := suite.service.SendOTP(request)
+	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -141,7 +142,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_UnsupportedChannel() {
 		Channel:   "email",
 	}
 
-	result, err := suite.service.SendOTP(request)
+	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -155,9 +156,9 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SenderNotFound() {
 		Channel:   "sms",
 	}
 
-	suite.mockSenderService.On("GetSender", "sender-123").Return(nil, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(nil, nil).Once()
 
-	result, err := suite.service.SendOTP(request)
+	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -171,10 +172,10 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SenderServiceError() {
 		Channel:   "sms",
 	}
 
-	suite.mockSenderService.On("GetSender", "sender-123").
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").
 		Return(nil, &ErrorInternalServerError).Once()
 
-	result, err := suite.service.SendOTP(request)
+	result, err := suite.service.SendOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -187,7 +188,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_EmptySessionToken() {
 		OTPCode:      "123456",
 	}
 
-	result, err := suite.service.VerifyOTP(request)
+	result, err := suite.service.VerifyOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -200,7 +201,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_EmptyOTPCode() {
 		OTPCode:      "",
 	}
 
-	result, err := suite.service.VerifyOTP(request)
+	result, err := suite.service.VerifyOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -217,7 +218,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_InvalidSessionToken() {
 	suite.mockJWTService.EXPECT().VerifyJWT("invalid-token", "otp-svc", mock.Anything).
 		Return(&ErrorInvalidSessionToken).Once()
 
-	result, err := suite.service.VerifyOTP(request)
+	result, err := suite.service.VerifyOTP(context.Background(), request)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -284,7 +285,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateOTPError() {
 	}
 
 	sender := suite.getValidSender()
-	suite.mockSenderService.On("GetSender", "sender-123").Return(sender, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
 	// replace crypto/rand.Reader to force generateOTP to return an error
 	orig := cryptorand.Reader
@@ -295,7 +296,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateOTPError() {
 	// mm := messagemock.NewMessageClientInterfaceMock(suite.T())
 	suite.service.clientProvider = newNotificationClientProviderInterfaceMock(suite.T())
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 
 	suite.Nil(res)
 	suite.NotNil(err)
@@ -310,7 +311,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_Success() {
 	}
 
 	sender := suite.getValidSender()
-	suite.mockSenderService.On("GetSender", "sender-123").Return(sender, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
 	mm := messagemock.NewMessageClientInterfaceMock(suite.T())
 	mm.EXPECT().SendSMS(mock.Anything).Return(nil).Once()
@@ -321,7 +322,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_Success() {
 	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return("session-token-123", int64(0), nil).Once()
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(err)
 	suite.NotNil(res)
 	suite.Equal("session-token-123", res.SessionToken)
@@ -334,7 +335,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SendSMSError() {
 		Channel:   "sms",
 	}
 	sender := suite.getValidSender()
-	suite.mockSenderService.On("GetSender", "sender-123").Return(sender, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
 	mm := messagemock.NewMessageClientInterfaceMock(suite.T())
 	mm.EXPECT().SendSMS(mock.Anything).Return(errors.New("send failed")).Once()
@@ -342,7 +343,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SendSMSError() {
 	cp.EXPECT().GetMessageClient(mock.Anything).Return(mm, nil).Once()
 	suite.service.clientProvider = cp
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -355,7 +356,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 		Channel:   "sms",
 	}
 	sender := suite.getValidSender()
-	suite.mockSenderService.On("GetSender", "sender-123").Return(sender, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
 	mm := messagemock.NewMessageClientInterfaceMock(suite.T())
 	mm.EXPECT().SendSMS(mock.Anything).Return(nil).Once()
@@ -366,7 +367,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return("", int64(0), &ErrorInternalServerError).Once()
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -397,7 +398,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Success() {
 	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
-	res, err := suite.service.VerifyOTP(req)
+	res, err := suite.service.VerifyOTP(context.Background(), req)
 	suite.Nil(err)
 	suite.NotNil(res)
 	suite.Equal(common.OTPVerifyStatusVerified, res.Status)
@@ -429,7 +430,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Expired() {
 	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
-	res, err := suite.service.VerifyOTP(req)
+	res, err := suite.service.VerifyOTP(context.Background(), req)
 	suite.Nil(err)
 	suite.NotNil(res)
 	suite.Equal(common.OTPVerifyStatusInvalid, res.Status)
@@ -443,14 +444,14 @@ func (suite *OTPServiceTestSuite) TestSendOTP_ClientProviderError() {
 	}
 
 	sender := suite.getValidSender()
-	suite.mockSenderService.On("GetSender", "sender-123").Return(sender, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
 	// client provider returns a service error
 	cp := newNotificationClientProviderInterfaceMock(suite.T())
 	cp.EXPECT().GetMessageClient(mock.Anything).Return(nil, &ErrorInternalServerError).Once()
 	suite.service.clientProvider = cp
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -464,13 +465,13 @@ func (suite *OTPServiceTestSuite) TestSendOTP_ClientProviderNilClient() {
 	}
 
 	sender := suite.getValidSender()
-	suite.mockSenderService.On("GetSender", "sender-123").Return(sender, nil).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(sender, nil).Once()
 
 	cp := newNotificationClientProviderInterfaceMock(suite.T())
 	cp.EXPECT().GetMessageClient(mock.Anything).Return(nil, nil).Once()
 	suite.service.clientProvider = cp
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -488,7 +489,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_MissingOTPData() {
 	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
-	res, err := suite.service.VerifyOTP(req)
+	res, err := suite.service.VerifyOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidSessionToken.Code, err.Code)
@@ -500,7 +501,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_BadPayloadDecode() {
 	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
-	res, err := suite.service.VerifyOTP(req)
+	res, err := suite.service.VerifyOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidSessionToken.Code, err.Code)
@@ -533,7 +534,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_Mismatch() {
 	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: otpValue}
-	res, err := suite.service.VerifyOTP(req)
+	res, err := suite.service.VerifyOTP(context.Background(), req)
 	suite.Nil(err)
 	suite.NotNil(res)
 	suite.Equal(common.OTPVerifyStatusInvalid, res.Status)
@@ -546,9 +547,9 @@ func (suite *OTPServiceTestSuite) TestSendOTP_SenderServiceError_NotFound() {
 		Channel:   "sms",
 	}
 
-	suite.mockSenderService.On("GetSender", "sender-123").Return(nil, &ErrorSenderNotFound).Once()
+	suite.mockSenderService.On("GetSender", mock.Anything, "sender-123").Return(nil, &ErrorSenderNotFound).Once()
 
-	res, err := suite.service.SendOTP(req)
+	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorSenderNotFound.Code, err.Code)
@@ -576,7 +577,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_UnmarshalError() {
 	suite.mockJWTService.EXPECT().VerifyJWT(token, mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := common.VerifyOTPDTO{SessionToken: token, OTPCode: "123456"}
-	res, err := suite.service.VerifyOTP(req)
+	res, err := suite.service.VerifyOTP(context.Background(), req)
 	suite.Nil(res)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidSessionToken.Code, err.Code)

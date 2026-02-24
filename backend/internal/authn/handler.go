@@ -75,13 +75,14 @@ func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 
 // HandleSendSMSOTPRequest handles the send SMS OTP authentication request.
 func (ah *authenticationHandler) HandleSendSMSOTPRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	otpRequest, err := sysutils.DecodeJSONBody[SendOTPAuthRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
 		return
 	}
 
-	sessionToken, svcErr := ah.authService.SendOTP(otpRequest.SenderID, notifcommon.ChannelTypeSMS,
+	sessionToken, svcErr := ah.authService.SendOTP(ctx, otpRequest.SenderID, notifcommon.ChannelTypeSMS,
 		otpRequest.Recipient)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
@@ -97,13 +98,14 @@ func (ah *authenticationHandler) HandleSendSMSOTPRequest(w http.ResponseWriter, 
 
 // HandleVerifySMSOTPRequest handles the verify SMS OTP authentication request.
 func (ah *authenticationHandler) HandleVerifySMSOTPRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	otpRequest, err := sysutils.DecodeJSONBody[VerifyOTPAuthRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
 		return
 	}
 
-	authResponse, svcErr := ah.authService.VerifyOTP(otpRequest.SessionToken, otpRequest.SkipAssertion,
+	authResponse, svcErr := ah.authService.VerifyOTP(ctx, otpRequest.SessionToken, otpRequest.SkipAssertion,
 		otpRequest.Assertion, otpRequest.OTP)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)

@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
@@ -33,21 +34,22 @@ type notificationFileBasedStore struct {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *notificationFileBasedStore) Create(id string, data interface{}) error {
 	sender := data.(*common.NotificationSenderDTO)
-	return f.createSender(*sender)
+	return f.createSender(context.TODO(), *sender)
 }
 
 // createSender implements notificationStoreInterface.
-func (f *notificationFileBasedStore) createSender(sender common.NotificationSenderDTO) error {
+func (f *notificationFileBasedStore) createSender(ctx context.Context, sender common.NotificationSenderDTO) error {
 	return f.GenericFileBasedStore.Create(sender.ID, &sender)
 }
 
 // deleteSender implements notificationStoreInterface.
-func (f *notificationFileBasedStore) deleteSender(id string) error {
+func (f *notificationFileBasedStore) deleteSender(ctx context.Context, id string) error {
 	return errors.New("deleteSender is not supported in file-based store")
 }
 
 // getSenderByID implements notificationStoreInterface.
-func (f *notificationFileBasedStore) getSenderByID(id string) (*common.NotificationSenderDTO, error) {
+func (f *notificationFileBasedStore) getSenderByID(
+	ctx context.Context, id string) (*common.NotificationSenderDTO, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return nil, err
@@ -61,7 +63,8 @@ func (f *notificationFileBasedStore) getSenderByID(id string) (*common.Notificat
 }
 
 // getSenderByName implements notificationStoreInterface.
-func (f *notificationFileBasedStore) getSenderByName(name string) (*common.NotificationSenderDTO, error) {
+func (f *notificationFileBasedStore) getSenderByName(
+	ctx context.Context, name string) (*common.NotificationSenderDTO, error) {
 	data, err := f.GenericFileBasedStore.GetByField(name, func(d interface{}) string {
 		return d.(*common.NotificationSenderDTO).Name
 	})
@@ -72,7 +75,7 @@ func (f *notificationFileBasedStore) getSenderByName(name string) (*common.Notif
 }
 
 // listSenders implements notificationStoreInterface.
-func (f *notificationFileBasedStore) listSenders() ([]common.NotificationSenderDTO, error) {
+func (f *notificationFileBasedStore) listSenders(ctx context.Context) ([]common.NotificationSenderDTO, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -88,7 +91,8 @@ func (f *notificationFileBasedStore) listSenders() ([]common.NotificationSenderD
 }
 
 // updateSender implements notificationStoreInterface.
-func (f *notificationFileBasedStore) updateSender(id string, sender common.NotificationSenderDTO) error {
+func (f *notificationFileBasedStore) updateSender(
+	ctx context.Context, id string, sender common.NotificationSenderDTO) error {
 	return errors.New("updateSender is not supported in file-based store")
 }
 

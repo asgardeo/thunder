@@ -318,7 +318,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleSendSMSOTPRequestSuccess(
 	}
 	sessionToken := testSessionTkn
 
-	suite.mockService.On("SendOTP", otpRequest.SenderID, mock.Anything, otpRequest.Recipient).
+	suite.mockService.On("SendOTP", mock.Anything, otpRequest.SenderID, mock.Anything, otpRequest.Recipient).
 		Return(sessionToken, nil)
 
 	body, _ := json.Marshal(otpRequest)
@@ -360,7 +360,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleSendSMSOTPRequestServiceE
 		ErrorDescription: "Failed to send OTP",
 	}
 
-	suite.mockService.On("SendOTP", mock.Anything, mock.Anything, mock.Anything).Return("", serviceError)
+	suite.mockService.On("SendOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", serviceError)
 
 	body, _ := json.Marshal(otpRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/otp/send", bytes.NewReader(body))
@@ -388,7 +388,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestSucces
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("VerifyOTP", otpRequest.SessionToken, otpRequest.SkipAssertion, "", otpRequest.OTP).
+	suite.mockService.On("VerifyOTP", mock.Anything, otpRequest.SessionToken,
+		otpRequest.SkipAssertion, "", otpRequest.OTP).
 		Return(authResponse, nil)
 
 	body, _ := json.Marshal(otpRequest)
@@ -426,7 +427,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestServic
 	}
 	serviceError := &otp.ErrorIncorrectOTP
 
-	suite.mockService.On("VerifyOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	suite.mockService.On("VerifyOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(otpRequest)
