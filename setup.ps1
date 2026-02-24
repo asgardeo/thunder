@@ -417,6 +417,8 @@ Write-Host "[WARN] Starting temporary server with security disabled..." -Foregro
 Write-Host ""
 
 # Export environment variable to skip security
+$hadSkipSecurity = Test-Path Env:THUNDER_SKIP_SECURITY
+$previousSkipSecurity = $env:THUNDER_SKIP_SECURITY
 $env:THUNDER_SKIP_SECURITY = "true"
 
 # Resolve thunder executable path
@@ -694,6 +696,13 @@ finally {
         try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
         } catch { }
+    }
+
+    # Restore THUNDER_SKIP_SECURITY to its previous state
+    if (-not $hadSkipSecurity) {
+        Remove-Item Env:THUNDER_SKIP_SECURITY -ErrorAction SilentlyContinue
+    } else {
+        $env:THUNDER_SKIP_SECURITY = $previousSkipSecurity
     }
 }
 
