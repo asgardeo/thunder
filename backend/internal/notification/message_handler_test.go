@@ -67,7 +67,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderListRequest() {
 	sender2 := common.NotificationSenderDTO{ID: "id2", Name: "s2", Provider: common.MessageProviderTypeVonage,
 		Properties: []cmodels.Property{createTestProperty("k2", "v2", false)}}
 
-	m.On("ListSenders").Return([]common.NotificationSenderDTO{sender1, sender2}, nil).Once()
+	m.On("ListSenders", mock.Anything).Return([]common.NotificationSenderDTO{sender1, sender2}, nil).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/senders", nil)
 	rr := httptest.NewRecorder()
@@ -85,7 +85,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderListRequest_ServiceError()
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	m.On("ListSenders").Return(nil, &ErrorInternalServerError).Once()
+	m.On("ListSenders", mock.Anything).Return(nil, &ErrorInternalServerError).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/senders", nil)
 	rr := httptest.NewRecorder()
@@ -110,7 +110,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderCreateRequest() {
 		Provider:   common.MessageProviderTypeTwilio,
 		Properties: []cmodels.Property{createTestProperty("k", "v", false)}}
 
-	m.On("CreateSender", mock.Anything).Return(&created, nil).Once()
+	m.On("CreateSender", mock.Anything, mock.Anything).Return(&created, nil).Once()
 	req := httptest.NewRequest(http.MethodPost, "/senders", bytes.NewBuffer(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -130,7 +130,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderCreateRequest_Duplicate() 
 	reqBody := common.NotificationSenderRequest{Name: "New Sender", Provider: "twilio"}
 	bodyBytes, _ := json.Marshal(reqBody)
 
-	m.On("CreateSender", mock.Anything).Return(nil, &ErrorDuplicateSenderName).Once()
+	m.On("CreateSender", mock.Anything, mock.Anything).Return(nil, &ErrorDuplicateSenderName).Once()
 	reqDup := httptest.NewRequest(http.MethodPost, "/senders", bytes.NewBuffer(bodyBytes))
 	reqDup.Header.Set("Content-Type", "application/json")
 	rr2 := httptest.NewRecorder()
@@ -146,7 +146,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderGetRequest() {
 		Provider:   common.MessageProviderTypeTwilio,
 		Properties: []cmodels.Property{createTestProperty("k", "v", false)}}
 
-	m.On("GetSender", "s-1").Return(dto, nil).Once()
+	m.On("GetSender", mock.Anything, "s-1").Return(dto, nil).Once()
 	reqGet := httptest.NewRequest(http.MethodGet, "/senders/s-1", nil)
 	reqGet.SetPathValue("id", "s-1")
 	rrGet := httptest.NewRecorder()
@@ -162,7 +162,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderGetRequest_NotFound() {
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	m.On("GetSender", "missing").Return(nil, nil).Once()
+	m.On("GetSender", mock.Anything, "missing").Return(nil, nil).Once()
 	reqGet2 := httptest.NewRequest(http.MethodGet, "/senders/missing", nil)
 	reqGet2.SetPathValue("id", "missing")
 	rrGet2 := httptest.NewRecorder()
@@ -179,7 +179,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderUpdateRequest() {
 	body, _ := json.Marshal(updateReq)
 	updatedDTO := common.NotificationSenderDTO{ID: "s-1", Name: "Updated",
 		Provider: common.MessageProviderTypeTwilio, Properties: []cmodels.Property{}}
-	m.On("UpdateSender", "s-1", mock.Anything).Return(&updatedDTO, nil).Once()
+	m.On("UpdateSender", mock.Anything, "s-1", mock.Anything).Return(&updatedDTO, nil).Once()
 	reqUpd := httptest.NewRequest(http.MethodPut, "/senders/s-1", bytes.NewBuffer(body))
 	reqUpd.SetPathValue("id", "s-1")
 	rrUpd := httptest.NewRecorder()
@@ -195,7 +195,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderDeleteRequest() {
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	m.On("DeleteSender", "s-1").Return(nil).Once()
+	m.On("DeleteSender", mock.Anything, "s-1").Return(nil).Once()
 	reqDel := httptest.NewRequest(http.MethodDelete, "/senders/s-1", nil)
 	reqDel.SetPathValue("id", "s-1")
 	rrDel := httptest.NewRecorder()
@@ -209,7 +209,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPSendRequest() {
 
 	sendReq := common.SendOTPRequest{Recipient: "+123", SenderID: "s-1", Channel: "sms"}
 	body, _ := json.Marshal(sendReq)
-	mOtp.On("SendOTP", mock.Anything).Return(&common.SendOTPResultDTO{SessionToken: "tok-1"}, nil).Once()
+	mOtp.On("SendOTP", mock.Anything, mock.Anything).Return(&common.SendOTPResultDTO{SessionToken: "tok-1"}, nil).Once()
 	req := httptest.NewRequest(http.MethodPost, "/otp/send", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 	handler.HandleOTPSendRequest(rr, req)
@@ -225,8 +225,8 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPVerifyRequest() {
 
 	verifyReq := common.VerifyOTPRequest{SessionToken: "tok-1", OTPCode: "1234"}
 	vbody, _ := json.Marshal(verifyReq)
-	mOtp.On("VerifyOTP", mock.Anything).Return(
-		&common.VerifyOTPResultDTO{Status: common.OTPVerifyStatus("SUCCESS")}, nil).Once()
+	mOtp.On("VerifyOTP", mock.Anything, mock.Anything).
+		Return(&common.VerifyOTPResultDTO{Status: common.OTPVerifyStatus("SUCCESS")}, nil).Once()
 	req2 := httptest.NewRequest(http.MethodPost, "/otp/verify", bytes.NewBuffer(vbody))
 	rr2 := httptest.NewRecorder()
 	handler.HandleOTPVerifyRequest(rr2, req2)
@@ -253,7 +253,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderCreateRequest_InvalidProvi
 
 	validBody := common.NotificationSenderRequest{Name: "s", Provider: "twilio"}
 	bb, _ := json.Marshal(validBody)
-	m.On("CreateSender", mock.Anything).Return(nil, &ErrorInvalidProvider).Once()
+	m.On("CreateSender", mock.Anything, mock.Anything).Return(nil, &ErrorInvalidProvider).Once()
 	req2 := httptest.NewRequest(http.MethodPost, "/senders", bytes.NewBuffer(bb))
 	req2.Header.Set("Content-Type", "application/json")
 	rr2 := httptest.NewRecorder()
@@ -265,7 +265,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderGetRequest_ServiceError() 
 	m := NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	handler := newMessageNotificationSenderHandler(m, nil)
 
-	m.On("GetSender", "err").Return(nil, &ErrorInternalServerError).Once()
+	m.On("GetSender", mock.Anything, "err").Return(nil, &ErrorInternalServerError).Once()
 	req := httptest.NewRequest(http.MethodGet, "/senders/err", nil)
 	req.SetPathValue("id", "err")
 	rr := httptest.NewRecorder()
@@ -290,7 +290,7 @@ func (suite *MessageHandlerTestSuite) TestHandleSenderUpdateRequest_SenderNotFou
 
 	upd := common.NotificationSenderRequest{Name: "u", Provider: "twilio"}
 	b, _ := json.Marshal(upd)
-	m.On("UpdateSender", "s1", mock.Anything).Return(nil, &ErrorSenderNotFound).Once()
+	m.On("UpdateSender", mock.Anything, "s1", mock.Anything).Return(nil, &ErrorSenderNotFound).Once()
 	req3 := httptest.NewRequest(http.MethodPut, "/senders/s1", bytes.NewBuffer(b))
 	req3.SetPathValue("id", "s1")
 	req3.Header.Set("Content-Type", "application/json")
@@ -312,7 +312,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPSendRequest_InvalidRecipient(
 	handler := newMessageNotificationSenderHandler(nil, mOtp)
 	sendReq := common.SendOTPRequest{Recipient: "+1", SenderID: "s1", Channel: "sms"}
 	b, _ := json.Marshal(sendReq)
-	mOtp.On("SendOTP", mock.Anything).Return(nil, &ErrorInvalidRecipient).Once()
+	mOtp.On("SendOTP", mock.Anything, mock.Anything).Return(nil, &ErrorInvalidRecipient).Once()
 	req2 := httptest.NewRequest(http.MethodPost, "/otp/send", bytes.NewBuffer(b))
 	rr2 := httptest.NewRecorder()
 	handler.HandleOTPSendRequest(rr2, req2)
@@ -332,7 +332,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPVerifyRequest_InvalidOTP() {
 	handler := newMessageNotificationSenderHandler(nil, mOtp)
 	vreq := common.VerifyOTPRequest{SessionToken: "t", OTPCode: "c"}
 	vb, _ := json.Marshal(vreq)
-	mOtp.On("VerifyOTP", mock.Anything).Return(nil, &ErrorInvalidOTP).Once()
+	mOtp.On("VerifyOTP", mock.Anything, mock.Anything).Return(nil, &ErrorInvalidOTP).Once()
 	req4 := httptest.NewRequest(http.MethodPost, "/otp/verify", bytes.NewBuffer(vb))
 	rr4 := httptest.NewRecorder()
 	handler.HandleOTPVerifyRequest(rr4, req4)

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/notification"
@@ -70,7 +71,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_Success() {
 		{ID: "sender2", Name: "Sender 2"},
 	}
 
-	s.mockService.EXPECT().ListSenders().Return(expectedSenders, nil)
+	s.mockService.EXPECT().ListSenders(mock.Anything).Return(expectedSenders, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -86,7 +87,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().ListSenders().Return(nil, expectedError)
+	s.mockService.EXPECT().ListSenders(mock.Anything).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -97,7 +98,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_Error() {
 func (s *NotificationSenderExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 	expectedSenders := []common.NotificationSenderDTO{}
 
-	s.mockService.EXPECT().ListSenders().Return(expectedSenders, nil)
+	s.mockService.EXPECT().ListSenders(mock.Anything).Return(expectedSenders, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -111,7 +112,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test Sender",
 	}
 
-	s.mockService.EXPECT().GetSender("sender1").Return(expectedSender, nil)
+	s.mockService.EXPECT().GetSender(mock.Anything, "sender1").Return(expectedSender, nil)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "sender1")
 
@@ -126,7 +127,7 @@ func (s *NotificationSenderExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetSender("sender1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetSender(mock.Anything, "sender1").Return(nil, expectedError)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "sender1")
 

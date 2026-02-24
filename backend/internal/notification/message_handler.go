@@ -49,8 +49,9 @@ func newMessageNotificationSenderHandler(
 
 // HandleSenderListRequest handles the request to list all message notification senders
 func (h *messageNotificationSenderHandler) HandleSenderListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
-	senders, svcErr := h.mgtService.ListSenders()
+	senders, svcErr := h.mgtService.ListSenders(ctx)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return
@@ -72,6 +73,7 @@ func (h *messageNotificationSenderHandler) HandleSenderListRequest(w http.Respon
 
 // HandleSenderCreateRequest handles the request to create a new message notification sender
 func (h *messageNotificationSenderHandler) HandleSenderCreateRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 	sender, err := sysutils.DecodeJSONBody[common.NotificationSenderRequest](r)
 	if err != nil {
@@ -86,7 +88,7 @@ func (h *messageNotificationSenderHandler) HandleSenderCreateRequest(w http.Resp
 		return
 	}
 
-	createdSender, svcErr := h.mgtService.CreateSender(*senderDTO)
+	createdSender, svcErr := h.mgtService.CreateSender(ctx, *senderDTO)
 	if svcErr != nil {
 		if svcErr.Code == ErrorDuplicateSenderName.Code {
 			errResp := apierror.ErrorResponse{
@@ -115,13 +117,14 @@ func (h *messageNotificationSenderHandler) HandleSenderCreateRequest(w http.Resp
 
 // HandleSenderGetRequest handles the request to get a message notification sender by ID
 func (h *messageNotificationSenderHandler) HandleSenderGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 	id := r.PathValue("id")
 	if !h.validateSenderID(w, id) {
 		return
 	}
 
-	sender, svcErr := h.mgtService.GetSender(id)
+	sender, svcErr := h.mgtService.GetSender(ctx, id)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return
@@ -148,6 +151,7 @@ func (h *messageNotificationSenderHandler) HandleSenderGetRequest(w http.Respons
 
 // HandleSenderUpdateRequest handles the request to update a message notification sender
 func (h *messageNotificationSenderHandler) HandleSenderUpdateRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 	id := r.PathValue("id")
 	if !h.validateSenderID(w, id) {
@@ -167,7 +171,7 @@ func (h *messageNotificationSenderHandler) HandleSenderUpdateRequest(w http.Resp
 		return
 	}
 
-	updatedSender, svcErr := h.mgtService.UpdateSender(id, *senderDTO)
+	updatedSender, svcErr := h.mgtService.UpdateSender(ctx, id, *senderDTO)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return
@@ -185,12 +189,13 @@ func (h *messageNotificationSenderHandler) HandleSenderUpdateRequest(w http.Resp
 
 // HandleSenderDeleteRequest handles the request to delete a message notification sender
 func (h *messageNotificationSenderHandler) HandleSenderDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
 	if !h.validateSenderID(w, id) {
 		return
 	}
 
-	svcErr := h.mgtService.DeleteSender(id)
+	svcErr := h.mgtService.DeleteSender(ctx, id)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return
@@ -201,6 +206,7 @@ func (h *messageNotificationSenderHandler) HandleSenderDeleteRequest(w http.Resp
 
 // HandleOTPSendRequest handles the request to send an OTP.
 func (h *messageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	request, err := sysutils.DecodeJSONBody[common.SendOTPRequest](r)
 	if err != nil {
 		h.handleError(w, &ErrorInvalidRequestFormat, "Failed to parse request body: "+err.Error())
@@ -208,7 +214,7 @@ func (h *messageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseW
 	}
 
 	otpDTO := common.SendOTPDTO(*request)
-	resultDTO, svcErr := h.otpService.SendOTP(otpDTO)
+	resultDTO, svcErr := h.otpService.SendOTP(ctx, otpDTO)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return
@@ -224,6 +230,7 @@ func (h *messageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseW
 
 // HandleOTPVerifyRequest handles the request to verify an OTP.
 func (h *messageNotificationSenderHandler) HandleOTPVerifyRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	request, err := sysutils.DecodeJSONBody[common.VerifyOTPRequest](r)
 	if err != nil {
 		h.handleError(w, &ErrorInvalidRequestFormat, "Failed to parse request body: "+err.Error())
@@ -231,7 +238,7 @@ func (h *messageNotificationSenderHandler) HandleOTPVerifyRequest(w http.Respons
 	}
 
 	verifyDTO := common.VerifyOTPDTO(*request)
-	resultDTO, svcErr := h.otpService.VerifyOTP(verifyDTO)
+	resultDTO, svcErr := h.otpService.VerifyOTP(ctx, verifyDTO)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return

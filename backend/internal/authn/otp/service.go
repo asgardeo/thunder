@@ -20,6 +20,7 @@
 package otp
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -42,8 +43,9 @@ var supportedChannels = []notifcommon.ChannelType{notifcommon.ChannelTypeSMS}
 // OTPAuthnServiceInterface defines the interface for OTP authentication operations.
 // This is a wrapper over the notification.OTPServiceInterface to perform user authentication.
 type OTPAuthnServiceInterface interface {
-	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (string, *serviceerror.ServiceError)
-	VerifyOTP(sessionToken, otp string) (*userprovider.User, *serviceerror.ServiceError)
+	SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType,
+		recipient string) (string, *serviceerror.ServiceError)
+	VerifyOTP(ctx context.Context, sessionToken, otp string) (*userprovider.User, *serviceerror.ServiceError)
 }
 
 // otpAuthnService is the default implementation of OTPAuthnServiceInterface.
@@ -65,7 +67,7 @@ func newOTPAuthnService(otpSvc notification.OTPServiceInterface,
 }
 
 // SendOTP sends an OTP to the specified recipient using the provided sender.
-func (s *otpAuthnService) SendOTP(senderID string, channel notifcommon.ChannelType,
+func (s *otpAuthnService) SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType,
 	recipient string) (string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Sending OTP for authentication", log.String("recipient", log.MaskString(recipient)),
@@ -80,7 +82,7 @@ func (s *otpAuthnService) SendOTP(senderID string, channel notifcommon.ChannelTy
 		Channel:   string(channel),
 		Recipient: recipient,
 	}
-	result, svcErr := s.otpService.SendOTP(otpData)
+	result, svcErr := s.otpService.SendOTP(ctx, otpData)
 	if svcErr != nil {
 		return "", s.handleOTPServiceError(svcErr, false, logger)
 	}
@@ -90,7 +92,8 @@ func (s *otpAuthnService) SendOTP(senderID string, channel notifcommon.ChannelTy
 }
 
 // VerifyOTP verifies the provided OTP against the session token and returns the authenticated user.
-func (s *otpAuthnService) VerifyOTP(sessionToken, otp string) (*userprovider.User, *serviceerror.ServiceError) {
+func (s *otpAuthnService) VerifyOTP(ctx context.Context, sessionToken,
+	otp string) (*userprovider.User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
@@ -102,7 +105,7 @@ func (s *otpAuthnService) VerifyOTP(sessionToken, otp string) (*userprovider.Use
 		SessionToken: sessionToken,
 		OTPCode:      otp,
 	}
-	result, svcErr := s.otpService.VerifyOTP(verifyData)
+	result, svcErr := s.otpService.VerifyOTP(ctx, verifyData)
 	if svcErr != nil {
 		return nil, s.handleOTPServiceError(svcErr, true, logger)
 	}

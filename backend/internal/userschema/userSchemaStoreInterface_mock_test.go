@@ -66,14 +66,19 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) CreateUserSchema(ctx interface{
 	return &userSchemaStoreInterfaceMock_CreateUserSchema_Call{Call: _e.mock.On("CreateUserSchema", ctx, userSchema)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) Run(run func(userSchema UserSchema)) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
+func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) Run(run func(ctx context.Context, userSchema UserSchema)) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 UserSchema
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(UserSchema)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 UserSchema
+		if args[1] != nil {
+			arg1 = args[1].(UserSchema)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -84,7 +89,7 @@ func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) Return(err error) 
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) RunAndReturn(run func(userSchema UserSchema) error) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
+func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) RunAndReturn(run func(ctx context.Context, userSchema UserSchema) error) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -118,14 +123,19 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) DeleteUserSchemaByID(ctx interf
 	return &userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call{Call: _e.mock.On("DeleteUserSchemaByID", ctx, schemaID)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) Run(run func(schemaID string)) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
+func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) Run(run func(ctx context.Context, schemaID string)) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -136,7 +146,7 @@ func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) Return(err err
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) RunAndReturn(run func(schemaID string) error) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
+func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) RunAndReturn(run func(ctx context.Context, schemaID string) error) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -179,14 +189,19 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaByID(ctx interface
 	return &userSchemaStoreInterfaceMock_GetUserSchemaByID_Call{Call: _e.mock.On("GetUserSchemaByID", ctx, schemaID)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) Run(run func(schemaID string)) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) Run(run func(ctx context.Context, schemaID string)) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -197,7 +212,7 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) Return(userSchema
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) RunAndReturn(run func(schemaID string) (UserSchema, error)) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) RunAndReturn(run func(ctx context.Context, schemaID string) (UserSchema, error)) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -240,14 +255,19 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaByName(ctx interfa
 	return &userSchemaStoreInterfaceMock_GetUserSchemaByName_Call{Call: _e.mock.On("GetUserSchemaByName", ctx, name)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) Run(run func(name string)) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) Run(run func(ctx context.Context, name string)) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -258,7 +278,7 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) Return(userSche
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) RunAndReturn(run func(name string) (UserSchema, error)) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) RunAndReturn(run func(ctx context.Context, name string) (UserSchema, error)) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -304,19 +324,24 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaList(ctx interface
 	return &userSchemaStoreInterfaceMock_GetUserSchemaList_Call{Call: _e.mock.On("GetUserSchemaList", ctx, limit, offset)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) Run(run func(limit int, offset int)) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) Run(run func(ctx context.Context, limit int, offset int)) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 int
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(int)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 int
 		if args[1] != nil {
 			arg1 = args[1].(int)
 		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -327,7 +352,7 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) Return(userSchema
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) RunAndReturn(run func(limit int, offset int) ([]UserSchemaListItem, error)) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int) ([]UserSchemaListItem, error)) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -369,9 +394,15 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaListCount(ctx inte
 	return &userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call{Call: _e.mock.On("GetUserSchemaListCount", ctx)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) Run(run func()) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) Run(run func(ctx context.Context)) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -381,7 +412,7 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) Return(n int
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) RunAndReturn(run func() (int, error)) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) RunAndReturn(run func(ctx context.Context) (int, error)) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -416,19 +447,24 @@ func (_e *userSchemaStoreInterfaceMock_Expecter) UpdateUserSchemaByID(ctx interf
 	return &userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call{Call: _e.mock.On("UpdateUserSchemaByID", ctx, schemaID, userSchema)}
 }
 
-func (_c *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call) Run(run func(schemaID string, userSchema UserSchema)) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {
+func (_c *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call) Run(run func(ctx context.Context, schemaID string, userSchema UserSchema)) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 UserSchema
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(UserSchema)
+			arg1 = args[1].(string)
+		}
+		var arg2 UserSchema
+		if args[2] != nil {
+			arg2 = args[2].(UserSchema)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -439,7 +475,7 @@ func (_c *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call) Return(err err
 	return _c
 }
 
-func (_c *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call) RunAndReturn(run func(schemaID string, userSchema UserSchema) error) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {
+func (_c *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call) RunAndReturn(run func(ctx context.Context, schemaID string, userSchema UserSchema) error) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
