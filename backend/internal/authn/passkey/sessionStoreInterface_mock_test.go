@@ -7,7 +7,6 @@ package passkey
 import (
 	"time"
 
-	"github.com/go-webauthn/webauthn/webauthn"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,50 +35,6 @@ type sessionStoreInterfaceMock_Expecter struct {
 
 func (_m *sessionStoreInterfaceMock) EXPECT() *sessionStoreInterfaceMock_Expecter {
 	return &sessionStoreInterfaceMock_Expecter{mock: &_m.Mock}
-}
-
-// deleteExpiredSessions provides a mock function for the type sessionStoreInterfaceMock
-func (_mock *sessionStoreInterfaceMock) deleteExpiredSessions() error {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for deleteExpiredSessions")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func() error); ok {
-		r0 = returnFunc()
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// sessionStoreInterfaceMock_deleteExpiredSessions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'deleteExpiredSessions'
-type sessionStoreInterfaceMock_deleteExpiredSessions_Call struct {
-	*mock.Call
-}
-
-// deleteExpiredSessions is a helper method to define mock.On call
-func (_e *sessionStoreInterfaceMock_Expecter) deleteExpiredSessions() *sessionStoreInterfaceMock_deleteExpiredSessions_Call {
-	return &sessionStoreInterfaceMock_deleteExpiredSessions_Call{Call: _e.mock.On("deleteExpiredSessions")}
-}
-
-func (_c *sessionStoreInterfaceMock_deleteExpiredSessions_Call) Run(run func()) *sessionStoreInterfaceMock_deleteExpiredSessions_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *sessionStoreInterfaceMock_deleteExpiredSessions_Call) Return(err error) *sessionStoreInterfaceMock_deleteExpiredSessions_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *sessionStoreInterfaceMock_deleteExpiredSessions_Call) RunAndReturn(run func() error) *sessionStoreInterfaceMock_deleteExpiredSessions_Call {
-	_c.Call.Return(run)
-	return _c
 }
 
 // deleteSession provides a mock function for the type sessionStoreInterfaceMock
@@ -134,25 +89,25 @@ func (_c *sessionStoreInterfaceMock_deleteSession_Call) RunAndReturn(run func(se
 }
 
 // retrieveSession provides a mock function for the type sessionStoreInterfaceMock
-func (_mock *sessionStoreInterfaceMock) retrieveSession(sessionKey string) (*webauthn.SessionData, string, string, error) {
+func (_mock *sessionStoreInterfaceMock) retrieveSession(sessionKey string) (*sessionData, string, string, error) {
 	ret := _mock.Called(sessionKey)
 
 	if len(ret) == 0 {
 		panic("no return value specified for retrieveSession")
 	}
 
-	var r0 *webauthn.SessionData
+	var r0 *sessionData
 	var r1 string
 	var r2 string
 	var r3 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*webauthn.SessionData, string, string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*sessionData, string, string, error)); ok {
 		return returnFunc(sessionKey)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *webauthn.SessionData); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *sessionData); ok {
 		r0 = returnFunc(sessionKey)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*webauthn.SessionData)
+			r0 = ret.Get(0).(*sessionData)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) string); ok {
@@ -197,27 +152,27 @@ func (_c *sessionStoreInterfaceMock_retrieveSession_Call) Run(run func(sessionKe
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_retrieveSession_Call) Return(v *webauthn.SessionData, s string, s1 string, err error) *sessionStoreInterfaceMock_retrieveSession_Call {
+func (_c *sessionStoreInterfaceMock_retrieveSession_Call) Return(v *sessionData, s string, s1 string, err error) *sessionStoreInterfaceMock_retrieveSession_Call {
 	_c.Call.Return(v, s, s1, err)
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_retrieveSession_Call) RunAndReturn(run func(sessionKey string) (*webauthn.SessionData, string, string, error)) *sessionStoreInterfaceMock_retrieveSession_Call {
+func (_c *sessionStoreInterfaceMock_retrieveSession_Call) RunAndReturn(run func(sessionKey string) (*sessionData, string, string, error)) *sessionStoreInterfaceMock_retrieveSession_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // storeSession provides a mock function for the type sessionStoreInterfaceMock
-func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, userID string, relyingPartyID string, sessionData *webauthn.SessionData, expiryTime time.Time) error {
-	ret := _mock.Called(sessionKey, userID, relyingPartyID, sessionData, expiryTime)
+func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, userID string, relyingPartyID string, sd *sessionData, expiryTime time.Time) error {
+	ret := _mock.Called(sessionKey, userID, relyingPartyID, sd, expiryTime)
 
 	if len(ret) == 0 {
 		panic("no return value specified for storeSession")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, *webauthn.SessionData, time.Time) error); ok {
-		r0 = returnFunc(sessionKey, userID, relyingPartyID, sessionData, expiryTime)
+	if returnFunc, ok := ret.Get(0).(func(string, string, string, *sessionData, time.Time) error); ok {
+		r0 = returnFunc(sessionKey, userID, relyingPartyID, sd, expiryTime)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -233,13 +188,13 @@ type sessionStoreInterfaceMock_storeSession_Call struct {
 //   - sessionKey string
 //   - userID string
 //   - relyingPartyID string
-//   - sessionData *webauthn.SessionData
+//   - sessionData *sessionData
 //   - expiryTime time.Time
 func (_e *sessionStoreInterfaceMock_Expecter) storeSession(sessionKey interface{}, userID interface{}, relyingPartyID interface{}, sessionData interface{}, expiryTime interface{}) *sessionStoreInterfaceMock_storeSession_Call {
 	return &sessionStoreInterfaceMock_storeSession_Call{Call: _e.mock.On("storeSession", sessionKey, userID, relyingPartyID, sessionData, expiryTime)}
 }
 
-func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey string, userID string, relyingPartyID string, sessionData *webauthn.SessionData, expiryTime time.Time)) *sessionStoreInterfaceMock_storeSession_Call {
+func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey string, userID string, relyingPartyID string, sessionData *sessionData, expiryTime time.Time)) *sessionStoreInterfaceMock_storeSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -253,9 +208,9 @@ func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey s
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		var arg3 *webauthn.SessionData
+		var arg3 *sessionData
 		if args[3] != nil {
-			arg3 = args[3].(*webauthn.SessionData)
+			arg3 = args[3].(*sessionData)
 		}
 		var arg4 time.Time
 		if args[4] != nil {
@@ -277,7 +232,7 @@ func (_c *sessionStoreInterfaceMock_storeSession_Call) Return(err error) *sessio
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_storeSession_Call) RunAndReturn(run func(sessionKey string, userID string, relyingPartyID string, sessionData *webauthn.SessionData, expiryTime time.Time) error) *sessionStoreInterfaceMock_storeSession_Call {
+func (_c *sessionStoreInterfaceMock_storeSession_Call) RunAndReturn(run func(sessionKey string, userID string, relyingPartyID string, sessionData *sessionData, expiryTime time.Time) error) *sessionStoreInterfaceMock_storeSession_Call {
 	_c.Call.Return(run)
 	return _c
 }

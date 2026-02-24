@@ -107,6 +107,128 @@ var (
 	}
 )
 
+// appendOUIDsINClause appends an "AND OU_ID IN (...)" condition to a query for the given OU IDs.
+// PostgreSQL uses numbered placeholders ($N, $N+1, ...) and SQLite uses ? placeholders.
+func appendOUIDsINClause(
+	query model.DBQuery, args []interface{}, ouIDs []string,
+) (model.DBQuery, []interface{}) {
+	if len(ouIDs) == 0 {
+		// No accessible OUs: append an always-false predicate so the query returns no rows.
+		denyClause := " AND 1=0"
+		return model.DBQuery{
+			ID:            query.ID,
+			Query:         query.Query + denyClause,
+			PostgresQuery: query.PostgresQuery + denyClause,
+			SQLiteQuery:   query.SQLiteQuery + denyClause,
+		}, args
+	}
+	startIdx := len(args) + 1
+
+	pgPlaceholders := make([]string, len(ouIDs))
+	for i := range ouIDs {
+		pgPlaceholders[i] = fmt.Sprintf("$%d", startIdx+i)
+	}
+	inClausePostgres := fmt.Sprintf(" AND OU_ID IN (%s)", strings.Join(pgPlaceholders, ", "))
+
+	sqlitePlaceholders := make([]string, len(ouIDs))
+	for i := range ouIDs {
+		sqlitePlaceholders[i] = "?"
+	}
+	inClauseSQLite := fmt.Sprintf(" AND OU_ID IN (%s)", strings.Join(sqlitePlaceholders, ", "))
+
+	for _, id := range ouIDs {
+		args = append(args, id)
+	}
+
+	return model.DBQuery{
+		ID:            query.ID,
+		Query:         query.Query + inClausePostgres,
+		PostgresQuery: query.PostgresQuery + inClausePostgres,
+		SQLiteQuery:   query.SQLiteQuery + inClauseSQLite,
+	}, args
+}
+
+// buildUserCountQueryByOUIDs constructs a count query scoped to a list of organization unit IDs.
+func buildUserCountQueryByOUIDs(
+	ouIDs []string, filters map[string]interface{}, deploymentID string,
+) (model.DBQuery, []interface{}, error) {
+	queryID := "ASQ-USER_MGT-19"
+	baseQuery := `SELECT COUNT(*) as total FROM "USER" WHERE 1=1`
+	columnName := AttributesColumn
+
+	var query model.DBQuery
+	var args []interface{}
+
+	if len(filters) > 0 {
+		var err error
+		query, args, err = utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
+		if err != nil {
+			return model.DBQuery{}, nil, err
+		}
+	} else {
+		query = model.DBQuery{
+			ID:            queryID,
+			Query:         baseQuery,
+			PostgresQuery: baseQuery,
+			SQLiteQuery:   baseQuery,
+		}
+		args = []interface{}{}
+	}
+
+	query, args = appendOUIDsINClause(query, args, ouIDs)
+	query, args = utils.AppendDeploymentIDToFilterQuery(query, args, deploymentID)
+	return query, args, nil
+}
+
+// buildUserListQueryByOUIDs constructs a paginated list query scoped to a list of organization unit IDs.
+func buildUserListQueryByOUIDs(
+	ouIDs []string, filters map[string]interface{}, limit, offset int, deploymentID string,
+) (model.DBQuery, []interface{}, error) {
+	queryID := "ASQ-USER_MGT-20"
+	baseQuery := `SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE 1=1`
+	columnName := AttributesColumn
+
+	var query model.DBQuery
+	var args []interface{}
+
+	if len(filters) > 0 {
+		var err error
+		query, args, err = utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
+		if err != nil {
+			return model.DBQuery{}, nil, err
+		}
+	} else {
+		query = model.DBQuery{
+			ID:            queryID,
+			Query:         baseQuery,
+			PostgresQuery: baseQuery,
+			SQLiteQuery:   baseQuery,
+		}
+		args = []interface{}{}
+	}
+
+	query, args = appendOUIDsINClause(query, args, ouIDs)
+	query, args = utils.AppendDeploymentIDToFilterQuery(query, args, deploymentID)
+
+	postgresQuery, err := buildPaginatedQuery(query.PostgresQuery, len(args), "$")
+	if err != nil {
+		return model.DBQuery{}, nil, err
+	}
+
+	sqliteQuery, err := buildPaginatedQuery(query.SQLiteQuery, len(args), "?")
+	if err != nil {
+		return model.DBQuery{}, nil, err
+	}
+
+	args = append(args, limit, offset)
+	return model.DBQuery{
+		ID:            queryID,
+		Query:         postgresQuery,
+		PostgresQuery: postgresQuery,
+		SQLiteQuery:   sqliteQuery,
+	}, args, nil
+}
+
 // buildIdentifyQuery constructs a query to identify a user based on the provided filters.
 func buildIdentifyQuery(filters map[string]interface{}, deploymentID string) (model.DBQuery, []interface{}, error) {
 	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE 1=1"

@@ -565,3 +565,47 @@ func TestHandleUserDeleteRequest_ErrorCases(t *testing.T) {
 		require.Equal(t, http.StatusInternalServerError, rr.Code)
 	})
 }
+
+func TestHandleError_ErrorUnauthorized_Returns403(t *testing.T) {
+	tests := []struct {
+		name     string
+		svcErr   *serviceerror.ServiceError
+		wantCode int
+	}{
+		{
+			name:     "UnauthorizedError_ReturnsForbidden",
+			svcErr:   &serviceerror.ErrorUnauthorized,
+			wantCode: http.StatusForbidden,
+		},
+		{
+			name:     "AuthenticationFailedError_ReturnsUnauthorized",
+			svcErr:   &ErrorAuthenticationFailed,
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:     "InternalServerError_Returns500",
+			svcErr:   &ErrorInternalServerError,
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "UserNotFoundError_Returns404",
+			svcErr:   &ErrorUserNotFound,
+			wantCode: http.StatusNotFound,
+		},
+	}
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	handler := newUserHandler(mockSvc)
+	userID := "u1"
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc.On("GetUser", mock.Anything, userID).Return(nil, tc.svcErr).Once()
+			req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
+			req.SetPathValue("id", userID)
+			rr := httptest.NewRecorder()
+			handler.HandleUserGetRequest(rr, req)
+			require.Equal(t, tc.wantCode, rr.Code)
+		})
+	}
+}
