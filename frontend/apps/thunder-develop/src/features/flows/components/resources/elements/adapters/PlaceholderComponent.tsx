@@ -18,7 +18,8 @@
 
 import {type PropsWithChildren, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {isI18nPattern as checkIsI18nPattern, resolveI18nValue} from '@/features/flows/utils/i18nPatternUtils';
+import {isI18nPattern as checkIsI18nPattern, isMetaPattern, resolveI18nValue} from '@/features/flows/utils/i18nPatternUtils';
+import DynamicValueSyntax from '../../../resource-property-panel/DynamicValueSyntax';
 import './PlaceholderComponent.scss';
 
 /**
@@ -49,6 +50,10 @@ function PlaceholderComponent({value, children = null}: PropsWithChildren<Placeh
 
   if (isI18nPattern) {
     return <span>{displayValue}</span>;
+  }
+
+  if (isMetaPattern(value)) {
+    return <DynamicValueSyntax value={value} />;
   }
 
   if (children) {

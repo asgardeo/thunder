@@ -30,6 +30,8 @@ import TypographyAdapter from './adapters/TypographyAdapter';
 import DividerAdapter from './adapters/DividerAdapter';
 import RichTextAdapter from './adapters/RichTextAdapter';
 import ImageAdapter from './adapters/ImageAdapter';
+import IconAdapter from './adapters/IconAdapter';
+import StackAdapter from './adapters/StackAdapter';
 import CaptchaAdapter from './adapters/CaptchaAdapter';
 import ResendButtonAdapter from './adapters/ResendButtonAdapter';
 
@@ -135,6 +137,19 @@ function CommonElementFactory({
   }
   if (resource.type === ElementTypes.Image) {
     return <ImageAdapter resource={resource} />;
+  }
+  if (resource.type === ElementTypes.Icon) {
+    return <IconAdapter resource={resource} />;
+  }
+  if (resource.type === ElementTypes.Stack) {
+    return (
+      <StackAdapter
+        stepId={stepId}
+        resource={resource}
+        availableElements={availableElements}
+        onAddElementToForm={onAddElementToForm}
+      />
+    );
   }
   if (resource.type === ElementTypes.Captcha) {
     return <CaptchaAdapter resource={resource} />;

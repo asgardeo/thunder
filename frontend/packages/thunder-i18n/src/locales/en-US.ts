@@ -1471,8 +1471,21 @@ const translations = {
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
     'core.elements.textPropertyField.tooltip.configureTranslation': 'Configure translation',
+    'core.elements.textPropertyField.tooltip.configureDynamicValue': 'Insert dynamic value',
     'core.elements.textPropertyField.i18nKey': 'Translation Key',
     'core.elements.textPropertyField.resolvedValue': 'Resolved Value',
+
+    // Elements - dynamic value popover
+    'core.elements.textPropertyField.dynamicValuePopover.title': 'Dynamic Value for {{field}}',
+    'core.elements.textPropertyField.dynamicValuePopover.tabs.translation': 'Translation',
+    'core.elements.textPropertyField.dynamicValuePopover.tabs.variables': 'Variables',
+
+    // Elements - meta card
+    'core.elements.textPropertyField.metaCard.title': 'Variable for {{field}}',
+    'core.elements.textPropertyField.metaCard.variablePath': 'Variable Path',
+    'core.elements.textPropertyField.metaCard.variablePathPlaceholder': 'e.g. application.name',
+    'core.elements.textPropertyField.metaCard.variablePathHint': 'Select a common variable or type a custom path',
+    'core.elements.textPropertyField.metaCard.formattedValue': 'Formatted Value',
 
     // Elements - i18n card
     'core.elements.textPropertyField.i18nCard.title': 'Translation for {{field}}',

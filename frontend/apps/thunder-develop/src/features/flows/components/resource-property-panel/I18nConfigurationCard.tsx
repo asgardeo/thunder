@@ -18,7 +18,7 @@
 
 import lowerCase from 'lodash-es/lowerCase';
 import startCase from 'lodash-es/startCase';
-import React, {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useMemo, useState} from 'react';
+import React, {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   Alert,
@@ -53,6 +53,17 @@ export interface LanguageTextFieldProps {
 }
 
 /**
+ * Props interface of {@link I18nConfigurationCardContent}
+ */
+export interface I18nConfigurationCardContentProps {
+  propertyKey: string;
+  i18nKey: string;
+  isActive: boolean;
+  onChange: (i18nKey: string) => void;
+  onCreateModeChange?: (isCreateMode: boolean) => void;
+}
+
+/**
  * Props interface of {@link I18nConfigurationCard}
  */
 export interface I18nConfigurationCardPropsInterface {
@@ -75,18 +86,16 @@ const DEFAULT_NAMESPACE = 'flowI18n';
 const DEFAULT_LANGUAGE = 'en-US';
 
 /**
- * I18n configuration floating card component.
- * Provides a dropdown to select i18n keys and displays the resolved translation value.
- * Also allows creating new translations via the i18n API.
+ * Inner content for i18n configuration (no Popover shell).
+ * Used both in standalone I18nConfigurationCard and embedded in DynamicValuePopover tabs.
  */
-function I18nConfigurationCard({
-  open,
-  anchorEl,
+export function I18nConfigurationCardContent({
   propertyKey,
-  onClose,
-  onChange,
   i18nKey: selectedI18nKey,
-}: I18nConfigurationCardPropsInterface): ReactElement {
+  isActive,
+  onChange,
+  onCreateModeChange,
+}: I18nConfigurationCardContentProps): ReactElement {
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
   const serverUrl = getServerUrl();
@@ -102,19 +111,19 @@ function I18nConfigurationCard({
     serverUrl,
     language: DEFAULT_LANGUAGE,
     namespace: DEFAULT_NAMESPACE,
-    enabled: open,
+    enabled: isActive,
   });
 
-  // State for create mode
   const [isCreateMode, setIsCreateMode] = useState<boolean>(false);
   const [newKey, setNewKey] = useState<string>('');
   const [newTranslationValue, setNewTranslationValue] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>(DEFAULT_LANGUAGE);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Get the list of available i18n keys from the flowI18n namespace.
-   */
+  useEffect(() => {
+    onCreateModeChange?.(isCreateMode);
+  }, [isCreateMode, onCreateModeChange]);
+
   const availableI18nKeys: string[] = useMemo(() => {
     if (!translationsData?.translations) {
       return [];
@@ -129,15 +138,11 @@ function I18nConfigurationCard({
     return keys;
   }, [translationsData]);
 
-  /**
-   * Get the resolved value for the selected i18n key.
-   */
   const resolvedValue: string = useMemo(() => {
     if (!selectedI18nKey || !i18nText) {
       return '';
     }
 
-    // Search for the key across all screens
     let foundValue = '';
 
     Object.values(i18nText).some((screenTexts: Record<string, string>) => {
@@ -151,9 +156,6 @@ function I18nConfigurationCard({
     return foundValue;
   }, [selectedI18nKey, i18nText]);
 
-  /**
-   * Available languages from the API or default list.
-   */
   const availableLanguages: string[] = useMemo(() => {
     if (languagesData?.languages && languagesData.languages.length > 0) {
       return languagesData.languages;
@@ -161,9 +163,6 @@ function I18nConfigurationCard({
     return [DEFAULT_LANGUAGE];
   }, [languagesData]);
 
-  /**
-   * Reset create mode form.
-   */
   const resetCreateForm = useCallback(() => {
     setNewKey('');
     setNewTranslationValue('');
@@ -171,25 +170,16 @@ function I18nConfigurationCard({
     setError(null);
   }, []);
 
-  /**
-   * Handle entering create mode.
-   */
   const handleEnterCreateMode = useCallback(() => {
     setIsCreateMode(true);
     resetCreateForm();
   }, [resetCreateForm]);
 
-  /**
-   * Handle exiting create mode.
-   */
   const handleExitCreateMode = useCallback(() => {
     setIsCreateMode(false);
     resetCreateForm();
   }, [resetCreateForm]);
 
-  /**
-   * Handle creating a new translation.
-   */
   const handleCreateTranslation = useCallback(() => {
     if (!newKey.trim()) {
       setError(t('common:validation.required', {field: t('flows:core.elements.textPropertyField.i18nCard.i18nKey')}));
@@ -203,7 +193,6 @@ function I18nConfigurationCard({
       return;
     }
 
-    // Validate key format (alphanumeric, dots, underscores, hyphens)
     const keyPattern = /^[a-zA-Z0-9._-]+$/;
     if (!keyPattern.test(newKey)) {
       setError(t('flows:core.elements.textPropertyField.i18nCard.invalidKeyFormat'));
@@ -219,7 +208,6 @@ function I18nConfigurationCard({
       },
       {
         onSuccess: () => {
-          // On success, use the new key with namespace prefix and close create mode
           onChange(`${DEFAULT_NAMESPACE}:${newKey}`);
           handleExitCreateMode();
         },
@@ -230,26 +218,12 @@ function I18nConfigurationCard({
     );
   }, [newKey, newTranslationValue, selectedLanguage, updateTranslation, onChange, handleExitCreateMode, t]);
 
-  /**
-   * Handle close and reset state.
-   */
-  const handleClose = useCallback(() => {
-    handleExitCreateMode();
-    onClose();
-  }, [handleExitCreateMode, onClose]);
-
-  /**
-   * Renders the loading state content.
-   */
   const renderLoadingContent = (): ReactElement => (
     <Box sx={{display: 'flex', justifyContent: 'center', p: 2}}>
       <CircularProgress size={20} />
     </Box>
   );
 
-  /**
-   * Renders the create mode content.
-   */
   const renderCreateModeContent = (): ReactElement => (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
       {error && (
@@ -323,9 +297,6 @@ function I18nConfigurationCard({
     </Box>
   );
 
-  /**
-   * Renders the select mode content.
-   */
   const renderSelectModeContent = (): ReactElement => (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
       <div>
@@ -386,20 +357,37 @@ function I18nConfigurationCard({
     </Box>
   );
 
-  /**
-   * Renders the card content based on the current state.
-   */
-  const renderCardContent = (): ReactElement => {
-    if (i18nTextLoading || translationsLoading) {
-      return renderLoadingContent();
-    }
+  if (i18nTextLoading || translationsLoading) {
+    return renderLoadingContent();
+  }
 
-    if (isCreateMode) {
-      return renderCreateModeContent();
-    }
+  if (isCreateMode) {
+    return renderCreateModeContent();
+  }
 
-    return renderSelectModeContent();
-  };
+  return renderSelectModeContent();
+}
+
+/**
+ * I18n configuration floating card component.
+ * Provides a dropdown to select i18n keys and displays the resolved translation value.
+ * Also allows creating new translations via the i18n API.
+ */
+function I18nConfigurationCard({
+  open,
+  anchorEl,
+  propertyKey,
+  onClose,
+  onChange,
+  i18nKey: selectedI18nKey,
+}: I18nConfigurationCardPropsInterface): ReactElement {
+  const {t} = useTranslation();
+  const [isCreateMode, setIsCreateMode] = useState<boolean>(false);
+
+  const handleClose = useCallback(() => {
+    setIsCreateMode(false);
+    onClose();
+  }, [onClose]);
 
   return (
     <Popover
@@ -434,7 +422,15 @@ function I18nConfigurationCard({
             </IconButton>
           }
         />
-        <CardContent>{renderCardContent()}</CardContent>
+        <CardContent>
+          <I18nConfigurationCardContent
+            propertyKey={propertyKey}
+            i18nKey={selectedI18nKey}
+            isActive={open}
+            onChange={onChange}
+            onCreateModeChange={setIsCreateMode}
+          />
+        </CardContent>
       </Card>
     </Popover>
   );
