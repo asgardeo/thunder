@@ -545,15 +545,15 @@ export async function checkKeyboardNavigation(
     if (focusedElement) {
       const { selector, ...elementInfo } = focusedElement;
 
-      // Tab-trap detection: if we've seen all current elements before
-      // and the cycle length is less than the expected count, it's a trap
-      if (seenSelectors.has(selector) && focusedElements.length > 0 && focusedElements.length < expectedFocusableCount) {
+      // Tab-trap detection: as soon as a selector repeats we stop the loop
+      // and mark a trap; do not add the duplicate to focusedElements.
+      if (seenSelectors.has(selector)) {
         tabTrapDetected = true;
         console.warn(
-          `🔄 Tab-trap detected! Focus is cycling through ${focusedElements.length} element(s) ` +
-            `but ${expectedFocusableCount} interactive elements exist on the page.`,
+          `🔄 Tab-trap detected! selector ${selector} reappeared after ${
+            focusedElements.length
+          } focusable element(s).`,
         );
-
         break;
       }
 
