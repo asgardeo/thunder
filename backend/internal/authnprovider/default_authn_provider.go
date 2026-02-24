@@ -43,15 +43,7 @@ func (p *defaultAuthnProvider) Authenticate(
 	identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata,
 ) (*AuthnResult, *AuthnProviderError) {
-	request := make(user.AuthenticateUserRequest)
-	for k, v := range identifiers {
-		request[k] = v
-	}
-	for k, v := range credentials {
-		request[k] = v
-	}
-
-	authResponse, authErr := p.userSvc.AuthenticateUser(context.Background(), request)
+	authResponse, authErr := p.userSvc.AuthenticateUser(context.Background(), identifiers, credentials)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			if authErr.Code == user.ErrorUserNotFound.Code {

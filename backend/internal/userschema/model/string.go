@@ -27,14 +27,19 @@ import (
 )
 
 type str struct {
-	required bool
-	unique   bool
-	enum     map[string]struct{}
-	pattern  *regexp.Regexp
+	required   bool
+	unique     bool
+	credential bool
+	enum       map[string]struct{}
+	pattern    *regexp.Regexp
 }
 
 func (p *str) isRequired() bool {
 	return p.required
+}
+
+func (p *str) isCredential() bool {
+	return p.credential
 }
 
 func (p *str) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
@@ -81,12 +86,13 @@ func (p *str) validateUniqueness(
 
 func compileStringProperty(propMap map[string]json.RawMessage) (property, error) {
 	allowedFields := map[string]struct{}{
-		"type":     {},
-		"required": {},
-		"unique":   {},
-		"enum":     {},
-		"regex":    {},
-		"pattern":  {},
+		"type":       {},
+		"required":   {},
+		"unique":     {},
+		"credential": {},
+		"enum":       {},
+		"regex":      {},
+		"pattern":    {},
 	}
 
 	for field := range propMap {
@@ -106,6 +112,12 @@ func compileStringProperty(propMap map[string]json.RawMessage) (property, error)
 	if raw, exists := propMap["unique"]; exists {
 		if err := json.Unmarshal(raw, &prop.unique); err != nil {
 			return nil, fmt.Errorf("'unique' field must be a boolean")
+		}
+	}
+
+	if raw, exists := propMap["credential"]; exists {
+		if err := json.Unmarshal(raw, &prop.credential); err != nil {
+			return nil, fmt.Errorf("'credential' field must be a boolean")
 		}
 	}
 

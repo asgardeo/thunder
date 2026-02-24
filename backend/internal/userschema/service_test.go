@@ -22,9 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -636,4 +638,122 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 			require.Contains(t, err.ErrorDescription, tc.expectedError)
 		})
 	}
+}
+
+type GetCredentialAttributesTestSuite struct {
+	suite.Suite
+}
+
+func TestGetCredentialAttributesTestSuite(t *testing.T) {
+	suite.Run(t, new(GetCredentialAttributesTestSuite))
+}
+
+func (s *GetCredentialAttributesTestSuite) TestReturnsCredentialFieldNames() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "customer").
+		Return(UserSchema{
+			Schema: json.RawMessage(
+				`{"password":{"type":"string","credential":true},` +
+					`"apiKey":{"type":"string","credential":true},` +
+					`"email":{"type":"string","unique":true}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), "customer",
+	)
+
+	s.Require().Nil(svcErr)
+	sort.Strings(fields)
+	s.Require().Equal([]string{"apiKey", "password"}, fields)
+}
+
+func (s *GetCredentialAttributesTestSuite) TestNoCredentials_ReturnsEmpty() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "customer").
+		Return(UserSchema{
+			Schema: json.RawMessage(
+				`{"email":{"type":"string"},"age":{"type":"number"}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), "customer",
+	)
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(fields)
+}
+
+func (s *GetCredentialAttributesTestSuite) TestSchemaNotFound_ReturnsError() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "unknown").
+		Return(UserSchema{}, ErrUserSchemaNotFound).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), "unknown",
+	)
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
+}
+
+func (s *GetCredentialAttributesTestSuite) TestEmptyUserType_ReturnsError() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), "",
+	)
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
+}
+
+func (s *GetCredentialAttributesTestSuite) TestStoreError_ReturnsInternalError() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "customer").
+		Return(UserSchema{}, errors.New("db failure")).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), "customer",
+	)
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorInternalServerError, *svcErr)
 }

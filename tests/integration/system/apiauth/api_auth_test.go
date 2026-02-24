@@ -76,7 +76,7 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username":  map[string]interface{}{"type": "string"},
-			"password":  map[string]interface{}{"type": "string"},
+			"password":  map[string]interface{}{"type": "string", "credential": true},
 			"email":     map[string]interface{}{"type": "string"},
 			"firstName": map[string]interface{}{"type": "string"},
 			"lastName":  map[string]interface{}{"type": "string"},

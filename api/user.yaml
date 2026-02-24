@@ -991,6 +991,10 @@ paths:
                   type: "string"
                   required: true
                   unique: true
+                password:
+                  type: "string"
+                  required: true
+                  credential: true
                 company:
                   type: "string"
                 role:
@@ -1022,6 +1026,10 @@ paths:
                     type: "string"
                     required: true
                     unique: true
+                  password:
+                    type: "string"
+                    required: true
+                    credential: true
                   company:
                     type: "string"
                   role:
@@ -1106,6 +1114,7 @@ paths:
                       password:
                         type: "string"
                         required: true
+                        credential: true
                         regex: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$"
                       employeeId:
                         type: "number"
@@ -1193,6 +1202,10 @@ paths:
                   type: "string"
                   required: true
                   unique: true
+                password:
+                  type: "string"
+                  required: true
+                  credential: true
                 age:
                   type: "number"
                 mobile:
@@ -1220,6 +1233,10 @@ paths:
                     type: "string"
                     required: true
                     unique: true
+                  password:
+                    type: "string"
+                    required: true
+                    credential: true
                   age:
                     type: "number"
                   mobile:
@@ -1556,12 +1573,12 @@ components:
           additionalProperties:
             oneOf:
               - type: object
-                description: "Leaf property definition (string, number, or boolean type)"
+                description: "Leaf property - string or number"
                 required: [type]
                 properties:
                   type:
                     type: string
-                    enum: ["string", "number", "boolean"]
+                    enum: ["string", "number"]
                     description: "Data type of the property"
                   required:
                     type: boolean
@@ -1571,6 +1588,10 @@ components:
                     type: boolean
                     default: false
                     description: "Whether this property must be unique across all users"
+                  credential:
+                    type: boolean
+                    default: false
+                    description: "Whether this property should be treated as a credential attribute"
                   enum:
                     type: array
                     items:
@@ -1579,6 +1600,19 @@ components:
                   regex:
                     type: string
                     description: "Regular expression pattern for validating the property value"
+                additionalProperties: false
+              - type: object
+                description: "Leaf property - boolean"
+                required: [type]
+                properties:
+                  type:
+                    type: string
+                    enum: ["boolean"]
+                    description: "Data type of the property"
+                  required:
+                    type: boolean
+                    default: false
+                    description: "Whether this attribute must be provided for the user type"
                 additionalProperties: false
               - type: object
                 description: "Object property definition"
@@ -1613,16 +1647,24 @@ components:
                   items:
                     oneOf:
                       - type: object
-                        description: "Array of strings, numbers, or booleans"
+                        description: "Array of strings or numbers"
                         required: [type]
                         properties:
                           type:
                             type: string
-                            enum: ["string", "number", "boolean"]
+                            enum: ["string", "number"]
                           enum:
                             type: array
                             items:
                               type: string
+                        additionalProperties: false
+                      - type: object
+                        description: "Array of booleans"
+                        required: [type]
+                        properties:
+                          type:
+                            type: string
+                            enum: ["boolean"]
                         additionalProperties: false
                       - type: object
                         description: "Array of objects"
@@ -1646,6 +1688,7 @@ components:
             password:
               type: "string"
               required: true
+              credential: true
               regex: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$"
             age:
               type: "number"

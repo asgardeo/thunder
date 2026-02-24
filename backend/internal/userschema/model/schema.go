@@ -41,6 +41,7 @@ const (
 
 type property interface {
 	isRequired() bool
+	isCredential() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
 		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
@@ -49,6 +50,18 @@ type property interface {
 // Schema represents a user schema with a set of properties.
 type Schema struct {
 	properties map[string]property
+}
+
+// GetCredentialAttributes returns the names of top-level properties marked as credentials.
+func (cs *Schema) GetCredentialAttributes() []string {
+	var fields []string
+	for name, prop := range cs.properties {
+		if prop.isCredential() {
+			fields = append(fields, name)
+		}
+	}
+
+	return fields
 }
 
 // Validate validates the user attributes against the schema.

@@ -143,6 +143,11 @@ $userSchemaData = ([ordered]@{
             type = "boolean"
             required = $false
         }
+        password = @{
+            type = "string"
+            required = $true
+            credential = $true
+        }
     }
 } | ConvertTo-Json -Depth 5)
 

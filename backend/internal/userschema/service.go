@@ -59,6 +59,9 @@ type UserSchemaServiceInterface interface {
 		userAttributes json.RawMessage,
 		identifyUser func(map[string]interface{}) (*string, error),
 	) (bool, *serviceerror.ServiceError)
+	GetCredentialAttributes(
+		ctx context.Context, userType string,
+	) ([]string, *serviceerror.ServiceError)
 }
 
 // userSchemaService is the default implementation of the UserSchemaServiceInterface.
@@ -367,6 +370,23 @@ func (us *userSchemaService) ValidateUserUniqueness(
 	}
 
 	return true, nil
+}
+
+// GetCredentialAttributes returns the names of schema properties marked as credentials for a given user type.
+func (us *userSchemaService) GetCredentialAttributes(
+	ctx context.Context, userType string,
+) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	compiledSchema, err := us.getCompiledSchemaForUserType(ctx, userType, logger)
+	if err != nil {
+		if errors.Is(err, ErrUserSchemaNotFound) {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logAndReturnServerError(logger, "Failed to load user schema for credential attributes", err)
+	}
+
+	return compiledSchema.GetCredentialAttributes(), nil
 }
 
 func (us *userSchemaService) getCompiledSchemaForUserType(
