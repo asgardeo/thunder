@@ -133,6 +133,11 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
     "phone_number_verified": {
       "type": "boolean",
       "required": false
+    },
+    "password": {
+      "type": "string",
+      "required": true,
+      "credential": true
     }
   }
 }')

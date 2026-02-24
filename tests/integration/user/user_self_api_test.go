@@ -66,7 +66,7 @@ func (s *SelfUserEndpointsSuite) SetupSuite() {
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string", "required": true, "unique": true},
 			"email":    map[string]interface{}{"type": "string", "required": true, "unique": true},
-			"password": map[string]interface{}{"type": "string"},
+			"password": map[string]interface{}{"type": "string", "credential": true},
 		},
 	}
 	schemaID, err := testutils.CreateUserType(schema)

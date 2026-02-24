@@ -34,6 +34,10 @@ func (p *object) isRequired() bool {
 	return p.required
 }
 
+func (p *object) isCredential() bool {
+	return false
+}
+
 func (p *object) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	valueMap, ok := value.(map[string]interface{})
 	if !ok {

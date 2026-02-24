@@ -51,6 +51,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 				"email": map[string]interface{}{
 					"type": "string",
@@ -65,6 +66,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 				"username": map[string]interface{}{
 					"type": "string",
@@ -79,6 +81,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 				"username": map[string]interface{}{
 					"type": "string",
@@ -99,6 +102,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 				"firstName": map[string]interface{}{
 					"type": "string",

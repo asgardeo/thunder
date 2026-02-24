@@ -110,6 +110,73 @@ func (_c *UserSchemaServiceInterfaceMock_CreateUserSchema_Call) RunAndReturn(run
 	return _c
 }
 
+// GetCredentialAttributes provides a mock function for the type UserSchemaServiceInterfaceMock
+func (_mock *UserSchemaServiceInterfaceMock) GetCredentialAttributes(ctx context.Context, userType string) ([]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCredentialAttributes")
+	}
+
+	var r0 []string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userType)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []string); ok {
+		r0 = returnFunc(ctx, userType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userType)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCredentialAttributes'
+type UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call struct {
+	*mock.Call
+}
+
+// GetCredentialAttributes is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userType string
+func (_e *UserSchemaServiceInterfaceMock_Expecter) GetCredentialAttributes(ctx interface{}, userType interface{}) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
+	return &UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call{Call: _e.mock.On("GetCredentialAttributes", ctx, userType)}
+}
+
+func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) Run(run func(ctx context.Context, userType string)) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(arg0, arg1)
+	})
+	return _c
+}
+
+func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) Return(fields []string, serviceError *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
+	_c.Call.Return(fields, serviceError)
+	return _c
+}
+
+func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) RunAndReturn(run func(ctx context.Context, userType string) ([]string, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteUserSchema provides a mock function for the type UserSchemaServiceInterfaceMock
 func (_mock *UserSchemaServiceInterfaceMock) DeleteUserSchema(ctx context.Context, schemaID string) *serviceerror.ServiceError {
 	ret := _mock.Called(ctx, schemaID)
