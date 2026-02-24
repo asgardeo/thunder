@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/asgardeo/thunder/internal/system/database/model"
 )
 
 const testDeploymentIDForConstants = "test-deployment-id"
@@ -297,4 +299,189 @@ func (suite *StoreConstantsTestSuite) TestBuildUserCountQuery() {
 	suite.Contains(query.PostgresQuery, "SELECT COUNT")
 	suite.Contains(query.PostgresQuery, "WHERE")
 	suite.NotEmpty(args)
+}
+
+// ---------------------------------------------------------------------------
+// appendOUIDsINClause
+// ---------------------------------------------------------------------------
+
+func (suite *StoreConstantsTestSuite) TestAppendOUIDsINClause_EmptyOUIDs() {
+	baseQuery := model.DBQuery{
+		ID:            "Q-0",
+		Query:         `SELECT * FROM "USER" WHERE 1=1`,
+		PostgresQuery: `SELECT * FROM "USER" WHERE 1=1`,
+		SQLiteQuery:   `SELECT * FROM "USER" WHERE 1=1`,
+	}
+	existingArgs := []interface{}{"deploy-id"}
+
+	result, args := appendOUIDsINClause(baseQuery, existingArgs, nil)
+
+	// When ouIDs is empty, a denying predicate (AND 1=0) must be appended so no rows are returned.
+	expectedQuery := model.DBQuery{
+		ID:            "Q-0",
+		Query:         `SELECT * FROM "USER" WHERE 1=1 AND 1=0`,
+		PostgresQuery: `SELECT * FROM "USER" WHERE 1=1 AND 1=0`,
+		SQLiteQuery:   `SELECT * FROM "USER" WHERE 1=1 AND 1=0`,
+	}
+	suite.Equal(expectedQuery, result)
+	suite.Equal(existingArgs, args)
+}
+
+func (suite *StoreConstantsTestSuite) TestAppendOUIDsINClause_SingleOUID() {
+	baseQuery := model.DBQuery{
+		ID:            "Q-1",
+		Query:         `SELECT * FROM "USER" WHERE 1=1`,
+		PostgresQuery: `SELECT * FROM "USER" WHERE 1=1`,
+		SQLiteQuery:   `SELECT * FROM "USER" WHERE 1=1`,
+	}
+	ouIDs := []string{"ou-1"}
+
+	result, args := appendOUIDsINClause(baseQuery, []interface{}{"deploy-id"}, ouIDs)
+
+	suite.Equal("Q-1", result.ID)
+	suite.Contains(result.PostgresQuery, "AND OU_ID IN ($2)")
+	suite.Contains(result.SQLiteQuery, "AND OU_ID IN (?)")
+	suite.Len(args, 2)
+	suite.Equal("deploy-id", args[0])
+	suite.Equal("ou-1", args[1])
+}
+
+func (suite *StoreConstantsTestSuite) TestAppendOUIDsINClause_MultipleOUIDs() {
+	baseQuery := model.DBQuery{
+		ID:            "Q-2",
+		Query:         `SELECT * FROM "USER" WHERE 1=1`,
+		PostgresQuery: `SELECT * FROM "USER" WHERE 1=1`,
+		SQLiteQuery:   `SELECT * FROM "USER" WHERE 1=1`,
+	}
+	ouIDs := []string{"ou-1", "ou-2", "ou-3"}
+
+	result, args := appendOUIDsINClause(baseQuery, []interface{}{}, ouIDs)
+
+	suite.Contains(result.PostgresQuery, "AND OU_ID IN ($1, $2, $3)")
+	suite.Contains(result.SQLiteQuery, "AND OU_ID IN (?, ?, ?)")
+	suite.Len(args, 3)
+	suite.Equal("ou-1", args[0])
+	suite.Equal("ou-2", args[1])
+	suite.Equal("ou-3", args[2])
+}
+
+func (suite *StoreConstantsTestSuite) TestAppendOUIDsINClause_PreservesExistingArgs() {
+	baseQuery := model.DBQuery{
+		ID:            "Q-3",
+		Query:         `SELECT * FROM "USER" WHERE ATTR = $1`,
+		PostgresQuery: `SELECT * FROM "USER" WHERE ATTR = $1`,
+		SQLiteQuery:   `SELECT * FROM "USER" WHERE ATTR = ?`,
+	}
+	existingArgs := []interface{}{"value1", "value2"}
+	ouIDs := []string{"ou-A", "ou-B"}
+
+	result, args := appendOUIDsINClause(baseQuery, existingArgs, ouIDs)
+
+	// PostgreSQL placeholders should start at $3 (after 2 existing args)
+	suite.Contains(result.PostgresQuery, "AND OU_ID IN ($3, $4)")
+	suite.Contains(result.SQLiteQuery, "AND OU_ID IN (?, ?)")
+	suite.Len(args, 4)
+	suite.Equal("value1", args[0])
+	suite.Equal("value2", args[1])
+	suite.Equal("ou-A", args[2])
+	suite.Equal("ou-B", args[3])
+}
+
+// ---------------------------------------------------------------------------
+// buildUserCountQueryByOUIDs
+// ---------------------------------------------------------------------------
+
+func (suite *StoreConstantsTestSuite) TestBuildUserCountQueryByOUIDs_NoFilters() {
+	ouIDs := []string{"ou-1"}
+	query, args, err := buildUserCountQueryByOUIDs(ouIDs, map[string]interface{}{}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-19", query.ID)
+	suite.Contains(query.PostgresQuery, `SELECT COUNT(*) as total FROM "USER" WHERE 1=1`)
+	suite.Contains(query.PostgresQuery, "AND OU_ID IN ($1)")
+	suite.Contains(query.PostgresQuery, "AND DEPLOYMENT_ID = $2")
+	suite.Contains(query.SQLiteQuery, "AND OU_ID IN (?)")
+	suite.NotEmpty(args)
+	suite.Equal("ou-1", args[0])
+	suite.Equal(testDeploymentIDForConstants, args[len(args)-1])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildUserCountQueryByOUIDs_MultipleOUIDs() {
+	ouIDs := []string{"ou-1", "ou-2"}
+	query, args, err := buildUserCountQueryByOUIDs(ouIDs, map[string]interface{}{}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Contains(query.PostgresQuery, "AND OU_ID IN ($1, $2)")
+	suite.Contains(query.SQLiteQuery, "AND OU_ID IN (?, ?)")
+	suite.Len(args, 3) // 2 ouIDs + 1 deploymentID
+	suite.Equal("ou-1", args[0])
+	suite.Equal("ou-2", args[1])
+	suite.Equal(testDeploymentIDForConstants, args[2])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildUserCountQueryByOUIDs_WithFilters() {
+	ouIDs := []string{"ou-1"}
+	filters := map[string]interface{}{"username": "alice"}
+
+	query, args, err := buildUserCountQueryByOUIDs(ouIDs, filters, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-19", query.ID)
+	suite.Contains(query.PostgresQuery, "WHERE")
+	// Filter args come first, then OU ID, then deployment ID.
+	suite.Greater(len(args), 2)
+	suite.Equal(testDeploymentIDForConstants, args[len(args)-1])
+}
+
+// ---------------------------------------------------------------------------
+// buildUserListQueryByOUIDs
+// ---------------------------------------------------------------------------
+
+func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_NoFilters() {
+	ouIDs := []string{"ou-1"}
+	query, args, err := buildUserListQueryByOUIDs(ouIDs, map[string]interface{}{}, 10, 0, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-20", query.ID)
+	suite.Contains(query.PostgresQuery, `SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE 1=1`)
+	// Should contain OU filter and pagination (LIMIT / OFFSET)
+	suite.Contains(query.PostgresQuery, "AND OU_ID IN (")
+	suite.Contains(query.PostgresQuery, "LIMIT")
+	suite.Contains(query.PostgresQuery, "OFFSET")
+	// Last two args are limit and offset
+	suite.Equal(10, args[len(args)-2])
+	suite.Equal(0, args[len(args)-1])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_MultipleOUIDs() {
+	ouIDs := []string{"ou-1", "ou-2", "ou-3"}
+	query, args, err := buildUserListQueryByOUIDs(ouIDs, map[string]interface{}{}, 5, 10, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Contains(query.PostgresQuery, "AND OU_ID IN ($1, $2, $3)")
+	suite.Contains(query.SQLiteQuery, "AND OU_ID IN (?, ?, ?)")
+	// args: 3 ouIDs + 1 deploymentID + limit + offset = 6
+	suite.Len(args, 6)
+	suite.Equal("ou-1", args[0])
+	suite.Equal("ou-2", args[1])
+	suite.Equal("ou-3", args[2])
+	suite.Equal(testDeploymentIDForConstants, args[3])
+	suite.Equal(5, args[4])
+	suite.Equal(10, args[5])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_WithFilters() {
+	ouIDs := []string{"ou-1"}
+	filters := map[string]interface{}{"username": "alice"}
+
+	query, args, err := buildUserListQueryByOUIDs(ouIDs, filters, 10, 0, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-20", query.ID)
+	suite.Contains(query.PostgresQuery, "WHERE")
+	suite.Contains(query.PostgresQuery, "AND OU_ID IN (")
+	suite.Contains(query.PostgresQuery, "LIMIT")
+	// Last two args must be limit and offset
+	suite.Equal(10, args[len(args)-2])
+	suite.Equal(0, args[len(args)-1])
 }

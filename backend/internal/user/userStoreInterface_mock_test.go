@@ -523,6 +523,92 @@ func (_c *userStoreInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// GetUserListByOUIDs provides a mock function for the type userStoreInterfaceMock
+func (_mock *userStoreInterfaceMock) GetUserListByOUIDs(ctx context.Context, ouIDs []string, limit int, offset int, filters map[string]interface{}) ([]User, error) {
+	ret := _mock.Called(ctx, ouIDs, limit, offset, filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserListByOUIDs")
+	}
+
+	var r0 []User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int, int, map[string]interface{}) ([]User, error)); ok {
+		return returnFunc(ctx, ouIDs, limit, offset, filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int, int, map[string]interface{}) []User); ok {
+		r0 = returnFunc(ctx, ouIDs, limit, offset, filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, int, int, map[string]interface{}) error); ok {
+		r1 = returnFunc(ctx, ouIDs, limit, offset, filters)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// userStoreInterfaceMock_GetUserListByOUIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserListByOUIDs'
+type userStoreInterfaceMock_GetUserListByOUIDs_Call struct {
+	*mock.Call
+}
+
+// GetUserListByOUIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ouIDs []string
+//   - limit int
+//   - offset int
+//   - filters map[string]interface{}
+func (_e *userStoreInterfaceMock_Expecter) GetUserListByOUIDs(ctx interface{}, ouIDs interface{}, limit interface{}, offset interface{}, filters interface{}) *userStoreInterfaceMock_GetUserListByOUIDs_Call {
+	return &userStoreInterfaceMock_GetUserListByOUIDs_Call{Call: _e.mock.On("GetUserListByOUIDs", ctx, ouIDs, limit, offset, filters)}
+}
+
+func (_c *userStoreInterfaceMock_GetUserListByOUIDs_Call) Run(run func(ctx context.Context, ouIDs []string, limit int, offset int, filters map[string]interface{})) *userStoreInterfaceMock_GetUserListByOUIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		var arg4 map[string]interface{}
+		if args[4] != nil {
+			arg4 = args[4].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_GetUserListByOUIDs_Call) Return(users []User, err error) *userStoreInterfaceMock_GetUserListByOUIDs_Call {
+	_c.Call.Return(users, err)
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_GetUserListByOUIDs_Call) RunAndReturn(run func(ctx context.Context, ouIDs []string, limit int, offset int, filters map[string]interface{}) ([]User, error)) *userStoreInterfaceMock_GetUserListByOUIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserListCount provides a mock function for the type userStoreInterfaceMock
 func (_mock *userStoreInterfaceMock) GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error) {
 	ret := _mock.Called(ctx, filters)
@@ -585,6 +671,78 @@ func (_c *userStoreInterfaceMock_GetUserListCount_Call) Return(n int, err error)
 }
 
 func (_c *userStoreInterfaceMock_GetUserListCount_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}) (int, error)) *userStoreInterfaceMock_GetUserListCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUserListCountByOUIDs provides a mock function for the type userStoreInterfaceMock
+func (_mock *userStoreInterfaceMock) GetUserListCountByOUIDs(ctx context.Context, ouIDs []string, filters map[string]interface{}) (int, error) {
+	ret := _mock.Called(ctx, ouIDs, filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserListCountByOUIDs")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, map[string]interface{}) (int, error)); ok {
+		return returnFunc(ctx, ouIDs, filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, map[string]interface{}) int); ok {
+		r0 = returnFunc(ctx, ouIDs, filters)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, map[string]interface{}) error); ok {
+		r1 = returnFunc(ctx, ouIDs, filters)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// userStoreInterfaceMock_GetUserListCountByOUIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserListCountByOUIDs'
+type userStoreInterfaceMock_GetUserListCountByOUIDs_Call struct {
+	*mock.Call
+}
+
+// GetUserListCountByOUIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ouIDs []string
+//   - filters map[string]interface{}
+func (_e *userStoreInterfaceMock_Expecter) GetUserListCountByOUIDs(ctx interface{}, ouIDs interface{}, filters interface{}) *userStoreInterfaceMock_GetUserListCountByOUIDs_Call {
+	return &userStoreInterfaceMock_GetUserListCountByOUIDs_Call{Call: _e.mock.On("GetUserListCountByOUIDs", ctx, ouIDs, filters)}
+}
+
+func (_c *userStoreInterfaceMock_GetUserListCountByOUIDs_Call) Run(run func(ctx context.Context, ouIDs []string, filters map[string]interface{})) *userStoreInterfaceMock_GetUserListCountByOUIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 map[string]interface{}
+		if args[2] != nil {
+			arg2 = args[2].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_GetUserListCountByOUIDs_Call) Return(n int, err error) *userStoreInterfaceMock_GetUserListCountByOUIDs_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_GetUserListCountByOUIDs_Call) RunAndReturn(run func(ctx context.Context, ouIDs []string, filters map[string]interface{}) (int, error)) *userStoreInterfaceMock_GetUserListCountByOUIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }
