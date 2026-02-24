@@ -352,7 +352,7 @@ func (o *oAuthExecutor) getIDPName(idpID string) (string, error) {
 	logger := o.logger
 	logger.Debug("Retrieving IDP name for the given IDP ID")
 
-	idp, svcErr := o.idpService.GetIdentityProvider(idpID)
+	idp, svcErr := o.idpService.GetIdentityProvider(context.TODO(), idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return "", fmt.Errorf("failed to get identity provider: %s", svcErr.ErrorDescription)

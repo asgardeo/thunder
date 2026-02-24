@@ -109,7 +109,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetOAuthClientConfigSuccess() {
 			*tokenEndpointProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	config, err := suite.service.GetOAuthClientConfig(testIDPID)
 	suite.Nil(err)
@@ -144,7 +144,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetOAuthClientConfigWithError() {
 					Code:             "IDP_NOT_FOUND",
 					ErrorDescription: "Identity provider not found",
 				}
-				m.On("GetIdentityProvider", testIDPID).Return(nil, clientErr)
+				m.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, clientErr)
 			},
 			expectedErrCode: ErrorClientErrorWhileRetrievingIDP.Code,
 		},
@@ -157,7 +157,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetOAuthClientConfigWithError() {
 					Code:             "INTERNAL_ERROR",
 					ErrorDescription: "Database unavailable",
 				}
-				m.On("GetIdentityProvider", testIDPID).Return(nil, serverErr)
+				m.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, serverErr)
 			},
 			expectedErrCode: serviceerror.InternalServerError.Code,
 		},
@@ -197,7 +197,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
 			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp, *authzEndpointProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	url, err := suite.service.BuildAuthorizeURL(testIDPID)
 	suite.Nil(err)
@@ -259,7 +259,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestBuildAuthorizeURLSuccessWithAdditio
 					*tc.extraProp,
 				},
 			}
-			suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+			suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 			url, err := suite.service.BuildAuthorizeURL(testIDPID)
 			suite.Nil(err)
@@ -284,7 +284,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestBuildAuthorizeURLWithError() {
 		Code:             "INTERNAL_ERROR",
 		ErrorDescription: "Database unavailable",
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(nil, serverErr)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(nil, serverErr)
 
 	url, err := suite.service.BuildAuthorizeURL(testIDPID)
 	suite.Empty(url)
@@ -341,7 +341,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 				Body:       io.NopCloser(bytes.NewReader([]byte(tokenRespJSON))),
 			}
 
-			suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpData, nil).Once()
+			suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpData, nil).Once()
 			suite.mockHTTPClient.On("Do", mock.Anything).Return(resp, nil).Once()
 
 			result, err := suite.service.ExchangeCodeForToken(testIDPID, tc.code, tc.validateResponse)
@@ -365,7 +365,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenWithFailure() {
 					Code: "IDP-001",
 					Type: serviceerror.ClientErrorType,
 				}
-				suite.mockIDPService.On("GetIdentityProvider", testIDPID).
+				suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).
 					Return(nil, svcErr).Once()
 			},
 			expectedError: ErrorClientErrorWhileRetrievingIDP.Code,
@@ -389,7 +389,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenWithFailure() {
 					},
 				}
 
-				suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpData, nil).Once()
+				suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpData, nil).Once()
 				suite.mockHTTPClient.On("Do", mock.Anything).
 					Return(nil, errors.New("network error")).Once()
 			},
@@ -404,7 +404,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenWithFailure() {
 					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"invalid_grant"}`))),
 				}
 
-				suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpData, nil).Once()
+				suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpData, nil).Once()
 				suite.mockHTTPClient.On("Do", mock.Anything).Return(resp, nil).Once()
 			},
 			expectedError: serviceerror.InternalServerError.Code,
@@ -418,7 +418,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenWithFailure() {
 					Body:       io.NopCloser(bytes.NewReader([]byte(`invalid json`))),
 				}
 
-				suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpData, nil).Once()
+				suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpData, nil).Once()
 				suite.mockHTTPClient.On("Do", mock.Anything).Return(resp, nil).Once()
 			},
 			expectedError: serviceerror.InternalServerError.Code,
@@ -451,7 +451,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestFetchUserInfoEmptyAccessToken() {
 			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	userInfo, err := suite.service.FetchUserInfo(testIDPID, "")
 	suite.Nil(userInfo)
@@ -664,7 +664,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestBuildAuthorizeURLURIError() {
 			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp, *authzEndpointProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	url, err := suite.service.BuildAuthorizeURL(testIDPID)
 	suite.Empty(url)
@@ -696,7 +696,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenWithValidationF
 		Body:       io.NopCloser(bytes.NewReader([]byte(tokenRespJSON))),
 	}
 
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpData, nil).Once()
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpData, nil).Once()
 	suite.mockHTTPClient.On("Do", mock.Anything).Return(resp, nil).Once()
 
 	result, err := suite.service.ExchangeCodeForToken(testIDPID, "code123", true)
@@ -737,7 +737,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestBuildAuthorizeURLMissingAuthorizati
 			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp, *authzEndpointProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	url, err := suite.service.BuildAuthorizeURL(testIDPID)
 	suite.Empty(url)
@@ -760,7 +760,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestExchangeCodeForTokenMissingTokenEnd
 			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp, *tokenEndpointProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	token, err := suite.service.ExchangeCodeForToken(testIDPID, "code123", false)
 	suite.Nil(token)
@@ -783,7 +783,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestFetchUserInfoMissingUserInfoEndpoin
 			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp, *userInfoEndpointProp,
 		},
 	}
-	suite.mockIDPService.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, testIDPID).Return(idpDTO, nil)
 
 	userInfo, err := suite.service.FetchUserInfo(testIDPID, "access_token")
 	suite.Nil(userInfo)

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/idp"
@@ -69,7 +70,7 @@ func (s *IDPExporterTestSuite) TestGetAllResourceIDs_Success() {
 		{ID: "idp2", Name: "IDP 2"},
 	}
 
-	s.mockService.EXPECT().GetIdentityProviderList().Return(expectedIDPs, nil)
+	s.mockService.EXPECT().GetIdentityProviderList(mock.Anything).Return(expectedIDPs, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -85,7 +86,7 @@ func (s *IDPExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetIdentityProviderList().Return(nil, expectedError)
+	s.mockService.EXPECT().GetIdentityProviderList(mock.Anything).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -96,7 +97,7 @@ func (s *IDPExporterTestSuite) TestGetAllResourceIDs_Error() {
 func (s *IDPExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 	expectedIDPs := []idp.BasicIDPDTO{}
 
-	s.mockService.EXPECT().GetIdentityProviderList().Return(expectedIDPs, nil)
+	s.mockService.EXPECT().GetIdentityProviderList(mock.Anything).Return(expectedIDPs, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -110,7 +111,7 @@ func (s *IDPExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test IDP",
 	}
 
-	s.mockService.EXPECT().GetIdentityProvider("idp1").Return(expectedIDP, nil)
+	s.mockService.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(expectedIDP, nil)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "idp1")
 
@@ -125,7 +126,7 @@ func (s *IDPExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetIdentityProvider("idp1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(nil, expectedError)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "idp1")
 
