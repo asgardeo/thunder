@@ -192,7 +192,7 @@ test.describe("Accessibility — UI Components @accessibility", () => {
     );
 
     test(
-      "TC-A11Y-COMP-007: Text meets enhanced (AAA) contrast on sign-in page",
+      "TC-A11Y-COMP-007: Text meets enhanced (AAA) contrast on dashboard",
       async ({ page }, testInfo) => {
         await test.step("Run enhanced contrast audit", async () => {
           await expectNoA11yViolations(
@@ -210,6 +210,7 @@ test.describe("Accessibility — UI Components @accessibility", () => {
 
   test.describe("Document Structure", () => {
     test.beforeEach(async ({ page }) => {
+      // dashboard is the target for this contrast test
       await page.goto("/", { waitUntil: "networkidle" });
     });
 
