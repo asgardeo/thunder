@@ -20,7 +20,6 @@ package executor
 
 import (
 	"github.com/asgardeo/thunder/internal/authn"
-	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -32,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/userprovider"
+
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -49,7 +49,6 @@ func Initialize(
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
 	userProvider userprovider.UserProviderInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
@@ -76,7 +75,7 @@ func Initialize(
 
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, userProvider))
 	reg.RegisterExecutor(ExecutorNameAuthAssert, newAuthAssertExecutor(flowFactory, jwtService,
-		ouService, authRegistry.AuthAssertGenerator, authnProvider, userProvider))
+		ouService, authRegistry.AuthAssertGenerator, authRegistry.CredentialsAuthnService, userProvider))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))

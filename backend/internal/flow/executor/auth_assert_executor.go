@@ -27,6 +27,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -49,7 +50,7 @@ type authAssertExecutor struct {
 	jwtService          jwt.JWTServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
-	authnProvider       authnprovider.AuthnProviderInterface
+	credsAuthSvc        authncreds.CredentialsAuthnServiceInterface
 	userProvider        userprovider.UserProviderInterface
 	logger              *log.Logger
 }
@@ -62,7 +63,7 @@ func newAuthAssertExecutor(
 	jwtService jwt.JWTServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
 	userProvider userprovider.UserProviderInterface,
 ) *authAssertExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authAssertLoggerComponentName),
@@ -76,7 +77,7 @@ func newAuthAssertExecutor(
 		jwtService:          jwtService,
 		ouService:           ouService,
 		authAssertGenerator: assertGenerator,
-		authnProvider:       authnProvider,
+		credsAuthSvc:        credsAuthSvc,
 		userProvider:        userProvider,
 		logger:              logger,
 	}
@@ -318,11 +319,12 @@ func (a *authAssertExecutor) getUserAttributes(userID string, token string, requ
 	var jsonAttrs json.RawMessage
 
 	if token != "" {
-		res, err := a.authnProvider.GetAttributes(token, requestedAttributes, metadata)
-		if err != nil {
-			logger.Error("Failed to fetch user attributes",
-				log.String("userID", userID), log.Any("error", err))
-			return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+		res, svcErr := a.credsAuthSvc.GetAttributes(token, requestedAttributes, metadata)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				return nil, errors.New("something went wrong while fetching user attributes")
+			}
+			return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
 		}
 		jsonAttrs = res.Attributes
 	} else {
