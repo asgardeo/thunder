@@ -53,6 +53,5 @@ export * from './models/responses';
 export * from './models/theme';
 
 // Utils
-export {default as oxygenUIThemeTransformer} from './utils/oxygenUIThemeTransformer';
 export {default as extractLayoutFromDesign} from './utils/extractLayoutFromDesign';
 export {default as mapEmbeddedFlowTextVariant} from './utils/mapEmbeddedFlowTextVariant';

@@ -16,14 +16,33 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
-import {TextField} from '@wso2/oxygen-ui';
+import {type ComponentType, type ReactElement} from 'react';
+import {Autocomplete, type AutocompleteRenderInputParams, Box, TextField} from '@wso2/oxygen-ui';
+import * as Icons from '@wso2/oxygen-ui-icons-react';
+import startCase from 'lodash-es/startCase';
 import type {Resource} from '../../models/resources';
 import {ElementTypes} from '../../models/elements';
 import RichTextWithTranslation from './rich-text/RichTextWithTranslation';
 import CheckboxPropertyField from './CheckboxPropertyField';
 import TextPropertyField from './TextPropertyField';
 import FlowBuilderElementConstants from '../../constants/FlowBuilderElementConstants';
+
+/**
+ * All PascalCase named icon exports from the icons package — computed once at module load.
+ * Lucide icons are forwardRef exotic components (typeof === 'object'), not plain functions.
+ * We identify real icon components by the presence of `displayName` (set by createLucideIcon).
+ * The base `Icon` component has no displayName and must be excluded to avoid render errors.
+ */
+const ICON_NAMES: string[] = Object.keys(Icons).filter((k) => {
+  if (!/^[A-Z]/.test(k)) return false;
+  const v = Icons[k as keyof typeof Icons];
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    '$$typeof' in (v as object) &&
+    typeof (v as Record<string, unknown>).displayName === 'string'
+  );
+});
 
 /**
  * Props interface of {@link CommonElementPropertyFactory}
@@ -79,6 +98,57 @@ function CommonElementPropertyFactory({
     }
   }
 
+  if (resource.type === ElementTypes.Icon && propertyKey === 'name') {
+    const IconPreview = typeof propertyValue === 'string' && propertyValue
+      ? (Icons[propertyValue as keyof typeof Icons] as ComponentType<{size?: number}> | undefined)
+      : undefined;
+
+    return (
+      <Box>
+        <Autocomplete
+          options={ICON_NAMES}
+          value={typeof propertyValue === 'string' ? propertyValue : null}
+          onChange={(_event: React.SyntheticEvent, newValue: string | null) => {
+            onChange(propertyKey, newValue ?? '', resource);
+          }}
+          renderInput={(params: AutocompleteRenderInputParams) => {
+            const {InputProps: acInputProps, inputProps: acHtmlInputProps, InputLabelProps, ...restParams} = params;
+            return (
+              <TextField
+                {...restParams}
+                label={startCase(propertyKey)}
+                size="small"
+                slotProps={{
+                  input: {
+                    ...acInputProps,
+                    startAdornment: IconPreview ? (
+                      <Box sx={{display: 'flex', alignItems: 'center', pl: 0.5, pr: 0.5}}>
+                        <IconPreview size={16} />
+                      </Box>
+                    ) : acInputProps?.startAdornment,
+                  },
+                  htmlInput: acHtmlInputProps,
+                  inputLabel: InputLabelProps,
+                }}
+              />
+            );
+          }}
+          renderOption={({key, ...props}: React.HTMLAttributes<HTMLLIElement> & {key: string}, option: string) => {
+            const Icon = Icons[option as keyof typeof Icons] as ComponentType<{size?: number}> | undefined;
+            return (
+              <li key={key} {...props}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  {Icon && <Icon size={16} />}
+                  {option}
+                </Box>
+              </li>
+            );
+          }}
+        />
+      </Box>
+    );
+  }
+
   if (typeof propertyValue === 'boolean') {
     return (
       <CheckboxPropertyField
@@ -86,6 +156,18 @@ function CommonElementPropertyFactory({
         propertyKey={propertyKey}
         propertyValue={propertyValue}
         onChange={onChange}
+        {...rest}
+      />
+    );
+  }
+
+  if (typeof propertyValue === 'number') {
+    return (
+      <TextPropertyField
+        resource={resource}
+        propertyKey={propertyKey}
+        propertyValue={String(propertyValue)}
+        onChange={(key, value, res) => onChange(key, value !== '' ? Number(value) : 0, res)}
         {...rest}
       />
     );
@@ -109,9 +191,11 @@ function CommonElementPropertyFactory({
         fullWidth
         label="Provider"
         defaultValue={FlowBuilderElementConstants.DEFAULT_CAPTCHA_PROVIDER}
-        inputProps={{
-          disabled: true,
-          readOnly: true,
+        slotProps={{
+          htmlInput: {
+            disabled: true,
+            readOnly: true,
+          },
         }}
         {...rest}
       />

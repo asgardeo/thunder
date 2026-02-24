@@ -19,7 +19,7 @@
 import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
-import type {ThemeConfig} from '@thunder/shared-design';
+import type {Theme} from '@thunder/shared-design';
 import type {Application} from '../../models/application';
 import ApplicationCreatePage from '../ApplicationCreatePage';
 import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
@@ -160,11 +160,11 @@ vi.mock('../../components/create-application/ConfigureDesign', () => ({
     onThemeSelect,
   }: {
     appLogo: string | null;
-    selectedTheme: ThemeConfig | null;
+    selectedTheme: Theme | null;
     onLogoSelect: (logo: string) => void;
     onInitialLogoLoad: (logo: string) => void;
     onReadyChange: (ready: boolean) => void;
-    onThemeSelect?: (themeId: string, themeConfig: ThemeConfig) => void;
+    onThemeSelect?: (themeId: string, themeConfig: Theme) => void;
   }) => (
     <div data-testid="configure-design">
       <button type="button" data-testid="logo-select-btn" onClick={() => onLogoSelect('test-logo.png')}>
@@ -173,7 +173,7 @@ vi.mock('../../components/create-application/ConfigureDesign', () => ({
       <button
         type="button"
         data-testid="select-theme-btn"
-        onClick={() => onThemeSelect?.('theme-1', {} as ThemeConfig)}
+        onClick={() => onThemeSelect?.('theme-1', {} as Theme)}
       >
         Select Theme
       </button>
@@ -1191,7 +1191,7 @@ describe('ApplicationCreatePage', () => {
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
-          
+
           const handleSetup = () => {
              // Explicitly set flow to null to trigger generation logic
             setSelectedAuthFlow(null);
@@ -1219,10 +1219,10 @@ describe('ApplicationCreatePage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      
+
       // Trigger setup
       await user.click(screen.getByTestId('setup-flow-generation'));
-      
+
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
       // Experience -> Stack -> Configure
@@ -1256,7 +1256,7 @@ describe('ApplicationCreatePage', () => {
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
-          
+
           const handleSetup = () => {
              setSelectedAuthFlow(null);
              setIntegrations({'basic_auth': true});
@@ -1277,15 +1277,15 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My App');
       await user.click(screen.getByRole('button', {name: /continue/i}));
       await user.click(screen.getByRole('button', {name: /continue/i})); // Design
-      
+
       // Options step
       await waitFor(() => {
         expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      
+
       // Trigger setup
       await user.click(screen.getByTestId('setup-flow-generation-error'));
-      
+
       await user.click(screen.getByRole('button', {name: /continue/i})); // Options -> Experience
       await user.click(screen.getByRole('button', {name: /continue/i})); // Experience -> Stack
       await user.click(screen.getByRole('button', {name: /continue/i})); // Stack -> Configure

@@ -18,12 +18,12 @@
 
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import humanId from 'human-id';
-import generateAppNameSuggestions from '../generateAppNameSuggestions';
+import generateRandomHumanReadableIdentifiers from '../generateRandomHumanReadableIdentifiers';
 
 // Mock the human-id library
 vi.mock('human-id');
 
-describe('generateAppNameSuggestions', () => {
+describe('generateRandomHumanReadableIdentifiers', () => {
   beforeEach(() => {
     // Setup mock implementation for human-id
     vi.mocked(humanId).mockImplementation(() => 'blue falcon');
@@ -35,14 +35,14 @@ describe('generateAppNameSuggestions', () => {
 
   describe('Basic Functionality', () => {
     it('should return an array of 10 suggestions', () => {
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       expect(Array.isArray(suggestions)).toBe(true);
       expect(suggestions).toHaveLength(10);
     });
 
     it('should return an array of strings', () => {
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(typeof suggestion).toBe('string');
@@ -50,7 +50,7 @@ describe('generateAppNameSuggestions', () => {
     });
 
     it('should return non-empty strings', () => {
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion.length).toBeGreaterThan(0);
@@ -60,7 +60,7 @@ describe('generateAppNameSuggestions', () => {
 
   describe('humanId Integration', () => {
     it('should call humanId with correct configuration', () => {
-      generateAppNameSuggestions();
+      generateRandomHumanReadableIdentifiers();
 
       expect(humanId).toHaveBeenCalledWith({
         separator: ' ',
@@ -71,13 +71,13 @@ describe('generateAppNameSuggestions', () => {
     });
 
     it('should call humanId 10 times', () => {
-      generateAppNameSuggestions();
+      generateRandomHumanReadableIdentifiers();
 
       expect(humanId).toHaveBeenCalledTimes(10);
     });
 
     it('should call humanId with space separator', () => {
-      generateAppNameSuggestions();
+      generateRandomHumanReadableIdentifiers();
 
       const callArgs = vi.mocked(humanId).mock.calls[0][0];
       if (typeof callArgs === 'object' && callArgs !== null) {
@@ -86,7 +86,7 @@ describe('generateAppNameSuggestions', () => {
     });
 
     it('should call humanId with capitalize enabled', () => {
-      generateAppNameSuggestions();
+      generateRandomHumanReadableIdentifiers();
 
       const callArgs = vi.mocked(humanId).mock.calls[0][0];
       if (typeof callArgs === 'object' && callArgs !== null) {
@@ -95,7 +95,7 @@ describe('generateAppNameSuggestions', () => {
     });
 
     it('should call humanId with no adjectives', () => {
-      generateAppNameSuggestions();
+      generateRandomHumanReadableIdentifiers();
 
       const callArgs = vi.mocked(humanId).mock.calls[0][0];
       if (typeof callArgs === 'object' && callArgs !== null) {
@@ -104,7 +104,7 @@ describe('generateAppNameSuggestions', () => {
     });
 
     it('should call humanId with no adverbs', () => {
-      generateAppNameSuggestions();
+      generateRandomHumanReadableIdentifiers();
 
       const callArgs = vi.mocked(humanId).mock.calls[0][0];
       if (typeof callArgs === 'object' && callArgs !== null) {
@@ -117,7 +117,7 @@ describe('generateAppNameSuggestions', () => {
     it('should capitalize first letter of each word', () => {
       vi.mocked(humanId).mockReturnValue('blue falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Blue Falcon');
@@ -127,7 +127,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle single word names', () => {
       vi.mocked(humanId).mockReturnValue('phoenix');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Phoenix');
@@ -137,7 +137,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle multiple word names', () => {
       vi.mocked(humanId).mockReturnValue('red dragon master');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Red Dragon Master');
@@ -147,7 +147,7 @@ describe('generateAppNameSuggestions', () => {
     it('should properly capitalize mixed case input', () => {
       vi.mocked(humanId).mockReturnValue('BLUE falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Blue Falcon');
@@ -157,7 +157,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle lowercase input', () => {
       vi.mocked(humanId).mockReturnValue('green turtle');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         const words = suggestion.split(' ');
@@ -171,7 +171,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle uppercase input', () => {
       vi.mocked(humanId).mockReturnValue('PURPLE ELEPHANT');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Purple Elephant');
@@ -193,7 +193,7 @@ describe('generateAppNameSuggestions', () => {
         .mockReturnValueOnce('black raven')
         .mockReturnValueOnce('silver fox');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       expect(suggestions).toEqual([
         'Blue Falcon',
@@ -213,7 +213,7 @@ describe('generateAppNameSuggestions', () => {
       // If humanId returns the same name multiple times, we should still get 10 results
       vi.mocked(humanId).mockReturnValue('blue falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       expect(suggestions).toHaveLength(10);
       suggestions.forEach((suggestion) => {
@@ -226,7 +226,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle empty string from humanId', () => {
       vi.mocked(humanId).mockReturnValue('');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       expect(suggestions).toHaveLength(10);
       suggestions.forEach((suggestion) => {
@@ -237,7 +237,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle names with extra spaces', () => {
       vi.mocked(humanId).mockReturnValue('blue  falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       // Split by space will create an empty string for double spaces
       suggestions.forEach((suggestion) => {
@@ -249,7 +249,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle names with leading spaces', () => {
       vi.mocked(humanId).mockReturnValue(' blue falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         // Leading space will create an empty first element
@@ -261,7 +261,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle names with trailing spaces', () => {
       vi.mocked(humanId).mockReturnValue('blue falcon ');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toContain('Blue');
@@ -272,7 +272,7 @@ describe('generateAppNameSuggestions', () => {
     it('should handle special characters in names', () => {
       vi.mocked(humanId).mockReturnValue('blue-falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Blue-falcon');
@@ -284,7 +284,7 @@ describe('generateAppNameSuggestions', () => {
     it('should use space as word separator', () => {
       vi.mocked(humanId).mockReturnValue('blue falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toContain(' ');
@@ -294,7 +294,7 @@ describe('generateAppNameSuggestions', () => {
     it('should not have leading or trailing spaces after processing', () => {
       vi.mocked(humanId).mockReturnValue('blue falcon');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe(suggestion.trim());
@@ -304,7 +304,7 @@ describe('generateAppNameSuggestions', () => {
     it('should maintain proper title case format', () => {
       vi.mocked(humanId).mockReturnValue('blue falcon master');
 
-      const suggestions = generateAppNameSuggestions();
+      const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
         const words = suggestion.split(' ');

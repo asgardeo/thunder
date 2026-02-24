@@ -18,7 +18,7 @@
 
 import type {Context} from 'react';
 import {createContext} from 'react';
-import type {ThemeConfig} from '@thunder/shared-design';
+import type {Theme} from '@thunder/shared-design';
 import type {
   ApplicationCreateFlowSignInApproach,
   ApplicationCreateFlowStep,
@@ -77,13 +77,13 @@ export interface ApplicationCreateContextType {
    * The selected theme configuration (UI theme data only, not API response wrapper)
    * @remark Needed for step 02: Application Design and preview.
    */
-  selectedTheme: ThemeConfig | null;
+  selectedTheme: Theme | null;
 
   /**
    * Sets the selected theme configuration
    * @remark Needed for step 02: Application Design and preview.
    */
-  setSelectedTheme: (theme: ThemeConfig | null) => void;
+  setSelectedTheme: (theme: Theme | null) => void;
 
   /**
    * URL of the selected application logo
@@ -211,7 +211,7 @@ export interface ApplicationCreateContextType {
    * @remark Needed for step 06: Configuration step.
    */
   setCallbackUrlFromConfig: (url: string) => void;
-  
+
   /**
    * The relying party ID for Passkey configuration.
    * @remark Needed for step 06: Configuration step.

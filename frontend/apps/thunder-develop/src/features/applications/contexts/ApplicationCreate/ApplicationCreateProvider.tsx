@@ -18,7 +18,7 @@
 
 import type {PropsWithChildren} from 'react';
 import {useState, useMemo, useCallback, useEffect} from 'react';
-import type {ThemeConfig} from '@thunder/shared-design';
+import type {Theme} from '@thunder/shared-design';
 import useGetApplications from '../../api/useGetApplications';
 import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
 import ApplicationCreateContext, {type ApplicationCreateContextType} from './ApplicationCreateContext';
@@ -46,7 +46,7 @@ const INITIAL_STATE: {
   currentStep: ApplicationCreateFlowStep;
   appName: string;
   themeId: string | null;
-  selectedTheme: ThemeConfig | null;
+  selectedTheme: Theme | null;
   appLogo: string | null;
   selectedColor: string;
   integrations: Record<string, boolean>;
@@ -119,7 +119,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const [currentStep, setCurrentStep] = useState<ApplicationCreateFlowStep>(INITIAL_STATE.currentStep);
   const [appName, setAppName] = useState<string>(INITIAL_STATE.appName);
   const [themeId, setThemeId] = useState<string | null>(INITIAL_STATE.themeId);
-  const [selectedTheme, setSelectedTheme] = useState<ThemeConfig | null>(INITIAL_STATE.selectedTheme);
+  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(INITIAL_STATE.selectedTheme);
   const [appLogo, setAppLogo] = useState<string | null>(INITIAL_STATE.appLogo);
   const [selectedColor, setSelectedColor] = useState<string>(INITIAL_STATE.selectedColor);
   const [integrations, setIntegrations] = useState<Record<string, boolean>>(INITIAL_STATE.integrations);

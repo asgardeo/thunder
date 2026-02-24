@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -19,26 +19,23 @@
 import humanId from 'human-id';
 
 /**
- * Generates a list of human-readable organization unit name suggestions.
+ * Generates a list of human-readable theme name suggestions.
  *
- * This function creates 10 unique, randomly generated name suggestions using the human-id library.
- * Each name is formatted with proper capitalization (title case).
- *
- * @returns An array of 10 generated organization unit name suggestions.
- *
- * @example
- * ```typescript
- * const suggestions = generateOrganizationUnitNameSuggestions();
- * // Returns: ['Blue Falcon', 'Red Dragon', 'Green Phoenix', ...]
- * ```
+ * @param length - The number of theme name suggestions to generate.
+ * @returns An array of generated theme name suggestions.
  */
-export default function generateOrganizationUnitNameSuggestions(): string[] {
-  return Array.from({length: 10}, () =>
-    humanId({
+export default function generateThemeNameSuggestions(length: number = 5): string[] {
+  return Array.from({length}, () => {
+    const id: string = humanId({
       separator: ' ',
       capitalize: true,
-      adjectiveCount: 0,
+      adjectiveCount: 1,
       addAdverb: false,
-    }),
-  );
+    });
+
+    return id
+      .split(' ')
+      .map((word: string): string => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  });
 }

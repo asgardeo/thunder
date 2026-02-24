@@ -16,10 +16,9 @@
  * under the License.
  */
 
-import {useContext, useMemo} from 'react';
+import {useContext} from 'react';
 import type {Theme} from '@wso2/oxygen-ui';
 import DesignContext, {DesignContextType} from './DesignContext';
-import oxygenUIThemeTransformer from '../../utils/oxygenUIThemeTransformer';
 
 /**
  * React hook for accessing Thunder design configuration throughout the application.
@@ -37,23 +36,10 @@ import oxygenUIThemeTransformer from '../../utils/oxygenUIThemeTransformer';
  */
 export default function useDesign(baseTheme?: Theme): DesignContextType {
   const context = useContext(DesignContext);
+
   if (context === undefined) {
     throw new Error('useDesign must be used within a DesignProvider');
   }
 
-  // If a baseTheme is provided, override the transformedTheme
-  const overriddenTransformedTheme = useMemo(() => {
-    if (baseTheme && context.design?.theme) {
-      return oxygenUIThemeTransformer(baseTheme, context.design.theme);
-    }
-    return undefined;
-  }, [baseTheme, context.design?.theme]);
-
-  return useMemo(
-    () => ({
-      ...context,
-      transformedTheme: overriddenTransformedTheme ?? context.transformedTheme,
-    }),
-    [context, overriddenTransformedTheme],
-  );
+  return context;
 }

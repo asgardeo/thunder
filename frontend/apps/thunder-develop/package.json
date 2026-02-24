@@ -34,6 +34,7 @@
   "dependencies": {
     "@asgardeo/react": "catalog:",
     "@asgardeo/react-router": "catalog:",
+    "@monaco-editor/react": "4.7.0",
     "@dnd-kit/abstract": "0.1.21",
     "@dnd-kit/collision": "0.1.21",
     "@dnd-kit/core": "6.3.1",
@@ -54,6 +55,7 @@
     "@thunder/i18n": "workspace:^",
     "@thunder/shared-design": "workspace:^",
     "@thunder/shared-hooks": "workspace:^",
+    "@thunder/shared-utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
     "@xyflow/react": "12.9.2",
@@ -64,7 +66,6 @@
     "dompurify": "catalog:",
     "elkjs": "^0.11.0",
     "html-react-parser": "5.2.10",
-    "human-id": "4.1.2",
     "i18next": "catalog:",
     "lexical": "0.38.2",
     "lodash-es": "catalog:",

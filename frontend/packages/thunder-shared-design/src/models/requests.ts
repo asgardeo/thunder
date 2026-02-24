@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ThemeConfig} from './theme';
+import type {Theme} from './theme';
 import type {LayoutConfig} from './layout';
 
 /**
@@ -25,7 +25,7 @@ import type {LayoutConfig} from './layout';
 export interface CreateThemeRequest {
   displayName: string;
   description?: string;
-  theme: ThemeConfig;
+  theme: Theme;
 }
 
 /**
@@ -34,7 +34,7 @@ export interface CreateThemeRequest {
 export interface UpdateThemeRequest {
   displayName: string;
   description?: string;
-  theme: ThemeConfig;
+  theme: Theme;
 }
 
 /**

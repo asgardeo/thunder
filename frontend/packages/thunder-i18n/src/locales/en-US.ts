@@ -314,6 +314,7 @@ const translations = {
     'categories.identities': 'Identities',
     'categories.resources': 'Resources',
     'categories.configure': 'Configure',
+    'categories.customize': 'Customize',
     'pages.home': 'Home',
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
@@ -323,6 +324,7 @@ const translations = {
     'pages.applications': 'Applications',
     'pages.dashboard': 'Dashboard',
     'pages.flows': 'Flows',
+    'pages.translations': 'Text & Translations',
     'breadcrumb.develop': 'Develop',
   },
 
@@ -1471,8 +1473,21 @@ const translations = {
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
     'core.elements.textPropertyField.tooltip.configureTranslation': 'Configure translation',
+    'core.elements.textPropertyField.tooltip.configureDynamicValue': 'Insert dynamic value',
     'core.elements.textPropertyField.i18nKey': 'Translation Key',
     'core.elements.textPropertyField.resolvedValue': 'Resolved Value',
+
+    // Elements - dynamic value popover
+    'core.elements.textPropertyField.dynamicValuePopover.title': 'Dynamic Value for {{field}}',
+    'core.elements.textPropertyField.dynamicValuePopover.tabs.translation': 'Translation',
+    'core.elements.textPropertyField.dynamicValuePopover.tabs.variables': 'Variables',
+
+    // Elements - meta card
+    'core.elements.textPropertyField.metaCard.title': 'Variable for {{field}}',
+    'core.elements.textPropertyField.metaCard.variablePath': 'Variable Path',
+    'core.elements.textPropertyField.metaCard.variablePathPlaceholder': 'e.g. application.name',
+    'core.elements.textPropertyField.metaCard.variablePathHint': 'Select a common variable or type a custom path',
+    'core.elements.textPropertyField.metaCard.formattedValue': 'Formatted Value',
 
     // Elements - i18n card
     'core.elements.textPropertyField.i18nCard.title': 'Translation for {{field}}',
@@ -1594,6 +1609,94 @@ const translations = {
   appearance: {
     'theme.defaultTheme': 'Default Theme',
     'theme.appTheme.displayName': '{{appName}} Theme',
+  },
+
+  // ============================================================================
+  // Translations namespace - Text & Translations feature
+  // ============================================================================
+  translations: {
+    'page.title': 'Text & Translations',
+    'page.subtitle': 'Manage and customize UI text and translations for your application.',
+
+    'listing.addLanguage': 'Add Language',
+    'listing.columns.language': 'Language',
+    'listing.columns.actions': 'Actions',
+
+    'language.selectPlaceholder': 'Select a language',
+    'language.addOption': 'Add new language...',
+
+    'language.create.steps.country': 'Country',
+    'language.create.steps.language': 'Language',
+    'language.create.steps.localeCode': 'Locale Code',
+    'language.create.steps.initialize': 'Initialize',
+
+    'language.create.country.title': 'Choose a Country',
+    'language.create.country.subtitle': 'Select the country for the language you want to add.',
+    'language.create.countryLabel': 'Country',
+    'language.create.country.placeholder': 'Select a country',
+
+    'language.create.language.title': 'Choose a Language',
+    'language.create.language.subtitle': 'Select the language variant spoken in {{country}}.',
+    'language.create.language.label': 'Language',
+    'language.create.language.placeholder': 'Select a language',
+    'language.create.language.helperText': 'Each variant may have distinct vocabulary and formatting conventions.',
+
+    'language.create.localeCode.title': 'Review Locale Code',
+    'language.create.localeCode.subtitle':
+      'The locale code was derived from your selection. Override it here if you need a different tag.',
+
+    'language.create.initialize.title': 'Initialize Translations',
+    'language.create.initialize.subtitle':
+      'Choose how to populate the translation keys for this language.',
+    'language.create.initialize.copyFromEnglish.label': 'Copy from English',
+    'language.create.initialize.copyFromEnglish.description':
+      'All keys will be pre-filled with English (en-US) text as a starting point. You can edit them afterwards.',
+    'language.create.initialize.startEmpty.label': 'Start empty',
+    'language.create.initialize.startEmpty.description':
+      'All keys will be created with empty values. Useful when you have your own translations ready to paste in.',
+
+    'language.create.createButton': 'Create Language',
+
+    'language.add.dialogTitle': 'Add New Language',
+    'language.add.code.label': 'Language Code',
+    'language.add.codePlaceholder': 'e.g. fr-FR, de-DE, ja-JP',
+    'language.add.codeHelper': 'Use BCP 47 format (e.g. fr-FR for French, de-DE for German).',
+    'language.add.populateLabel': 'Pre-populate from English (en-US)',
+    'language.add.populateHelper': 'All keys will be pre-filled with English text. You can update them after.',
+    'language.add.emptyHelper': 'All keys will be added with empty values. You can fill them in later.',
+    'language.add.adding': 'Adding translations...',
+    'language.add.success': '"{{code}}" added successfully.',
+    'language.add.error': 'Failed to add language. Please try again.',
+
+    'namespace.label': 'Namespaces',
+    'namespace.noKeys': 'No translatable keys in this namespace.',
+
+    'editor.panelHeader': 'Edit Translations',
+    'editor.fieldsTab': 'Fields',
+    'editor.jsonTab': 'JSON',
+    'editor.searchPlaceholder': 'Search by key or value...',
+    'editor.noResults': 'No matching translations.',
+    'editor.noLanguageSelected': 'Select a language to start editing.',
+    'editor.loading': 'Loading translations...',
+    'editor.fieldSaveSuccess': 'Saved.',
+    'editor.fieldSaveError': 'Failed to save.',
+    'editor.jsonSaveAll': 'Save All',
+    'editor.jsonSaveSuccess': 'All translations saved.',
+    'editor.jsonSaveError': 'Failed to save some translations.',
+    'editor.jsonInvalid': 'Invalid JSON — fix errors before saving.',
+    'editor.resetField': 'Reset to saved value',
+    'editor.noKeys': 'No translatable keys in this namespace.',
+    'editor.unsavedCount': '{{count}} unsaved change',
+    'editor.namespace': 'Namespace',
+    'editor.namespace.helperText':
+      'A namespace typically represents a page or a section within a page. It helps group and organize related translation keys for better structure and maintainability.',
+    'editor.textFields': 'Fields',
+    'editor.rawJson': 'Raw JSON',
+
+    'actions.saveChanges': 'Save Changes',
+    'actions.discardChanges': 'Discard Changes',
+    'actions.resetToDefault': 'Reset to Default',
+    'preview.noTheme': 'No themes configured. Preview unavailable.',
   },
 } as const;
 

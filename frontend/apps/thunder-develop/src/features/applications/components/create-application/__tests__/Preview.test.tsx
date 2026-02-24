@@ -20,7 +20,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import type {ThemeConfig} from '@thunder/shared-design';
+import type {Theme} from '@thunder/shared-design';
 import Preview, {type PreviewProps} from '../Preview';
 
 // Mock the @asgardeo/react module
@@ -44,7 +44,7 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
 
 const {default: useIdentityProviders} = await import('@/features/integrations/api/useIdentityProviders');
 
-const mockTheme: ThemeConfig = {
+const mockTheme: Theme = {
   direction: 'ltr',
   defaultColorScheme: 'light',
   colorSchemes: {
@@ -810,7 +810,7 @@ describe('Preview', () => {
   });
 
   describe('high-contrast theme colors', () => {
-    const highContrastTheme: ThemeConfig = {
+    const highContrastTheme: Theme = {
       colorSchemes: {
         light: {
           colors: {

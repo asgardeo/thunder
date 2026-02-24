@@ -40,7 +40,11 @@ const DROP_INDICATOR_KEYFRAMES = {
 /**
  * Props interface of {@link Droppable}
  */
-export type DroppableProps = UseDroppableInput<Record<string, unknown>> & BoxProps;
+export type DroppableProps = UseDroppableInput<Record<string, unknown>> &
+  BoxProps & {
+    /** Minimum height of the invisible end-zone drop target. Defaults to 40. */
+    bottomZoneMinHeight?: number;
+  };
 
 /**
  * Props interface for DroppablePresentation
@@ -88,11 +92,13 @@ function BottomZone({
   count,
   accept = undefined,
   droppableData = undefined,
+  minHeight = 40,
 }: {
   id: string;
   count: number;
   accept?: UseDroppableInput['accept'];
   droppableData?: Record<string, unknown>;
+  minHeight?: number;
 }) {
   const {ref, sortable, isDropTarget} = useSortable({
     id: `${id}-end`,
@@ -108,7 +114,7 @@ function BottomZone({
   );
 
   const dropIndicatorStyles = useMemo(() => ({
-    minHeight: '40px',
+    minHeight: `${minHeight}px`,
     width: '100%',
     position: 'relative' as const,
     marginTop: '4px',
@@ -165,6 +171,7 @@ function Droppable({
   collisionDetector = pointerIntersection,
   data,
   accept,
+  bottomZoneMinHeight = 40,
   ...rest
 }: PropsWithChildren<DroppableProps>): ReactElement {
   const {ref, droppable, isDropTarget} = useDroppable<Record<string, unknown>>({
@@ -217,7 +224,7 @@ function Droppable({
       }}
     >
       <MemoizedDroppablePresentation sx={sx}>{children}</MemoizedDroppablePresentation>
-      <MemoizedBottomZone id={id} count={count} accept={accept} droppableData={data} />
+      <MemoizedBottomZone id={id} count={count} accept={accept} droppableData={data} minHeight={bottomZoneMinHeight} />
     </Box>
   );
 }

@@ -31,16 +31,14 @@ import {
   Avatar,
   Stack,
   OxygenUIThemeProvider,
-  OxygenTheme,
 } from '@wso2/oxygen-ui';
 import {AppWindowMac, KeyRound} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
-import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import {oxygenUIThemeTransformer, type ThemeConfig} from '@thunder/shared-design';
+import {type Theme} from '@thunder/shared-design';
 import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
 
 /**
@@ -57,7 +55,7 @@ export interface PreviewProps {
   /**
    * The selected theme configuration to apply to the preview for accurate color representation
    */
-  selectedTheme: ThemeConfig | undefined;
+  selectedTheme: Theme | undefined;
 
   /**
    * Record of enabled authentication integrations
@@ -116,7 +114,7 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
   // Resolve the active color mode: when mode is 'system', fall back to the OS-reported systemMode
   const colorMode: 'light' | 'dark' = (mode === 'system' ? systemMode : mode) === 'dark' ? 'dark' : 'light';
 
-  const previewPrimary = selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary;
+  const previewPrimary = selectedTheme?.colorSchemes?.[colorMode]?.palette?.primary;
 
   // Buttons in the preview must NOT use variant="contained" / "outlined" with color="primary"
   // because MUI's .MuiButton-containedPrimary class applies background-color via CSS variables
@@ -144,8 +142,6 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
     identityProviders?.filter((idp: IdentityProvider): boolean => integrations[idp.id]) ?? [];
   const hasSocialLogins: boolean = selectedProviders.length > 0;
   const hasSmsOtp: boolean = integrations['sms-otp'] ?? false;
-
-  const previewTheme = useMemo(() => oxygenUIThemeTransformer(OxygenTheme, selectedTheme), [selectedTheme]);
 
   return (
     <Box
@@ -227,7 +223,7 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
             position: 'relative',
           }}
         >
-          <OxygenUIThemeProvider theme={previewTheme}>
+          <OxygenUIThemeProvider theme={selectedTheme}>
             <ThemeProvider mode={colorMode}>
               <Box>
                 <BaseSignIn onError={() => {}} onSuccess={() => {}}>

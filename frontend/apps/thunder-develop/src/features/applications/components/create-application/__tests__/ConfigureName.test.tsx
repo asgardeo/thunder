@@ -21,10 +21,10 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ConfigureName, {type ConfigureNameProps} from '../ConfigureName';
 
-// Mock the utility function
-vi.mock('../../../utils/generateAppNameSuggestions');
+// Mock the utility library
+vi.mock('@thunder/shared-utils');
 
-const {default: generateAppNameSuggestions} = await import('../../../utils/generateAppNameSuggestions');
+const {generateRandomHumanReadableIdentifiers} = await import('@thunder/shared-utils');
 
 describe('ConfigureName', () => {
   const mockOnAppNameChange = vi.fn();
@@ -37,7 +37,7 @@ describe('ConfigureName', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(generateAppNameSuggestions).mockReturnValue(mockSuggestions);
+    vi.mocked(generateRandomHumanReadableIdentifiers).mockReturnValue(mockSuggestions);
   });
 
   const renderComponent = (props: Partial<ConfigureNameProps> = {}) =>
@@ -110,12 +110,12 @@ describe('ConfigureName', () => {
   it('should generate suggestions only once on mount', () => {
     const {rerender} = renderComponent();
 
-    expect(generateAppNameSuggestions).toHaveBeenCalledTimes(1);
+    expect(generateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
 
     rerender(<ConfigureName {...defaultProps} appName="Updated Name" />);
 
     // Should still be called only once due to useMemo
-    expect(generateAppNameSuggestions).toHaveBeenCalledTimes(1);
+    expect(generateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
   });
 
   it('should handle empty app name', () => {

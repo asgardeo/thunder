@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ThemeConfig} from './theme';
+import type {Theme} from './theme';
 import type {LayoutConfig} from './layout';
 
 /**
@@ -26,7 +26,7 @@ export interface ThemeListItem {
   id: string;
   displayName: string;
   description?: string;
-  theme: ThemeConfig | null;
+  theme: Theme | null;
 }
 
 /**
@@ -64,7 +64,7 @@ export interface ThemeResponse {
   id: string;
   displayName: string;
   description?: string;
-  theme: ThemeConfig;
+  theme: Theme;
 }
 
 /**
@@ -92,6 +92,6 @@ export interface LayoutResponse {
  * Returns the merged theme and layout for a given entity.
  */
 export interface DesignResolveResponse {
-  theme: ThemeConfig;
+  theme: Theme;
   layout: LayoutConfig;
 }

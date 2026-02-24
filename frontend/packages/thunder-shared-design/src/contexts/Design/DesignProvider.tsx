@@ -71,7 +71,6 @@ export default function DesignProvider({children}: DesignProviderProps) {
       isDesignEnabled: Boolean(design),
       isLoading,
       error,
-      transformedTheme: undefined,
       theme: design?.theme,
       layout: design?.layout,
     }),

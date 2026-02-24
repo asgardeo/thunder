@@ -44,6 +44,10 @@ class VisualFlowConstants {
 
   public static readonly FLOW_BUILDER_DROPPABLE_FORM_ID: string = 'flow-builder-droppable-form';
 
+  public static readonly FLOW_BUILDER_STACK_ID: string = 'flow-builder-stack';
+
+  public static readonly FLOW_BUILDER_DROPPABLE_STACK_ID: string = 'flow-builder-droppable-stack';
+
   public static readonly FLOW_BUILDER_NEXT_HANDLE_SUFFIX: string = `_${ActionTypes.Next}`;
 
   public static readonly FLOW_BUILDER_PREVIOUS_HANDLE_SUFFIX: string = `_${ActionTypes.Previous}`;
@@ -85,6 +89,8 @@ class VisualFlowConstants {
   public static readonly FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES: string[] = [
     BlockTypes.Form,
     ElementTypes.Action,
+    ElementTypes.Icon,
+    ElementTypes.Stack,
     ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
@@ -113,6 +119,8 @@ class VisualFlowConstants {
   ];
 
   public static readonly FLOW_BUILDER_FLOW_COMPLETION_VIEW_ALLOWED_RESOURCE_TYPES: string[] = [
+    ElementTypes.Icon,
+    ElementTypes.Stack,
     ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
@@ -130,6 +138,18 @@ class VisualFlowConstants {
     ElementTypes.Checkbox,
     ElementTypes.Dropdown,
     ElementTypes.Action,
+    ElementTypes.Icon,
+    ElementTypes.Stack,
+    ElementTypes.Text,
+    ElementTypes.RichText,
+    ElementTypes.Divider,
+    ElementTypes.Image,
+  ];
+
+  public static readonly FLOW_BUILDER_STACK_ALLOWED_RESOURCE_TYPES: string[] = [
+    ElementTypes.Action,
+    ElementTypes.Icon,
+    ElementTypes.Stack,
     ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
@@ -137,6 +157,8 @@ class VisualFlowConstants {
   ];
 
   public static readonly FLOW_BUILDER_STATIC_CONTENT_ALLOWED_RESOURCE_TYPES: string[] = [
+    ElementTypes.Icon,
+    ElementTypes.Stack,
     ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,

@@ -27,6 +27,16 @@ const I18N_PATTERN = /^\{\{t\([^)]+\)\}\}$/;
 const I18N_KEY_PATTERN = /^\{\{t\(([^)]+)\)\}\}$/;
 
 /**
+ * Regular expression pattern to match meta format: {{meta(key)}}
+ */
+const META_PATTERN = /^\{\{meta\([^)]+\)\}\}$/;
+
+/**
+ * Regular expression pattern to extract the key from meta format: {{meta(key)}}
+ */
+const META_KEY_PATTERN = /^\{\{meta\(([^)]+)\)\}\}$/;
+
+/**
  * Strip HTML tags from a string using a simple regex approach.
  * Note: This uses a basic regex pattern suitable for well-formed HTML from the Lexical editor.
  * It is not intended for sanitizing arbitrary or malformed HTML content.
@@ -85,4 +95,37 @@ export function resolveI18nValue(
   }
 
   return '';
+}
+
+/**
+ * Check if a value matches the meta pattern {{meta(key)}}.
+ * @param value - The value to check.
+ * @returns True if the value matches the meta pattern, false otherwise.
+ */
+export function isMetaPattern(value: string | undefined): boolean {
+  if (!value) return false;
+
+  return META_PATTERN.test(value.trim());
+}
+
+/**
+ * Extract the meta key from a pattern like {{meta(key)}}.
+ * @param value - The value containing the pattern.
+ * @returns The extracted key or null if no match is found.
+ */
+export function extractMetaKey(value: string | undefined): string | null {
+  if (!value) return null;
+
+  const match = META_KEY_PATTERN.exec(value.trim());
+
+  return match?.[1] ?? null;
+}
+
+/**
+ * Check if a value matches any dynamic value pattern (i18n or meta).
+ * @param value - The value to check.
+ * @returns True if the value matches any dynamic value pattern, false otherwise.
+ */
+export function isDynamicValuePattern(value: string | undefined): boolean {
+  return isI18nPattern(value) || isMetaPattern(value);
 }

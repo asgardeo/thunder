@@ -51,7 +51,11 @@
     "overrides": {
       "minimatch@10.1.1": ">=10.2.1",
       "vite": "catalog:",
-      "nx>axios": ">=1.13.5"
+      "nx>axios": ">=1.13.5",
+      "@asgardeo/i18n": "file:/Users/brion/Desktop/wso2/sdk-development/javascript/packages/i18n",
+      "@asgardeo/browser": "file:/Users/brion/Desktop/wso2/sdk-development/javascript/packages/browser",
+      "@asgardeo/javascript": "file:/Users/brion/Desktop/wso2/sdk-development/javascript/packages/javascript",
+      "@asgardeo/react": "file:/Users/brion/Desktop/wso2/sdk-development/javascript/packages/react"
     },
     "auditConfig": {
       "ignoreCves": [

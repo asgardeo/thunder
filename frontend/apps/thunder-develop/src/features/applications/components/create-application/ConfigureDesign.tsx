@@ -21,7 +21,7 @@ import {Palette, Shuffle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useGetThemes, useGetTheme, type ThemeListItem, type ThemeConfig} from '@thunder/shared-design';
+import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
 import generateAppLogoSuggestions from '../../utils/generateAppLogoSuggestion';
 
 /**
@@ -43,7 +43,7 @@ export interface ConfigureDesignProps {
   /**
    * The currently selected theme configuration (UI theme data only, not API response wrapper)
    */
-  selectedTheme: ThemeConfig | null;
+  selectedTheme: Theme | null;
 
   /**
    * Callback function when a logo is selected
@@ -53,7 +53,7 @@ export interface ConfigureDesignProps {
   /**
    * Callback function when a theme is selected, receives theme ID and config separately
    */
-  onThemeSelect: (themeId: string, themeConfig: ThemeConfig) => void;
+  onThemeSelect: (themeId: string, themeConfig: Theme) => void;
 
   /**
    * Optional callback function when the initial logo is loaded
@@ -96,7 +96,7 @@ export interface ConfigureDesignProps {
  * function OnboardingFlow() {
  *   const [logo, setLogo] = useState<string | null>(null);
  *   const [themeId, setThemeId] = useState<string | null>(null);
- *   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
+ *   const [themeConfig, setThemeConfig] = useState<Theme | null>(null);
  *
  *   return (
  *     <ConfigureDesign
@@ -134,10 +134,10 @@ export default function ConfigureDesign({
 
   const hasThemes = Boolean(themesData?.themes?.length);
   const primaryColorLight: string =
-    selectedThemeProp?.colorSchemes?.light?.colors?.primary?.main ?? theme.vars?.palette.primary.main ?? '';
+    selectedThemeProp?.colorSchemes?.light?.palette?.primary?.main ?? theme.vars?.palette.primary.main ?? '';
   const primaryColorDark: string =
-    selectedThemeProp?.colorSchemes?.dark?.colors?.primary?.main ??
-    selectedThemeProp?.colorSchemes?.light?.colors?.primary?.main ??
+    selectedThemeProp?.colorSchemes?.dark?.palette?.primary?.main ??
+    selectedThemeProp?.colorSchemes?.light?.palette?.primary?.main ??
     theme.vars?.palette.primary.main ??
     '';
 

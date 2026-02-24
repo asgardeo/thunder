@@ -73,21 +73,31 @@ export type {
 export {LANGUAGE_CONFIGS, isSupportedLanguage} from './models';
 
 // Export hooks
-export {default as useGetTranslations} from './hooks/useGetTranslations';
-export type {TranslationsResponse, UseGetTranslationsOptions} from './hooks/useGetTranslations';
+export {default as useGetTranslations} from './api/useGetTranslations';
+export type {TranslationsResponse, UseGetTranslationsOptions} from './api/useGetTranslations';
 
-export {default as useGetLanguages} from './hooks/useGetLanguages';
-export type {LanguagesResponse, UseGetLanguagesOptions} from './hooks/useGetLanguages';
+export {default as useGetLanguages} from './api/useGetLanguages';
+export type {LanguagesResponse, UseGetLanguagesOptions} from './api/useGetLanguages';
 
-export {default as useUpdateTranslation} from './hooks/useUpdateTranslation';
+export {default as useUpdateTranslation} from './api/useUpdateTranslation';
 export type {
   TranslationResponse,
   UpdateTranslationVariables,
   UseUpdateTranslationOptions,
-} from './hooks/useUpdateTranslation';
+} from './api/useUpdateTranslation';
 
-export {default as useLanguage} from './hooks/useLanguage';
-export type {UseLanguageReturn} from './hooks/useLanguage';
+export {default as useLanguage} from './api/useLanguage';
+export type {UseLanguageReturn} from './api/useLanguage';
 
 // Export constants
 export {default as I18nQueryKeys} from './constants/I18nQueryKeys';
+
+// Export utils
+export {default as COMMON_LOCALES} from './utils/commonLocales';
+export {default as REGION_LOCALES} from './utils/regionLocales';
+export {default as toFlagEmoji} from './utils/toFlagEmoji';
+export {default as buildCountryOptions} from './utils/buildCountryOptions';
+export type {CountryOption} from './utils/buildCountryOptions';
+export {default as buildLocaleOptions} from './utils/buildLocaleOptions';
+export type {LocaleOption} from './utils/buildLocaleOptions';
+export {default as getDisplayNameForCode} from './utils/getDisplayNameForCode';
