@@ -17,36 +17,13 @@
  */
 
 import kebabCase from 'lodash-es/kebabCase';
-import {memo, useCallback, useEffect, useMemo, useRef, useState, type HTMLAttributes, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Button,
-  Drawer,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@wso2/oxygen-ui';
-import {
-  ArrowLeft,
-  BoxesIcon,
-  BoxIcon,
-  Check,
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CogIcon,
-  Edit,
-  LayoutTemplate,
-  X,
-  ZapIcon,
-} from '@wso2/oxygen-ui-icons-react';
+import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from '@wso2/oxygen-ui';
+import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, LayoutTemplate, ZapIcon} from '@wso2/oxygen-ui-icons-react';
 import {useNavigate} from 'react-router';
+import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
+import BuilderLayout from '../../../../components/BuilderLayout/BuilderLayout';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import ResourcePanelStatic from './ResourcePanelStatic';
 import type {Element} from '../../models/elements';
@@ -93,8 +70,6 @@ export interface ResourcePanelPropsInterface extends HTMLAttributes<HTMLDivEleme
   onFlowTitleChange?: (newTitle: string) => void;
 }
 
-const PANEL_WIDTH = 350;
-
 /**
  * Flow builder resource panel that contains draggable components.
  *
@@ -116,62 +91,14 @@ function ResourcePanel({
   const navigate = useNavigate();
   const {setIsResourcePanelOpen} = useFlowBuilderCore();
 
-  // Flow title editing state
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(flowTitle);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Sync editedTitle when flowTitle prop changes
-  useEffect(() => {
-    setEditedTitle(flowTitle);
-  }, [flowTitle]);
-
-  // Focus input when entering edit mode
-  useEffect(() => {
-    if (isEditingTitle && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditingTitle]);
-
-  const handleEditClick = useCallback(() => {
-    setIsEditingTitle(true);
-  }, []);
-
-  const handleTitleSave = useCallback(() => {
-    const trimmedTitle = editedTitle.trim();
-
-    // Don't allow empty titles - keep edit mode open
-    if (!trimmedTitle) {
-      return;
-    }
-
-    if (trimmedTitle !== flowTitle) {
-      onFlowTitleChange?.(trimmedTitle);
-    }
-    setIsEditingTitle(false);
-  }, [editedTitle, flowTitle, onFlowTitleChange]);
-
-  const handleTitleCancel = useCallback(() => {
-    setEditedTitle(flowTitle);
-    setIsEditingTitle(false);
-  }, [flowTitle]);
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        handleTitleSave();
-      } else if (event.key === 'Escape') {
-        handleTitleCancel();
-      }
-    },
-    [handleTitleSave, handleTitleCancel],
-  );
-
   const handleBackToFlows = useCallback((): void => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     navigate('/flows');
   }, [navigate]);
+
+  const handleTogglePanel = useCallback((): void => {
+    setIsResourcePanelOpen((prev: boolean) => !prev);
+  }, [setIsResourcePanelOpen]);
 
   const {
     elements: unfilteredElements,
@@ -180,10 +107,6 @@ function ResourcePanel({
     templates: unfilteredTemplates,
     executors: unfilteredExecutors,
   } = resources;
-
-  const handleTogglePanel = useCallback((): void => {
-    setIsResourcePanelOpen((prev: boolean) => !prev);
-  }, [setIsResourcePanelOpen]);
 
   const elements: Element[] = useMemo(
     () => unfilteredElements?.filter((element: Element) => element.display?.showOnResourcePanel !== false),
@@ -206,475 +129,323 @@ function ResourcePanel({
     [unfilteredExecutors],
   );
 
-  return (
-    <Box width="100%" height="100%" display="flex" position="relative" {...rest}>
-      {/* Floating expand button shown when panel is collapsed */}
-      {!open && (
-        <Tooltip title={t('flows:core.resourcePanel.showResources')} placement="right">
-          <IconButton
-            onClick={handleTogglePanel}
-            sx={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              zIndex: 10,
-              borderRadius: 1,
-              '&:hover': {
-                backgroundColor: 'action.hover',
-              },
-            }}
-            size="small"
-          >
-            <ChevronRightIcon size={16} />
-          </IconButton>
-        </Tooltip>
-      )}
+  const panelContent = (
+    <>
+      <BuilderPanelHeader
+        title={flowTitle}
+        handle={flowHandle}
+        onBack={handleBackToFlows}
+        onPanelToggle={handleTogglePanel}
+        onTitleChange={onFlowTitleChange}
+        backLabel={t('flows:core.headerPanel.goBack')}
+        hidePanelTooltip={t('flows:core.resourcePanel.hideResources')}
+        editTitleTooltip={t('flows:core.headerPanel.editTitle')}
+        saveTitleTooltip={t('flows:core.headerPanel.saveTitle')}
+        cancelEditTooltip={t('flows:core.headerPanel.cancelEdit')}
+      />
 
-      {/* Resource Panel using MUI Drawer for animation */}
-      <Drawer
-        variant="persistent"
-        anchor="left"
-        open={open}
+      {/* Starter Templates */}
+      <Accordion
+        square
+        disableGutters
+        defaultExpanded
         sx={{
-          width: PANEL_WIDTH,
-          height: '100%',
-          flexShrink: 0,
-          mr: 1,
-          transition: (theme) =>
-            theme.transitions.create('width', {
-              easing: open ? theme.transitions.easing.easeOut : theme.transitions.easing.sharp,
-              duration: open ? theme.transitions.duration.enteringScreen : theme.transitions.duration.leavingScreen,
-            }),
-          ...(!open && {
-            width: 0,
-            mr: 0,
-          }),
-          '& .MuiDrawer-paper': {
-            width: PANEL_WIDTH,
-            position: 'relative',
-            border: 'none',
-            overflow: 'scroll',
-            p: 2,
-            gap: 1,
+          backgroundColor: 'transparent',
+          '&:before': {
+            display: 'none',
           },
+          overflow: 'hidden',
+          flexShrink: 0,
         }}
       >
-        {/* Flow title section */}
-        <Box
+        <AccordionSummary
+          expandIcon={<ChevronDownIcon size={14} />}
+          aria-controls="panel1-content"
+          id="panel1-header"
           sx={{
-            pb: 1.5,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            mb: 1,
-            flexShrink: 0,
+            minHeight: 48,
+            '&.Mui-expanded': {
+              minHeight: 48,
+            },
+            '& .MuiAccordionSummary-content': {
+              margin: '12px 0',
+              gap: 1,
+            },
+          }}
+          slotProps={{
+            content: {
+              sx: {alignItems: 'center'},
+            },
           }}
         >
-          {/* Back button and collapse row */}
-          <Box display="flex" alignItems="center" justifyContent="space-between" sx={{mb: 1}}>
-            <Tooltip title={t('flows:core.headerPanel.goBack')} placement="right">
-              <Button onClick={handleBackToFlows} size="small" startIcon={<ArrowLeft size={16} />}>
-                {t('flows:core.headerPanel.goBack')}
-              </Button>
-            </Tooltip>
-            <Tooltip title={t('flows:core.resourcePanel.hideResources')} placement="right">
-              <IconButton onClick={handleTogglePanel} size="small">
-                <ChevronLeftIcon size={16} />
-              </IconButton>
-            </Tooltip>
+          <Box component="span" display="inline-flex" alignItems="center">
+            <LayoutTemplate size={16} />
           </Box>
-
-          {/* Flow title with edit capability */}
-          {flowTitle &&
-            (isEditingTitle ? (
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <TextField
-                  inputRef={inputRef}
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  size="small"
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    '& .MuiInputBase-input': {
-                      py: 0.5,
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                    },
-                  }}
-                />
-                <Tooltip title={t('flows:core.headerPanel.saveTitle')}>
-                  <IconButton size="small" onClick={handleTitleSave} color="primary">
-                    <Check size={16} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('flows:core.headerPanel.cancelEdit')}>
-                  <IconButton size="small" onClick={handleTitleCancel}>
-                    <X size={16} />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            ) : (
-              <Stack direction="column" spacing={0}>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <Typography variant="h6" sx={{fontWeight: 600}}>
-                    {flowTitle}
-                  </Typography>
-                  {onFlowTitleChange && (
-                    <Tooltip title={t('flows:core.headerPanel.editTitle')}>
-                      <IconButton size="small" onClick={handleEditClick} sx={{p: 0.25}}>
-                        <Edit size={14} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Stack>
-                {flowHandle && (
-                  <Typography variant="caption" color="text.secondary">
-                    {flowHandle}
-                  </Typography>
-                )}
-              </Stack>
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t('flows:core.resourcePanel.starterTemplates.title')}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{pt: 0, pb: 2, px: 2}}>
+          <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
+            {t('flows:core.resourcePanel.starterTemplates.description')}
+          </Typography>
+          <Stack direction="column" spacing={1}>
+            {templates?.map((template: Template, index: number) => (
+              <ResourcePanelStatic
+                id={`${template.resourceType}-${template.type}-${index}`}
+                key={template.type}
+                resource={template}
+                onAdd={onAdd}
+                disabled={disabled}
+              />
             ))}
-        </Box>
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
 
-        {/* Starter Templates */}
-        <Accordion
-          square
-          disableGutters
-          defaultExpanded
-          sx={{
-            backgroundColor: 'transparent',
-            '&:before': {
-              display: 'none',
-            },
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ChevronDownIcon size={14} />}
-            aria-controls="panel1-content"
-            id="panel1-header"
-            sx={{
-              minHeight: 48,
-              '&.Mui-expanded': {
-                minHeight: 48,
-              },
-              '& .MuiAccordionSummary-content': {
-                margin: '12px 0',
-                gap: 1,
-              },
-            }}
-            slotProps={{
-              content: {
-                sx: {alignItems: 'center'},
-              },
-            }}
-          >
-            <Box component="span" display="inline-flex" alignItems="center">
-              <LayoutTemplate size={16} />
-            </Box>
-            <Typography variant="subtitle2" fontWeight={600}>
-              {t('flows:core.resourcePanel.starterTemplates.title')}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              pt: 0,
-              pb: 2,
-              px: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
-              {t('flows:core.resourcePanel.starterTemplates.description')}
-            </Typography>
-            <Stack direction="column" spacing={1}>
-              {templates?.map((template: Template, index: number) => (
-                <ResourcePanelStatic
-                  id={`${template.resourceType}-${template.type}-${index}`}
-                  key={template.type}
-                  resource={template}
-                  onAdd={onAdd}
-                  disabled={disabled}
-                />
-              ))}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Widgets */}
-        <Accordion
-          square
-          disableGutters
-          sx={{
-            backgroundColor: 'transparent',
-            '&:before': {
-              display: 'none',
-            },
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ChevronDownIcon size={14} />}
-            id="panel2-header"
-            sx={{
-              minHeight: 48,
-              '&.Mui-expanded': {
-                minHeight: 48,
-              },
-              '& .MuiAccordionSummary-content': {
-                margin: '12px 0',
-                gap: 1,
-              },
-            }}
-            slotProps={{
-              content: {
-                sx: {alignItems: 'center'},
-              },
-            }}
-          >
-            <Box component="span" display="inline-flex" alignItems="center">
-              <CogIcon size={16} />
-            </Box>
-            <Typography variant="subtitle2" fontWeight={600}>
-              {t('flows:core.resourcePanel.widgets.title')}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              pt: 0,
-              pb: 2,
-              px: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
-              {t('flows:core.resourcePanel.widgets.description')}
-            </Typography>
-            <Stack direction="column" spacing={1}>
-              {widgets?.map((widget: Widget, index: number) => (
-                <ResourcePanelDraggable
-                  id={`${widget.resourceType}-${widget.type}-${index}`}
-                  key={widget.type}
-                  resource={widget}
-                  onAdd={onAdd}
-                  disabled={disabled}
-                />
-              ))}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Steps */}
-        <Accordion
-          square
-          disableGutters
-          sx={{
-            backgroundColor: 'transparent',
-            '&:before': {
-              display: 'none',
-            },
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ChevronDownIcon size={14} />}
-            aria-controls="panel3-content"
-            id="panel3-header"
-            sx={{
-              minHeight: 48,
-              '&.Mui-expanded': {
-                minHeight: 48,
-              },
-              '& .MuiAccordionSummary-content': {
-                margin: '12px 0',
-                gap: 1,
-              },
-            }}
-            slotProps={{
-              content: {
-                sx: {alignItems: 'center'},
-              },
-            }}
-          >
-            <Box component="span" display="inline-flex" alignItems="center">
-              <BoxIcon size={16} />
-            </Box>
-            <Typography variant="subtitle2" fontWeight={600}>
-              {t('flows:core.resourcePanel.steps.title')}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              pt: 0,
-              pb: 2,
-              px: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
-              {t('flows:core.resourcePanel.steps.description')}
-            </Typography>
-            <Stack direction="column" spacing={1}>
-              {steps?.map((step: Step, index: number) => (
-                <ResourcePanelDraggable
-                  id={`${step.resourceType}-${step.type}-${index}`}
-                  key={`${step.type}-${kebabCase(step.display.label)}`}
-                  resource={step}
-                  onAdd={onAdd}
-                  disabled={disabled}
-                />
-              ))}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Components */}
-        <Accordion
-          square
-          disableGutters
-          sx={{
-            backgroundColor: 'transparent',
-            '&:before': {
-              display: 'none',
-            },
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ChevronDownIcon size={14} />}
-            aria-controls="panel4-content"
-            id="panel4-header"
-            sx={{
-              minHeight: 48,
-              '&.Mui-expanded': {
-                minHeight: 48,
-              },
-              '& .MuiAccordionSummary-content': {
-                margin: '12px 0',
-                gap: 1,
-              },
-            }}
-            slotProps={{
-              content: {
-                sx: {alignItems: 'center'},
-              },
-            }}
-          >
-            <Box component="span" display="inline-flex" alignItems="center">
-              <BoxesIcon size={16} />
-            </Box>
-            <Typography variant="subtitle2" fontWeight={600}>
-              {t('flows:core.resourcePanel.components.title')}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              pt: 0,
-              pb: 2,
-              px: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
-              {t('flows:core.resourcePanel.components.description')}
-            </Typography>
-            <Stack direction="column" spacing={1}>
-              {elements?.map((element: Element, index: number) => (
-                <ResourcePanelDraggable
-                  id={`${element.resourceType}-${element.type}-${index}`}
-                  key={`${element.resourceType}-${element.category}-${element.type}`}
-                  resource={element}
-                  onAdd={onAdd}
-                  disabled={false}
-                />
-              ))}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Executors */}
-        <Accordion
-          square
-          disableGutters
-          sx={{
-            backgroundColor: 'transparent',
-            '&:before': {
-              display: 'none',
-            },
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ChevronDownIcon size={14} />}
-            aria-controls="panel-executors-content"
-            id="panel-executors-header"
-            sx={{
-              minHeight: 48,
-              '&.Mui-expanded': {
-                minHeight: 48,
-              },
-              '& .MuiAccordionSummary-content': {
-                margin: '12px 0',
-                gap: 1,
-              },
-            }}
-            slotProps={{
-              content: {
-                sx: {alignItems: 'center'},
-              },
-            }}
-          >
-            <Box component="span" display="inline-flex" alignItems="center">
-              <ZapIcon size={16} />
-            </Box>
-            <Typography variant="subtitle2" fontWeight={600}>
-              {t('flows:core.resourcePanel.executors.title')}
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              pt: 0,
-              pb: 2,
-              px: 2,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
-              {t('flows:core.resourcePanel.executors.description')}
-            </Typography>
-            <Stack direction="column" spacing={1}>
-              {executors?.map((executor: Step, index: number) => (
-                <ResourcePanelDraggable
-                  id={`${executor.resourceType}-${executor.type}-${index}`}
-                  key={`${executor.type}-${kebabCase(executor.display.label)}`}
-                  resource={executor}
-                  onAdd={onAdd}
-                  disabled={disabled}
-                />
-              ))}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-      </Drawer>
-
-      {/* Main Content Area (Canvas) */}
-      <Box
-        component="main"
+      {/* Widgets */}
+      <Accordion
+        square
+        disableGutters
         sx={{
-          flexGrow: 1,
-          height: '100%',
-          position: 'relative',
-          transition: (theme) =>
-            theme.transitions.create(['margin', 'width'], {
-              easing: open ? theme.transitions.easing.easeOut : theme.transitions.easing.sharp,
-              duration: open ? theme.transitions.duration.enteringScreen : theme.transitions.duration.leavingScreen,
-            }),
+          backgroundColor: 'transparent',
+          '&:before': {
+            display: 'none',
+          },
+          overflow: 'hidden',
+          flexShrink: 0,
         }}
       >
-        {children}
-      </Box>
-    </Box>
+        <AccordionSummary
+          expandIcon={<ChevronDownIcon size={14} />}
+          id="panel2-header"
+          sx={{
+            minHeight: 48,
+            '&.Mui-expanded': {
+              minHeight: 48,
+            },
+            '& .MuiAccordionSummary-content': {
+              margin: '12px 0',
+              gap: 1,
+            },
+          }}
+          slotProps={{
+            content: {
+              sx: {alignItems: 'center'},
+            },
+          }}
+        >
+          <Box component="span" display="inline-flex" alignItems="center">
+            <CogIcon size={16} />
+          </Box>
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t('flows:core.resourcePanel.widgets.title')}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{pt: 0, pb: 2, px: 2}}>
+          <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
+            {t('flows:core.resourcePanel.widgets.description')}
+          </Typography>
+          <Stack direction="column" spacing={1}>
+            {widgets?.map((widget: Widget, index: number) => (
+              <ResourcePanelDraggable
+                id={`${widget.resourceType}-${widget.type}-${index}`}
+                key={widget.type}
+                resource={widget}
+                onAdd={onAdd}
+                disabled={disabled}
+              />
+            ))}
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Steps */}
+      <Accordion
+        square
+        disableGutters
+        sx={{
+          backgroundColor: 'transparent',
+          '&:before': {
+            display: 'none',
+          },
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ChevronDownIcon size={14} />}
+          aria-controls="panel3-content"
+          id="panel3-header"
+          sx={{
+            minHeight: 48,
+            '&.Mui-expanded': {
+              minHeight: 48,
+            },
+            '& .MuiAccordionSummary-content': {
+              margin: '12px 0',
+              gap: 1,
+            },
+          }}
+          slotProps={{
+            content: {
+              sx: {alignItems: 'center'},
+            },
+          }}
+        >
+          <Box component="span" display="inline-flex" alignItems="center">
+            <BoxIcon size={16} />
+          </Box>
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t('flows:core.resourcePanel.steps.title')}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{pt: 0, pb: 2, px: 2}}>
+          <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
+            {t('flows:core.resourcePanel.steps.description')}
+          </Typography>
+          <Stack direction="column" spacing={1}>
+            {steps?.map((step: Step, index: number) => (
+              <ResourcePanelDraggable
+                id={`${step.resourceType}-${step.type}-${index}`}
+                key={`${step.type}-${kebabCase(step.display.label)}`}
+                resource={step}
+                onAdd={onAdd}
+                disabled={disabled}
+              />
+            ))}
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Components */}
+      <Accordion
+        square
+        disableGutters
+        sx={{
+          backgroundColor: 'transparent',
+          '&:before': {
+            display: 'none',
+          },
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ChevronDownIcon size={14} />}
+          aria-controls="panel4-content"
+          id="panel4-header"
+          sx={{
+            minHeight: 48,
+            '&.Mui-expanded': {
+              minHeight: 48,
+            },
+            '& .MuiAccordionSummary-content': {
+              margin: '12px 0',
+              gap: 1,
+            },
+          }}
+          slotProps={{
+            content: {
+              sx: {alignItems: 'center'},
+            },
+          }}
+        >
+          <Box component="span" display="inline-flex" alignItems="center">
+            <BoxesIcon size={16} />
+          </Box>
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t('flows:core.resourcePanel.components.title')}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{pt: 0, pb: 2, px: 2}}>
+          <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
+            {t('flows:core.resourcePanel.components.description')}
+          </Typography>
+          <Stack direction="column" spacing={1}>
+            {elements?.map((element: Element, index: number) => (
+              <ResourcePanelDraggable
+                id={`${element.resourceType}-${element.type}-${index}`}
+                key={`${element.resourceType}-${element.category}-${element.type}`}
+                resource={element}
+                onAdd={onAdd}
+                disabled={false}
+              />
+            ))}
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Executors */}
+      <Accordion
+        square
+        disableGutters
+        sx={{
+          backgroundColor: 'transparent',
+          '&:before': {
+            display: 'none',
+          },
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ChevronDownIcon size={14} />}
+          aria-controls="panel-executors-content"
+          id="panel-executors-header"
+          sx={{
+            minHeight: 48,
+            '&.Mui-expanded': {
+              minHeight: 48,
+            },
+            '& .MuiAccordionSummary-content': {
+              margin: '12px 0',
+              gap: 1,
+            },
+          }}
+          slotProps={{
+            content: {
+              sx: {alignItems: 'center'},
+            },
+          }}
+        >
+          <Box component="span" display="inline-flex" alignItems="center">
+            <ZapIcon size={16} />
+          </Box>
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t('flows:core.resourcePanel.executors.title')}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{pt: 0, pb: 2, px: 2}}>
+          <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
+            {t('flows:core.resourcePanel.executors.description')}
+          </Typography>
+          <Stack direction="column" spacing={1}>
+            {executors?.map((executor: Step, index: number) => (
+              <ResourcePanelDraggable
+                id={`${executor.resourceType}-${executor.type}-${index}`}
+                key={`${executor.type}-${kebabCase(executor.display.label)}`}
+                resource={executor}
+                onAdd={onAdd}
+                disabled={disabled}
+              />
+            ))}
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+    </>
+  );
+
+  return (
+    <BuilderLayout
+      open={open}
+      onPanelToggle={handleTogglePanel}
+      expandTooltip={t('flows:core.resourcePanel.showResources')}
+      panelContent={panelContent}
+      {...rest}
+    >
+      {children}
+    </BuilderLayout>
   );
 }
 

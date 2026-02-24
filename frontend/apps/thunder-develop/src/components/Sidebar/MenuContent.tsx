@@ -18,7 +18,7 @@
 
 import {NavLink} from 'react-router';
 import {List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, Tooltip} from '@wso2/oxygen-ui';
-import {Blocks, Building, LayoutGrid, User, Users, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
+import {Blocks, Building, LayoutGrid, Palette, User, Users, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
 import {useContext, useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import useNavigation from '@/layouts/contexts/useNavigation';
@@ -79,6 +79,20 @@ export default function MenuContent(): JSX.Element {
         icon: <User size={16} />,
         category: 'Dashboard',
         path: '/user-types',
+      },
+      {
+        id: 'design',
+        text: t('navigation:pages.design', 'Design'),
+        icon: <Palette size={16} />,
+        category: 'Dashboard',
+        path: '/design',
+      },
+      {
+        id: 'design',
+        text: t('navigation:pages.design', 'Design'),
+        icon: <Palette size={16} />,
+        category: 'Dashboard',
+        path: '/design',
       },
     ],
     [t],
