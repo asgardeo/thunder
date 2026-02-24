@@ -27,6 +27,7 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 
@@ -70,11 +71,17 @@ func (suite *InitTestSuite) TestInitialize() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	service, _, err := Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	service, _, err := Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	suite.NotNil(service)
@@ -87,11 +94,17 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-schemas", nil)
@@ -108,11 +121,17 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPost, "/user-schemas", nil)
@@ -123,17 +142,54 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	suite.NotEqual(http.StatusNotFound, w.Code)
 }
 
+// TestInitialize_DBTransactionerError tests Initialize when DBTransactioner fails
+func (suite *InitTestSuite) TestInitialize_DBTransactionerError() {
+	// Ensure any previously initialized DB clients are closed so it forces re-initialization
+	_ = provider.GetDBProviderCloser().Close()
+	defer func() {
+		_ = provider.GetDBProviderCloser().Close()
+	}()
+
+	// Configure with invalid DB driver to force an error during GetConfigDBTransactioner
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "invalid-db-type",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(suite.T(), err)
+
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.Error(suite.T(), err)
+	if err != nil {
+		assert.Contains(suite.T(), err.Error(), "failed to get config database client")
+	}
+}
+
 // TestRegisterRoutes_GetByIDEndpoint tests that the get by ID endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-schemas/test-id", nil)
@@ -150,11 +206,17 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPut, "/user-schemas/test-id", nil)
@@ -171,11 +233,17 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/user-schemas/test-id", nil)
@@ -192,11 +260,17 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-schemas", nil)
@@ -213,11 +287,17 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-schemas/test-id", nil)
@@ -408,6 +488,12 @@ func TestInitialize_Standalone(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 
 	config.ResetThunderRuntime()
@@ -419,7 +505,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
-	service, _, err := Initialize(mux, mockOUService, &mockTransactioner{})
+	service, _, err := Initialize(mux, mockOUService)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, service)
@@ -762,7 +848,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Initialize should return an error due to invalid YAML
-	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
@@ -815,7 +901,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Initialize should return an error due to validation failure
-	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
@@ -876,7 +962,7 @@ schema: |
 		}).Once()
 
 	// Initialize should return an error due to OU service failure
-	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 
@@ -929,7 +1015,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Initialize should return an error due to invalid JSON
-	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
+	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
