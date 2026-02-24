@@ -38,7 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
-	"github.com/asgardeo/thunder/tests/mocks/authnprovidermock"
+	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
@@ -50,7 +50,7 @@ type AuthAssertExecutorTestSuite struct {
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
 	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
 	mockAssertGenerator *assertmock.AuthAssertGeneratorInterfaceMock
-	mockAuthnProvider   *authnprovidermock.AuthnProviderInterfaceMock
+	mockCredsAuthSvc    *credentialsmock.CredentialsAuthnServiceInterfaceMock
 	mockUserProvider    *userprovidermock.UserProviderInterfaceMock
 	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
 	executor            *authAssertExecutor
@@ -67,7 +67,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockAssertGenerator = assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
-	suite.mockAuthnProvider = authnprovidermock.NewAuthnProviderInterfaceMock(suite.T())
+	suite.mockCredsAuthSvc = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
@@ -76,7 +76,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 		[]common.Input{}, []common.Input{}).Return(mockExec)
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
-		suite.mockOUService, suite.mockAssertGenerator, suite.mockAuthnProvider, suite.mockUserProvider)
+		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockUserProvider)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,
@@ -102,7 +102,7 @@ func initializeTestRuntime() error {
 func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.jwtService)
-	assert.NotNil(suite.T(), suite.executor.authnProvider)
+	assert.NotNil(suite.T(), suite.executor.credsAuthSvc)
 	assert.NotNil(suite.T(), suite.executor.userProvider)
 	assert.NotNil(suite.T(), suite.executor.authAssertGenerator)
 }
@@ -448,7 +448,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 		Attributes: attrsJSON,
 	}
 
-	suite.mockAuthnProvider.On("GetAttributes", "token-123", []string{"email", "name"},
+	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", []string{"email", "name"},
 		(*authnprovider.GetAttributesMetadata)(nil)).Return(&res, nil)
 
 	resultAttrs, err := suite.executor.getUserAttributes("user-123", "token-123", []string{"email", "name"}, nil)
@@ -457,7 +457,24 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 	assert.NotNil(suite.T(), resultAttrs)
 	assert.Equal(suite.T(), "test@example.com", resultAttrs["email"])
 	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
-	suite.mockAuthnProvider.AssertExpectations(suite.T())
+	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_ServiceError() {
+	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", []string{"email", "name"},
+		(*authnprovider.GetAttributesMetadata)(nil)).Return(nil, &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "ATTRIBUTES_FETCH_FAILED",
+		Error:            "failed to fetch attributes",
+		ErrorDescription: "something went wrong",
+	})
+
+	resultAttrs, err := suite.executor.getUserAttributes("user-123", "token-123", []string{"email", "name"}, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resultAttrs)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
+	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
