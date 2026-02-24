@@ -220,7 +220,7 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 		return nil, &common.ErrorInvalidIDPID
 	}
 
-	identityProvider, svcErr := as.idpService.GetIdentityProvider(idpID)
+	identityProvider, svcErr := as.idpService.GetIdentityProvider(context.TODO(), idpID)
 	if svcErr != nil {
 		return nil, as.handleIDPServiceError(idpID, svcErr, logger)
 	}

@@ -22,7 +22,9 @@ package idp
 import (
 	"net/http"
 
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -36,7 +38,18 @@ func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.Re
 		idpStore = newIDPStore()
 	}
 
-	idpService := newIDPService(idpStore)
+	// Get transactioner from DB provider
+	dbProvider := provider.GetDBProvider()
+	dbClient, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		log.GetLogger().Fatal("Failed to get DB client", log.Error(err))
+	}
+	transactioner, err := dbClient.GetTransactioner()
+	if err != nil {
+		log.GetLogger().Fatal("Failed to get transactioner", log.Error(err))
+	}
+
+	idpService := newIDPService(idpStore, transactioner)
 
 	// Load declarative resources if enabled
 	if declarativeresource.IsDeclarativeModeEnabled() {

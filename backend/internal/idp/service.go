@@ -20,9 +20,11 @@
 package idp
 
 import (
+	"context"
 	"errors"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -31,30 +33,32 @@ import (
 
 // IDPServiceInterface defines the interface for the IdP service.
 type IDPServiceInterface interface {
-	CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)
-	GetIdentityProviderList() ([]BasicIDPDTO, *serviceerror.ServiceError)
-	GetIdentityProvider(idpID string) (*IDPDTO, *serviceerror.ServiceError)
-	GetIdentityProviderByName(idpName string) (*IDPDTO, *serviceerror.ServiceError)
-	UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)
-	DeleteIdentityProvider(idpID string) *serviceerror.ServiceError
+	CreateIdentityProvider(ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)
+	GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, *serviceerror.ServiceError)
+	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, *serviceerror.ServiceError)
+	GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, *serviceerror.ServiceError)
+	UpdateIdentityProvider(ctx context.Context, idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)
+	DeleteIdentityProvider(ctx context.Context, idpID string) *serviceerror.ServiceError
 }
 
 // idpService is the default implementation of the IdPServiceInterface.
 type idpService struct {
-	idpStore idpStoreInterface
-	logger   *log.Logger
+	idpStore      idpStoreInterface
+	transactioner transaction.Transactioner
+	logger        *log.Logger
 }
 
 // newIDPService creates a new instance of IdPService.
-func newIDPService(idpStore idpStoreInterface) IDPServiceInterface {
+func newIDPService(idpStore idpStoreInterface, transactioner transaction.Transactioner) IDPServiceInterface {
 	return &idpService{
-		idpStore: idpStore,
-		logger:   log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+		idpStore:      idpStore,
+		transactioner: transactioner,
+		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
 	}
 }
 
 // CreateIdentityProvider creates a new Identity Provider.
-func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
+func (is *idpService) CreateIdentityProvider(ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
 	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
 		return nil, err
@@ -64,28 +68,41 @@ func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerro
 		return nil, svcErr
 	}
 
-	// Check if an identity provider with the same name already exists
-	existingIDP, err := is.idpStore.GetIdentityProviderByName(idp.Name)
-	if err != nil && !errors.Is(err, ErrIDPNotFound) {
-		logger.Error("Failed to check existing identity provider by name", log.Error(err),
-			log.String("idpName", idp.Name))
-		return nil, &serviceerror.InternalServerError
-	}
-	if existingIDP != nil {
-		return nil, &ErrorIDPAlreadyExists
-	}
-
-	// Create the IdP in the database.
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
 		logger.Error("failed to generate ID for identity provider", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
-
 	idp.ID = id
-	err = is.idpStore.CreateIdentityProvider(*idp)
-	if err != nil {
-		logger.Error("Failed to create IdP", log.Error(err))
+
+	var svcErr *serviceerror.ServiceError
+	err = is.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		// Check if an identity provider with the same name already exists
+		existingIDP, err := is.idpStore.GetIdentityProviderByName(txCtx, idp.Name)
+		if err != nil && !errors.Is(err, ErrIDPNotFound) {
+			logger.Error("Failed to check existing identity provider by name", log.Error(err),
+				log.String("idpName", idp.Name))
+			svcErr = &serviceerror.InternalServerError
+			return err
+		}
+		if existingIDP != nil {
+			svcErr = &ErrorIDPAlreadyExists
+			return errors.New("identity provider already exists")
+		}
+
+		// Create the IdP in the database.
+		err = is.idpStore.CreateIdentityProvider(txCtx, *idp)
+		if err != nil {
+			logger.Error("Failed to create IdP", log.Error(err))
+			svcErr = &serviceerror.InternalServerError
+			return err
+		}
+		return nil
+	})
+
+	if svcErr != nil {
+		return nil, svcErr
+	} else if err != nil {
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -93,9 +110,9 @@ func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerro
 }
 
 // GetIdentityProviderList retrieves the list of all Identity Providers.
-func (is *idpService) GetIdentityProviderList() ([]BasicIDPDTO, *serviceerror.ServiceError) {
+func (is *idpService) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
-	idps, err := is.idpStore.GetIdentityProviderList()
+	idps, err := is.idpStore.GetIdentityProviderList(ctx)
 	if err != nil {
 		logger.Error("Failed to get identity provider list", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -105,13 +122,13 @@ func (is *idpService) GetIdentityProviderList() ([]BasicIDPDTO, *serviceerror.Se
 }
 
 // GetIdentityProvider retrieves an identity provider by its ID.
-func (is *idpService) GetIdentityProvider(idpID string) (*IDPDTO, *serviceerror.ServiceError) {
+func (is *idpService) GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
 	if strings.TrimSpace(idpID) == "" {
 		return nil, &ErrorInvalidIDPID
 	}
 
-	idp, err := is.idpStore.GetIdentityProvider(idpID)
+	idp, err := is.idpStore.GetIdentityProvider(ctx, idpID)
 	if err != nil {
 		if errors.Is(err, ErrIDPNotFound) {
 			return nil, &ErrorIDPNotFound
@@ -124,13 +141,14 @@ func (is *idpService) GetIdentityProvider(idpID string) (*IDPDTO, *serviceerror.
 }
 
 // GetIdentityProviderByName retrieves an identity provider by its name.
-func (is *idpService) GetIdentityProviderByName(idpName string) (*IDPDTO, *serviceerror.ServiceError) {
+func (is *idpService) GetIdentityProviderByName(ctx context.Context,
+	idpName string) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
 	if strings.TrimSpace(idpName) == "" {
 		return nil, &ErrorInvalidIDPName
 	}
 
-	idp, err := is.idpStore.GetIdentityProviderByName(idpName)
+	idp, err := is.idpStore.GetIdentityProviderByName(ctx, idpName)
 	if err != nil {
 		if errors.Is(err, ErrIDPNotFound) {
 			return nil, &ErrorIDPNotFound
@@ -143,7 +161,7 @@ func (is *idpService) GetIdentityProviderByName(idpName string) (*IDPDTO, *servi
 }
 
 // UpdateIdentityProvider updates an existing Identity Provider.
-func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO,
+func (is *idpService) UpdateIdentityProvider(ctx context.Context, idpID string, idp *IDPDTO) (*IDPDTO,
 	*serviceerror.ServiceError) {
 	logger := is.logger
 	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
@@ -157,36 +175,48 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 		return nil, svcErr
 	}
 
-	// Check if the identity provider exists
-	existingIDP, err := is.idpStore.GetIdentityProvider(idpID)
-	if err != nil {
-		if errors.Is(err, ErrIDPNotFound) {
-			return nil, &ErrorIDPNotFound
-		}
-		logger.Error("Failed to get identity provider for update", log.String("idpID", idpID), log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	if existingIDP == nil {
-		return nil, &ErrorIDPNotFound
-	}
-
-	// If the name is being updated, check whether another IdP with the same name exists
-	if existingIDP.Name != idp.Name {
-		existingIDPByName, err := is.idpStore.GetIdentityProviderByName(idp.Name)
-		if err != nil && !errors.Is(err, ErrIDPNotFound) {
-			logger.Error("Failed to check existing identity provider by name", log.Error(err),
-				log.String("idpName", idp.Name))
-			return nil, &serviceerror.InternalServerError
-		}
-		if existingIDPByName != nil {
-			return nil, &ErrorIDPAlreadyExists
-		}
-	}
-
 	idp.ID = idpID
-	err = is.idpStore.UpdateIdentityProvider(idp)
-	if err != nil {
-		logger.Error("Failed to update identity provider", log.Error(err), log.String("idpID", idpID))
+	var svcErr *serviceerror.ServiceError
+	err := is.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		// Check if the identity provider exists
+		existingIDP, err := is.idpStore.GetIdentityProvider(txCtx, idpID)
+		if err != nil {
+			if errors.Is(err, ErrIDPNotFound) {
+				svcErr = &ErrorIDPNotFound
+				return err
+			}
+			logger.Error("Failed to get identity provider for update", log.String("idpID", idpID), log.Error(err))
+			svcErr = &serviceerror.InternalServerError
+			return err
+		}
+
+		// If the name is being updated, check whether another IdP with the same name exists
+		if existingIDP.Name != idp.Name {
+			existingIDPByName, err := is.idpStore.GetIdentityProviderByName(txCtx, idp.Name)
+			if err != nil && !errors.Is(err, ErrIDPNotFound) {
+				logger.Error("Failed to check existing identity provider by name", log.Error(err),
+					log.String("idpName", idp.Name))
+				svcErr = &serviceerror.InternalServerError
+				return err
+			}
+			if existingIDPByName != nil {
+				svcErr = &ErrorIDPAlreadyExists
+				return errors.New("identity provider already exists")
+			}
+		}
+
+		err = is.idpStore.UpdateIdentityProvider(txCtx, idp)
+		if err != nil {
+			logger.Error("Failed to update identity provider", log.Error(err), log.String("idpID", idpID))
+			svcErr = &serviceerror.InternalServerError
+			return err
+		}
+		return nil
+	})
+
+	if svcErr != nil {
+		return nil, svcErr
+	} else if err != nil {
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -194,7 +224,7 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 }
 
 // DeleteIdentityProvider deletes an identity provider.
-func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.ServiceError {
+func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) *serviceerror.ServiceError {
 	logger := is.logger
 	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
@@ -204,19 +234,31 @@ func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.Service
 		return &ErrorInvalidIDPID
 	}
 
-	// Check if the identity provider exists
-	_, err := is.idpStore.GetIdentityProvider(idpID)
-	if err != nil {
-		if errors.Is(err, ErrIDPNotFound) {
-			return nil
+	var svcErr *serviceerror.ServiceError
+	err := is.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		// Check if the identity provider exists
+		_, err := is.idpStore.GetIdentityProvider(txCtx, idpID)
+		if err != nil {
+			if errors.Is(err, ErrIDPNotFound) {
+				return nil
+			}
+			logger.Error("Failed to get identity provider for deletion", log.Error(err), log.String("idpID", idpID))
+			svcErr = &serviceerror.InternalServerError
+			return err
 		}
-		logger.Error("Failed to get identity provider for deletion", log.Error(err), log.String("idpID", idpID))
-		return &serviceerror.InternalServerError
-	}
 
-	err = is.idpStore.DeleteIdentityProvider(idpID)
-	if err != nil {
-		logger.Error("Failed to delete identity provider", log.Error(err), log.String("idpID", idpID))
+		err = is.idpStore.DeleteIdentityProvider(txCtx, idpID)
+		if err != nil {
+			logger.Error("Failed to delete identity provider", log.Error(err), log.String("idpID", idpID))
+			svcErr = &serviceerror.InternalServerError
+			return err
+		}
+		return nil
+	})
+
+	if svcErr != nil {
+		return svcErr
+	} else if err != nil {
 		return &serviceerror.InternalServerError
 	}
 

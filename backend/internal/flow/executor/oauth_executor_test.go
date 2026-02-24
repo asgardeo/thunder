@@ -86,7 +86,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorize
 	suite.mockOAuthService.On("BuildAuthorizeURL", "idp-123").
 		Return("https://oauth.provider.com/authorize?client_id=abc", nil)
 
-	suite.mockIDPService.On("GetIdentityProvider", "idp-123").
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
 		Return(&idp.IDPDTO{ID: "idp-123", Name: "TestIDP"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -166,7 +166,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_Success() {
 
 	suite.mockOAuthService.On("BuildAuthorizeURL", "idp-123").
 		Return("https://oauth.provider.com/authorize", nil)
-	suite.mockIDPService.On("GetIdentityProvider", "idp-123").
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
 		Return(&idp.IDPDTO{ID: "idp-123", Name: "GoogleIDP"}, nil)
 
 	err := suite.executor.BuildAuthorizeFlow(ctx, execResp)

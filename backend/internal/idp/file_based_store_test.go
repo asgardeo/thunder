@@ -19,6 +19,7 @@
 package idp
 
 import (
+	"context"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
@@ -60,11 +61,11 @@ func (suite *FileBasedStoreTestSuite) TestCreateIdentityProvider() {
 	}
 
 	// Test creation
-	err = suite.store.CreateIdentityProvider(idp)
+	err = suite.store.CreateIdentityProvider(context.Background(), idp)
 	suite.NoError(err)
 
 	// Verify it was stored
-	retrievedIDP, err := suite.store.GetIdentityProvider("test-idp-1")
+	retrievedIDP, err := suite.store.GetIdentityProvider(context.Background(), "test-idp-1")
 	suite.NoError(err)
 	suite.NotNil(retrievedIDP)
 	suite.Equal("test-idp-1", retrievedIDP.ID)
@@ -85,11 +86,11 @@ func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderByID() {
 		Properties:  []cmodels.Property{*prop},
 	}
 
-	err = suite.store.CreateIdentityProvider(idp)
+	err = suite.store.CreateIdentityProvider(context.Background(), idp)
 	suite.NoError(err)
 
 	// Test retrieval
-	retrievedIDP, err := suite.store.GetIdentityProvider("test-idp-2")
+	retrievedIDP, err := suite.store.GetIdentityProvider(context.Background(), "test-idp-2")
 	suite.NoError(err)
 	suite.NotNil(retrievedIDP)
 	suite.Equal("test-idp-2", retrievedIDP.ID)
@@ -99,7 +100,7 @@ func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderByID() {
 
 func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderByID_NotFound() {
 	// Test retrieval of non-existent IDP
-	retrievedIDP, err := suite.store.GetIdentityProvider("non-existent-id")
+	retrievedIDP, err := suite.store.GetIdentityProvider(context.Background(), "non-existent-id")
 	suite.Error(err)
 	suite.Nil(retrievedIDP)
 	suite.Equal(ErrIDPNotFound, err)
@@ -118,11 +119,11 @@ func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderByName() {
 		Properties:  []cmodels.Property{*prop},
 	}
 
-	err = suite.store.CreateIdentityProvider(idp)
+	err = suite.store.CreateIdentityProvider(context.Background(), idp)
 	suite.NoError(err)
 
 	// Test retrieval by name
-	retrievedIDP, err := suite.store.GetIdentityProviderByName("Test IDP By Name")
+	retrievedIDP, err := suite.store.GetIdentityProviderByName(context.Background(), "Test IDP By Name")
 	suite.NoError(err)
 	suite.NotNil(retrievedIDP)
 	suite.Equal("test-idp-3", retrievedIDP.ID)
@@ -131,7 +132,7 @@ func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderByName() {
 
 func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderByName_NotFound() {
 	// Test retrieval of non-existent IDP by name
-	retrievedIDP, err := suite.store.GetIdentityProviderByName("Non-Existent IDP")
+	retrievedIDP, err := suite.store.GetIdentityProviderByName(context.Background(), "Non-Existent IDP")
 	suite.Error(err)
 	suite.Nil(retrievedIDP)
 	suite.Equal(ErrIDPNotFound, err)
@@ -158,11 +159,11 @@ func (suite *FileBasedStoreTestSuite) TestGetIdentityProviderList() {
 		Properties:  []cmodels.Property{*prop2},
 	}
 
-	suite.NoError(suite.store.CreateIdentityProvider(idp1))
-	suite.NoError(suite.store.CreateIdentityProvider(idp2))
+	suite.NoError(suite.store.CreateIdentityProvider(context.Background(), idp1))
+	suite.NoError(suite.store.CreateIdentityProvider(context.Background(), idp2))
 
 	// Test list retrieval
-	idpList, err := suite.store.GetIdentityProviderList()
+	idpList, err := suite.store.GetIdentityProviderList(context.Background())
 	suite.NoError(err)
 	suite.Len(idpList, 2)
 
@@ -183,14 +184,14 @@ func (suite *FileBasedStoreTestSuite) TestUpdateIdentityProvider_NotSupported() 
 		Type: IDPTypeGoogle,
 	}
 
-	err := suite.store.UpdateIdentityProvider(idp)
+	err := suite.store.UpdateIdentityProvider(context.Background(), idp)
 	suite.Error(err)
 	suite.Contains(err.Error(), "not supported in file-based store")
 }
 
 func (suite *FileBasedStoreTestSuite) TestDeleteIdentityProvider_NotSupported() {
 	// Test that delete is not supported in file-based store
-	err := suite.store.DeleteIdentityProvider("test-idp-7")
+	err := suite.store.DeleteIdentityProvider(context.Background(), "test-idp-7")
 	suite.Error(err)
 	suite.Contains(err.Error(), "not supported in file-based store")
 }
