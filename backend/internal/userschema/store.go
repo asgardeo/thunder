@@ -112,6 +112,11 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	var displayAttribute interface{}
+	if userSchema.DisplayAttribute != "" {
+		displayAttribute = userSchema.DisplayAttribute
+	}
+
 	_, err = dbClient.QueryContext(
 		ctx,
 		queryCreateUserSchema,
@@ -119,6 +124,7 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
+		displayAttribute,
 		string(userSchema.Schema),
 		s.deploymentID,
 	)
@@ -174,12 +180,18 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	var displayAttribute interface{}
+	if userSchema.DisplayAttribute != "" {
+		displayAttribute = userSchema.DisplayAttribute
+	}
+
 	_, err = dbClient.QueryContext(
 		ctx,
 		queryUpdateUserSchemaByID,
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
+		displayAttribute,
 		string(userSchema.Schema),
 		schemaID,
 		s.deploymentID,
@@ -244,11 +256,19 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to parse schema_def as string")
 	}
 
+	var displayAttribute string
+	if row["display_attribute"] != nil {
+		if da, ok := row["display_attribute"].(string); ok {
+			displayAttribute = da
+		}
+	}
+
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		DisplayAttribute:      displayAttribute,
 		Schema:                json.RawMessage(schemaDef),
 	}
 
@@ -277,11 +297,19 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		return UserSchemaListItem{}, err
 	}
 
+	var displayAttribute string
+	if row["display_attribute"] != nil {
+		if da, ok := row["display_attribute"].(string); ok {
+			displayAttribute = da
+		}
+	}
+
 	userSchemaListItem := UserSchemaListItem{
 		ID:                    schemaID,
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		DisplayAttribute:      displayAttribute,
 	}
 
 	return userSchemaListItem, nil

@@ -79,7 +79,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TearDownSuite() {
 // Test top-level required string attribute.
 func (ts *UserSchemaRequiredAPITestSuite) TestRequiredTopLevelString() {
 	schema := CreateUserSchemaRequest{
-		Name: "req-top-level-string",
+		Name:             "req-top-level-string",
+		DisplayAttribute: "email",
 		Schema: json.RawMessage(`{
             "email": {"type": "string", "required": true},
             "nickname": {"type": "string"}

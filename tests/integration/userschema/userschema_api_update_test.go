@@ -99,7 +99,8 @@ func (ts *UpdateUserSchemaTestSuite) TearDownSuite() {
 // TestUpdateUserSchema tests PUT /user-schemas/{id} with valid data
 func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
 	updateRequest := UpdateUserSchemaRequest{
-		Name: "updated-schema-name",
+		Name:             "updated-schema-name",
+		DisplayAttribute: "updatedField",
 		Schema: json.RawMessage(`{
             "updatedField": {"type": "string", "required": true},
             "newField": {"type": "number"},
@@ -146,7 +147,98 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
 	// Verify updated schema according to API spec
 	ts.Assert().Equal(ts.testSchemaID, updatedSchema.ID, "ID should remain the same")
 	ts.Assert().Equal(updateRequest.Name, updatedSchema.Name, "Name should be updated")
+	ts.Assert().Equal("updatedField", updatedSchema.DisplayAttribute, "Display attribute should be updated")
 	ts.Assert().JSONEq(string(updateRequest.Schema), string(updatedSchema.Schema), "Schema data should be updated")
+}
+
+// TestUpdateUserSchemaDisplayAttribute tests changing the display attribute during update.
+func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaDisplayAttribute() {
+	// Create a schema with displayAttribute set to "firstName"
+	createReq := CreateUserSchemaRequest{
+		Name:             "display-attr-update-test",
+		DisplayAttribute: "firstName",
+		Schema: json.RawMessage(`{
+            "firstName": {"type": "string"},
+            "email": {"type": "string"}
+        }`),
+	}
+	createReq.OrganizationUnitID = ts.organizationUnitID
+	schemaID := ts.createTestSchema(createReq)
+
+	// Update to change display attribute to "email"
+	updateReq := UpdateUserSchemaRequest{
+		Name:             "display-attr-update-test",
+		DisplayAttribute: "email",
+		Schema: json.RawMessage(`{
+            "firstName": {"type": "string"},
+            "email": {"type": "string"}
+        }`),
+	}
+	updateReq.OrganizationUnitID = ts.organizationUnitID
+
+	jsonData, err := json.Marshal(updateReq)
+	if err != nil {
+		ts.T().Fatalf("Failed to marshal request: %v", err)
+	}
+
+	req, err := http.NewRequest("PUT", testServerURL+"/user-schemas/"+schemaID, bytes.NewBuffer(jsonData))
+	if err != nil {
+		ts.T().Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ts.client.Do(req)
+	if err != nil {
+		ts.T().Fatalf("Failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	ts.Assert().Equal(http.StatusOK, resp.StatusCode, "Should return 200 OK")
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		ts.T().Fatalf("Failed to read response body: %v", err)
+	}
+
+	var updatedSchema UserSchema
+	err = json.Unmarshal(bodyBytes, &updatedSchema)
+	if err != nil {
+		ts.T().Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	ts.Assert().Equal("email", updatedSchema.DisplayAttribute,
+		"Display attribute should be changed to email")
+
+	// Verify via GET that the change persisted
+	getReq, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+schemaID, nil)
+	if err != nil {
+		ts.T().Fatalf("Failed to create get request: %v", err)
+	}
+
+	getResp, err := ts.client.Do(getReq)
+	if err != nil {
+		ts.T().Fatalf("Failed to send get request: %v", err)
+	}
+	defer getResp.Body.Close()
+
+	ts.Assert().Equal(http.StatusOK, getResp.StatusCode)
+
+	getBody, err := io.ReadAll(getResp.Body)
+	if err != nil {
+		ts.T().Fatalf("Failed to read get response: %v", err)
+	}
+
+	var fetchedSchema UserSchema
+	err = json.Unmarshal(getBody, &fetchedSchema)
+	if err != nil {
+		ts.T().Fatalf("Failed to unmarshal get response: %v", err)
+	}
+
+	ts.Assert().Equal("email", fetchedSchema.DisplayAttribute,
+		"Display attribute should persist after update")
+
+	// Clean up
+	ts.deleteTestSchema(schemaID)
 }
 
 // TestUpdateUserSchemaNotFound tests PUT /user-schemas/{id} with non-existent ID

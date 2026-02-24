@@ -70,7 +70,8 @@ func (ts *DeleteUserSchemaTestSuite) SetupSuite() {
 func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
 	// Create a schema to delete
 	schema := CreateUserSchemaRequest{
-		Name: "schema-to-delete",
+		Name:             "schema-to-delete",
+		DisplayAttribute: "tempField",
 		Schema: json.RawMessage(`{
             "tempField": {"type": "string", "required": true},
             "description": {"type": "string"}

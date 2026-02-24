@@ -32,6 +32,7 @@ type UserSchema struct {
 	Name                  string          `json:"name,omitempty" yaml:"name"`
 	OrganizationUnitID    string          `json:"ouId" yaml:"organization_unit_id"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration" yaml:"allow_self_registration,omitempty"`
+	DisplayAttribute      string          `json:"displayAttribute,omitempty" yaml:"display_attribute,omitempty"`
 	Schema                json.RawMessage `json:"schema,omitempty" yaml:"schema"`
 }
 
@@ -41,6 +42,7 @@ type UserSchemaListItem struct {
 	Name                  string `json:"name,omitempty"`
 	OrganizationUnitID    string `json:"ouId"`
 	AllowSelfRegistration bool   `json:"allowSelfRegistration"`
+	DisplayAttribute      string `json:"displayAttribute,omitempty"`
 }
 
 // Link represents a hypermedia link in the API response.
@@ -63,6 +65,7 @@ type CreateUserSchemaRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
+	DisplayAttribute      string          `json:"displayAttribute,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
@@ -71,6 +74,7 @@ type UpdateUserSchemaRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
+	DisplayAttribute      string          `json:"displayAttribute,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
@@ -80,5 +84,6 @@ type UserSchemaRequestWithID struct {
 	Name                  string `yaml:"name"`
 	OrganizationUnitID    string `yaml:"organization_unit_id"`
 	AllowSelfRegistration bool   `yaml:"allow_self_registration,omitempty"`
+	DisplayAttribute      string `yaml:"display_attribute,omitempty"`
 	Schema                string `yaml:"schema"`
 }

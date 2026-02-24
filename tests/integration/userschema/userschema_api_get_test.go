@@ -77,8 +77,9 @@ func (ts *GetUserSchemaTestSuite) SetupSuite() {
     }`)
 
 	schema := CreateUserSchemaRequest{
-		Name:   ts.testSchemaName,
-		Schema: ts.testSchemaData,
+		Name:             ts.testSchemaName,
+		DisplayAttribute: "username",
+		Schema:           ts.testSchemaData,
 	}
 
 	ts.testSchemaID = ts.createTestSchema(schema)
@@ -127,6 +128,7 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaByID() {
 	// Verify retrieved schema according to API spec
 	ts.Assert().Equal(ts.testSchemaID, schema.ID, "ID should match")
 	ts.Assert().Equal(ts.testSchemaName, schema.Name, "Name should match")
+	ts.Assert().Equal("username", schema.DisplayAttribute, "Display attribute should match")
 	ts.Assert().JSONEq(string(ts.testSchemaData), string(schema.Schema), "Schema data should match")
 }
 

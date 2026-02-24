@@ -76,7 +76,8 @@ func (ts *CreateUserSchemaTestSuite) TearDownSuite() {
 // TestCreateUserSchema tests POST /user-schemas with valid data
 func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 	schema := CreateUserSchemaRequest{
-		Name: "employee-schema-test",
+		Name:             "employee-schema-test",
+		DisplayAttribute: "email",
 		Schema: json.RawMessage(`{
             "firstName": {"type": "string"},
             "lastName": {"type": "string", "required": true},
@@ -120,6 +121,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 	// Verify created schema according to API spec
 	ts.Assert().NotEmpty(createdSchema.ID, "Created schema should have ID")
 	ts.Assert().Equal(schema.Name, createdSchema.Name, "Name should match")
+	ts.Assert().Equal("email", createdSchema.DisplayAttribute, "Display attribute should match")
 	ts.Assert().JSONEq(string(schema.Schema), string(createdSchema.Schema), "Schema data should match")
 
 	// Track for cleanup

@@ -318,7 +318,8 @@ func (ts *UserValidationTestSuite) TestCreateUserWithoutSchema() {
 
 func (ts *UserValidationTestSuite) createEmployeeSchema() string {
 	schema := CreateUserSchemaRequest{
-		Name: "employee",
+		Name:             "employee",
+		DisplayAttribute: "email",
 		Schema: json.RawMessage(`{
 			"firstName": {"type": "string"},
 			"lastName": {"type": "string"},
@@ -333,7 +334,8 @@ func (ts *UserValidationTestSuite) createEmployeeSchema() string {
 
 func (ts *UserValidationTestSuite) createSchemaWithEnum() string {
 	schema := CreateUserSchemaRequest{
-		Name: "student",
+		Name:             "student",
+		DisplayAttribute: "name",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"grade": {"type": "string", "enum": ["A", "B", "C", "D", "F"]},

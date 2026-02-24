@@ -88,6 +88,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(
 				Name:                  schema.Name,
 				OrganizationUnitID:    schema.OrganizationUnitID,
 				AllowSelfRegistration: schema.AllowSelfRegistration,
+				DisplayAttribute:      schema.DisplayAttribute,
 			}
 			schemaList = append(schemaList, listItem)
 		}

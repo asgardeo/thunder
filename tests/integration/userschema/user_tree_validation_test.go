@@ -174,7 +174,8 @@ func (ts *UserTreeValidationTestSuite) getUniqueName(baseName string) string {
 func (ts *UserTreeValidationTestSuite) createEmployeeSchema() (string, string) {
 	schemaName := ts.getUniqueName("employee")
 	schema := CreateUserSchemaRequest{
-		Name: schemaName,
+		Name:             schemaName,
+		DisplayAttribute: "email",
 		Schema: json.RawMessage(`{
 			"firstName": {"type": "string"},
 			"lastName": {"type": "string"},
@@ -192,7 +193,8 @@ func (ts *UserTreeValidationTestSuite) createEmployeeSchema() (string, string) {
 func (ts *UserTreeValidationTestSuite) createComplexSchema() (string, string) {
 	schemaName := ts.getUniqueName("manager")
 	schema := CreateUserSchemaRequest{
-		Name: schemaName,
+		Name:             schemaName,
+		DisplayAttribute: "name",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"profile": {

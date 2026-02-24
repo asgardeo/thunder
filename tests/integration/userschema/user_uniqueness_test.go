@@ -164,6 +164,7 @@ func (ts *UserUniquenessTestSuite) createSchemaWithUniqueFields() string {
 	schema := CreateUserSchemaRequest{
 		Name:               "unique-employee",
 		OrganizationUnitID: ts.organizationUnitID,
+		DisplayAttribute:   "username",
 		Schema: json.RawMessage(`{
 			"username": {"type": "string", "unique": true},
 			"email": {"type": "string", "unique": true},

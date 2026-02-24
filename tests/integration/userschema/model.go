@@ -34,6 +34,7 @@ type UserSchema struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
+	DisplayAttribute      string          `json:"displayAttribute,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
@@ -42,6 +43,7 @@ type CreateUserSchemaRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
+	DisplayAttribute      string          `json:"displayAttribute,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
@@ -50,6 +52,7 @@ type UpdateUserSchemaRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
+	DisplayAttribute      string          `json:"displayAttribute,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
@@ -59,6 +62,7 @@ type UserSchemaListItem struct {
 	Name                  string `json:"name,omitempty"`
 	OrganizationUnitID    string `json:"ouId"`
 	AllowSelfRegistration bool   `json:"allowSelfRegistration,omitempty"`
+	DisplayAttribute      string `json:"displayAttribute,omitempty"`
 }
 
 // UserSchemaListResponse represents the response from listing user schemas

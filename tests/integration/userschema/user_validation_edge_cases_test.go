@@ -284,6 +284,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 	schema := CreateUserSchemaRequest{
 		Name:               "employee",
 		OrganizationUnitID: ts.organizationUnitID,
+		DisplayAttribute:   "email",
 		Schema: json.RawMessage(`{
 			"firstName": {"type": "string"},
 			"lastName": {"type": "string"},
@@ -314,6 +315,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string 
 	schema := CreateUserSchemaRequest{
 		Name:               "status-user",
 		OrganizationUnitID: ts.organizationUnitID,
+		DisplayAttribute:   "name",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"status": {"type": "string", "enum": ["active", "inactive", "pending"]},
@@ -328,6 +330,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithMixedEnum() string {
 	schema := CreateUserSchemaRequest{
 		Name:               "mixed-user",
 		OrganizationUnitID: ts.organizationUnitID,
+		DisplayAttribute:   "name",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"level": {"type": "number", "enum": [1, 2, 3, 4, 5]},
