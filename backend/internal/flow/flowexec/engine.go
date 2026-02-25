@@ -95,7 +95,6 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			CurrentNodeID:     ctx.CurrentNode.GetID(),
 			RuntimeData:       ctx.RuntimeData,
 			ForwardedData:     ctx.ForwardedData,
-			HTTPContext:       ctx.HTTPContext,
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
 			ExecutionHistory:  ctx.ExecutionHistory,
