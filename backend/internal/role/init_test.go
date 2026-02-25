@@ -20,7 +20,11 @@ package role
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -28,8 +32,10 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 // InitTestSuite contains tests for store initialization.
@@ -603,4 +609,119 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestMatchesAssigneeEmptyAssignme
 	groupSet := map[string]bool{}
 
 	suite.False(matchesAssignee(assignments, "", groupSet))
+}
+
+// TestInitialize_DBClientError tests Initialize when DB client retrieval fails
+func (suite *InitTestSuite) TestInitialize_DBClientError() {
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(nil, errors.New("mock db client error"))
+
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface {
+		return mockProvider
+	}
+	defer func() {
+		getDBProvider = originalGetDBProvider
+	}()
+
+	mux := http.NewServeMux()
+	_, _, err := Initialize(mux, nil, nil, nil, nil)
+
+	suite.Error(err)
+	suite.Equal("mock db client error", err.Error())
+	mockProvider.AssertExpectations(suite.T())
+}
+
+// TestInitialize_TransactionerError tests Initialize when transactioner retrieval fails
+func (suite *InitTestSuite) TestInitialize_TransactionerError() {
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(nil, errors.New("mock transactioner error"))
+
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface {
+		return mockProvider
+	}
+	defer func() {
+		getDBProvider = originalGetDBProvider
+	}()
+
+	mux := http.NewServeMux()
+	_, _, err := Initialize(mux, nil, nil, nil, nil)
+
+	suite.Error(err)
+	suite.Equal("mock transactioner error", err.Error())
+	mockProvider.AssertExpectations(suite.T())
+	mockClient.AssertExpectations(suite.T())
+}
+
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
+	return operation(ctx)
+}
+
+// TestInitialize_Success tests successful Initialize
+func (suite *InitTestSuite) TestInitialize_Success() {
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface {
+		return mockProvider
+	}
+	defer func() {
+		getDBProvider = originalGetDBProvider
+	}()
+
+	mux := http.NewServeMux()
+	svc, exporter, err := Initialize(mux, nil, nil, nil, nil)
+
+	suite.NoError(err)
+	suite.NotNil(svc)
+	suite.NotNil(exporter)
+	mockProvider.AssertExpectations(suite.T())
+	mockClient.AssertExpectations(suite.T())
+}
+
+// TestInitialize_StoreInitError tests Initialize when store initialization fails
+func (suite *InitTestSuite) TestInitialize_StoreInitError() {
+	config.ResetThunderRuntime()
+	testDir := suite.T().TempDir()
+
+	// Create invalid roles yaml
+	rolesDir := filepath.Join(testDir, "repository", "resources", "roles")
+	err := os.MkdirAll(rolesDir, 0750)
+	suite.NoError(err)
+	err = os.WriteFile(filepath.Join(rolesDir, "invalid.yaml"), []byte("invalid yaml content: ["), 0600)
+	suite.NoError(err)
+
+	testConfig := &config.Config{
+		Role: config.RoleConfig{
+			Store: string(serverconst.StoreModeDeclarative),
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	_ = config.InitializeThunderRuntime(testDir, testConfig)
+	defer func() {
+		config.ResetThunderRuntime()
+		suite.SetupSuite()
+	}()
+
+	mux := http.NewServeMux()
+	svc, exporter, err := Initialize(mux, nil, nil, nil, nil)
+
+	suite.Error(err)
+	if err != nil {
+		suite.Contains(err.Error(), "failed to load role resources")
+	}
+	suite.Nil(svc)
+	suite.Nil(exporter)
 }
