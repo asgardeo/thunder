@@ -72,6 +72,25 @@ func (c *compositeOUStore) GetOrganizationUnitList(limit, offset int) ([]Organiz
 	return items, nil
 }
 
+// GetOrganizationUnitsByIDs retrieves organization units matching the given IDs from both stores.
+func (c *compositeOUStore) GetOrganizationUnitsByIDs(ids []string) ([]OrganizationUnitBasic, error) {
+	if len(ids) == 0 {
+		return []OrganizationUnitBasic{}, nil
+	}
+
+	dbOUs, err := c.dbStore.GetOrganizationUnitsByIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+
+	fileOUs, err := c.fileStore.GetOrganizationUnitsByIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergeAndDeduplicateOUs(dbOUs, fileOUs), nil
+}
+
 // CreateOrganizationUnit creates a new organization unit in the database store only.
 // Conflict checking and parent validation are handled at the service layer.
 func (c *compositeOUStore) CreateOrganizationUnit(ou OrganizationUnit) error {

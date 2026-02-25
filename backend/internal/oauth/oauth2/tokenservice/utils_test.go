@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -628,7 +629,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserError() {
 	}
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(nil, serverErr)
 
-	_, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch user")
@@ -646,7 +647,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UnmarshalError() {
 		Type:       "local",
 	}, nil)
 
-	_, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal user attributes")
@@ -665,7 +666,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAttributes() {
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -686,7 +687,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyAllowedClaims() {
 	}, nil)
 
 	// Empty allowedClaims - no special claims should be added
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", []string{})
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", []string{})
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -711,7 +712,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAllowedClaims() {
 	}, nil)
 
 	// Nil allowedClaims - no special claims should be added
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -735,7 +736,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoType() {
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -759,7 +760,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoOrganizationUnit(
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -784,7 +785,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
 	}, nil)
 
 	// Mock GetOrganizationUnit to return OU details
-	mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{
 		ID:     "ou-123",
 		Handle: "test-org",
 		Name:   "Test Organization",
@@ -792,7 +793,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
 
 	// Request all OU-related claims
 	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle, constants.ClaimOUName}
-	attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -817,15 +818,16 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceError() {
 	}, nil)
 
 	// Mock GetOrganizationUnit to return error
-	mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "OU_NOT_FOUND",
-		ErrorDescription: "organization unit not found",
-	})
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "OU_NOT_FOUND",
+			ErrorDescription: "organization unit not found",
+		})
 
 	// Request ouHandle which requires OU service
 	allowedClaims := []string{constants.ClaimOUHandle}
-	_, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch organization unit details")
@@ -850,7 +852,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_OUDetailsNotRequestedSkipsO
 
 	// Request only ouId (not ouHandle or ouName)
 	allowedClaims := []string{constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -877,7 +879,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilOUServiceSkipsOUDetails(
 
 	// Request ouHandle but pass nil ouService
 	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -921,7 +923,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithGroups() {
 		constants.ClaimOUID,
 		constants.UserAttributeGroups,
 	}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -958,7 +960,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithEmptyGroups() {
 
 	// Request groups
 	allowedClaims := []string{constants.UserAttributeGroups}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -989,7 +991,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserGroupsError() {
 
 	// Request groups in allowed claims to trigger the error
 	allowedClaims := []string{constants.UserAttributeGroups}
-	_, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch user groups")
@@ -1009,7 +1011,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithoutGroups() {
 
 	// Include userType but NOT groups - so GetUserGroups should not be called
 	allowedClaims := []string{"email", constants.ClaimUserType}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -1059,13 +1061,14 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_SingleOUClaim() {
 				OrganizationUnit: "ou-123",
 			}, nil)
 
-			mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{
+			mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{
 				ID:     "ou-123",
 				Handle: "test-org",
 				Name:   "Test Organization",
 			}, nil)
 
-			attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", tc.allowedClaims)
+			attrs, err := FetchUserAttributes(
+				context.Background(), mockUserService, mockOUService, "test-user", tc.allowedClaims)
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), attrs)

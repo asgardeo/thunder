@@ -214,12 +214,13 @@ func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO
 // FetchUserAttributes fetches user attributes and merges default claims and groups into the return map.
 // Callers should log errors with their own context.
 func FetchUserAttributes(
+	ctx context.Context,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	userID string,
 	allowedClaims []string,
 ) (map[string]interface{}, error) {
-	userData, svcErr := userService.GetUser(context.TODO(), userID)
+	userData, svcErr := userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
 	}
@@ -257,7 +258,7 @@ func FetchUserAttributes(
 		// Only fetch OU details if ouHandle or ouName are requested
 		needsOUDetails := shouldInclude(constants.ClaimOUHandle) || shouldInclude(constants.ClaimOUName)
 		if needsOUDetails && ouService != nil {
-			ouDetails, ouErr := ouService.GetOrganizationUnit(userData.OrganizationUnit)
+			ouDetails, ouErr := ouService.GetOrganizationUnit(ctx, userData.OrganizationUnit)
 			if ouErr != nil {
 				return nil, fmt.Errorf("failed to fetch organization unit details: %s", ouErr.Error)
 			}

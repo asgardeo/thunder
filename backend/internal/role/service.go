@@ -139,7 +139,7 @@ func (rs *roleService) CreateRole(
 	}
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(role.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			logger.Debug("Organization unit not found", log.String("ouID", role.OrganizationUnitID))
@@ -246,7 +246,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(role.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			logger.Debug("Organization unit not found", log.String("ouID", role.OrganizationUnitID))

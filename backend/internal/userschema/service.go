@@ -136,7 +136,8 @@ func (us *userSchemaService) CreateUserSchema(
 	}
 
 	// Ensure organization unit exists
-	if svcErr := us.ensureOrganizationUnitExists(request.OrganizationUnitID, logger); svcErr != nil {
+	if svcErr := us.ensureOrganizationUnitExists(
+		ctx, request.OrganizationUnitID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -241,7 +242,8 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	}
 
 	// Ensure organization unit exists
-	if svcErr := us.ensureOrganizationUnitExists(request.OrganizationUnitID, logger); svcErr != nil {
+	if svcErr := us.ensureOrganizationUnitExists(
+		ctx, request.OrganizationUnitID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -414,6 +416,7 @@ func (us *userSchemaService) getCompiledSchemaForUserType(
 
 // ensureOrganizationUnitExists validates that the provided organization unit exists using the OU service.
 func (us *userSchemaService) ensureOrganizationUnitExists(
+	ctx context.Context,
 	organizationUnitID string,
 	logger *log.Logger,
 ) *serviceerror.ServiceError {
@@ -422,7 +425,7 @@ func (us *userSchemaService) ensureOrganizationUnitExists(
 		return &ErrorInternalServerError
 	}
 
-	exists, svcErr := us.ouService.IsOrganizationUnitExists(organizationUnitID)
+	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, organizationUnitID)
 	if svcErr != nil {
 		logger.Error("Failed to verify organization unit existence",
 			log.String("organizationUnitID", organizationUnitID), log.Any("error", svcErr))
