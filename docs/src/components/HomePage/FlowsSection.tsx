@@ -20,6 +20,15 @@ import React, {JSX, useCallback, useRef, useState} from 'react';
 import {Box, Card, Container, Typography} from '@wso2/oxygen-ui';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
+import FacebookIcon from '../icons/FacebookIcon';
+import GithubIcon from '../icons/GithubIcon';
+import PasskeyIcon from '../icons/PasskeyIcon';
+import FingerprintIcon from '../icons/FingerprintIcon';
+import MagicLinkIcon from '../icons/MagicLinkIcon';
+import PhoneIcon from '../icons/PhoneIcon';
+import LockIcon from '../icons/LockIcon';
+import EmailIcon from '../icons/EmailIcon';
+import KeypadIcon from '../icons/KeypadIcon';
 
 /* ─── Types ─── */
 
@@ -67,73 +76,7 @@ function AsgardeoStarIcon({size = 24, color = '#FF6B00'}: {size?: number; color?
   );
 }
 
-const FacebookIcon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-  </svg>
-);
-
-const GithubIcon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-  </svg>
-);
-
 const GoogleLetterIcon = <Box component="span" sx={{fontWeight: 700, fontSize: '1.1rem', color: 'inherit'}}>G</Box>;
-
-const PersonIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const FingerprintIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" />
-    <path d="M5 19.5C5.5 18 6 15 6 12c0-3.5 2.5-6 6-6" />
-    <path d="M12 10c-2 0-3 1.5-3 3 0 3-1 5.5-2 7.5" />
-    <path d="M15 9.4a4 4 0 0 1 1 2.6c0 3-.5 5.5-1.5 8" />
-    <path d="M18 6.5a9 9 0 0 1 2 5.5c0 4.5-1 7-2 9" />
-  </svg>
-);
-
-const MagicLinkIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 20h.01" />
-    <path d="M2 8.82a15 15 0 0 1 20 0" />
-    <path d="M5 12.859a10 10 0 0 1 14 0" />
-    <path d="M8.5 16.429a5 5 0 0 1 7 0" />
-  </svg>
-);
-
-const PhoneIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-    <path d="M12 18h.01" />
-  </svg>
-);
-
-const LockIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-);
-
-const EmailIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="20" height="16" x="2" y="4" rx="2" />
-    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-  </svg>
-);
-
-const KeypadIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="20" height="16" x="2" y="4" rx="2" />
-    <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M6 16h.01M10 16h.01M14 16h.01M18 16h.01" />
-  </svg>
-);
 
 /* ─── Flow Configurations ─── */
 
@@ -142,8 +85,8 @@ const CATEGORIES: CategoryDef[] = [
     id: 'social',
     label: 'Social Logins',
     icons: [
-      {id: 'facebook', label: 'Facebook', icon: FacebookIcon},
-      {id: 'github', label: 'GitHub', icon: GithubIcon},
+      {id: 'facebook', label: 'Facebook', icon: <FacebookIcon size={20} />},
+      {id: 'github', label: 'GitHub', icon: <GithubIcon size={20} />},
       {id: 'google', label: 'Google', icon: GoogleLetterIcon},
     ],
     flows: [
@@ -177,9 +120,9 @@ const CATEGORIES: CategoryDef[] = [
     id: 'passwordless',
     label: 'Passwordless Login',
     icons: [
-      {id: 'passkey', label: 'Passkey', icon: PersonIcon},
-      {id: 'biometric', label: 'Biometric', icon: FingerprintIcon},
-      {id: 'magic-link', label: 'Magic Link', icon: MagicLinkIcon},
+      {id: 'passkey', label: 'Passkey', icon: <PasskeyIcon />},
+      {id: 'biometric', label: 'Biometric', icon: <FingerprintIcon />},
+      {id: 'magic-link', label: 'Magic Link', icon: <MagicLinkIcon />},
     ],
     flows: [
       {
@@ -206,10 +149,10 @@ const CATEGORIES: CategoryDef[] = [
     id: 'mfa',
     label: 'Multi-Factor Authentication',
     icons: [
-      {id: 'sms', label: 'SMS OTP', icon: PhoneIcon},
-      {id: 'security-key', label: 'Security Key', icon: LockIcon},
-      {id: 'email-otp', label: 'Email OTP', icon: EmailIcon},
-      {id: 'totp', label: 'TOTP', icon: KeypadIcon},
+      {id: 'sms', label: 'SMS OTP', icon: <PhoneIcon />},
+      {id: 'security-key', label: 'Security Key', icon: <LockIcon />},
+      {id: 'email-otp', label: 'Email OTP', icon: <EmailIcon />},
+      {id: 'totp', label: 'TOTP', icon: <KeypadIcon />},
     ],
     flows: [
       {
@@ -643,10 +586,8 @@ function VerifyCard({flow, branding}: {flow: FlowConfig; branding: ThemeBranding
 
       {flow.verifyType === 'passkey' && (
         <Box sx={{textAlign: 'center'}}>
-          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center'}}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={branding.primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4" />
-            </svg>
+          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center', color: branding.primaryColor}}>
+            <PasskeyIcon size={32} />
           </Box>
           <Typography variant="caption" sx={{fontSize: '0.65rem', color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', display: 'block', mb: 1.5}}>
             Use your device to verify your identity
@@ -657,14 +598,8 @@ function VerifyCard({flow, branding}: {flow: FlowConfig; branding: ThemeBranding
 
       {flow.verifyType === 'biometric' && (
         <Box sx={{textAlign: 'center'}}>
-          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center'}}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={branding.primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" />
-              <path d="M5 19.5C5.5 18 6 15 6 12c0-3.5 2.5-6 6-6" />
-              <path d="M12 10c-2 0-3 1.5-3 3 0 3-1 5.5-2 7.5" />
-              <path d="M15 9.4a4 4 0 0 1 1 2.6c0 3-.5 5.5-1.5 8" />
-              <path d="M18 6.5a9 9 0 0 1 2 5.5c0 4.5-1 7-2 9" />
-            </svg>
+          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center', color: branding.primaryColor}}>
+            <FingerprintIcon size={32} />
           </Box>
           <Typography variant="caption" sx={{fontSize: '0.65rem', color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', display: 'block', mb: 1.5}}>
             Place your finger on the sensor
@@ -675,11 +610,8 @@ function VerifyCard({flow, branding}: {flow: FlowConfig; branding: ThemeBranding
 
       {flow.verifyType === 'magic-link' && (
         <Box sx={{textAlign: 'center'}}>
-          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center'}}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={branding.primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect width="20" height="16" x="2" y="4" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
+          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center', color: branding.primaryColor}}>
+            <MagicLinkIcon size={32} />
           </Box>
           <Typography variant="caption" sx={{fontSize: '0.65rem', color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', display: 'block', mb: 1.5}}>
             We sent a magic link to your email
@@ -690,11 +622,8 @@ function VerifyCard({flow, branding}: {flow: FlowConfig; branding: ThemeBranding
 
       {flow.verifyType === 'security-key' && (
         <Box sx={{textAlign: 'center'}}>
-          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center'}}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={branding.primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
+          <Box sx={{mx: 'auto', mb: 1.5, display: 'flex', justifyContent: 'center', color: branding.primaryColor}}>
+            <LockIcon size={32} />
           </Box>
           <Typography variant="caption" sx={{fontSize: '0.65rem', color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', display: 'block', mb: 1.5}}>
             Insert your security key and tap
