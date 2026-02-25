@@ -50,7 +50,7 @@ export type A11ySeverity = "minor" | "moderate" | "serious" | "critical";
  * Configuration options for accessibility checks.
  */
 export interface A11yOptions {
-  /** WCAG tag sets to validate against (e.g., 'wcag2a', 'wcag22aa'). Defaults to WCAG 2.2 AA. */
+  /** WCAG tag sets to validate against (e.g., 'wcag2a', 'wcag22aa'). Used when runAllRules is false. Defaults to WCAG 2.2 AA. */
   tags?: readonly string[];
 
   /** Specific axe-core rule IDs to include (runs only these rules). */
@@ -198,7 +198,7 @@ const DEFAULT_OPTIONS: Required<A11yOptions> = {
   excludeSelectors: [],
   failOnSeverity: "serious",
   attachReport: true,
-  runAllRules: true,
+  runAllRules: false,
 };
 
 // ─── Core Functions ──────────────────────────────────────────────────────────
@@ -378,7 +378,13 @@ export async function checkA11yWithReport(
   page: Page,
   options: A11yOptions = {},
 ): Promise<A11yAuditResult> {
-  const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
+  const mergedOptions: Required<A11yOptions> = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    // If tags were explicitly passed, keep audit tag-scoped unless caller explicitly opts into all rules.
+    runAllRules:
+      options.runAllRules ?? (options.tags !== undefined ? false : DEFAULT_OPTIONS.runAllRules),
+  };
   const { builder, skipped } = await createAxeBuilder(page, mergedOptions);
 
   // If all includeSelectors were invalid, return a clean pass
@@ -447,6 +453,12 @@ export async function expectNoA11yViolations(
   const result = await checkA11yWithReport(page, options);
   const pageUrl = page.url();
 
+  const runAllRules =
+    options.runAllRules ?? (options.tags !== undefined ? false : DEFAULT_OPTIONS.runAllRules);
+  const auditScope = runAllRules
+    ? "all enabled axe-core rules"
+    : (options.tags ?? DEFAULT_OPTIONS.tags).join(", ");
+
   // Log warnings (below threshold)
   if (result.warningViolations.length > 0) {
     const warningReport = generateReportString(result.warningViolations, pageUrl, "WARNINGS");
@@ -497,7 +509,7 @@ export async function expectNoA11yViolations(
   }
 
   // Success
-  console.log(`✅ No accessibility violations (${options.tags?.join(", ") ?? "wcag22aa"}) on: ${pageUrl}`);
+  console.log(`✅ No accessibility violations (${auditScope}) on: ${pageUrl}`);
 }
 
 /**
