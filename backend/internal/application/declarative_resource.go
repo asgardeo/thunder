@@ -202,6 +202,7 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 		Assertion:                 appRequest.Assertion,
 		Certificate:               appRequest.Certificate,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		Metadata:                  appRequest.Metadata,
 	}
 	if len(appRequest.InboundAuthConfig) > 0 {
 		inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)

@@ -53,6 +53,7 @@ type ApplicationDTO struct {
 	Certificate       *ApplicationCertificate `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 	InboundAuthConfig []InboundAuthConfigDTO  `json:"inbound_auth_config,omitempty" jsonschema:"OAuth/OIDC authentication configuration. Required for OAuth-enabled applications. Configure OAuth grant types, redirect URIs, and client authentication methods."`
 	AllowedUserTypes  []string                `json:"allowed_user_types,omitempty" jsonschema:"Allowed user types. Optional. Restricts which types of users can register to this application."`
+	Metadata          map[string]interface{}  `json:"metadata,omitempty" jsonschema:"Generic metadata. Optional arbitrary key-value pairs for consumer use."`
 }
 
 // BasicApplicationDTO represents a simplified data transfer object for application service operations.
@@ -93,6 +94,7 @@ type Application struct {
 	Certificate       *ApplicationCertificate     `yaml:"certificate,omitempty" json:"certificate,omitempty" jsonschema:"Application certificate settings."`
 	InboundAuthConfig []InboundAuthConfigComplete `yaml:"inbound_auth_config,omitempty" json:"inbound_auth_config,omitempty" jsonschema:"Inbound authentication configuration (OAuth2/OIDC settings)."`
 	AllowedUserTypes  []string                    `yaml:"allowed_user_types,omitempty" json:"allowed_user_types,omitempty" jsonschema:"Allowed user types for registration."`
+	Metadata          map[string]interface{}      `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"Generic metadata key-value pairs."`
 }
 
 // ApplicationProcessedDTO represents the processed data transfer object for application service operations.
@@ -117,6 +119,7 @@ type ApplicationProcessedDTO struct {
 	Certificate       *ApplicationCertificate         `yaml:"certificate,omitempty"`
 	InboundAuthConfig []InboundAuthConfigProcessedDTO `yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes  []string                        `yaml:"allowed_user_types,omitempty"`
+	Metadata          map[string]interface{}          `yaml:"metadata,omitempty"`
 }
 
 // InboundAuthConfigDTO represents the data transfer object for inbound authentication configuration.
@@ -160,6 +163,7 @@ type ApplicationRequest struct {
 	Contacts                  []string                    `json:"contacts,omitempty" yaml:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty" yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty" yaml:"allowed_user_types,omitempty"`
+	Metadata                  map[string]interface{}      `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
 // ApplicationRequestWithID represents the request structure for importing an application using file based runtime.
@@ -184,6 +188,7 @@ type ApplicationRequestWithID struct {
 	Contacts                  []string                    `json:"contacts,omitempty" yaml:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty" yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty" yaml:"allowed_user_types,omitempty"`
+	Metadata                  map[string]interface{}      `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
 // ApplicationCompleteResponse represents the complete response structure for an application.
@@ -207,6 +212,7 @@ type ApplicationCompleteResponse struct {
 	Contacts                  []string                    `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty"`
+	Metadata                  map[string]interface{}      `json:"metadata,omitempty"`
 }
 
 // ApplicationGetResponse represents the response structure for getting an application.
@@ -230,6 +236,7 @@ type ApplicationGetResponse struct {
 	Contacts                  []string                `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig     `json:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                `json:"allowed_user_types,omitempty"`
+	Metadata                  map[string]interface{}  `json:"metadata,omitempty"`
 }
 
 // BasicApplicationResponse represents a simplified response structure for an application.

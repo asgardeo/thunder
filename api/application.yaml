@@ -102,6 +102,9 @@ paths:
               tos_uri: "https://myapp.example.com/terms"
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+              metadata:
+                env: "production"
+                team: "platform"
               assertion:
                 validity_period: 3600
                 user_attributes: ["email", "username"]
@@ -160,6 +163,9 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+                metadata:
+                  env: "production"
+                  team: "platform"
                 assertion:
                   validity_period: 3600
                   user_attributes: ["email", "username"]
@@ -269,6 +275,9 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+                metadata:
+                  env: "production"
+                  team: "platform"
                 assertion:
                   validity_period: 3600
                   user_attributes: ["email", "username"]
@@ -368,6 +377,9 @@ paths:
               tos_uri: "https://myapp.example.com/terms"
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+              metadata:
+                env: "production"
+                team: "platform"
               assertion:
                 validity_period: 3600
                 user_attributes: ["email", "username"]
@@ -428,6 +440,9 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+                metadata:
+                  env: "production"
+                  team: "platform"
                 assertion:
                   validity_period: 3600
                   user_attributes: ["email", "username"]
@@ -660,6 +675,13 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Generic metadata for the application. Arbitrary key-value pairs for consumer use.
+          example:
+            env: "production"
+            team: "platform"
 
     ApplicationCompleteResponse:
       type: object
@@ -748,6 +770,13 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Generic metadata for the application. Arbitrary key-value pairs for consumer use.
+          example:
+            env: "production"
+            team: "platform"
 
     ApplicationGetResponse:
       type: object
@@ -836,6 +865,13 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Generic metadata for the application. Arbitrary key-value pairs for consumer use.
+          example:
+            env: "production"
+            team: "platform"
 
     BasicApplicationResponse:
       type: object
