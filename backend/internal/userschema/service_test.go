@@ -25,6 +25,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -55,7 +56,9 @@ func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	ouID := testOUID1
-	ouServiceMock.On("IsOrganizationUnitExists", ouID).Return(false, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, ouID).
+		Return(false, (*serviceerror.ServiceError)(nil)).
+		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
@@ -94,7 +97,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 
 	ouID := testOUID2
 	ouServiceMock.
-		On("IsOrganizationUnitExists", ouID).
+		On("IsOrganizationUnitExists", mock.Anything, ouID).
 		Return(false, &serviceerror.ServiceError{Code: "OUS-5000"}).
 		Once()
 
@@ -133,7 +136,9 @@ func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	ouID := testOUID3
-	ouServiceMock.On("IsOrganizationUnitExists", ouID).Return(false, (*serviceerror.ServiceError)(nil)).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, ouID).
+		Return(false, (*serviceerror.ServiceError)(nil)).
+		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,

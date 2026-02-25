@@ -143,7 +143,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.Anything).Return("jwt-token", int64(3600), nil)
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(ou.OrganizationUnit{ID: "ou-123"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -501,7 +502,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 			return claims[oauth2const.ClaimUserType] == "EXTERNAL" && claims[oauth2const.ClaimOUID] == "ou-456"
 		})).Return("jwt-token", int64(3600), nil)
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-456").Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-456").
+		Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -558,7 +560,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-789").Return(ou.OrganizationUnit{
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-789").Return(ou.OrganizationUnit{
 		ID:     "ou-789",
 		Name:   "Engineering",
 		Handle: "eng",
@@ -666,7 +668,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-123").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
 			Error:            "ou_not_found",
 			ErrorDescription: "organization unit not found",
@@ -728,7 +730,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-invalid").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
 			Error:            "ou_not_found",
 			ErrorDescription: "organization unit does not exist",

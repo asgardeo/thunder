@@ -132,7 +132,7 @@ func (rs *resourceService) CreateResourceServer(
 	}
 
 	// Validate organization unit exists
-	_, svcErr := rs.ouService.GetOrganizationUnit(resourceServer.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			rs.logger.Debug("Organization unit not found", log.String("ouID", resourceServer.OrganizationUnitID))
@@ -281,7 +281,7 @@ func (rs *resourceService) UpdateResourceServer(
 	resourceServer.Delimiter = existingResServer.Delimiter
 
 	// Validate organization unit
-	_, svcErr := rs.ouService.GetOrganizationUnit(resourceServer.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &ErrorOrganizationUnitNotFound

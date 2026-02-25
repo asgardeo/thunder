@@ -25,16 +25,19 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 )
 
 // Initialize initializes the organization unit service and registers its routes.
-func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, declarativeresource.ResourceExporter, error) {
+func Initialize(
+	mux *http.ServeMux, authzService sysauthz.SystemAuthorizationServiceInterface,
+) (OrganizationUnitServiceInterface, declarativeresource.ResourceExporter, error) {
 	ouStore, err := initializeStore()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ouService := newOrganizationUnitService(ouStore)
+	ouService := newOrganizationUnitService(authzService, ouStore)
 
 	ouHandler := newOrganizationUnitHandler(ouService)
 	registerRoutes(mux, ouHandler)

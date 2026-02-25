@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -63,7 +64,7 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceByID() {
 		Parent:      nil,
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnit("test-ou-1").Return(ou, (*serviceerror.ServiceError)(nil))
+	s.mockService.EXPECT().GetOrganizationUnit(mock.Anything, "test-ou-1").Return(ou, (*serviceerror.ServiceError)(nil))
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "test-ou-1")
 	assert.Nil(s.T(), err)
@@ -264,7 +265,7 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceRules() {
 
 func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_NoOUs() {
 	// Test with empty result
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -286,7 +287,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_RootOUsOnly() {
 		Name:   "Root 2",
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{rootOU1, rootOU2},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -295,11 +296,13 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_RootOUsOnly() {
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-2").Return(false)
 
 	// Mock GetOrganizationUnitChildren to return empty lists for both roots
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-2", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-2", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -328,7 +331,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_WithChildren() {
 		Name:   "Grandchild OU",
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{rootOU},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -336,19 +339,22 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_WithChildren() {
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-1").Return(false)
 
 	// Mock children at each level
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{childOU},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("child-1").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{grandchildOU},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("grandchild-1").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("grandchild-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "grandchild-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -383,7 +389,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithCh
 		Name:   "Child 2",
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{rootOU1, rootOU2},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -391,23 +397,27 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithCh
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-1").Return(false)
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-2").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{child1},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("child-1").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-2", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-2", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{child2},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("child-2").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("child-2", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-2", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -422,7 +432,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithCh
 
 func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_ErrorGettingList() {
 	// Test error handling when getting the OU list fails
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(
 		(*OrganizationUnitListResponse)(nil),
 		&serviceerror.InternalServerError,
 	)
@@ -441,14 +451,14 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_ErrorGettingChildre
 		Name:   "Root OU",
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{rootOU},
 	}, (*serviceerror.ServiceError)(nil))
 
 	// Mock IsOrganizationUnitDeclarative to indicate this is a mutable OU
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-1").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 100, 0).Return(
+	s.mockService.EXPECT().GetOrganizationUnitChildren(mock.Anything, "root-1", 100, 0).Return(
 		(*OrganizationUnitListResponse)(nil),
 		&serviceerror.InternalServerError,
 	)
@@ -466,38 +476,43 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_DeepNesting() {
 	level4 := OrganizationUnitBasic{ID: "level-4", Handle: "l4", Name: "Level 4"}
 	level5 := OrganizationUnitBasic{ID: "level-5", Handle: "l5", Name: "Level 5"}
 
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level1},
 	}, (*serviceerror.ServiceError)(nil))
 
 	// Mock IsOrganizationUnitDeclarative for all levels
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("level-1").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("level-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "level-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level2},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("level-2").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("level-2", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "level-2", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level3},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("level-3").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("level-3", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "level-3", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level4},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("level-4").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("level-4", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "level-4", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level5},
 	}, (*serviceerror.ServiceError)(nil))
 
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("level-5").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("level-5", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "level-5", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -532,14 +547,15 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleChildrenPer
 		Name:   "Child 3",
 	}
 
-	s.mockService.EXPECT().GetOrganizationUnitList(100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{rootOU},
 	}, (*serviceerror.ServiceError)(nil))
 
 	// Mock IsOrganizationUnitDeclarative for root
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-1").Return(false)
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{child1, child2, child3},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -549,15 +565,18 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleChildrenPer
 	s.mockService.EXPECT().IsOrganizationUnitDeclarative("child-3").Return(false)
 
 	// Each child has no children
-	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-1", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("child-2", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-2", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
-	s.mockService.EXPECT().GetOrganizationUnitChildren("child-3", 100, 0).Return(&OrganizationUnitListResponse{
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-3", 100, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
 	}, (*serviceerror.ServiceError)(nil))
 
@@ -568,4 +587,40 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_MultipleChildrenPer
 	assert.Contains(s.T(), ids, "child-1")
 	assert.Contains(s.T(), ids, "child-2")
 	assert.Contains(s.T(), ids, "child-3")
+}
+
+func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_ErrorGettingGrandchildren() {
+	rootOU := OrganizationUnitBasic{
+		ID:     "root-1",
+		Handle: "root",
+		Name:   "Root OU",
+	}
+	childOU := OrganizationUnitBasic{
+		ID:     "child-1",
+		Handle: "child",
+		Name:   "Child OU",
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(mock.Anything, 100, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{rootOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitDeclarative("root-1").Return(false)
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "root-1", 100, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{childOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitDeclarative("child-1").Return(false)
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren(
+		mock.Anything, "child-1", 100, 0).Return(
+		(*OrganizationUnitListResponse)(nil),
+		&serviceerror.InternalServerError,
+	)
+
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
+	assert.NotNil(s.T(), err)
+	assert.Nil(s.T(), ids)
 }
