@@ -27,12 +27,14 @@ import (
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 )
 
 // Initialize initializes the user schema service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
+	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Determine store mode and initialize store structure
 	storeMode := getUserSchemaStoreMode()
@@ -50,7 +52,7 @@ func Initialize(
 	}
 
 	// Step 3: Create service with store
-	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner)
+	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner, authzService)
 
 	// Step 4: Load declarative resources into store (if applicable)
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {

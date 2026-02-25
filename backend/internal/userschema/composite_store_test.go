@@ -232,17 +232,17 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByName() {
 func (suite *CompositeStoreTestSuite) TestCompositeStore_IsUserSchemaDeclarative() {
 	ctx := context.Background()
 
+	const fileSchema1ID = "file-schema-1"
 	// Setup: Add schema to file store
-	fileSchemaID := "file-schema-1"
 	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 fileSchemaID,
+		ID:                 fileSchema1ID,
 		Name:               "File Schema",
 		OrganizationUnitID: "ou-1",
 	})
 	suite.NoError(err)
 
 	// Test: File schema should be declarative
-	suite.True(suite.compositeStore.IsUserSchemaDeclarative(fileSchemaID))
+	suite.True(suite.compositeStore.IsUserSchemaDeclarative(fileSchema1ID))
 
 	// Test: DB schema should not be declarative (file store will return false for non-existent)
 	suite.False(suite.compositeStore.IsUserSchemaDeclarative("db-schema-1"))
@@ -460,6 +460,118 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaList_DBSto
 
 	// Attempt to get list - should propagate the error
 	result, err := suite.compositeStore.GetUserSchemaList(ctx, 100, 0)
+	suite.Error(err)
+	suite.Nil(result)
+	suite.dbStoreMock.AssertExpectations(suite.T())
+}
+
+// TestCompositeStore_GetUserSchemaListCountByOUIDs tests retrieving count filtered by OU IDs from composite store.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListCountByOUIDs() {
+	ctx := context.Background()
+	ouIDs := []string{"ou-1"}
+
+	// Setup: Add schema to file store
+	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
+		ID:                 "file-schema-1",
+		Name:               "File Schema",
+		OrganizationUnitID: "ou-1",
+	})
+	suite.NoError(err)
+
+	err = suite.fileStore.CreateUserSchema(ctx, UserSchema{
+		ID:                 "file-schema-2",
+		Name:               "File Schema 2",
+		OrganizationUnitID: "ou-2",
+	})
+	suite.NoError(err)
+
+	// Setup: Mock DB store count filtered by OU IDs
+	suite.dbStoreMock.On("GetUserSchemaListCountByOUIDs", ctx, ouIDs).
+		Return(2, nil).
+		Once()
+
+	// Execute
+	count, err := suite.compositeStore.GetUserSchemaListCountByOUIDs(ctx, ouIDs)
+
+	// Verify - should sum both counts (2 from DB + 1 from file matching "ou-1" = 3)
+	suite.NoError(err)
+	suite.Equal(3, count)
+	suite.dbStoreMock.AssertExpectations(suite.T())
+}
+
+// TestCompositeStore_GetUserSchemaListByOUIDs tests retrieving user schemas filtered by OU IDs from composite store.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListByOUIDs() {
+	ctx := context.Background()
+	ouIDs := []string{"ou-1"}
+
+	// Setup file store
+	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
+		ID:                 "file-schema-1",
+		Name:               "File Schema 1",
+		OrganizationUnitID: "ou-1",
+	})
+	suite.NoError(err)
+
+	// Set up mock for DB store
+	dbCount := 1
+	suite.dbStoreMock.On("GetUserSchemaListCountByOUIDs", ctx, ouIDs).
+		Return(dbCount, nil).
+		Once()
+	suite.dbStoreMock.On("GetUserSchemaListByOUIDs", ctx, ouIDs, dbCount, 0).
+		Return([]UserSchemaListItem{
+			{
+				ID:                 "db-schema-1",
+				Name:               "DB Schema 1",
+				OrganizationUnitID: "ou-1",
+			},
+		}, nil).
+		Once()
+
+	result, err := suite.compositeStore.GetUserSchemaListByOUIDs(ctx, ouIDs, 100, 0)
+
+	suite.NoError(err)
+	// Should have both from file store and DB store
+	suite.Equal(2, len(result))
+	for _, item := range result {
+		if item.ID == "file-schema-1" {
+			suite.True(item.IsReadOnly, "File-based schemas should be read-only")
+		} else if item.ID == "db-schema-1" {
+			suite.False(item.IsReadOnly, "DB-backed schemas should be mutable")
+		}
+	}
+}
+
+// TestCompositeStore_GetUserSchemaListByOUIDs_LimitExceeded tests the limit exceeded error.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListByOUIDs_LimitExceeded() {
+	ctx := context.Background()
+	ouIDs := []string{"ou-1"}
+
+	// Mock DB store to return a count that would exceed the limit
+	suite.dbStoreMock.On("GetUserSchemaListCountByOUIDs", ctx, ouIDs).
+		Return(1001, nil).
+		Once()
+
+	// Attempt to get list - should fail due to limit
+	result, err := suite.compositeStore.GetUserSchemaListByOUIDs(ctx, ouIDs, 100, 0)
+
+	suite.Error(err)
+	suite.Nil(result)
+	suite.Equal(errResultLimitExceededInCompositeMode, err)
+	suite.dbStoreMock.AssertExpectations(suite.T())
+}
+
+// TestCompositeStore_GetUserSchemaListByOUIDs_DBStoreCountError tests error handling when DB store count fails.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListByOUIDs_DBStoreCountError() {
+	ctx := context.Background()
+	ouIDs := []string{"ou-1"}
+
+	// Mock DB store to return an error
+	suite.dbStoreMock.On("GetUserSchemaListCountByOUIDs", ctx, ouIDs).
+		Return(0, errors.New("database error")).
+		Once()
+
+	// Attempt to get list - should propagate the error
+	result, err := suite.compositeStore.GetUserSchemaListByOUIDs(ctx, ouIDs, 100, 0)
 
 	suite.Error(err)
 	suite.Nil(result)

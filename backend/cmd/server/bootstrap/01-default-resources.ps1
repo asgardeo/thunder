@@ -309,11 +309,13 @@ Write-Host ""
 #
 # Permission auto-derivation:
 #   Resource Server identifier "system"
-#   └── Resource handle "system"     → permission "system"
-#       └── Resource handle "ou"     → permission "system:ou"
-#           └── Action handle "view" → permission "system:ou:view"
-#       └── Resource handle "user"   → permission "system:user"
-#           └── Action handle "view" → permission "system:user:view"
+#   └── Resource handle "system"           → permission "system"
+#       └── Resource handle "ou"           → permission "system:ou"
+#           └── Action handle "view"       → permission "system:ou:view"
+#       └── Resource handle "user"         → permission "system:user"
+#           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "userschema"   → permission "system:userschema"
+#           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
 
 Log-Info "Creating 'system' resource under the system resource server..."
@@ -423,7 +425,7 @@ elseif ($response.StatusCode -eq 409) {
 }
 else {
     Log-Error "Failed to create OU resource (HTTP $($response.StatusCode))"
-    Write-Host "Response: $($response.Body)"
+    Log-Error "Response: $($response.Body)"
     exit 1
 }
 
@@ -445,7 +447,7 @@ elseif ($response.StatusCode -eq 409) {
 }
 else {
     Log-Error "Failed to create OU view action (HTTP $($response.StatusCode))"
-    Write-Host "Response: $($response.Body)"
+    Log-Error "Response: $($response.Body)"
     exit 1
 }
 
@@ -523,6 +525,84 @@ elseif ($response.StatusCode -eq 409) {
 }
 else {
     Log-Error "Failed to create user view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'userschema' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create user schema resource."
+    exit 1
+}
+
+$userSchemaResourceData = @{
+    name        = "User Schema"
+    description = "User schema resource"
+    handle      = "userschema"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userSchemaResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User schema resource created successfully (permission: system:userschema)"
+    $body = $response.Body | ConvertFrom-Json
+    $USER_SCHEMA_RESOURCE_ID = $body.id
+    if ($USER_SCHEMA_RESOURCE_ID) {
+        Log-Info "User schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract user schema resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User schema resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $userSchemaResource = $body.resources | Where-Object { $_.handle -eq "userschema" } | Select-Object -First 1
+
+        if ($userSchemaResource) {
+            $USER_SCHEMA_RESOURCE_ID = $userSchemaResource.id
+            Log-Success "Found user schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find user schema resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create user schema resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'userschema' resource..."
+
+$userSchemaViewActionData = @{
+    name        = "View"
+    description = "Read-only access to user schemas"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_SCHEMA_RESOURCE_ID/actions" -Data $userSchemaViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User schema view action created successfully (permission: system:userschema:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User schema view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create user schema view action (HTTP $($response.StatusCode))"
     Log-Error "Response: $($response.Body)"
     exit 1
 }

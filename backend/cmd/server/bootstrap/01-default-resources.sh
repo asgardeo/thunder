@@ -298,11 +298,13 @@ echo ""
 #
 # Permission auto-derivation:
 #   Resource Server identifier "system"
-#   └── Resource handle "system"     → permission "system"
-#       └── Resource handle "ou"     → permission "system:ou"
-#           └── Action handle "view" → permission "system:ou:view"
-#       └── Resource handle "user"   → permission "system:user"
-#           └── Action handle "view" → permission "system:user:view"
+#   └── Resource handle "system"           → permission "system"
+#       └── Resource handle "ou"           → permission "system:ou"
+#           └── Action handle "view"       → permission "system:ou:view"
+#       └── Resource handle "user"         → permission "system:user"
+#           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "userschema"   → permission "system:userschema"
+#           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
 
 log_info "Creating 'system' resource under the system resource server..."
@@ -422,11 +424,6 @@ fi
 
 log_info "Creating 'user' sub-resource under the 'system' resource..."
 
-if [[ -z "$SYSTEM_RESOURCE_ID" ]]; then
-    log_error "System resource ID is not available. Cannot create user resource."
-    exit 1
-fi
-
 RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
   \"name\": \"User\",
   \"description\": \"User resource\",
@@ -487,6 +484,72 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "User view action already exists, skipping"
 else
     log_error "Failed to create user view action (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'userschema' sub-resource under the 'system' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
+  \"name\": \"User Schema\",
+  \"description\": \"User schema resource\",
+  \"handle\": \"userschema\",
+  \"parent\": \"${SYSTEM_RESOURCE_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "User schema resource created successfully (permission: system:userschema)"
+    USER_SCHEMA_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$USER_SCHEMA_RESOURCE_ID" ]]; then
+        log_info "User schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+    else
+        log_error "Could not extract user schema resource ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "User schema resource already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources?parentId=${SYSTEM_RESOURCE_ID}")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        USER_SCHEMA_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"userschema"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$USER_SCHEMA_RESOURCE_ID" ]]; then
+            log_success "Found user schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+        else
+            log_error "Could not find user schema resource in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create user schema resource (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'view' action under the 'userschema' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${USER_SCHEMA_RESOURCE_ID}/actions" '{
+  "name": "View",
+  "description": "Read-only access to user schemas",
+  "handle": "view"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "User schema view action created successfully (permission: system:userschema:view)"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "User schema view action already exists, skipping"
+else
+    log_error "Failed to create user schema view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi

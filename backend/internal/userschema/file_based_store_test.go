@@ -246,3 +246,173 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCount() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 3, count)
 }
+
+func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListByOUIDs() {
+	schemaJSON := testSchemaJSON
+	schemas := []UserSchema{
+		{
+			ID:                    "schema-1",
+			Name:                  "schema_1",
+			OrganizationUnitID:    "ou-1",
+			AllowSelfRegistration: true,
+			Schema:                json.RawMessage(schemaJSON),
+		},
+		{
+			ID:                    "schema-2",
+			Name:                  "schema_2",
+			OrganizationUnitID:    "ou-2",
+			AllowSelfRegistration: false,
+			Schema:                json.RawMessage(schemaJSON),
+		},
+		{
+			ID:                    "schema-3",
+			Name:                  "schema_3",
+			OrganizationUnitID:    "ou-1",
+			AllowSelfRegistration: true,
+			Schema:                json.RawMessage(schemaJSON),
+		},
+	}
+	for _, schema := range schemas {
+		err := suite.store.CreateUserSchema(context.Background(), schema)
+		assert.NoError(suite.T(), err)
+	}
+
+	testCases := []struct {
+		name          string
+		ouIDs         []string
+		limit         int
+		offset        int
+		expectedCount int
+		expectedNames []string
+	}{
+		{
+			name:          "Get by single OU ID",
+			ouIDs:         []string{"ou-2"},
+			limit:         10,
+			offset:        0,
+			expectedCount: 1,
+			expectedNames: []string{"schema_2"},
+		},
+		{
+			name:          "Get by multiple OU IDs",
+			ouIDs:         []string{"ou-1", "ou-2"},
+			limit:         10,
+			offset:        0,
+			expectedCount: 3,
+			expectedNames: []string{"schema_1", "schema_2", "schema_3"},
+		},
+		{
+			name:          "Get by non-existent OU ID",
+			ouIDs:         []string{"ou-3"},
+			limit:         10,
+			offset:        0,
+			expectedCount: 0,
+			expectedNames: []string{},
+		},
+		{
+			name:          "Pagination limit",
+			ouIDs:         []string{"ou-1"},
+			limit:         1,
+			offset:        0,
+			expectedCount: 1,
+			expectedNames: []string{"schema_1"},
+		},
+		{
+			name:          "Pagination offset",
+			ouIDs:         []string{"ou-1"},
+			limit:         10,
+			offset:        1,
+			expectedCount: 1,
+			expectedNames: []string{"schema_3"},
+		},
+		{
+			name:          "Pagination beyond total",
+			ouIDs:         []string{"ou-1"},
+			limit:         10,
+			offset:        5,
+			expectedCount: 0,
+			expectedNames: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			list, err := suite.store.GetUserSchemaListByOUIDs(context.Background(), tc.ouIDs, tc.limit, tc.offset)
+			assert.NoError(suite.T(), err)
+			assert.Len(suite.T(), list, tc.expectedCount)
+
+			// Verify names if expected
+			var names []string
+			for _, item := range list {
+				names = append(names, item.Name)
+			}
+			assert.ElementsMatch(suite.T(), tc.expectedNames, names)
+		})
+	}
+}
+
+func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCountByOUIDs() {
+	schemaJSON := testSchemaJSON
+	schemas := []UserSchema{
+		{
+			ID:                    "schema-1",
+			Name:                  "schema_1",
+			OrganizationUnitID:    "ou-1",
+			AllowSelfRegistration: true,
+			Schema:                json.RawMessage(schemaJSON),
+		},
+		{
+			ID:                    "schema-2",
+			Name:                  "schema_2",
+			OrganizationUnitID:    "ou-2",
+			AllowSelfRegistration: false,
+			Schema:                json.RawMessage(schemaJSON),
+		},
+		{
+			ID:                    "schema-3",
+			Name:                  "schema_3",
+			OrganizationUnitID:    "ou-1",
+			AllowSelfRegistration: true,
+			Schema:                json.RawMessage(schemaJSON),
+		},
+	}
+	for _, schema := range schemas {
+		err := suite.store.CreateUserSchema(context.Background(), schema)
+		assert.NoError(suite.T(), err)
+	}
+
+	testCases := []struct {
+		name          string
+		ouIDs         []string
+		expectedCount int
+	}{
+		{
+			name:          "Count by single OU ID",
+			ouIDs:         []string{"ou-2"},
+			expectedCount: 1,
+		},
+		{
+			name:          "Count by multiple OU IDs",
+			ouIDs:         []string{"ou-1", "ou-2"},
+			expectedCount: 3,
+		},
+		{
+			name:          "Count by non-existent OU ID",
+			ouIDs:         []string{"ou-3"},
+			expectedCount: 0,
+		},
+		{
+			name:          "Empty OU IDs",
+			ouIDs:         []string{},
+			expectedCount: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			count, err := suite.store.GetUserSchemaListCountByOUIDs(context.Background(), tc.ouIDs)
+			assert.NoError(suite.T(), err)
+			assert.Equal(suite.T(), tc.expectedCount, count)
+		})
+	}
+}

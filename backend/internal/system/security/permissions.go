@@ -223,6 +223,13 @@ var apiPermissionEntries = []apiPermissionEntry{
 	{"GET /groups/**", PermissionGroupView},
 	{"PUT /groups/**", PermissionGroup},
 	{"DELETE /groups/**", PermissionGroup},
+
+	// User schema APIs.
+	{"GET /user-schemas", PermissionUserSchemaView},
+	{"POST /user-schemas", PermissionUserSchema},
+	{"GET /user-schemas/**", PermissionUserSchemaView},
+	{"PUT /user-schemas/**", PermissionUserSchema},
+	{"DELETE /user-schemas/**", PermissionUserSchema},
 }
 
 // ---- Helper functions ----

@@ -193,6 +193,7 @@ func (_c *SystemAuthorizationServiceInterfaceMock_IsActionAllowed_Call) RunAndRe
 // SetOUHierarchyResolver provides a mock function for the type SystemAuthorizationServiceInterfaceMock
 func (_mock *SystemAuthorizationServiceInterfaceMock) SetOUHierarchyResolver(resolver sysauthz.OUHierarchyResolver) {
 	_mock.Called(resolver)
+	return
 }
 
 // SystemAuthorizationServiceInterfaceMock_SetOUHierarchyResolver_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetOUHierarchyResolver'
@@ -212,7 +213,9 @@ func (_c *SystemAuthorizationServiceInterfaceMock_SetOUHierarchyResolver_Call) R
 		if args[0] != nil {
 			arg0 = args[0].(sysauthz.OUHierarchyResolver)
 		}
-		run(arg0)
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -223,6 +226,6 @@ func (_c *SystemAuthorizationServiceInterfaceMock_SetOUHierarchyResolver_Call) R
 }
 
 func (_c *SystemAuthorizationServiceInterfaceMock_SetOUHierarchyResolver_Call) RunAndReturn(run func(resolver sysauthz.OUHierarchyResolver)) *SystemAuthorizationServiceInterfaceMock_SetOUHierarchyResolver_Call {
-	_c.Call.Return(run)
+	_c.Run(run)
 	return _c
 }
