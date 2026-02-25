@@ -89,3 +89,8 @@ func (_m *systemAuthorizationServiceMock) GetAccessibleResources(
 	}
 	return r0, r1
 }
+
+// SetOUHierarchyResolver provides a mock function for the type systemAuthorizationServiceMock.
+func (_m *systemAuthorizationServiceMock) SetOUHierarchyResolver(resolver sysauthz.OUHierarchyResolver) {
+	_m.Called(resolver)
+}

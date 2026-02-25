@@ -66,9 +66,6 @@ type authorizationPolicy interface {
 // ouMembershipPolicy enforces that the caller's organization unit matches the OU of the
 // resource being acted upon. This prevents non-system callers from operating on
 // resources that belong to a different OU.
-//
-// Future evolution: replace or augment with a ReBAC policy that queries a
-// relationship graph (e.g., "is the caller a member of the resource's OU hierarchy?").
 type ouMembershipPolicy struct{}
 
 // isActionAllowed returns:
@@ -102,14 +99,93 @@ func (p *ouMembershipPolicy) getAccessibleResources(ctx context.Context, action 
 	return true, &AccessibleResources{AllAllowed: false, IDs: []string{ouID}}, nil
 }
 
-// isActionAllowedByPolicies runs all global policies against the given action context in order.
+// ouInheritancePolicy grants read-only access to resources whose OU is an ancestor of
+// (or the same as) the caller's OU. This enables child OUs to see resources defined in
+// parent OUs without being able to modify them.
+type ouInheritancePolicy struct {
+	resolver OUHierarchyResolver
+}
+
+// isActionAllowed returns:
+//   - PolicyDecisionNotApplicable when the action context carries no OuID.
+//   - PolicyDecisionAllowed when the resource's OU is the same as or an ancestor of the
+//     caller's OU (i.e. the resource was defined at or above the caller's level).
+//   - PolicyDecisionDenied when the caller is outside the resource's OU subtree.
+func (p *ouInheritancePolicy) isActionAllowed(ctx context.Context,
+	actionCtx *ActionContext) (policyDecision, *serviceerror.ServiceError) {
+	if actionCtx == nil || actionCtx.OuID == "" {
+		return policyDecisionNotApplicable, nil
+	}
+	callerOUID := security.GetOUID(ctx)
+	if callerOUID == "" {
+		return policyDecisionDenied, nil
+	}
+	// Allow if the resource's OU is an ancestor of (or the same as) the caller's OU.
+	// i.e. the caller belongs to the resource's OU or to one of its descendants.
+	isAncestor, svcErr := p.resolver.IsAncestorOrSelf(ctx, actionCtx.OuID, callerOUID)
+	if svcErr != nil {
+		return policyDecisionDenied, svcErr
+	}
+	if isAncestor {
+		return policyDecisionAllowed, nil
+	}
+	return policyDecisionDenied, nil
+}
+
+// getAccessibleResources returns the caller's own OU plus all ancestor OUs, so that
+// list queries include inherited resources from parent OUs.
+func (p *ouInheritancePolicy) getAccessibleResources(ctx context.Context, action security.Action,
+	resourceType security.ResourceType) (bool, *AccessibleResources, *serviceerror.ServiceError) {
+	if !inheritanceReadActions[action] {
+		return false, nil, nil
+	}
+	callerOUID := security.GetOUID(ctx)
+	if callerOUID == "" {
+		return true, &AccessibleResources{AllAllowed: false, IDs: []string{}}, nil
+	}
+	ancestorIDs, svcErr := p.resolver.GetAncestorOUIDs(ctx, callerOUID)
+	if svcErr != nil {
+		return true, nil, svcErr
+	}
+	return true, &AccessibleResources{AllAllowed: false, IDs: ancestorIDs}, nil
+}
+
+// inheritanceReadActions is the set of read-only actions that use OU-inheritance semantics.
+// An action listed here gives callers in child OUs visibility into resources defined in
+// parent OUs. Write actions must NOT be listed here — child OUs must never be able to
+// modify resources owned by a parent OU.
+// Each action implicitly encodes its resource type (e.g. ActionReadUserSchema → UserSchema),
+// so a separate resource-type map is not needed.
+var inheritanceReadActions = map[security.Action]bool{
+	security.ActionReadUserSchema:  true,
+	security.ActionListUserSchemas: true,
+}
+
+// isInheritanceEligible returns true when the action is registered for
+// inheritance-based policy evaluation.
+func isInheritanceEligible(action security.Action) bool {
+	return inheritanceReadActions[action]
+}
+
+// selectPolicies returns the effective policy chain for the given action.
+// When a pre-built inheritancePolicy is available and the action is eligible,
+// that policy is used instead of the default globalPolicies.
+func selectPolicies(action security.Action, policies *policies) []authorizationPolicy {
+	if policies.inheritancePolicy != nil && isInheritanceEligible(action) {
+		return []authorizationPolicy{policies.inheritancePolicy}
+	}
+	return []authorizationPolicy{policies.membershipPolicy}
+}
+
+// isActionAllowedByPolicies runs the effective policy chain for the given action against
+// the action context in order.
 // - PolicyDecisionDenied from any policy stops the chain and denies the action.
 // - PolicyDecisionNotApplicable skips to the next policy.
 // - PolicyDecisionAllowed continues to the next policy.
 // If all policies return NotApplicable, the action is allowed (permission check already passed).
-func isActionAllowedByPolicies(ctx context.Context,
+func isActionAllowedByPolicies(ctx context.Context, policies *policies, action security.Action,
 	actionCtx *ActionContext) (bool, *serviceerror.ServiceError) {
-	for _, policy := range globalPolicies {
+	for _, policy := range selectPolicies(action, policies) {
 		decision, err := policy.isActionAllowed(ctx, actionCtx)
 		if err != nil {
 			return false, err
@@ -121,16 +197,15 @@ func isActionAllowedByPolicies(ctx context.Context,
 	return true, nil
 }
 
-// getAccessibleResourcesByPolicies iterates global policies to compute the accessible resource
-// set for list operations. Policies that are not applicable for the given resource type are
-// skipped. The result of the first applicable policy is returned immediately.
+// getAccessibleResourcesByPolicies iterates the effective policy chain to compute the
+// accessible resource set for list operations. The result of the first applicable policy
+// is returned immediately (first-applicable-wins).
 //
-// NOTE: This is a first-applicable-wins strategy. If multiple policies need to be combined
-// for the same resource type in the future, this function should be updated to intersect
-// the results across all applicable policies.
-func getAccessibleResourcesByPolicies(ctx context.Context, action security.Action,
+// NOTE: If multiple policies ever need to be combined for the same resource type in the
+// future, this function should be updated to intersect their results.
+func getAccessibleResourcesByPolicies(ctx context.Context, policies *policies, action security.Action,
 	resourceType security.ResourceType) (*AccessibleResources, *serviceerror.ServiceError) {
-	for _, policy := range globalPolicies {
+	for _, policy := range selectPolicies(action, policies) {
 		applicable, result, err := policy.getAccessibleResources(ctx, action, resourceType)
 		if err != nil {
 			return nil, err
@@ -140,9 +215,4 @@ func getAccessibleResourcesByPolicies(ctx context.Context, action security.Actio
 		}
 	}
 	return &AccessibleResources{AllAllowed: true}, nil
-}
-
-// globalPolicies is the ordered set of policies evaluated for every system action.
-var globalPolicies = []authorizationPolicy{
-	&ouMembershipPolicy{},
 }
