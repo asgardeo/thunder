@@ -18,7 +18,12 @@
 
 package userschema
 
-import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+import (
+	"fmt"
+	"strings"
+
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+)
 
 var (
 	// queryGetUserSchemaCount retrieves the total count of user schemas.
@@ -69,3 +74,88 @@ var (
 		Query: `DELETE FROM USER_SCHEMAS WHERE SCHEMA_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )
+
+// buildGetUserSchemaListByOUIDsQuery dynamically builds a query to retrieve user schemas
+// filtered by a list of OU IDs with pagination.
+// For PostgreSQL: WHERE OU_ID IN ($1, $2, ...) AND DEPLOYMENT_ID = $N ORDER BY NAME LIMIT $N+1 OFFSET $N+2
+// For SQLite: WHERE OU_ID IN (?, ?, ...) AND DEPLOYMENT_ID = ? ORDER BY NAME LIMIT ? OFFSET ?
+func buildGetUserSchemaListByOUIDsQuery(ouIDs []string) dbmodel.DBQuery {
+	n := len(ouIDs)
+
+	if n == 0 {
+		return dbmodel.DBQuery{
+			ID: "ASQ-USER_SCHEMA-008",
+			PostgresQuery: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION FROM USER_SCHEMAS ` +
+				`WHERE 1=0 AND DEPLOYMENT_ID = $1 ORDER BY NAME LIMIT $2 OFFSET $3`,
+			SQLiteQuery: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION FROM USER_SCHEMAS ` +
+				`WHERE 1=0 AND DEPLOYMENT_ID = ? ORDER BY NAME LIMIT ? OFFSET ?`,
+		}
+	}
+
+	// Build PostgreSQL placeholders: $1, $2, ..., $N
+	pgPlaceholders := make([]string, n)
+	for i := range ouIDs {
+		pgPlaceholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	pgInClause := strings.Join(pgPlaceholders, ", ")
+	pgDeploymentID := fmt.Sprintf("$%d", n+1)
+	pgLimit := fmt.Sprintf("$%d", n+2)
+	pgOffset := fmt.Sprintf("$%d", n+3)
+
+	// Build SQLite placeholders: ?, ?, ...
+	sqlitePlaceholders := make([]string, n)
+	for i := range ouIDs {
+		sqlitePlaceholders[i] = "?"
+	}
+	sqliteInClause := strings.Join(sqlitePlaceholders, ", ")
+
+	return dbmodel.DBQuery{
+		ID: "ASQ-USER_SCHEMA-008",
+		PostgresQuery: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION FROM USER_SCHEMAS ` +
+			`WHERE OU_ID IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + pgDeploymentID +
+			` ORDER BY NAME LIMIT ` + pgLimit + ` OFFSET ` + pgOffset,
+		SQLiteQuery: `SELECT SCHEMA_ID, NAME, OU_ID, ALLOW_SELF_REGISTRATION FROM USER_SCHEMAS ` +
+			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ? ORDER BY NAME LIMIT ? OFFSET ?`,
+	}
+}
+
+// buildGetUserSchemaCountByOUIDsQuery dynamically builds a query to count user schemas
+// filtered by a list of OU IDs.
+// For PostgreSQL: WHERE OU_ID IN ($1, $2, ...) AND DEPLOYMENT_ID = $N
+// For SQLite: WHERE OU_ID IN (?, ?, ...) AND DEPLOYMENT_ID = ?
+func buildGetUserSchemaCountByOUIDsQuery(ouIDs []string) dbmodel.DBQuery {
+	n := len(ouIDs)
+
+	if n == 0 {
+		return dbmodel.DBQuery{
+			ID: "ASQ-USER_SCHEMA-009",
+			PostgresQuery: `SELECT COUNT(*) AS total FROM USER_SCHEMAS ` +
+				`WHERE 1=0 AND DEPLOYMENT_ID = $1`,
+			SQLiteQuery: `SELECT COUNT(*) AS total FROM USER_SCHEMAS ` +
+				`WHERE 1=0 AND DEPLOYMENT_ID = ?`,
+		}
+	}
+
+	// Build PostgreSQL placeholders: $1, $2, ..., $N
+	pgPlaceholders := make([]string, n)
+	for i := range ouIDs {
+		pgPlaceholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	pgInClause := strings.Join(pgPlaceholders, ", ")
+	pgDeploymentID := fmt.Sprintf("$%d", n+1)
+
+	// Build SQLite placeholders: ?, ?, ...
+	sqlitePlaceholders := make([]string, n)
+	for i := range ouIDs {
+		sqlitePlaceholders[i] = "?"
+	}
+	sqliteInClause := strings.Join(sqlitePlaceholders, ", ")
+
+	return dbmodel.DBQuery{
+		ID: "ASQ-USER_SCHEMA-009",
+		PostgresQuery: `SELECT COUNT(*) AS total FROM USER_SCHEMAS ` +
+			`WHERE OU_ID IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + pgDeploymentID,
+		SQLiteQuery: `SELECT COUNT(*) AS total FROM USER_SCHEMAS ` +
+			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ?`,
+	}
+}

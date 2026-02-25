@@ -31,7 +31,9 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 )
 
 const (
@@ -39,6 +41,19 @@ const (
 	testOUID2 = "00000000-0000-0000-0000-000000000002"
 	testOUID3 = "00000000-0000-0000-0000-000000000003"
 )
+
+// newAllowAllAuthz returns a mock SystemAuthorizationServiceInterface that allows all actions.
+func newAllowAllAuthz(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *sysauthzmock.SystemAuthorizationServiceInterfaceMock {
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(true, nil).Maybe()
+	authzMock.On("GetAccessibleResources", mock.Anything, mock.Anything, mock.Anything).
+		Return(&sysauthz.AccessibleResources{AllAllowed: true}, nil).Maybe()
+	return authzMock
+}
 
 func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	// Initialize ThunderRuntime with default config
@@ -174,6 +189,7 @@ func TestGetUserSchemaByNameReturnsSchema(t *testing.T) {
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
 		transactioner:   &mockTransactioner{},
+		authzService:    newAllowAllAuthz(t),
 	}
 
 	userSchema, svcErr := service.GetUserSchemaByName(context.Background(), "employee")

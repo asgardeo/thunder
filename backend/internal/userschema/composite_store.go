@@ -80,6 +80,43 @@ func (c *compositeUserSchemaStore) GetUserSchemaList(
 	return items, nil
 }
 
+// GetUserSchemaListCountByOUIDs retrieves the total count of user schemas filtered by OU IDs from both stores.
+func (c *compositeUserSchemaStore) GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error) {
+	return declarativeresource.CompositeMergeCountHelper(
+		func() (int, error) { return c.dbStore.GetUserSchemaListCountByOUIDs(ctx, ouIDs) },
+		func() (int, error) { return c.fileStore.GetUserSchemaListCountByOUIDs(ctx, ouIDs) },
+	)
+}
+
+// GetUserSchemaListByOUIDs retrieves user schemas filtered by OU IDs from both stores with pagination.
+// Applies the 1000-record limit in composite mode to prevent memory exhaustion.
+// Returns errResultLimitExceededInCompositeMode if the limit is exceeded.
+func (c *compositeUserSchemaStore) GetUserSchemaListByOUIDs(
+	ctx context.Context, ouIDs []string, limit, offset int,
+) ([]UserSchemaListItem, error) {
+	items, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		func() (int, error) { return c.dbStore.GetUserSchemaListCountByOUIDs(ctx, ouIDs) },
+		func() (int, error) { return c.fileStore.GetUserSchemaListCountByOUIDs(ctx, ouIDs) },
+		func(count int) ([]UserSchemaListItem, error) {
+			return c.dbStore.GetUserSchemaListByOUIDs(ctx, ouIDs, count, 0)
+		},
+		func(count int) ([]UserSchemaListItem, error) {
+			return c.fileStore.GetUserSchemaListByOUIDs(ctx, ouIDs, count, 0)
+		},
+		mergeAndDeduplicateUserSchemas,
+		limit,
+		offset,
+		serverconst.MaxCompositeStoreRecords,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if limitExceeded {
+		return nil, errResultLimitExceededInCompositeMode
+	}
+	return items, nil
+}
+
 // CreateUserSchema creates a new user schema in the database store only.
 // Conflict checking is handled at the service layer.
 func (c *compositeUserSchemaStore) CreateUserSchema(ctx context.Context, schema UserSchema) error {

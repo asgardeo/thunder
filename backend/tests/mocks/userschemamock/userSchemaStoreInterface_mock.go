@@ -358,6 +358,86 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) RunAndReturn(run 
 	return _c
 }
 
+// GetUserSchemaListByOUIDs provides a mock function for the type userSchemaStoreInterfaceMock
+func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaListByOUIDs(ctx context.Context, ouIDs []string, limit int, offset int) ([]userschema.UserSchemaListItem, error) {
+	ret := _mock.Called(ctx, ouIDs, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserSchemaListByOUIDs")
+	}
+
+	var r0 []userschema.UserSchemaListItem
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int, int) ([]userschema.UserSchemaListItem, error)); ok {
+		return returnFunc(ctx, ouIDs, limit, offset)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int, int) []userschema.UserSchemaListItem); ok {
+		r0 = returnFunc(ctx, ouIDs, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]userschema.UserSchemaListItem)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, int, int) error); ok {
+		r1 = returnFunc(ctx, ouIDs, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserSchemaListByOUIDs'
+type userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call struct {
+	*mock.Call
+}
+
+// GetUserSchemaListByOUIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ouIDs []string
+//   - limit int
+//   - offset int
+func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaListByOUIDs(ctx interface{}, ouIDs interface{}, limit interface{}, offset interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call {
+	return &userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call{Call: _e.mock.On("GetUserSchemaListByOUIDs", ctx, ouIDs, limit, offset)}
+}
+
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call) Run(run func(ctx context.Context, ouIDs []string, limit int, offset int)) *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call) Return(userSchemaListItems []userschema.UserSchemaListItem, err error) *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call {
+	_c.Call.Return(userSchemaListItems, err)
+	return _c
+}
+
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call) RunAndReturn(run func(ctx context.Context, ouIDs []string, limit int, offset int) ([]userschema.UserSchemaListItem, error)) *userSchemaStoreInterfaceMock_GetUserSchemaListByOUIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserSchemaListCount provides a mock function for the type userSchemaStoreInterfaceMock
 func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaListCount(ctx context.Context) (int, error) {
 	ret := _mock.Called(ctx)
@@ -414,6 +494,72 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) Return(n int
 }
 
 func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) RunAndReturn(run func(ctx context.Context) (int, error)) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUserSchemaListCountByOUIDs provides a mock function for the type userSchemaStoreInterfaceMock
+func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error) {
+	ret := _mock.Called(ctx, ouIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserSchemaListCountByOUIDs")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) (int, error)); ok {
+		return returnFunc(ctx, ouIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) int); ok {
+		r0 = returnFunc(ctx, ouIDs)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = returnFunc(ctx, ouIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserSchemaListCountByOUIDs'
+type userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call struct {
+	*mock.Call
+}
+
+// GetUserSchemaListCountByOUIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ouIDs []string
+func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaListCountByOUIDs(ctx interface{}, ouIDs interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call {
+	return &userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call{Call: _e.mock.On("GetUserSchemaListCountByOUIDs", ctx, ouIDs)}
+}
+
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call) Run(run func(ctx context.Context, ouIDs []string)) *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call) Return(n int, err error) *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call) RunAndReturn(run func(ctx context.Context, ouIDs []string) (int, error)) *userSchemaStoreInterfaceMock_GetUserSchemaListCountByOUIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }
