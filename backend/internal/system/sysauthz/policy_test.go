@@ -51,6 +51,29 @@ func (p *stubPolicy) getAccessibleResources(_ context.Context, _ security.Action
 	return p.applicable, p.result, p.resourceErr
 }
 
+// stubOUHierarchyResolver is a configurable OUHierarchyResolver for testing.
+type stubOUHierarchyResolver struct {
+	// IsAncestorOrSelf response fields.
+	isAncestorResult bool
+	isAncestorErr    *serviceerror.ServiceError
+
+	// GetAncestorOUIDs response fields.
+	ancestorIDs    []string
+	ancestorIDsErr *serviceerror.ServiceError
+}
+
+func (r *stubOUHierarchyResolver) IsAncestorOrSelf(
+	_ context.Context, _, _ string,
+) (bool, *serviceerror.ServiceError) {
+	return r.isAncestorResult, r.isAncestorErr
+}
+
+func (r *stubOUHierarchyResolver) GetAncestorOUIDs(
+	_ context.Context, _ string,
+) ([]string, *serviceerror.ServiceError) {
+	return r.ancestorIDs, r.ancestorIDsErr
+}
+
 // ---------------------------------------------------------------------------
 // ouMembershipPolicy.isActionAllowed
 // ---------------------------------------------------------------------------
@@ -175,63 +198,38 @@ func TestIsActionAllowedByPolicies(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		policies    []authorizationPolicy
+		policy      authorizationPolicy
 		wantAllowed bool
 		wantErr     bool
 	}{
 		{
-			name:        "EmptyPolicies_DefaultAllowed",
-			policies:    []authorizationPolicy{},
+			// Policy has no opinion → allowed (permission check already passed).
+			name:        "NotApplicable_DefaultAllowed",
+			policy:      &stubPolicy{decision: policyDecisionNotApplicable},
 			wantAllowed: true,
 		},
 		{
-			name: "AllNotApplicable_DefaultAllowed",
-			policies: []authorizationPolicy{
-				&stubPolicy{decision: policyDecisionNotApplicable},
-				&stubPolicy{decision: policyDecisionNotApplicable},
-			},
+			name:        "PolicyDenied_ReturnsFalse",
+			policy:      &stubPolicy{decision: policyDecisionDenied},
+			wantAllowed: false,
+		},
+		{
+			name:        "PolicyAllowed_ReturnsTrue",
+			policy:      &stubPolicy{decision: policyDecisionAllowed},
 			wantAllowed: true,
 		},
 		{
-			name: "PolicyDenied_ReturnsFalse",
-			policies: []authorizationPolicy{
-				&stubPolicy{decision: policyDecisionDenied},
-			},
-			wantAllowed: false,
-		},
-		{
-			name: "AllowedThenDenied_ReturnsFalse",
-			policies: []authorizationPolicy{
-				&stubPolicy{decision: policyDecisionAllowed},
-				&stubPolicy{decision: policyDecisionDenied},
-			},
-			wantAllowed: false,
-		},
-		{
-			name: "PolicyError_ReturnsFalseAndError",
-			policies: []authorizationPolicy{
-				&stubPolicy{actionErr: errSvc},
-			},
+			name:        "PolicyError_ReturnsFalseAndError",
+			policy:      &stubPolicy{actionErr: errSvc},
 			wantAllowed: false,
 			wantErr:     true,
-		},
-		{
-			name: "AllAllowed_DefaultAllowed",
-			policies: []authorizationPolicy{
-				&stubPolicy{decision: policyDecisionAllowed},
-				&stubPolicy{decision: policyDecisionAllowed},
-			},
-			wantAllowed: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			original := globalPolicies
-			globalPolicies = tt.policies
-			defer func() { globalPolicies = original }()
-
-			allowed, err := isActionAllowedByPolicies(context.Background(), nil)
+			p := &policies{membershipPolicy: tt.policy}
+			allowed, err := isActionAllowedByPolicies(context.Background(), p, security.ActionCreateOU, nil)
 			assert.Equal(t, tt.wantAllowed, allowed)
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -251,57 +249,38 @@ func TestGetAccessibleResourcesByPolicies(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		policies       []authorizationPolicy
+		policy         authorizationPolicy
 		wantAllAllowed bool
 		wantIDs        []string
 		wantErr        bool
 	}{
 		{
-			name: "NoApplicablePolicies_AllAllowed",
-			policies: []authorizationPolicy{
-				&stubPolicy{applicable: false},
-				&stubPolicy{applicable: false},
-			},
+			// Policy has no opinion on this resource type → AllAllowed fallback.
+			name:           "NotApplicable_AllAllowed",
+			policy:         &stubPolicy{applicable: false},
 			wantAllAllowed: true,
 		},
 		{
-			name: "FirstApplicableResultReturned",
-			policies: []authorizationPolicy{
-				&stubPolicy{applicable: false},
-				&stubPolicy{
-					applicable: true,
-					result:     &AccessibleResources{AllAllowed: false, IDs: []string{"ou1", "ou2"}},
-				},
+			name: "ApplicableResult_Returned",
+			policy: &stubPolicy{
+				applicable: true,
+				result:     &AccessibleResources{AllAllowed: false, IDs: []string{"ou1", "ou2"}},
 			},
 			wantAllAllowed: false,
 			wantIDs:        []string{"ou1", "ou2"},
 		},
 		{
-			name: "SubsequentPoliciesSkippedAfterFirstApplicable",
-			policies: []authorizationPolicy{
-				&stubPolicy{applicable: true, result: &AccessibleResources{AllAllowed: false, IDs: []string{"ou1"}}},
-				&stubPolicy{applicable: true, result: &AccessibleResources{AllAllowed: false, IDs: []string{"ou2"}}},
-			},
-			wantAllAllowed: false,
-			wantIDs:        []string{"ou1"},
-		},
-		{
-			name: "PolicyError_ReturnsNilAndError",
-			policies: []authorizationPolicy{
-				&stubPolicy{applicable: true, resourceErr: errSvc},
-			},
+			name:    "PolicyError_ReturnsNilAndError",
+			policy:  &stubPolicy{applicable: true, resourceErr: errSvc},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			original := globalPolicies
-			globalPolicies = tt.policies
-			defer func() { globalPolicies = original }()
-
+			p := &policies{membershipPolicy: tt.policy}
 			result, err := getAccessibleResourcesByPolicies(
-				context.Background(), security.ActionListOUs, security.ResourceTypeOU)
+				context.Background(), p, security.ActionListOUs, security.ResourceTypeOU)
 			if tt.wantErr {
 				assert.NotNil(t, err)
 				assert.Nil(t, result)
@@ -315,4 +294,251 @@ func TestGetAccessibleResourcesByPolicies(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ---------------------------------------------------------------------------
+// ouInheritancePolicy.isActionAllowed
+// ---------------------------------------------------------------------------
+
+func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
+	errSvc := &serviceerror.ServiceError{Code: "ERR-300", Error: "hierarchy resolver error"}
+
+	tests := []struct {
+		name         string
+		ctx          context.Context
+		actionCtx    *ActionContext
+		resolver     *stubOUHierarchyResolver
+		wantDecision policyDecision
+		wantErr      bool
+	}{
+		{
+			name:         "NilActionCtx_NotApplicable",
+			ctx:          context.Background(),
+			actionCtx:    nil,
+			resolver:     &stubOUHierarchyResolver{},
+			wantDecision: policyDecisionNotApplicable,
+		},
+		{
+			name:         "EmptyOuID_NotApplicable",
+			ctx:          context.Background(),
+			actionCtx:    &ActionContext{OuID: ""},
+			resolver:     &stubOUHierarchyResolver{},
+			wantDecision: policyDecisionNotApplicable,
+		},
+		{
+			name:         "NoCallerOU_Denied",
+			ctx:          context.Background(),
+			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			resolver:     &stubOUHierarchyResolver{isAncestorResult: true},
+			wantDecision: policyDecisionDenied,
+		},
+		{
+			// Caller is in the same OU as the resource (ancestor of self).
+			name:         "SameOU_ResolverReturnsTrue_Allowed",
+			ctx:          buildCtxWithOU("", "ou1"),
+			actionCtx:    &ActionContext{OuID: "ou1"},
+			resolver:     &stubOUHierarchyResolver{isAncestorResult: true},
+			wantDecision: policyDecisionAllowed,
+		},
+		{
+			// Caller is in a child OU; resource's OU is an ancestor → allowed (inherited visibility).
+			name:         "CallerInChildOU_ResolverReturnsTrue_Allowed",
+			ctx:          buildCtxWithOU("", "child-ou"),
+			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			resolver:     &stubOUHierarchyResolver{isAncestorResult: true},
+			wantDecision: policyDecisionAllowed,
+		},
+		{
+			// Caller is in an unrelated OU; resource's OU is not an ancestor → denied.
+			name:         "CallerInUnrelatedOU_ResolverReturnsFalse_Denied",
+			ctx:          buildCtxWithOU("", "other-ou"),
+			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			resolver:     &stubOUHierarchyResolver{isAncestorResult: false},
+			wantDecision: policyDecisionDenied,
+		},
+		{
+			// Resolver returns an error → denied + error propagated.
+			name:         "ResolverError_DeniedWithError",
+			ctx:          buildCtxWithOU("", "child-ou"),
+			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			resolver:     &stubOUHierarchyResolver{isAncestorErr: errSvc},
+			wantDecision: policyDecisionDenied,
+			wantErr:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			policy := &ouInheritancePolicy{resolver: tt.resolver}
+			decision, err := policy.isActionAllowed(tt.ctx, tt.actionCtx)
+			assert.Equal(t, tt.wantDecision, decision)
+			if tt.wantErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ouInheritancePolicy.getAccessibleResources
+// ---------------------------------------------------------------------------
+
+func TestOuInheritancePolicy_GetAccessibleResources(t *testing.T) {
+	errSvc := &serviceerror.ServiceError{Code: "ERR-400", Error: "ancestor lookup error"}
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		resourceType   security.ResourceType
+		action         security.Action
+		resolver       *stubOUHierarchyResolver
+		wantApplicable bool
+		wantAllAllowed bool
+		wantIDs        []string
+		wantErr        bool
+	}{
+		{
+			// Non-inheritable resource type → not applicable.
+			name:           "OUResource_NotApplicable",
+			ctx:            buildCtxWithOU("", "ou1"),
+			resourceType:   security.ResourceTypeOU,
+			action:         security.ActionListOUs,
+			resolver:       &stubOUHierarchyResolver{},
+			wantApplicable: false,
+		},
+		{
+			// Non-inheritable resource type → not applicable.
+			name:           "UserResource_NotApplicable",
+			ctx:            buildCtxWithOU("", "ou1"),
+			resourceType:   security.ResourceTypeUser,
+			action:         security.ActionListUsers,
+			resolver:       &stubOUHierarchyResolver{},
+			wantApplicable: false,
+		},
+		{
+			// UserSchema resource, no caller OU → applicable, empty IDs.
+			name:           "UserSchemaResource_EmptyCallerOU_RestrictedEmpty",
+			ctx:            context.Background(),
+			resourceType:   security.ResourceTypeUserSchema,
+			action:         security.ActionListUserSchemas,
+			resolver:       &stubOUHierarchyResolver{},
+			wantApplicable: true,
+			wantAllAllowed: false,
+			wantIDs:        []string{},
+		},
+		{
+			// UserSchema resource, caller in child OU → resolver returns self + ancestors.
+			name:           "UserSchemaResource_CallerInChildOU_ReturnsAncestors",
+			ctx:            buildCtxWithOU("", "child-ou"),
+			resourceType:   security.ResourceTypeUserSchema,
+			action:         security.ActionListUserSchemas,
+			resolver:       &stubOUHierarchyResolver{ancestorIDs: []string{"child-ou", "parent-ou", "root-ou"}},
+			wantApplicable: true,
+			wantAllAllowed: false,
+			wantIDs:        []string{"child-ou", "parent-ou", "root-ou"},
+		},
+		{
+			// Resolver error for GetAncestorOUIDs → applicable true, nil result, error returned.
+			name:           "UserSchemaResource_ResolverError_PropagatedAsError",
+			ctx:            buildCtxWithOU("", "ou1"),
+			resourceType:   security.ResourceTypeUserSchema,
+			action:         security.ActionListUserSchemas,
+			resolver:       &stubOUHierarchyResolver{ancestorIDsErr: errSvc},
+			wantApplicable: true,
+			wantErr:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			policy := &ouInheritancePolicy{resolver: tt.resolver}
+			applicable, result, err := policy.getAccessibleResources(tt.ctx, tt.action, tt.resourceType)
+			assert.Equal(t, tt.wantApplicable, applicable)
+			if tt.wantErr {
+				assert.NotNil(t, err)
+				assert.Nil(t, result)
+				return
+			}
+			assert.Nil(t, err)
+			if tt.wantApplicable {
+				assert.NotNil(t, result)
+				assert.Equal(t, tt.wantAllAllowed, result.AllAllowed)
+				assert.ElementsMatch(t, tt.wantIDs, result.IDs)
+			} else {
+				assert.Nil(t, result)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// isInheritanceEligible + selectPolicies
+// ---------------------------------------------------------------------------
+
+func TestIsInheritanceEligible(t *testing.T) {
+	tests := []struct {
+		name   string
+		action security.Action
+		want   bool
+	}{
+		{"UserSchema_Read_Eligible", security.ActionReadUserSchema, true},
+		{"UserSchema_List_Eligible", security.ActionListUserSchemas, true},
+		{"UserSchema_Create_NotEligible", security.ActionCreateUserSchema, false},
+		{"UserSchema_Update_NotEligible", security.ActionUpdateUserSchema, false},
+		{"UserSchema_Delete_NotEligible", security.ActionDeleteUserSchema, false},
+		{"OU_Read_NotEligible", security.ActionReadOU, false},
+		{"User_List_NotEligible", security.ActionListUsers, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// resourceType is not consulted; eligibility is determined solely by action.
+			assert.Equal(t, tt.want, isInheritanceEligible(tt.action))
+		})
+	}
+}
+
+func TestSelectPolicies_InheritanceEligible_UsesInheritancePolicy(t *testing.T) {
+	inh := &ouInheritancePolicy{resolver: &stubOUHierarchyResolver{}}
+	p := &policies{
+		membershipPolicy:  &ouMembershipPolicy{},
+		inheritancePolicy: inh,
+	}
+	chain := selectPolicies(security.ActionReadUserSchema, p)
+	assert.Len(t, chain, 1)
+	_, ok := chain[0].(*ouInheritancePolicy)
+	assert.True(t, ok, "expected ouInheritancePolicy for inheritance-eligible action")
+}
+
+func TestSelectPolicies_NilInheritance_UsesMembershipPolicy(t *testing.T) {
+	membership := &ouMembershipPolicy{}
+	p := &policies{membershipPolicy: membership}
+	chain := selectPolicies(security.ActionReadUserSchema, p)
+	assert.Len(t, chain, 1)
+	assert.Equal(t, membership, chain[0])
+}
+
+func TestSelectPolicies_NonEligibleAction_UsesMembershipPolicy(t *testing.T) {
+	membership := &ouMembershipPolicy{}
+	p := &policies{
+		membershipPolicy:  membership,
+		inheritancePolicy: &ouInheritancePolicy{resolver: &stubOUHierarchyResolver{}},
+	}
+	// Write action on UserSchema → not in inheritanceReadActions → membership policy.
+	chain := selectPolicies(security.ActionCreateUserSchema, p)
+	assert.Len(t, chain, 1)
+	assert.Equal(t, membership, chain[0])
+}
+
+func TestSelectPolicies_NonEligibleResourceType_UsesMembershipPolicy(t *testing.T) {
+	membership := &ouMembershipPolicy{}
+	p := &policies{
+		membershipPolicy:  membership,
+		inheritancePolicy: &ouInheritancePolicy{resolver: &stubOUHierarchyResolver{}},
+	}
+	// ActionReadOU is not in inheritanceReadActions → membership policy regardless.
+	chain := selectPolicies(security.ActionReadOU, p)
+	assert.Len(t, chain, 1)
+	assert.Equal(t, membership, chain[0])
 }
