@@ -28,7 +28,7 @@ import {
   Sidebar,
   UserMenu,
 } from '@wso2/oxygen-ui';
-import {Building, Layers, LayoutGrid, UserRoundCog, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
+import {Building, Group, Layers, LayoutGrid, UserRoundCog, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
 import {SignOutButton, User, useAsgardeo} from '@asgardeo/react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -67,6 +67,12 @@ export default function DashboardLayout(): ReactNode {
             text: t('navigation:pages.users'),
             icon: <UsersRound />,
             path: '/users',
+          },
+          {
+            id: 'groups',
+            text: t('navigation:pages.groups'),
+            icon: <Group />,
+            path: '/groups',
           },
           {
             id: 'user-types',

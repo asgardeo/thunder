@@ -33,6 +33,7 @@ interface MockDataGridProps {
   }[];
   loading?: boolean;
   onRowClick?: (params: {row: unknown}, details: unknown, event: unknown) => void;
+  getRowId?: (row: {id: string; [key: string]: unknown}) => string;
 }
 
 vi.mock('@wso2/oxygen-ui', async () => {
@@ -41,32 +42,45 @@ vi.mock('@wso2/oxygen-ui', async () => {
     ...actual,
     DataGrid: {
       ...(actual.DataGrid ?? {}),
-      DataGrid: ({rows = [], columns = [], loading = false, onRowClick = undefined}: MockDataGridProps) => (
+      GridColDef: {},
+      GridRenderCellParams: {},
+    },
+    ListingTable: {
+      Provider: ({children, loading = false}: {children: React.ReactNode; loading?: boolean}) => (
+        <div data-testid="listing-table-provider" data-loading={loading ? 'true' : 'false'}>
+          {children}
+        </div>
+      ),
+      Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      DataGrid: ({rows = [], columns = [], loading = false, onRowClick = undefined, getRowId = undefined}: MockDataGridProps) => (
         <div data-testid="data-grid" data-loading={loading}>
-          {rows.map((row) => (
-            <div key={row.id} className="MuiDataGrid-row-container">
-              <button
-                type="button"
-                className="MuiDataGrid-row"
-                onClick={() => onRowClick?.({row}, {}, {})}
-                data-testid={`row-${row.id}`}
-              >
-                {row.name}
-              </button>
-              {columns.map((column) => {
-                if (!column?.field) return null;
-                const value = column.valueGetter ? column.valueGetter(undefined, row) : row[column.field];
-                const content = column.renderCell
-                  ? column.renderCell({row, field: column.field, value, id: String(row.id)})
-                  : value;
-                return (
-                  <span key={`${row.id}-${column.field}`} className="MuiDataGrid-cell">
-                    {content as React.ReactNode}
-                  </span>
-                );
-              })}
-            </div>
-          ))}
+          {rows.map((row) => {
+            const rowId = getRowId ? getRowId(row) : row.id;
+            return (
+              <div key={rowId} className="MuiDataGrid-row-container">
+                <button
+                  type="button"
+                  className="MuiDataGrid-row"
+                  onClick={() => onRowClick?.({row}, {}, {})}
+                  data-testid={`row-${rowId}`}
+                >
+                  {row.name}
+                </button>
+                {columns.map((column) => {
+                  if (!column?.field) return null;
+                  const value = column.valueGetter ? column.valueGetter(undefined, row) : row[column.field];
+                  const content = column.renderCell
+                    ? column.renderCell({row, field: column.field, value, id: String(rowId)})
+                    : value;
+                  return (
+                    <span key={`${rowId}-${column.field}`} className="MuiDataGrid-cell">
+                      {content as React.ReactNode}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       ),
     },
@@ -134,7 +148,7 @@ describe('GroupsList', () => {
     });
     renderWithProviders(<GroupsList />);
 
-    expect(screen.getByTestId('data-grid')).toHaveAttribute('data-loading', 'true');
+    expect(screen.getByTestId('listing-table-provider')).toHaveAttribute('data-loading', 'true');
   });
 
   it('should show error state', () => {

@@ -16,157 +16,115 @@
  * under the License.
  */
 
-import {Link, useNavigate} from 'react-router';
-import {useEffect, useMemo, useState} from 'react';
+import {useNavigate} from 'react-router';
+import {useState, useCallback, useMemo} from 'react';
 import {
   Box,
   Stack,
-  Typography,
   Button,
-  Paper,
-  FormLabel,
-  FormControl,
-  Select,
-  MenuItem,
-  TextField,
-  Checkbox,
-  FormControlLabel,
   IconButton,
+  LinearProgress,
+  Breadcrumbs,
+  Typography,
   Alert,
   Snackbar,
-  PageContent,
-  PageTitle,
 } from '@wso2/oxygen-ui';
-import {Plus, Save, X} from '@wso2/oxygen-ui-icons-react';
+import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import useCreateUserType from '../api/useCreateUserType';
-import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
+import useUserTypeCreate from '../contexts/UserTypeCreate/useUserTypeCreate';
+import {UserTypeCreateFlowStep} from '../models/user-type-create-flow';
+import ConfigureName from '../components/create-user-type/ConfigureName';
+import ConfigureGeneral from '../components/create-user-type/ConfigureGeneral';
+import ConfigureProperties from '../components/create-user-type/ConfigureProperties';
 import type {
   PropertyDefinition,
   UserSchemaDefinition,
-  UIPropertyType,
-  SchemaPropertyInput,
   CreateUserSchemaRequest,
 } from '../types/user-types';
 
-export default function CreateUserTypePage() {
-  const navigate = useNavigate();
+export default function CreateUserTypePage(): JSX.Element {
   const {t} = useTranslation();
+  const navigate = useNavigate();
   const logger = useLogger('CreateUserTypePage');
   const {createUserType, loading, error: createError} = useCreateUserType();
-  const {
-    data: organizationUnitsResponse,
-    isLoading: organizationUnitsLoading,
-    error: organizationUnitsError,
-  } = useGetOrganizationUnits();
 
-  const [name, setName] = useState('');
-  const [ouId, setOuId] = useState('');
-  const [allowSelfRegistration, setAllowSelfRegistration] = useState(false);
-  const [properties, setProperties] = useState<SchemaPropertyInput[]>([
-    {
-      id: '1',
-      name: '',
-      type: 'string',
-      required: false,
-      unique: false,
-      enum: [],
-      regex: '',
-    },
-  ]);
-  const [enumInput, setEnumInput] = useState<Record<string, string>>({});
+  const {
+    currentStep,
+    setCurrentStep,
+    name,
+    setName,
+    ouId,
+    setOuId,
+    allowSelfRegistration,
+    setAllowSelfRegistration,
+    properties,
+    setProperties,
+    enumInput,
+    setEnumInput,
+    error,
+    setError,
+  } = useUserTypeCreate();
+
+  const steps: Record<UserTypeCreateFlowStep, {label: string; order: number}> = useMemo(
+    () => ({
+      NAME: {label: t('userTypes:createWizard.steps.name'), order: 1},
+      GENERAL: {label: t('userTypes:createWizard.steps.general'), order: 2},
+      PROPERTIES: {label: t('userTypes:createWizard.steps.properties'), order: 3},
+    }),
+    [t],
+  );
+
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const organizationUnits = useMemo(
-    () => organizationUnitsResponse?.organizationUnits ?? [],
-    [organizationUnitsResponse],
+
+  const [stepReady, setStepReady] = useState<Record<UserTypeCreateFlowStep, boolean>>({
+    NAME: false,
+    GENERAL: false,
+    PROPERTIES: false,
+  });
+
+  const handleClose = (): void => {
+    (async () => {
+      await navigate('/user-types');
+    })().catch((_error: unknown) => {
+      logger.error('Failed to navigate to user types page', {error: _error});
+    });
+  };
+
+  const handleStepReadyChange = useCallback((step: UserTypeCreateFlowStep, isReady: boolean): void => {
+    setStepReady((prev) => ({
+      ...prev,
+      [step]: isReady,
+    }));
+  }, []);
+
+  const handleNameStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserTypeCreateFlowStep.NAME, isReady);
+    },
+    [handleStepReadyChange],
   );
-  const selectedOrganizationUnit = useMemo(
-    () => organizationUnits.find((unit) => unit.id === ouId),
-    [organizationUnits, ouId],
+
+  const handleGeneralStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserTypeCreateFlowStep.GENERAL, isReady);
+    },
+    [handleStepReadyChange],
   );
 
-  useEffect(() => {
-    if (!ouId && organizationUnits.length > 0) {
-      setOuId(organizationUnits[0].id);
-    }
-  }, [organizationUnits, ouId]);
+  const handlePropertiesStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserTypeCreateFlowStep.PROPERTIES, isReady);
+    },
+    [handleStepReadyChange],
+  );
 
-  const handleBack = async () => {
-    await navigate('/user-types');
-  };
-
-  const handleAddProperty = () => {
-    const newProperty: SchemaPropertyInput = {
-      id: Date.now().toString(),
-      name: '',
-      type: 'string',
-      required: false,
-      unique: false,
-      enum: [],
-      regex: '',
-    };
-    setProperties([...properties, newProperty]);
-  };
-
-  const handleRemoveProperty = (id: string) => {
-    setProperties(properties.filter((prop) => prop.id !== id));
-    const newEnumInput = {...enumInput};
-    delete newEnumInput[id];
-    setEnumInput(newEnumInput);
-  };
-
-  const handlePropertyChange = <K extends keyof SchemaPropertyInput>(
-    id: string,
-    field: K,
-    value: SchemaPropertyInput[K],
-  ) => {
-    setProperties(
-      properties.map((prop) =>
-        prop.id === id
-          ? {
-              ...prop,
-              [field]: value,
-              // Reset type-specific fields when type changes
-              ...(field === 'type' && {
-                enum: (value as UIPropertyType) === 'enum' ? prop.enum : [],
-                regex: '',
-                unique:
-                  (value as UIPropertyType) === 'string' ||
-                  (value as UIPropertyType) === 'number' ||
-                  (value as UIPropertyType) === 'enum'
-                    ? prop.unique
-                    : false,
-              }),
-            }
-          : prop,
-      ),
-    );
-  };
-
-  const handleAddEnumValue = (propertyId: string) => {
-    const inputValue = enumInput[propertyId]?.trim();
-    if (!inputValue) return;
-
-    setProperties(
-      properties.map((prop) => (prop.id === propertyId ? {...prop, enum: [...prop.enum, inputValue]} : prop)),
-    );
-
-    setEnumInput({...enumInput, [propertyId]: ''});
-  };
-
-  const handleRemoveEnumValue = (propertyId: string, enumValue: string) => {
-    setProperties(
-      properties.map((prop) =>
-        prop.id === propertyId ? {...prop, enum: prop.enum.filter((val) => val !== enumValue)} : prop,
-      ),
-    );
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (): Promise<void> => {
     setValidationError(null);
+    setError(null);
 
     // Validate
     if (!name.trim()) {
@@ -201,7 +159,6 @@ export default function CreateUserTypePage() {
     // Convert properties to schema definition
     const schema: UserSchemaDefinition = {};
     validProperties.forEach((prop) => {
-      // Convert enum type to string type with enum values
       const actualType = prop.type === 'enum' ? 'string' : prop.type;
 
       const propDef: Partial<PropertyDefinition> = {
@@ -209,15 +166,16 @@ export default function CreateUserTypePage() {
         required: prop.required,
       };
 
-      // Add type-specific fields
       if (actualType === 'string' || actualType === 'number') {
         if (prop.unique) {
           (propDef as {unique?: boolean}).unique = true;
         }
+        if (prop.credential) {
+          (propDef as {credential?: boolean}).credential = true;
+        }
       }
 
       if (actualType === 'string') {
-        // For enum type or string with enum values, add enum array
         if (prop.type === 'enum' || prop.enum.length > 0) {
           (propDef as {enum?: string[]}).enum = prop.enum;
         }
@@ -226,7 +184,6 @@ export default function CreateUserTypePage() {
         }
       }
 
-      // For array and object types, we'll use basic definitions for now
       if (actualType === 'array') {
         (propDef as {items?: {type: string}}).items = {type: 'string'};
       } else if (actualType === 'object') {
@@ -248,277 +205,218 @@ export default function CreateUserTypePage() {
 
     try {
       await createUserType(requestBody);
-
-      // Navigate back to list on success
       await navigate('/user-types');
-    } catch (error) {
-      logger.error('Failed to create user type or navigate', {error, userTypeName: name});
+    } catch (submitError) {
+      logger.error('Failed to create user type or navigate', {error: submitError, userTypeName: name});
     }
+  };
+
+  const handleNextStep = (): void => {
+    switch (currentStep) {
+      case UserTypeCreateFlowStep.NAME:
+        setCurrentStep(UserTypeCreateFlowStep.GENERAL);
+        break;
+      case UserTypeCreateFlowStep.GENERAL:
+        setCurrentStep(UserTypeCreateFlowStep.PROPERTIES);
+        break;
+      case UserTypeCreateFlowStep.PROPERTIES:
+        handleSubmit().catch(() => {
+          // Error handled in handleSubmit
+        });
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handlePrevStep = (): void => {
+    switch (currentStep) {
+      case UserTypeCreateFlowStep.GENERAL:
+        setCurrentStep(UserTypeCreateFlowStep.NAME);
+        break;
+      case UserTypeCreateFlowStep.PROPERTIES:
+        setCurrentStep(UserTypeCreateFlowStep.GENERAL);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const renderStepContent = (): JSX.Element | null => {
+    switch (currentStep) {
+      case UserTypeCreateFlowStep.NAME:
+        return (
+          <ConfigureName name={name} onNameChange={setName} onReadyChange={handleNameStepReadyChange} />
+        );
+      case UserTypeCreateFlowStep.GENERAL:
+        return (
+          <ConfigureGeneral
+            ouId={ouId}
+            onOuIdChange={setOuId}
+            allowSelfRegistration={allowSelfRegistration}
+            onAllowSelfRegistrationChange={setAllowSelfRegistration}
+            onReadyChange={handleGeneralStepReadyChange}
+          />
+        );
+      case UserTypeCreateFlowStep.PROPERTIES:
+        return (
+          <ConfigureProperties
+            properties={properties}
+            onPropertiesChange={setProperties}
+            enumInput={enumInput}
+            onEnumInputChange={setEnumInput}
+            onReadyChange={handlePropertiesStepReadyChange}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getStepProgress = (): number => {
+    const stepNames = Object.keys(steps) as UserTypeCreateFlowStep[];
+    return ((stepNames.indexOf(currentStep) + 1) / stepNames.length) * 100;
+  };
+
+  const getBreadcrumbSteps = (): UserTypeCreateFlowStep[] => {
+    const allSteps: UserTypeCreateFlowStep[] = [
+      UserTypeCreateFlowStep.NAME,
+      UserTypeCreateFlowStep.GENERAL,
+      UserTypeCreateFlowStep.PROPERTIES,
+    ];
+
+    const currentIndex = allSteps.indexOf(currentStep);
+    return allSteps.slice(0, currentIndex + 1);
   };
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
 
+  const isLastStep = currentStep === UserTypeCreateFlowStep.PROPERTIES;
+
   return (
-    <PageContent>
-      {/* Header */}
-      <PageTitle>
-        <PageTitle.BackButton component={<Link to="/user-types" />} />
-        <PageTitle.Header>{t('userTypes:createUserType.title')}</PageTitle.Header>
-        <PageTitle.SubHeader>{t('userTypes:createUserType.subtitle')}</PageTitle.SubHeader>
-      </PageTitle>
+    <Box sx={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
+      {/* Progress bar at the very top */}
+      <LinearProgress variant="determinate" value={getStepProgress()} sx={{height: 6}} />
 
-      <Paper sx={{p: 4}}>
-        {!organizationUnitsLoading && organizationUnitsError && (
-          <Alert severity="error" sx={{mb: 3}}>
-            <Typography variant="body2" sx={{fontWeight: 600, mb: 0.5}}>
-              {t('userTypes:errors.organizationUnitsFailedTitle')}
-            </Typography>
-            <Typography variant="body2">{organizationUnitsError.message}</Typography>
-          </Alert>
-        )}
-        <Box
-          component="form"
-          onSubmit={(e) => {
-            handleSubmit(e).catch(() => {
-              // Handle error
-            });
-          }}
-          noValidate
-        >
-          <FormControl fullWidth sx={{mb: 3}}>
-            <FormLabel htmlFor="name">
-              {t('userTypes:typeName')} <span style={{color: 'red'}}>*</span>
-            </FormLabel>
-            <TextField
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('userTypes:typeNamePlaceholder')}
-              required
-              variant="outlined"
-            />
-          </FormControl>
-
-          <FormControl fullWidth sx={{mb: 3}}>
-            <FormLabel htmlFor="ouId">
-              {t('userTypes:organizationUnit')} <span style={{color: 'red'}}>*</span>
-            </FormLabel>
-            <Select
-              id="ouId"
-              aria-label={t('userTypes:organizationUnit')}
-              value={ouId}
-              onChange={(event) => setOuId(event.target.value ?? '')}
-              displayEmpty
-              required
-              renderValue={(selected) => {
-                const value = typeof selected === 'string' ? selected : '';
-                if (!value) {
-                  return t('userTypes:ouSelectPlaceholder');
-                }
-
-                return selectedOrganizationUnit ? selectedOrganizationUnit.name : value;
+      <Box sx={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+        {/* Header with close button and breadcrumb */}
+        <Box sx={{p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <IconButton
+              aria-label={t('common:actions.close')}
+              onClick={handleClose}
+              sx={{
+                bgcolor: 'background.paper',
+                '&:hover': {bgcolor: 'action.hover'},
+                boxShadow: 1,
               }}
             >
-              {organizationUnitsLoading && (
-                <MenuItem value="" disabled>
-                  {t('common:status.loading')}
-                </MenuItem>
-              )}
+              <X size={24} />
+            </IconButton>
+            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
+              {getBreadcrumbSteps().map((step, index, array) => {
+                const isLast = index === array.length - 1;
 
-              {!organizationUnitsLoading && organizationUnitsError && (
-                <MenuItem value="" disabled>
-                  {organizationUnitsError.message}
-                </MenuItem>
-              )}
-
-              {!organizationUnitsLoading && !organizationUnitsError && organizationUnits.length === 0 && (
-                <MenuItem value="" disabled>
-                  {t('userTypes:noOrganizationUnits')}
-                </MenuItem>
-              )}
-
-              {organizationUnits.map((unit) => (
-                <MenuItem key={unit.id} value={unit.id}>
-                  <Typography variant="body2" sx={{fontWeight: 500}}>
-                    {unit.name}
+                return isLast ? (
+                  <Typography key={step} variant="h5" color="text.primary">
+                    {steps[step].label}
                   </Typography>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControlLabel
-            control={
-              <Checkbox checked={allowSelfRegistration} onChange={(e) => setAllowSelfRegistration(e.target.checked)} />
-            }
-            label={t('userTypes:allowSelfRegistration')}
-            sx={{mb: 2}}
-          />
-
-          <Typography variant="h6" gutterBottom sx={{mt: 4, mb: 2}}>
-            {t('userTypes:schemaProperties')}
-          </Typography>
-
-          {properties.map((property) => (
-            <Paper key={property.id} variant="outlined" sx={{px: 2, py: 4, mb: 2}}>
-              {properties.length > 1 && (
-                <Stack direction="row" justifyContent="flex-end" alignItems="center">
-                  <IconButton size="small" color="error" onClick={() => handleRemoveProperty(property.id)}>
-                    <X size={16} />
-                  </IconButton>
-                </Stack>
-              )}
-              <Box sx={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2}}>
-                <FormControl>
-                  <FormLabel>{t('userTypes:propertyName')}</FormLabel>
-                  <TextField
-                    value={property.name}
-                    onChange={(e) => handlePropertyChange(property.id, 'name', e.target.value)}
-                    placeholder={t('userTypes:propertyNamePlaceholder')}
-                    size="small"
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>{t('userTypes:propertyType')}</FormLabel>
-                  <Select
-                    value={property.type}
-                    onChange={(e) => handlePropertyChange(property.id, 'type', e.target.value as UIPropertyType)}
-                    size="small"
+                ) : (
+                  <Typography
+                    key={step}
+                    variant="h5"
+                    color="inherit"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setCurrentStep(step)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setCurrentStep(step);
+                      }
+                    }}
+                    sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
                   >
-                    <MenuItem value="string">{t('userTypes:types.string')}</MenuItem>
-                    <MenuItem value="number">{t('userTypes:types.number')}</MenuItem>
-                    <MenuItem value="boolean">{t('userTypes:types.boolean')}</MenuItem>
-                    <MenuItem value="enum">{t('userTypes:types.enum')}</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <Box sx={{mt: 2, display: 'flex', gap: 2}}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={property.required}
-                      onChange={(e) => handlePropertyChange(property.id, 'required', e.target.checked)}
-                    />
-                  }
-                  label={t('common:form.required')}
-                />
-                {(property.type === 'string' || property.type === 'number' || property.type === 'enum') && (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={property.unique}
-                        onChange={(e) => handlePropertyChange(property.id, 'unique', e.target.checked)}
-                      />
-                    }
-                    label={t('userTypes:unique')}
-                  />
-                )}
-              </Box>
-
-              {property.type === 'string' && (
-                <FormControl fullWidth sx={{mt: 2}}>
-                  <FormLabel>{t('userTypes:regexPattern')}</FormLabel>
-                  <TextField
-                    value={property.regex}
-                    onChange={(e) => handlePropertyChange(property.id, 'regex', e.target.value)}
-                    placeholder={t('userTypes:regexPlaceholder')}
-                    size="small"
-                  />
-                </FormControl>
-              )}
-
-              {property.type === 'enum' && (
-                <FormControl fullWidth sx={{mt: 2}}>
-                  <FormLabel>{t('userTypes:enumValues')}</FormLabel>
-                  <Box sx={{display: 'flex', gap: 1}}>
-                    <TextField
-                      value={enumInput[property.id] ?? ''}
-                      onChange={(e) => setEnumInput({...enumInput, [property.id]: e.target.value})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddEnumValue(property.id);
-                        }
-                      }}
-                      placeholder={t('userTypes:enumPlaceholder')}
-                      size="small"
-                      fullWidth
-                    />
-                    <Button variant="outlined" onClick={() => handleAddEnumValue(property.id)}>
-                      {t('common:actions.add')}
-                    </Button>
-                  </Box>
-                  {property.enum.length > 0 && (
-                    <Box sx={{mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1}}>
-                      {property.enum.map((val) => (
-                        <Box
-                          key={val}
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                            px: 1.5,
-                            py: 0.5,
-                          }}
-                        >
-                          <Typography variant="body2">{val}</Typography>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveEnumValue(property.id, val)}
-                            sx={{
-                              ml: 0.5,
-                              border: 'none',
-                            }}
-                          >
-                            <X size={14} />
-                          </IconButton>
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-                </FormControl>
-              )}
-            </Paper>
-          ))}
-
-          <Button variant="outlined" startIcon={<Plus size={16} />} onClick={handleAddProperty} sx={{mb: 3}}>
-            {t('userTypes:addProperty')}
-          </Button>
-
-          {createError && (
-            <Alert severity="error" sx={{mb: 3}}>
-              <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                {createError.message}
-              </Typography>
-              {createError.description && <Typography variant="body2">{createError.description}</Typography>}
-            </Alert>
-          )}
-
-          <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{mt: 4}}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                handleBack().catch(() => {
-                  // Handle navigation error
-                });
-              }}
-              disabled={loading}
-              startIcon={<X size={16} />}
-            >
-              {t('common:actions.cancel')}
-            </Button>
-            <Button type="submit" variant="contained" disabled={loading} startIcon={<Save size={16} />}>
-              {loading ? t('common:status.saving') : t('userTypes:createUserType')}
-            </Button>
+                    {steps[step].label}
+                  </Typography>
+                );
+              })}
+            </Breadcrumbs>
           </Stack>
         </Box>
-      </Paper>
+
+        {/* Main content */}
+        <Box sx={{flex: 1, display: 'flex', minHeight: 0}}>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              py: 8,
+              px: 20,
+              mx: currentStep === UserTypeCreateFlowStep.NAME ? 'auto' : 0,
+              alignItems: 'flex-start',
+            }}
+          >
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 800,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Error Alerts */}
+              {error && (
+                <Alert severity="error" sx={{my: 3}} onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              )}
+
+              {createError && (
+                <Alert severity="error" sx={{mb: 3}}>
+                  <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
+                    {createError.message}
+                  </Typography>
+                  {createError.description && <Typography variant="body2">{createError.description}</Typography>}
+                </Alert>
+              )}
+
+              {renderStepContent()}
+
+              {/* Navigation buttons */}
+              <Stack
+                direction="row"
+                justifyContent="flex-end"
+                alignItems="center"
+                spacing={2}
+                sx={{mt: 4}}
+              >
+                {currentStep !== UserTypeCreateFlowStep.NAME && (
+                  <Button variant="text" onClick={handlePrevStep} disabled={loading}>
+                    {t('common:actions.back')}
+                  </Button>
+                )}
+
+                <Button
+                  variant="contained"
+                  disabled={!stepReady[currentStep] || loading}
+                  sx={{minWidth: 140}}
+                  onClick={handleNextStep}
+                >
+                  {(() => {
+                    if (!isLastStep) return t('common:actions.continue');
+                    if (loading) return t('common:status.saving');
+                    return t('userTypes:createUserType');
+                  })()}
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Validation Error Snackbar */}
       <Snackbar
@@ -531,6 +429,6 @@ export default function CreateUserTypePage() {
           {validationError}
         </Alert>
       </Snackbar>
-    </PageContent>
+    </Box>
   );
 }

@@ -29,6 +29,7 @@ import {
   ListItemIcon,
   ListItemText,
   DataGrid,
+  ListingTable,
   useTheme,
 } from '@wso2/oxygen-ui';
 import {Users, EllipsisVertical, Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
@@ -184,34 +185,36 @@ export default function GroupsList(): JSX.Element {
 
   return (
     <>
-      <Box sx={{height: 600, width: '100%'}}>
-        <DataGrid.DataGrid
-          rows={data?.groups ?? []}
-          columns={columns}
-          loading={isLoading}
-          getRowId={(row): string => row.id}
-          onRowClick={(params) => {
-            const groupId = (params.row as GroupBasic).id;
-            (async (): Promise<void> => {
-              await navigate(`/groups/${groupId}`);
-            })().catch((_error: unknown) => {
-              logger.error('Failed to navigate to group', {error: _error, groupId});
-            });
-          }}
-          paginationMode="server"
-          rowCount={data?.totalResults ?? 0}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          pageSizeOptions={[5, 10, 25]}
-          disableRowSelectionOnClick
-          localeText={dataGridLocaleText}
-          sx={{
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-            },
-          }}
-        />
-      </Box>
+      <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
+        <ListingTable.Container disablePaper>
+          <ListingTable.DataGrid
+            rows={data?.groups ?? []}
+            columns={columns}
+            getRowId={(row) => (row as GroupBasic).id}
+            onRowClick={(params) => {
+              const groupId = (params.row as GroupBasic).id;
+              (async (): Promise<void> => {
+                await navigate(`/groups/${groupId}`);
+              })().catch((_error: unknown) => {
+                logger.error('Failed to navigate to group', {error: _error, groupId});
+              });
+            }}
+            paginationMode="server"
+            rowCount={data?.totalResults ?? 0}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            pageSizeOptions={[5, 10, 25]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            sx={{
+              height: 'auto',
+              '& .MuiDataGrid-row': {
+                cursor: 'pointer',
+              },
+            }}
+          />
+        </ListingTable.Container>
+      </ListingTable.Provider>
 
       {/* Actions Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
