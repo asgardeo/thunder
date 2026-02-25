@@ -56,11 +56,11 @@ deployment:
     port: 8090
   resources:
     limits:
-      cpu: 1.5
-      memory: 512Mi
+      cpu: 200m
+      memory: 100Mi
     requests:
-      cpu: 1
-      memory: 256Mi
+      cpu: 100m
+      memory: 50Mi
   # Controls the THUNDER_SKIP_SECURITY environment variable. Set this to true only
   # in non-production environments for testing purposes to bypass REST API security checks.
   skipSecurity: false
@@ -298,11 +298,11 @@ setup:
   # Resource limits for setup job
   resources:
     limits:
-      cpu: 500m
-      memory: 256Mi
+      cpu: 200m
+      memory: 100Mi
     requests:
-      cpu: 250m
-      memory: 128Mi
+      cpu: 100m
+      memory: 50Mi
   # Additional volume mounts for setup job
   extraVolumeMounts: []
     # Example:
