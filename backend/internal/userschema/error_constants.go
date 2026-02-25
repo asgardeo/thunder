@@ -75,6 +75,23 @@ var (
 		Error:            "User validation failed",
 		ErrorDescription: "User attributes do not conform to the required schema",
 	}
+	// ErrorCannotModifyDeclarativeResource is the error returned when trying to modify a declarative resource.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1008",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The user schema is declarative and cannot be modified or deleted",
+	}
+	// ErrorResultLimitExceededInCompositeMode is the error returned when
+	// the result limit is exceeded in composite mode.
+	ErrorResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1009",
+		Error: "Result limit exceeded",
+		ErrorDescription: "The combined result set from both file-based and database " +
+			"stores exceeds the maximum limit. Please refine your query to return " +
+			"fewer results.",
+	}
 )
 
 // Server errors for user schema management operations.
@@ -98,4 +115,7 @@ var (
 
 	// ErrInvalidSchemaDefinition is returned when the schema definition is invalid.
 	ErrInvalidSchemaDefinition = errors.New("invalid schema definition")
+
+	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )
