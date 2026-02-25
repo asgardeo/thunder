@@ -34,6 +34,7 @@ interface BasePropertyDefinition {
  */
 export interface StringPropertyDefinition extends BasePropertyDefinition {
   type: 'string';
+  credential?: boolean;
   enum?: string[];
   regex?: string;
 }
@@ -43,6 +44,7 @@ export interface StringPropertyDefinition extends BasePropertyDefinition {
  */
 export interface NumberPropertyDefinition extends BasePropertyDefinition {
   type: 'number';
+  credential?: boolean;
 }
 
 /**
@@ -192,6 +194,7 @@ export interface SchemaPropertyInput {
   type: UIPropertyType;
   required: boolean;
   unique: boolean;
+  credential: boolean;
   enum: string[];
   regex: string;
 }

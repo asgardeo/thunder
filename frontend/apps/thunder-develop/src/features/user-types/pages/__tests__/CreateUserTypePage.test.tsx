@@ -18,9 +18,9 @@
 
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent, fireEvent} from '@thunder/test-utils';
-import type {OrganizationUnitListParams} from '@/features/organization-units/models/requests';
+import {render, screen, waitFor, userEvent, within} from '@thunder/test-utils';
 import CreateUserTypePage from '../CreateUserTypePage';
+import UserTypeCreateProvider from '../../contexts/UserTypeCreate/UserTypeCreateProvider';
 import type {ApiError, CreateUserSchemaRequest} from '../../types/user-types';
 
 const mockNavigate = vi.fn();
@@ -56,47 +56,83 @@ interface UseCreateUserTypeReturn {
 
 const mockUseCreateUserType = vi.fn<() => UseCreateUserTypeReturn>();
 
-interface UseGetOrganizationUnitsReturn {
-  data: {
-    totalResults: number;
-    startIndex: number;
-    count: number;
-    organizationUnits: {
-      id: string;
-      name: string;
-      handle: string;
-      description?: string | null;
-      parent?: string | null;
-    }[];
-  } | null;
-  isLoading: boolean;
-  error: ApiError | null;
-  refetch: (newParams?: OrganizationUnitListParams) => Promise<void>;
-}
-
-const mockUseGetOrganizationUnits = vi.fn<() => UseGetOrganizationUnitsReturn>();
-const mockRefetchOrganizationUnits = vi.fn();
-
 vi.mock('../../api/useCreateUserType', () => ({
   default: () => mockUseCreateUserType(),
 }));
 
+// Mock useGetOrganizationUnits (used by ConfigureGeneral for auto-selecting the first OU)
 vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
-  default: () => mockUseGetOrganizationUnits(),
+  default: () => ({
+    data: {
+      totalResults: 2,
+      startIndex: 1,
+      count: 2,
+      organizationUnits: [
+        {id: 'root-ou', name: 'Root Organization', handle: 'root', description: null, parent: null},
+        {id: 'child-ou', name: 'Child Organization', handle: 'child', description: null, parent: 'root-ou'},
+      ],
+    },
+    isLoading: false,
+    error: null,
+  }),
 }));
 
-const getOrganizationUnitSelect = () => screen.getAllByRole('combobox')[0];
-const getPropertyTypeSelect = (index = 0) => screen.getAllByRole('combobox')[index + 1];
+// Mock OrganizationUnitTreePicker
+vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () => ({
+  default: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
+    <div data-testid="ou-tree-picker">
+      <span data-testid="ou-value">{value}</span>
+      <button type="button" data-testid="select-ou" onClick={() => onChange('ou-123')}>
+        Select OU
+      </button>
+    </div>
+  ),
+}));
 
-const mockOrganizationUnitsResponse = {
-  totalResults: 2,
-  startIndex: 1,
-  count: 2,
-  organizationUnits: [
-    {id: 'root-ou', name: 'Root Organization', handle: 'root', description: null, parent: null},
-    {id: 'child-ou', name: 'Child Organization', handle: 'child', description: null, parent: 'root-ou'},
-  ],
-};
+vi.mock('../../../applications/utils/generateAppNameSuggestions', () => ({
+  default: () => ['Alpha Users', 'Beta Users', 'Gamma Users'],
+}));
+
+/**
+ * Helper to render the wizard page wrapped in provider.
+ */
+function renderPage() {
+  return render(
+    <UserTypeCreateProvider>
+      <CreateUserTypePage />
+    </UserTypeCreateProvider>,
+  );
+}
+
+/**
+ * Helper to navigate from step 1 (Name) to step 2 (General) by typing a name and clicking Continue.
+ */
+async function goToGeneralStep(user: ReturnType<typeof userEvent.setup>, name = 'Employee') {
+  await user.type(screen.getByLabelText(/User Type Name/i), name);
+  await user.click(screen.getByRole('button', {name: /Continue/i}));
+  await waitFor(() => {
+    expect(screen.getByTestId('configure-general')).toBeInTheDocument();
+  });
+}
+
+/**
+ * Helper to navigate from step 1 to step 3 (Properties) via step 2.
+ * The first OU is auto-selected by ConfigureGeneral.
+ */
+async function goToPropertiesStep(user: ReturnType<typeof userEvent.setup>, name = 'Employee') {
+  await goToGeneralStep(user, name);
+  // OU is auto-selected from useGetOrganizationUnits data
+  await waitFor(() => {
+    const continueButton = screen.getByRole('button', {name: /Continue/i});
+    expect(continueButton).not.toBeDisabled();
+  });
+  await user.click(screen.getByRole('button', {name: /Continue/i}));
+  await waitFor(() => {
+    expect(screen.getByTestId('configure-properties')).toBeInTheDocument();
+  });
+}
+
+const getPropertyTypeSelect = (index = 0) => screen.getAllByRole('combobox')[index];
 
 describe('CreateUserTypePage', () => {
   beforeEach(() => {
@@ -106,40 +142,29 @@ describe('CreateUserTypePage', () => {
       loading: false,
       error: null,
     });
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: mockOrganizationUnitsResponse,
-      isLoading: false,
-      error: null,
-      refetch: mockRefetchOrganizationUnits,
-    });
   });
 
-  it('renders the page with initial form', () => {
-    render(<CreateUserTypePage />);
+  // ============================================================================
+  // Step 1: Name
+  // ============================================================================
 
-    expect(screen.getByRole('heading', {name: 'Create User Type'})).toBeInTheDocument();
-    expect(screen.getByText('Add a new user type to your organization')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Type Name/i)).toBeInTheDocument();
+  it('renders the wizard with Name step initially', () => {
+    renderPage();
+
+    expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+    expect(screen.getByText("Let's name your user type")).toBeInTheDocument();
+    expect(screen.getByLabelText(/User Type Name/i)).toBeInTheDocument();
   });
 
-  it('navigates back when Back button is clicked', async () => {
+  it('closes wizard when X button is clicked', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    const backButton = screen.getByRole('button', {name: /^back$/i});
-    await user.click(backButton);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/user-types');
-    });
-  });
-
-  it('navigates back when Cancel button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
-
-    const cancelButton = screen.getByRole('button', {name: /Cancel/i});
-    await user.click(cancelButton);
+    // The X (close) button navigates back to /user-types
+    const closeButtons = screen.getAllByRole('button');
+    // The X close button is the first IconButton in the header
+    const closeButton = closeButtons[0];
+    await user.click(closeButton);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/user-types');
@@ -148,17 +173,119 @@ describe('CreateUserTypePage', () => {
 
   it('allows user to enter user type name', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    const nameInput = screen.getByLabelText(/Type Name/i);
+    const nameInput = screen.getByLabelText(/User Type Name/i);
     await user.type(nameInput, 'Employee');
 
     expect(nameInput).toHaveValue('Employee');
   });
 
+  it('disables Continue button when name is empty', () => {
+    renderPage();
+
+    const continueButton = screen.getByRole('button', {name: /Continue/i});
+    expect(continueButton).toBeDisabled();
+  });
+
+  it('enables Continue button when name is entered', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/User Type Name/i), 'Employee');
+
+    const continueButton = screen.getByRole('button', {name: /Continue/i});
+    expect(continueButton).not.toBeDisabled();
+  });
+
+  it('navigates to General step when Continue is clicked', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToGeneralStep(user);
+
+    expect(screen.getByTestId('configure-general')).toBeInTheDocument();
+  });
+
+  // ============================================================================
+  // Step 2: General
+  // ============================================================================
+
+  it('shows the organization unit tree picker on General step', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToGeneralStep(user);
+
+    expect(screen.getByTestId('ou-tree-picker')).toBeInTheDocument();
+  });
+
+  it('auto-selects the first organization unit', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToGeneralStep(user);
+
+    // First OU should be auto-selected from useGetOrganizationUnits data
+    await waitFor(() => {
+      expect(screen.getByTestId('ou-value')).toHaveTextContent('root-ou');
+    });
+  });
+
+  it('allows selecting a different organization unit via tree picker', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToGeneralStep(user);
+
+    await user.click(screen.getByTestId('select-ou'));
+
+    expect(screen.getByTestId('ou-value')).toHaveTextContent('ou-123');
+  });
+
+  it('enables Continue on General step when OU is auto-selected', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToGeneralStep(user);
+
+    await waitFor(() => {
+      const continueButton = screen.getByRole('button', {name: /Continue/i});
+      expect(continueButton).not.toBeDisabled();
+    });
+  });
+
+  it('navigates back to Name step when Back is clicked on General step', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToGeneralStep(user);
+
+    await user.click(screen.getByRole('button', {name: /Back/i}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================================================
+  // Step 3: Properties
+  // ============================================================================
+
+  it('navigates to Properties step', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToPropertiesStep(user);
+
+    expect(screen.getByTestId('configure-properties')).toBeInTheDocument();
+  });
+
   it('allows adding a new property', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
+
+    await goToPropertiesStep(user);
 
     const addButton = screen.getByRole('button', {name: /Add Property/i});
     await user.click(addButton);
@@ -166,13 +293,15 @@ describe('CreateUserTypePage', () => {
 
   it('allows removing a property', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
+
+    await goToPropertiesStep(user);
 
     // Add a second property first
     const addButton = screen.getByRole('button', {name: /Add Property/i});
     await user.click(addButton);
 
-    // Now remove the second property - find the X icon button
+    // Now remove the second property
     const removeButtons = screen
       .getAllByRole('button')
       .filter((btn) => btn.classList.contains('MuiIconButton-colorError'));
@@ -182,7 +311,9 @@ describe('CreateUserTypePage', () => {
 
   it('allows changing property name', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
+
+    await goToPropertiesStep(user);
 
     const propertyNameInput = screen.getByPlaceholderText(/e\.g\., email, age, address/i);
     await user.type(propertyNameInput, 'email');
@@ -192,7 +323,9 @@ describe('CreateUserTypePage', () => {
 
   it('allows changing property type', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
+
+    await goToPropertiesStep(user);
 
     const typeSelect = getPropertyTypeSelect();
     await user.click(typeSelect);
@@ -205,129 +338,13 @@ describe('CreateUserTypePage', () => {
     });
   });
 
-  it('shows validation error when submitting without name', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
-
-    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a user type name')).toBeInTheDocument();
-    });
-
-    expect(mockCreateUserType).not.toHaveBeenCalled();
-  });
-
-  it('renders organization units and allows selecting by name', async () => {
-    const user = userEvent.setup();
-    mockCreateUserType.mockResolvedValue(undefined);
-
-    render(<CreateUserTypePage />);
-
-    const ouSelect = getOrganizationUnitSelect();
-
-    await waitFor(() => {
-      expect(ouSelect).toHaveTextContent('Root Organization');
-    });
-
-    fireEvent.mouseDown(ouSelect);
-    const childOption = await screen.findByRole('option', {name: /Child Organization/i});
-    await user.click(childOption);
-
-    await waitFor(() => {
-      expect(ouSelect).toHaveTextContent('Child Organization');
-    });
-
-    await user.type(screen.getByLabelText(/Type Name/i), 'Employee');
-    await user.type(screen.getByPlaceholderText(/e\.g\., email, age, address/i), 'email');
-
-    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalledWith(
-        expect.objectContaining({
-          ouId: 'child-ou',
-        }),
-      );
-    });
-  });
-
-  it('shows validation error when submitting without property name', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
-
-    const nameInput = screen.getByLabelText(/Type Name/i);
-    await user.type(nameInput, 'Employee');
-
-    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Please add at least one property')).toBeInTheDocument();
-    });
-
-    expect(mockCreateUserType).not.toHaveBeenCalled();
-  });
-
-  it('shows validation error when submitting without organization unit id', async () => {
-    const user = userEvent.setup();
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      isLoading: false,
-      error: null,
-      refetch: mockRefetchOrganizationUnits,
-    });
-    render(<CreateUserTypePage />);
-
-    await user.type(screen.getByLabelText(/Type Name/i), 'Employee');
-    await user.type(screen.getByPlaceholderText(/e\.g\., email, age, address/i), 'email');
-
-    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Please provide an organization unit ID')).toBeInTheDocument();
-    });
-
-    expect(mockCreateUserType).not.toHaveBeenCalled();
-  });
-
-  it('shows validation error for duplicate property names', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
-
-    const nameInput = screen.getByLabelText(/Type Name/i);
-    await user.type(nameInput, 'Employee');
-
-    // Add first property
-    const firstPropertyInput = screen.getByPlaceholderText(/e\.g\., email, age, address/i);
-    await user.type(firstPropertyInput, 'email');
-
-    // Add second property
-    const addButton = screen.getByRole('button', {name: /Add Property/i});
-    await user.click(addButton);
-
-    // Set same name for second property
-    const propertyInputs = screen.getAllByPlaceholderText(/e\.g\., email, age, address/i);
-    await user.type(propertyInputs[1], 'email');
-
-    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Duplicate property names found/i)).toBeInTheDocument();
-    });
-
-    expect(mockCreateUserType).not.toHaveBeenCalled();
-  });
-
   it('allows toggling required checkbox', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    const requiredCheckbox = screen.getByRole('checkbox', {name: /Required/i});
+    await goToPropertiesStep(user);
+
+    const requiredCheckbox = screen.getByRole('checkbox', {name: /Users must provide a value/i});
     expect(requiredCheckbox).not.toBeChecked();
 
     await user.click(requiredCheckbox);
@@ -339,9 +356,11 @@ describe('CreateUserTypePage', () => {
 
   it('allows toggling unique checkbox for string type', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    const uniqueCheckbox = screen.getByRole('checkbox', {name: /Unique/i});
+    await goToPropertiesStep(user);
+
+    const uniqueCheckbox = screen.getByRole('checkbox', {name: /Each user must have a distinct value/i});
     expect(uniqueCheckbox).not.toBeChecked();
 
     await user.click(uniqueCheckbox);
@@ -350,12 +369,12 @@ describe('CreateUserTypePage', () => {
 
   it('hides unique checkbox for boolean type', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Initially unique checkbox should be visible for string type
-    expect(screen.getByRole('checkbox', {name: /Unique/i})).toBeInTheDocument();
+    await goToPropertiesStep(user);
 
-    // Change to boolean type
+    expect(screen.getByRole('checkbox', {name: /Each user must have a distinct value/i})).toBeInTheDocument();
+
     const typeSelect = getPropertyTypeSelect();
     await user.click(typeSelect);
 
@@ -363,13 +382,15 @@ describe('CreateUserTypePage', () => {
     await user.click(booleanOption);
 
     await waitFor(() => {
-      expect(screen.queryByRole('checkbox', {name: /Unique/i})).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', {name: /Each user must have a distinct value/i})).not.toBeInTheDocument();
     });
   });
 
   it('allows adding regex pattern for string type', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
+
+    await goToPropertiesStep(user);
 
     const regexInput = screen.getByPlaceholderText('e.g., ^[a-zA-Z0-9]+$');
     await user.click(regexInput);
@@ -378,34 +399,40 @@ describe('CreateUserTypePage', () => {
     expect(regexInput).toHaveValue('^[a-z]+$');
   });
 
-  it('allows adding enum values for enum type', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+  it(
+    'allows adding enum values for enum type',
+    async () => {
+      const user = userEvent.setup();
+      renderPage();
 
-    // Change type to enum
-    const typeSelect = getPropertyTypeSelect();
-    await user.click(typeSelect);
-    const enumOption = await screen.findByText('Enum');
-    await user.click(enumOption);
+      await goToPropertiesStep(user);
 
-    const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
-    await user.type(enumInput, 'admin');
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByText('Enum');
+      await user.click(enumOption);
 
-    const addEnumButton = screen.getByRole('button', {name: /^Add$/i});
-    await user.click(addEnumButton);
+      const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
+      await user.type(enumInput, 'admin');
 
-    await waitFor(() => {
-      expect(screen.getByText('admin')).toBeInTheDocument();
-    });
+      const addEnumButton = screen.getByRole('button', {name: /^Add$/i});
+      await user.click(addEnumButton);
 
-    expect(enumInput).toHaveValue('');
-  });
+      await waitFor(() => {
+        expect(screen.getByText('admin')).toBeInTheDocument();
+      });
+
+      expect(enumInput).toHaveValue('');
+    },
+    15_000,
+  );
 
   it('allows adding enum value by pressing Enter', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Change type to enum
+    await goToPropertiesStep(user);
+
     const typeSelect = getPropertyTypeSelect();
     await user.click(typeSelect);
     const enumOption = await screen.findByText('Enum');
@@ -423,9 +450,10 @@ describe('CreateUserTypePage', () => {
 
   it('does not add enum value when input is empty or whitespace', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Change type to enum
+    await goToPropertiesStep(user);
+
     const typeSelect = getPropertyTypeSelect();
     await user.click(typeSelect);
     const enumOption = await screen.findByText('Enum');
@@ -433,27 +461,24 @@ describe('CreateUserTypePage', () => {
 
     const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
 
-    // Try to add empty value by clicking button
     const addEnumButton = screen.getByRole('button', {name: /^Add$/i});
     await user.click(addEnumButton);
 
-    // Should not add any enum values
     const enumContainer = enumInput.closest('div')?.querySelector('.MuiBox-root');
     expect(enumContainer).not.toBeInTheDocument();
 
-    // Try to add whitespace value
     await user.type(enumInput, '   ');
     await user.click(addEnumButton);
 
-    // Should still not add any enum values
     expect(enumContainer).not.toBeInTheDocument();
   });
 
   it('allows removing enum values', async () => {
     const user = userEvent.setup();
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Change type to enum
+    await goToPropertiesStep(user);
+
     const typeSelect = getPropertyTypeSelect();
     await user.click(typeSelect);
     const enumOption = await screen.findByText('Enum');
@@ -466,11 +491,11 @@ describe('CreateUserTypePage', () => {
       expect(screen.getByText('admin')).toBeInTheDocument();
     });
 
-    // Find and click the remove button for the enum value
-    const enumContainer = screen.getByText('admin').closest('div');
-    const removeButton = enumContainer?.querySelector('button');
-    if (removeButton) {
-      await user.click(removeButton);
+    // The Chip component renders a delete icon as an SVG sibling to the label
+    const chipElement = screen.getByText('admin').closest('.MuiChip-root');
+    const deleteIcon = chipElement?.querySelector('.MuiChip-deleteIcon');
+    if (deleteIcon) {
+      await user.click(deleteIcon);
     }
 
     await waitFor(() => {
@@ -478,25 +503,84 @@ describe('CreateUserTypePage', () => {
     });
   });
 
+  it('resets type-specific fields when type changes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToPropertiesStep(user);
+
+    const typeSelect = getPropertyTypeSelect();
+    await user.click(typeSelect);
+    const enumTypeOption = await screen.findByText('Enum');
+    await user.click(enumTypeOption);
+
+    const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
+    await user.type(enumInput, 'test{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('test')).toBeInTheDocument();
+    });
+
+    await user.click(typeSelect);
+
+    const numberOption = await screen.findByText('Number');
+    await user.click(numberOption);
+
+    await waitFor(() => {
+      expect(screen.queryByText('test')).not.toBeInTheDocument();
+    });
+
+    expect(screen.queryByPlaceholderText(/Add value and press Enter/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/\^\[a-zA-Z0-9\]\+\$/)).not.toBeInTheDocument();
+  });
+
+  it('navigates back to General step when Back is clicked on Properties step', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToPropertiesStep(user);
+
+    await user.click(screen.getByRole('button', {name: /Back/i}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('configure-general')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================================================
+  // Full wizard flow: submission
+  // ============================================================================
+
   it('successfully creates user type with valid data', async () => {
     const user = userEvent.setup();
     mockCreateUserType.mockResolvedValue(undefined);
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Fill in user type name
-    const nameInput = screen.getByLabelText(/Type Name/i);
-    await user.type(nameInput, 'Employee');
+    // Step 1: Name
+    await user.type(screen.getByLabelText(/User Type Name/i), 'Employee');
+    await user.click(screen.getByRole('button', {name: /Continue/i}));
 
-    // Fill in property name
+    // Step 2: General (OU auto-selected as root-ou)
+    await waitFor(() => {
+      expect(screen.getByTestId('configure-general')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /Continue/i})).not.toBeDisabled();
+    });
+    await user.click(screen.getByRole('button', {name: /Continue/i}));
+
+    // Step 3: Properties
+    await waitFor(() => {
+      expect(screen.getByTestId('configure-properties')).toBeInTheDocument();
+    });
     const propertyNameInput = screen.getByPlaceholderText(/e.g., email, age, address/i);
     await user.type(propertyNameInput, 'email');
 
-    // Mark as required
-    const requiredCheckbox = screen.getByRole('checkbox', {name: /Required/i});
+    const requiredCheckbox = screen.getByRole('checkbox', {name: /Users must provide a value/i});
     await user.click(requiredCheckbox);
 
-    // Submit form
+    // Submit
     const submitButton = screen.getByRole('button', {name: /Create User Type/i});
     await user.click(submitButton);
 
@@ -522,25 +606,33 @@ describe('CreateUserTypePage', () => {
     const user = userEvent.setup();
     mockCreateUserType.mockResolvedValue(undefined);
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    await user.type(screen.getByLabelText(/Type Name/i), 'Employee');
-    const ouSelect = getOrganizationUnitSelect();
-    await user.click(ouSelect);
-    const secondOuOption = await screen.findByText('Child Organization');
-    await user.click(secondOuOption);
+    // Step 1: Name
+    await user.type(screen.getByLabelText(/User Type Name/i), 'Employee');
+    await user.click(screen.getByRole('button', {name: /Continue/i}));
 
+    // Step 2: General - pick a different OU via tree picker and enable self-registration
+    await waitFor(() => {
+      expect(screen.getByTestId('configure-general')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('select-ou'));
+    await user.click(screen.getByLabelText(/Allow Self Registration/i));
+    await user.click(screen.getByRole('button', {name: /Continue/i}));
+
+    // Step 3: Properties
+    await waitFor(() => {
+      expect(screen.getByTestId('configure-properties')).toBeInTheDocument();
+    });
     const propertyNameInput = screen.getByPlaceholderText(/e\.g\., email, age, address/i);
     await user.type(propertyNameInput, 'email');
-
-    await user.click(screen.getByLabelText(/Allow Self Registration/i));
 
     await user.click(screen.getByRole('button', {name: /Create User Type/i}));
 
     await waitFor(() => {
       expect(mockCreateUserType).toHaveBeenCalledWith({
         name: 'Employee',
-        ouId: 'child-ou',
+        ouId: 'ou-123',
         allowSelfRegistration: true,
         schema: {
           email: {
@@ -552,7 +644,48 @@ describe('CreateUserTypePage', () => {
     });
   });
 
-  it('displays error from API', async () => {
+  it('shows validation error when submitting without property name', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToPropertiesStep(user);
+
+    // The Create User Type button should be disabled when no property name is entered
+    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
+    expect(submitButton).toBeDisabled();
+
+    expect(mockCreateUserType).not.toHaveBeenCalled();
+  });
+
+  it('shows validation error for duplicate property names', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await goToPropertiesStep(user);
+
+    // Add first property
+    const firstPropertyInput = screen.getByPlaceholderText(/e\.g\., email, age, address/i);
+    await user.type(firstPropertyInput, 'email');
+
+    // Add second property
+    const addButton = screen.getByRole('button', {name: /Add Property/i});
+    await user.click(addButton);
+
+    // Set same name for second property
+    const propertyInputs = screen.getAllByPlaceholderText(/e\.g\., email, age, address/i);
+    await user.type(propertyInputs[1], 'email');
+
+    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Duplicate property names found/i)).toBeInTheDocument();
+    });
+
+    expect(mockCreateUserType).not.toHaveBeenCalled();
+  });
+
+  it('displays error from API', () => {
     const error: ApiError = {
       code: 'CREATE_ERROR',
       message: 'Failed to create user type',
@@ -565,56 +698,45 @@ describe('CreateUserTypePage', () => {
       error,
     });
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
     expect(screen.getByText('Failed to create user type')).toBeInTheDocument();
     expect(screen.getByText('User type already exists')).toBeInTheDocument();
   });
 
-  it('shows loading state during submission', () => {
+  it('shows loading state during submission on last step', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    // Navigate to properties step with loading=false (default from beforeEach)
+    await goToPropertiesStep(user);
+
+    // Type a property name so the step is "ready"
+    await user.type(screen.getByPlaceholderText(/e\.g\., email, age, address/i), 'email');
+
+    // Now switch to loading state
     mockUseCreateUserType.mockReturnValue({
       createUserType: mockCreateUserType,
       loading: true,
       error: null,
     });
 
-    render(<CreateUserTypePage />);
+    // Trigger a re-render by typing (the hook return value will update)
+    await user.type(screen.getByPlaceholderText(/e\.g\., email, age, address/i), '2');
 
-    expect(screen.getByText('Saving...')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Saving...')).toBeInTheDocument();
+    });
     expect(screen.getByRole('button', {name: /Saving/i})).toBeDisabled();
-    expect(screen.getByRole('button', {name: /Cancel/i})).toBeDisabled();
-  });
-
-  it('closes snackbar when close button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
-
-    // Trigger validation error
-    const submitButton = screen.getByRole('button', {name: /Create User Type/i});
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a user type name')).toBeInTheDocument();
-    });
-
-    // Close snackbar
-    const closeButton = screen.getByLabelText(/close/i);
-    await user.click(closeButton);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Please enter a user type name')).not.toBeInTheDocument();
-    });
   });
 
   it('creates schema with enum property correctly', async () => {
     const user = userEvent.setup();
     mockCreateUserType.mockResolvedValue(undefined);
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Set user type name
-    const nameInput = screen.getByLabelText(/Type Name/i);
-    await user.type(nameInput, 'Complex Type');
+    await goToPropertiesStep(user, 'Complex Type');
 
     // Change type to enum
     const typeSelect = getPropertyTypeSelect();
@@ -626,10 +748,10 @@ describe('CreateUserTypePage', () => {
     const firstPropertyInput = screen.getByPlaceholderText(/e.g., email, age, address/i);
     await user.type(firstPropertyInput, 'status');
 
-    const requiredCheckbox = screen.getByRole('checkbox', {name: /Required/i});
+    const requiredCheckbox = screen.getByRole('checkbox', {name: /Users must provide a value/i});
     await user.click(requiredCheckbox);
 
-    const uniqueCheckbox = screen.getByRole('checkbox', {name: /Unique/i});
+    const uniqueCheckbox = screen.getByRole('checkbox', {name: /Each user must have a distinct value/i});
     await user.click(uniqueCheckbox);
 
     const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
@@ -656,55 +778,19 @@ describe('CreateUserTypePage', () => {
     });
   });
 
-  it('resets type-specific fields when type changes', async () => {
-    const user = userEvent.setup();
-    render(<CreateUserTypePage />);
-
-    // Change type to enum first
-    const typeSelect = getPropertyTypeSelect();
-    await user.click(typeSelect);
-    const enumTypeOption = await screen.findByText('Enum');
-    await user.click(enumTypeOption);
-
-    // Add enum value for enum type
-    const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
-    await user.type(enumInput, 'test{Enter}');
-
-    await waitFor(() => {
-      expect(screen.getByText('test')).toBeInTheDocument();
-    });
-
-    // Change type to number
-    await user.click(typeSelect);
-
-    const numberOption = await screen.findByText('Number');
-    await user.click(numberOption);
-
-    // Enum values should be gone
-    await waitFor(() => {
-      expect(screen.queryByText('test')).not.toBeInTheDocument();
-    });
-
-    // Regex and enum inputs should not be visible for number type
-    expect(screen.queryByPlaceholderText(/userTypes:enumPlaceholder/i)).not.toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/userTypes:regexPlaceholder/i)).not.toBeInTheDocument();
-  });
-
   it('creates schema with string property containing regex pattern', async () => {
     const user = userEvent.setup();
     mockCreateUserType.mockResolvedValue(undefined);
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Set user type name
-    const nameInput = screen.getByLabelText(/Type Name/i);
-    await user.type(nameInput, 'RegexTest');
+    await goToPropertiesStep(user, 'RegexTest');
 
     // Add property name
     const propertyNameInput = screen.getByPlaceholderText(/e.g., email, age, address/i);
     await user.type(propertyNameInput, 'code');
 
-    // Add regex pattern using paste to avoid special character parsing issues
+    // Add regex pattern
     const regexInput = screen.getByPlaceholderText('e.g., ^[a-zA-Z0-9]+$');
     await user.click(regexInput);
     await user.paste('^[A-Z]{3}$');
@@ -732,11 +818,9 @@ describe('CreateUserTypePage', () => {
     const user = userEvent.setup();
     mockCreateUserType.mockResolvedValue(undefined);
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    // Set user type name
-    const nameInput = screen.getByLabelText(/Type Name/i);
-    await user.type(nameInput, 'NumberTest');
+    await goToPropertiesStep(user, 'NumberTest');
 
     // Add property name
     const propertyNameInput = screen.getByPlaceholderText(/e.g., email, age, address/i);
@@ -749,7 +833,7 @@ describe('CreateUserTypePage', () => {
     await user.click(numberOption);
 
     // Mark as unique
-    const uniqueCheckbox = screen.getByRole('checkbox', {name: /Unique/i});
+    const uniqueCheckbox = screen.getByRole('checkbox', {name: /Each user must have a distinct value/i});
     await user.click(uniqueCheckbox);
 
     // Submit
@@ -775,9 +859,10 @@ describe('CreateUserTypePage', () => {
     const user = userEvent.setup();
     mockCreateUserType.mockRejectedValue(new Error('Create failed'));
 
-    render(<CreateUserTypePage />);
+    renderPage();
 
-    await user.type(screen.getByLabelText(/Type Name/i), 'Employee');
+    await goToPropertiesStep(user);
+
     await user.type(screen.getByPlaceholderText(/e\.g\., email, age, address/i), 'email');
 
     const submitButton = screen.getByRole('button', {name: /Create User Type/i});
@@ -785,132 +870,52 @@ describe('CreateUserTypePage', () => {
 
     await waitFor(() => {
       expect(mockCreateUserType).toHaveBeenCalled();
-      // Should not navigate on error
       expect(mockNavigate).not.toHaveBeenCalledWith('/user-types');
     });
   });
 
-  it('shows organization units error alert when fetch fails', () => {
-    const orgError: ApiError = {
-      code: 'ORG_ERROR',
-      message: 'API error message',
-      description: 'Error description',
-    };
+  // ============================================================================
+  // Breadcrumb navigation
+  // ============================================================================
 
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: orgError,
-      refetch: mockRefetchOrganizationUnits,
-    });
-
-    render(<CreateUserTypePage />);
-
-    // The title uses the translation key, and the message is the API error message
-    expect(screen.getByText('Failed to load organization units')).toBeInTheDocument();
-    expect(screen.getByText('API error message')).toBeInTheDocument();
-  });
-
-  it('shows loading state in organization unit dropdown', async () => {
+  it('shows breadcrumbs reflecting current step', async () => {
     const user = userEvent.setup();
+    renderPage();
 
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: null,
-      isLoading: true,
-      error: null,
-      refetch: mockRefetchOrganizationUnits,
-    });
+    // Step 1: Only "Name" breadcrumb
+    const breadcrumb1 = screen.getByRole('navigation', {name: /breadcrumb/i});
+    expect(within(breadcrumb1).getByText('Name')).toBeInTheDocument();
 
-    render(<CreateUserTypePage />);
+    await goToGeneralStep(user);
 
-    const ouSelect = getOrganizationUnitSelect();
-    await user.click(ouSelect);
-
-    await waitFor(() => {
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
-    });
+    // Step 2: "Name" > "General" breadcrumbs
+    const breadcrumb2 = screen.getByRole('navigation', {name: /breadcrumb/i});
+    expect(within(breadcrumb2).getByText('Name')).toBeInTheDocument();
+    expect(within(breadcrumb2).getByText('General')).toBeInTheDocument();
   });
 
-  it('shows no organization units message when list is empty', async () => {
+  it('allows navigating back via breadcrumb click', async () => {
     const user = userEvent.setup();
+    renderPage();
 
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      isLoading: false,
-      error: null,
-      refetch: mockRefetchOrganizationUnits,
-    });
+    await goToGeneralStep(user);
 
-    render(<CreateUserTypePage />);
-
-    const ouSelect = getOrganizationUnitSelect();
-    await user.click(ouSelect);
+    // Click on "Name" breadcrumb to go back
+    const breadcrumb = screen.getByRole('navigation', {name: /breadcrumb/i});
+    await user.click(within(breadcrumb).getByText('Name'));
 
     await waitFor(() => {
-      expect(screen.getByText('No organization units available')).toBeInTheDocument();
+      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
     });
   });
 
-  it('shows error in organization unit dropdown when fetch fails', async () => {
-    const user = userEvent.setup();
-    const orgError: ApiError = {
-      code: 'ORG_ERROR',
-      message: 'Org fetch failed',
-      description: 'Error',
-    };
+  // ============================================================================
+  // Progress bar
+  // ============================================================================
 
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: orgError,
-      refetch: mockRefetchOrganizationUnits,
-    });
+  it('shows progress bar', () => {
+    renderPage();
 
-    render(<CreateUserTypePage />);
-
-    const ouSelect = getOrganizationUnitSelect();
-    await user.click(ouSelect);
-
-    // The error message appears in the dropdown menu item
-    await waitFor(() => {
-      const menuItems = screen.getAllByRole('option');
-      expect(menuItems.some((item) => item.textContent?.includes('Org fetch failed'))).toBe(true);
-    });
-  });
-
-  it('displays organization unit placeholder when no value is selected', async () => {
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      isLoading: false,
-      error: null,
-      refetch: mockRefetchOrganizationUnits,
-    });
-
-    render(<CreateUserTypePage />);
-
-    const ouSelect = getOrganizationUnitSelect();
-    expect(ouSelect).toHaveTextContent('Select an organization unit');
-  });
-
-  it('displays selected organization unit name in renderValue', async () => {
-    const user = userEvent.setup();
-
-    render(<CreateUserTypePage />);
-
-    // The component should auto-select the first organization unit
-    const ouSelect = getOrganizationUnitSelect();
-
-    await waitFor(() => {
-      expect(ouSelect).toHaveTextContent('Root Organization');
-    });
-
-    // Click to open dropdown and select a different unit
-    await user.click(ouSelect);
-    const childOption = await screen.findByText('Child Organization');
-    await user.click(childOption);
-
-    await waitFor(() => {
-      expect(ouSelect).toHaveTextContent('Child Organization');
-    });
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 });

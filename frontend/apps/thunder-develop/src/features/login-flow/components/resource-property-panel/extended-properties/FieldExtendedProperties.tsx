@@ -46,6 +46,7 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
   const {selectedNotification} = useValidationStatus();
 
   const attributes: string[] = useMemo(() => ['email', 'username', 'firstName'], []);
+  const credentialAttributes: string[] = useMemo(() => ['password', 'pin', 'secret'], []);
 
   const resourceRef = (resource as Element & {ref?: string})?.ref;
 
@@ -71,17 +72,13 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
     return '';
   }, [resource, selectedNotification]);
 
-  if (resource.type === ElementTypes.PasswordInput) {
-    return null;
-  }
-
   return (
     <Stack>
       <Autocomplete
-        freeSolo
+        freeSolo={resource.type !== ElementTypes.PasswordInput}
         disablePortal
         key={resource.id}
-        options={attributes ?? []}
+        options={(resource.type === ElementTypes.PasswordInput ? credentialAttributes : attributes) ?? []}
         getOptionLabel={(attribute: string) => attribute}
         sx={{width: '100%'}}
         renderInput={(params: AutocompleteRenderInputParams) => (
