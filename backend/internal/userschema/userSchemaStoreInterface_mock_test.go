@@ -417,6 +417,57 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) RunAndReturn
 	return _c
 }
 
+// IsUserSchemaDeclarative provides a mock function for the type userSchemaStoreInterfaceMock
+func (_mock *userSchemaStoreInterfaceMock) IsUserSchemaDeclarative(schemaID string) bool {
+	ret := _mock.Called(schemaID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsUserSchemaDeclarative")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(schemaID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsUserSchemaDeclarative'
+type userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsUserSchemaDeclarative is a helper method to define mock.On call
+//   - schemaID string
+func (_e *userSchemaStoreInterfaceMock_Expecter) IsUserSchemaDeclarative(schemaID interface{}) *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call {
+	return &userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call{Call: _e.mock.On("IsUserSchemaDeclarative", schemaID)}
+}
+
+func (_c *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call) Run(run func(schemaID string)) *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call) Return(b bool) *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call) RunAndReturn(run func(schemaID string) bool) *userSchemaStoreInterfaceMock_IsUserSchemaDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUserSchemaByID provides a mock function for the type userSchemaStoreInterfaceMock
 func (_mock *userSchemaStoreInterfaceMock) UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error {
 	ret := _mock.Called(ctx, schemaID, userSchema)

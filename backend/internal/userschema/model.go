@@ -41,6 +41,7 @@ type UserSchemaListItem struct {
 	Name                  string `json:"name,omitempty"`
 	OrganizationUnitID    string `json:"ouId"`
 	AllowSelfRegistration bool   `json:"allowSelfRegistration"`
+	IsReadOnly            bool   `json:"isReadOnly,omitempty"`
 }
 
 // Link represents a hypermedia link in the API response.

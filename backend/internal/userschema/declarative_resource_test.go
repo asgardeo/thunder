@@ -194,6 +194,14 @@ func (s *UserSchemaExporterTestSuite) TestValidateResource_NoSchema() {
 	assert.Equal(s.T(), "Test Schema", name)
 }
 
+func (s *UserSchemaExporterTestSuite) TestGetResourceRules() {
+	rules := s.exporter.GetResourceRules()
+
+	assert.NotNil(s.T(), rules)
+	// ResourceRules is currently an empty struct, but the function should return a valid pointer
+	assert.IsType(s.T(), &declarativeresource.ResourceRules{}, rules)
+}
+
 func (s *UserSchemaExporterTestSuite) TestUserSchemaExporterImplementsInterface() {
 	var _ declarativeresource.ResourceExporter = (*userschema.UserSchemaExporter)(nil)
 }
