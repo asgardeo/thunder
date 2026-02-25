@@ -249,6 +249,28 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithEmptyTemplat
 	suite.Nil(result["template"]) // Empty template should not be included
 }
 
+func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithMetadata() {
+	app := suite.createTestApplication()
+	app.Metadata = map[string]interface{}{
+		"env":  "production",
+		"team": "platform",
+	}
+
+	jsonBytes, err := getAppJSONDataBytes(&app)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &result)
+	suite.NoError(err)
+
+	metadata, ok := result["metadata"].(map[string]interface{})
+	suite.True(ok)
+	suite.Equal("production", metadata["env"])
+	suite.Equal("platform", metadata["team"])
+}
+
 func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_Success() {
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
@@ -600,6 +622,9 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 			"validity_period": float64(3600),
 			"user_attributes": []interface{}{"email", "name"},
 		},
+		"metadata": map[string]interface{}{
+			"env": "production",
+		},
 	}
 	appJSONBytes, _ := json.Marshal(appJSON)
 
@@ -639,6 +664,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 	suite.Len(result.Contacts, 1)
 	suite.NotNil(result.Assertion)
 	suite.Equal(int64(3600), result.Assertion.ValidityPeriod)
+	suite.NotNil(result.Metadata)
+	suite.Equal("production", result.Metadata["env"])
 	suite.Len(result.InboundAuthConfig, 1)
 	suite.Equal("client_app1", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
 }
