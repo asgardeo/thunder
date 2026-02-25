@@ -654,4 +654,38 @@ describe('CreateUserPage', () => {
       expect(screen.getByText('username is required')).toBeInTheDocument();
     });
   });
+
+  it('renders credential fields as password inputs with toggle visibility', () => {
+    const schemaWithCredential: ApiUserSchema = {
+      id: 'schema1',
+      name: 'Employee',
+      schema: {
+        username: {
+          type: 'string',
+          required: true,
+        },
+        password: {
+          type: 'string',
+          required: true,
+          credential: true,
+        },
+      },
+    };
+
+    mockUseGetUserSchema.mockReturnValue({
+      data: schemaWithCredential,
+      loading: false,
+      error: null,
+      refetch: mockRefetchSchema,
+    });
+
+    render(<CreateUserPage />);
+
+    const passwordInput = screen.getByPlaceholderText(/Enter password/i);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(screen.getByLabelText('show password')).toBeInTheDocument();
+
+    const usernameInput = screen.getByPlaceholderText(/Enter username/i);
+    expect(usernameInput).toHaveAttribute('type', 'text');
+  });
 });
