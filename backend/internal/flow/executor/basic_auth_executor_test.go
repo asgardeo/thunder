@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
@@ -746,4 +747,176 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_Re
 	assert.Equal(suite.T(), failureReasonInvalidCredentials, execResp.FailureReason)
 	assert.NotEmpty(suite.T(), execResp.Inputs, "Inputs should be re-populated for retry")
 	assert.Len(suite.T(), execResp.Inputs, 2, "Should include both username and password inputs")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithAllFields() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"tenant_id": "tenant-123",
+				"region":    "us-west",
+			},
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "oauth-client-1",
+					},
+				},
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "oauth-client-2",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.NotNil(suite.T(), metadata.AppMetadata)
+	assert.Equal(suite.T(), "tenant-123", metadata.AppMetadata["tenant_id"])
+	assert.Equal(suite.T(), "us-west", metadata.AppMetadata["region"])
+
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 2)
+	assert.Contains(suite.T(), clientIDs, "oauth-client-1")
+	assert.Contains(suite.T(), clientIDs, "oauth-client-2")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithNoMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.NotNil(suite.T(), metadata.AppMetadata)
+	assert.Empty(suite.T(), metadata.AppMetadata)
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyAppMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"environment": "production",
+				"version":     "1.0.0",
+			},
+		},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Equal(suite.T(), "production", metadata.AppMetadata["environment"])
+	assert.Equal(suite.T(), "1.0.0", metadata.AppMetadata["version"])
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyClientIDs() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "single-oauth-client",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 1)
+	assert.Equal(suite.T(), "single-oauth-client", clientIDs[0])
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithNilOAuthConfig() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type:           appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: nil,
+				},
+			},
+		},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithEmptyClientID() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInboundConfigs() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "valid-client",
+					},
+				},
+				{
+					Type:           appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: nil,
+				},
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "",
+					},
+				},
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "another-valid-client",
+					},
+				},
+			},
+		},
+	}
+
+	metadata := suite.executor.buildAuthnMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 2)
+	assert.Contains(suite.T(), clientIDs, "valid-client")
+	assert.Contains(suite.T(), clientIDs, "another-valid-client")
 }

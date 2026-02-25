@@ -26,6 +26,7 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -178,7 +179,8 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// For authentication flows, call Authenticate directly.
-	authnResult, svcErr := b.credsAuthSvc.Authenticate(userIdentifiers, userCredentials, nil)
+	metadata := b.buildAuthnMetadata(ctx)
+	authnResult, svcErr := b.credsAuthSvc.Authenticate(userIdentifiers, userCredentials, metadata)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecUserInputRequired
@@ -229,4 +231,33 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		AvailableAttributes: authnResult.AvailableAttributes,
 		Token:               authnResult.Token,
 	}, nil
+}
+
+// buildAuthnMetadata constructs the metadata for authentication.
+func (b *basicAuthExecutor) buildAuthnMetadata(ctx *core.NodeContext) *authnprovider.AuthnMetadata {
+	metadata := &authnprovider.AuthnMetadata{
+		AppMetadata: make(map[string]interface{}),
+	}
+
+	// Copy application metadata if present
+	if ctx.Application.Metadata != nil {
+		for key, value := range ctx.Application.Metadata {
+			metadata.AppMetadata[key] = value
+		}
+	}
+
+	// Extract client IDs from InboundAuthConfig
+	var clientIDs []string
+	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
+		if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthAppConfig.ClientID)
+		}
+	}
+
+	// Add client IDs to metadata if present
+	if len(clientIDs) > 0 {
+		metadata.AppMetadata["client_ids"] = clientIDs
+	}
+
+	return metadata
 }
