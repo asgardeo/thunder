@@ -67,17 +67,17 @@ func (e *permissionValidator) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 
 	logger.Debug("Checking scope protection", log.Any("requiredScopes", requiredScopes))
 
-	// Check if HTTP context exists
-	if ctx.HTTPContext == nil {
-		logger.Debug("No HTTP context available - blocking access")
+	// Check if context exists
+	if ctx.Context == nil {
+		logger.Debug("No context available - blocking access")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Insufficient permissions"
 		return execResp, nil
 	}
 
-	// Extract permissions from HTTP request context
-	userPermissions := security.GetPermissions(ctx.HTTPContext)
-	logger.Debug("Extracted permissions from HTTP context",
+	// Extract permissions from request context
+	userPermissions := security.GetPermissions(ctx.Context)
+	logger.Debug("Extracted permissions from context",
 		log.Int("permissionCount", len(userPermissions)),
 		log.String("permissions", strings.Join(userPermissions, ", ")))
 
