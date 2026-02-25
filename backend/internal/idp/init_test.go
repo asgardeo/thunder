@@ -20,6 +20,7 @@ package idp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -31,7 +32,9 @@ import (
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 const (
@@ -798,4 +801,50 @@ func (s *IDPInitTestSuite) TestIsDeclarativeModeEnabled() {
 	enabled := isDeclarativeModeEnabled()
 
 	s.True(enabled)
+}
+
+// TestInitialize_DBClientError tests Initialize when DB client retrieval fails
+func (s *IDPInitTestSuite) TestInitialize_DBClientError() {
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(nil, errors.New("mock db client error"))
+
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface {
+		return mockProvider
+	}
+	defer func() {
+		getDBProvider = originalGetDBProvider
+	}()
+
+	mux := http.NewServeMux()
+	_, _, err := Initialize(mux)
+
+	s.Error(err)
+	s.Equal("mock db client error", err.Error())
+	mockProvider.AssertExpectations(s.T())
+}
+
+// TestInitialize_TransactionerError tests Initialize when transactioner retrieval fails
+func (s *IDPInitTestSuite) TestInitialize_TransactionerError() {
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(nil, errors.New("mock transactioner error"))
+
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface {
+		return mockProvider
+	}
+	defer func() {
+		getDBProvider = originalGetDBProvider
+	}()
+
+	mux := http.NewServeMux()
+	_, _, err := Initialize(mux)
+
+	s.Error(err)
+	s.Equal("mock transactioner error", err.Error())
+	mockProvider.AssertExpectations(s.T())
+	mockClient.AssertExpectations(s.T())
 }
