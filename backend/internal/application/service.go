@@ -155,6 +155,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		Metadata:                  processedDTO.Metadata,
 	}
 	if inboundAuthConfig != nil && len(processedDTO.InboundAuthConfig) > 0 {
 		processedTokenConfig := processedDTO.InboundAuthConfig[0].OAuthAppConfig.Token
@@ -264,6 +265,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		Metadata:                  app.Metadata,
 	}
 	if inboundAuthConfig != nil {
 		// Construct the return DTO with processed token configuration
@@ -402,6 +404,7 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 		Contacts:                  applicationDTO.Contacts,
 		Certificate:               applicationDTO.Certificate,
 		AllowedUserTypes:          applicationDTO.AllowedUserTypes,
+		Metadata:                  applicationDTO.Metadata,
 	}
 
 	if len(applicationDTO.InboundAuthConfig) > 0 {
@@ -557,6 +560,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		Metadata:                  app.Metadata,
 	}
 	if inboundAuthConfig != nil {
 		// Wrap the finalOAuthAccessToken and finalOAuthIDToken in OAuthTokenConfig structure
@@ -622,6 +626,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		Metadata:                  processedDTO.Metadata,
 	}
 	if inboundAuthConfig != nil {
 		// Construct the return DTO with processed token configuration

@@ -542,3 +542,22 @@ allowed_user_types:
 	assert.Equal(s.T(), 3, len(appDTO.AllowedUserTypes))
 	assert.Contains(s.T(), appDTO.AllowedUserTypes, "guest")
 }
+
+func (s *ValidateApplicationWrapperTestSuite) TestParseToApplicationDTO_WithMetadata() {
+	yamlData := []byte(`
+id: app-123
+name: Test App
+metadata:
+  env: production
+  team: platform
+`)
+
+	dto, err := parseToApplicationDTO(yamlData)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), dto)
+	assert.Equal(s.T(), "app-123", dto.ID)
+	assert.Equal(s.T(), "Test App", dto.Name)
+	assert.NotNil(s.T(), dto.Metadata)
+	assert.Equal(s.T(), "production", dto.Metadata["env"])
+	assert.Equal(s.T(), "platform", dto.Metadata["team"])
+}
