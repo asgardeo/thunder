@@ -34,6 +34,10 @@ func (p *boolean) isRequired() bool {
 	return p.required
 }
 
+func (p *boolean) isCredential() bool {
+	return false
+}
+
 func (p *boolean) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	_, ok := value.(bool)
 	if !ok {

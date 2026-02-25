@@ -104,9 +104,6 @@ type CreateUserByPathRequest struct {
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
-// AuthenticateUserRequest represents the request body for authenticating a user.
-type AuthenticateUserRequest map[string]interface{}
-
 // AuthenticateUserResponse represents the response body for authenticating a user.
 type AuthenticateUserResponse struct {
 	ID               string `json:"id"`

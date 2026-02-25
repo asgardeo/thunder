@@ -61,7 +61,8 @@ type UserServiceInterface interface {
 	VerifyUser(ctx context.Context, userID string,
 		credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(ctx context.Context,
-		request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
+		identifiers map[string]interface{},
+		credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUserCredentialsByType(ctx context.Context, userID string,
 		credentialType string) ([]Credential, *serviceerror.ServiceError)
@@ -213,7 +214,16 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 		return nil, &serviceerror.InternalServerError
 	}
 
-	credentials, err := us.extractCredentials(user)
+	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, user.Type)
+	if svcErr != nil {
+		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription))
+	}
+
+	credentials, err := us.extractCredentials(user, schemaCredentialAttributes)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
@@ -265,8 +275,9 @@ func (us *userService) CreateUserByPath(
 	return us.CreateUser(ctx, user)
 }
 
-// extractCredentials extracts the credentials from the user attributes and returns Credentials struct.
-func (us *userService) extractCredentials(user *User) (Credentials, error) {
+// extractCredentials extracts credentials from user attributes based on schema-defined credential attributes.
+// Schema-defined credentials are always hashed. System-managed credentials are also extracted defensively.
+func (us *userService) extractCredentials(user *User, schemaCredentialAttributes []string) (Credentials, error) {
 	if user.Attributes == nil {
 		return Credentials{}, nil
 	}
@@ -278,15 +289,20 @@ func (us *userService) extractCredentials(user *User) (Credentials, error) {
 
 	credentials := make(Credentials)
 
-	for _, credType := range SupportedCredentialTypes {
-		credField := string(credType)
+	// Extract schema-defined credential attributes (always hashed).
+	for _, credField := range schemaCredentialAttributes {
 		if credValue, ok := attrsMap[credField].(string); ok {
+			delete(attrsMap, credField)
+
+			// Skip empty credential values.
+			if credValue == "" {
+				continue
+			}
+
 			credHash, err := us.hashService.Generate([]byte(credValue))
 			if err != nil {
 				return nil, err
 			}
-
-			delete(attrsMap, credField)
 
 			credential := Credential{
 				StorageType: "hash",
@@ -299,7 +315,29 @@ func (us *userService) extractCredentials(user *User) (Credentials, error) {
 				Value: credHash.Hash,
 			}
 
-			// Initialize the credential type array if it doesn't exist
+			credType := CredentialType(credField)
+			if credentials[credType] == nil {
+				credentials[credType] = []Credential{}
+			}
+			credentials[credType] = append(credentials[credType], credential)
+		}
+	}
+
+	// Extract system-managed credential types defensively.
+	for _, credType := range systemManagedCredentialTypes {
+		credField := string(credType)
+		if credValue, ok := attrsMap[credField].(string); ok {
+			delete(attrsMap, credField)
+
+			// Skip empty credential values.
+			if credValue == "" {
+				continue
+			}
+
+			credential := Credential{
+				Value: credValue,
+			}
+
 			if credentials[credType] == nil {
 				credentials[credType] = []Credential{}
 			}
@@ -406,7 +444,21 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 	// Ensure the user object has the correct ID
 	user.ID = userID
 
-	credentials, err := us.extractCredentials(user)
+	if us.userSchemaService == nil {
+		logger.Error("User schema service is not configured for user operations")
+		return nil, &ErrorInternalServerError
+	}
+
+	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, user.Type)
+	if svcErr != nil {
+		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription), log.String("id", userID))
+	}
+
+	credentials, err := us.extractCredentials(user, schemaCredentialAttributes)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to extract credentials", err, log.String("id", userID))
 	}
@@ -477,7 +529,31 @@ func (us *userService) UpdateUserAttributes(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	hasCredentials, svcErr := us.containsCredentialFields(attributes)
+	// Pre-fetch user to get the type for credential field lookup (outside transaction).
+	existingUser, getErr := us.userStore.GetUser(ctx, userID)
+	if getErr != nil {
+		if errors.Is(getErr, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user", getErr, log.String("id", userID))
+	}
+
+	if us.userSchemaService == nil {
+		logger.Error("User schema service is not configured for user operations")
+		return nil, &ErrorInternalServerError
+	}
+
+	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, existingUser.Type)
+	if svcErr != nil {
+		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription), log.String("id", userID))
+	}
+
+	hasCredentials, svcErr := us.containsCredentialAttributes(attributes, schemaCredentialAttributes)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -527,8 +603,11 @@ func (us *userService) UpdateUserAttributes(
 	return &updatedUser, nil
 }
 
-// containsCredentialFields checks whether the attributes include credential fields.
-func (us *userService) containsCredentialFields(attributes json.RawMessage) (bool, *serviceerror.ServiceError) {
+// containsCredentialAttributes checks whether the attributes include credential attributes
+// (either schema-defined or system-managed).
+func (us *userService) containsCredentialAttributes(
+	attributes json.RawMessage, schemaCredentialAttributes []string,
+) (bool, *serviceerror.ServiceError) {
 	if len(attributes) == 0 {
 		return false, nil
 	}
@@ -538,7 +617,13 @@ func (us *userService) containsCredentialFields(attributes json.RawMessage) (boo
 		return false, &ErrorInvalidRequestFormat
 	}
 
-	for _, credType := range SupportedCredentialTypes {
+	for _, credField := range schemaCredentialAttributes {
+		if _, ok := attrs[credField]; ok {
+			return true, nil
+		}
+	}
+
+	for _, credType := range systemManagedCredentialTypes {
 		if _, ok := attrs[string(credType)]; ok {
 			return true, nil
 		}
@@ -593,8 +678,8 @@ func (us *userService) batchUpdateUserCredentials(
 	var capturedSvcErr *serviceerror.ServiceError
 
 	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		// Get existing credentials once at the beginning
-		_, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
+		// Get existing credentials and user info
+		existingUser, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
 				logger.Debug("User not found", log.String("userID", userID))
@@ -611,13 +696,43 @@ func (us *userService) batchUpdateUserCredentials(
 			return errors.New("rollback for database error")
 		}
 
+		// Get schema credential attributes for the user's type
+		if us.userSchemaService == nil {
+			logger.Error("User schema service is not configured for user operations")
+			capturedSvcErr = &ErrorInternalServerError
+			return errors.New("rollback for nil schema service")
+		}
+
+		schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(txCtx, existingUser.Type)
+		if svcErr != nil {
+			if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+				capturedSvcErr = &ErrorUserSchemaNotFound
+				return errors.New("rollback for schema not found")
+			}
+			capturedSvcErr = logErrorAndReturnServerError(
+				logger, "Failed to get credential attributes from schema",
+				fmt.Errorf("schema service error: %s", svcErr.ErrorDescription),
+				log.String("userID", userID))
+			return errors.New("rollback for schema error")
+		}
+
+		// Build set of valid credential field names
+		validCredentialAttributes := make(
+			map[string]struct{}, len(schemaCredentialAttributes)+len(systemManagedCredentialTypes))
+		for _, field := range schemaCredentialAttributes {
+			validCredentialAttributes[field] = struct{}{}
+		}
+		for _, credType := range systemManagedCredentialTypes {
+			validCredentialAttributes[string(credType)] = struct{}{}
+		}
+
 		// Process all credential types first (validation and hashing)
 		processedCredentials := make(Credentials)
 		for credTypeStr, credValue := range credentialsMap {
 			credType := CredentialType(credTypeStr)
 
-			// Validate credential type
-			if !credType.IsValid() {
+			// Validate credential type against schema + system-managed types
+			if _, valid := validCredentialAttributes[credTypeStr]; !valid {
 				logger.Debug("Invalid credential type", log.String("credentialType", credTypeStr))
 				errorDesc := fmt.Sprintf("Invalid credential type: %s", credType)
 				capturedSvcErr = serviceerror.CustomServiceError(ErrorInvalidCredential, errorDesc)
@@ -696,8 +811,9 @@ func (us *userService) processCredentialType(
 		credentials = []Credential{{Value: stringValue}}
 	}
 
-	// Validate that only passkey type supports multiple credentials
-	if credentialType.RequiresHashing() && len(credentials) > 1 {
+	// System-managed credentials (e.g., passkey) support multiple values.
+	// Schema-defined credentials only support a single value.
+	if !credentialType.IsSystemManaged() && len(credentials) > 1 {
 		logger.Debug("Multiple credentials not supported for this credential type",
 			log.String("credentialType", string(credentialType)),
 			log.Int("count", len(credentials)))
@@ -717,25 +833,24 @@ func (us *userService) processCredentialType(
 		}
 	}
 
-	// Hash credentials if needed
-	hashedCredentials, svcErr := us.hashCredentialsIfNeeded(credentialType, credentials, logger)
-	if svcErr != nil {
-		return nil, svcErr
+	// Schema-defined credentials are always hashed. System-managed credentials are stored as-is.
+	if !credentialType.IsSystemManaged() {
+		hashedCredentials, svcErr := us.hashCredentials(credentials, credentialType, logger)
+		if svcErr != nil {
+			return nil, svcErr
+		}
+		return hashedCredentials, nil
 	}
 
-	return hashedCredentials, nil
+	return credentials, nil
 }
 
-// hashCredentialsIfNeeded hashes credentials for types that require hashing.
-func (us *userService) hashCredentialsIfNeeded(
-	credType CredentialType,
+// hashCredentials hashes all credentials in the provided list.
+func (us *userService) hashCredentials(
 	credentials []Credential,
+	credType CredentialType,
 	logger *log.Logger,
 ) ([]Credential, *serviceerror.ServiceError) {
-	if !credType.RequiresHashing() {
-		return credentials, nil
-	}
-
 	hashedCredentials := make([]Credential, 0, len(credentials))
 	for _, cred := range credentials {
 		credHash, err := us.hashService.Generate([]byte(cred.Value))
@@ -851,11 +966,24 @@ func (us *userService) VerifyUser(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	credentialsToVerify := make(map[string]string)
+	user, storedCredentials, err := us.userStore.GetCredentials(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to verify user", err, log.String("id", userID))
+	}
 
+	if len(storedCredentials) == 0 {
+		logger.Debug("No credentials found for user", log.String("userID", log.MaskString(userID)))
+		return nil, &ErrorAuthenticationFailed
+	}
+
+	// Filter credentials to verify: only include those that have stored credential keys.
+	credentialsToVerify := make(map[string]string)
 	for credType, credValueInterface := range credentials {
-		ct := CredentialType(credType)
-		if !ct.IsValid() {
+		if _, exists := storedCredentials[CredentialType(credType)]; !exists {
 			continue
 		}
 
@@ -868,32 +996,12 @@ func (us *userService) VerifyUser(
 	}
 
 	if len(credentialsToVerify) == 0 {
-		logger.Debug("No valid credentials provided for verification", log.String("userID", userID))
-		return nil, &ErrorAuthenticationFailed
-	}
-
-	user, storedCredentials, err := us.userStore.GetCredentials(ctx, userID)
-	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("id", userID))
-			return nil, &ErrorUserNotFound
-		}
-		return nil, logErrorAndReturnServerError(logger, "Failed to verify user", err, log.String("id", userID))
-	}
-
-	if len(storedCredentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", userID))
+		logger.Debug("No valid credentials provided for verification", log.String("userID", log.MaskString(userID)))
 		return nil, &ErrorAuthenticationFailed
 	}
 
 	for credType, credValue := range credentialsToVerify {
-		// Get credentials of this type from the map
-		credList, exists := storedCredentials[CredentialType(credType)]
-		if !exists || len(credList) == 0 {
-			logger.Debug("No stored credential found for type",
-				log.String("userID", userID), log.String("credType", credType))
-			return nil, &ErrorAuthenticationFailed
-		}
+		credList := storedCredentials[CredentialType(credType)]
 
 		// Try to verify against any credential of this type (typically first one)
 		verified := false
@@ -911,7 +1019,7 @@ func (us *userService) VerifyUser(
 
 			if err == nil && hashVerified {
 				logger.Debug("Credential verified successfully",
-					log.String("userID", userID), log.String("credType", credType))
+					log.String("userID", log.MaskString(userID)), log.String("credType", credType))
 				verified = true
 				break
 			}
@@ -919,7 +1027,7 @@ func (us *userService) VerifyUser(
 
 		if !verified {
 			logger.Debug("Credential verification failed",
-				log.String("userID", userID), log.String("credType", credType))
+				log.String("userID", log.MaskString(userID)), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
 		}
 	}
@@ -929,29 +1037,16 @@ func (us *userService) VerifyUser(
 }
 
 // AuthenticateUser authenticates a user by combining identify and verify operations.
+// Identifiers are used to find the user, and credentials are verified against stored values.
 func (us *userService) AuthenticateUser(
-	ctx context.Context, request AuthenticateUserRequest,
+	ctx context.Context,
+	identifiers map[string]interface{},
+	credentials map[string]interface{},
 ) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Authenticating user")
 
-	if len(request) == 0 {
-		return nil, &ErrorInvalidRequestFormat
-	}
-
-	identifyFilters := make(map[string]interface{})
-	credentials := make(map[string]interface{})
-
-	for key, value := range request {
-		ct := CredentialType(key)
-		if ct.IsValid() {
-			credentials[key] = value
-		} else {
-			identifyFilters[key] = value
-		}
-	}
-
-	if len(identifyFilters) == 0 {
+	if len(identifiers) == 0 {
 		return nil, &ErrorMissingRequiredFields
 	}
 
@@ -959,7 +1054,7 @@ func (us *userService) AuthenticateUser(
 		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := us.IdentifyUser(ctx, identifyFilters)
+	userID, svcErr := us.IdentifyUser(ctx, identifiers)
 	if svcErr != nil {
 		if svcErr.Code == ErrorUserNotFound.Code {
 			return nil, &ErrorUserNotFound

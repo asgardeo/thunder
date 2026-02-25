@@ -397,11 +397,17 @@ const translations = {
     propertyNamePlaceholder: 'e.g., email, age, address',
     propertyType: 'Type',
     addProperty: 'Add Property',
+    credential: 'Credential',
     unique: 'Unique',
+    removeProperty: 'Remove property',
     regexPattern: 'Regular Expression Pattern (Optional)',
     regexPlaceholder: 'e.g., ^[a-zA-Z0-9]+$',
     enumValues: 'Allowed Values (Enum) - Optional',
     enumPlaceholder: 'Add value and press Enter',
+    'tooltips.required': 'Users must provide a value for this field',
+    'tooltips.unique': 'Each user must have a distinct value for this field',
+    'tooltips.credential': 'Values will be hashed and not returned in API responses',
+    credentialHint: 'This field will be treated as a secret. Values will be hashed and cannot be retrieved.',
     'types.string': 'String',
     'types.number': 'Number',
     'types.boolean': 'Boolean',
@@ -424,6 +430,19 @@ const translations = {
     // Create page
     'createUserType.title': 'Create User Type',
     'createUserType.subtitle': 'Add a new user type to your organization',
+
+    // Create wizard steps
+    'createWizard.steps.name': 'Name',
+    'createWizard.steps.general': 'General',
+    'createWizard.steps.properties': 'Properties',
+    'createWizard.name.title': "Let's name your user type",
+    'createWizard.name.fieldLabel': 'User Type Name',
+    'createWizard.name.placeholder': 'Enter your user type name',
+    'createWizard.name.suggestions.label': 'In a hurry? Pick a random name:',
+    'createWizard.general.title': 'Configure general settings',
+    'createWizard.general.subtitle': 'Choose an organization unit and set registration preferences',
+    'createWizard.properties.title': 'Define your schema properties',
+    'createWizard.properties.subtitle': 'Add the fields that make up this user type',
   },
 
   // ============================================================================

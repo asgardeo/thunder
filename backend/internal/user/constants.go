@@ -23,27 +23,16 @@ import "slices"
 // CredentialType represents the type of credential.
 type CredentialType string
 
-// Credential type constants define the supported credential types.
+// Credential type constants for system-managed credential types.
+// System-managed credentials are not defined in user schemas.
 const (
-	CredentialTypePassword CredentialType = "password"
-	CredentialTypePin      CredentialType = "pin"
-	CredentialTypeSecret   CredentialType = "secret"
-	CredentialTypePasskey  CredentialType = "passkey"
+	CredentialTypePasskey CredentialType = "passkey"
 )
 
-// SupportedCredentialTypes defines the set of credential types that are supported.
-var SupportedCredentialTypes = []CredentialType{
-	CredentialTypePassword,
-	CredentialTypePin,
-	CredentialTypeSecret,
+// systemManagedCredentialTypes defines credential types that are managed by the system,
+// not through user schemas. These may support multiple values per user.
+var systemManagedCredentialTypes = []CredentialType{
 	CredentialTypePasskey,
-}
-
-// HashedCredentialTypes defines credential types that require hashing.
-var HashedCredentialTypes = []CredentialType{
-	CredentialTypePassword,
-	CredentialTypePin,
-	CredentialTypeSecret,
 }
 
 // String returns the string representation of the credential type.
@@ -51,12 +40,7 @@ func (ct CredentialType) String() string {
 	return string(ct)
 }
 
-// RequiresHashing checks if this credential type requires hashing.
-func (ct CredentialType) RequiresHashing() bool {
-	return slices.Contains(HashedCredentialTypes, ct)
-}
-
-// IsValid checks if the credential type is supported.
-func (ct CredentialType) IsValid() bool {
-	return slices.Contains(SupportedCredentialTypes, ct)
+// IsSystemManaged checks if the credential type is a system-managed credential type.
+func (ct CredentialType) IsSystemManaged() bool {
+	return slices.Contains(systemManagedCredentialTypes, ct)
 }

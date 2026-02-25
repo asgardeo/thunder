@@ -151,6 +151,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"sub": map[string]interface{}{
 				"type": "string",
