@@ -60,12 +60,14 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_Success() {
 	appRequest := model.ApplicationRequest{
 		Name:        "TestApp",
 		Description: "Test Description",
+		Metadata:    map[string]interface{}{"key1": "val1"},
 	}
 
 	expectedApp := &model.ApplicationDTO{
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
+		Metadata:    map[string]interface{}{"key1": "val1"},
 	}
 
 	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
@@ -85,6 +87,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "TestApp", response.Name)
+	assert.Equal(suite.T(), map[string]interface{}{"key1": "val1"}, response.Metadata)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -436,6 +439,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_Success() {
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
+		Metadata:    map[string]interface{}{"key3": "val3"},
 	}
 
 	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
@@ -454,6 +458,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "TestApp", response.Name)
+	assert.Equal(suite.T(), map[string]interface{}{"key3": "val3"}, response.Metadata)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -699,12 +704,14 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_Success() {
 	appRequest := model.ApplicationRequest{
 		Name:        "UpdatedApp",
 		Description: "Updated Description",
+		Metadata:    map[string]interface{}{"key2": "val2"},
 	}
 
 	expectedApp := &model.ApplicationDTO{
 		ID:          "test-app-id",
 		Name:        "UpdatedApp",
 		Description: "Updated Description",
+		Metadata:    map[string]interface{}{"key2": "val2"},
 	}
 
 	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
@@ -726,6 +733,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "UpdatedApp", response.Name)
+	assert.Equal(suite.T(), map[string]interface{}{"key2": "val2"}, response.Metadata)
 
 	mockService.AssertExpectations(suite.T())
 }

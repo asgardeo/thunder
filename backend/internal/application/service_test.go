@@ -1014,8 +1014,9 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
 	app := &model.ApplicationProcessedDTO{
-		ID:   "app123",
-		Name: "Test App",
+		ID:       "app123",
+		Name:     "Test App",
+		Metadata: map[string]interface{}{"service_key": "service_val"},
 	}
 
 	mockStore.On("GetApplicationByID", "app123").Return(app, nil)
@@ -1027,6 +1028,7 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "app123", result.ID)
+	assert.Equal(suite.T(), map[string]interface{}{"service_key": "service_val"}, result.Metadata)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
@@ -3677,6 +3679,73 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"old_key": "old_value",
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"new_key":     "new_value",
+			"another_key": "another_value",
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.On("IsValidFlow", "default-auth-flow").Return(true)
+	mockFlowMgtService.On("IsValidFlow", "default-reg-flow").Return(true)
+	// Mock certificate service to return no certificate (nil, nil)
+	mockCertService.On("GetCertificateByReference", mock.Anything, cert.CertificateReferenceTypeApplication, "").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", existingApp, mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+		// Verify that metadata is properly set in the processed DTO
+		if dto.Metadata == nil {
+			return false
+		}
+		if dto.Metadata["new_key"] != "new_value" {
+			return false
+		}
+		if dto.Metadata["another_key"] != "another_value" {
+			return false
+		}
+		// Ensure old metadata is not present
+		if _, exists := dto.Metadata["old_key"]; exists {
+			return false
+		}
+		return true
+	})).Return(nil)
+
+	result, svcErr := service.UpdateApplication("app123", updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "new_value", result.Metadata["new_key"])
+	assert.Equal(suite.T(), "another_value", result.Metadata["another_key"])
+	mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PublicClient() {

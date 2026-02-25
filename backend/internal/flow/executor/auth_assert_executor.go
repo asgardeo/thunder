@@ -291,7 +291,7 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 		// Fetch from user/authentication provider
 		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
 			var err error
-			metadata := &authnprovider.GetAttributesMetadata{}
+			metadata := a.buildGetAttributesMetadata(ctx)
 			attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID, ctx.AuthenticatedUser.Token, userAttributes,
 				metadata)
 			if err != nil {
@@ -405,4 +405,38 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	}
 
 	return nil
+}
+
+// buildGetAttributesMetadata constructs the metadata for fetching user attributes.
+func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovider.GetAttributesMetadata {
+	metadata := &authnprovider.GetAttributesMetadata{
+		AppMetadata: make(map[string]interface{}),
+	}
+
+	// Copy application metadata if present
+	if ctx.Application.Metadata != nil {
+		for key, value := range ctx.Application.Metadata {
+			metadata.AppMetadata[key] = value
+		}
+	}
+
+	// Extract client IDs from InboundAuthConfig
+	var clientIDs []string
+	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
+		if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthAppConfig.ClientID)
+		}
+	}
+
+	// Add client IDs to metadata if present
+	if len(clientIDs) > 0 {
+		metadata.AppMetadata["client_ids"] = clientIDs
+	}
+
+	// Set locale from runtime data if present
+	if locale, exists := ctx.RuntimeData["required_locales"]; exists && locale != "" {
+		metadata.Locale = locale
+	}
+
+	return metadata
 }

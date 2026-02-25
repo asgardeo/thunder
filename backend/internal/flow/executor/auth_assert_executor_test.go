@@ -899,3 +899,176 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user groups")
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithAllFields() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "client-123",
+					},
+				},
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "client-456",
+					},
+				},
+			},
+		},
+		RuntimeData: map[string]string{
+			"required_locales": "en_US",
+		},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.NotNil(suite.T(), metadata.AppMetadata)
+	assert.Equal(suite.T(), "value1", metadata.AppMetadata["key1"])
+	assert.Equal(suite.T(), "value2", metadata.AppMetadata["key2"])
+
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 2)
+	assert.Contains(suite.T(), clientIDs, "client-123")
+	assert.Contains(suite.T(), clientIDs, "client-456")
+
+	assert.Equal(suite.T(), "en_US", metadata.Locale)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithNoMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.NotNil(suite.T(), metadata.AppMetadata)
+	assert.Empty(suite.T(), metadata.AppMetadata)
+	assert.Empty(suite.T(), metadata.Locale)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyAppMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"custom_field": "custom_value",
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Equal(suite.T(), "custom_value", metadata.AppMetadata["custom_field"])
+	assert.Empty(suite.T(), metadata.Locale)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyClientIDs() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "single-client",
+					},
+				},
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 1)
+	assert.Equal(suite.T(), "single-client", clientIDs[0])
+	assert.Empty(suite.T(), metadata.Locale)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyLocale() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{
+			"required_locales": "fr_FR",
+		},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Equal(suite.T(), "fr_FR", metadata.Locale)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithNilOAuthConfig() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type:           appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: nil,
+				},
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmptyClientID() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "",
+					},
+				},
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmptyLocale() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{
+			"required_locales": "",
+		},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Empty(suite.T(), metadata.Locale)
+}
