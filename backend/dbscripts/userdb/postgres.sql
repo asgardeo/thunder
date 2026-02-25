@@ -1,8 +1,7 @@
 -- Table to store Organization Units
 CREATE TABLE ORGANIZATION_UNIT (
-    ID              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
-    OU_ID           VARCHAR(36) NOT NULL,
+    OU_ID           VARCHAR(36) PRIMARY KEY,
     PARENT_ID       VARCHAR(36),
     HANDLE          VARCHAR(100)        NOT NULL,
     NAME            VARCHAR(100)        NOT NULL,
@@ -20,9 +19,8 @@ CREATE INDEX idx_organization_unit_deployment_id ON ORGANIZATION_UNIT (DEPLOYMEN
 
 -- Table to store Users
 CREATE TABLE "USER" (
-    ID          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
-    USER_ID     VARCHAR(36)        NOT NULL,
+    USER_ID     VARCHAR(36)        PRIMARY KEY,
     OU_ID       VARCHAR(36)        NOT NULL,
     TYPE        VARCHAR(50)        NOT NULL,
     ATTRIBUTES  JSONB,
@@ -37,9 +35,8 @@ CREATE INDEX idx_user_deployment_id ON "USER" (DEPLOYMENT_ID);
 
 -- Table to store Groups
 CREATE TABLE "GROUP" (
-    ID              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
-    GROUP_ID        VARCHAR(36)        NOT NULL,
+    GROUP_ID        VARCHAR(36)        PRIMARY KEY,
     OU_ID           VARCHAR(36)        NOT NULL,
     NAME            VARCHAR(50)        NOT NULL,
     DESCRIPTION     VARCHAR(255),
