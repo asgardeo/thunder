@@ -21,6 +21,7 @@ import type {Control, FieldErrors, Path} from 'react-hook-form';
 import {Box, Typography, TextField, FormLabel, FormControl, Select, MenuItem, Checkbox, FormControlLabel} from '@wso2/oxygen-ui';
 import type {PropertyDefinition} from '../types/users';
 import ArrayFieldInput from '../components/ArrayFieldInput';
+import CredentialFieldInput from '../components/CredentialFieldInput';
 
 /**
  * Helper function to render a form field based on the property definition
@@ -112,21 +113,37 @@ const renderSchemaField = <T extends Record<string, unknown>>(
             required: isRequired ? `${fieldLabel} is required` : false,
             pattern: validationPattern,
           }}
-          render={({field}) => (
-            <TextField
-              {...field}
-              value={field.value ?? ''}
-              id={fieldName}
-              type="text"
-              placeholder={`Enter ${fieldLabel.toLowerCase()}`}
-              fullWidth
-              required={isRequired}
-              variant="outlined"
-              error={!!errors[fieldName]}
-              helperText={errors[fieldName]?.message as string}
-              color={errors[fieldName] ? 'error' : 'primary'}
-            />
-          )}
+          render={({field}) =>
+            stringDef.credential ? (
+              <CredentialFieldInput
+                id={fieldName}
+                name={field.name}
+                value={(field.value as string) ?? ''}
+                placeholder={`Enter ${fieldLabel.toLowerCase()}`}
+                required={isRequired}
+                error={!!errors[fieldName]}
+                helperText={errors[fieldName]?.message as string}
+                color={errors[fieldName] ? 'error' : 'primary'}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+              />
+            ) : (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                id={fieldName}
+                type="text"
+                placeholder={`Enter ${fieldLabel.toLowerCase()}`}
+                fullWidth
+                required={isRequired}
+                variant="outlined"
+                error={!!errors[fieldName]}
+                helperText={errors[fieldName]?.message as string}
+                color={errors[fieldName] ? 'error' : 'primary'}
+              />
+            )
+          }
         />
       </FormControl>
     );
@@ -134,6 +151,7 @@ const renderSchemaField = <T extends Record<string, unknown>>(
 
   // Number fields
   if (fieldDef.type === 'number') {
+    const numberDef = fieldDef;
     return (
       <FormControl key={fieldName}>
         <FormLabel htmlFor={fieldName}>
@@ -146,25 +164,45 @@ const renderSchemaField = <T extends Record<string, unknown>>(
           rules={{
             required: isRequired ? `${fieldLabel} is required` : false,
           }}
-          render={({field}) => (
-            <TextField
-              {...field}
-              value={field.value ?? ''}
-              id={fieldName}
-              type="number"
-              placeholder={`Enter ${fieldLabel.toLowerCase()}`}
-              fullWidth
-              required={isRequired}
-              variant="outlined"
-              error={!!errors[fieldName]}
-              helperText={errors[fieldName]?.message as string}
-              color={errors[fieldName] ? 'error' : 'primary'}
-              onChange={(e) => {
-                const {value} = e.target;
-                field.onChange(value ? Number(value) : '');
-              }}
-            />
-          )}
+          render={({field}) =>
+            numberDef.credential ? (
+              <CredentialFieldInput
+                id={fieldName}
+                name={field.name}
+                value={String(field.value ?? '')}
+                placeholder={`Enter ${fieldLabel.toLowerCase()}`}
+                required={isRequired}
+                error={!!errors[fieldName]}
+                helperText={errors[fieldName]?.message as string}
+                color={errors[fieldName] ? 'error' : 'primary'}
+                onChange={(e) => {
+                  const {value} = e.target;
+                  const num = Number(value);
+                  field.onChange(value && !Number.isNaN(num) ? num : '');
+                }}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+              />
+            ) : (
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                id={fieldName}
+                type="number"
+                placeholder={`Enter ${fieldLabel.toLowerCase()}`}
+                fullWidth
+                required={isRequired}
+                variant="outlined"
+                error={!!errors[fieldName]}
+                helperText={errors[fieldName]?.message as string}
+                color={errors[fieldName] ? 'error' : 'primary'}
+                onChange={(e) => {
+                  const {value} = e.target;
+                  field.onChange(value ? Number(value) : '');
+                }}
+              />
+            )
+          }
         />
       </FormControl>
     );
