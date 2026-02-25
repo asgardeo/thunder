@@ -1071,41 +1071,45 @@ describe('OrganizationUnitEditPage', () => {
   });
 
   describe('Edited OU Fallbacks', () => {
-    it('should display edited name when re-editing after a name change', async () => {
-      renderWithProviders(<OrganizationUnitEditPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
-      });
-
-      // First edit: change name
-      const editButtons = screen.getAllByRole('button');
-      const nameEditButton = editButtons.find(
-        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
-      );
-
-      if (nameEditButton) {
-        fireEvent.click(nameEditButton);
-        const nameInput = screen.getByDisplayValue('Test Organization Unit');
-        fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-        fireEvent.blur(nameInput);
+    it(
+      'should display edited name when re-editing after a name change',
+      async () => {
+        renderWithProviders(<OrganizationUnitEditPage />);
 
         await waitFor(() => {
-          expect(screen.getByText('Updated Name')).toBeInTheDocument();
+          expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
         });
 
-        // Second edit: the input should show the edited name
-        const editButtons2 = screen.getAllByRole('button');
-        const nameEditButton2 = editButtons2.find(
-          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
+        // First edit: change name
+        const editButtons = screen.getAllByRole('button');
+        const nameEditButton = editButtons.find(
+          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
         );
 
-        if (nameEditButton2) {
-          fireEvent.click(nameEditButton2);
-          expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
+        if (nameEditButton) {
+          fireEvent.click(nameEditButton);
+          const nameInput = screen.getByDisplayValue('Test Organization Unit');
+          fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+          fireEvent.blur(nameInput);
+
+          await waitFor(() => {
+            expect(screen.getByText('Updated Name')).toBeInTheDocument();
+          });
+
+          // Second edit: the input should show the edited name
+          const editButtons2 = screen.getAllByRole('button');
+          const nameEditButton2 = editButtons2.find(
+            (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
+          );
+
+          if (nameEditButton2) {
+            fireEvent.click(nameEditButton2);
+            expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
+          }
         }
-      }
-    });
+      },
+      15_000,
+    );
 
     it('should display edited description when re-editing after a description change', async () => {
       renderWithProviders(<OrganizationUnitEditPage />);

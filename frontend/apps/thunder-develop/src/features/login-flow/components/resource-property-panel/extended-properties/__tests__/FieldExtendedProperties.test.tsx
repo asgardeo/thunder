@@ -85,12 +85,20 @@ describe('FieldExtendedProperties', () => {
   });
 
   describe('Password Input Handling', () => {
-    it('should return null for PasswordInput type', () => {
+    it('should render with credential attributes for PasswordInput type', async () => {
+      const user = userEvent.setup();
       const resource = createMockResource(ElementTypes.PasswordInput);
 
-      const {container} = render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(container.firstChild).toBeNull();
+      const input = screen.getByRole('combobox');
+      expect(input).toBeInTheDocument();
+
+      await user.click(input);
+
+      expect(await screen.findByRole('option', {name: 'password'})).toBeInTheDocument();
+      expect(screen.getByRole('option', {name: 'pin'})).toBeInTheDocument();
+      expect(screen.getByRole('option', {name: 'secret'})).toBeInTheDocument();
     });
   });
 

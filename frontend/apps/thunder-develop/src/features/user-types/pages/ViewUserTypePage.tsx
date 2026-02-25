@@ -100,6 +100,7 @@ export default function ViewUserTypePage() {
       type: value.type,
       required: value.required ?? false,
       unique: 'unique' in value ? (value.unique ?? false) : false,
+      credential: 'credential' in value ? (value.credential ?? false) : false,
       enum: 'enum' in value ? (value.enum ?? []) : [],
       regex: 'regex' in value ? (value.regex ?? '') : '',
     }));
