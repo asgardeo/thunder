@@ -33,6 +33,8 @@ import (
 type userSchemaStoreInterface interface {
 	GetUserSchemaListCount(ctx context.Context) (int, error)
 	GetUserSchemaList(ctx context.Context, limit, offset int) ([]UserSchemaListItem, error)
+	GetUserSchemaListByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) ([]UserSchemaListItem, error)
+	GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error)
 	CreateUserSchema(ctx context.Context, userSchema UserSchema) error
 	GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error)
 	GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error)
@@ -104,6 +106,80 @@ func (s *userSchemaStore) GetUserSchemaList(ctx context.Context, limit, offset i
 	}
 
 	return userSchemas, nil
+}
+
+// GetUserSchemaListByOUIDs retrieves a paginated list of user schemas filtered by OU IDs.
+func (s *userSchemaStore) GetUserSchemaListByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) (
+	[]UserSchemaListItem, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
+
+	if len(ouIDs) == 0 {
+		return []UserSchemaListItem{}, nil
+	}
+
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetUserSchemaListByOUIDsQuery(ouIDs)
+	args := make([]interface{}, 0, len(ouIDs)+3)
+	for _, id := range ouIDs {
+		args = append(args, id)
+	}
+	args = append(args, s.deploymentID, limit, offset)
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	userSchemas := make([]UserSchemaListItem, 0, len(results))
+	for _, row := range results {
+		userSchema, err := parseUserSchemaListItemFromRow(row)
+		if err != nil {
+			logger.Error("Failed to parse user schema list item from row", log.Error(err))
+			continue
+		}
+		userSchemas = append(userSchemas, userSchema)
+	}
+
+	return userSchemas, nil
+}
+
+// GetUserSchemaListCountByOUIDs retrieves the total count of user schemas filtered by OU IDs.
+func (s *userSchemaStore) GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error) {
+	if len(ouIDs) == 0 {
+		return 0, nil
+	}
+
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetUserSchemaCountByOUIDsQuery(ouIDs)
+	args := make([]interface{}, 0, len(ouIDs)+1)
+	for _, id := range ouIDs {
+		args = append(args, id)
+	}
+	args = append(args, s.deploymentID)
+
+	countResults, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute count query: %w", err)
+	}
+
+	var totalCount int
+	if len(countResults) > 0 {
+		if count, ok := countResults[0]["total"].(int64); ok {
+			totalCount = int(count)
+		} else {
+			return 0, fmt.Errorf("failed to parse count result")
+		}
+	}
+
+	return totalCount, nil
 }
 
 // CreateUserSchema creates a new user schema.

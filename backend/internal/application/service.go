@@ -37,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -798,8 +799,10 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 	offset := 0
 
 	for {
-		// TODO: Pass context from the caller
-		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(context.TODO(), limit, offset)
+		// TODO: Pass context from the caller and remove creating the runtime context
+		// Runtime context is created to avoid authorization checks
+		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(
+			security.WithRuntimeContext(context.TODO()), limit, offset)
 		if svcErr != nil {
 			logger.Error("Failed to retrieve user schema list for validation",
 				log.String("error", svcErr.Error), log.String("code", svcErr.Code))
