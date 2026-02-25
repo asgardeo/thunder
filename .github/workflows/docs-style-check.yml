@@ -1,4 +1,5 @@
-# This workflow validates that Thunder content follows the style rules defined in .vale.ini using Vale. It only runs on changed md and mdx files in pull requests.
+# This workflow validates that Thunder content follows the style rules defined in .vale.ini using Vale.
+# It only runs on changed md and mdx files in pull requests.
 
 name: 🥒 Vale Lint (Changed Markdown Only)
 
@@ -15,20 +16,38 @@ jobs:
     permissions:
       contents: read
       checks: write
+      pull-requests: read
 
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
-
-      - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          fetch-depth: 0
+
+      - name: 🔍 Get changed markdown files
+        id: changed-files
+        run: |
+          # Get list of changed md/mdx files in this PR
+          FILES=$(git diff --name-only --diff-filter=ACMR origin/${{ github.base_ref }}...HEAD -- '*.md' '*.mdx')
+          if [ -z "$FILES" ]; then
+            echo "No markdown files changed."
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changed markdown files:"
+            echo "$FILES"
+            # Convert newline-separated list to comma-separated for vale-action
+            COMMA_FILES=$(echo "$FILES" | paste -sd ',' -)
+            echo "files=$COMMA_FILES" >> "$GITHUB_OUTPUT"
+            echo "has_files=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: 🔍 Run Vale
+        if: steps.changed-files.outputs.has_files == 'true'
         uses: errata-ai/vale-action@v2.1.1
         with:
-          filter_mode: added
+          files: ${{ steps.changed-files.outputs.files }}
+          separator: ","
           reporter: github-pr-check
+          filter_mode: added
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -84,8 +84,17 @@ const ConstellationBackground = React.memo(function ConstellationBackground(): J
       preserveAspectRatio="xMidYMid slice"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Ambient orange glow */}
+      {/* Keyframes injected inline since Docusaurus tree-shakes unused CSS keyframes from custom.css */}
       <defs>
+        <style>{`
+          @keyframes constellationFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+          }
+          @keyframes constellationDash {
+            to { stroke-dashoffset: -40; }
+          }
+        `}</style>
         <radialGradient id="hero-orange-glow" cx="60%" cy="35%" r="45%">
           <stop offset="0%" stopColor={isDark ? 'rgba(255, 107, 0, 0.18)' : 'rgba(255, 107, 0, 0.08)'} />
           <stop offset="50%" stopColor={isDark ? 'rgba(255, 107, 0, 0.06)' : 'rgba(255, 107, 0, 0.03)'} />
@@ -100,7 +109,7 @@ const ConstellationBackground = React.memo(function ConstellationBackground(): J
       <rect width="1440" height="900" fill="url(#hero-orange-glow-2)" />
 
       {/* Single large thunder bolt outline — dashed stroke with slow float */}
-      <g style={{transformOrigin: `${shapeCx}px ${shapeCy}px`, animation: 'subtleFloat 20s ease-in-out infinite'}}>
+      <g style={{transformOrigin: `${shapeCx}px ${shapeCy}px`, animation: 'constellationFloat 20s ease-in-out infinite'}}>
         <path
           d={boltPath(shapeCx, shapeCy, shapeScale)}
           fill="none"
@@ -109,7 +118,7 @@ const ConstellationBackground = React.memo(function ConstellationBackground(): J
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeDasharray="6 8"
-          style={{animation: 'dashFlow 8s linear infinite'}}
+          style={{animation: 'constellationDash 8s linear infinite'}}
         />
 
         {/* Nodes at all vertices */}
