@@ -19,7 +19,7 @@
 /**
  * Authentication Flows — Accessibility Tests
  *
- * Validates WCAG 2.1 AA compliance on authentication-related pages.
+ * Validates WCAG 2.2 AA compliance on authentication-related pages.
  * These tests run against unauthenticated pages (sign-in, sign-up)
  * and do not require pre-existing session state.
  *
@@ -59,13 +59,13 @@ test.describe("Accessibility — Authentication Flows @accessibility", () => {
     });
 
     test(
-      "TC-A11Y-AUTH-001: Sign-in page meets WCAG 2.1 AA standards",
+      "TC-A11Y-AUTH-001: Sign-in page meets WCAG 2.2 AA standards",
       async ({ page }, testInfo) => {
-        await test.step("Run axe-core WCAG 2.1 AA audit", async () => {
+        await test.step("Run axe-core WCAG 2.2 AA audit", async () => {
           await expectNoA11yViolations(
             page,
             {
-              tags: A11Y_RULE_SETS.WCAG_21_AA,
+              tags: A11Y_RULE_SETS.WCAG_22_AA,
               excludeRules: KNOWN_VIOLATIONS,
             },
             testInfo,
@@ -187,7 +187,7 @@ test.describe("Accessibility — Authentication Flows @accessibility", () => {
           await expectNoA11yViolations(
             page,
             {
-              tags: A11Y_RULE_SETS.WCAG_21_AA,
+              tags: A11Y_RULE_SETS.WCAG_22_AA,
               excludeRules: KNOWN_VIOLATIONS,
             },
             testInfo,
@@ -197,22 +197,4 @@ test.describe("Accessibility — Authentication Flows @accessibility", () => {
     );
   });
 
-  test.describe("Sign-In Page — Comprehensive WCAG 2.2 AA", () => {
-    test(
-      "TC-A11Y-AUTH-007: Sign-in page passes WCAG 2.2 AA audit",
-      async ({ page }, testInfo) => {
-  // use relative path so baseURL config is applied
-  await page.goto("/", { waitUntil: "networkidle" });
-
-        await expectNoA11yViolations(
-          page,
-          {
-            tags: A11Y_RULE_SETS.WCAG_22_AA,
-            excludeRules: KNOWN_VIOLATIONS,
-          },
-          testInfo,
-        );
-      },
-    );
-  });
 });

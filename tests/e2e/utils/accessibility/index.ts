@@ -50,7 +50,7 @@ export type A11ySeverity = "minor" | "moderate" | "serious" | "critical";
  * Configuration options for accessibility checks.
  */
 export interface A11yOptions {
-  /** WCAG tag sets to validate against (e.g., 'wcag2a', 'wcag21aa'). Defaults to WCAG 2.1 AA. */
+  /** WCAG tag sets to validate against (e.g., 'wcag2a', 'wcag22aa'). Defaults to WCAG 2.2 AA. */
   tags?: readonly string[];
 
   /** Specific axe-core rule IDs to include (runs only these rules). */
@@ -191,14 +191,14 @@ const SEVERITY_COLORS: Record<A11ySeverity, string> = {
  * Default options for accessibility checks.
  */
 const DEFAULT_OPTIONS: Required<A11yOptions> = {
-  tags: A11Y_RULE_SETS.WCAG_21_AA,
+  tags: A11Y_RULE_SETS.WCAG_22_AA,
   includeRules: [],
   excludeRules: [],
   includeSelectors: [],
   excludeSelectors: [],
   failOnSeverity: "serious",
   attachReport: true,
-  runAllRules: false,
+  runAllRules: true,
 };
 
 // ─── Core Functions ──────────────────────────────────────────────────────────
@@ -428,7 +428,7 @@ export async function checkA11yWithReport(
  * @throws {Error} If violations at or above `failOnSeverity` are found
  *
  * @example
- * // Basic usage — WCAG 2.1 AA, fail on serious+
+ * // Basic usage — WCAG 2.2 AA, fail on serious+
  * await expectNoA11yViolations(page);
  *
  * @example
@@ -497,7 +497,7 @@ export async function expectNoA11yViolations(
   }
 
   // Success
-  console.log(`✅ No accessibility violations (${options.tags?.join(", ") ?? "wcag21aa"}) on: ${pageUrl}`);
+  console.log(`✅ No accessibility violations (${options.tags?.join(", ") ?? "wcag22aa"}) on: ${pageUrl}`);
 }
 
 /**
