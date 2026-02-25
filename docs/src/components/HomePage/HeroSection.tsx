@@ -39,6 +39,33 @@ export default function HeroSection(): JSX.Element {
   return (
     <Box
       sx={{
+        '@keyframes fadeInUp': {
+          from: {opacity: 0, transform: 'translateY(32px)'},
+          to: {opacity: 1, transform: 'translateY(0)'},
+        },
+        '@keyframes fadeInScale': {
+          from: {opacity: 0, transform: 'scale(0.95) translateY(16px)'},
+          to: {opacity: 1, transform: 'scale(1) translateY(0)'},
+        },
+        '@keyframes slideInLeft': {
+          from: {opacity: 0, transform: 'translateX(-32px)'},
+          to: {opacity: 1, transform: 'translateX(0)'},
+        },
+        '@keyframes slideInRight': {
+          from: {opacity: 0, transform: 'translateX(32px)'},
+          to: {opacity: 1, transform: 'translateX(0)'},
+        },
+        '@keyframes pulseGlow': {
+          '0%, 100%': {opacity: 0.6, transform: 'scale(1)'},
+          '50%': {opacity: 1, transform: 'scale(1.1)'},
+        },
+        '@keyframes heroFloat': {
+          '0%, 100%': {transform: 'translateY(0)'},
+          '50%': {transform: 'translateY(-6px)'},
+        },
+        '@keyframes heroDash': {
+          to: {strokeDashoffset: -40},
+        },
         py: {xs: 7, lg: 10},
         position: 'relative',
         overflow: 'hidden',
@@ -94,7 +121,13 @@ export default function HeroSection(): JSX.Element {
                 animation: 'pulseGlow 3s ease-in-out infinite',
               }}
             />
-            <svg width="56" height="80" viewBox="0 0 24 32" fill="none" style={{position: 'relative', zIndex: 1, animation: 'subtleFloat 4s ease-in-out infinite'}}>
+            <svg
+              width="56"
+              height="80"
+              viewBox="0 0 24 32"
+              fill="none"
+              style={{position: 'relative', zIndex: 1, animation: 'heroFloat 4s ease-in-out infinite'}}
+            >
               <path
                 d="M13.5 1L4 18h7l-1.5 13L20 14h-7L13.5 1z"
                 stroke="#FF8C00"
@@ -133,7 +166,7 @@ export default function HeroSection(): JSX.Element {
               animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
             }}
           >
-            {'[  THUNDER  ]'}
+            [ THUNDER ]
           </Typography>
 
           {/* Main heading */}
@@ -175,8 +208,7 @@ export default function HeroSection(): JSX.Element {
               animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both',
             }}
           >
-            The world&apos;s most flexible, truly open source identity platform,
-            powered by open source innovation.
+            The world&apos;s most flexible, truly open source identity platform, powered by open source innovation.
           </Typography>
 
           {/* Buttons */}
@@ -200,14 +232,33 @@ export default function HeroSection(): JSX.Element {
                 fontSize: '1.05rem',
                 borderRadius: '28px',
                 background: 'linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                // Shimmer sweep on hover
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: '-100%',
+                  width: '60%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+                  transition: 'none',
+                  transform: 'skewX(-15deg)',
+                },
+                '&:hover::after': {
+                  left: '150%',
+                  transition: 'left 0.6s ease',
+                },
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #e65e00 0%, #e67d00 100%)',
+                  background: 'linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)',
                   transform: 'translateY(-2px)',
-                  boxShadow: '0 6px 20px rgba(255, 107, 0, 0.3)',
+                  boxShadow: '0 6px 24px rgba(255, 107, 0, 0.35), 0 0 40px rgba(255, 107, 0, 0.1)',
                 },
                 '&:active': {
                   transform: 'translateY(0)',
+                  boxShadow: '0 2px 8px rgba(255, 107, 0, 0.2)',
                 },
               }}
             >
@@ -226,14 +277,35 @@ export default function HeroSection(): JSX.Element {
                 borderRadius: '28px',
                 borderColor: isDark ? 'rgba(255, 140, 0, 0.4)' : 'rgba(255, 107, 0, 0.5)',
                 color: '#FF8C00',
-                transition: 'transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease',
+                // Subtle radial glow on hover
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 'inherit',
+                  background: isDark
+                    ? 'radial-gradient(circle at center, rgba(255, 140, 0, 0.08) 0%, transparent 70%)'
+                    : 'radial-gradient(circle at center, rgba(255, 107, 0, 0.06) 0%, transparent 70%)',
+                  opacity: 0,
+                  transition: 'opacity 0.3s ease',
+                },
+                '&:hover::before': {
+                  opacity: 1,
+                },
                 '&:hover': {
-                  borderColor: 'rgba(255, 140, 0, 0.7)',
-                  bgcolor: 'rgba(255, 140, 0, 0.05)',
+                  borderColor: isDark ? 'rgba(255, 140, 0, 0.7)' : 'rgba(255, 107, 0, 0.7)',
+                  bgcolor: isDark ? 'rgba(255, 140, 0, 0.06)' : 'rgba(255, 107, 0, 0.04)',
                   transform: 'translateY(-2px)',
+                  boxShadow: isDark
+                    ? '0 4px 16px rgba(255, 140, 0, 0.12), 0 0 0 1px rgba(255, 140, 0, 0.15)'
+                    : '0 4px 16px rgba(255, 107, 0, 0.1), 0 0 0 1px rgba(255, 107, 0, 0.12)',
                 },
                 '&:active': {
                   transform: 'translateY(0)',
+                  boxShadow: 'none',
                 },
               }}
               startIcon={
@@ -297,19 +369,25 @@ export default function HeroSection(): JSX.Element {
             >
               {/* Left-to-center connecting line */}
               <line
-                x1="320" y1="280" x2="430" y2="200"
+                x1="320"
+                y1="280"
+                x2="430"
+                y2="200"
                 stroke={isDark ? 'rgba(255, 140, 0, 0.08)' : 'rgba(255, 107, 0, 0.06)'}
                 strokeWidth="1"
                 strokeDasharray="4 6"
-                style={{animation: 'dashFlow 6s linear infinite'}}
+                style={{animation: 'heroDash 6s linear infinite'}}
               />
               {/* Center-to-right connecting line */}
               <line
-                x1="670" y1="200" x2="780" y2="280"
+                x1="670"
+                y1="200"
+                x2="780"
+                y2="280"
                 stroke={isDark ? 'rgba(255, 140, 0, 0.08)' : 'rgba(255, 107, 0, 0.06)'}
                 strokeWidth="1"
                 strokeDasharray="4 6"
-                style={{animation: 'dashFlow 6s linear infinite'}}
+                style={{animation: 'heroDash 6s linear infinite'}}
               />
             </Box>
 
@@ -338,9 +416,27 @@ export default function HeroSection(): JSX.Element {
                 {cx: 50, cy: 250, r: 1.5, dur: '7s', delay: '1.5s'},
                 {cx: 1050, cy: 280, r: 1.5, dur: '5.5s', delay: '2.5s'},
               ].map((dot, i) => (
-                <circle key={i} cx={dot.cx} cy={dot.cy} r={dot.r} fill={isDark ? 'rgba(255, 140, 0, 0.3)' : 'rgba(255, 107, 0, 0.2)'}>
-                  <animate attributeName="cy" values={`${dot.cy};${dot.cy - 15};${dot.cy}`} dur={dot.dur} begin={dot.delay} repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.15;0.5;0.15" dur={dot.dur} begin={dot.delay} repeatCount="indefinite" />
+                <circle
+                  key={i}
+                  cx={dot.cx}
+                  cy={dot.cy}
+                  r={dot.r}
+                  fill={isDark ? 'rgba(255, 140, 0, 0.3)' : 'rgba(255, 107, 0, 0.2)'}
+                >
+                  <animate
+                    attributeName="cy"
+                    values={`${dot.cy};${dot.cy - 15};${dot.cy}`}
+                    dur={dot.dur}
+                    begin={dot.delay}
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="0.15;0.5;0.15"
+                    dur={dot.dur}
+                    begin={dot.delay}
+                    repeatCount="indefinite"
+                  />
                 </circle>
               ))}
             </Box>
@@ -368,13 +464,10 @@ export default function HeroSection(): JSX.Element {
                   transform: 'translateY(0px)',
                   opacity: 0.85,
                   zIndex: 0,
-                  transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                  ...(animDone
-                    ? {}
-                    : {animation: 'slideInLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both'}),
-                  boxShadow: isDark
-                    ? '0 12px 40px rgba(0, 0, 0, 0.4)'
-                    : '0 12px 40px rgba(0, 0, 0, 0.06)',
+                  transition:
+                    'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                  ...(animDone ? {} : {animation: 'slideInLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both'}),
+                  boxShadow: isDark ? '0 12px 40px rgba(0, 0, 0, 0.4)' : '0 12px 40px rgba(0, 0, 0, 0.06)',
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     opacity: 0.95,
@@ -395,10 +488,9 @@ export default function HeroSection(): JSX.Element {
                   boxShadow: isDark
                     ? '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 107, 0, 0.1)'
                     : '0 20px 60px rgba(0, 0, 0, 0.1), 0 0 80px rgba(255, 107, 0, 0.07)',
-                  transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                  ...(animDone
-                    ? {}
-                    : {animation: 'fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both'}),
+                  transition:
+                    'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                  ...(animDone ? {} : {animation: 'fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both'}),
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     boxShadow: isDark
@@ -420,13 +512,10 @@ export default function HeroSection(): JSX.Element {
                   transform: 'translateY(0px)',
                   opacity: 0.85,
                   zIndex: 0,
-                  transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                  ...(animDone
-                    ? {}
-                    : {animation: 'slideInRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both'}),
-                  boxShadow: isDark
-                    ? '0 12px 40px rgba(0, 0, 0, 0.4)'
-                    : '0 12px 40px rgba(0, 0, 0, 0.06)',
+                  transition:
+                    'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                  ...(animDone ? {} : {animation: 'slideInRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both'}),
+                  boxShadow: isDark ? '0 12px 40px rgba(0, 0, 0, 0.4)' : '0 12px 40px rgba(0, 0, 0, 0.06)',
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     opacity: 0.95,
