@@ -28,10 +28,11 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
 )
+
+var getDBProvider = provider.GetDBProvider
 
 // Initialize initializes the role service and registers its routes.
 func Initialize(
@@ -48,14 +49,14 @@ func Initialize(
 	}
 
 	// Get transactioner from DB provider
-	dbProvider := provider.GetDBProvider()
+	dbProvider := getDBProvider()
 	dbClient, err := dbProvider.GetConfigDBClient()
 	if err != nil {
-		log.GetLogger().Fatal("Failed to get DB client", log.Error(err))
+		return nil, nil, err
 	}
 	transactioner, err := dbClient.GetTransactioner()
 	if err != nil {
-		log.GetLogger().Fatal("Failed to get transactioner", log.Error(err))
+		return nil, nil, err
 	}
 
 	// Step 2: Create service with store
