@@ -334,11 +334,13 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 
 	// Handle authenticated user from the node response
 	if fe.shouldUpdateAuthenticatedUser(engineCtx) {
-		prevAuthnUserAttrs := engineCtx.AuthenticatedUser.Attributes
+		prevAuthnUser := engineCtx.AuthenticatedUser
+
 		engineCtx.AuthenticatedUser = nodeResp.AuthenticatedUser
 
 		// If engine context already had authenticated user attributes, merge them with the new ones.
 		// Here if the same attribute exists in both, the one from the node response will take precedence.
+		prevAuthnUserAttrs := prevAuthnUser.Attributes
 		if len(prevAuthnUserAttrs) > 0 {
 			if engineCtx.AuthenticatedUser.Attributes == nil {
 				engineCtx.AuthenticatedUser.Attributes = prevAuthnUserAttrs
@@ -346,6 +348,11 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 				engineCtx.AuthenticatedUser.Attributes = sysutils.MergeInterfaceMaps(
 					prevAuthnUserAttrs, engineCtx.AuthenticatedUser.Attributes)
 			}
+		}
+
+		// If current node has not set an authenticated user token, retain the previous one
+		if engineCtx.AuthenticatedUser.Token == "" {
+			engineCtx.AuthenticatedUser.Token = prevAuthnUser.Token
 		}
 
 		// Append user ID as a runtime data if not already set

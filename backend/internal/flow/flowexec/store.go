@@ -68,7 +68,7 @@ func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryCreateFlowUserData, dbModel.FlowID,
 				dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID,
-				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
+				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token, s.deploymentID)
 			return err
 		},
 	}
@@ -118,7 +118,7 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryUpdateFlowUserData, dbModel.FlowID, dbModel.IsAuthenticated,
 				dbModel.UserID, dbModel.OrganizationUnitID, dbModel.UserType,
-				dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
+				dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token, s.deploymentID)
 			return err
 		},
 	}
@@ -197,6 +197,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	userInputs := s.parseOptionalString(row["user_inputs"])
 	runtimeData := s.parseOptionalString(row["runtime_data"])
 	userAttributes := s.parseOptionalString(row["user_attributes"])
+	token := s.parseOptionalString(row["token"])
 	executionHistory := s.parseOptionalString(row["execution_history"])
 
 	// Parse boolean fields with type conversion support
@@ -217,6 +218,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		UserType:           userType,
 		UserInputs:         userInputs,
 		UserAttributes:     userAttributes,
+		Token:              token,
 		ExecutionHistory:   executionHistory,
 	}, nil
 }
