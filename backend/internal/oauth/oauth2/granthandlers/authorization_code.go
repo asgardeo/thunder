@@ -159,7 +159,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	}
 
 	// Generate ID token if 'openid' scope is present
-	if slices.Contains(authorizedScopes, "openid") {
+	if slices.Contains(authorizedScopes, constants.ScopeOpenID) {
 		idToken, err := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
 			Subject:        authCode.AuthorizedUserID,
 			Audience:       tokenRequest.ClientID,

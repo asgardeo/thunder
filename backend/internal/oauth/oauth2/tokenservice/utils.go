@@ -307,7 +307,7 @@ func BuildClaims(
 	result := make(map[string]interface{})
 
 	// Check for openid scope first
-	hasOpenIDScope := slices.Contains(scopes, "openid")
+	hasOpenIDScope := slices.Contains(scopes, constants.ScopeOpenID)
 	if !hasOpenIDScope || userAttributes == nil {
 		return result
 	}
