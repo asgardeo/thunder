@@ -17,16 +17,112 @@
  */
 
 import React, {JSX, useEffect, useState} from 'react';
-import {Box, Typography, Button, AvatarGroup, Avatar, Tooltip, Skeleton, Card} from '@wso2/oxygen-ui';
-import {MessagesSquare, CircleDot, ArrowUpRight} from '@wso2/oxygen-ui-icons-react';
+import {Box, Typography, AvatarGroup, Avatar, Tooltip, Skeleton, Card, Container} from '@wso2/oxygen-ui';
+import useIsDarkMode from '../../hooks/useIsDarkMode';
+import useScrollAnimation from '../../hooks/useScrollAnimation';
+import {MessagesSquare, CircleDot} from '@wso2/oxygen-ui-icons-react';
 import {useLogger} from '@thunder/logger';
 
 interface Contributor {
   login: string;
 }
 
+function CommunityCard({
+  icon,
+  iconBg,
+  title,
+  description,
+  linkLabel,
+  href,
+}: {
+  icon: JSX.Element;
+  iconBg: string;
+  title: string;
+  description: string;
+  linkLabel: string;
+  href: string;
+}) {
+  const isDark = useIsDarkMode();
+
+  return (
+    <Card
+      sx={{
+        flex: 1,
+        p: {xs: 3, sm: 4},
+        pt: {xs: 4, sm: 5},
+        pb: {xs: 3, sm: 4},
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        bgcolor: isDark ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.02)',
+        border: '1px solid',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        borderRadius: '16px',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: isDark ? '0 12px 32px rgba(0, 0, 0, 0.4)' : '0 12px 32px rgba(0, 0, 0, 0.1)',
+          borderColor: 'rgba(255, 140, 0, 0.25)',
+          bgcolor: isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.03)',
+        },
+      }}
+      onClick={() => window.open(href, '_blank', 'noopener noreferrer')}
+    >
+      <Box
+        sx={{
+          width: 56,
+          height: 56,
+          borderRadius: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: iconBg,
+          color: '#ffffff',
+          mb: 3,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography
+        variant="h6"
+        sx={{fontWeight: 600, mb: 1, color: isDark ? '#ffffff' : '#1a1a2e', fontSize: '1.1rem'}}
+      >
+        {title}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          mb: 3,
+          color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)',
+          lineHeight: 1.7,
+          fontSize: '0.9rem',
+        }}
+      >
+        {description}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          mt: 'auto',
+          color: '#FF8C00',
+          fontWeight: 500,
+          fontSize: '0.9rem',
+          transition: 'color 0.2s ease',
+          '&:hover': {color: '#FF6B00'},
+        }}
+      >
+        {linkLabel} &rarr;
+      </Typography>
+    </Card>
+  );
+}
+
 export default function CommunitySection(): JSX.Element {
   const logger = useLogger('CommunitySection');
+  const isDark = useIsDarkMode();
+  const {ref: sectionRef, isVisible: sectionVisible} = useScrollAnimation({threshold: 0.15});
 
   const [contributors, setContributors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,251 +141,154 @@ export default function CommunitySection(): JSX.Element {
       })
       .catch((error) => {
         logger.error('Error fetching contributors:', {error});
-
         setLoading(false);
       });
   }, [logger]);
 
+  const hasContributors = !loading && contributors.length > 0;
+
   return (
-    <Box component="section" sx={{textDecoration: 'none'}}>
-      <Box
-        sx={{
-          mx: 'auto',
-          display: 'flex',
-          width: '100%',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          px: 4,
-          py: 16,
-        }}
-      >
-        <Typography variant="h2" fontWeight={600} sx={{mb: 2}}>
-          Join the{' '}
-          <Box component="span" sx={{color: 'primary.main'}}>
-            community
-          </Box>
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            mb: 10,
-            color: (theme) => (theme.palette.mode === 'light' ? 'rgb(113, 113, 122)' : 'rgb(113, 113, 122)'),
-          }}
-        >
-          Engage with our ever-growing community to get the latest updates, product support, and more.
-        </Typography>
-        {loading ? (
-          <Box
-            sx={{
-              mx: 'auto',
-              mb: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: 1,
-            }}
-          >
-            {Array.from({length: 12}).map((_, index) => (
-              <Skeleton
-                key={`${index + 1}-skeleton`}
-                variant="circular"
-                sx={{
-                  height: {xs: 48, lg: 60},
-                  width: {xs: 48, lg: 60},
-                  border: 2,
-                  borderColor: 'background.paper',
-                }}
-              />
-            ))}
-          </Box>
-        ) : (
-          <AvatarGroup
-            max={12}
-            sx={{
-              mx: 'auto',
-              mb: 16,
-              '& .MuiAvatar-root': {
-                width: {xs: 48, lg: 60},
-                height: {xs: 48, lg: 60},
-                border: 2,
-                borderColor: 'background.paper',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-                '&:hover': {
-                  transform: 'translateY(-8px) scale(1.2)',
-                  zIndex: 1000,
-                },
-              },
-            }}
-          >
-            {contributors
-              .filter((username) => !failedImages.has(username))
-              .map((username) => (
-                <Tooltip key={username} title={username} arrow>
-                  <Avatar
-                    alt={username}
-                    src={`https://github.com/${username}.png?size=96`}
-                    imgProps={{loading: 'lazy'}}
-                    onError={() => handleImageError(username)}
-                  />
-                </Tooltip>
-              ))}
-          </AvatarGroup>
-        )}
+    <Box component="section" sx={{py: {xs: 8, lg: 12}, background: isDark ? '#0a0a0a' : 'transparent'}}>
+      <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}}}>
         <Box
+          ref={sectionRef}
           sx={{
             display: 'flex',
-            width: '100%',
-            maxWidth: 900,
-            flexDirection: {xs: 'column', md: 'row'},
-            alignItems: 'stretch',
-            justifyContent: 'center',
-            gap: 3,
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            opacity: sectionVisible ? 1 : 0,
+            transform: sectionVisible ? 'translateY(0)' : 'translateY(32px)',
+            transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          <Card
+          {/* Heading */}
+          <Typography
+            variant="h3"
             sx={{
-              flex: 1,
-              p: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              border: '1px solid',
-              borderColor: 'divider',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: (theme) =>
-                  theme.palette.mode === 'light' ? '0 8px 24px rgba(0, 0, 0, 0.12)' : '0 8px 24px rgba(0, 0, 0, 0.4)',
-                borderColor: 'primary.main',
-                '& .arrow-icon': {
-                  opacity: 1,
-                },
-              },
+              mb: 2,
+              fontSize: {xs: '1.75rem', sm: '2.25rem', md: '2.5rem'},
+              fontWeight: 700,
+              color: isDark ? '#ffffff' : '#1a1a2e',
             }}
-            onClick={() =>
-              window.open('https://github.com/asgardeo/thunder/discussions', '_blank', 'noopener noreferrer')
-            }
           >
+            Join the{' '}
             <Box
+              component="span"
               sx={{
-                width: 56,
-                height: 56,
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                mb: 2,
+                background: 'linear-gradient(90deg, #FF6B00 0%, #FF8C00 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
               }}
             >
-              <MessagesSquare size={28} />
+              community
             </Box>
-            <Typography variant="h6" fontWeight={600} sx={{mb: 1}}>
-              Join the Discussions
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
-              Connect with the community, ask questions, and share your ideas
-            </Typography>
-            <Button
-              variant="text"
-              endIcon={
-                <Box
-                  className="arrow-icon"
-                  component="span"
-                  sx={{
-                    display: 'flex',
-                    opacity: 0,
-                    transition: 'opacity 0.2s ease',
-                  }}
-                >
-                  <ArrowUpRight size={18} />
-                </Box>
-              }
-              sx={{mt: 'auto'}}
-            >
-              Join Discussions
-            </Button>
-          </Card>
+          </Typography>
 
-          <Card
+          <Typography
+            variant="body1"
             sx={{
-              flex: 1,
-              p: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              border: '1px solid',
-              borderColor: 'divider',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: (theme) =>
-                  theme.palette.mode === 'light' ? '0 8px 24px rgba(0, 0, 0, 0.12)' : '0 8px 24px rgba(0, 0, 0, 0.4)',
-                borderColor: 'primary.main',
-                '& .arrow-icon': {
-                  opacity: 1,
-                },
-              },
+              mb: hasContributors || loading ? 6 : 5,
+              fontSize: {xs: '0.95rem', sm: '1.05rem'},
+              color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)',
+              lineHeight: 1.7,
+              maxWidth: '600px',
             }}
-            onClick={() =>
-              window.open(
-                'https://github.com/asgardeo/thunder/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22',
-                '_blank',
-                'noopener noreferrer',
-              )
-            }
           >
+            Engage with our ever-growing community to get the latest updates, product support, and more.
+          </Typography>
+
+          {/* Contributor avatars — only show when we have data */}
+          {loading && (
             <Box
               sx={{
-                width: 56,
-                height: 56,
-                borderRadius: 2,
+                mx: 'auto',
+                mb: 6,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: 'success.main',
-                color: 'success.contrastText',
-                mb: 2,
+                flexWrap: 'wrap',
+                gap: 0.5,
               }}
             >
-              <CircleDot size={28} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{mb: 1}}>
-              Good First Issues
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
-              Start contributing with beginner-friendly issues to get involved
-            </Typography>
-            <Button
-              variant="text"
-              endIcon={
-                <Box
-                  className="arrow-icon"
-                  component="span"
+              {Array.from({length: 10}).map((_, index) => (
+                <Skeleton
+                  key={`${index + 1}-skeleton`}
+                  variant="circular"
                   sx={{
-                    display: 'flex',
-                    opacity: 0,
-                    transition: 'opacity 0.2s ease',
+                    height: {xs: 44, lg: 52},
+                    width: {xs: 44, lg: 52},
+                    bgcolor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
                   }}
-                >
-                  <ArrowUpRight size={18} />
-                </Box>
-              }
-              sx={{mt: 'auto'}}
+                />
+              ))}
+            </Box>
+          )}
+
+          {hasContributors && (
+            <AvatarGroup
+              max={12}
+              sx={{
+                mx: 'auto',
+                mb: 6,
+                '& .MuiAvatar-root': {
+                  width: {xs: 44, lg: 52},
+                  height: {xs: 44, lg: 52},
+                  border: isDark ? '2px solid #141414' : '2px solid #ffffff',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'translateY(-6px) scale(1.15)',
+                    zIndex: 1000,
+                  },
+                },
+              }}
             >
-              View Issues
-            </Button>
-          </Card>
+              {contributors
+                .filter((username) => !failedImages.has(username))
+                .map((username) => (
+                  <Tooltip key={username} title={username} arrow>
+                    <Avatar
+                      alt={username}
+                      src={`https://github.com/${username}.png?size=96`}
+                      imgProps={{loading: 'lazy'}}
+                      onError={() => handleImageError(username)}
+                    />
+                  </Tooltip>
+                ))}
+            </AvatarGroup>
+          )}
+
+          {/* Cards */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'},
+              width: '100%',
+              maxWidth: 800,
+              gap: 3,
+            }}
+          >
+            <CommunityCard
+              icon={<MessagesSquare size={26} />}
+              iconBg="linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)"
+              title="Join the Discussions"
+              description="Connect with the community, ask questions, and share your ideas"
+              linkLabel="Join Discussions"
+              href="https://github.com/asgardeo/thunder/discussions"
+            />
+            <CommunityCard
+              icon={<CircleDot size={26} />}
+              iconBg="linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
+              title="Good First Issues"
+              description="Start contributing with beginner-friendly issues to get involved"
+              linkLabel="View Issues"
+              href="https://github.com/asgardeo/thunder/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22"
+            />
+          </Box>
         </Box>
-      </Box>
+      </Container>
     </Box>
   );
 }

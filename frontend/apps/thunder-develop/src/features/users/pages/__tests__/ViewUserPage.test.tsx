@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import ViewUserPage from '../ViewUserPage';
@@ -36,6 +37,18 @@ vi.mock('react-router', async () => {
     ...actual,
     useNavigate: () => mockNavigate,
     useParams: () => ({userId: 'user123'}),
+    Link: ({to, children = undefined, ...props}: {to: string; children?: ReactNode; [key: string]: unknown}) => (
+      <a
+        {...(props as Record<string, unknown>)}
+        href={to}
+        onClick={(e) => {
+          e.preventDefault();
+          Promise.resolve(mockNavigate(to)).catch(() => {});
+        }}
+      >
+        {children}
+      </a>
+    ),
   };
 });
 
@@ -343,7 +356,7 @@ describe('ViewUserPage', () => {
     it('renders user profile page with title', () => {
       render(<ViewUserPage />);
 
-      expect(screen.getByRole('heading', {name: 'User Profile'})).toBeInTheDocument();
+      expect(screen.getByRole('heading', {name: 'Manage User'})).toBeInTheDocument();
       expect(screen.getByText('View and manage user information')).toBeInTheDocument();
     });
 
@@ -426,7 +439,7 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       render(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /go back/i});
+      const backButton = screen.getByRole('button', {name: /^back$/i});
       await user.click(backButton);
 
       await waitFor(() => {
@@ -441,7 +454,7 @@ describe('ViewUserPage', () => {
 
       render(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /go back/i});
+      const backButton = screen.getByRole('button', {name: /^back$/i});
       await user.click(backButton);
 
       await waitFor(() => {
@@ -566,6 +579,7 @@ describe('ViewUserPage', () => {
           password: {
             type: 'string',
             required: true,
+            credential: true,
           },
           email: {
             type: 'string',
@@ -590,6 +604,87 @@ describe('ViewUserPage', () => {
         expect(screen.getByPlaceholderText(/Enter email/i)).toBeInTheDocument();
         // Password field should not be present
         expect(screen.queryByPlaceholderText(/Enter password/i)).not.toBeInTheDocument();
+      });
+    });
+
+    it('filters out all credential fields from schema in edit mode', async () => {
+      const user = userEvent.setup();
+      const schemaWithMultipleCredentials: ApiUserSchema = {
+        id: 'employee',
+        name: 'Employee',
+        schema: {
+          username: {
+            type: 'string',
+            required: true,
+          },
+          password: {
+            type: 'string',
+            required: true,
+            credential: true,
+          },
+          pin: {
+            type: 'string',
+            credential: true,
+          },
+          email: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserSchema.mockReturnValue({
+        data: schemaWithMultipleCredentials,
+        loading: false,
+        error: null,
+        refetch: mockRefetchSchema,
+      });
+
+      render(<ViewUserPage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Enter email/i)).toBeInTheDocument();
+        // All credential fields should be filtered out
+        expect(screen.queryByPlaceholderText(/Enter password/i)).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText(/Enter pin/i)).not.toBeInTheDocument();
+      });
+    });
+
+    it('does not filter non-credential fields with similar names', async () => {
+      const user = userEvent.setup();
+      const schemaWithoutCredential: ApiUserSchema = {
+        id: 'employee',
+        name: 'Employee',
+        schema: {
+          username: {
+            type: 'string',
+            required: true,
+          },
+          password: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserSchema.mockReturnValue({
+        data: schemaWithoutCredential,
+        loading: false,
+        error: null,
+        refetch: mockRefetchSchema,
+      });
+
+      render(<ViewUserPage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      await waitFor(() => {
+        // A field named "password" without credential: true should still appear
+        expect(screen.getByPlaceholderText(/Enter password/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
       });
     });
 
@@ -704,10 +799,7 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUser).toHaveBeenCalledWith(
-          'user123',
-          expect.objectContaining({organizationUnit: 'test-ou'}),
-        );
+        expect(mockUpdateUser).toHaveBeenCalledWith('user123', expect.objectContaining({organizationUnit: 'test-ou'}));
       });
     });
 

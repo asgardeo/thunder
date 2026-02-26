@@ -38,7 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
-	"github.com/asgardeo/thunder/tests/mocks/authnprovidermock"
+	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
@@ -50,7 +50,7 @@ type AuthAssertExecutorTestSuite struct {
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
 	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
 	mockAssertGenerator *assertmock.AuthAssertGeneratorInterfaceMock
-	mockAuthnProvider   *authnprovidermock.AuthnProviderInterfaceMock
+	mockCredsAuthSvc    *credentialsmock.CredentialsAuthnServiceInterfaceMock
 	mockUserProvider    *userprovidermock.UserProviderInterfaceMock
 	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
 	executor            *authAssertExecutor
@@ -67,7 +67,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockAssertGenerator = assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
-	suite.mockAuthnProvider = authnprovidermock.NewAuthnProviderInterfaceMock(suite.T())
+	suite.mockCredsAuthSvc = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
@@ -76,7 +76,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 		[]common.Input{}, []common.Input{}).Return(mockExec)
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
-		suite.mockOUService, suite.mockAssertGenerator, suite.mockAuthnProvider, suite.mockUserProvider)
+		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockUserProvider)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,
@@ -102,7 +102,7 @@ func initializeTestRuntime() error {
 func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.jwtService)
-	assert.NotNil(suite.T(), suite.executor.authnProvider)
+	assert.NotNil(suite.T(), suite.executor.credsAuthSvc)
 	assert.NotNil(suite.T(), suite.executor.userProvider)
 	assert.NotNil(suite.T(), suite.executor.authAssertGenerator)
 }
@@ -141,9 +141,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 	}, nil)
 
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
-		mock.Anything).Return("jwt-token", int64(3600), nil)
+		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(ou.OrganizationUnit{ID: "ou-123"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -192,7 +193,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			perms, ok := claims["authorized_permissions"]
 			return ok && perms == "read:documents write:documents"
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -233,7 +234,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["email"] == "test@example.com" && claims["phone"] == "1234567890"
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -258,7 +259,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	}
 
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
+		mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "JWT_GENERATION_FAILED",
 		Error:            "JWT generation failed",
@@ -448,7 +449,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 		Attributes: attrsJSON,
 	}
 
-	suite.mockAuthnProvider.On("GetAttributes", "token-123", []string{"email", "name"},
+	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", []string{"email", "name"},
 		(*authnprovider.GetAttributesMetadata)(nil)).Return(&res, nil)
 
 	resultAttrs, err := suite.executor.getUserAttributes("user-123", "token-123", []string{"email", "name"}, nil)
@@ -457,7 +458,24 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 	assert.NotNil(suite.T(), resultAttrs)
 	assert.Equal(suite.T(), "test@example.com", resultAttrs["email"])
 	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
-	suite.mockAuthnProvider.AssertExpectations(suite.T())
+	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_ServiceError() {
+	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", []string{"email", "name"},
+		(*authnprovider.GetAttributesMetadata)(nil)).Return(nil, &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "ATTRIBUTES_FETCH_FAILED",
+		Error:            "failed to fetch attributes",
+		ErrorDescription: "something went wrong",
+	})
+
+	resultAttrs, err := suite.executor.getUserAttributes("user-123", "token-123", []string{"email", "name"}, nil)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resultAttrs)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
+	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
@@ -482,9 +500,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims[oauth2const.ClaimUserType] == "EXTERNAL" && claims[oauth2const.ClaimOUID] == "ou-456"
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-456").Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-456").
+		Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -513,7 +532,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 	}
 
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", "https://test.thunder.io", int64(7200),
-		mock.Anything).Return("jwt-token", int64(7200), nil)
+		mock.Anything, mock.Anything).Return("jwt-token", int64(7200), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -541,7 +560,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-789").Return(ou.OrganizationUnit{
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-789").Return(ou.OrganizationUnit{
 		ID:     "ou-789",
 		Name:   "Engineering",
 		Handle: "eng",
@@ -552,7 +571,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 			return claims[oauth2const.ClaimOUID] == "ou-789" &&
 				claims[oauth2const.ClaimOUName] == "Engineering" &&
 				claims[oauth2const.ClaimOUHandle] == "eng"
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -622,7 +641,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	existingUser.Attributes = attrsJSON
 	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -649,7 +668,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-123").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
 			Error:            "ou_not_found",
 			ErrorDescription: "organization unit not found",
@@ -711,7 +730,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-invalid").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
 			Error:            "ou_not_found",
 			ErrorDescription: "organization unit does not exist",
@@ -759,7 +778,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 			hasUsername := claims["username"] == "testuser"
 			hasFirstName := claims["firstName"] == "Test"
 			return hasEmail && hasUsername && hasFirstName
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -805,7 +824,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 				return false
 			}
 			return len(groups) == 3 && groups[0] == "admin" && groups[1] == "developer" && groups[2] == "viewer"
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -844,7 +863,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 			// Should NOT contain groups claim when groups list is empty
 			_, ok := claims[oauth2const.UserAttributeGroups]
 			return !ok
-		})).Return("jwt-token", int64(3600), nil)
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -881,4 +900,177 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 	assert.Nil(suite.T(), resp)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user groups")
 	suite.mockUserProvider.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithAllFields() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "client-123",
+					},
+				},
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "client-456",
+					},
+				},
+			},
+		},
+		RuntimeData: map[string]string{
+			"required_locales": "en_US",
+		},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.NotNil(suite.T(), metadata.AppMetadata)
+	assert.Equal(suite.T(), "value1", metadata.AppMetadata["key1"])
+	assert.Equal(suite.T(), "value2", metadata.AppMetadata["key2"])
+
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 2)
+	assert.Contains(suite.T(), clientIDs, "client-123")
+	assert.Contains(suite.T(), clientIDs, "client-456")
+
+	assert.Equal(suite.T(), "en_US", metadata.Locale)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithNoMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.NotNil(suite.T(), metadata.AppMetadata)
+	assert.Empty(suite.T(), metadata.AppMetadata)
+	assert.Empty(suite.T(), metadata.Locale)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyAppMetadata() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			Metadata: map[string]interface{}{
+				"custom_field": "custom_value",
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Equal(suite.T(), "custom_value", metadata.AppMetadata["custom_field"])
+	assert.Empty(suite.T(), metadata.Locale)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyClientIDs() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "single-client",
+					},
+				},
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	clientIDs, ok := metadata.AppMetadata["client_ids"].([]string)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), clientIDs, 1)
+	assert.Equal(suite.T(), "single-client", clientIDs[0])
+	assert.Empty(suite.T(), metadata.Locale)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithOnlyLocale() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{
+			"required_locales": "fr_FR",
+		},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Equal(suite.T(), "fr_FR", metadata.Locale)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithNilOAuthConfig() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type:           appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: nil,
+				},
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmptyClientID() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{
+			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+				{
+					Type: appmodel.OAuthInboundAuthType,
+					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+						ClientID: "",
+					},
+				},
+			},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	_, hasClientIDs := metadata.AppMetadata["client_ids"]
+	assert.False(suite.T(), hasClientIDs)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmptyLocale() {
+	ctx := &core.NodeContext{
+		Application: appmodel.Application{},
+		RuntimeData: map[string]string{
+			"required_locales": "",
+		},
+	}
+
+	metadata := suite.executor.buildGetAttributesMetadata(ctx)
+
+	assert.NotNil(suite.T(), metadata)
+	assert.Empty(suite.T(), metadata.Locale)
 }

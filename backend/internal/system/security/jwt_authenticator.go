@@ -74,7 +74,7 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 		subject = sub
 	}
 
-	ouID := extractAttribute(attributes, "ou_id")
+	ouID := extractAttribute(attributes, "ouId")
 
 	// Step 5: Extract scopes from JWT claims
 	scopes := extractScopes(attributes)

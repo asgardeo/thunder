@@ -19,6 +19,7 @@
 package idp
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -59,6 +60,7 @@ func (s *IDPInitTestSuite) TearDownTest() {
 }
 
 func (s *IDPInitTestSuite) TestInitialize() {
+	config.ResetThunderRuntime()
 	// Initialize runtime config for the test
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
@@ -70,9 +72,13 @@ func (s *IDPInitTestSuite) TestInitialize() {
 				Type: "sqlite",
 				Path: ":memory:",
 			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeThunderRuntime("", testConfig)
 	mux := http.NewServeMux()
 
 	service, _, err := Initialize(mux)
@@ -122,7 +128,7 @@ func (s *IDPInitTestSuite) TestNewIDPHandler() {
 
 func (s *IDPInitTestSuite) TestNewIDPService() {
 	store := &idpStore{}
-	service := newIDPService(store)
+	service := newIDPService(store, &mockTransactioner{})
 
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
@@ -285,8 +291,22 @@ func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled()
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	mux := http.NewServeMux()
@@ -307,6 +327,20 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
 		},
 	}
 
@@ -337,7 +371,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 	assert.Implements(t, (*IDPServiceInterface)(nil), service)
 
 	// Verify no IDPs are loaded
-	idps, svcErr := service.GetIdentityProviderList()
+	idps, svcErr := service.GetIdentityProviderList(context.Background())
 	assert.Nil(t, svcErr)
 	assert.Empty(t, idps)
 }
@@ -359,11 +393,15 @@ func TestInitialize_WithDeclarativeResourcesEnabled_ValidConfigs(t *testing.T) {
 		Database: config.DatabaseConfig{
 			Identity: config.DataSource{
 				Type: "sqlite",
-				Path: ":memory:",
+				Path: "test.db",
 			},
 			Runtime: config.DataSource{
 				Type: "sqlite",
-				Path: ":memory:",
+				Path: "test.db",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
 			},
 		},
 		DeclarativeResources: config.DeclarativeResources{
@@ -432,7 +470,7 @@ properties:
 	assert.Implements(t, (*IDPServiceInterface)(nil), service)
 
 	// Verify IDPs are loaded
-	idps, svcErr := service.GetIdentityProviderList()
+	idps, svcErr := service.GetIdentityProviderList(context.Background())
 	assert.Nil(t, svcErr)
 	assert.Len(t, idps, 2)
 
@@ -442,7 +480,7 @@ properties:
 	assert.Contains(t, idpNames, "GitHub IDP")
 
 	// Verify we can get individual IDPs by name
-	googleIDP, svcErr := service.GetIdentityProviderByName("Google IDP")
+	googleIDP, svcErr := service.GetIdentityProviderByName(context.Background(), "Google IDP")
 	assert.Nil(t, svcErr)
 	assert.NotNil(t, googleIDP)
 	assert.Equal(t, "Google IDP", googleIDP.Name)
@@ -452,7 +490,7 @@ properties:
 	// jwks_endpoint, userinfo_endpoint, scopes (defaults)
 	assert.Len(t, googleIDP.Properties, 8)
 
-	githubIDP, svcErr := service.GetIdentityProviderByName("GitHub IDP")
+	githubIDP, svcErr := service.GetIdentityProviderByName(context.Background(), "GitHub IDP")
 	assert.Nil(t, svcErr)
 	assert.NotNil(t, githubIDP)
 	assert.Equal(t, "GitHub IDP", githubIDP.Name)
@@ -488,6 +526,20 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
 			},
 		},
 	}
@@ -537,6 +589,20 @@ properties:
 				Key: testCryptoKey,
 			},
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+		},
 	}
 
 	config.ResetThunderRuntime()
@@ -582,6 +648,20 @@ properties:
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
 			},
 		},
 	}

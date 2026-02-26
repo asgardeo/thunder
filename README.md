@@ -109,7 +109,7 @@ Follow these steps to run WSO2 Thunder using Docker Compose.
     Download the `docker-compose.yml` file using the following command:
 
     ```bash
-    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.22.0/install/quick-start/docker-compose.yml
+    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.23.0/install/quick-start/docker-compose.yml
     ```
 
 2. **Start Thunder**

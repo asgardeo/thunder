@@ -28,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
@@ -72,6 +73,18 @@ func TestRoleServiceTestSuite(t *testing.T) {
 }
 
 func (suite *RoleServiceTestSuite) SetupTest() {
+	// Initialize config runtime with default values
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if err != nil {
+		suite.Fail("Failed to initialize runtime", err)
+	}
+
 	suite.mockStore = newRoleStoreInterfaceMock(suite.T())
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockGroupService = groupmock.NewGroupServiceInterfaceMock(suite.T())
@@ -86,6 +99,11 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 		suite.mockResourceService,
 		suite.transactioner,
 	)
+}
+
+// TearDownTest cleans up after each test
+func (suite *RoleServiceTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 // GetRoleList Tests
@@ -183,7 +201,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_Success() {
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1", Name: "Test OU"}
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1", "perm2"}).Return([]string{}, nil)
 	suite.mockStore.On("CheckRoleNameExists", mock.Anything,
@@ -325,7 +343,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 			},
 			setupMocks: func() {
 				ou := oupkg.OrganizationUnit{ID: "ou1"}
-				suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil).Once()
+				suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil).Once()
 				suite.mockStore.On("CheckRoleNameExists", mock.Anything,
 					"ou1", "Test Role").Return(false, nil).Once()
 				suite.mockStore.On("CreateRole", mock.Anything,
@@ -348,7 +366,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 			},
 			setupMocks: func() {
 				ou := oupkg.OrganizationUnit{ID: "ou1"}
-				suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil).Once()
+				suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil).Once()
 				suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 					"rs1", []string{"perm1"}).
 					Return([]string{}, nil).Once()
@@ -394,7 +412,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_OrganizationUnitNotFound() {
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "nonexistent").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "nonexistent").
 		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound)
 
 	result, err := suite.service.CreateRole(context.Background(), request)
@@ -456,7 +474,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_StoreError() {
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("CheckRoleNameExists", mock.Anything,
@@ -480,7 +498,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_NameConflict() {
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("CheckRoleNameExists", mock.Anything,
@@ -501,7 +519,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_CheckNameExistsError() {
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("CheckRoleNameExists", mock.Anything,
@@ -513,6 +531,71 @@ func (suite *RoleServiceTestSuite) TestCreateRole_CheckNameExistsError() {
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
+}
+
+// CreateRole Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestCreateRole_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := RoleCreationDetail{
+		Name:               "Test Role",
+		OrganizationUnitID: "ou1",
+	}
+
+	result, err := suite.service.CreateRole(context.Background(), request)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorDeclarativeModeCreateNotAllowed.Code, err.Code)
+}
+
+func (suite *RoleServiceTestSuite) TestUpdateRole_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := RoleUpdateDetail{
+		Name:               "Updated Role",
+		OrganizationUnitID: "ou1",
+		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+	}
+
+	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
+		"rs1", []string{"perm1"}).Return([]string{}, nil)
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	result, err := suite.service.UpdateRoleWithPermissions(context.Background(), "role1", request)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorImmutableRole.Code, err.Code)
 }
 
 // GetRoleWithPermissions Tests
@@ -651,7 +734,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_OUNotFound() {
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
 		"role1").Return(true, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "nonexistent_ou").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "nonexistent_ou").
 		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound)
 
 	result, err := suite.service.UpdateRoleWithPermissions(context.Background(), "role1", request)
@@ -672,7 +755,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_OUServiceError() {
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
 		"role1").Return(true, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "INTERNAL_ERROR"})
 
 	result, err := suite.service.UpdateRoleWithPermissions(context.Background(), "role1", request)
@@ -694,7 +777,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_UpdateStoreError() {
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
 		"role1").Return(true, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockStore.On("CheckRoleNameExistsExcludingID", mock.Anything,
 		"ou1", "New Name", "role1").Return(false, nil)
 	suite.mockStore.On("UpdateRole", mock.Anything,
@@ -722,7 +805,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_Success() {
 		"rs1", []string{"perm1", "perm2"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
 		"role1").Return(true, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockStore.On("CheckRoleNameExistsExcludingID", mock.Anything,
 		"ou1", "New Name", "role1").Return(false, nil)
 	suite.mockStore.On("UpdateRole", mock.Anything,
@@ -771,7 +854,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_NameConflict() {
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
 		"role1").Return(true, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockStore.On("CheckRoleNameExistsExcludingID", mock.Anything,
 		"ou1", "Conflicting Name",
 		"role1").Return(true, nil)
@@ -795,7 +878,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_CheckNameExistsError() {
 		"rs1", []string{"perm1"}).Return([]string{}, nil)
 	suite.mockStore.On("IsRoleExist", mock.Anything,
 		"role1").Return(true, nil)
-	suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil)
 	suite.mockStore.On("CheckRoleNameExistsExcludingID", mock.Anything,
 		"ou1", "New Name", "role1").
 		Return(false, errors.New("database error"))
@@ -878,7 +961,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 				suite.mockResourceService.On("ValidatePermissions", mock.Anything,
 					"rs2", []string{"perm2"}).
 					Return([]string{}, nil).Once()
-				suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil).Once()
+				suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil).Once()
 				suite.mockStore.On("CheckRoleNameExistsExcludingID", mock.Anything,
 					"ou1",
 					"Updated Role", "role1").Return(false, nil).Once()
@@ -900,7 +983,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 				ou := oupkg.OrganizationUnit{ID: "ou1"}
 				suite.mockStore.On("IsRoleExist", mock.Anything,
 					"role1").Return(true, nil).Once()
-				suite.mockOUService.On("GetOrganizationUnit", "ou1").Return(ou, nil).Once()
+				suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou1").Return(ou, nil).Once()
 				suite.mockStore.On("CheckRoleNameExistsExcludingID", mock.Anything,
 					"ou1",
 					"Updated Role", "role1").Return(false, nil).Once()
@@ -1009,6 +1092,33 @@ func (suite *RoleServiceTestSuite) TestDeleteRole_StoreError() {
 
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
+}
+
+// DeleteRole Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestDeleteRole_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	err2 := suite.service.DeleteRole(context.Background(), "role1")
+
+	suite.NotNil(err2)
+	suite.Equal(ErrorImmutableRole.Code, err2.Code)
 }
 
 // GetRoleAssignments Tests
@@ -1299,6 +1409,37 @@ func (suite *RoleServiceTestSuite) TestAddAssignments_Success() {
 	suite.Nil(err)
 }
 
+// AddAssignments Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestAddAssignments_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := []RoleAssignment{
+		{ID: testUserID1, Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	err2 := suite.service.AddAssignments(context.Background(), "role1", request)
+
+	suite.NotNil(err2)
+	suite.Equal(ErrorImmutableAssignment.Code, err2.Code)
+}
+
 // RemoveAssignments Tests
 func (suite *RoleServiceTestSuite) TestRemoveAssignments_MissingRoleID() {
 	request := []RoleAssignment{
@@ -1377,6 +1518,37 @@ func (suite *RoleServiceTestSuite) TestRemoveAssignments_Success() {
 	err := suite.service.RemoveAssignments(context.Background(), "role1", request)
 
 	suite.Nil(err)
+}
+
+// RemoveAssignments Declarative Mode Tests
+func (suite *RoleServiceTestSuite) TestRemoveAssignments_DeclarativeMode_Denied() {
+	// Setup declarative-only mode
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		Role: config.RoleConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if initErr != nil {
+		suite.Fail("Failed to initialize runtime", initErr)
+	}
+	defer config.ResetThunderRuntime()
+
+	request := []RoleAssignment{
+		{ID: "user1", Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
+
+	err2 := suite.service.RemoveAssignments(context.Background(), "role1", request)
+
+	suite.NotNil(err2)
+	suite.Equal(ErrorImmutableAssignment.Code, err2.Code)
 }
 
 // validateAssignmentIDs Tests
@@ -1624,4 +1796,35 @@ func (suite *RoleServiceTestSuite) TestGetAuthorizedPermissions() {
 			}
 		})
 	}
+}
+
+// Tests for IsRoleDeclarative (public method)
+func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_ReturnsTrue() {
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "declarative-role").Return(true, nil)
+
+	isDeclarative, err := suite.service.IsRoleDeclarative(context.Background(), "declarative-role")
+
+	suite.Nil(err)
+	suite.True(isDeclarative)
+	suite.mockStore.AssertCalled(suite.T(), "IsRoleDeclarative", mock.Anything, "declarative-role")
+}
+
+func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_ReturnsFalse() {
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "mutable-role").Return(false, nil)
+
+	isDeclarative, err := suite.service.IsRoleDeclarative(context.Background(), "mutable-role")
+
+	suite.Nil(err)
+	suite.False(isDeclarative)
+}
+
+func (suite *RoleServiceTestSuite) TestIsRoleDeclarative_StoreReturnsError() {
+	storeErr := errors.New("store error")
+	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role-id").Return(false, storeErr)
+
+	isDeclarative, err := suite.service.IsRoleDeclarative(context.Background(), "role-id")
+
+	suite.NotNil(err)
+	suite.False(isDeclarative)
+	suite.Equal(&ErrorInternalServerError, err)
 }

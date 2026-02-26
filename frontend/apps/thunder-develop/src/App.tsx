@@ -32,6 +32,7 @@ import ApplicationEditPage from './features/applications/pages/ApplicationEditPa
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
+import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
 import FlowsListPage from './features/flows/pages/FlowsListPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
 import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
@@ -59,7 +60,6 @@ export default function App(): JSX.Element {
           <Route path="users/create" element={<CreateUserPage />} />
           <Route path="users/:userId" element={<ViewUserPage />} />
           <Route path="user-types" element={<UserTypesListPage />} />
-          <Route path="user-types/create" element={<CreateUserTypePage />} />
           <Route path="user-types/:id" element={<ViewUserTypePage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
           <Route path="groups" element={<GroupsListPage />} />
@@ -96,6 +96,18 @@ export default function App(): JSX.Element {
           <Route index element={<CreateGroupPage />} />
         </Route>
         <Route
+          path="/user-types/create"
+          element={
+            <ProtectedRoute>
+              <UserTypeCreateProvider>
+                <FullScreenLayout />
+              </UserTypeCreateProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CreateUserTypePage />} />
+        </Route>
+        <Route
           path="/applications/create"
           element={
             <ProtectedRoute>
@@ -111,7 +123,7 @@ export default function App(): JSX.Element {
           path="/flows/signin"
           element={
             <ProtectedRoute>
-              <DashboardLayout dense />
+              <DashboardLayout />
             </ProtectedRoute>
           }
         >
@@ -121,7 +133,7 @@ export default function App(): JSX.Element {
           path="/flows/signin/:flowId"
           element={
             <ProtectedRoute>
-              <DashboardLayout dense />
+              <DashboardLayout />
             </ProtectedRoute>
           }
         >

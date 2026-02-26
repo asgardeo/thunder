@@ -19,6 +19,8 @@
 package declarativeresource
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -40,11 +42,11 @@ type ResourceExporter interface {
 	GetParameterizerType() string
 
 	// GetAllResourceIDs retrieves all resource IDs for wildcard export
-	GetAllResourceIDs() ([]string, *serviceerror.ServiceError)
+	GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError)
 
 	// GetResourceByID retrieves a single resource by its ID
 	// Returns: resource object, resource name, error
-	GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError)
+	GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError)
 
 	// ValidateResource validates the resource and extracts its name
 	// Returns: resource name, export error

@@ -24,7 +24,9 @@ import {DataGrid} from '@wso2/oxygen-ui';
 import UsersList from '../UsersList';
 import type {UserListResponse, ApiUserSchema, ApiError} from '../../types/users';
 
-type DataGridProps = DataGrid.DataGridProps;
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
 
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
@@ -37,90 +39,106 @@ interface MockRow {
   [key: string]: unknown;
 }
 
+interface MockDataGridProps {
+  rows?: MockRow[];
+  columns?: DataGrid.GridColDef<MockRow>[];
+  loading?: boolean;
+  onRowClick?: (params: {row: MockRow}, event: never, details: never) => void;
+  getRowId?: (row: MockRow) => string;
+  [key: string]: unknown;
+}
+
 vi.mock('@wso2/oxygen-ui', async () => {
   const actual = await vi.importActual<typeof OxygenUI>('@wso2/oxygen-ui');
   return {
     ...actual,
     DataGrid: {
       ...(actual.DataGrid ?? {}),
-      DataGrid: (props: DataGridProps) => {
-        const {rows = [], columns = [], loading, onRowClick} = props;
-
-        return (
-          <div data-testid="data-grid" data-loading={loading}>
-            {rows.map((row) => {
-              const mockRow = row as MockRow;
-              const username = mockRow.attributes?.username;
-              const displayText = typeof username === 'string' ? username : mockRow.id;
-
-              return (
-                <div key={mockRow.id} className="MuiDataGrid-row-container">
-                  <button
-                    type="button"
-                    className="MuiDataGrid-row"
-                    onClick={() => {
-                      if (onRowClick) {
-                        onRowClick({row: mockRow} as never, {} as never, {} as never);
-                      }
-                    }}
-                    data-testid={`row-${mockRow.id}`}
-                  >
-                    {displayText}
-                  </button>
-                  {columns?.map((column) => {
-                    if (column?.field === undefined) return null;
-
-                    let value: unknown;
-                    if (typeof column.valueGetter === 'function') {
-                      value = column.valueGetter({} as never, mockRow as never, column as never, {} as never);
-                    } else if (column.field in mockRow) {
-                      value = mockRow[column.field];
-                    } else {
-                      value = mockRow.attributes?.[column.field];
-                    }
-
-                    const params = {
-                      row: mockRow,
-                      field: column.field,
-                      value,
-                      id: mockRow.id,
-                    };
-
-                    const content =
-                      typeof column.renderCell === 'function' ? column.renderCell(params as never) : value;
-
-                    if (content === null || content === undefined) {
-                      return null;
-                    }
-
-                    // Convert content to a renderable format
-                    let renderableContent: React.ReactNode;
-                    if (typeof content === 'string' || typeof content === 'number' || typeof content === 'boolean') {
-                      renderableContent = String(content);
-                    } else if (React.isValidElement(content)) {
-                      renderableContent = content;
-                    } else if (Array.isArray(content)) {
-                      renderableContent = JSON.stringify(content);
-                    } else if (typeof content === 'object') {
-                      renderableContent = JSON.stringify(content);
-                    } else {
-                      renderableContent = '';
-                    }
-
-                    return (
-                      <span key={`${mockRow.id}-${column.field}`} className="MuiDataGrid-cell">
-                        {renderableContent}
-                      </span>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        );
-      },
       GridColDef: {} as never,
       GridRenderCellParams: {} as never,
+    },
+    ListingTable: {
+      Provider: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      DataGrid: ({
+        rows = [],
+        columns = [],
+        loading = undefined,
+        onRowClick = undefined,
+        getRowId = undefined,
+      }: MockDataGridProps) => (
+        <div data-testid="data-grid" data-loading={loading}>
+          {rows.map((row) => {
+            const rowId = getRowId ? getRowId(row) : row.id;
+            const username = row.attributes?.username;
+            const displayText = typeof username === 'string' ? username : rowId;
+
+            return (
+              <div key={rowId} className="MuiDataGrid-row-container">
+                <button
+                  type="button"
+                  className="MuiDataGrid-row"
+                  onClick={() => {
+                    if (onRowClick) {
+                      onRowClick({row}, {} as never, {} as never);
+                    }
+                  }}
+                  data-testid={`row-${rowId}`}
+                >
+                  {displayText}
+                </button>
+                {columns?.map((column) => {
+                  if (column?.field === undefined) return null;
+
+                  let value: unknown;
+                  if (typeof column.valueGetter === 'function') {
+                    value = column.valueGetter({} as never, row as never, column as never, {} as never);
+                  } else if (column.field in row) {
+                    value = row[column.field];
+                  } else {
+                    value = row.attributes?.[column.field];
+                  }
+
+                  const params = {
+                    row,
+                    field: column.field,
+                    value,
+                    id: rowId,
+                  };
+
+                  const content = typeof column.renderCell === 'function' ? column.renderCell(params as never) : value;
+
+                  if (content === null || content === undefined) {
+                    return null;
+                  }
+
+                  // Convert content to a renderable format
+                  let renderableContent: React.ReactNode;
+                  if (typeof content === 'string' || typeof content === 'number' || typeof content === 'boolean') {
+                    renderableContent = String(content);
+                  } else if (React.isValidElement(content)) {
+                    renderableContent = content;
+                  } else if (Array.isArray(content)) {
+                    renderableContent = JSON.stringify(content);
+                  } else if (typeof content === 'object') {
+                    renderableContent = JSON.stringify(content);
+                  } else {
+                    renderableContent = '';
+                  }
+
+                  return (
+                    <span key={`${rowId}-${column.field}`} className="MuiDataGrid-cell">
+                      {renderableContent}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      ),
+      CellIcon: ({primary}: {primary: string}) => <span>{primary}</span>,
+      RowActions: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
     },
   };
 });
@@ -133,6 +151,15 @@ vi.mock('react-router', async () => {
     useNavigate: () => mockNavigate,
   };
 });
+
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 // Mock hooks
 interface UseGetUsersReturn {
@@ -310,24 +337,19 @@ describe('UsersList', () => {
     });
   });
 
-  it('opens menu when actions button is clicked', async () => {
-    const user = userEvent.setup();
+  it('should render inline delete buttons for each row', async () => {
     render(<UsersList selectedSchema="schema1" />);
 
     await waitFor(() => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // Actions are now inline buttons (Trash2), not a dropdown menu
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    expect(deleteButtons.length).toBeGreaterThan(0);
   });
 
-  it('navigates to view page when View is clicked', async () => {
+  it('navigates to view page when row is clicked', async () => {
     const user = userEvent.setup();
     render(<UsersList selectedSchema="schema1" />);
 
@@ -335,15 +357,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    const viewButton = screen.getByText('View');
-    await user.click(viewButton);
+    const row = screen.getByTestId('row-user1');
+    await user.click(row);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
@@ -358,11 +373,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -380,11 +392,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -519,11 +528,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -557,11 +563,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to delete')).toBeInTheDocument();
@@ -609,11 +612,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -644,6 +644,67 @@ describe('UsersList', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
+    });
+  });
+
+  it('should navigate to user when View action button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(0);
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
+    });
+  });
+
+  it('should navigate to correct user when View action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(1);
+    await user.click(viewButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/user2');
+    });
+  });
+
+  it('should log error when View button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to user details',
+        expect.objectContaining({
+          error: navigationError,
+          userId: 'user1',
+        }),
+      );
     });
   });
 
@@ -1038,8 +1099,7 @@ describe('UsersList', () => {
     });
   });
 
-  it('opens menu for multiple users independently', async () => {
-    const user = userEvent.setup();
+  it('renders independent inline delete buttons for each user row', async () => {
     render(<UsersList selectedSchema="schema1" />);
 
     await waitFor(() => {
@@ -1047,16 +1107,9 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    // Menu should be displayed
-    const viewButton = screen.getByText('View');
-    expect(viewButton).toBeInTheDocument();
+    // Each user row has its own inline delete button
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('handles number field with null value', async () => {
@@ -1221,11 +1274,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       const confirmButton = screen.getByRole('button', {name: /loading/i});

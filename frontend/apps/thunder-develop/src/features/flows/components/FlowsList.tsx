@@ -19,25 +19,20 @@
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
-import {
-  Box,
-  Avatar,
-  Chip,
-  IconButton,
-  Typography,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  DataGrid,
-  useTheme,
-} from '@wso2/oxygen-ui';
-import {GitBranch, EllipsisVertical, Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Box, Avatar, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
+import {GitBranch, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetFlows from '../api/useGetFlows';
 import type {BasicFlowDefinition} from '../models/responses';
 import FlowDeleteDialog from './FlowDeleteDialog';
+
+/**
+ * When true, only flows that support editing (AUTHENTICATION type) are shown in the list.
+ * Set to false to show all flow types.
+ */
+// TODO: Remove the boolean and Re-enable when the other flow types are available to edit
+const HIDE_NON_EDITABLE_FLOWS = true;
 
 export default function FlowsList(): JSX.Element {
   const theme = useTheme();
@@ -47,87 +42,64 @@ export default function FlowsList(): JSX.Element {
   const dataGridLocaleText = useDataGridLocaleText();
   const {data, isLoading, error} = useGetFlows();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedFlow, setSelectedFlow] = useState<BasicFlowDefinition | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, flow: BasicFlowDefinition) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+  const handleDeleteClick = useCallback((flow: BasicFlowDefinition): void => {
     setSelectedFlow(flow);
-  }, []);
-
-  const handleMenuClose = (): void => {
-    setAnchorEl(null);
-  };
-
-  const handleDeleteClick = (): void => {
-    handleMenuClose();
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   const handleDeleteDialogClose = (): void => {
     setDeleteDialogOpen(false);
     setSelectedFlow(null);
   };
 
-  const handleViewClick = (): void => {
-    handleMenuClose();
-    // Only authentication flows are editable for now
-    if (selectedFlow?.flowType === 'AUTHENTICATION') {
+  const handleEditClick = useCallback(
+    (flow: BasicFlowDefinition): void => {
+      if (flow.flowType !== 'AUTHENTICATION') return;
       (async (): Promise<void> => {
-        await navigate(`/flows/signin/${selectedFlow.id}`);
+        await navigate(`/flows/signin/${flow.id}`);
       })().catch((_error: unknown) => {
-        logger.error('Failed to navigate to flow builder', {error: _error, flowId: selectedFlow.id});
+        logger.error('Failed to navigate to flow builder', {error: _error, flowId: flow.id});
       });
-    }
-  };
+    },
+    [logger, navigate],
+  );
 
   const columns: DataGrid.GridColDef<BasicFlowDefinition>[] = useMemo(
     () => [
       {
-        field: 'avatar',
-        headerName: '',
-        width: 70,
-        sortable: false,
-        filterable: false,
-        renderCell: (): JSX.Element => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
-          >
-            <Avatar
-              sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {
-                  backgroundColor: theme.vars?.palette.grey[900],
-                }),
-              }}
-            >
-              <GitBranch size={14} />
-            </Avatar>
-          </Box>
-        ),
-      },
-      {
         field: 'name',
         headerName: t('flows:listing.columns.name'),
         flex: 1,
-        minWidth: 200,
+        minWidth: 220,
+        renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element => (
+          <ListingTable.CellIcon
+            sx={{width: '100%'}}
+            icon={
+              <Avatar
+                sx={{
+                  backgroundColor: theme.vars?.palette.grey[500],
+                  width: 30,
+                  height: 30,
+                  fontSize: '0.875rem',
+                  ...theme.applyStyles('dark', {
+                    backgroundColor: theme.vars?.palette.grey[900],
+                  }),
+                }}
+              >
+                <GitBranch size={14} />
+              </Avatar>
+            }
+            primary={params.row.name}
+          />
+        ),
       },
       {
         field: 'flowType',
         headerName: t('flows:listing.columns.flowType'),
-        flex: 1,
-        minWidth: 150,
+        width: 180,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element => (
           <Chip
             label={params.row.flowType}
@@ -159,8 +131,7 @@ export default function FlowsList(): JSX.Element {
       {
         field: 'updatedAt',
         headerName: t('flows:listing.columns.updatedAt'),
-        flex: 1,
-        minWidth: 180,
+        width: 180,
         valueGetter: (_value, row): string => {
           const date = new Date(row.updatedAt);
           return date.toLocaleDateString(undefined, {
@@ -175,24 +146,45 @@ export default function FlowsList(): JSX.Element {
       {
         field: 'actions',
         headerName: t('flows:listing.columns.actions'),
-        width: 80,
+        width: 150,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
         filterable: false,
         hideable: false,
-        renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element => (
-          <IconButton
-            size="small"
-            aria-label="Open actions menu"
-            onClick={(e) => {
-              handleMenuOpen(e, params.row);
-            }}
-          >
-            <EllipsisVertical size={16} />
-          </IconButton>
-        ),
+        renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element | null => {
+          if (params.row.flowType !== 'AUTHENTICATION') return null;
+          return (
+            <ListingTable.RowActions visibility="hover">
+              <Tooltip title={t('common:actions.edit')}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditClick(params.row);
+                  }}
+                >
+                  <Pencil size={16} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('common:actions.delete')}>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(params.row);
+                  }}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
+              </Tooltip>
+            </ListingTable.RowActions>
+          );
+        },
       },
     ],
-    [handleMenuOpen, t, theme],
+    [handleDeleteClick, handleEditClick, t, theme],
   );
 
   if (error) {
@@ -210,63 +202,38 @@ export default function FlowsList(): JSX.Element {
 
   return (
     <>
-      <Box sx={{height: 600, width: '100%'}}>
-        <DataGrid.DataGrid
-          rows={data?.flows ?? []}
-          columns={columns}
-          loading={isLoading}
-          getRowId={(row): string => row.id}
-          onRowClick={(params) => {
-            const flow = params.row as BasicFlowDefinition;
-            // Only authentication flows are editable for now
-            if (flow.flowType !== 'AUTHENTICATION') {
-              return;
+      <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
+        <ListingTable.Container disablePaper>
+          <ListingTable.DataGrid
+            rows={(data?.flows ?? []).filter((flow) => !HIDE_NON_EDITABLE_FLOWS || flow.flowType === 'AUTHENTICATION')}
+            columns={columns}
+            getRowId={(row): string => (row as BasicFlowDefinition).id}
+            onRowClick={(params) => {
+              handleEditClick(params.row as BasicFlowDefinition);
+            }}
+            initialState={{
+              pagination: {
+                paginationModel: {pageSize: 10},
+              },
+            }}
+            pageSizeOptions={[5, 10, 25, 50]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            getRowClassName={(params) =>
+              (params.row as BasicFlowDefinition).flowType === 'AUTHENTICATION' ? 'row-clickable' : 'row-not-clickable'
             }
-            (async (): Promise<void> => {
-              await navigate(`/flows/signin/${flow.id}`);
-            })().catch((_error: unknown) => {
-              logger.error('Failed to navigate to flow', {error: _error, flowId: flow.id});
-            });
-          }}
-          initialState={{
-            pagination: {
-              paginationModel: {pageSize: 10},
-            },
-          }}
-          pageSizeOptions={[5, 10, 25, 50]}
-          disableRowSelectionOnClick
-          localeText={dataGridLocaleText}
-          getRowClassName={(params) =>
-            params.row.flowType === 'AUTHENTICATION' ? 'row-clickable' : 'row-not-clickable'
-          }
-          sx={{
-            '& .MuiDataGrid-row.row-clickable': {
-              cursor: 'pointer',
-            },
-            '& .MuiDataGrid-row.row-not-clickable': {
-              cursor: 'default',
-            },
-          }}
-        />
-      </Box>
-
-      {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        {selectedFlow?.flowType === 'AUTHENTICATION' && (
-          <MenuItem onClick={handleViewClick}>
-            <ListItemIcon>
-              <Eye size={16} />
-            </ListItemIcon>
-            <ListItemText>{t('common:actions.view')}</ListItemText>
-          </MenuItem>
-        )}
-        <MenuItem onClick={handleDeleteClick}>
-          <ListItemIcon>
-            <Trash2 size={16} color={theme.vars?.palette.error.main} />
-          </ListItemIcon>
-          <ListItemText sx={{color: 'error.main'}}>{t('common:actions.delete')}</ListItemText>
-        </MenuItem>
-      </Menu>
+            sx={{
+              height: 'auto',
+              '& .MuiDataGrid-row.row-clickable': {
+                cursor: 'pointer',
+              },
+              '& .MuiDataGrid-row.row-not-clickable': {
+                cursor: 'default',
+              },
+            }}
+          />
+        </ListingTable.Container>
+      </ListingTable.Provider>
 
       <FlowDeleteDialog open={deleteDialogOpen} flowId={selectedFlow?.id ?? null} onClose={handleDeleteDialogClose} />
     </>

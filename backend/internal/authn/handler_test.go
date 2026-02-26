@@ -318,7 +318,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleSendSMSOTPRequestSuccess(
 	}
 	sessionToken := testSessionTkn
 
-	suite.mockService.On("SendOTP", otpRequest.SenderID, mock.Anything, otpRequest.Recipient).
+	suite.mockService.On("SendOTP", mock.Anything, otpRequest.SenderID, mock.Anything, otpRequest.Recipient).
 		Return(sessionToken, nil)
 
 	body, _ := json.Marshal(otpRequest)
@@ -360,7 +360,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleSendSMSOTPRequestServiceE
 		ErrorDescription: "Failed to send OTP",
 	}
 
-	suite.mockService.On("SendOTP", mock.Anything, mock.Anything, mock.Anything).Return("", serviceError)
+	suite.mockService.On("SendOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", serviceError)
 
 	body, _ := json.Marshal(otpRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/otp/send", bytes.NewReader(body))
@@ -388,7 +388,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestSucces
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("VerifyOTP", otpRequest.SessionToken, otpRequest.SkipAssertion, "", otpRequest.OTP).
+	suite.mockService.On("VerifyOTP", mock.Anything, otpRequest.SessionToken,
+		otpRequest.SkipAssertion, "", otpRequest.OTP).
 		Return(authResponse, nil)
 
 	body, _ := json.Marshal(otpRequest)
@@ -426,7 +427,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestServic
 	}
 	serviceError := &otp.ErrorIncorrectOTP
 
-	suite.mockService.On("VerifyOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	suite.mockService.On("VerifyOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(otpRequest)
@@ -762,6 +763,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartReque
 	}
 
 	suite.mockService.On("StartPasskeyRegistration",
+		mock.Anything,
 		regRequest.UserID,
 		regRequest.RelyingPartyID,
 		regRequest.RelyingPartyName,
@@ -804,7 +806,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartReque
 	serviceError := &common.ErrorUserNotFound
 
 	suite.mockService.On("StartPasskeyRegistration",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(regRequest)
@@ -840,6 +842,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequ
 	}
 
 	suite.mockService.On("FinishPasskeyRegistration",
+		mock.Anything,
 		regRequest.PublicKeyCredential,
 		testSessionTkn,
 		"My Passkey").Return(regResponse, nil)
@@ -892,7 +895,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequ
 	}
 
 	suite.mockService.On("FinishPasskeyRegistration",
-		mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(regRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/finish", bytes.NewReader(body))
@@ -927,6 +930,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestSucces
 	}
 
 	suite.mockService.On("StartPasskeyAuthentication",
+		mock.Anything,
 		authRequest.UserID,
 		authRequest.RelyingPartyID).Return(authResponse, nil)
 
@@ -966,7 +970,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestServic
 	serviceError := &common.ErrorUserNotFound
 
 	suite.mockService.On("StartPasskeyAuthentication",
-		mock.Anything, mock.Anything).Return(nil, serviceError)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/start", bytes.NewReader(body))
@@ -1004,6 +1008,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestSucce
 	}
 
 	suite.mockService.On("FinishPasskeyAuthentication",
+		mock.Anything,
 		authRequest.PublicKeyCredential.ID,
 		authRequest.PublicKeyCredential.Type,
 		authRequest.PublicKeyCredential.Response,
@@ -1058,7 +1063,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestServi
 	}
 
 	suite.mockService.On("FinishPasskeyAuthentication",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)

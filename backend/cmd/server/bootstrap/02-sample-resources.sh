@@ -98,6 +98,11 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
       "required": true,
       "unique": true
     },
+    "password": {
+      "type": "string",
+      "required": true,
+      "credential": true
+    },
     "email": {
       "type": "string",
       "required": true,

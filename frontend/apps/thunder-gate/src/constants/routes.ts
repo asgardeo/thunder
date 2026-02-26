@@ -29,6 +29,10 @@ export interface Routes {
    */
   AUTH: {
     /**
+     * Error page route.
+     */
+    ERROR: string;
+    /**
      * Sign-in page route.
      */
     SIGN_IN: string;
@@ -64,6 +68,7 @@ export interface Routes {
 const ROUTES: Routes = {
   ROOT: '/',
   AUTH: {
+    ERROR: '/error',
     SIGN_IN: '/signin',
     SIGN_UP: '/signup',
     INVITE: '/invite',

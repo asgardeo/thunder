@@ -235,7 +235,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					}, nil).
 					Once()
 
-				ouMock.On("GetOrganizationUnitByPath", "root/child").
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "root/child").
 					Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil).
 					Once()
 				return nil
@@ -271,7 +271,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				storeMock *groupStoreInterfaceMock,
 				ouMock *oumock.OrganizationUnitServiceInterfaceMock,
 			) *serviceerror.ServiceError {
-				ouMock.On("GetOrganizationUnitByPath", "root/child").
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "root/child").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
 				return nil
@@ -294,7 +294,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					Code: "OU-5000",
 					Type: serviceerror.ServerErrorType,
 				}
-				ouMock.On("GetOrganizationUnitByPath", "root/child").
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "root/child").
 					Return(oupkg.OrganizationUnit{}, expectedErr).
 					Once()
 				return expectedErr
@@ -310,7 +310,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				storeMock *groupStoreInterfaceMock,
 				ouMock *oumock.OrganizationUnitServiceInterfaceMock,
 			) *serviceerror.ServiceError {
-				ouMock.On("GetOrganizationUnitByPath", "root/child").
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "root/child").
 					Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).
 					Once()
 				return nil
@@ -333,7 +333,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					Return(0, errors.New("count fail")).
 					Once()
 
-				ouMock.On("GetOrganizationUnitByPath", "root/child").
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "root/child").
 					Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil).
 					Once()
 				return nil
@@ -360,7 +360,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					Return(nil, errors.New("list fail")).
 					Once()
 
-				ouMock.On("GetOrganizationUnitByPath", "root/child").
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "root/child").
 					Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil).
 					Once()
 				return nil
@@ -453,7 +453,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Return(nil).
 					Once()
 
-				args.ou.On("GetOrganizationUnit", "ou-001").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 
@@ -470,7 +470,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-unknown",
 			},
 			setup: func(args *setupArgs) {
-				args.ou.On("GetOrganizationUnit", "ou-unknown").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-unknown").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, []string{}).
@@ -490,7 +490,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(nil).
 					Maybe()
-				args.ou.On("GetOrganizationUnit", "ou-001").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-invalid"}).
@@ -509,7 +509,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(ErrGroupNameConflict).
 					Once()
-				args.ou.On("GetOrganizationUnit", "ou-001").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
@@ -531,7 +531,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(errors.New("db failure")).
 					Once()
-				args.ou.On("GetOrganizationUnit", "ou-001").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
@@ -559,7 +559,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CreateGroup", mock.Anything, mock.Anything).
 					Return(errors.New("create fail")).
 					Once()
-				args.ou.On("GetOrganizationUnit", "ou-001").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
@@ -575,7 +575,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
-				args.ou.On("GetOrganizationUnit", "ou-001").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
 					Return(oupkg.OrganizationUnit{},
 						&serviceerror.ServiceError{Code: "OU-5000", Type: serviceerror.ServerErrorType}).
 					Once()
@@ -657,7 +657,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroupByPath() {
 			request: CreateGroupByPathRequest{Name: "n"},
 			setup: func(args *setupArgs) *serviceerror.ServiceError {
 				expected := &serviceerror.ServiceError{Code: "OU-5000", Type: serviceerror.ServerErrorType}
-				args.ou.On("GetOrganizationUnitByPath", "root").
+				args.ou.On("GetOrganizationUnitByPath", mock.Anything, "root").
 					Return(oupkg.OrganizationUnit{}, expected).
 					Once()
 				return expected
@@ -669,7 +669,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroupByPath() {
 			path:    "root",
 			request: CreateGroupByPathRequest{Name: "n"},
 			setup: func(args *setupArgs) *serviceerror.ServiceError {
-				args.ou.On("GetOrganizationUnitByPath", "root").
+				args.ou.On("GetOrganizationUnitByPath", mock.Anything, "root").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
 				return nil
@@ -836,7 +836,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				})).
 					Return(nil).
 					Once()
-				args.ou.On("GetOrganizationUnit", "ou-new").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-new").
 					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
 					Once()
 			},
@@ -856,7 +856,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new-name", "ou-new", "grp-001").
 					Return(ErrGroupNameConflict).
 					Once()
-				args.ou.On("GetOrganizationUnit", "ou-new").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-new").
 					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
 					Once()
 			},
@@ -901,7 +901,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou-old"}, nil).
 					Once()
-				args.ou.On("GetOrganizationUnit", "ou-new").
+				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-new").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
 			},
@@ -1294,7 +1294,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUpdateGroupRequest(
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateOUHandlesInternalError() {
 	t := suite.T()
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("GetOrganizationUnit", "ou-1").
+	ouServiceMock.On("GetOrganizationUnit", mock.Anything, "ou-1").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 			Code: "OU-5000",
 			Type: serviceerror.ServerErrorType,
@@ -1305,7 +1305,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateOUHandlesInternalEr
 		ouService: ouServiceMock,
 	}
 
-	err := service.validateOU("ou-1")
+	err := service.validateOU(context.Background(), "ou-1")
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInternalServerError, *err)

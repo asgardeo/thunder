@@ -1,4 +1,4 @@
-Asgardeo
+[Aa]sgardeo
 WSO2
 OIDC
 OAuth

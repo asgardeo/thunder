@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useNavigate, useParams} from 'react-router';
+import {Link, useNavigate, useParams} from 'react-router';
 import {useForm} from 'react-hook-form';
 import {useState, useEffect, useMemo} from 'react';
 import {
@@ -33,8 +33,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  PageContent,
+  PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Save, X, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useTranslation} from 'react-i18next';
 import useGetUser from '../api/useGetUser';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
@@ -46,6 +49,7 @@ type UpdateUserFormData = Record<string, string | number | boolean>;
 
 export default function ViewUserPage() {
   const navigate = useNavigate();
+  const {t} = useTranslation();
   const {userId} = useParams<{userId: string}>();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,7 +177,7 @@ export default function ViewUserPage() {
   // Error state
   if (userError ?? schemaError) {
     return (
-      <Box sx={{maxWidth: 1000, mx: 'auto', px: 2, pt: 6}}>
+      <PageContent>
         <Alert severity="error" sx={{mb: 2}}>
           {userError?.message ?? schemaError?.message ?? 'Failed to load user information'}
         </Alert>
@@ -187,14 +191,14 @@ export default function ViewUserPage() {
         >
           Back to Users
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   // No user found
   if (!user) {
     return (
-      <Box sx={{maxWidth: 1000, mx: 'auto', px: 2, pt: 6}}>
+      <PageContent>
         <Alert severity="warning" sx={{mb: 2}}>
           User not found
         </Alert>
@@ -208,46 +212,30 @@ export default function ViewUserPage() {
         >
           Back to Users
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   return (
-    <Box>
-      <Button
-        onClick={() => {
-          handleBack().catch(() => {
-            // Handle navigation error
-          });
-        }}
-        variant="text"
-        sx={{mb: 3}}
-        aria-label="Go back"
-        startIcon={<ArrowLeft size={16} />}
-      >
-        Back
-      </Button>
-
-      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={4} gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            User Profile
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            View and manage user information
-          </Typography>
-        </Box>
-        {!isEditMode && (
-          <Stack direction="row" spacing={2}>
-            <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
-              Delete
-            </Button>
-            <Button variant="contained" startIcon={<Edit size={16} />} onClick={() => setIsEditMode(true)}>
-              Edit
-            </Button>
-          </Stack>
-        )}
-      </Stack>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.BackButton component={<Link to="/users" />} />
+        <PageTitle.Header>{t('users:manageUser.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('users:manageUser.subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
+          {!isEditMode && (
+            <>
+              <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
+                Delete
+              </Button>
+              <Button variant="contained" startIcon={<Edit size={16} />} onClick={() => setIsEditMode(true)}>
+                Edit
+              </Button>
+            </>
+          )}
+        </PageTitle.Actions>
+      </PageTitle>
 
       <Paper sx={{p: 4}}>
         {/* User Basic Information */}
@@ -337,7 +325,7 @@ export default function ViewUserPage() {
               {/* Dynamic Schema Fields */}
               {userSchema?.schema ? (
                 Object.entries(userSchema.schema)
-                  .filter(([fieldName]) => fieldName !== 'password')
+                  .filter(([, fieldDef]) => !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential))
                   .map(([fieldName, fieldDef]) => renderSchemaField(fieldName, fieldDef, control, errors))
               ) : (
                 <Typography variant="body2" color="text.secondary">
@@ -416,6 +404,6 @@ export default function ViewUserPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageContent>
   );
 }

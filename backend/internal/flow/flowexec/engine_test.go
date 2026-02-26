@@ -26,7 +26,7 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
+	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 )
 
 type EngineTestSuite struct {

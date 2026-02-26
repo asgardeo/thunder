@@ -114,23 +114,24 @@ const config: Config = {
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
-          position: 'left',
+          position: 'right',
           label: 'Docs',
           className: 'navbar__link--docs',
         },
         {
           to: '/apis',
-          position: 'left',
+          position: 'right',
           label: 'APIs',
         },
         {
           to: '/docs/sdks/overview',
-          position: 'left',
+          position: 'right',
           label: 'SDKs',
         },
         {
           label: 'Resources',
           type: 'dropdown',
+          position: 'right',
           className: 'navbar__link--dropdown',
           items: [
             {
@@ -145,7 +146,7 @@ const config: Config = {
         {
           type: 'docSidebar',
           sidebarId: 'communitySidebar',
-          position: 'left',
+          position: 'right',
           label: 'Community',
         },
         {

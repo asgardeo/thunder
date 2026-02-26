@@ -29,6 +29,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
 
 	"gopkg.in/yaml.v3"
 )
@@ -64,8 +65,8 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all user schema IDs.
-func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(context.TODO(), serverconst.MaxPageSize, 0)
+func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +78,10 @@ func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.Servic
 }
 
 // GetResourceByID retrieves a user schema by its ID.
-func (e *UserSchemaExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	schema, err := e.service.GetUserSchema(context.TODO(), id)
+func (e *UserSchemaExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
+	schema, err := e.service.GetUserSchema(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -195,7 +198,7 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 	}
 
 	// Validate organization unit exists
-	_, err := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
+	_, err := ouService.GetOrganizationUnit(security.WithRuntimeContext(context.TODO()), schemaDTO.OrganizationUnitID)
 	if err != nil {
 		return fmt.Errorf("organization unit '%s' not found for user schema '%s'",
 			schemaDTO.OrganizationUnitID, schemaDTO.Name)

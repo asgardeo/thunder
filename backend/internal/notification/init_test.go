@@ -47,6 +47,7 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupSuite() {
+	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "test-issuer",
@@ -55,6 +56,12 @@ func (suite *InitTestSuite) SetupSuite() {
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}
@@ -67,6 +74,10 @@ func (suite *InitTestSuite) SetupSuite() {
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mux = http.NewServeMux()
+}
+
+func (suite *InitTestSuite) TearDownSuite() {
+	config.ResetThunderRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {
@@ -190,6 +201,12 @@ properties:
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}
@@ -505,6 +522,12 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Inval
 				Key: testCryptoKey,
 			},
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err = config.InitializeThunderRuntime("", suiteConfig)
 	suite.NoError(err)
@@ -569,6 +592,12 @@ properties:
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}

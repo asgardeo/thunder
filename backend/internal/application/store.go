@@ -66,7 +66,8 @@ type idTokenConfig struct {
 
 // userInfoConfig represents the user info endpoint configuration structure for JSON marshaling/unmarshaling.
 type userInfoConfig struct {
-	UserAttributes []string `json:"user_attributes,omitempty"`
+	ResponseType   model.UserInfoResponseType `json:"response_type,omitempty"`
+	UserAttributes []string                   `json:"user_attributes,omitempty"`
 }
 
 // ApplicationStoreInterface defines the interface for application data persistence operations.
@@ -282,6 +283,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 			userAttributes = make([]string, 0)
 		}
 		userInfoConfig = &model.UserInfoConfig{
+			ResponseType:   oAuthConfig.UserInfo.ResponseType,
 			UserAttributes: userAttributes,
 		}
 	}
@@ -481,6 +483,11 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 		jsonData["allowed_user_types"] = app.AllowedUserTypes
 	}
 
+	// Include metadata if present
+	if app.Metadata != nil {
+		jsonData["metadata"] = app.Metadata
+	}
+
 	// Include assertion config if present
 	if app.Assertion != nil {
 		assertionData := map[string]interface{}{}
@@ -534,6 +541,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 	// Handle UserInfo config
 	if inboundAuthConfig.OAuthAppConfig.UserInfo != nil {
 		oauthConfig.UserInfo = &userInfoConfig{
+			ResponseType:   inboundAuthConfig.OAuthAppConfig.UserInfo.ResponseType,
 			UserAttributes: inboundAuthConfig.OAuthAppConfig.UserInfo.UserAttributes,
 		}
 	}
@@ -804,6 +812,14 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 
 	assertionConfig := extractAssertionConfigFromJSON(appJSONData)
 
+	// Extract metadata from app JSON if present
+	var metadata map[string]interface{}
+	if appJSONData["metadata"] != nil {
+		if m, ok := appJSONData["metadata"].(map[string]interface{}); ok {
+			metadata = m
+		}
+	}
+
 	// Extract template from app JSON if present
 	template, err := extractStringFromJSON(appJSONData, "template")
 	if err != nil {
@@ -827,6 +843,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		PolicyURI:                 policyURI,
 		Contacts:                  contacts,
 		AllowedUserTypes:          allowedUserTypes,
+		Metadata:                  metadata,
 	}
 
 	if basicApp.ClientID != "" {
@@ -913,6 +930,7 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			userAttributes = make([]string, 0)
 		}
 		userInfoConfig = &model.UserInfoConfig{
+			ResponseType:   oauthConfig.UserInfo.ResponseType,
 			UserAttributes: userAttributes,
 		}
 	}

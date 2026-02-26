@@ -39,13 +39,11 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
@@ -53,7 +51,9 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/mcp"
+	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -90,26 +90,26 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Add to exporters list (must be done after initializing list)
 	exporters = append(exporters, i18nExporter)
 
-	ouService, ouExporter, err := ou.Initialize(mux)
+	ouAuthzService, err := sysauthz.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize system authorization service", log.Error(err))
+	}
+
+	ouService, ouExporter, err := ou.Initialize(mux, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
 	}
 	exporters = append(exporters, ouExporter)
 
 	hashService := hash.Initialize()
-	dbProvider := provider.GetDBProvider()
-	transactioner, err := dbProvider.GetConfigDBTransactioner()
-	if err != nil {
-		logger.Fatal("Failed to get config DB transactioner", log.Error(err))
-	}
 
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService, transactioner)
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
 	}
 	exporters = append(exporters, userSchemaExporter)
 
-	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
+	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
@@ -122,7 +122,11 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	if err != nil {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}
-	roleService := role.Initialize(mux, userService, groupService, ouService, resourceService)
+	roleService, roleExporter, err := role.Initialize(mux, userService, groupService, ouService, resourceService)
+	if err != nil {
+		logger.Fatal("Failed to initialize RoleService", log.Error(err))
+	}
+	exporters = append(exporters, roleExporter)
 	authZService := authz.Initialize(roleService)
 
 	idpService, idpExporter, err := idp.Initialize(mux)
@@ -156,7 +160,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	flowFactory, graphCache := flowcore.Initialize()
 	execRegistry := executor.Initialize(flowFactory, ouService,
 		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
-		groupService, roleService, userProvider, authnProvider)
+		groupService, roleService, userProvider)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

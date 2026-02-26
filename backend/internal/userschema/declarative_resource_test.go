@@ -19,6 +19,7 @@
 package userschema_test
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -73,7 +74,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
 
 	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -89,7 +90,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
 
 	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(nil, expectedError)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -102,7 +103,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 
 	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -116,7 +117,7 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
 
 	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(expectedSchema, nil)
 
-	resource, name, err := s.exporter.GetResourceByID("schema1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "schema1")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Schema", name)
@@ -131,7 +132,7 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
 
 	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(nil, expectedError)
 
-	resource, name, err := s.exporter.GetResourceByID("schema1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "schema1")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)

@@ -5,6 +5,8 @@
 package passkey
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
@@ -38,8 +40,8 @@ func (_m *PasskeyServiceInterfaceMock) EXPECT() *PasskeyServiceInterfaceMock_Exp
 }
 
 // FinishAuthentication provides a mock function for the type PasskeyServiceInterfaceMock
-func (_mock *PasskeyServiceInterfaceMock) FinishAuthentication(req *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(req)
+func (_mock *PasskeyServiceInterfaceMock) FinishAuthentication(ctx context.Context, req *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FinishAuthentication")
@@ -47,18 +49,18 @@ func (_mock *PasskeyServiceInterfaceMock) FinishAuthentication(req *PasskeyAuthe
 
 	var r0 *common.AuthenticationResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, req)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyAuthenticationFinishRequest) *common.AuthenticationResponse); ok {
-		r0 = returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyAuthenticationFinishRequest) *common.AuthenticationResponse); ok {
+		r0 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common.AuthenticationResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*PasskeyAuthenticationFinishRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(req)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PasskeyAuthenticationFinishRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -73,19 +75,25 @@ type PasskeyServiceInterfaceMock_FinishAuthentication_Call struct {
 }
 
 // FinishAuthentication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - req *PasskeyAuthenticationFinishRequest
-func (_e *PasskeyServiceInterfaceMock_Expecter) FinishAuthentication(req interface{}) *PasskeyServiceInterfaceMock_FinishAuthentication_Call {
-	return &PasskeyServiceInterfaceMock_FinishAuthentication_Call{Call: _e.mock.On("FinishAuthentication", req)}
+func (_e *PasskeyServiceInterfaceMock_Expecter) FinishAuthentication(ctx interface{}, req interface{}) *PasskeyServiceInterfaceMock_FinishAuthentication_Call {
+	return &PasskeyServiceInterfaceMock_FinishAuthentication_Call{Call: _e.mock.On("FinishAuthentication", ctx, req)}
 }
 
-func (_c *PasskeyServiceInterfaceMock_FinishAuthentication_Call) Run(run func(req *PasskeyAuthenticationFinishRequest)) *PasskeyServiceInterfaceMock_FinishAuthentication_Call {
+func (_c *PasskeyServiceInterfaceMock_FinishAuthentication_Call) Run(run func(ctx context.Context, req *PasskeyAuthenticationFinishRequest)) *PasskeyServiceInterfaceMock_FinishAuthentication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *PasskeyAuthenticationFinishRequest
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*PasskeyAuthenticationFinishRequest)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *PasskeyAuthenticationFinishRequest
+		if args[1] != nil {
+			arg1 = args[1].(*PasskeyAuthenticationFinishRequest)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -96,14 +104,14 @@ func (_c *PasskeyServiceInterfaceMock_FinishAuthentication_Call) Return(authenti
 	return _c
 }
 
-func (_c *PasskeyServiceInterfaceMock_FinishAuthentication_Call) RunAndReturn(run func(req *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_FinishAuthentication_Call {
+func (_c *PasskeyServiceInterfaceMock_FinishAuthentication_Call) RunAndReturn(run func(ctx context.Context, req *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_FinishAuthentication_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FinishRegistration provides a mock function for the type PasskeyServiceInterfaceMock
-func (_mock *PasskeyServiceInterfaceMock) FinishRegistration(req *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError) {
-	ret := _mock.Called(req)
+func (_mock *PasskeyServiceInterfaceMock) FinishRegistration(ctx context.Context, req *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FinishRegistration")
@@ -111,18 +119,18 @@ func (_mock *PasskeyServiceInterfaceMock) FinishRegistration(req *PasskeyRegistr
 
 	var r0 *PasskeyRegistrationFinishData
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)); ok {
-		return returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, req)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyRegistrationFinishRequest) *PasskeyRegistrationFinishData); ok {
-		r0 = returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyRegistrationFinishRequest) *PasskeyRegistrationFinishData); ok {
+		r0 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*PasskeyRegistrationFinishData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*PasskeyRegistrationFinishRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(req)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PasskeyRegistrationFinishRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -137,19 +145,25 @@ type PasskeyServiceInterfaceMock_FinishRegistration_Call struct {
 }
 
 // FinishRegistration is a helper method to define mock.On call
+//   - ctx context.Context
 //   - req *PasskeyRegistrationFinishRequest
-func (_e *PasskeyServiceInterfaceMock_Expecter) FinishRegistration(req interface{}) *PasskeyServiceInterfaceMock_FinishRegistration_Call {
-	return &PasskeyServiceInterfaceMock_FinishRegistration_Call{Call: _e.mock.On("FinishRegistration", req)}
+func (_e *PasskeyServiceInterfaceMock_Expecter) FinishRegistration(ctx interface{}, req interface{}) *PasskeyServiceInterfaceMock_FinishRegistration_Call {
+	return &PasskeyServiceInterfaceMock_FinishRegistration_Call{Call: _e.mock.On("FinishRegistration", ctx, req)}
 }
 
-func (_c *PasskeyServiceInterfaceMock_FinishRegistration_Call) Run(run func(req *PasskeyRegistrationFinishRequest)) *PasskeyServiceInterfaceMock_FinishRegistration_Call {
+func (_c *PasskeyServiceInterfaceMock_FinishRegistration_Call) Run(run func(ctx context.Context, req *PasskeyRegistrationFinishRequest)) *PasskeyServiceInterfaceMock_FinishRegistration_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *PasskeyRegistrationFinishRequest
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*PasskeyRegistrationFinishRequest)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *PasskeyRegistrationFinishRequest
+		if args[1] != nil {
+			arg1 = args[1].(*PasskeyRegistrationFinishRequest)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -160,14 +174,14 @@ func (_c *PasskeyServiceInterfaceMock_FinishRegistration_Call) Return(passkeyReg
 	return _c
 }
 
-func (_c *PasskeyServiceInterfaceMock_FinishRegistration_Call) RunAndReturn(run func(req *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_FinishRegistration_Call {
+func (_c *PasskeyServiceInterfaceMock_FinishRegistration_Call) RunAndReturn(run func(ctx context.Context, req *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_FinishRegistration_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // StartAuthentication provides a mock function for the type PasskeyServiceInterfaceMock
-func (_mock *PasskeyServiceInterfaceMock) StartAuthentication(req *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError) {
-	ret := _mock.Called(req)
+func (_mock *PasskeyServiceInterfaceMock) StartAuthentication(ctx context.Context, req *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StartAuthentication")
@@ -175,18 +189,18 @@ func (_mock *PasskeyServiceInterfaceMock) StartAuthentication(req *PasskeyAuthen
 
 	var r0 *PasskeyAuthenticationStartData
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)); ok {
-		return returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, req)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyAuthenticationStartRequest) *PasskeyAuthenticationStartData); ok {
-		r0 = returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyAuthenticationStartRequest) *PasskeyAuthenticationStartData); ok {
+		r0 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*PasskeyAuthenticationStartData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*PasskeyAuthenticationStartRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(req)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PasskeyAuthenticationStartRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -201,19 +215,25 @@ type PasskeyServiceInterfaceMock_StartAuthentication_Call struct {
 }
 
 // StartAuthentication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - req *PasskeyAuthenticationStartRequest
-func (_e *PasskeyServiceInterfaceMock_Expecter) StartAuthentication(req interface{}) *PasskeyServiceInterfaceMock_StartAuthentication_Call {
-	return &PasskeyServiceInterfaceMock_StartAuthentication_Call{Call: _e.mock.On("StartAuthentication", req)}
+func (_e *PasskeyServiceInterfaceMock_Expecter) StartAuthentication(ctx interface{}, req interface{}) *PasskeyServiceInterfaceMock_StartAuthentication_Call {
+	return &PasskeyServiceInterfaceMock_StartAuthentication_Call{Call: _e.mock.On("StartAuthentication", ctx, req)}
 }
 
-func (_c *PasskeyServiceInterfaceMock_StartAuthentication_Call) Run(run func(req *PasskeyAuthenticationStartRequest)) *PasskeyServiceInterfaceMock_StartAuthentication_Call {
+func (_c *PasskeyServiceInterfaceMock_StartAuthentication_Call) Run(run func(ctx context.Context, req *PasskeyAuthenticationStartRequest)) *PasskeyServiceInterfaceMock_StartAuthentication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *PasskeyAuthenticationStartRequest
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*PasskeyAuthenticationStartRequest)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *PasskeyAuthenticationStartRequest
+		if args[1] != nil {
+			arg1 = args[1].(*PasskeyAuthenticationStartRequest)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -224,14 +244,14 @@ func (_c *PasskeyServiceInterfaceMock_StartAuthentication_Call) Return(passkeyAu
 	return _c
 }
 
-func (_c *PasskeyServiceInterfaceMock_StartAuthentication_Call) RunAndReturn(run func(req *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_StartAuthentication_Call {
+func (_c *PasskeyServiceInterfaceMock_StartAuthentication_Call) RunAndReturn(run func(ctx context.Context, req *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_StartAuthentication_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // StartRegistration provides a mock function for the type PasskeyServiceInterfaceMock
-func (_mock *PasskeyServiceInterfaceMock) StartRegistration(req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError) {
-	ret := _mock.Called(req)
+func (_mock *PasskeyServiceInterfaceMock) StartRegistration(ctx context.Context, req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StartRegistration")
@@ -239,18 +259,18 @@ func (_mock *PasskeyServiceInterfaceMock) StartRegistration(req *PasskeyRegistra
 
 	var r0 *PasskeyRegistrationStartData
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)); ok {
-		return returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, req)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*PasskeyRegistrationStartRequest) *PasskeyRegistrationStartData); ok {
-		r0 = returnFunc(req)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *PasskeyRegistrationStartRequest) *PasskeyRegistrationStartData); ok {
+		r0 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*PasskeyRegistrationStartData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*PasskeyRegistrationStartRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(req)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *PasskeyRegistrationStartRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -265,19 +285,25 @@ type PasskeyServiceInterfaceMock_StartRegistration_Call struct {
 }
 
 // StartRegistration is a helper method to define mock.On call
+//   - ctx context.Context
 //   - req *PasskeyRegistrationStartRequest
-func (_e *PasskeyServiceInterfaceMock_Expecter) StartRegistration(req interface{}) *PasskeyServiceInterfaceMock_StartRegistration_Call {
-	return &PasskeyServiceInterfaceMock_StartRegistration_Call{Call: _e.mock.On("StartRegistration", req)}
+func (_e *PasskeyServiceInterfaceMock_Expecter) StartRegistration(ctx interface{}, req interface{}) *PasskeyServiceInterfaceMock_StartRegistration_Call {
+	return &PasskeyServiceInterfaceMock_StartRegistration_Call{Call: _e.mock.On("StartRegistration", ctx, req)}
 }
 
-func (_c *PasskeyServiceInterfaceMock_StartRegistration_Call) Run(run func(req *PasskeyRegistrationStartRequest)) *PasskeyServiceInterfaceMock_StartRegistration_Call {
+func (_c *PasskeyServiceInterfaceMock_StartRegistration_Call) Run(run func(ctx context.Context, req *PasskeyRegistrationStartRequest)) *PasskeyServiceInterfaceMock_StartRegistration_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *PasskeyRegistrationStartRequest
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*PasskeyRegistrationStartRequest)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *PasskeyRegistrationStartRequest
+		if args[1] != nil {
+			arg1 = args[1].(*PasskeyRegistrationStartRequest)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -288,7 +314,7 @@ func (_c *PasskeyServiceInterfaceMock_StartRegistration_Call) Return(passkeyRegi
 	return _c
 }
 
-func (_c *PasskeyServiceInterfaceMock_StartRegistration_Call) RunAndReturn(run func(req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_StartRegistration_Call {
+func (_c *PasskeyServiceInterfaceMock_StartRegistration_Call) RunAndReturn(run func(ctx context.Context, req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)) *PasskeyServiceInterfaceMock_StartRegistration_Call {
 	_c.Call.Return(run)
 	return _c
 }

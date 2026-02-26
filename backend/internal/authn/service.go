@@ -20,6 +20,7 @@
 package authn
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -54,21 +55,24 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 type AuthenticationServiceInterface interface {
 	AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
 		skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
-	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (
+	SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
-	VerifyOTP(sessionToken string, skipAssertion bool, existingAssertion, otp string) (
+	VerifyOTP(ctx context.Context, sessionToken string, skipAssertion bool, existingAssertion, otp string) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
 	StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
 		*IDPAuthInitData, *serviceerror.ServiceError)
 	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool,
 		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	// Passkey methods
-	StartPasskeyRegistration(userID, relyingPartyID, relyingPartyName string,
+	StartPasskeyRegistration(ctx context.Context, userID, relyingPartyID, relyingPartyName string,
 		authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)
-	FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO, sessionToken,
+	FinishPasskeyRegistration(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken,
 		credentialName string) (interface{}, *serviceerror.ServiceError)
-	StartPasskeyAuthentication(userID, relyingPartyID string) (interface{}, *serviceerror.ServiceError)
+	StartPasskeyAuthentication(
+		ctx context.Context, userID, relyingPartyID string,
+	) (interface{}, *serviceerror.ServiceError)
 	FinishPasskeyAuthentication(
+		ctx context.Context,
 		credentialID, credentialType string,
 		response PasskeyCredentialResponseDTO,
 		sessionToken string,
@@ -175,18 +179,18 @@ func (as *authenticationService) AuthenticateWithCredentials(identifiers, creden
 }
 
 // SendOTP sends an OTP to the specified recipient for authentication.
-func (as *authenticationService) SendOTP(senderID string, channel notifcommon.ChannelType,
+func (as *authenticationService) SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType,
 	recipient string) (string, *serviceerror.ServiceError) {
-	return as.otpService.SendOTP(senderID, channel, recipient)
+	return as.otpService.SendOTP(ctx, senderID, channel, recipient)
 }
 
 // VerifyOTP verifies an OTP and returns the authenticated user.
-func (as *authenticationService) VerifyOTP(sessionToken string, skipAssertion bool,
+func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken string, skipAssertion bool,
 	existingAssertion, otpCode string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
-	user, svcErr := as.otpService.VerifyOTP(sessionToken, otpCode)
+	user, svcErr := as.otpService.VerifyOTP(ctx, sessionToken, otpCode)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -219,7 +223,7 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 		return nil, &common.ErrorInvalidIDPID
 	}
 
-	identityProvider, svcErr := as.idpService.GetIdentityProvider(idpID)
+	identityProvider, svcErr := as.idpService.GetIdentityProvider(context.TODO(), idpID)
 	if svcErr != nil {
 		return nil, as.handleIDPServiceError(idpID, svcErr, logger)
 	}
@@ -390,7 +394,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 	// Generate auth assertion JWT
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 	token, _, err := as.jwtService.GenerateJWT(user.UserID, jwtConfig.Audience, jwtConfig.Issuer,
-		jwtConfig.ValidityPeriod, jwtClaims)
+		jwtConfig.ValidityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
 		logger.Error("Failed to generate auth assertion", log.String("error", err.Error))
 		return &serviceerror.InternalServerError
@@ -623,7 +627,7 @@ func (as *authenticationService) createSessionToken(idpID string, idpType idp.ID
 	}
 
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	token, _, err := as.jwtService.GenerateJWT("auth-svc", "auth-svc", jwtConfig.Issuer, 600, claims)
+	token, _, err := as.jwtService.GenerateJWT("auth-svc", "auth-svc", jwtConfig.Issuer, 600, claims, jwt.TokenTypeJWT)
 	if err != nil {
 		return "", err
 	}
@@ -694,8 +698,10 @@ func (as *authenticationService) getSubClaim(userClaims map[string]interface{}, 
 }
 
 // StartPasskeyRegistration starts the passkey registration process.
-func (as *authenticationService) StartPasskeyRegistration(userID, relyingPartyID, relyingPartyName string,
-	authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError) {
+func (as *authenticationService) StartPasskeyRegistration(
+	ctx context.Context, userID, relyingPartyID, relyingPartyName string,
+	authSelection *PasskeyAuthenticatorSelectionDTO, attestation string,
+) (interface{}, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey registration")
 
@@ -717,12 +723,14 @@ func (as *authenticationService) StartPasskeyRegistration(userID, relyingPartyID
 		Attestation:            attestation,
 	}
 
-	return as.passkeyService.StartRegistration(req)
+	return as.passkeyService.StartRegistration(ctx, req)
 }
 
 // FinishPasskeyRegistration completes the passkey registration process.
-func (as *authenticationService) FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO,
-	sessionToken, credentialName string) (interface{}, *serviceerror.ServiceError) {
+func (as *authenticationService) FinishPasskeyRegistration(
+	ctx context.Context, credential PasskeyPublicKeyCredentialDTO,
+	sessionToken, credentialName string,
+) (interface{}, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing Passkey registration")
 
@@ -735,11 +743,11 @@ func (as *authenticationService) FinishPasskeyRegistration(credential PasskeyPub
 		CredentialName:    credentialName,
 	}
 
-	return as.passkeyService.FinishRegistration(req)
+	return as.passkeyService.FinishRegistration(ctx, req)
 }
 
 // StartPasskeyAuthentication starts the passkey authentication process.
-func (as *authenticationService) StartPasskeyAuthentication(userID, relyingPartyID string) (
+func (as *authenticationService) StartPasskeyAuthentication(ctx context.Context, userID, relyingPartyID string) (
 	interface{}, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey authentication")
@@ -748,11 +756,11 @@ func (as *authenticationService) StartPasskeyAuthentication(userID, relyingParty
 		UserID:         userID,
 		RelyingPartyID: relyingPartyID,
 	}
-	return as.passkeyService.StartAuthentication(req)
+	return as.passkeyService.StartAuthentication(ctx, req)
 }
 
 // FinishPasskeyAuthentication completes the passkey authentication process.
-func (as *authenticationService) FinishPasskeyAuthentication(credentialID, credentialType string,
+func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context, credentialID, credentialType string,
 	response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool,
 	existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
@@ -768,7 +776,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(credentialID, crede
 		UserHandle:        response.UserHandle,
 		SessionToken:      sessionToken,
 	}
-	authResponse, svcErr := as.passkeyService.FinishAuthentication(req)
+	authResponse, svcErr := as.passkeyService.FinishAuthentication(ctx, req)
 	if svcErr != nil {
 		return nil, svcErr
 	}

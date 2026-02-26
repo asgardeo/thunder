@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -49,7 +51,7 @@ type authAssertExecutor struct {
 	jwtService          jwt.JWTServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
-	authnProvider       authnprovider.AuthnProviderInterface
+	credsAuthSvc        authncreds.CredentialsAuthnServiceInterface
 	userProvider        userprovider.UserProviderInterface
 	logger              *log.Logger
 }
@@ -62,7 +64,7 @@ func newAuthAssertExecutor(
 	jwtService jwt.JWTServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
-	authnProvider authnprovider.AuthnProviderInterface,
+	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
 	userProvider userprovider.UserProviderInterface,
 ) *authAssertExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authAssertLoggerComponentName),
@@ -76,7 +78,7 @@ func newAuthAssertExecutor(
 		jwtService:          jwtService,
 		ouService:           ouService,
 		authAssertGenerator: assertGenerator,
-		authnProvider:       authnProvider,
+		credsAuthSvc:        credsAuthSvc,
 		userProvider:        userProvider,
 		logger:              logger,
 	}
@@ -189,12 +191,12 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		slices.Contains(userAttributes, oauth2const.ClaimOUHandle)
 	if ouAttributesConfigured && ctx.AuthenticatedUser.OrganizationUnitID != "" {
 		if err := a.appendOUDetailsToClaims(
-			ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
+			ctx.Context, ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
 			return "", err
 		}
 	}
 
-	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims)
+	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
 		logger.Error("Failed to generate JWT token", log.String("error", err.Error))
 		return "", errors.New("failed to generate JWT token: " + err.Error)
@@ -290,7 +292,7 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 		// Fetch from user/authentication provider
 		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
 			var err error
-			metadata := &authnprovider.GetAttributesMetadata{}
+			metadata := a.buildGetAttributesMetadata(ctx)
 			attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID, ctx.AuthenticatedUser.Token, userAttributes,
 				metadata)
 			if err != nil {
@@ -318,11 +320,12 @@ func (a *authAssertExecutor) getUserAttributes(userID string, token string, requ
 	var jsonAttrs json.RawMessage
 
 	if token != "" {
-		res, err := a.authnProvider.GetAttributes(token, requestedAttributes, metadata)
-		if err != nil {
-			logger.Error("Failed to fetch user attributes",
-				log.String("userID", userID), log.Any("error", err))
-			return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+		res, svcErr := a.credsAuthSvc.GetAttributes(token, requestedAttributes, metadata)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				return nil, errors.New("something went wrong while fetching user attributes")
+			}
+			return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
 		}
 		jsonAttrs = res.Attributes
 	} else {
@@ -353,10 +356,10 @@ func (a *authAssertExecutor) getUserAttributes(userID string, token string, requ
 // appendOUDetailsToClaims appends organization unit details to the JWT claims.
 // Only adds attributes that are configured in userAttributes.
 func (a *authAssertExecutor) appendOUDetailsToClaims(
-	ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
+	ctx context.Context, ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
 	logger := a.logger.With(log.String(ouIDKey, ouID))
 
-	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ouID)
+	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ctx, ouID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch organization unit details",
 			log.String(ouIDKey, ouID), log.Any("error", svcErr))
@@ -403,4 +406,38 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	}
 
 	return nil
+}
+
+// buildGetAttributesMetadata constructs the metadata for fetching user attributes.
+func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovider.GetAttributesMetadata {
+	metadata := &authnprovider.GetAttributesMetadata{
+		AppMetadata: make(map[string]interface{}),
+	}
+
+	// Copy application metadata if present
+	if ctx.Application.Metadata != nil {
+		for key, value := range ctx.Application.Metadata {
+			metadata.AppMetadata[key] = value
+		}
+	}
+
+	// Extract client IDs from InboundAuthConfig
+	var clientIDs []string
+	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
+		if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthAppConfig.ClientID)
+		}
+	}
+
+	// Add client IDs to metadata if present
+	if len(clientIDs) > 0 {
+		metadata.AppMetadata["client_ids"] = clientIDs
+	}
+
+	// Set locale from runtime data if present
+	if locale, exists := ctx.RuntimeData["required_locales"]; exists && locale != "" {
+		metadata.Locale = locale
+	}
+
+	return metadata
 }

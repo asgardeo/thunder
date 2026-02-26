@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -127,8 +128,8 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 	}
 
 	suite.mockAppService.On("GetApplication", appID).Return(mockApp, nil)
-	suite.mockOUService.On("GetOrganizationUnitList", 1, 0).Return(mockOUList, nil)
-	suite.mockOUService.On("GetOrganizationUnit", ouID).Return(mockOU, nil)
+	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).Return(mockDesign, nil)
 	suite.mockI18nService.On("ResolveTranslations", language, namespace).Return(mockTranslations, nil)
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en", "es"}, nil)
@@ -175,7 +176,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_OU_Success() {
 		Translations: map[string]map[string]string{},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", ouID).Return(mockOU, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeOU, ouID).Return(mockDesign, nil)
 	suite.mockI18nService.On("ResolveTranslations", "en", "").Return(mockTranslations, nil)
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
@@ -229,7 +230,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_OUNotFound() {
 	metaType := MetaTypeOU
 	ouID := "non-existent"
 
-	suite.mockOUService.On("GetOrganizationUnit", ouID).
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).
 		Return(ou.OrganizationUnit{}, &ou.ErrorOrganizationUnitNotFound)
 
 	// Act
@@ -266,8 +267,8 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 	}
 
 	suite.mockAppService.On("GetApplication", appID).Return(mockApp, nil)
-	suite.mockOUService.On("GetOrganizationUnitList", 1, 0).Return(mockOUList, nil)
-	suite.mockOUService.On("GetOrganizationUnit", ouID).Return(mockOU, nil)
+	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).
 		Return(nil, &serviceerror.InternalServerError)
 	suite.mockI18nService.On("ResolveTranslations", "en", "").
@@ -299,7 +300,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_I18nError_ContinuesWi
 		Name:   "Default OU",
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", ouID).Return(mockOU, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeOU, ouID).
 		Return(&common.DesignResponse{
 			Theme:  json.RawMessage(`{}`),

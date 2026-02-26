@@ -60,7 +60,8 @@ func (suite *SecurityServiceTestSuite) SetupTest() {
 	suite.mockAuth2 = &AuthenticatorInterfaceMock{}
 
 	var err error
-	suite.service, err = newSecurityService([]AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2}, testPublicPaths)
+	suite.service, err = newSecurityService(
+		[]AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	// Create test authentication context with "system" permission so that
@@ -124,7 +125,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPaths() {
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err)
-			assert.Equal(suite.T(), req.Context(), ctx)
+			assert.NotNil(suite.T(), ctx)
+			assert.True(suite.T(), IsRuntimeContext(ctx), "public path should return a runtime context")
 		})
 	}
 }
@@ -335,7 +337,7 @@ func (suite *SecurityServiceTestSuite) TestIsPublicPath() {
 
 // Test SecurityService with empty authenticators list
 func (suite *SecurityServiceTestSuite) TestProcess_EmptyAuthenticators() {
-	service, err := newSecurityService([]AuthenticatorInterface{}, testPublicPaths)
+	service, err := newSecurityService([]AuthenticatorInterface{}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -348,7 +350,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_EmptyAuthenticators() {
 
 // Test SecurityService with nil authenticators list
 func (suite *SecurityServiceTestSuite) TestProcess_NilAuthenticators() {
-	service, err := newSecurityService(nil, testPublicPaths)
+	service, err := newSecurityService(nil, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -421,7 +423,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPathVariations() {
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err, "Path should be public: %s", tc.path)
-			assert.Equal(suite.T(), req.Context(), ctx)
+			assert.NotNil(suite.T(), ctx)
+			assert.True(suite.T(), IsRuntimeContext(ctx), "public path should return a runtime context: %s", tc.path)
 		})
 	}
 }
@@ -440,98 +443,35 @@ func (suite *SecurityServiceTestSuite) TestProcess_OptionsMethod() {
 	suite.mockAuth2.AssertNotCalled(suite.T(), "CanHandle")
 }
 
-// Test newSecurityService returns error on invalid paths
+// TestNewSecurityService_Error verifies that newSecurityService returns an error
+// when either the public path patterns or the API permission entry patterns are invalid.
 func (suite *SecurityServiceTestSuite) TestNewSecurityService_Error() {
-	invalidPaths := []string{"/valid", "/invalid/**/middle/**"}
-	service, err := newSecurityService(nil, invalidPaths)
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), service)
-	assert.Contains(suite.T(), err.Error(), "invalid pattern")
-}
-
-func (suite *SecurityServiceTestSuite) TestCompilePathPatterns() {
 	tests := []struct {
-		name           string
-		pattern        string
-		expectedRegex  string
-		shouldMatch    []string
-		shouldNotMatch []string
+		name        string
+		publicPaths []string
+		apiPerms    []apiPermissionEntry
+		errContains string
 	}{
 		{
-			name:           "Single wildcard segment",
-			pattern:        "/api/*/users",
-			expectedRegex:  "^/api/[^/]+/users$",
-			shouldMatch:    []string{"/api/v1/users", "/api/test/users"},
-			shouldNotMatch: []string{"/api/users", "/api/v1/v2/users"},
+			name:        "invalid public path pattern",
+			publicPaths: []string{"/valid", "/invalid/**/middle/**"},
+			apiPerms:    apiPermissionEntries,
+			errContains: "invalid pattern",
 		},
 		{
-			name:           "Recursive wildcard suffix",
-			pattern:        "/health/**",
-			expectedRegex:  "^/health(?:/.*)?$",
-			shouldMatch:    []string{"/health", "/health/", "/health/liveness", "/health/readiness/full"},
-			shouldNotMatch: []string{"/healthz", "/other"},
-		},
-		{
-			name:           "Multiple wildcards",
-			pattern:        "/i18n/languages/*/translations/ns/*/keys/*/resolve",
-			expectedRegex:  "^/i18n/languages/[^/]+/translations/ns/[^/]+/keys/[^/]+/resolve$",
-			shouldMatch:    []string{"/i18n/languages/en/translations/ns/common/keys/btn.submit/resolve"},
-			shouldNotMatch: []string{"/i18n/languages/en/translations/ns/common/keys/btn.submit/extra"},
-		},
-		{
-			name:           "Special characters escaping",
-			pattern:        "/api/v1.0/user",
-			expectedRegex:  "^/api/v1\\.0/user$",
-			shouldMatch:    []string{"/api/v1.0/user"},
-			shouldNotMatch: []string{"/api/v1a0/user"},
+			name:        "invalid API permission entry pattern",
+			publicPaths: []string{},
+			apiPerms:    []apiPermissionEntry{{"GET /invalid/**/middle/**", PermissionUser}},
+			errContains: "invalid pattern",
 		},
 	}
 
-	tests = append(tests, []struct {
-		name           string
-		pattern        string
-		expectedRegex  string
-		shouldMatch    []string
-		shouldNotMatch []string
-	}{
-		{
-			name:           "Invalid middle globstar (skipped)",
-			pattern:        "/api/**/users",
-			expectedRegex:  "", // Skipped
-			shouldMatch:    nil,
-			shouldNotMatch: nil,
-		},
-		{
-			name:           "Multiple globstars (skipped)",
-			pattern:        "/api/**/users/**",
-			expectedRegex:  "", // Skipped
-			shouldMatch:    nil,
-			shouldNotMatch: nil,
-		},
-	}...)
-
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			compiled, err := compilePathPatterns([]string{tt.pattern})
-
-			if tt.expectedRegex == "" {
-				// Invalid pattern. Error is expected.
-				assert.Error(suite.T(), err)
-				assert.Nil(suite.T(), compiled)
-			} else {
-				assert.NoError(suite.T(), err)
-				assert.Len(suite.T(), compiled, 1)
-				regex := compiled[0]
-				assert.Equal(suite.T(), tt.expectedRegex, regex.String())
-
-				for _, matchPath := range tt.shouldMatch {
-					assert.True(suite.T(), regex.MatchString(matchPath), "Should match: %s", matchPath)
-				}
-
-				for _, mismatchPath := range tt.shouldNotMatch {
-					assert.False(suite.T(), regex.MatchString(mismatchPath), "Should not match: %s", mismatchPath)
-				}
-			}
+			service, err := newSecurityService(nil, tt.publicPaths, tt.apiPerms)
+			assert.Error(suite.T(), err)
+			assert.Nil(suite.T(), service)
+			assert.Contains(suite.T(), err.Error(), tt.errContains)
 		})
 	}
 }
@@ -571,114 +511,120 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPath_WithInvalidToken()
 	ctx, err := suite.service.Process(req)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), req.Context(), ctx)
+	assert.NotNil(suite.T(), ctx)
+	assert.True(suite.T(), IsRuntimeContext(ctx), "public path with invalid token should return a runtime context")
 
 	userID := GetSubject(ctx)
 	assert.Empty(suite.T(), userID)
 }
 
-// Test skipSecurity flag allows requests to proceed even with auth failures
-func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWithoutToken() {
-	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
-	defer func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") }()
+// TestProcess_SkipSecurity verifies the behavior of the service when
+// THUNDER_SKIP_SECURITY is set to "true". Each case exercises a distinct
+// combination of token presence, authentication outcome, and authorization
+// outcome to confirm that the skip-security flag either enriches the context
+// normally (when the full flow succeeds) or falls back to the skipped marker
+// (when any step would otherwise have returned an error).
+func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity() {
+	unprivCtx := newSecurityContext("user123", "ou456", "test_token", []string{}, nil)
 
-	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
-	suite.Require().NoError(err)
+	tests := []struct {
+		name        string
+		token       string
+		canHandle   bool
+		authCtx     *SecurityContext
+		authErr     error
+		wantSkipped bool
+		wantSubject string
+	}{
+		{
+			// No authenticator can handle the request — errNoHandlerFound is
+			// suppressed by skipSecurity and the skipped marker is set.
+			name:        "no authenticator handles the request",
+			token:       "",
+			canHandle:   false,
+			wantSkipped: true,
+			wantSubject: "",
+		},
+		{
+			// Both authentication and authorization succeed — the context is
+			// enriched normally and the skipped marker must NOT be present.
+			name:        "authentication and authorization both succeed",
+			token:       "valid_token",
+			canHandle:   true,
+			authCtx:     suite.testCtx,
+			wantSkipped: false,
+			wantSubject: "user123",
+		},
+		{
+			// Authentication fails — the error is suppressed by skipSecurity
+			// and the skipped marker is set.
+			name:        "authentication fails with invalid token",
+			token:       "invalid_token",
+			canHandle:   true,
+			authErr:     errInvalidToken,
+			wantSkipped: true,
+			wantSubject: "",
+		},
+		{
+			// Authentication succeeds but authorization fails due to missing
+			// permissions — the error is suppressed by skipSecurity, the
+			// skipped marker is set, and the subject is still populated because
+			// the security context was enriched before the authz check.
+			name:        "authorization fails due to insufficient permissions",
+			token:       "valid_token",
+			canHandle:   true,
+			authCtx:     unprivCtx,
+			wantSkipped: true,
+			wantSubject: "user123",
+		},
+	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
+			suite.T().Cleanup(func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") })
 
-	// No authenticator can handle the request (no token)
-	suite.mockAuth1.On("CanHandle", req).Return(false)
+			mockAuth := &AuthenticatorInterfaceMock{}
+			service, err := newSecurityService(
+				[]AuthenticatorInterface{mockAuth}, testPublicPaths, apiPermissionEntries)
+			suite.Require().NoError(err)
 
-	ctx, err := service.Process(req)
+			req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+			if tt.token != "" {
+				req.Header.Set("Authorization", "Bearer "+tt.token)
+			}
 
-	// Should succeed without authentication
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), ctx)
-	assert.Equal(suite.T(), req.Context(), ctx)
+			mockAuth.On("CanHandle", req).Return(tt.canHandle)
+			if tt.canHandle {
+				mockAuth.On("Authenticate", req).Return(tt.authCtx, tt.authErr)
+			}
+
+			ctx, err := service.Process(req)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), ctx)
+			assert.Equal(suite.T(), tt.wantSkipped, IsSecuritySkipped(ctx))
+			assert.Equal(suite.T(), tt.wantSubject, GetSubject(ctx))
+
+			mockAuth.AssertExpectations(suite.T())
+		})
+	}
 }
 
-// setupSkipSecurityTest is a helper function to set up skip security tests
-func (suite *SecurityServiceTestSuite) setupSkipSecurityTest() (*http.Request, SecurityServiceInterface) {
-	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
-	suite.T().Cleanup(func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") })
-
-	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
-	suite.Require().NoError(err)
-
+// Test that the skipped marker is NOT present when authentication and authorization succeed normally.
+func (suite *SecurityServiceTestSuite) TestProcess_SecurityNotSkipped_WhenAuthSucceeds() {
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
-	req.Header.Set("Authorization", "Bearer valid_token")
-	return req, service
-}
 
-// Test skipSecurity flag enriches context when valid token is present
-func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_EnrichesContextWithValidToken() {
-	req, service := suite.setupSkipSecurityTest()
-
-	// Authenticator handles request and succeeds
 	suite.mockAuth1.On("CanHandle", req).Return(true)
 	suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
 
-	ctx, err := service.Process(req)
+	ctx, err := suite.service.Process(req)
 
-	// Should succeed and context should be enriched
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), ctx)
-
-	userID := GetSubject(ctx)
-	assert.Equal(suite.T(), "user123", userID)
-}
-
-// Test skipSecurity flag allows access even with invalid token
-func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWithInvalidToken() {
-	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
-	defer func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") }()
-
-	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
-	suite.Require().NoError(err)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
-	req.Header.Set("Authorization", "Bearer invalid_token")
-
-	// Authenticator handles request but authentication fails
-	suite.mockAuth1.On("CanHandle", req).Return(true)
-	suite.mockAuth1.On("Authenticate", req).Return(nil, errInvalidToken)
-
-	ctx, err := service.Process(req)
-
-	// Should succeed even though authentication failed
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), ctx)
-	assert.Equal(suite.T(), req.Context(), ctx)
-
-	// Context should not be enriched
-	userID := GetSubject(ctx)
-	assert.Empty(suite.T(), userID)
-}
-
-// Test skipSecurity flag allows access even when the caller has no permissions.
-// A SecurityContext without "system" permission would normally trigger
-// errInsufficientPermissions on the /api/protected path, but skipSecurity
-// bypasses the enforcement.
-func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWithInsufficientPermissions() {
-	req, service := suite.setupSkipSecurityTest()
-
-	// Create a context with no permissions — authorization will fail on /api/protected.
-	unprivCtx := newSecurityContext("user123", "ou456", "test_token", []string{}, nil)
-
-	// Authenticator handles request and authentication succeeds.
-	suite.mockAuth1.On("CanHandle", req).Return(true)
-	suite.mockAuth1.On("Authenticate", req).Return(unprivCtx, nil)
-
-	ctx, err := service.Process(req)
-
-	// Should succeed even though authorization would have failed.
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), ctx)
-
-	// Context should still be enriched (authentication succeeded).
-	userID := GetSubject(ctx)
-	assert.Equal(suite.T(), "user123", userID)
+	// Normal successful flow must NOT mark the context as skipped.
+	assert.False(suite.T(), IsSecuritySkipped(ctx))
+	assert.Equal(suite.T(), "user123", GetSubject(ctx))
 }
 
 // Test that the service returns errInsufficientPermissions when the authenticated
@@ -696,131 +642,4 @@ func (suite *SecurityServiceTestSuite) TestProcess_AuthorizationFailure_Insuffic
 
 	assert.Nil(suite.T(), ctx)
 	assert.ErrorIs(suite.T(), err, errInsufficientPermissions)
-}
-
-// Test getRequiredPermissions returns the expected permission set for various paths.
-func (suite *SecurityServiceTestSuite) TestGetRequiredPermissions() {
-	tests := []struct {
-		name     string
-		path     string
-		method   string
-		expected []string
-	}{
-		{
-			name:     "Protected API path requires system",
-			path:     "/users",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "Applications endpoint requires system",
-			path:     "/applications",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "Root path requires system",
-			path:     "/",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "User self-service /users/me needs no special permission",
-			path:     "/users/me",
-			method:   http.MethodGet,
-			expected: []string{},
-		},
-		{
-			name:     "User self-service /users/me123 needs system permission",
-			path:     "/users/me123",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "User credentials update needs no special permission",
-			path:     "/users/me/update-credentials",
-			method:   http.MethodPut,
-			expected: []string{},
-		},
-		{
-			name:     "Passkey registration start needs no special permission",
-			path:     "/register/passkey/start",
-			method:   http.MethodPost,
-			expected: []string{},
-		},
-		{
-			name:     "Passkey registration finish needs no special permission",
-			path:     "/register/passkey/finish",
-			method:   http.MethodPost,
-			expected: []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-			result := suite.service.getRequiredPermissions(req)
-			assert.Equal(suite.T(), tt.expected, result)
-		})
-	}
-}
-
-// Test hasAnyPermission covers all edge cases.
-func (suite *SecurityServiceTestSuite) TestHasAnyPermission() {
-	tests := []struct {
-		name                string
-		userPermissions     []string
-		requiredPermissions []string
-		expected            bool
-	}{
-		{
-			name:                "User has one of the required permissions",
-			userPermissions:     []string{"users:read", "groups:manage"},
-			requiredPermissions: []string{"users:read", "users:write"},
-			expected:            true,
-		},
-		{
-			name:                "User has all required permissions",
-			userPermissions:     []string{"users:read", "users:write"},
-			requiredPermissions: []string{"users:read", "users:write"},
-			expected:            true,
-		},
-		{
-			name:                "User has none of the required permissions",
-			userPermissions:     []string{"groups:manage"},
-			requiredPermissions: []string{"users:read", "users:write"},
-			expected:            false,
-		},
-		{
-			name:                "No required permissions — always allowed",
-			userPermissions:     []string{"users:read"},
-			requiredPermissions: []string{},
-			expected:            true,
-		},
-		{
-			name:                "Empty user permissions",
-			userPermissions:     []string{},
-			requiredPermissions: []string{"users:read"},
-			expected:            false,
-		},
-		{
-			name:                "Both empty — allowed",
-			userPermissions:     []string{},
-			requiredPermissions: []string{},
-			expected:            true,
-		},
-		{
-			name:                "System permission satisfies system requirement",
-			userPermissions:     []string{"system"},
-			requiredPermissions: []string{"system"},
-			expected:            true,
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			result := hasAnyPermission(tt.userPermissions, tt.requiredPermissions)
-			assert.Equal(suite.T(), tt.expected, result)
-		})
-	}
 }

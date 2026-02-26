@@ -19,28 +19,45 @@
 import type {ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
-import React from 'react';
+import React, {useEffect} from 'react';
+import Head from '@docusaurus/Head';
 import HeroSection from '@site/src/components/HomePage/HeroSection';
+import FeatureCardsSection from '@site/src/components/HomePage/FeatureCardsSection';
+import GetStartedSection from '@site/src/components/HomePage/GetStartedSection';
+
+import FlowsSection from '@site/src/components/HomePage/FlowsSection';
+import UIComponentsSection from '@site/src/components/HomePage/UIComponentsSection';
 import APIReferenceSection from '@site/src/components/HomePage/APIReferenceSection';
 import CommunitySection from '@site/src/components/HomePage/CommunitySection';
 import HomeFooter from '@site/src/components/Footer';
-import Head from '@docusaurus/Head';
-import {Box} from '@wso2/oxygen-ui';
 
 export default function Homepage(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-page', 'home');
+
+    return () => {
+      document.documentElement.removeAttribute('data-page');
+    };
+  }, []);
 
   return (
     <Layout title={siteConfig.tagline} noFooter>
       <Head>
         <link rel="prefetch" href="/assets/css/elements.min.css" />
+        <html data-page="home" />
       </Head>
-      <HeroSection />
-      <Box sx={{mb: 4}}>
+      <div>
+        <HeroSection />
+        <FeatureCardsSection />
+        <GetStartedSection />
+        <FlowsSection />
+        <UIComponentsSection />
         <APIReferenceSection />
-      </Box>
-      <CommunitySection />
-      <HomeFooter />
+        <CommunitySection />
+        <HomeFooter />
+      </div>
     </Layout>
   );
 }

@@ -19,6 +19,7 @@
 package thememgt
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -56,7 +57,7 @@ func (e *themeExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all theme IDs.
-func (e *themeExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *themeExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	themeList, err := e.service.GetThemeList(100, 0) // Get a large number to fetch all
 	if err != nil {
 		return nil, err
@@ -69,7 +70,9 @@ func (e *themeExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceErro
 }
 
 // GetResourceByID retrieves a theme by its ID.
-func (e *themeExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *themeExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	theme, err := e.service.GetTheme(id)
 	if err != nil {
 		return nil, "", err

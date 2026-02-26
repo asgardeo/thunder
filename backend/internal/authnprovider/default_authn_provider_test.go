@@ -49,11 +49,6 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	identifiers := map[string]interface{}{"username": "testuser"}
 	credentials := map[string]interface{}{"password": "password123"}
 
-	authReq := user.AuthenticateUserRequest{
-		"username": "testuser",
-		"password": "password123",
-	}
-
 	authResp := &user.AuthenticateUserResponse{
 		ID:               "user123",
 		Type:             "customer",
@@ -68,7 +63,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	}
 
 	// Expect AuthenticateUser call
-	suite.mockService.On("AuthenticateUser", mock.Anything, authReq).
+	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
 		Return(authResp, (*serviceerror.ServiceError)(nil)).Once()
 	// Expect GetUser call
 	suite.mockService.On("GetUser", mock.Anything, "user123").Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
@@ -88,14 +83,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_UserNotFound() {
 	identifiers := map[string]interface{}{"username": "unknown"}
 	credentials := map[string]interface{}{"password": "password"}
 
-	authReq := user.AuthenticateUserRequest{
-		"username": "unknown",
-		"password": "password",
-	}
-
 	userNotFoundErr := &user.ErrorUserNotFound
 
-	suite.mockService.On("AuthenticateUser", mock.Anything, authReq).Return(nil, userNotFoundErr).Once()
+	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
+		Return(nil, userNotFoundErr).Once()
 
 	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
 
@@ -108,14 +99,9 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 	identifiers := map[string]interface{}{"username": "testuser"}
 	credentials := map[string]interface{}{"password": "wrongpassword"}
 
-	authReq := user.AuthenticateUserRequest{
-		"username": "testuser",
-		"password": "wrongpassword",
-	}
-
 	authFailedErr := &user.ErrorAuthenticationFailed
 
-	suite.mockService.On("AuthenticateUser", mock.Anything, authReq).Return(nil, authFailedErr).Once()
+	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).Return(nil, authFailedErr).Once()
 
 	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
 
@@ -128,14 +114,9 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_SystemError_Prepare
 	identifiers := map[string]interface{}{"username": "testuser"}
 	credentials := map[string]interface{}{"password": "password"}
 
-	authReq := user.AuthenticateUserRequest{
-		"username": "testuser",
-		"password": "password",
-	}
-
 	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Type: serviceerror.ServerErrorType, Error: "System Error"}
 
-	suite.mockService.On("AuthenticateUser", mock.Anything, authReq).Return(nil, sysErr).Once()
+	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).Return(nil, sysErr).Once()
 
 	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
 
@@ -197,11 +178,6 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
 	identifiers := map[string]interface{}{"username": "testuser"}
 	credentials := map[string]interface{}{"password": "password123"}
 
-	authReq := user.AuthenticateUserRequest{
-		"username": "testuser",
-		"password": "password123",
-	}
-
 	authResp := &user.AuthenticateUserResponse{
 		ID:               "user123",
 		Type:             "customer",
@@ -209,7 +185,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
 	}
 
 	// Expect AuthenticateUser call - Success
-	suite.mockService.On("AuthenticateUser", mock.Anything, authReq).
+	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
 		Return(authResp, (*serviceerror.ServiceError)(nil)).Once()
 
 	// Expect GetUser call - Fail with UserNotFound

@@ -16,11 +16,24 @@
  * under the License.
  */
 
-import {useNavigate} from 'react-router';
+import {Link, useNavigate} from 'react-router';
 import {useForm, Controller} from 'react-hook-form';
 import {useMemo, useState, useEffect} from 'react';
-import {Box, Stack, Typography, Button, Paper, FormLabel, FormControl, Select, MenuItem} from '@wso2/oxygen-ui';
-import {ArrowLeft, Plus, Save} from '@wso2/oxygen-ui-icons-react';
+import {
+  Box,
+  Stack,
+  Typography,
+  Button,
+  Paper,
+  FormLabel,
+  FormControl,
+  Select,
+  MenuItem,
+  PageContent,
+  PageTitle,
+} from '@wso2/oxygen-ui';
+import {Plus, Save} from '@wso2/oxygen-ui-icons-react';
+import {useTranslation} from 'react-i18next';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import type {SchemaInterface} from '../types/users';
 import useGetUserSchema from '../api/useGetUserSchema';
@@ -34,6 +47,7 @@ interface CreateUserFormData {
 
 export default function CreateUserPage() {
   const navigate = useNavigate();
+  const {t} = useTranslation();
   const [selectedSchema, setSelectedSchema] = useState<SchemaInterface>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -115,10 +129,6 @@ export default function CreateUserPage() {
     await navigate('/users');
   };
 
-  const handleBack = async () => {
-    await navigate('/users');
-  };
-
   const handleCreateUserType = () => {
     // TODO: Implement navigation to create user schema page
     // eslint-disable-next-line no-console
@@ -126,31 +136,13 @@ export default function CreateUserPage() {
   };
 
   return (
-    <Box>
-      <Button
-        onClick={() => {
-          handleBack().catch(() => {
-            // Handle navigation error
-          });
-        }}
-        variant="text"
-        sx={{mb: 2}}
-        aria-label="Go back"
-        startIcon={<ArrowLeft size={16} />}
-      >
-        Back
-      </Button>
-
-      <Stack direction="row" alignItems="flex-start" mb={4} gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            Create User
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Add a new user to your organization
-          </Typography>
-        </Box>
-      </Stack>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.BackButton component={<Link to="/users" />} />
+        <PageTitle.Header>{t('users:createUser.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('users:createUser.subtitle')}</PageTitle.SubHeader>
+      </PageTitle>
 
       <Paper sx={{p: 4}}>
         <Box
@@ -276,6 +268,6 @@ export default function CreateUserPage() {
           </Stack>
         </Box>
       </Paper>
-    </Box>
+    </PageContent>
   );
 }

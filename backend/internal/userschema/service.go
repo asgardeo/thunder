@@ -59,6 +59,9 @@ type UserSchemaServiceInterface interface {
 		userAttributes json.RawMessage,
 		identifyUser func(map[string]interface{}) (*string, error),
 	) (bool, *serviceerror.ServiceError)
+	GetCredentialAttributes(
+		ctx context.Context, userType string,
+	) ([]string, *serviceerror.ServiceError)
 }
 
 // userSchemaService is the default implementation of the UserSchemaServiceInterface.
@@ -133,7 +136,8 @@ func (us *userSchemaService) CreateUserSchema(
 	}
 
 	// Ensure organization unit exists
-	if svcErr := us.ensureOrganizationUnitExists(request.OrganizationUnitID, logger); svcErr != nil {
+	if svcErr := us.ensureOrganizationUnitExists(
+		ctx, request.OrganizationUnitID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -238,7 +242,8 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	}
 
 	// Ensure organization unit exists
-	if svcErr := us.ensureOrganizationUnitExists(request.OrganizationUnitID, logger); svcErr != nil {
+	if svcErr := us.ensureOrganizationUnitExists(
+		ctx, request.OrganizationUnitID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -369,6 +374,23 @@ func (us *userSchemaService) ValidateUserUniqueness(
 	return true, nil
 }
 
+// GetCredentialAttributes returns the names of schema properties marked as credentials for a given user type.
+func (us *userSchemaService) GetCredentialAttributes(
+	ctx context.Context, userType string,
+) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	compiledSchema, err := us.getCompiledSchemaForUserType(ctx, userType, logger)
+	if err != nil {
+		if errors.Is(err, ErrUserSchemaNotFound) {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logAndReturnServerError(logger, "Failed to load user schema for credential attributes", err)
+	}
+
+	return compiledSchema.GetCredentialAttributes(), nil
+}
+
 func (us *userSchemaService) getCompiledSchemaForUserType(
 	ctx context.Context,
 	userType string,
@@ -394,6 +416,7 @@ func (us *userSchemaService) getCompiledSchemaForUserType(
 
 // ensureOrganizationUnitExists validates that the provided organization unit exists using the OU service.
 func (us *userSchemaService) ensureOrganizationUnitExists(
+	ctx context.Context,
 	organizationUnitID string,
 	logger *log.Logger,
 ) *serviceerror.ServiceError {
@@ -402,7 +425,7 @@ func (us *userSchemaService) ensureOrganizationUnitExists(
 		return &ErrorInternalServerError
 	}
 
-	exists, svcErr := us.ouService.IsOrganizationUnitExists(organizationUnitID)
+	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, organizationUnitID)
 	if svcErr != nil {
 		logger.Error("Failed to verify organization unit existence",
 			log.String("organizationUnitID", organizationUnitID), log.Any("error", svcErr))

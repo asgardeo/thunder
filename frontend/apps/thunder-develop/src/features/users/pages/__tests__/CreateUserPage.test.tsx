@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import CreateUserPage from '../CreateUserPage';
@@ -34,6 +35,18 @@ vi.mock('react-router', async () => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
+    Link: ({to, children = undefined, ...props}: {to: string; children?: ReactNode; [key: string]: unknown}) => (
+      <a
+        {...(props as Record<string, unknown>)}
+        href={to}
+        onClick={(e) => {
+          e.preventDefault();
+          Promise.resolve(mockNavigate(to)).catch(() => {});
+        }}
+      >
+        {children}
+      </a>
+    ),
   };
 });
 
@@ -148,7 +161,7 @@ describe('CreateUserPage', () => {
     const user = userEvent.setup();
     render(<CreateUserPage />);
 
-    const backButton = screen.getByRole('button', {name: /go back/i});
+    const backButton = screen.getByRole('button', {name: /^back$/i});
     await user.click(backButton);
 
     await waitFor(() => {
@@ -640,5 +653,39 @@ describe('CreateUserPage', () => {
     await waitFor(() => {
       expect(screen.getByText('username is required')).toBeInTheDocument();
     });
+  });
+
+  it('renders credential fields as password inputs with toggle visibility', () => {
+    const schemaWithCredential: ApiUserSchema = {
+      id: 'schema1',
+      name: 'Employee',
+      schema: {
+        username: {
+          type: 'string',
+          required: true,
+        },
+        password: {
+          type: 'string',
+          required: true,
+          credential: true,
+        },
+      },
+    };
+
+    mockUseGetUserSchema.mockReturnValue({
+      data: schemaWithCredential,
+      loading: false,
+      error: null,
+      refetch: mockRefetchSchema,
+    });
+
+    render(<CreateUserPage />);
+
+    const passwordInput = screen.getByPlaceholderText(/Enter password/i);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(screen.getByLabelText('show password')).toBeInTheDocument();
+
+    const usernameInput = screen.getByPlaceholderText(/Enter username/i);
+    expect(usernameInput).toHaveAttribute('type', 'text');
   });
 });

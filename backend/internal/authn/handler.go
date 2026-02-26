@@ -75,13 +75,14 @@ func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 
 // HandleSendSMSOTPRequest handles the send SMS OTP authentication request.
 func (ah *authenticationHandler) HandleSendSMSOTPRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	otpRequest, err := sysutils.DecodeJSONBody[SendOTPAuthRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
 		return
 	}
 
-	sessionToken, svcErr := ah.authService.SendOTP(otpRequest.SenderID, notifcommon.ChannelTypeSMS,
+	sessionToken, svcErr := ah.authService.SendOTP(ctx, otpRequest.SenderID, notifcommon.ChannelTypeSMS,
 		otpRequest.Recipient)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
@@ -97,13 +98,14 @@ func (ah *authenticationHandler) HandleSendSMSOTPRequest(w http.ResponseWriter, 
 
 // HandleVerifySMSOTPRequest handles the verify SMS OTP authentication request.
 func (ah *authenticationHandler) HandleVerifySMSOTPRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	otpRequest, err := sysutils.DecodeJSONBody[VerifyOTPAuthRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
 		return
 	}
 
-	authResponse, svcErr := ah.authService.VerifyOTP(otpRequest.SessionToken, otpRequest.SkipAssertion,
+	authResponse, svcErr := ah.authService.VerifyOTP(ctx, otpRequest.SessionToken, otpRequest.SkipAssertion,
 		otpRequest.Assertion, otpRequest.OTP)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
@@ -227,6 +229,7 @@ func (ah *authenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 
 // HandlePasskeyRegisterStartRequest handles the passkey start registration request.
 func (ah *authenticationHandler) HandlePasskeyRegisterStartRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	regRequest, err := sysutils.DecodeJSONBody[PasskeyRegisterStartRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
@@ -234,6 +237,7 @@ func (ah *authenticationHandler) HandlePasskeyRegisterStartRequest(w http.Respon
 	}
 
 	regResponse, svcErr := ah.authService.StartPasskeyRegistration(
+		ctx,
 		regRequest.UserID,
 		regRequest.RelyingPartyID,
 		regRequest.RelyingPartyName,
@@ -250,6 +254,7 @@ func (ah *authenticationHandler) HandlePasskeyRegisterStartRequest(w http.Respon
 
 // HandlePasskeyRegisterFinishRequest handles the passkey finish registration request.
 func (ah *authenticationHandler) HandlePasskeyRegisterFinishRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	regRequest, err := sysutils.DecodeJSONBody[PasskeyRegisterFinishRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
@@ -257,6 +262,7 @@ func (ah *authenticationHandler) HandlePasskeyRegisterFinishRequest(w http.Respo
 	}
 
 	regResponse, svcErr := ah.authService.FinishPasskeyRegistration(
+		ctx,
 		regRequest.PublicKeyCredential,
 		regRequest.SessionToken,
 		regRequest.CredentialName,
@@ -271,6 +277,7 @@ func (ah *authenticationHandler) HandlePasskeyRegisterFinishRequest(w http.Respo
 
 // HandlePasskeyStartRequest handles the passkey start authentication request.
 func (ah *authenticationHandler) HandlePasskeyStartRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	authRequest, err := sysutils.DecodeJSONBody[PasskeyStartRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
@@ -278,6 +285,7 @@ func (ah *authenticationHandler) HandlePasskeyStartRequest(w http.ResponseWriter
 	}
 
 	authResponse, svcErr := ah.authService.StartPasskeyAuthentication(
+		ctx,
 		authRequest.UserID,
 		authRequest.RelyingPartyID,
 	)
@@ -291,6 +299,7 @@ func (ah *authenticationHandler) HandlePasskeyStartRequest(w http.ResponseWriter
 
 // HandlePasskeyFinishRequest handles the passkey finish authentication request.
 func (ah *authenticationHandler) HandlePasskeyFinishRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	authRequest, err := sysutils.DecodeJSONBody[PasskeyFinishRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
@@ -298,6 +307,7 @@ func (ah *authenticationHandler) HandlePasskeyFinishRequest(w http.ResponseWrite
 	}
 
 	authResponse, svcErr := ah.authService.FinishPasskeyAuthentication(
+		ctx,
 		authRequest.PublicKeyCredential.ID,
 		authRequest.PublicKeyCredential.Type,
 		authRequest.PublicKeyCredential.Response,

@@ -249,11 +249,21 @@ describe('Preview', () => {
     expect(screen.queryByText('Password')).not.toBeInTheDocument();
   });
 
-  it('should apply selected color to sign in button', () => {
+  it('should apply theme primary color to sign in button background', () => {
     renderComponent();
 
     const signInButton = screen.getByRole('button', {name: 'Sign In'});
+    // Buttons omit variant="contained" to avoid CSS-variable specificity issues with
+    // the outer app's theme; visual styles are applied entirely through the sx prop.
+    expect(signInButton).not.toHaveClass('MuiButton-containedPrimary');
     expect(signInButton).toHaveStyle({backgroundColor: '#FF5733'});
+  });
+
+  it('should apply contrastText color to sign in button label', () => {
+    renderComponent();
+
+    const signInButton = screen.getByRole('button', {name: 'Sign In'});
+    expect(signInButton).toHaveStyle({color: '#FFFFFF'});
   });
 
   it('should apply selected color to logo background', () => {
@@ -562,7 +572,7 @@ describe('Preview', () => {
       expect(passkeyButton).toHaveClass('MuiButton-colorPrimary');
     });
 
-    it('should render passkey button with contained variant when username/password is disabled', () => {
+    it('should apply theme primary color to passkey button background when username/password is disabled', () => {
       renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
@@ -572,8 +582,23 @@ describe('Preview', () => {
       });
 
       const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
-      expect(passkeyButton).toHaveClass('MuiButton-contained');
-      expect(passkeyButton).toHaveClass('MuiButton-colorPrimary');
+      // Without username/password, the passkey button acts as the primary action and omits
+      // variant="contained" — styles come entirely from the sx prop.
+      expect(passkeyButton).not.toHaveClass('MuiButton-contained');
+      expect(passkeyButton).toHaveStyle({backgroundColor: '#FF5733'});
+    });
+
+    it('should apply contrastText color to passkey button label when username/password is disabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+          [AuthenticatorTypes.PASSKEY]: true,
+        },
+        selectedTheme: mockTheme,
+      });
+
+      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      expect(passkeyButton).toHaveStyle({color: '#FFFFFF'});
     });
 
     it('should render passkey button inside form container when social logins are present', () => {
@@ -620,7 +645,6 @@ describe('Preview', () => {
           'sms-otp': true,
         },
       });
-
     });
   });
 
@@ -782,6 +806,88 @@ describe('Preview', () => {
       expect(screen.getByText('Mobile Number')).toBeInTheDocument();
       // Divider should be present when both methods exist
       expect(screen.getByText('or')).toBeInTheDocument();
+    });
+  });
+
+  describe('high-contrast theme colors', () => {
+    const highContrastTheme: ThemeConfig = {
+      colorSchemes: {
+        light: {
+          colors: {
+            primary: {
+              main: '#0000FF',
+              dark: '#0000CC',
+              contrastText: '#FFFFFF',
+            },
+            secondary: {
+              main: '#FFD700',
+              dark: '#CCB000',
+              contrastText: '#000000',
+            },
+          },
+        },
+        dark: {
+          colors: {
+            primary: {
+              main: '#00FFFF',
+              dark: '#00CCCC',
+              contrastText: '#000000',
+            },
+            secondary: {
+              main: '#FFFF00',
+              dark: '#CCCC00',
+              contrastText: '#000000',
+            },
+          },
+        },
+      },
+      defaultColorScheme: 'light',
+      direction: 'ltr',
+    };
+
+    it('should render sign in button with high-contrast primary background', () => {
+      renderComponent({
+        integrations: {[AuthenticatorTypes.BASIC_AUTH]: true},
+        selectedTheme: highContrastTheme,
+      });
+
+      const signInButton = screen.getByRole('button', {name: 'Sign In'});
+      expect(signInButton).toHaveStyle({backgroundColor: '#0000FF'});
+    });
+
+    it('should render sign in button with white contrastText on high-contrast blue', () => {
+      renderComponent({
+        integrations: {[AuthenticatorTypes.BASIC_AUTH]: true},
+        selectedTheme: highContrastTheme,
+      });
+
+      const signInButton = screen.getByRole('button', {name: 'Sign In'});
+      expect(signInButton).toHaveStyle({color: '#FFFFFF'});
+    });
+
+    it('should render Send OTP button with high-contrast primary background', () => {
+      renderComponent({
+        integrations: {'sms-otp': true},
+        selectedTheme: highContrastTheme,
+      });
+
+      const sendOtpButton = screen.getByRole('button', {name: 'Send OTP'});
+      expect(sendOtpButton).toHaveStyle({backgroundColor: '#0000FF'});
+      expect(sendOtpButton).toHaveStyle({color: '#FFFFFF'});
+    });
+
+    it('should render passkey button with dark mode high-contrast colors', () => {
+      mockUseColorScheme.mockReturnValue({mode: 'dark'});
+
+      renderComponent({
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+        selectedTheme: highContrastTheme,
+      });
+
+      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      expect(passkeyButton).toHaveStyle({backgroundColor: '#00FFFF'});
+      // Dark mode cyan primary has black contrastText
+      expect(passkeyButton).toHaveStyle({color: '#000000'});
     });
   });
 

@@ -12,128 +12,181 @@ import {useState} from 'react';
 
 export const SDKsContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  const frontendSDKs = [
-    {icon: <ReactLogo size={64} />, title: 'React SDK', packageName: '@asgardeo/react', packageManager: 'npm', description: 'Get started installing and initializing Thunder in a new React + Vite app.', href: '/docs/sdks/react/overview'},
-    {icon: <NextLogo size={64} />, title: 'Next.js SDK', packageName: '@asgardeo/nextjs', packageManager: 'npm', description: 'Integrate Thunder authentication in your Next.js application with App Router support.', comingSoon: true},
-    {icon: <VueLogo size={64} />, title: 'Vue SDK', packageName: '@asgardeo/vue', packageManager: 'npm', description: 'Add authentication to your Vue.js application with Thunder SDK.', comingSoon: true},
-    {icon: <NuxtLogo size={64} />, title: 'Nuxt SDK', packageName: '@asgardeo/nuxt', packageManager: 'npm', description: 'Integrate Thunder authentication in your Nuxt 3 application.', comingSoon: true},
-    {icon: <AngularLogo size={64} />, title: 'Angular SDK', packageName: '@asgardeo/angular', packageManager: 'npm', description: 'Add Thunder authentication to your Angular application.', comingSoon: true},
-    {icon: <BrowserLogo size={64} />, title: 'Browser SDK', packageName: '@asgardeo/browser', packageManager: 'npm', description: 'Vanilla JavaScript SDK for browser-based applications without frameworks.', comingSoon: true},
+  const allSDKs = [
+    {icon: <ReactLogo size={64} />, title: 'React SDK', packageName: '@asgardeo/react', packageManager: 'npm', description: 'Get started installing and initializing Thunder in a new React + Vite app.', href: '/docs/sdks/react/overview', category: 'frontend'},
+    {icon: <NextLogo size={64} />, title: 'Next.js SDK', packageName: '@asgardeo/nextjs', packageManager: 'npm', description: 'Integrate Thunder authentication in your Next.js application with App Router support.', comingSoon: true, category: 'frontend'},
+    {icon: <VueLogo size={64} />, title: 'Vue SDK', packageName: '@asgardeo/vue', packageManager: 'npm', description: 'Add authentication to your Vue.js application with Thunder SDK.', comingSoon: true, category: 'frontend'},
+    {icon: <NuxtLogo size={64} />, title: 'Nuxt SDK', packageName: '@asgardeo/nuxt', packageManager: 'npm', description: 'Integrate Thunder authentication in your Nuxt 3 application.', comingSoon: true, category: 'frontend'},
+    {icon: <AngularLogo size={64} />, title: 'Angular SDK', packageName: '@asgardeo/angular', packageManager: 'npm', description: 'Add Thunder authentication to your Angular application.', comingSoon: true, category: 'frontend'},
+    {icon: <BrowserLogo size={64} />, title: 'Browser SDK', packageName: '@asgardeo/browser', packageManager: 'npm', description: 'Vanilla JavaScript SDK for browser-based applications without frameworks.', comingSoon: true, category: 'frontend'},
+    {icon: <NodeLogo size={64} />, title: 'Node.js SDK', packageName: '@asgardeo/node', packageManager: 'npm', description: 'Server-side authentication for Node.js applications.', comingSoon: true, category: 'backend'},
+    {icon: <ExpressLogo size={64} />, title: 'Express SDK', packageName: '@asgardeo/express', packageManager: 'npm', description: 'Middleware for Express.js applications with Thunder authentication.', comingSoon: true, category: 'backend'},
+    {icon: <GoLogo size={64} />, title: 'Go SDK', packageName: 'github.com/asgardeo/go', packageManager: 'go', description: 'Thunder authentication SDK for Go applications.', comingSoon: true, category: 'backend'},
+    {icon: <PythonLogo size={64} />, title: 'Python SDK', packageName: 'asgardeo', packageManager: 'pip', description: 'Integrate Thunder authentication in your Python applications.', comingSoon: true, category: 'backend'},
+    {icon: <IOSLogo size={64} />, title: 'iOS SDK', packageName: 'Asgardeo', packageManager: 'pod', description: 'Native iOS SDK for Thunder authentication in Swift applications.', comingSoon: true, category: 'mobile'},
+    {icon: <AndroidLogo size={64} />, title: 'Android SDK', packageName: 'io.asgardeo:android', packageManager: 'gradle', description: 'Native Android SDK for Thunder authentication in Kotlin/Java applications.', comingSoon: true, category: 'mobile'},
+    {icon: <ReactLogo size={64} />, title: 'React Native SDK', packageName: '@asgardeo/react-native', packageManager: 'npm', description: 'Cross-platform React Native SDK for Thunder authentication.', comingSoon: true, category: 'mobile'},
+    {icon: <FlutterLogo size={64} />, title: 'Flutter SDK', packageName: 'asgardeo_flutter', packageManager: 'pub', description: 'Cross-platform Flutter SDK for Thunder authentication.', comingSoon: true, category: 'mobile'},
   ];
 
-  const backendSDKs = [
-    {icon: <NodeLogo size={64} />, title: 'Node.js SDK', packageName: '@asgardeo/node', packageManager: 'npm', description: 'Server-side authentication for Node.js applications.', comingSoon: true},
-    {icon: <ExpressLogo size={64} />, title: 'Express SDK', packageName: '@asgardeo/express', packageManager: 'npm', description: 'Middleware for Express.js applications with Thunder authentication.', comingSoon: true},
-    {icon: <GoLogo size={64} />, title: 'Go SDK', packageName: 'github.com/asgardeo/go', packageManager: 'go', description: 'Thunder authentication SDK for Go applications.', comingSoon: true},
-    {icon: <PythonLogo size={64} />, title: 'Python SDK', packageName: 'asgardeo', packageManager: 'pip', description: 'Integrate Thunder authentication in your Python applications.', comingSoon: true},
+  const filters = [
+    {key: 'all', label: 'All', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>},
+    {key: 'frontend', label: 'Frontend', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>},
+    {key: 'backend', label: 'Backend', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>},
+    {key: 'mobile', label: 'Mobile', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>},
   ];
 
-  const mobileSDKs = [
-    {icon: <IOSLogo size={64} />, title: 'iOS SDK', packageName: 'Asgardeo', packageManager: 'pod', description: 'Native iOS SDK for Thunder authentication in Swift applications.', comingSoon: true},
-    {icon: <AndroidLogo size={64} />, title: 'Android SDK', packageName: 'io.asgardeo:android', packageManager: 'gradle', description: 'Native Android SDK for Thunder authentication in Kotlin/Java applications.', comingSoon: true},
-    {icon: <ReactLogo size={64} />, title: 'React Native SDK', packageName: '@asgardeo/react-native', packageManager: 'npm', description: 'Cross-platform React Native SDK for Thunder authentication.', comingSoon: true},
-    {icon: <FlutterLogo size={64} />, title: 'Flutter SDK', packageName: 'asgardeo_flutter', packageManager: 'npm', description: 'Cross-platform Flutter SDK for Thunder authentication.', comingSoon: true},
-  ];
-
-  const filterSDKs = (sdks) => {
-    if (!searchQuery) return sdks;
+  const filteredSDKs = allSDKs.filter(sdk => {
+    const matchesCategory = activeFilter === 'all' || sdk.category === activeFilter;
+    if (!matchesCategory) return false;
+    if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    return sdks.filter(sdk => 
+    return (
       sdk.title.toLowerCase().includes(query) ||
       sdk.packageName?.toLowerCase().includes(query) ||
       sdk.description.toLowerCase().includes(query)
     );
-  };
-
-  const filteredFrontend = filterSDKs(frontendSDKs);
-  const filteredBackend = filterSDKs(backendSDKs);
-  const filteredMobile = filterSDKs(mobileSDKs);
+  });
 
   return (
     <>
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mt: 5
+          position: 'relative',
+          overflow: 'hidden',
+          pt: 10,
+          pb: 8,
+          mt: -2,
+          mx: -4,
+          px: 4,
         }}
       >
-        <Typography variant="h1" fontWeight={600}>
-          Thunder SDKs
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{textAlign: 'center', maxWidth: 600, mb: 5, mt: 2}}>
-          Explore the official Thunder SDKs for seamless integration of authentication and user management into your
-          applications.
-        </Typography>
-
-        <Box sx={{width: '80%'}}>
-          <TextField
-            placeholder="Search SDKs..."
-            variant="outlined"
-            sx={{width: '100%'}}
-            size="large"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
+        <FloatingLogosBackground />
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/* Main heading with accent-colored count */}
+          <Typography
+            variant="h1"
+            sx={{
+              fontWeight: 700,
+              fontSize: {xs: '2.5rem', sm: '3rem', md: '3.5rem'},
+              lineHeight: 1.15,
+              textAlign: 'center',
             }}
-          />
+          >
+            Thunder SDKs
+          </Typography>
+
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              textAlign: 'center',
+              maxWidth: 560,
+              mt: 2.5,
+              mb: 5,
+              fontSize: {xs: '0.95rem', sm: '1.05rem'},
+              lineHeight: 1.7,
+            }}
+          >
+            Explore the official Thunder SDKs for seamless integration of authentication
+            and user management into your applications.
+          </Typography>
+
+          {/* Search + filters row */}
+          <Box sx={{width: {xs: '100%', sm: '80%', md: '60%'}, maxWidth: 600}}>
+            <TextField
+              placeholder="Search SDKs..."
+              variant="outlined"
+              sx={{width: '100%'}}
+              size="medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          </Box>
+
+          {/* Filter chips */}
+          <Box role="tablist" aria-label="SDK filters" sx={{display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap', justifyContent: 'center'}}>
+            {filters.map(f => {
+              const isActive = activeFilter === f.key;
+              return (
+                <Box
+                  component="button"
+                  key={f.key}
+                  onClick={() => setActiveFilter(f.key)}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={`Filter by ${f.label}`}
+                  tabIndex={0}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    px: 2,
+                    py: 0.75,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: isActive ? 600 : 400,
+                    lineHeight: 1,
+                    userSelect: 'none',
+                    transition: 'all 0.2s ease',
+                    border: '1px solid',
+                    borderColor: isActive ? 'primary.main' : 'divider',
+                    bgcolor: isActive ? 'rgba(255, 107, 0, 0.08)' : 'transparent',
+                    color: isActive ? 'primary.main' : 'text.secondary',
+                    boxShadow: isActive ? '0 0 0 1px rgba(255, 107, 0, 0.3), 0 0 12px rgba(255, 107, 0, 0.1)' : 'none',
+                    fontFamily: 'inherit',
+                    '&:hover': {
+                      borderColor: isActive ? 'primary.main' : 'text.secondary',
+                      bgcolor: isActive ? 'rgba(255, 107, 0, 0.12)' : 'action.hover',
+                    },
+                  }}
+                >
+                  {f.icon}
+                  {f.label}
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
       </Box>
 
-      {filteredFrontend.length > 0 && (
-        <>
-          <Typography variant="h4" sx={{mt: 6, mb: 3}}>Frontend SDKs</Typography>
-          <Grid container spacing={3} sx={{mb: 4}}>
-            {filteredFrontend.map((sdk, index) => (
-              <Grid key={index} size={{xs: 12, sm: 6, md: 4}}>
-                <SDKCard {...sdk} />
-              </Grid>
-            ))}
+      {/* SDK cards grid */}
+      <Grid container spacing={3} sx={{mt: 2, mb: 4}}>
+        {filteredSDKs.map((sdk, index) => (
+          <Grid key={index} size={{xs: 12, sm: 6, md: 4}}>
+            <SDKCard {...sdk} />
           </Grid>
-        </>
-      )}
+        ))}
+      </Grid>
 
-      {filteredBackend.length > 0 && (
-        <>
-          <Typography variant="h4" sx={{mt: 6, mb: 3}}>Backend SDKs</Typography>
-          <Grid container spacing={3} sx={{mb: 4}}>
-            {filteredBackend.map((sdk, index) => (
-              <Grid key={index} size={{xs: 12, sm: 6, md: 4}}>
-                <SDKCard {...sdk} />
-              </Grid>
-            ))}
-          </Grid>
-        </>
-      )}
-
-      {filteredMobile.length > 0 && (
-        <>
-          <Typography variant="h4" sx={{mt: 6, mb: 3}}>Mobile SDKs</Typography>
-          <Grid container spacing={3} sx={{mb: 4}}>
-            {filteredMobile.map((sdk, index) => (
-              <Grid key={index} size={{xs: 12, sm: 6, md: 4}}>
-                <SDKCard {...sdk} />
-              </Grid>
-            ))}
-          </Grid>
-        </>
-      )}
-
-      {filteredFrontend.length === 0 && filteredBackend.length === 0 && filteredMobile.length === 0 && (
+      {filteredSDKs.length === 0 && (
         <Box sx={{textAlign: 'center', py: 8}}>
           <Typography variant="h6" color="text.secondary">
-            No SDKs found matching "{searchQuery}"
+            No SDKs found{searchQuery ? ` matching "${searchQuery}"` : ''}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-            Try searching with different keywords
+            Try a different search or filter
           </Typography>
         </Box>
       )}

@@ -47,7 +47,8 @@ type IDTokenConfig struct {
 
 // UserInfoConfig represents the user info endpoint configuration structure.
 type UserInfoConfig struct {
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
+	ResponseType   UserInfoResponseType `json:"response_type,omitempty" yaml:"response_type,omitempty"`
+	UserAttributes []string             `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.

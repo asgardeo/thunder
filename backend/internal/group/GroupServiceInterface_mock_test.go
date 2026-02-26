@@ -629,82 +629,6 @@ func (_c *GroupServiceInterfaceMock_GetGroupsByPath_Call) RunAndReturn(run func(
 	return _c
 }
 
-// UpdateGroup provides a mock function for the type GroupServiceInterfaceMock
-func (_mock *GroupServiceInterfaceMock) UpdateGroup(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, groupID, request)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateGroup")
-	}
-
-	var r0 *Group
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateGroupRequest) (*Group, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, groupID, request)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateGroupRequest) *Group); ok {
-		r0 = returnFunc(ctx, groupID, request)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*Group)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, UpdateGroupRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, groupID, request)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// GroupServiceInterfaceMock_UpdateGroup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateGroup'
-type GroupServiceInterfaceMock_UpdateGroup_Call struct {
-	*mock.Call
-}
-
-// UpdateGroup is a helper method to define mock.On call
-//   - ctx context.Context
-//   - groupID string
-//   - request UpdateGroupRequest
-func (_e *GroupServiceInterfaceMock_Expecter) UpdateGroup(ctx interface{}, groupID interface{}, request interface{}) *GroupServiceInterfaceMock_UpdateGroup_Call {
-	return &GroupServiceInterfaceMock_UpdateGroup_Call{Call: _e.mock.On("UpdateGroup", ctx, groupID, request)}
-}
-
-func (_c *GroupServiceInterfaceMock_UpdateGroup_Call) Run(run func(ctx context.Context, groupID string, request UpdateGroupRequest)) *GroupServiceInterfaceMock_UpdateGroup_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 UpdateGroupRequest
-		if args[2] != nil {
-			arg2 = args[2].(UpdateGroupRequest)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *GroupServiceInterfaceMock_UpdateGroup_Call) Return(group *Group, serviceError *serviceerror.ServiceError) *GroupServiceInterfaceMock_UpdateGroup_Call {
-	_c.Call.Return(group, serviceError)
-	return _c
-}
-
-func (_c *GroupServiceInterfaceMock_UpdateGroup_Call) RunAndReturn(run func(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_UpdateGroup_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // RemoveGroupMembers provides a mock function for the type GroupServiceInterfaceMock
 func (_mock *GroupServiceInterfaceMock) RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, groupID, members)
@@ -777,6 +701,82 @@ func (_c *GroupServiceInterfaceMock_RemoveGroupMembers_Call) Return(group *Group
 }
 
 func (_c *GroupServiceInterfaceMock_RemoveGroupMembers_Call) RunAndReturn(run func(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_RemoveGroupMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateGroup provides a mock function for the type GroupServiceInterfaceMock
+func (_mock *GroupServiceInterfaceMock) UpdateGroup(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, groupID, request)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateGroup")
+	}
+
+	var r0 *Group
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateGroupRequest) (*Group, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, groupID, request)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UpdateGroupRequest) *Group); ok {
+		r0 = returnFunc(ctx, groupID, request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Group)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, UpdateGroupRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, groupID, request)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// GroupServiceInterfaceMock_UpdateGroup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateGroup'
+type GroupServiceInterfaceMock_UpdateGroup_Call struct {
+	*mock.Call
+}
+
+// UpdateGroup is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupID string
+//   - request UpdateGroupRequest
+func (_e *GroupServiceInterfaceMock_Expecter) UpdateGroup(ctx interface{}, groupID interface{}, request interface{}) *GroupServiceInterfaceMock_UpdateGroup_Call {
+	return &GroupServiceInterfaceMock_UpdateGroup_Call{Call: _e.mock.On("UpdateGroup", ctx, groupID, request)}
+}
+
+func (_c *GroupServiceInterfaceMock_UpdateGroup_Call) Run(run func(ctx context.Context, groupID string, request UpdateGroupRequest)) *GroupServiceInterfaceMock_UpdateGroup_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 UpdateGroupRequest
+		if args[2] != nil {
+			arg2 = args[2].(UpdateGroupRequest)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_UpdateGroup_Call) Return(group *Group, serviceError *serviceerror.ServiceError) *GroupServiceInterfaceMock_UpdateGroup_Call {
+	_c.Call.Return(group, serviceError)
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_UpdateGroup_Call) RunAndReturn(run func(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_UpdateGroup_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
@@ -36,12 +37,12 @@ var (
 
 // notificationStoreInterface defines the interface for notification sender storage operations.
 type notificationStoreInterface interface {
-	createSender(sender common.NotificationSenderDTO) error
-	listSenders() ([]common.NotificationSenderDTO, error)
-	getSenderByID(id string) (*common.NotificationSenderDTO, error)
-	getSenderByName(name string) (*common.NotificationSenderDTO, error)
-	updateSender(id string, sender common.NotificationSenderDTO) error
-	deleteSender(id string) error
+	createSender(ctx context.Context, sender common.NotificationSenderDTO) error
+	listSenders(ctx context.Context) ([]common.NotificationSenderDTO, error)
+	getSenderByID(ctx context.Context, id string) (*common.NotificationSenderDTO, error)
+	getSenderByName(ctx context.Context, name string) (*common.NotificationSenderDTO, error)
+	updateSender(ctx context.Context, id string, sender common.NotificationSenderDTO) error
+	deleteSender(ctx context.Context, id string) error
 }
 
 // notificationStore is the implementation of notificationStoreInterface.
@@ -59,7 +60,7 @@ func newNotificationStore() notificationStoreInterface {
 }
 
 // createSender creates a new notification sender.
-func (s *notificationStore) createSender(sender common.NotificationSenderDTO) error {
+func (s *notificationStore) createSender(ctx context.Context, sender common.NotificationSenderDTO) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -74,7 +75,7 @@ func (s *notificationStore) createSender(sender common.NotificationSenderDTO) er
 		}
 	}
 
-	_, err = dbClient.Execute(queryCreateNotificationSender, sender.Name, sender.ID,
+	_, err = dbClient.ExecuteContext(ctx, queryCreateNotificationSender, sender.Name, sender.ID,
 		sender.Description, string(sender.Type), string(sender.Provider), propertiesJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -84,13 +85,13 @@ func (s *notificationStore) createSender(sender common.NotificationSenderDTO) er
 }
 
 // listSenders retrieves all notification senders
-func (s *notificationStore) listSenders() ([]common.NotificationSenderDTO, error) {
+func (s *notificationStore) listSenders(ctx context.Context) ([]common.NotificationSenderDTO, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetAllNotificationSenders, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetAllNotificationSenders, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -126,17 +127,17 @@ func (s *notificationStore) listSenders() ([]common.NotificationSenderDTO, error
 }
 
 // getSenderByID retrieves a notification sender by ID.
-func (s *notificationStore) getSenderByID(id string) (*common.NotificationSenderDTO, error) {
-	return s.getSender(queryGetNotificationSenderByID, id)
+func (s *notificationStore) getSenderByID(ctx context.Context, id string) (*common.NotificationSenderDTO, error) {
+	return s.getSender(ctx, queryGetNotificationSenderByID, id)
 }
 
 // getSenderByName retrieves a notification sender by name
-func (s *notificationStore) getSenderByName(name string) (*common.NotificationSenderDTO, error) {
-	return s.getSender(queryGetNotificationSenderByName, name)
+func (s *notificationStore) getSenderByName(ctx context.Context, name string) (*common.NotificationSenderDTO, error) {
+	return s.getSender(ctx, queryGetNotificationSenderByName, name)
 }
 
 // getSender retrieves a notification sender by a specific identifier (ID or name).
-func (s *notificationStore) getSender(query dbmodel.DBQuery,
+func (s *notificationStore) getSender(ctx context.Context, query dbmodel.DBQuery,
 	identifier string) (*common.NotificationSenderDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationStore"))
 
@@ -145,7 +146,7 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, identifier, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, query, identifier, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -183,7 +184,7 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 }
 
 // updateSender updates an existing notification sender.
-func (s *notificationStore) updateSender(id string, sender common.NotificationSenderDTO) error {
+func (s *notificationStore) updateSender(ctx context.Context, id string, sender common.NotificationSenderDTO) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -198,7 +199,7 @@ func (s *notificationStore) updateSender(id string, sender common.NotificationSe
 		}
 	}
 
-	_, err = dbClient.Execute(queryUpdateNotificationSender, sender.Name, sender.Description,
+	_, err = dbClient.ExecuteContext(ctx, queryUpdateNotificationSender, sender.Name, sender.Description,
 		string(sender.Provider), propertiesJSON, id, string(sender.Type), s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -208,7 +209,7 @@ func (s *notificationStore) updateSender(id string, sender common.NotificationSe
 }
 
 // deleteSender deletes a notification sender.
-func (s *notificationStore) deleteSender(id string) error {
+func (s *notificationStore) deleteSender(ctx context.Context, id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationStore"))
 
 	dbClient, err := s.dbProvider.GetConfigDBClient()
@@ -216,7 +217,7 @@ func (s *notificationStore) deleteSender(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteNotificationSender, id, s.deploymentID)
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryDeleteNotificationSender, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute delete query: %w", err)
 	}

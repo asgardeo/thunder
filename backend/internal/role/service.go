@@ -50,6 +50,7 @@ type RoleServiceInterface interface {
 		includeDisplay bool) (*AssignmentList, *serviceerror.ServiceError)
 	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
 	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
+	IsRoleDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError)
 	GetAuthorizedPermissions(
 		ctx context.Context, userID string, groups []string, requestedPermissions []string,
 	) ([]string, *serviceerror.ServiceError)
@@ -122,6 +123,12 @@ func (rs *roleService) CreateRole(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating role", log.String("name", role.Name))
 
+	// Check if role creation is allowed (not in declarative-only mode)
+	if isDeclarativeModeEnabled() {
+		logger.Debug("Cannot create role in declarative-only mode")
+		return nil, &ErrorDeclarativeModeCreateNotAllowed
+	}
+
 	if err := rs.validateCreateRoleRequest(role); err != nil {
 		return nil, err
 	}
@@ -139,7 +146,7 @@ func (rs *roleService) CreateRole(
 	}
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(role.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			logger.Debug("Organization unit not found", log.String("ouID", role.OrganizationUnitID))
@@ -245,8 +252,14 @@ func (rs *roleService) UpdateRoleWithPermissions(
 		return nil, &ErrorRoleNotFound
 	}
 
+	// Check if role is declarative - cannot modify declarative roles
+	if rs.isRoleDeclarative(ctx, id) {
+		logger.Debug("Cannot modify declarative role", log.String("id", id))
+		return nil, &ErrorImmutableRole
+	}
+
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(role.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			logger.Debug("Organization unit not found", log.String("ouID", role.OrganizationUnitID))
@@ -304,6 +317,12 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
 		return nil
+	}
+
+	// Check if role is declarative - cannot delete declarative roles
+	if rs.isRoleDeclarative(ctx, id) {
+		logger.Debug("Cannot delete declarative role", log.String("id", id))
+		return &ErrorImmutableRole
 	}
 
 	// Check if role has any assignments before deleting
@@ -422,6 +441,12 @@ func (rs *roleService) AddAssignments(
 		return &ErrorRoleNotFound
 	}
 
+	// Check if role is declarative - cannot modify assignments for declarative roles
+	if rs.isRoleDeclarative(ctx, id) {
+		logger.Debug("Cannot modify assignments for declarative role", log.String("id", id))
+		return &ErrorImmutableAssignment
+	}
+
 	// Validate assignment IDs
 	if err := rs.validateAssignmentIDs(ctx, assignments); err != nil {
 		return err
@@ -462,6 +487,12 @@ func (rs *roleService) RemoveAssignments(
 	if !exists {
 		logger.Debug("Role not found", log.String("id", id))
 		return &ErrorRoleNotFound
+	}
+
+	// Check if role is declarative - cannot modify assignments for declarative roles
+	if rs.isRoleDeclarative(ctx, id) {
+		logger.Debug("Cannot modify assignments for declarative role", log.String("id", id))
+		return &ErrorImmutableAssignment
 	}
 
 	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
@@ -516,6 +547,16 @@ func (rs *roleService) GetAuthorizedPermissions(
 		log.Int("authorizedCount", len(authorizedPermissions)))
 
 	return authorizedPermissions, nil
+}
+
+// IsRoleDeclarative returns true if the role is declarative.
+func (rs *roleService) IsRoleDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError) {
+	isDeclarative, err := rs.roleStore.IsRoleDeclarative(ctx, id)
+	if err != nil {
+		return false, &ErrorInternalServerError
+	}
+
+	return isDeclarative, nil
 }
 
 // validateCreateRoleRequest validates the create role request.
@@ -740,4 +781,27 @@ func (rs *roleService) validatePermissions(
 	}
 
 	return nil
+}
+
+// isRoleDeclarative checks if a role is defined in declarative configuration.
+func (rs *roleService) isRoleDeclarative(ctx context.Context, roleID string) bool {
+	// Check the store mode - if it's mutable, no roles are declarative
+	storeMode := getRoleStoreMode()
+	if storeMode == serverconst.StoreModeMutable {
+		return false
+	}
+
+	// For declarative and composite modes, check with store
+	// Note: This is a placeholder implementation
+	// Actual implementation would check against declarative config
+	isDeclarative, err := rs.roleStore.IsRoleDeclarative(ctx, roleID)
+	if err != nil {
+		// Log at Warn level and fail open - treat as non-declarative on error
+		// RISK: In composite mode, this could allow modification of declarative roles if the check fails
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+		logger.Warn("Failed to check if role is declarative", log.String("roleID", roleID), log.Error(err))
+		return false
+	}
+
+	return isDeclarative
 }

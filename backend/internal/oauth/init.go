@@ -32,10 +32,10 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/token"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/user"
 )
 

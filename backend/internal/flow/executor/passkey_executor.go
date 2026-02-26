@@ -27,9 +27,9 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
@@ -197,7 +197,7 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 		UserID:         userID, // May be empty for usernameless flow
 		RelyingPartyID: relyingPartyID,
 	}
-	startData, svcErr := p.passkeyService.StartAuthentication(startReq)
+	startData, svcErr := p.passkeyService.StartAuthentication(ctx.Context, startReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey authentication",
@@ -304,7 +304,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		UserHandle:        userHandle,
 		SessionToken:      sessionToken,
 	}
-	authResp, svcErr := p.passkeyService.FinishAuthentication(finishReq)
+	authResp, svcErr := p.passkeyService.FinishAuthentication(ctx.Context, finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey verification failed", log.String("userID", userID),
@@ -400,7 +400,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	}
 
 	// Start passkey registration
-	startData, svcErr := p.passkeyService.StartRegistration(regReq)
+	startData, svcErr := p.passkeyService.StartRegistration(ctx.Context, regReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey registration",
@@ -490,7 +490,7 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	}
 
 	// Call passkey service to finish registration
-	finishData, svcErr := p.passkeyService.FinishRegistration(finishReq)
+	finishData, svcErr := p.passkeyService.FinishRegistration(ctx.Context, finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey registration failed", log.String("error", svcErr.ErrorDescription))

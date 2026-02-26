@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useNavigate, useParams} from 'react-router';
+import {Link, useNavigate, useParams} from 'react-router';
 import {useState, useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -49,6 +49,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  PageContent,
+  PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Save, X, Trash2, Check} from '@wso2/oxygen-ui-icons-react';
 import useGetUserType from '../api/useGetUserType';
@@ -98,6 +100,7 @@ export default function ViewUserTypePage() {
       type: value.type,
       required: value.required ?? false,
       unique: 'unique' in value ? (value.unique ?? false) : false,
+      credential: 'credential' in value ? (value.credential ?? false) : false,
       enum: 'enum' in value ? (value.enum ?? []) : [],
       regex: 'regex' in value ? (value.regex ?? '') : '',
     }));
@@ -288,7 +291,7 @@ export default function ViewUserTypePage() {
   // Error state
   if (userTypeError) {
     return (
-      <Box sx={{maxWidth: 1000, mx: 'auto', pt: 6}}>
+      <PageContent>
         <Alert severity="error" sx={{mb: 2}}>
           {userTypeError.message ?? 'Failed to load user type information'}
         </Alert>
@@ -302,14 +305,14 @@ export default function ViewUserTypePage() {
         >
           Back to User Types
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   // No user type found
   if (!userType) {
     return (
-      <Box sx={{maxWidth: 1000, mx: 'auto', pt: 6}}>
+      <PageContent>
         <Alert severity="warning" sx={{mb: 2}}>
           User type not found
         </Alert>
@@ -323,46 +326,30 @@ export default function ViewUserTypePage() {
         >
           Back to User Types
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   return (
-    <Box>
-      <Button
-        onClick={() => {
-          handleBack().catch(() => {
-            // Handle navigation error
-          });
-        }}
-        variant="text"
-        sx={{mb: 3}}
-        aria-label="Go back"
-        startIcon={<ArrowLeft size={16} />}
-      >
-        Back
-      </Button>
-
-      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={4} gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            User Type Details
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            View and manage user type schema
-          </Typography>
-        </Box>
-        {!isEditMode && (
-          <Stack direction="row" spacing={2}>
-            <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
-              Delete
-            </Button>
-            <Button variant="contained" startIcon={<Edit size={16} />} onClick={handleEdit}>
-              Edit
-            </Button>
-          </Stack>
-        )}
-      </Stack>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.BackButton component={<Link to="/user-types" />} />
+        <PageTitle.Header>{t('userTypes:manageUserType.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('userTypes:manageUserType.subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
+          {!isEditMode && (
+            <>
+              <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
+                Delete
+              </Button>
+              <Button variant="contained" startIcon={<Edit size={16} />} onClick={handleEdit}>
+                Edit
+              </Button>
+            </>
+          )}
+        </PageTitle.Actions>
+      </PageTitle>
 
       <Paper sx={{p: 4}}>
         {/* Basic Information */}
@@ -488,7 +475,7 @@ export default function ViewUserTypePage() {
 
           {!isEditMode ? (
             // View Mode - Display properties in a table
-            <TableContainer>
+            <TableContainer component={Paper}>
               <Table sx={{'& .MuiTableCell-root': {py: 2}}}>
                 <TableHead>
                   <TableRow>
@@ -770,6 +757,6 @@ export default function ViewUserTypePage() {
           {validationError}
         </Alert>
       </Snackbar>
-    </Box>
+    </PageContent>
   );
 }

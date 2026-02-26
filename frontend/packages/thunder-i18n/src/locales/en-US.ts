@@ -311,6 +311,9 @@ const translations = {
   // Navigation namespace - Navigation related translations
   // ============================================================================
   navigation: {
+    'categories.identities': 'Identities',
+    'categories.resources': 'Resources',
+    'categories.configure': 'Configure',
     'pages.home': 'Home',
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
@@ -327,6 +330,7 @@ const translations = {
   // Users namespace - User management feature translations
   // ============================================================================
   users: {
+    // Listing page
     title: 'User Management',
     subtitle: 'Manage users, roles, and permissions across your organization',
     addUser: 'Add User',
@@ -358,13 +362,23 @@ const translations = {
     userDeletedSuccess: 'User deleted successfully',
     'errors.failed.title': 'Error',
     'errors.failed.description': 'An error occurred. Please try again.',
+
+    // Edit page
+    'manageUser.title': 'Manage User',
+    'manageUser.subtitle': 'View and manage user information',
+
+    // Create page
+    'createUser.title': 'Create User',
+    'createUser.subtitle': 'Add a new user to your organization',
   },
 
   // ============================================================================
   // User Types namespace - User types feature translations
   // ============================================================================
   userTypes: {
+    // Listing page
     title: 'User Types',
+    subtitle: 'Define and manage user types with custom schemas',
     addUserType: 'Add User Type',
     createUserType: 'Create User Type',
     editUserType: 'Edit User Type',
@@ -383,11 +397,17 @@ const translations = {
     propertyNamePlaceholder: 'e.g., email, age, address',
     propertyType: 'Type',
     addProperty: 'Add Property',
+    credential: 'Credential',
     unique: 'Unique',
+    removeProperty: 'Remove property',
     regexPattern: 'Regular Expression Pattern (Optional)',
     regexPlaceholder: 'e.g., ^[a-zA-Z0-9]+$',
     enumValues: 'Allowed Values (Enum) - Optional',
     enumPlaceholder: 'Add value and press Enter',
+    'tooltips.required': 'Users must provide a value for this field',
+    'tooltips.unique': 'Each user must have a distinct value for this field',
+    'tooltips.credential': 'Values will be hashed and not returned in API responses',
+    credentialHint: 'This field will be treated as a secret. Values will be hashed and cannot be retrieved.',
     'types.string': 'String',
     'types.number': 'Number',
     'types.boolean': 'Boolean',
@@ -402,6 +422,27 @@ const translations = {
     noUserTypes: 'No user types found',
     noOrganizationUnits: 'No organization units available',
     confirmDeleteUserType: 'Are you sure you want to delete this user type?',
+
+    // Edit page
+    'manageUserType.title': 'Manage User Type',
+    'manageUserType.subtitle': 'View and manage user type information',
+
+    // Create page
+    'createUserType.title': 'Create User Type',
+    'createUserType.subtitle': 'Add a new user type to your organization',
+
+    // Create wizard steps
+    'createWizard.steps.name': 'Name',
+    'createWizard.steps.general': 'General',
+    'createWizard.steps.properties': 'Properties',
+    'createWizard.name.title': "Let's name your user type",
+    'createWizard.name.fieldLabel': 'User Type Name',
+    'createWizard.name.placeholder': 'Enter your user type name',
+    'createWizard.name.suggestions.label': 'In a hurry? Pick a random name:',
+    'createWizard.general.title': 'Configure general settings',
+    'createWizard.general.subtitle': 'Choose an organization unit and set registration preferences',
+    'createWizard.properties.title': 'Define your schema properties',
+    'createWizard.properties.subtitle': 'Add the fields that make up this user type',
   },
 
   // ============================================================================
@@ -422,6 +463,7 @@ const translations = {
     'listing.treeView.loadError': 'Failed to load child organization units',
     'listing.treeView.addChild': 'Add Child OU',
     'listing.treeView.addChildOrganizationUnit': 'Add Child Organization Unit',
+    'listing.treeView.loadMore': 'Load more',
     'listing.columns.name': 'Name',
     'listing.columns.handle': 'Handle',
     'listing.columns.description': 'Description',
@@ -443,6 +485,7 @@ const translations = {
     // Common
     'edit.page.error': 'Failed to load organization unit',
     'edit.page.notFound': 'Organization unit not found',
+    'edit.page.logoUpdate.label': 'Update Logo',
     'edit.page.back': 'Back to Organization Units',
     'edit.page.backToOU': 'Back to {{name}}',
     'edit.page.description.empty': 'No description',
@@ -714,6 +757,10 @@ const translations = {
     serverError: 'Server error occurred',
     networkError: 'Network error. Please check your connection.',
     redirectFailed: 'Redirect failed',
+    'page.defaultTitle': "Oops, that didn't work",
+    'page.defaultDescription': "We're sorry, we ran into a problem. Please try again!",
+    'page.invalidRequest.title': 'Oh no, we ran into a problem!',
+    'page.invalidRequest.description': 'The request is invalid. Please check and try again.',
   },
 
   // ============================================================================
@@ -1011,6 +1058,7 @@ const translations = {
     'edit.page.error': 'Failed to load application information',
     'edit.page.notFound': 'Application not found',
     'edit.page.back': 'Back to Applications',
+    'edit.page.logoUpdate.label': 'Update Logo',
     'edit.page.description.empty': 'No description',
     'edit.page.description.placeholder': 'Add a description',
     'edit.page.tabs.overview': 'Guide',
@@ -1146,8 +1194,7 @@ const translations = {
     'edit.token.userInfoAttributes.description': 'Configure the user attributes to include in the User Info response.',
     'edit.token.inheritFromIdToken': 'Use same attributes as ID Token',
     'edit.token.tokenConfiguration.title': 'Token Configuration',
-    'edit.token.tokenConfiguration.description':
-      'Configure token validity settings that apply to all issued tokens.',
+    'edit.token.tokenConfiguration.description': 'Configure token validity settings that apply to all issued tokens.',
     'edit.token.validity.title': 'Token Validity',
     'edit.token.validity.description':
       'Configure how long tokens remain valid before expiration. Shorter validity periods enhance security.',

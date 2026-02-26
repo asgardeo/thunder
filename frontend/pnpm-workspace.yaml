@@ -6,14 +6,7 @@ packages:
 catalog:
   '@asgardeo/react': 0.13.0
   '@asgardeo/react-router': 1.1.0
-  '@emotion/react': 11.14.0
-  '@emotion/styled': 11.14.1
   '@hookform/resolvers': 5.2.2
-  '@mui/material': 7.3.4
-  '@mui/x-charts': 8.14.0
-  '@mui/x-data-grid': 8.14.0
-  '@mui/x-date-pickers': 8.14.0
-  '@mui/x-tree-view': 8.14.0
   '@tanstack/react-query': 5.90.5
   '@tanstack/react-query-devtools': 5.90.2
   '@testing-library/jest-dom': 6.9.1
@@ -28,8 +21,8 @@ catalog:
   '@vitest/browser-playwright': 4.0.17
   playwright: 1.58.1
   '@vitest/coverage-istanbul': 4.0.17
-  '@wso2/oxygen-ui': 0.0.1-alpha.10
-  '@wso2/oxygen-ui-icons-react': 0.0.1-alpha.10
+  '@wso2/oxygen-ui': 0.8.0
+  '@wso2/oxygen-ui-icons-react': 0.8.0
   babel-plugin-react-compiler: 19.1.0-rc.3
   clsx: 2.1.1
   dayjs: 1.11.18

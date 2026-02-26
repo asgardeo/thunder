@@ -19,6 +19,7 @@
 package idp
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -65,8 +66,8 @@ func (e *IDPExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all identity provider IDs.
-func (e *IDPExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	idps, err := e.service.GetIdentityProviderList()
+func (e *IDPExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+	idps, err := e.service.GetIdentityProviderList(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +79,10 @@ func (e *IDPExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError)
 }
 
 // GetResourceByID retrieves an identity provider by its ID.
-func (e *IDPExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	idpDTO, err := e.service.GetIdentityProvider(id)
+func (e *IDPExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
+	idpDTO, err := e.service.GetIdentityProvider(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}

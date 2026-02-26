@@ -11,6 +11,62 @@
     {
       "id": "choose_auth_method",
       "type": "PROMPT",
+      "meta": {
+        "components": [
+          {
+            "type": "TEXT",
+            "id": "text_001",
+            "label": "Sign In",
+            "variant": "HEADING_1"
+          },
+          {
+            "type": "BLOCK",
+            "id": "block_basic",
+            "components": [
+              {
+                "id": "input_username",
+                "ref": "username",
+                "type": "TEXT_INPUT",
+                "label": "Username",
+                "required": true,
+                "placeholder": "Enter your username"
+              },
+              {
+                "id": "input_password",
+                "ref": "password",
+                "type": "PASSWORD_INPUT",
+                "label": "Password",
+                "required": true,
+                "placeholder": "Enter your password"
+              },
+              {
+                "type": "ACTION",
+                "id": "action_basic",
+                "label": "Sign In",
+                "variant": "PRIMARY",
+                "eventType": "SUBMIT"
+              }
+            ]
+          },
+          {
+            "type": "DIVIDER",
+            "id": "divider_001"
+          },
+          {
+            "type": "BLOCK",
+            "id": "block_passkey",
+            "components": [
+              {
+                "type": "ACTION",
+                "id": "action_passkey",
+                "label": "Sign in with Passkey",
+                "variant": "SECONDARY",
+                "eventType": "SUBMIT"
+              }
+            ]
+          }
+        ]
+      },
       "prompts": [
         {
           "inputs": [
@@ -43,6 +99,37 @@
     {
       "id": "prompt_passkey_identifier",
       "type": "PROMPT",
+      "meta": {
+        "components": [
+          {
+            "type": "TEXT",
+            "id": "text_002",
+            "label": "Sign in with Passkey",
+            "variant": "HEADING_1"
+          },
+          {
+            "type": "BLOCK",
+            "id": "block_identifier",
+            "components": [
+              {
+                "id": "passkey_username",
+                "ref": "username",
+                "type": "TEXT_INPUT",
+                "label": "Username",
+                "required": true,
+                "placeholder": "Enter your username"
+              },
+              {
+                "type": "ACTION",
+                "id": "action_continue",
+                "label": "Continue",
+                "variant": "PRIMARY",
+                "eventType": "SUBMIT"
+              }
+            ]
+          }
+        ]
+      },
       "prompts": [
         {
           "inputs": [
@@ -94,6 +181,43 @@
     {
       "id": "prompt_password_for_registration",
       "type": "PROMPT",
+      "meta": {
+        "components": [
+          {
+            "type": "TEXT",
+            "id": "text_004",
+            "label": "Register Passkey",
+            "variant": "HEADING_1"
+          },
+          {
+            "type": "TEXT",
+            "id": "text_005",
+            "label": "No passkey found for your account. Enter your password to register a new passkey.",
+            "variant": "BODY"
+          },
+          {
+            "type": "BLOCK",
+            "id": "block_password_reg",
+            "components": [
+              {
+                "id": "reg_password",
+                "ref": "password",
+                "type": "PASSWORD_INPUT",
+                "label": "Password",
+                "required": true,
+                "placeholder": "Enter your password"
+              },
+              {
+                "type": "ACTION",
+                "id": "action_verify_password",
+                "label": "Register Passkey",
+                "variant": "PRIMARY",
+                "eventType": "SUBMIT"
+              }
+            ]
+          }
+        ]
+      },
       "prompts": [
         {
           "inputs": [

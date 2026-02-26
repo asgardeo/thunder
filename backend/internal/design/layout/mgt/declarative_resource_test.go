@@ -19,6 +19,7 @@
 package layoutmgt
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -105,7 +106,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetAllResourceIDs_Succ
 	exporter := &layoutExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.Nil(svcErr)
@@ -123,7 +124,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetAllResourceIDs_Serv
 	exporter := &layoutExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.NotNil(svcErr)
@@ -138,7 +139,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetAllResourceIDs_Empt
 	exporter := &layoutExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.Nil(svcErr)
@@ -160,7 +161,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetResourceByID_Succes
 	exporter := &layoutExporter{service: mockService}
 
 	// Act
-	resource, displayName, svcErr := exporter.GetResourceByID("layout-001")
+	resource, displayName, svcErr := exporter.GetResourceByID(context.Background(), "layout-001")
 
 	// Assert
 	s.Nil(svcErr)
@@ -181,7 +182,7 @@ func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetResourceByID_NotFou
 	exporter := &layoutExporter{service: mockService}
 
 	// Act
-	resource, displayName, svcErr := exporter.GetResourceByID("non-existent")
+	resource, displayName, svcErr := exporter.GetResourceByID(context.Background(), "non-existent")
 
 	// Assert
 	s.NotNil(svcErr)

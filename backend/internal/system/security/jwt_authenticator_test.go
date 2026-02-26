@@ -100,9 +100,9 @@ func (suite *JWTAuthenticatorTestSuite) TestCanHandle() {
 
 func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 	// Valid JWT token with attributes (simplified representation)
-	// Payload: {"sub":"user123","scope":"system users:read","ou_id":"ou1","app_id":"app1"}
+	// Payload: {"sub":"user123","scope":"system users:read","ouId":"ou1","app_id":"app1"}
 	//nolint:gosec,lll // Test data, not a real credential
-	validToken := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwic2NvcGUiOiJzeXN0ZW0gdXNlcnM6cmVhZCIsIm91X2lkIjoib3UxIiwiYXBwX2lkIjoiYXBwMSJ9.signature"
+	validToken := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwic2NvcGUiOiJzeXN0ZW0gdXNlcnM6cmVhZCIsIm91SWQiOiJvdTEiLCJhcHBfaWQiOiJhcHAxIn0.signature"
 
 	tests := []struct {
 		name           string

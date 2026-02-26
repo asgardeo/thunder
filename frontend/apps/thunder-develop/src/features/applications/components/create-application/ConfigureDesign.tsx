@@ -133,8 +133,13 @@ export default function ConfigureDesign({
   const {data: selectedThemeDetails} = useGetTheme(selectedThemeId ?? '');
 
   const hasThemes = Boolean(themesData?.themes?.length);
-  const primaryColor: string =
+  const primaryColorLight: string =
     selectedThemeProp?.colorSchemes?.light?.colors?.primary?.main ?? theme.vars?.palette.primary.main ?? '';
+  const primaryColorDark: string =
+    selectedThemeProp?.colorSchemes?.dark?.colors?.primary?.main ??
+    selectedThemeProp?.colorSchemes?.light?.colors?.primary?.main ??
+    theme.vars?.palette.primary.main ??
+    '';
 
   const [logoSeed, setLogoSeed] = useState<number>(0);
 
@@ -254,10 +259,10 @@ export default function ConfigureDesign({
                     },
                     transition: 'all 0.2s ease-in-out',
                     ...theme.applyStyles('light', {
-                      backgroundColor: isSelected ? primaryColor : theme.vars?.palette.grey[600],
+                      backgroundColor: isSelected ? primaryColorLight : theme.vars?.palette.grey[600],
                     }),
                     ...theme.applyStyles('dark', {
-                      backgroundColor: isSelected ? primaryColor : theme.vars?.palette.grey[600],
+                      backgroundColor: isSelected ? primaryColorDark : theme.vars?.palette.grey[600],
                     }),
                   }}
                 />

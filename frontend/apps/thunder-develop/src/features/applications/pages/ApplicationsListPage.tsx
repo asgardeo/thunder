@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {Box, Typography, Stack, Button, TextField, InputAdornment} from '@wso2/oxygen-ui';
+import {Stack, Button, TextField, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {Plus, Search} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -30,17 +30,12 @@ export default function ApplicationsListPage(): JSX.Element {
   const logger = useLogger('ApplicationsListPage');
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            {t('applications:listing.title')}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {t('applications:listing.subtitle')}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2}>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.Header>{t('applications:listing.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('applications:listing.subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
           <Button
             variant="contained"
             startIcon={<Plus size={18} />}
@@ -54,8 +49,8 @@ export default function ApplicationsListPage(): JSX.Element {
           >
             {t('applications:listing.addApplication')}
           </Button>
-        </Stack>
-      </Stack>
+        </PageTitle.Actions>
+      </PageTitle>
 
       {/* Search and Filters */}
       <Stack direction="row" spacing={2} mb={4} flexWrap="wrap" useFlexGap>
@@ -75,6 +70,6 @@ export default function ApplicationsListPage(): JSX.Element {
         />
       </Stack>
       <ApplicationsList />
-    </Box>
+    </PageContent>
   );
 }

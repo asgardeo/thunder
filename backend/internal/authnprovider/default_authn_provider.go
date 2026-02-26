@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
@@ -43,15 +44,8 @@ func (p *defaultAuthnProvider) Authenticate(
 	identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata,
 ) (*AuthnResult, *AuthnProviderError) {
-	request := make(user.AuthenticateUserRequest)
-	for k, v := range identifiers {
-		request[k] = v
-	}
-	for k, v := range credentials {
-		request[k] = v
-	}
-
-	authResponse, authErr := p.userSvc.AuthenticateUser(context.Background(), request)
+	authResponse, authErr := p.userSvc.AuthenticateUser(
+		security.WithRuntimeContext(context.Background()), identifiers, credentials)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			if authErr.Code == user.ErrorUserNotFound.Code {
@@ -62,7 +56,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
 	}
 
-	userResult, getUserErr := p.userSvc.GetUser(context.Background(), authResponse.ID)
+	userResult, getUserErr := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), authResponse.ID)
 	if getUserErr != nil {
 		if getUserErr.Code == user.ErrorUserNotFound.Code {
 			return nil, NewError(ErrorCodeUserNotFound, getUserErr.Error, getUserErr.ErrorDescription)
@@ -103,7 +97,7 @@ func (p *defaultAuthnProvider) GetAttributes(
 ) (*GetAttributesResult, *AuthnProviderError) {
 	userID := token
 
-	userResult, authErr := p.userSvc.GetUser(context.Background(), userID)
+	userResult, authErr := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), userID)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			return nil, NewError(ErrorCodeInvalidToken, authErr.Error, authErr.ErrorDescription)

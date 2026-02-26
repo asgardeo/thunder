@@ -126,7 +126,7 @@ func (gs *groupService) GetGroupsByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := gs.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := gs.ouService.GetOrganizationUnitByPath(ctx, handlePath)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &ErrorGroupNotFound
@@ -177,7 +177,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		return nil, err
 	}
 
-	if err := gs.validateOU(request.OrganizationUnitID); err != nil {
+	if err := gs.validateOU(ctx, request.OrganizationUnitID); err != nil {
 		return nil, err
 	}
 
@@ -266,7 +266,7 @@ func (gs *groupService) CreateGroupByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := gs.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := gs.ouService.GetOrganizationUnitByPath(ctx, handlePath)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &ErrorGroupNotFound
@@ -343,7 +343,7 @@ func (gs *groupService) UpdateGroup(
 		updateOrganizationUnitID := existingGroupDAO.OrganizationUnitID
 
 		if gs.isOrganizationUnitChanged(existingGroup, request) {
-			if err := gs.validateOU(request.OrganizationUnitID); err != nil {
+			if err := gs.validateOU(txCtx, request.OrganizationUnitID); err != nil {
 				capturedSvcErr = err
 				return errors.New("rollback for invalid OU")
 			}
@@ -689,10 +689,10 @@ func (gs *groupService) isOrganizationUnitChanged(existingGroup Group, request U
 }
 
 // validateOU validates that provided organization unit ID exist.
-func (gs *groupService) validateOU(ouID string) *serviceerror.ServiceError {
+func (gs *groupService) validateOU(ctx context.Context, ouID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	_, err := gs.ouService.GetOrganizationUnit(ouID)
+	_, err := gs.ouService.GetOrganizationUnit(ctx, ouID)
 	if err != nil {
 		if err.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return &ErrorInvalidOUID

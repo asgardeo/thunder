@@ -71,7 +71,7 @@ describe('UserTypesListPage', () => {
   it('renders page description', () => {
     render(<UserTypesListPage />);
 
-    expect(screen.getByText('Define a new user type schema for your organization')).toBeInTheDocument();
+    expect(screen.getByText('Define and manage user types with custom schemas')).toBeInTheDocument();
   });
 
   it('renders create user type button', () => {

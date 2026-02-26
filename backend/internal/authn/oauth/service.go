@@ -20,6 +20,7 @@
 package oauth
 
 import (
+	"context"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
@@ -92,7 +93,7 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
 		return nil, &ErrorEmptyIdpID
 	}
 
-	idp, svcErr := s.idpService.GetIdentityProvider(idpID)
+	idp, svcErr := s.idpService.GetIdentityProvider(context.TODO(), idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP,

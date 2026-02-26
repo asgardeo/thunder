@@ -51,6 +51,14 @@ import useOrganizationUnit from '../contexts/useOrganizationUnit';
 const PLACEHOLDER_SUFFIX = '__placeholder';
 const ERROR_SUFFIX = '__error';
 const ADD_CHILD_SUFFIX = '__addChild';
+const LOAD_MORE_SUFFIX = '__loadMore';
+const ROOT_PARENT_ID = '__root';
+const ROOT_LOAD_MORE_ID = `${ROOT_PARENT_ID}${LOAD_MORE_SUFFIX}`;
+const PAGE_SIZE = 30;
+
+function TreeViewLoadingIcon(): JSX.Element {
+  return <CircularProgress size={18} />;
+}
 
 function buildAddChildItem(parentId: string, parentName: string, parentHandle: string): OrganizationUnitTreeItem {
   return {
@@ -98,11 +106,13 @@ interface CustomTreeItemProps extends TreeView.TreeItemProps {
   onEdit?: (event: MouseEvent<HTMLElement>, ou: {id: string; name: string}) => void;
   onDelete?: (event: MouseEvent<HTMLElement>, ou: {id: string; name: string}) => void;
   onAddChild?: (event: MouseEvent<HTMLElement>, ou: {id: string; name: string; handle: string}) => void;
+  onLoadMore?: (parentId: string) => void;
   addChildTooltip?: string;
   addChildButtonText?: string;
   editTooltip?: string;
   deleteTooltip?: string;
   loadingItems?: Set<string>;
+  loadMoreLoadingItems?: Set<string>;
   itemMap?: Map<string, OrganizationUnitTreeItem>;
 }
 
@@ -120,11 +130,13 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
     onEdit,
     onDelete,
     onAddChild,
+    onLoadMore: onLoadMoreProp,
     addChildTooltip = '',
     addChildButtonText = '',
     editTooltip = '',
     deleteTooltip = '',
     loadingItems: loadingItemsProp,
+    loadMoreLoadingItems: loadMoreLoadingItemsProp,
     itemMap: itemMapProp,
     itemId,
     label,
@@ -132,15 +144,75 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
   } = allProps;
   const treeItemProps = {itemId, label, ...restProps};
   const theme = useTheme();
+  const {t} = useTranslation();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const labelStr = typeof label === 'string' ? label : '';
   const itemData = itemMapProp?.get(itemId);
+  const isLoadMoreItem = itemId.endsWith(LOAD_MORE_SUFFIX);
   const isAddChildButton = itemId.endsWith(ADD_CHILD_SUFFIX);
   const isPlaceholder =
     !isAddChildButton &&
+    !isLoadMoreItem &&
     (itemData?.isPlaceholder ??
       (itemId.endsWith(PLACEHOLDER_SUFFIX) || itemId.endsWith(ERROR_SUFFIX) || itemId.endsWith('__empty')));
   const isItemLoading = loadingItemsProp?.has(itemId);
+
+  if (isLoadMoreItem) {
+    const parentId = itemId.replace(LOAD_MORE_SUFFIX, '');
+    const isLoadingMore = loadMoreLoadingItemsProp?.has(parentId);
+
+    return (
+      <TreeView.TreeItem
+        {...treeItemProps}
+        sx={{
+          '& > .MuiTreeItem-content': {
+            border: '1px dashed',
+            borderColor: theme.vars?.palette.divider,
+            borderRadius: 1,
+            backgroundColor: 'transparent !important',
+            cursor: isLoadingMore ? 'default' : 'pointer',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              borderColor: isLoadingMore ? undefined : theme.vars?.palette.primary.main,
+            },
+          },
+        }}
+        label={
+          <Box
+            role="button"
+            tabIndex={0}
+            onClick={(e: MouseEvent<HTMLElement>) => {
+              e.stopPropagation();
+              if (!isLoadingMore) {
+                onLoadMoreProp?.(parentId);
+              }
+            }}
+            onKeyDown={(e: KeyboardEvent) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !isLoadingMore) {
+                e.preventDefault();
+                e.stopPropagation();
+                onLoadMoreProp?.(parentId);
+              }
+            }}
+            sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.25}}
+          >
+            {isLoadingMore ? (
+              <>
+                <CircularProgress size={14} />
+                <Typography variant="caption" color="text.secondary">
+                  {t('common:status.loading')}
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="caption" color="primary" sx={{fontWeight: 500}}>
+                {t('organizationUnits:listing.treeView.loadMore')}
+              </Typography>
+            )}
+          </Box>
+        }
+      />
+    );
+  }
 
   if (isAddChildButton) {
     const parentId = itemId.replace(ADD_CHILD_SUFFIX, '');
@@ -261,6 +333,9 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
     <>
       <TreeView.TreeItem
         {...treeItemProps}
+        {...(isItemLoading
+          ? {slots: {collapseIcon: TreeViewLoadingIcon, expandIcon: TreeViewLoadingIcon}}
+          : {})}
         label={
           <Box
             sx={{
@@ -291,7 +366,6 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
                 </Typography>
               )}
             </Box>
-            {isItemLoading && <CircularProgress size={16} />}
             <IconButton
               size="small"
               aria-label="Actions"
@@ -370,6 +444,12 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   const itemMap = useMemo(() => buildItemMap(treeItems), [treeItems]);
 
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
+  const [loadMoreLoadingItems, setLoadMoreLoadingItems] = useState<Set<string>>(new Set());
+  const [childOffsets, setChildOffsets] = useState<Map<string, number>>(new Map());
+  const [rootOffset, setRootOffset] = useState<number>(0);
+  const [rootLoadMoreLoading, setRootLoadMoreLoading] = useState<boolean>(false);
+  const rootLoadMoreLoadingRef = useRef<boolean>(false);
+  rootLoadMoreLoadingRef.current = rootLoadMoreLoading;
   const loadingItemsRef = useRef<Set<string>>(loadingItems);
   loadingItemsRef.current = loadingItems;
   const expandedItemsRef = useRef<string[]>(expandedItems);
@@ -406,15 +486,36 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
     [],
   );
 
-  // Fetch children for a single parent and return the built tree items.
-  // Does NOT update React state — caller is responsible for that.
-  const fetchChildItems = useCallback(
-    async (parentId: string): Promise<OrganizationUnitTreeItem[]> => {
+  const appendTreeItemChildren = useCallback(
+    (
+      items: OrganizationUnitTreeItem[],
+      parentId: string,
+      newChildren: OrganizationUnitTreeItem[],
+    ): OrganizationUnitTreeItem[] =>
+      items.map((item) => {
+        if (item.id === parentId) {
+          const existing = (item.children ?? []).filter((c) => !c.id.endsWith(LOAD_MORE_SUFFIX));
+
+          return {...item, children: [...existing, ...newChildren]};
+        }
+
+        if (item.children && item.children.length > 0) {
+          return {...item, children: appendTreeItemChildren(item.children, parentId, newChildren)};
+        }
+
+        return item;
+      }),
+    [],
+  );
+
+  const fetchChildPage = useCallback(
+    async (parentId: string, offset: number): Promise<OrganizationUnitListResponse> => {
       const serverUrl = getServerUrl();
-      const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
-        queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit: 30, offset: 0}],
+
+      return queryClient.fetchQuery<OrganizationUnitListResponse>({
+        queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit: PAGE_SIZE, offset}],
         queryFn: async (): Promise<OrganizationUnitListResponse> => {
-          const queryParams = new URLSearchParams({limit: '30', offset: '0'});
+          const queryParams = new URLSearchParams({limit: String(PAGE_SIZE), offset: String(offset)});
           const response: {data: OrganizationUnitListResponse} = await http.request({
             url: `${serverUrl}/organization-units/${encodeURIComponent(parentId)}/ous?${queryParams.toString()}`,
             method: 'GET',
@@ -423,16 +524,34 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
 
           return response.data;
         },
-        staleTime: 0, // Always fetch fresh data; mutations invalidate cache but staleTime would ignore invalidation
+        staleTime: 0,
       });
+    },
+    [getServerUrl, queryClient, http],
+  );
 
+  // Fetch children for a single parent and return the built tree items.
+  // Does NOT update React state — caller is responsible for that.
+  const fetchChildItems = useCallback(
+    async (parentId: string): Promise<OrganizationUnitTreeItem[]> => {
+      const result = await fetchChildPage(parentId, 0);
       const childOUs = result.organizationUnits;
       const parentItem = findItem(treeItemsRef.current, parentId);
       const addChildItem = buildAddChildItem(parentId, parentItem?.label ?? '', parentItem?.handle ?? '');
+      const items = childOUs.length > 0 ? [addChildItem, ...buildTreeItems(childOUs)] : [addChildItem];
 
-      return childOUs.length > 0 ? [addChildItem, ...buildTreeItems(childOUs)] : [addChildItem];
+      if (childOUs.length < result.totalResults) {
+        items.push({
+          id: `${parentId}${LOAD_MORE_SUFFIX}`,
+          label: '',
+          handle: '',
+          isPlaceholder: true,
+        });
+      }
+
+      return items;
     },
-    [getServerUrl, queryClient, http],
+    [fetchChildPage],
   );
 
   // Fetch and update state for user-triggered node expansion
@@ -444,6 +563,10 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
 
       try {
         const childItems = await fetchChildItems(parentId);
+
+        setChildOffsets((prev) => new Map(prev).set(parentId, childItems.filter(
+          (c) => !c.isPlaceholder,
+        ).length));
         // Update tree items, mark as loaded, then expand in one synchronous block.
         // The node stays collapsed until this point, so it opens directly with real children.
         setTreeItems((prev) => updateTreeItemChildren(prev, parentId, childItems));
@@ -471,6 +594,98 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
       }
     },
     [fetchChildItems, updateTreeItemChildren, setTreeItems, setLoadedItems, setExpandedItems, logger, t],
+  );
+
+  const handleRootLoadMore = useCallback(
+    async (): Promise<void> => {
+      if (rootLoadMoreLoadingRef.current) return;
+
+      setRootLoadMoreLoading(true);
+
+      try {
+        const serverUrl = getServerUrl();
+        const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
+          queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit: PAGE_SIZE, offset: rootOffset}],
+          queryFn: async (): Promise<OrganizationUnitListResponse> => {
+            const queryParams = new URLSearchParams({limit: String(PAGE_SIZE), offset: String(rootOffset)});
+            const response: {data: OrganizationUnitListResponse} = await http.request({
+              url: `${serverUrl}/organization-units?${queryParams.toString()}`,
+              method: 'GET',
+              headers: {'Content-Type': 'application/json'},
+            } as unknown as Parameters<typeof http.request>[0]);
+
+            return response.data;
+          },
+          staleTime: 0,
+        });
+
+        const newItems = buildTreeItems(result.organizationUnits);
+        const loadedSoFar = rootOffset + result.organizationUnits.length;
+
+        if (loadedSoFar < result.totalResults) {
+          newItems.push({
+            id: ROOT_LOAD_MORE_ID,
+            label: '',
+            handle: '',
+            isPlaceholder: true,
+          });
+        }
+
+        setRootOffset(loadedSoFar);
+        setTreeItems((prev) => {
+          const withoutLoadMore = prev.filter((item) => item.id !== ROOT_LOAD_MORE_ID);
+
+          return [...withoutLoadMore, ...newItems];
+        });
+      } catch (_error: unknown) {
+        logger.error('Failed to load more root organization units', {error: _error});
+      } finally {
+        setRootLoadMoreLoading(false);
+      }
+    },
+    [rootOffset, getServerUrl, queryClient, http, setTreeItems, logger],
+  );
+
+  const handleLoadMore = useCallback(
+    async (parentId: string): Promise<void> => {
+      if (parentId === ROOT_PARENT_ID) {
+        await handleRootLoadMore();
+
+        return;
+      }
+
+      setLoadMoreLoadingItems((prev) => new Set(prev).add(parentId));
+
+      try {
+        const offset = childOffsets.get(parentId) ?? PAGE_SIZE;
+        const result = await fetchChildPage(parentId, offset);
+        const childOUs = result.organizationUnits;
+        const newItems = buildTreeItems(childOUs);
+        const loadedSoFar = offset + childOUs.length;
+
+        if (loadedSoFar < result.totalResults) {
+          newItems.push({
+            id: `${parentId}${LOAD_MORE_SUFFIX}`,
+            label: '',
+            handle: '',
+            isPlaceholder: true,
+          });
+        }
+
+        setChildOffsets((prev) => new Map(prev).set(parentId, loadedSoFar));
+        setTreeItems((prev) => appendTreeItemChildren(prev, parentId, newItems));
+      } catch (_error: unknown) {
+        logger.error('Failed to load more child organization units', {error: _error, parentId});
+      } finally {
+        setLoadMoreLoadingItems((prev) => {
+          const next = new Set(prev);
+          next.delete(parentId);
+
+          return next;
+        });
+      }
+    },
+    [childOffsets, fetchChildPage, appendTreeItemChildren, setTreeItems, logger, handleRootLoadMore],
   );
 
   // Process one level of the tree: fetch children for the given IDs,
@@ -537,6 +752,26 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
     [expandLevel],
   );
 
+  const buildRootTreeItems = useCallback(
+    (response: OrganizationUnitListResponse): OrganizationUnitTreeItem[] => {
+      const items = buildTreeItems(response.organizationUnits);
+
+      if (response.organizationUnits.length < response.totalResults) {
+        items.push({
+          id: ROOT_LOAD_MORE_ID,
+          label: '',
+          handle: '',
+          isPlaceholder: true,
+        });
+      }
+
+      setRootOffset(response.organizationUnits.length);
+
+      return items;
+    },
+    [],
+  );
+
   // Rebuild tree when query data is available and either the tree is empty (after
   // reset) or the data has changed since the last build (fresh fetch after mutation).
   // rebuildIdRef guards against stale rebuilds: if a newer rebuild starts while an
@@ -557,7 +792,19 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
         .then(({tree, loaded}) => {
           // Only apply if no newer rebuild was triggered
           if (rebuildIdRef.current === id) {
-            setTreeItems(tree);
+            const items = tree;
+
+            if (data.organizationUnits.length < data.totalResults) {
+              items.push({
+                id: ROOT_LOAD_MORE_ID,
+                label: '',
+                handle: '',
+                isPlaceholder: true,
+              });
+            }
+
+            setRootOffset(data.organizationUnits.length);
+            setTreeItems(items);
             setLoadedItems(loaded);
             builtFromDataRef.current = data;
           }
@@ -566,15 +813,15 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
           logger.error('Failed to rebuild tree with expanded items', {error: _err});
           if (rebuildIdRef.current === id) {
             // Fallback: just set root items
-            setTreeItems(buildTreeItems(data.organizationUnits));
+            setTreeItems(buildRootTreeItems(data));
             builtFromDataRef.current = data;
           }
         });
     } else {
-      setTreeItems(buildTreeItems(data.organizationUnits));
+      setTreeItems(buildRootTreeItems(data));
       builtFromDataRef.current = data;
     }
-  }, [data, treeItems.length, rebuildTree, setTreeItems, setLoadedItems, logger]);
+  }, [data, treeItems.length, rebuildTree, buildRootTreeItems, setTreeItems, setLoadedItems, logger]);
 
   // Clear builtFromDataRef when tree is reset so the effect rebuilds from current data
   useEffect(() => {
@@ -651,6 +898,14 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
       logger.error('Failed to navigate to create organization unit page', {error: _error});
     });
   }, [navigate, logger]);
+
+  const combinedLoadMoreLoadingItems = useMemo(() => {
+    if (!rootLoadMoreLoading) return loadMoreLoadingItems;
+    const combined = new Set(loadMoreLoadingItems);
+    combined.add(ROOT_PARENT_ID);
+
+    return combined;
+  }, [loadMoreLoadingItems, rootLoadMoreLoading]);
 
   if (error) {
     return (
@@ -824,11 +1079,17 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
               onEdit: handleEditClick,
               onDelete: handleDeleteClick,
               onAddChild: handleAddChildClick,
+              onLoadMore: (parentId: string) => {
+                handleLoadMore(parentId).catch((_error: unknown) => {
+                  logger.error('Failed to load more child organization units', {error: _error, parentId});
+                });
+              },
               addChildTooltip: t('organizationUnits:listing.treeView.addChild'),
               addChildButtonText: t('organizationUnits:listing.treeView.addChildOrganizationUnit'),
               editTooltip: t('common:actions.edit'),
               deleteTooltip: t('common:actions.delete'),
               loadingItems,
+              loadMoreLoadingItems: combinedLoadMoreLoadingItems,
               itemMap,
             } as Record<string, unknown>,
           }}

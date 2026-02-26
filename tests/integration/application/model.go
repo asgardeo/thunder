@@ -78,6 +78,7 @@ type OAuthTokenConfig struct {
 
 // UserInfoConfig represents the UserInfo endpoint configuration.
 type UserInfoConfig struct {
+	ResponseType   string   `json:"response_type,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
@@ -262,6 +263,9 @@ func (app *Application) equals(expectedApp Application) bool {
 				// Compare UserInfo config - lenient if expected is nil but actual is empty
 				if expectedOAuth.UserInfo != nil {
 					if oauth.UserInfo == nil {
+						return false
+					}
+					if oauth.UserInfo.ResponseType != expectedOAuth.UserInfo.ResponseType {
 						return false
 					}
 					if !compareStringSlices(oauth.UserInfo.UserAttributes, expectedOAuth.UserInfo.UserAttributes) {

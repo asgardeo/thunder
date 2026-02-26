@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {render, screen, waitFor, fireEvent} from '@thunder/test-utils';
+import {render, screen, waitFor, fireEvent, within} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {UseQueryResult, UseMutationResult} from '@tanstack/react-query';
 import type {Application} from '../../models/application';
 import ApplicationEditPage from '../ApplicationEditPage';
@@ -42,6 +42,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'applications:edit.page.back': 'Back to Applications',
+        'applications:edit.page.logoUpdate.label': 'Update Logo',
         'applications:edit.page.loading': 'Loading application...',
         'applications:edit.page.notFound.title': 'Application Not Found',
         'applications:edit.page.notFound.description': 'The application you are looking for does not exist.',
@@ -81,7 +82,23 @@ vi.mock('../../utils/getIntegrationGuidesForTemplate', () => ({
 
 // Mock child components
 vi.mock('../../components/edit-application/general-settings/EditGeneralSettings', () => ({
-  default: vi.fn(() => <div data-testid="edit-general-settings">General Settings</div>),
+  default: vi.fn(
+    ({
+      onCopyToClipboard,
+      copiedField,
+    }: {
+      onCopyToClipboard?: (text: string, fieldName: string) => void;
+      copiedField?: string | null;
+    }) => (
+      <div data-testid="edit-general-settings">
+        General Settings
+        {copiedField && <span data-testid="copied-field">{copiedField}</span>}
+        <button type="button" data-testid="copy-button" onClick={() => onCopyToClipboard?.('test-text', 'clientId')}>
+          Copy
+        </button>
+      </div>
+    ),
+  ),
 }));
 
 vi.mock('../../components/edit-application/flows-settings/EditFlowsSettings', () => ({
@@ -222,6 +239,22 @@ describe('ApplicationEditPage', () => {
 
       renderComponent();
 
+      expect(screen.getByRole('button', {name: /back to applications/i})).toBeInTheDocument();
+    });
+
+    it('should navigate back when back button is clicked in error state', async () => {
+      mockUseGetApplication.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error('Not found'),
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      fireEvent.click(screen.getByRole('button', {name: /back to applications/i}));
+
+      // Button should still be present after click (navigation is async)
       expect(screen.getByRole('button', {name: /back to applications/i})).toBeInTheDocument();
     });
   });
@@ -562,7 +595,8 @@ describe('ApplicationEditPage', () => {
       await user.click(avatar);
 
       // Click update logo button in modal
-      const updateLogoButton = screen.getByRole('button', {name: /update logo/i});
+      const modal = screen.getByTestId('logo-update-modal');
+      const updateLogoButton = within(modal).getByRole('button', {name: /update logo/i});
       await user.click(updateLogoButton);
 
       await waitFor(() => {
@@ -572,8 +606,8 @@ describe('ApplicationEditPage', () => {
 
       // Modal should be closed
       await waitFor(() => {
-        const modal = screen.getByTestId('logo-update-modal');
-        expect(modal).toHaveStyle({display: 'none'});
+        const closedModal = screen.getByTestId('logo-update-modal');
+        expect(closedModal).toHaveStyle({display: 'none'});
       });
     });
 
@@ -805,6 +839,22 @@ describe('ApplicationEditPage', () => {
       expect(screen.getByText('applications:edit.page.notFound')).toBeInTheDocument();
       expect(screen.getByRole('button', {name: /back to applications/i})).toBeInTheDocument();
     });
+
+    it('should navigate back when back button is clicked in not found state', async () => {
+      mockUseGetApplication.mockReturnValue({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      fireEvent.click(screen.getByRole('button', {name: /back to applications/i}));
+
+      // Button should still be present after click (navigation is async)
+      expect(screen.getByRole('button', {name: /back to applications/i})).toBeInTheDocument();
+    });
   });
 
   describe('Error Handling', () => {
@@ -873,6 +923,8 @@ describe('ApplicationEditPage', () => {
     });
 
     it('should not save when application or applicationId is missing', async () => {
+      const user = userEvent.setup();
+
       // Mock useParams to return undefined applicationId
       const {useParams} = await import('react-router');
       (useParams as ReturnType<typeof vi.fn>).mockReturnValue({applicationId: undefined});
@@ -887,6 +939,23 @@ describe('ApplicationEditPage', () => {
       } as unknown as UseMutationResult<Application, Error, Partial<Application>>);
 
       renderComponent();
+
+      // Make a change to trigger the floating save bar
+      const nameSection = screen.getByText('Test Application').closest('div');
+      const editButton = nameSection?.querySelector('button');
+      await user.click(editButton!);
+
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Application{Enter}');
+
+      // Click save — handleSave should return early due to missing applicationId
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
+      });
+
+      const saveButton = screen.getByRole('button', {name: /save changes/i});
+      await user.click(saveButton);
 
       // mutateAsync should not have been called since applicationId is missing
       expect(mockMutateAsync).not.toHaveBeenCalled();
@@ -1036,22 +1105,267 @@ describe('ApplicationEditPage', () => {
 
   describe('Edit Icon Click for Logo', () => {
     it('should open logo modal when edit icon button is clicked', async () => {
+      renderComponent();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Update Logo'}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+      });
+    });
+  });
+
+  describe('Copy to Clipboard', () => {
+    const originalClipboard = navigator.clipboard;
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: originalClipboard,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('should copy text to clipboard when copy button is clicked', async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {writeText: writeTextMock},
+        writable: true,
+        configurable: true,
+      });
+
+      renderComponent();
+
+      fireEvent.click(screen.getByTestId('copy-button'));
+
+      await waitFor(() => {
+        expect(writeTextMock).toHaveBeenCalledWith('test-text');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('copied-field')).toHaveTextContent('clientId');
+      });
+    });
+
+    it('should handle clipboard write failure gracefully', async () => {
+      const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {writeText: writeTextMock},
+        writable: true,
+        configurable: true,
+      });
+
+      renderComponent();
+
+      fireEvent.click(screen.getByTestId('copy-button'));
+
+      await waitFor(() => {
+        expect(writeTextMock).toHaveBeenCalledWith('test-text');
+      });
+
+      // Component should still be functional after error
+      expect(screen.getByText('Test Application')).toBeInTheDocument();
+    });
+  });
+
+  describe('Avatar Image Error', () => {
+    it('should hide avatar image when image fails to load', () => {
+      renderComponent();
+
+      const avatar = screen.getByRole('img');
+
+      // Simulate image load error via the onError handler
+      fireEvent.error(avatar);
+
+      // The image should be hidden
+      expect(avatar).toHaveStyle({display: 'none'});
+    });
+  });
+
+  describe('Edited App Fallbacks', () => {
+    it('should display edited name when editedApp has name', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Find all edit buttons and click the one next to the avatar
-      const allButtons = screen.getAllByRole('button');
-      // The edit icon next to avatar has a smaller icon (size 14)
-      const avatarEditButton = allButtons.find((btn) => btn.querySelector('svg') && btn.closest('[class*="absolute"]'));
+      // Edit the name
+      const nameSection = screen.getByText('Test Application').closest('div');
+      const editButton = nameSection?.querySelector('button');
+      await user.click(editButton!);
 
-      if (avatarEditButton) {
-        await user.click(avatarEditButton);
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'New App Name{Enter}');
 
-        await waitFor(() => {
-          const modal = screen.getByTestId('logo-update-modal');
-          expect(modal).toHaveStyle({display: 'block'});
-        });
-      }
+      await waitFor(() => {
+        expect(screen.getByText('New App Name')).toBeInTheDocument();
+      });
+
+      // Now click edit again - tempName should be set from editedApp.name
+      const updatedNameSection = screen.getByText('New App Name').closest('div');
+      const editButtonAgain = updatedNameSection?.querySelector('button');
+      await user.click(editButtonAgain!);
+
+      const nameInputAgain = screen.getByRole('textbox');
+      expect(nameInputAgain).toHaveValue('New App Name');
+    });
+
+    it('should display edited description when editedApp has description', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Edit description
+      const descriptionSection = screen.getByText('Test application description').closest('div');
+      const editButton = descriptionSection?.querySelector('button');
+      await user.click(editButton!);
+
+      const descriptionInput = screen.getByPlaceholderText('Add a description');
+      await user.clear(descriptionInput);
+      await user.type(descriptionInput, 'New description');
+      fireEvent.blur(descriptionInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('New description')).toBeInTheDocument();
+      });
+
+      // Click edit again - tempDescription should use editedApp.description
+      const updatedSection = screen.getByText('New description').closest('div');
+      const editButtonAgain = updatedSection?.querySelector('button');
+      await user.click(editButtonAgain!);
+
+      const descriptionInputAgain = screen.getByPlaceholderText('Add a description');
+      expect(descriptionInputAgain).toHaveValue('New description');
+    });
+
+    it('should display edited logo_url in avatar when editedApp has logo_url', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Open modal and update logo
+      const avatar = screen.getByRole('img');
+      await user.click(avatar);
+
+      const logoModal = screen.getByTestId('logo-update-modal');
+      const updateLogoButton = within(logoModal).getByRole('button', {name: /update logo/i});
+      await user.click(updateLogoButton);
+
+      await waitFor(() => {
+        const updatedAvatar = screen.getByRole('img');
+        expect(updatedAvatar).toHaveAttribute('src', 'https://example.com/new-logo.png');
+      });
+    });
+
+    it('should handle application with no logo_url', () => {
+      mockUseGetApplication.mockReturnValue({
+        data: {...mockApplication, logo_url: undefined},
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as UseQueryResult<Application>);
+
+      renderComponent();
+
+      // Should render without crashing - avatar will use fallback icon
+      expect(screen.getByText('Test Application')).toBeInTheDocument();
+    });
+  });
+
+  describe('Tab Navigation with Integration Guides', () => {
+    it('should switch to general tab when overview is first tab', async () => {
+      const user = userEvent.setup();
+      mockGetIntegrationGuidesForTemplate.mockReturnValue(['react-vite']);
+
+      renderComponent();
+
+      // Click General tab (second tab when integration guides are present)
+      const generalTab = screen.getByRole('tab', {name: /general/i});
+      await user.click(generalTab);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('edit-general-settings')).toBeInTheDocument();
+      });
+    });
+
+    it('should switch to flows tab when integration guides exist', async () => {
+      const user = userEvent.setup();
+      mockGetIntegrationGuidesForTemplate.mockReturnValue(['react-vite']);
+
+      renderComponent();
+
+      const flowsTab = screen.getByRole('tab', {name: /flows/i});
+      await user.click(flowsTab);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('edit-flows-settings')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Description Escape with Edited Value', () => {
+    it('should restore edited description on Escape key when editedApp has description', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // First, edit the description to set editedApp.description
+      const descriptionSection = screen.getByText('Test application description').closest('div');
+      const editButton = descriptionSection?.querySelector('button');
+      await user.click(editButton!);
+
+      const descriptionInput = screen.getByPlaceholderText('Add a description');
+      await user.clear(descriptionInput);
+      await user.type(descriptionInput, 'Edited description');
+      fireEvent.blur(descriptionInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('Edited description')).toBeInTheDocument();
+      });
+
+      // Now edit again and press Escape - should restore the editedApp.description
+      const updatedSection = screen.getByText('Edited description').closest('div');
+      const editButtonAgain = updatedSection?.querySelector('button');
+      await user.click(editButtonAgain!);
+
+      const descriptionInputAgain = screen.getByPlaceholderText('Add a description');
+      await user.clear(descriptionInputAgain);
+      await user.type(descriptionInputAgain, 'Something else');
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => {
+        // Should revert to the editedApp.description value
+        expect(screen.getByText('Edited description')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Name Editing with Edited Value', () => {
+    it('should restore edited name on Escape when editedApp has name', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // First, edit name to set editedApp.name
+      const nameSection = screen.getByText('Test Application').closest('div');
+      const editButton = nameSection?.querySelector('button');
+      await user.click(editButton!);
+
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Edited Name{Enter}');
+
+      await waitFor(() => {
+        expect(screen.getByText('Edited Name')).toBeInTheDocument();
+      });
+
+      // Edit again and press Escape - should restore editedApp.name
+      const updatedNameSection = screen.getByText('Edited Name').closest('div');
+      const editButtonAgain = updatedNameSection?.querySelector('button');
+      await user.click(editButtonAgain!);
+
+      const nameInputAgain = screen.getByRole('textbox');
+      await user.clear(nameInputAgain);
+      await user.type(nameInputAgain, 'Something else{Escape}');
+
+      await waitFor(() => {
+        expect(screen.getByText('Edited Name')).toBeInTheDocument();
+      });
     });
   });
 });

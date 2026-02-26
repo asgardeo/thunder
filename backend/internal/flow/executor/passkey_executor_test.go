@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/passkeymock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
+	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
@@ -179,7 +179,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_Success() {
 		},
 	}
 
-	suite.mockPasskeyService.On("StartAuthentication", mock.MatchedBy(
+	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.MatchedBy(
 		func(req *passkey.PasskeyAuthenticationStartRequest) bool {
 			return req.UserID == testPasskeyUserID && req.RelyingPartyID == testRelyingPartyID
 		})).Return(expectedStartData, nil)
@@ -205,7 +205,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_MissingUserID() 
 	}
 
 	// Mock passkey service for usernameless authentication (empty UserID)
-	suite.mockPasskeyService.On("StartAuthentication", mock.MatchedBy(
+	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.MatchedBy(
 		func(req *passkey.PasskeyAuthenticationStartRequest) bool {
 			return req.UserID == "" && req.RelyingPartyID == testRelyingPartyID
 		})).Return(expectedStartData, nil)
@@ -235,7 +235,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_ServiceError_Cli
 	ctx := createPasskeyNodeContext(passkeyExecutorModeChallenge, common.FlowTypeAuthentication)
 	ctx.RuntimeData[userAttributeUserID] = testPasskeyUserID
 
-	suite.mockPasskeyService.On("StartAuthentication", mock.Anything).Return(
+	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "User has no registered passkeys",
@@ -253,7 +253,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_ServiceError_Ser
 	ctx := createPasskeyNodeContext(passkeyExecutorModeChallenge, common.FlowTypeAuthentication)
 	ctx.RuntimeData[userAttributeUserID] = testPasskeyUserID
 
-	suite.mockPasskeyService.On("StartAuthentication", mock.Anything).Return(
+	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			ErrorDescription: "Database connection failed",
@@ -280,7 +280,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 	authResp := &authncm.AuthenticationResponse{
 		ID: testPasskeyUserID,
 	}
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything).Return(authResp, nil)
+	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(authResp, nil)
 
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
@@ -342,7 +342,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_InvalidPasskey_Clie
 		inputSignature:         "invalid-signature",
 	}
 
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything).Return(
+	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "Invalid signature",
@@ -367,7 +367,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_ServiceError_Server
 		inputSignature:         "signature",
 	}
 
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything).Return(
+	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			ErrorDescription: "Database error",
@@ -390,7 +390,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_Success() {
 		},
 	}
 
-	suite.mockPasskeyService.On("StartRegistration", mock.MatchedBy(
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.MatchedBy(
 		func(req *passkey.PasskeyRegistrationStartRequest) bool {
 			return req.UserID == testPasskeyUserID &&
 				req.RelyingPartyID == testRelyingPartyID &&
@@ -433,7 +433,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_ServiceError
 	ctx := createPasskeyNodeContext(passkeyExecutorModeRegStart, common.FlowTypeRegistration)
 	ctx.RuntimeData[userAttributeUserID] = testPasskeyUserID
 
-	suite.mockPasskeyService.On("StartRegistration", mock.Anything).Return(
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "User not found",
@@ -450,7 +450,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_ServiceError
 	ctx := createPasskeyNodeContext(passkeyExecutorModeRegStart, common.FlowTypeRegistration)
 	ctx.RuntimeData[userAttributeUserID] = testPasskeyUserID
 
-	suite.mockPasskeyService.On("StartRegistration", mock.Anything).Return(
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			ErrorDescription: "Database error",
@@ -475,7 +475,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_DefaultRelyi
 		PublicKeyCredentialCreationOptions: passkey.PublicKeyCredentialCreationOptions{},
 	}
 
-	suite.mockPasskeyService.On("StartRegistration", mock.MatchedBy(
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.MatchedBy(
 		func(req *passkey.PasskeyRegistrationStartRequest) bool {
 			// relyingPartyName should default to relyingPartyId
 			return req.RelyingPartyName == testRelyingPartyID
@@ -503,7 +503,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Reg
 		CredentialName: "My Passkey",
 		CreatedAt:      "2025-01-15T00:00:00Z",
 	}
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(finishData, nil)
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(finishData, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -532,7 +532,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Aut
 		CredentialName: "Passkey", // Default name
 		CreatedAt:      "2025-01-15T00:00:00Z",
 	}
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(finishData, nil)
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(finishData, nil)
 
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
@@ -592,7 +592,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceErro
 		inputAttestationObject: "invalid-attestation",
 	}
 
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "Invalid attestation object",
@@ -616,7 +616,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceErro
 		inputAttestationObject: "attestation-object",
 	}
 
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			ErrorDescription: "Database error",
@@ -921,7 +921,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_GetAuthenticatedUse
 	authResp := &authncm.AuthenticationResponse{
 		ID: testPasskeyUserID,
 	}
-	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything).Return(authResp, nil)
+	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything, mock.Anything).Return(authResp, nil)
 
 	// Simulate user not found when getting authenticated user details
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
@@ -948,7 +948,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_GetAuthenti
 		CredentialName: "Passkey",
 		CreatedAt:      "2025-01-15T00:00:00Z",
 	}
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(finishData, nil)
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(finishData, nil)
 
 	// Simulate user not found when getting authenticated user details
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
@@ -975,7 +975,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_UserIDFromAuthen
 		},
 	}
 
-	suite.mockPasskeyService.On("StartAuthentication", mock.MatchedBy(
+	suite.mockPasskeyService.On("StartAuthentication", mock.Anything, mock.MatchedBy(
 		func(req *passkey.PasskeyAuthenticationStartRequest) bool {
 			return req.UserID == testPasskeyUserID && req.RelyingPartyID == testRelyingPartyID
 		})).Return(expectedStartData, nil)
@@ -1000,7 +1000,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterStart_UserIDFromAu
 		PublicKeyCredentialCreationOptions: passkey.PublicKeyCredentialCreationOptions{},
 	}
 
-	suite.mockPasskeyService.On("StartRegistration", mock.MatchedBy(
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.MatchedBy(
 		func(req *passkey.PasskeyRegistrationStartRequest) bool {
 			return req.UserID == testPasskeyUserID
 		})).Return(expectedStartData, nil)

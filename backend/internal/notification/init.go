@@ -22,8 +22,11 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -31,13 +34,29 @@ import (
 func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	NotificationSenderMgtSvcInterface, OTPServiceInterface, declarativeresource.ResourceExporter, error) {
 	var notificationStore notificationStoreInterface
+	var tx transaction.Transactioner
+
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		notificationStore = newNotificationFileBasedStore()
 	} else {
 		notificationStore = newNotificationStore()
+		client, err := provider.GetDBProvider().GetConfigDBClient()
+		if err != nil {
+			log.GetLogger().Error("Failed to initialize database client for notification service",
+				log.Error(err))
+			return nil, nil, nil, err
+		}
+
+		var txErr error
+		tx, txErr = client.GetTransactioner()
+		if txErr != nil {
+			log.GetLogger().Error("Failed to initialize database transactioner for notification service",
+				log.Error(txErr))
+			return nil, nil, nil, txErr
+		}
 	}
 
-	mgtService := newNotificationSenderMgtService(notificationStore)
+	mgtService := newNotificationSenderMgtService(notificationStore, tx)
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(notificationStore); err != nil {
