@@ -27,6 +27,7 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -118,6 +119,7 @@ type FlowContextWithUserDataDB struct {
 	UserType           *string
 	UserInputs         *string
 	UserAttributes     *string
+	Token              *string
 	ExecutionHistory   *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
@@ -155,11 +157,23 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 		userAttributes = make(map[string]interface{})
 	}
 
+	// Decrypt token if present
+	var token string
+	if f.Token != nil {
+		encryptionService := encrypt.GetEncryptionService()
+		decrypted, err := encryptionService.DecryptString(*f.Token)
+		if err != nil {
+			return EngineContext{}, err
+		}
+		token = decrypted
+	}
+
 	// Build authenticated user
 	authenticatedUser := authncm.AuthenticatedUser{
 		IsAuthenticated: f.IsAuthenticated,
 		UserID:          "",
 		Attributes:      userAttributes,
+		Token:           token,
 	}
 	if f.UserID != nil {
 		authenticatedUser.UserID = *f.UserID
@@ -272,6 +286,17 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 		userType = &ctx.AuthenticatedUser.UserType
 	}
 
+	// Encrypt and store token if present
+	var encryptedToken *string
+	if ctx.AuthenticatedUser.Token != "" {
+		encryptionService := encrypt.GetEncryptionService()
+		encrypted, err := encryptionService.EncryptString(ctx.AuthenticatedUser.Token)
+		if err != nil {
+			return nil, err
+		}
+		encryptedToken = &encrypted
+	}
+
 	// Get graph ID
 	graphID := ""
 	if ctx.Graph != nil {
@@ -292,6 +317,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 		UserType:           userType,
 		UserInputs:         &userInputs,
 		UserAttributes:     &userAttributes,
+		Token:              encryptedToken,
 		ExecutionHistory:   &executionHistory,
 	}, nil
 }
