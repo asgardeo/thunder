@@ -320,7 +320,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_Success() {
 	suite.service.clientProvider = cp
 
 	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("session-token-123", int64(0), nil).Once()
+		mock.Anything, mock.Anything, mock.Anything).Return("session-token-123", int64(0), nil).Once()
 
 	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(err)
@@ -365,7 +365,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 	suite.service.clientProvider = cp
 
 	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("", int64(0), &ErrorInternalServerError).Once()
+		mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &ErrorInternalServerError).Once()
 
 	res, err := suite.service.SendOTP(context.Background(), req)
 	suite.Nil(res)

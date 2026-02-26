@@ -391,7 +391,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 	// Generate auth assertion JWT
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 	token, _, err := as.jwtService.GenerateJWT(user.UserID, jwtConfig.Audience, jwtConfig.Issuer,
-		jwtConfig.ValidityPeriod, jwtClaims)
+		jwtConfig.ValidityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
 		logger.Error("Failed to generate auth assertion", log.String("error", err.Error))
 		return &serviceerror.InternalServerError
@@ -624,7 +624,7 @@ func (as *authenticationService) createSessionToken(idpID string, idpType idp.ID
 	}
 
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	token, _, err := as.jwtService.GenerateJWT("auth-svc", "auth-svc", jwtConfig.Issuer, 600, claims)
+	token, _, err := as.jwtService.GenerateJWT("auth-svc", "auth-svc", jwtConfig.Issuer, 600, claims, jwt.TokenTypeJWT)
 	if err != nil {
 		return "", err
 	}
