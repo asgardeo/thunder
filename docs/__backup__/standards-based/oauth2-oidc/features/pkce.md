@@ -71,8 +71,9 @@ curl -kL -X POST https://localhost:8090/oauth2/token \
 ## Code Challenge Methods
 
 Thunder supports:
-- **S256**: SHA256 hash (recommended, more secure)
-- **plain**: Plain text (less secure, not recommended)
+- **S256**: SHA256 hash (required, per OAuth 2.0 Security Best Current Practice)
+
+The `plain` method is not supported as it does not provide adequate security. Per RFC 9700 (OAuth 2.0 Security Best Current Practice), clients MUST use S256 as the code challenge method.
 
 ## Application Configuration
 

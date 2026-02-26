@@ -36,7 +36,7 @@ Returns OAuth 2.0 authorization server metadata including:
     "refresh_token",
     "urn:ietf:params:oauth:grant-type:token-exchange"
   ],
-  "code_challenge_methods_supported": ["S256", "plain"],
+  "code_challenge_methods_supported": ["S256"],
   "scopes_supported": ["openid", "profile", "email"],
   "introspection_endpoint": "https://localhost:8090/oauth2/introspect",
   "registration_endpoint": "https://localhost:8090/oauth2/dcr/register"

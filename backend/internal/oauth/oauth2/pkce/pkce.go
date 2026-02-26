@@ -27,8 +27,7 @@ import (
 
 // PKCE Code Challenge Methods.
 const (
-	CodeChallengeMethodPlain = "plain"
-	CodeChallengeMethodS256  = "S256"
+	CodeChallengeMethodS256 = "S256"
 )
 
 // PKCE validation errors
@@ -56,23 +55,21 @@ func isValidBase64URLChar(c rune) bool {
 }
 
 // ValidatePKCE validates the PKCE code verifier against the stored code challenge.
+// Only S256 code challenge method is supported as per OAuth 2.0 Security Best Current Practice.
 func ValidatePKCE(codeChallenge, codeChallengeMethod, codeVerifier string) error {
-	if codeChallengeMethod == "" {
-		codeChallengeMethod = CodeChallengeMethodPlain
+	if codeChallengeMethod != "" && codeChallengeMethod != CodeChallengeMethodS256 {
+		return ErrInvalidChallengeMethod
 	}
 
-	if err := validatePKCEParameters(codeChallenge, codeChallengeMethod, codeVerifier); err != nil {
+	if err := validateCodeVerifier(codeVerifier); err != nil {
 		return err
 	}
 
-	switch codeChallengeMethod {
-	case CodeChallengeMethodPlain:
-		return validatePlainChallenge(codeChallenge, codeVerifier)
-	case CodeChallengeMethodS256:
-		return validateS256Challenge(codeChallenge, codeVerifier)
-	default:
-		return ErrInvalidChallengeMethod
+	if codeChallenge == "" {
+		return ErrInvalidCodeChallenge
 	}
+
+	return validateS256Challenge(codeChallenge, codeVerifier)
 }
 
 // validateCodeVerifier validates the format of a code verifier according to RFC 7636.
@@ -91,31 +88,6 @@ func validateCodeVerifier(codeVerifier string) error {
 	return nil
 }
 
-// validatePKCEParameters validates the basic format of PKCE parameters.
-func validatePKCEParameters(codeChallenge, codeChallengeMethod, codeVerifier string) error {
-	if err := validateCodeVerifier(codeVerifier); err != nil {
-		return err
-	}
-
-	if codeChallenge == "" {
-		return ErrInvalidCodeChallenge
-	}
-
-	if codeChallengeMethod != CodeChallengeMethodPlain && codeChallengeMethod != CodeChallengeMethodS256 {
-		return ErrInvalidChallengeMethod
-	}
-
-	return nil
-}
-
-// validatePlainChallenge validates a plain code challenge.
-func validatePlainChallenge(codeChallenge, codeVerifier string) error {
-	if codeChallenge != codeVerifier {
-		return ErrPKCEValidationFailed
-	}
-	return nil
-}
-
 // validateS256Challenge validates an S256 code challenge.
 func validateS256Challenge(codeChallenge, codeVerifier string) error {
 	hash := sha256.Sum256([]byte(codeVerifier))
@@ -128,65 +100,42 @@ func validateS256Challenge(codeChallenge, codeVerifier string) error {
 }
 
 // GenerateCodeChallenge generates a code challenge from a code verifier using the specified method.
+// Only S256 code challenge method is supported as per OAuth 2.0 Security Best Current Practice.
 func GenerateCodeChallenge(codeVerifier, method string) (string, error) {
 	if err := validateCodeVerifier(codeVerifier); err != nil {
 		return "", err
 	}
 
-	if method != CodeChallengeMethodPlain && method != CodeChallengeMethodS256 {
+	if method != "" && method != CodeChallengeMethodS256 {
 		return "", ErrInvalidChallengeMethod
 	}
 
-	switch method {
-	case CodeChallengeMethodPlain:
-		return codeVerifier, nil
-	case CodeChallengeMethodS256:
-		hash := sha256.Sum256([]byte(codeVerifier))
-		return base64.RawURLEncoding.EncodeToString(hash[:]), nil
-	default:
-		return "", ErrInvalidChallengeMethod
-	}
+	hash := sha256.Sum256([]byte(codeVerifier))
+	return base64.RawURLEncoding.EncodeToString(hash[:]), nil
 }
 
 // ValidateCodeChallenge validates the format of a code challenge according to RFC 7636.
+// Only S256 code challenge method is supported as per OAuth 2.0 Security Best Current Practice.
 func ValidateCodeChallenge(codeChallenge, codeChallengeMethod string) error {
-	if codeChallengeMethod == "" {
-		codeChallengeMethod = CodeChallengeMethodPlain
+	if codeChallengeMethod != "" && codeChallengeMethod != CodeChallengeMethodS256 {
+		return ErrInvalidChallengeMethod
 	}
 
-	if codeChallengeMethod == CodeChallengeMethodPlain {
-		if len(codeChallenge) < 43 || len(codeChallenge) > 128 {
+	if len(codeChallenge) != 43 {
+		return ErrInvalidCodeChallenge
+	}
+
+	for _, c := range codeChallenge {
+		if !isValidBase64URLChar(c) {
 			return ErrInvalidCodeChallenge
 		}
-
-		for _, c := range codeChallenge {
-			if !isValidASCIIUnreserved(c) {
-				return ErrInvalidCodeChallenge
-			}
-		}
-		return nil
 	}
-
-	if codeChallengeMethod == CodeChallengeMethodS256 {
-		if len(codeChallenge) != 43 {
-			return ErrInvalidCodeChallenge
-		}
-
-		for _, c := range codeChallenge {
-			if !isValidBase64URLChar(c) {
-				return ErrInvalidCodeChallenge
-			}
-		}
-		return nil
-	}
-
-	return ErrInvalidCodeChallenge
+	return nil
 }
 
 // GetSupportedCodeChallengeMethods returns all supported PKCE code challenge methods.
 func GetSupportedCodeChallengeMethods() []string {
 	return []string{
 		CodeChallengeMethodS256,
-		CodeChallengeMethodPlain,
 	}
 }

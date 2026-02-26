@@ -126,10 +126,9 @@ func (ts *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata_GET_Success(
 	ts.Contains(metadata.TokenEndpointAuthMethodsSupported, "client_secret_post", "Should support client_secret_post")
 	ts.Contains(metadata.TokenEndpointAuthMethodsSupported, "none", "Should support none")
 
-	// Verify supported code challenge methods
-	ts.NotEmpty(metadata.CodeChallengeMethodsSupported, "CodeChallengeMethodsSupported should not be empty")
-	ts.Contains(metadata.CodeChallengeMethodsSupported, "S256", "Should support S256 code challenge method")
-	ts.Contains(metadata.CodeChallengeMethodsSupported, "plain", "Should support plain code challenge method")
+	// Verify only S256 code challenge method is supported (plain is prohibited per OAuth 2.0 Security BCP)
+	ts.Equal([]string{"S256"}, metadata.CodeChallengeMethodsSupported,
+		"CodeChallengeMethodsSupported should contain exactly S256")
 
 	// Verify supported scopes
 	ts.NotEmpty(metadata.ScopesSupported, "ScopesSupported should not be empty")

@@ -227,7 +227,7 @@ https://localhost:8090/oauth2/authorize?
 
 **Optional Parameters:**
 - `code_challenge`: PKCE code challenge (if PKCE is required)
-- `code_challenge_method`: `"S256"` or `"plain"` (if PKCE is required)
+- `code_challenge_method`: `"S256"` (if PKCE is required)
 - `resource`: Target resource/audience (RFC 8707)
 
 ### Step 5: User Authentication

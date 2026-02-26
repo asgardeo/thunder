@@ -16,7 +16,7 @@ GET /oauth2/authorize
 - `scope`: Space-separated scopes (URL-encoded)
 - `state`: CSRF protection token (recommended)
 - `code_challenge`: PKCE code challenge (if PKCE is used)
-- `code_challenge_method`: `"S256"` or `"plain"` (if PKCE is used)
+- `code_challenge_method`: `"S256"` (if PKCE is used)
 - `resource`: Target resource/audience (RFC 8707, optional)
 
 ## Example
