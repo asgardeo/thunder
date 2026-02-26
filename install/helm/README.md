@@ -137,7 +137,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.strategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during an update              | `0`                           |
 | `deployment.image.registry`             | Thunder image registry                                                                  | `ghcr.io/asgardeo`             |
 | `deployment.image.repository`           | Thunder image repository                                                                | `thunder`                      |
-| `deployment.image.tag`                  | Thunder image tag                                                                       | `0.7.0`                        |
+| `deployment.image.tag`                  | Thunder image tag                                                                       | `latest`                       |
 | `deployment.image.digest`               | Thunder image digest (use either tag or digest)                                         | `""`                           |
 | `deployment.image.pullPolicy`           | Thunder image pull policy                                                               | `Always`                       |
 | `deployment.terminationGracePeriodSeconds` | Pod termination grace period in seconds                                              | `10`                           |
@@ -148,10 +148,10 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.livenessProbe.periodSeconds` | Liveness probe period seconds                                                          | `10`                           |
 | `deployment.readinessProbe.initialDelaySeconds` | Readiness probe initial delay seconds                                           | `1`                            |
 | `deployment.readinessProbe.periodSeconds` | Readiness probe period seconds                                                        | `10`                           |
-| `deployment.resources.limits.cpu`       | CPU resource limits                                                                     | `1.5`                          |
-| `deployment.resources.limits.memory`    | Memory resource limits                                                                  | `512Mi`                        |
-| `deployment.resources.requests.cpu`     | CPU resource requests                                                                   | `1`                            |
-| `deployment.resources.requests.memory`  | Memory resource requests                                                                | `256Mi`                        |
+| `deployment.resources.limits.cpu`       | CPU resource limits                                                                     | `200m`                         |
+| `deployment.resources.limits.memory`    | Memory resource limits                                                                  | `100Mi`                        |
+| `deployment.resources.requests.cpu`     | CPU resource requests                                                                   | `100m`                         |
+| `deployment.resources.requests.memory`  | Memory resource requests                                                                | `50Mi`                         |
 | `deployment.securityContext.readOnlyRootFilesystem` | Enable read-only root filesystem (must be false for SQLite)                     | `true`                         |
 | `deployment.securityContext.enableRunAsUser` | Enforce user ID via pod security context                                               | `true`                         |
 | `deployment.securityContext.runAsUser`  | User ID to run the container                                                            | `10001`                        |
@@ -421,10 +421,10 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | `setup.debug`                          | Enable debug mode for setup                                     | `false`                      |
 | `setup.args`                           | Additional command-line arguments for setup.sh                  | `[]`                         |
 | `setup.env`                            | Additional environment variables for setup job                  | `[]`                         |
-| `setup.resources.requests.cpu`         | CPU request for setup job                                       | `250m`                       |
-| `setup.resources.requests.memory`      | Memory request for setup job                                    | `128Mi`                      |
-| `setup.resources.limits.cpu`           | CPU limit for setup job                                         | `500m`                       |
-| `setup.resources.limits.memory`        | Memory limit for setup job                                      | `256Mi`                      |
+| `setup.resources.requests.cpu`         | CPU request for setup job                                       | `100m`                       |
+| `setup.resources.requests.memory`      | Memory request for setup job                                    | `50Mi`                       |
+| `setup.resources.limits.cpu`           | CPU limit for setup job                                         | `200m`                       |
+| `setup.resources.limits.memory`        | Memory limit for setup job                                      | `100Mi`                      |
 | `setup.extraVolumeMounts`              | Additional volume mounts for setup job                          | `[]`                         |
 | `setup.extraVolumes`                   | Additional volumes for setup job                                | `[]`                         |
 
