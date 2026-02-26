@@ -60,8 +60,8 @@ func newIDPService(idpStore idpStoreInterface, transactioner transaction.Transac
 // CreateIdentityProvider creates a new Identity Provider.
 func (is *idpService) CreateIdentityProvider(ctx context.Context, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &declarativeresource.ErrorDeclarativeResourceCreateOperation
 	}
 
 	if svcErr := validateIDP(idp, logger); svcErr != nil {
@@ -164,8 +164,10 @@ func (is *idpService) GetIdentityProviderByName(ctx context.Context,
 func (is *idpService) UpdateIdentityProvider(ctx context.Context, idpID string, idp *IDPDTO) (*IDPDTO,
 	*serviceerror.ServiceError) {
 	logger := is.logger
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return nil, err
+	// Block updates only in declarative-only mode; allow in composite and mutable modes
+	// In composite mode, the store will check if the resource is immutable and return appropriate error
+	if isDeclarativeModeEnabled() {
+		return nil, &declarativeresource.ErrorDeclarativeResourceUpdateOperation
 	}
 
 	if strings.TrimSpace(idpID) == "" {
@@ -207,6 +209,11 @@ func (is *idpService) UpdateIdentityProvider(ctx context.Context, idpID string, 
 
 		err = is.idpStore.UpdateIdentityProvider(txCtx, idp)
 		if err != nil {
+			// Check if it's the immutable error from composite store
+			if errors.Is(err, ErrIDPIsImmutable) {
+				svcErr = &ErrorIDPDeclarativeReadOnly
+				return err
+			}
 			logger.Error("Failed to update identity provider", log.Error(err), log.String("idpID", idpID))
 			svcErr = &serviceerror.InternalServerError
 			return err
@@ -226,8 +233,10 @@ func (is *idpService) UpdateIdentityProvider(ctx context.Context, idpID string, 
 // DeleteIdentityProvider deletes an identity provider.
 func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) *serviceerror.ServiceError {
 	logger := is.logger
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
+	// Block deletes only in declarative-only mode; allow in composite and mutable modes
+	// In composite mode, the store will check if the resource is immutable and return appropriate error
+	if isDeclarativeModeEnabled() {
+		return &declarativeresource.ErrorDeclarativeResourceDeleteOperation
 	}
 
 	if strings.TrimSpace(idpID) == "" {
@@ -249,6 +258,11 @@ func (is *idpService) DeleteIdentityProvider(ctx context.Context, idpID string) 
 
 		err = is.idpStore.DeleteIdentityProvider(txCtx, idpID)
 		if err != nil {
+			// Check if it's the immutable error from composite store
+			if errors.Is(err, ErrIDPIsImmutable) {
+				svcErr = &ErrorIDPDeclarativeReadOnly
+				return err
+			}
 			logger.Error("Failed to delete identity provider", log.Error(err), log.String("idpID", idpID))
 			svcErr = &serviceerror.InternalServerError
 			return err

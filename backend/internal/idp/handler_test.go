@@ -170,6 +170,36 @@ func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_Success() {
 	s.Len(response, 2)
 	s.Equal("idp-1", response[0].ID)
 	s.Equal("IDP 1", response[0].Name)
+	s.False(response[0].IsReadOnly, "First IDP should be mutable")
+	s.False(response[1].IsReadOnly, "Second IDP should be mutable")
+}
+
+// TestHandleIDPListRequest_WithReadOnlyIDPs tests IDP list retrieval with read-only IDPs
+func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_WithReadOnlyIDPs() {
+	req := httptest.NewRequest(http.MethodGet, "/identity-providers", nil)
+	rr := httptest.NewRecorder()
+
+	idpList := []BasicIDPDTO{
+		{ID: "idp-1", Name: "IDP 1", Type: IDPTypeOIDC, IsReadOnly: false},
+		{ID: "idp-2", Name: "IDP 2", Type: IDPTypeGoogle, IsReadOnly: true},
+		{ID: "idp-3", Name: "IDP 3", Type: IDPTypeOIDC, IsReadOnly: false},
+	}
+
+	s.mockService.On("GetIdentityProviderList", mock.Anything).Return(idpList, (*serviceerror.ServiceError)(nil))
+
+	s.handler.HandleIDPListRequest(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	var response []basicIDPResponse
+	err := json.NewDecoder(rr.Body).Decode(&response)
+	s.NoError(err)
+	s.Len(response, 3)
+	s.Equal("idp-1", response[0].ID)
+	s.False(response[0].IsReadOnly)
+	s.Equal("idp-2", response[1].ID)
+	s.True(response[1].IsReadOnly)
+	s.Equal("idp-3", response[2].ID)
+	s.False(response[2].IsReadOnly)
 }
 
 // TestHandleIDPListRequest_EmptyList tests empty IDP list
