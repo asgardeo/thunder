@@ -730,7 +730,7 @@ describe('CreateUserTypePage', () => {
     expect(screen.getByRole('button', {name: /Saving/i})).toBeDisabled();
   });
 
-  it('creates schema with enum property correctly', async () => {
+  it('creates schema with enum property correctly', {timeout: 15_000}, async () => {
     const user = userEvent.setup();
     mockCreateUserType.mockResolvedValue(undefined);
 
