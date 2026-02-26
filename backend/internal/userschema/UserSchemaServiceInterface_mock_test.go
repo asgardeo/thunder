@@ -109,6 +109,65 @@ func (_c *UserSchemaServiceInterfaceMock_CreateUserSchema_Call) RunAndReturn(run
 	return _c
 }
 
+// DeleteUserSchema provides a mock function for the type UserSchemaServiceInterfaceMock
+func (_mock *UserSchemaServiceInterfaceMock) DeleteUserSchema(ctx context.Context, schemaID string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, schemaID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteUserSchema")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, schemaID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserSchemaServiceInterfaceMock_DeleteUserSchema_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteUserSchema'
+type UserSchemaServiceInterfaceMock_DeleteUserSchema_Call struct {
+	*mock.Call
+}
+
+// DeleteUserSchema is a helper method to define mock.On call
+//   - ctx context.Context
+//   - schemaID string
+func (_e *UserSchemaServiceInterfaceMock_Expecter) DeleteUserSchema(ctx interface{}, schemaID interface{}) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
+	return &UserSchemaServiceInterfaceMock_DeleteUserSchema_Call{Call: _e.mock.On("DeleteUserSchema", ctx, schemaID)}
+}
+
+func (_c *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call) Run(run func(ctx context.Context, schemaID string)) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call) Return(serviceError *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call) RunAndReturn(run func(ctx context.Context, schemaID string) *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetCredentialAttributes provides a mock function for the type UserSchemaServiceInterfaceMock
 func (_mock *UserSchemaServiceInterfaceMock) GetCredentialAttributes(ctx context.Context, userType string) ([]string, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userType)
@@ -169,71 +228,12 @@ func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) Run(run f
 	return _c
 }
 
-func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) Return(fields []string, serviceError *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
-	_c.Call.Return(fields, serviceError)
+func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) Return(strings []string, serviceError *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
+	_c.Call.Return(strings, serviceError)
 	return _c
 }
 
 func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) RunAndReturn(run func(ctx context.Context, userType string) ([]string, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// DeleteUserSchema provides a mock function for the type UserSchemaServiceInterfaceMock
-func (_mock *UserSchemaServiceInterfaceMock) DeleteUserSchema(ctx context.Context, schemaID string) *serviceerror.ServiceError {
-	ret := _mock.Called(ctx, schemaID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteUserSchema")
-	}
-
-	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(ctx, schemaID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*serviceerror.ServiceError)
-		}
-	}
-	return r0
-}
-
-// UserSchemaServiceInterfaceMock_DeleteUserSchema_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteUserSchema'
-type UserSchemaServiceInterfaceMock_DeleteUserSchema_Call struct {
-	*mock.Call
-}
-
-// DeleteUserSchema is a helper method to define mock.On call
-//   - ctx context.Context
-//   - schemaID string
-func (_e *UserSchemaServiceInterfaceMock_Expecter) DeleteUserSchema(ctx interface{}, schemaID interface{}) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
-	return &UserSchemaServiceInterfaceMock_DeleteUserSchema_Call{Call: _e.mock.On("DeleteUserSchema", ctx, schemaID)}
-}
-
-func (_c *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call) Run(run func(ctx context.Context, schemaID string)) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call) Return(serviceError *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
-	_c.Call.Return(serviceError)
-	return _c
-}
-
-func (_c *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call) RunAndReturn(run func(ctx context.Context, schemaID string) *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_DeleteUserSchema_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -109,7 +109,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, userSchemaExporter)
 
-	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
+	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}

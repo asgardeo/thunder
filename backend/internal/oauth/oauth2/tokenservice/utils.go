@@ -274,7 +274,7 @@ func FetchUserAttributes(
 
 	// Fetch and add groups if requested
 	if shouldInclude(constants.UserAttributeGroups) {
-		groups, svcErr := userService.GetUserGroups(context.TODO(), userID, constants.DefaultGroupListLimit, 0)
+		groups, svcErr := userService.GetUserGroups(ctx, userID, constants.DefaultGroupListLimit, 0)
 		if svcErr != nil {
 			return nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
 		}

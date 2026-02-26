@@ -1705,10 +1705,10 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_Succes
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockPasskeyService.On("StartRegistration", mock.Anything).Return(expectedResponse, nil).Once()
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).Return(expectedResponse, nil).Once()
 
 	result, err := suite.service.StartPasskeyRegistration(
-		testUserID, testRelyingPartyID, testRelyingPartyName, authSelection, attestation)
+		context.Background(), testUserID, testRelyingPartyID, testRelyingPartyName, authSelection, attestation)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1723,10 +1723,10 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_Withou
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockPasskeyService.On("StartRegistration", mock.Anything).Return(expectedResponse, nil).Once()
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).Return(expectedResponse, nil).Once()
 
 	result, err := suite.service.StartPasskeyRegistration(
-		testUserID, testRelyingPartyID, testRelyingPartyName, nil, attestation)
+		context.Background(), testUserID, testRelyingPartyID, testRelyingPartyName, nil, attestation)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1741,11 +1741,11 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyRegistration_Servic
 		ErrorDescription: "Failed to start registration",
 	}
 
-	suite.mockPasskeyService.On("StartRegistration", mock.Anything).
+	suite.mockPasskeyService.On("StartRegistration", mock.Anything, mock.Anything).
 		Return(nil, serviceError).Once()
 
 	result, err := suite.service.StartPasskeyRegistration(
-		testUserID, testRelyingPartyID, testRelyingPartyName, nil, "")
+		context.Background(), testUserID, testRelyingPartyID, testRelyingPartyName, nil, "")
 
 	suite.NotNil(err)
 	suite.Nil(result)
@@ -1770,9 +1770,11 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Succe
 		CredentialName: "My Passkey",
 	}
 
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(expectedResponse, nil).Once()
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).Return(expectedResponse, nil).Once()
 
-	result, err := suite.service.FinishPasskeyRegistration(credential, sessionToken, credentialName)
+	result, err := suite.service.FinishPasskeyRegistration(
+		context.Background(), credential, sessionToken, credentialName,
+	)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1795,10 +1797,10 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Witho
 		CredentialID: "credential-id-123",
 	}
 
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).
 		Return(expectedResponse, nil).Once()
 
-	result, err := suite.service.FinishPasskeyRegistration(credential, sessionToken, "")
+	result, err := suite.service.FinishPasskeyRegistration(context.Background(), credential, sessionToken, "")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1822,10 +1824,10 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyRegistration_Servi
 		ErrorDescription: "Failed to verify attestation",
 	}
 
-	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).
+	suite.mockPasskeyService.On("FinishRegistration", mock.Anything, mock.Anything).
 		Return(nil, serviceError).Once()
 
-	result, err := suite.service.FinishPasskeyRegistration(credential, testSessionTkn, "")
+	result, err := suite.service.FinishPasskeyRegistration(context.Background(), credential, testSessionTkn, "")
 
 	suite.NotNil(err)
 	suite.Nil(result)
@@ -1839,11 +1841,11 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyAuthentication_Succ
 	}
 
 	suite.mockPasskeyService.On(
-		"StartAuthentication", mock.MatchedBy(func(req *passkey.PasskeyAuthenticationStartRequest) bool {
+		"StartAuthentication", mock.Anything, mock.MatchedBy(func(req *passkey.PasskeyAuthenticationStartRequest) bool {
 			return req != nil && req.UserID == testUserID && req.RelyingPartyID == testRelyingPartyID
 		})).Return(expectedResponse, nil).Once()
 
-	result, err := suite.service.StartPasskeyAuthentication(testUserID, testRelyingPartyID)
+	result, err := suite.service.StartPasskeyAuthentication(context.Background(), testUserID, testRelyingPartyID)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1860,11 +1862,11 @@ func (suite *AuthenticationServiceTestSuite) TestStartPasskeyAuthentication_Serv
 	}
 
 	suite.mockPasskeyService.On(
-		"StartAuthentication", mock.MatchedBy(func(req *passkey.PasskeyAuthenticationStartRequest) bool {
+		"StartAuthentication", mock.Anything, mock.MatchedBy(func(req *passkey.PasskeyAuthenticationStartRequest) bool {
 			return req != nil && req.UserID == testUserID && req.RelyingPartyID == testRelyingPartyID
 		})).Return(nil, serviceError).Once()
 
-	result, err := suite.service.StartPasskeyAuthentication(testUserID, testRelyingPartyID)
+	result, err := suite.service.StartPasskeyAuthentication(context.Background(), testUserID, testRelyingPartyID)
 
 	suite.NotNil(err)
 	suite.Nil(result)
@@ -1888,7 +1890,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 	}
 
 	suite.mockPasskeyService.On(
-		"FinishAuthentication", mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		"FinishAuthentication", mock.Anything,
+		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -1917,7 +1920,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 		}), mock.Anything).Return(testJWTToken, int64(3600), nil).Once()
 
 	result, err := suite.service.FinishPasskeyAuthentication(
-		testCredentialID, testCredentialType, response, sessionToken, false, "")
+		context.Background(), testCredentialID, testCredentialType, response, sessionToken, false, "")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1947,7 +1950,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 	}
 
 	suite.mockPasskeyService.On(
-		"FinishAuthentication", mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		"FinishAuthentication", mock.Anything,
+		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -1959,7 +1963,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 		})).Return(expectedResponse, nil).Once()
 
 	result, err := suite.service.FinishPasskeyAuthentication(
-		testCredentialID, testCredentialType, response, sessionToken, true, "")
+		context.Background(), testCredentialID, testCredentialType, response, sessionToken, true, "")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1984,7 +1988,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 	}
 
 	suite.mockPasskeyService.On(
-		"FinishAuthentication", mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		"FinishAuthentication", mock.Anything,
+		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -2014,7 +2019,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 		mock.Anything, mock.Anything).Return("updated.jwt.token", int64(3600), nil).Once()
 
 	result, err := suite.service.FinishPasskeyAuthentication(
-		testCredentialID, testCredentialType, response, sessionToken, false, existingAssertion)
+		context.Background(), testCredentialID, testCredentialType, response, sessionToken, false, existingAssertion)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -2039,7 +2044,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Ser
 	}
 
 	suite.mockPasskeyService.On(
-		"FinishAuthentication", mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
+		"FinishAuthentication", mock.Anything,
+		mock.MatchedBy(func(req *passkey.PasskeyAuthenticationFinishRequest) bool {
 			return req != nil &&
 				req.CredentialID == testCredentialID &&
 				req.CredentialType == testCredentialType &&
@@ -2051,7 +2057,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Ser
 		})).Return(nil, serviceError).Once()
 
 	result, err := suite.service.FinishPasskeyAuthentication(
-		testCredentialID, testCredentialType, response, testSessionTkn, false, "")
+		context.Background(), testCredentialID, testCredentialType, response, testSessionTkn, false, "")
 
 	suite.NotNil(err)
 	suite.Nil(result)

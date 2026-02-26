@@ -92,7 +92,17 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 		return true, nil
 	}
 
-	// Step 5: Resolve required permission for the action and evaluate using hierarchical matching.
+	// Step 5: Allow resource owners to access their own resources (self-service).
+	if isResourceOwner(ctx, actionCtx) {
+		if logger.IsDebugEnabled() {
+			logger.Debug("Authorization granted: resource owner",
+				log.String("action", string(action)),
+				log.String("subject", log.MaskString(subject)))
+		}
+		return true, nil
+	}
+
+	// Step 6: Resolve required permission for the action and evaluate using hierarchical matching.
 	requiredPermission := security.ResolveActionPermission(action)
 	if !security.HasSufficientPermission(permissions, requiredPermission) {
 		if logger.IsDebugEnabled() {
@@ -103,7 +113,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 		return false, nil
 	}
 
-	// Step 6: Evaluate global policies (e.g., OU scope check).
+	// Step 7: Evaluate global policies (e.g., OU scope check).
 	allowed, svcErr := isActionAllowedByPolicies(ctx, actionCtx)
 	if svcErr != nil {
 		return false, svcErr
@@ -124,6 +134,27 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 	}
 
 	return true, nil
+}
+
+// isResourceOwner checks whether the authenticated caller is the owner of the resource
+// being acted upon. This enables self-service operations (e.g., a user accessing their own
+// profile) without requiring system-level permissions.
+//
+// Returns true only when:
+//   - The ActionContext carries a non-empty ResourceID.
+//   - The resource type supports owner-based access (currently only ResourceTypeUser).
+//   - The caller's subject matches the ResourceID.
+func isResourceOwner(ctx context.Context, actionCtx *ActionContext) bool {
+	if actionCtx == nil || actionCtx.ResourceID == "" {
+		return false
+	}
+
+	// Currently only user resources support owner-based access.
+	if actionCtx.ResourceType != security.ResourceTypeUser {
+		return false
+	}
+
+	return security.GetSubject(ctx) == actionCtx.ResourceID
 }
 
 // GetAccessibleResources returns the set of resources the caller can access for the given

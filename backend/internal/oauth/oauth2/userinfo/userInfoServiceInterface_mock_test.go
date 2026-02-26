@@ -39,8 +39,8 @@ func (_m *userInfoServiceInterfaceMock) EXPECT() *userInfoServiceInterfaceMock_E
 }
 
 // GetUserInfo provides a mock function for the type userInfoServiceInterfaceMock
-func (_m *userInfoServiceInterfaceMock) GetUserInfo(ctx context.Context, accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
-	ret := _m.Called(ctx, accessToken)
+func (_mock *userInfoServiceInterfaceMock) GetUserInfo(ctx context.Context, accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, accessToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserInfo")
@@ -98,8 +98,8 @@ func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Return(response *UserInfoResponse, serviceError *serviceerror.ServiceError) *userInfoServiceInterfaceMock_GetUserInfo_Call {
-	_c.Call.Return(response, serviceError)
+func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Return(userInfoResponse *UserInfoResponse, serviceError *serviceerror.ServiceError) *userInfoServiceInterfaceMock_GetUserInfo_Call {
+	_c.Call.Return(userInfoResponse, serviceError)
 	return _c
 }
 

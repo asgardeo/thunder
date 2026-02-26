@@ -64,12 +64,15 @@ type AuthenticationServiceInterface interface {
 	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool,
 		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	// Passkey methods
-	StartPasskeyRegistration(userID, relyingPartyID, relyingPartyName string,
+	StartPasskeyRegistration(ctx context.Context, userID, relyingPartyID, relyingPartyName string,
 		authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)
-	FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO, sessionToken,
+	FinishPasskeyRegistration(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken,
 		credentialName string) (interface{}, *serviceerror.ServiceError)
-	StartPasskeyAuthentication(userID, relyingPartyID string) (interface{}, *serviceerror.ServiceError)
+	StartPasskeyAuthentication(
+		ctx context.Context, userID, relyingPartyID string,
+	) (interface{}, *serviceerror.ServiceError)
 	FinishPasskeyAuthentication(
+		ctx context.Context,
 		credentialID, credentialType string,
 		response PasskeyCredentialResponseDTO,
 		sessionToken string,
@@ -695,8 +698,10 @@ func (as *authenticationService) getSubClaim(userClaims map[string]interface{}, 
 }
 
 // StartPasskeyRegistration starts the passkey registration process.
-func (as *authenticationService) StartPasskeyRegistration(userID, relyingPartyID, relyingPartyName string,
-	authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError) {
+func (as *authenticationService) StartPasskeyRegistration(
+	ctx context.Context, userID, relyingPartyID, relyingPartyName string,
+	authSelection *PasskeyAuthenticatorSelectionDTO, attestation string,
+) (interface{}, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey registration")
 
@@ -718,12 +723,14 @@ func (as *authenticationService) StartPasskeyRegistration(userID, relyingPartyID
 		Attestation:            attestation,
 	}
 
-	return as.passkeyService.StartRegistration(req)
+	return as.passkeyService.StartRegistration(ctx, req)
 }
 
 // FinishPasskeyRegistration completes the passkey registration process.
-func (as *authenticationService) FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO,
-	sessionToken, credentialName string) (interface{}, *serviceerror.ServiceError) {
+func (as *authenticationService) FinishPasskeyRegistration(
+	ctx context.Context, credential PasskeyPublicKeyCredentialDTO,
+	sessionToken, credentialName string,
+) (interface{}, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing Passkey registration")
 
@@ -736,11 +743,11 @@ func (as *authenticationService) FinishPasskeyRegistration(credential PasskeyPub
 		CredentialName:    credentialName,
 	}
 
-	return as.passkeyService.FinishRegistration(req)
+	return as.passkeyService.FinishRegistration(ctx, req)
 }
 
 // StartPasskeyAuthentication starts the passkey authentication process.
-func (as *authenticationService) StartPasskeyAuthentication(userID, relyingPartyID string) (
+func (as *authenticationService) StartPasskeyAuthentication(ctx context.Context, userID, relyingPartyID string) (
 	interface{}, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting Passkey authentication")
@@ -749,11 +756,11 @@ func (as *authenticationService) StartPasskeyAuthentication(userID, relyingParty
 		UserID:         userID,
 		RelyingPartyID: relyingPartyID,
 	}
-	return as.passkeyService.StartAuthentication(req)
+	return as.passkeyService.StartAuthentication(ctx, req)
 }
 
 // FinishPasskeyAuthentication completes the passkey authentication process.
-func (as *authenticationService) FinishPasskeyAuthentication(credentialID, credentialType string,
+func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context, credentialID, credentialType string,
 	response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool,
 	existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
@@ -769,7 +776,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(credentialID, crede
 		UserHandle:        response.UserHandle,
 		SessionToken:      sessionToken,
 	}
-	authResponse, svcErr := as.passkeyService.FinishAuthentication(req)
+	authResponse, svcErr := as.passkeyService.FinishAuthentication(ctx, req)
 	if svcErr != nil {
 		return nil, svcErr
 	}
