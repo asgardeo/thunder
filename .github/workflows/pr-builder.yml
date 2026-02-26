@@ -232,29 +232,6 @@ jobs:
           DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
           echo "Built distribution: $DIST_PATH"
 
-      - name: 🧪 Run Frontend Tests with Coverage
-        run: |
-          cd frontend/apps/thunder-develop
-          pnpm test:coverage
-
-      - name: 🧪 Run Thunder-Gate Tests with Coverage
-        run: |
-          cd frontend/apps/thunder-gate
-          pnpm test:coverage
-
-      # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading to Codecov.
-      # React Compiler (babel-plugin-react-compiler) generates phantom branch points in compiled
-      # output that inflate the partial-line count in Codecov's coverage calculation.
-      # This is a known upstream issue: https://github.com/facebook/react/issues/32950
-      # Line and function coverage remain unaffected and accurately reflect test quality.
-      - name: 🧹 Strip branch data from frontend LCOV reports
-        run: |
-          for lcov_file in frontend/apps/thunder-develop/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
-            if [ -f "$lcov_file" ]; then
-              sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
-            fi
-          done
-
       - name: 📦 Upload Built Distribution
         uses: actions/upload-artifact@v4
         with:
@@ -279,11 +256,109 @@ jobs:
           path: backend/coverage_unit.out
           if-no-files-found: error
 
+  test-frontend:
+    name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 'latest'
+          run_install: false
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 📦 Install Frontend Dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+      - name: 🔨 Build Frontend Packages
+        run: |
+          cd frontend
+          pnpm build:packages
+
+      - name: 🧪 Run Thunder-Develop Tests with Coverage
+        run: |
+          cd frontend/apps/thunder-develop
+          pnpm vitest run --coverage --shard=${{ matrix.shard }}/4
+
+      - name: 🧪 Run Thunder-Gate Tests with Coverage
+        if: matrix.shard == 1
+        run: |
+          cd frontend/apps/thunder-gate
+          pnpm test:coverage
+
+      # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading.
+      # React Compiler (babel-plugin-react-compiler) generates phantom branch points in compiled
+      # output that inflate the partial-line count in Codecov's coverage calculation.
+      # This is a known upstream issue: https://github.com/facebook/react/issues/32950
+      # Line and function coverage remain unaffected and accurately reflect test quality.
+      - name: 🧹 Strip branch data from frontend LCOV reports
+        run: |
+          for lcov_file in frontend/apps/thunder-develop/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
+            if [ -f "$lcov_file" ]; then
+              sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
+            fi
+          done
+
+      - name: 📦 Upload thunder-develop coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: develop-coverage-shard-${{ matrix.shard }}
+          path: frontend/apps/thunder-develop/coverage/lcov.info
+          if-no-files-found: error
+
+      - name: 📦 Upload thunder-gate coverage artifact
+        if: matrix.shard == 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-coverage
+          path: frontend/apps/thunder-gate/coverage/lcov.info
+          if-no-files-found: error
+
+  upload-frontend-coverage:
+    name: 📊 Upload Frontend Coverage
+    needs: test-frontend
+    if: always() && needs.test-frontend.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: develop-coverage-shard-*
+          path: coverage/develop
+
+      - name: 📥 Download gate coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gate-coverage
+          path: coverage/gate
+
+      - name: 🔀 Merge thunder-develop coverage from shards
+        run: |
+          cat coverage/develop/develop-coverage-shard-*/lcov.info > coverage/develop-merged-lcov.info
+
       - name: 📊 Upload `@thunder/develop` Unit Test Coverage Report to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: frontend/apps/thunder-develop/coverage/lcov.info
+          files: coverage/develop-merged-lcov.info
           disable_search: true
           flags: frontend-apps-develop-unit
           name: Frontend Develop App Unit Tests
@@ -293,7 +368,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: frontend/apps/thunder-gate/coverage/lcov.info
+          files: coverage/gate/lcov.info
           disable_search: true
           flags: frontend-apps-gate-unit
           name: Frontend Gate App Unit Tests
