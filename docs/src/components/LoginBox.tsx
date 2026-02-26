@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Box, Typography, TextField, Button, Divider, Card, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import useIsDarkMode from '../hooks/useIsDarkMode';
 
@@ -29,6 +29,7 @@ interface LoginBoxProps {
 
 export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}: LoginBoxProps) {
   const isDark = useIsDarkMode();
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // Clear entry animation after it plays so transitions work smoothly on hover.
   const [entryDone, setEntryDone] = useState(false);
@@ -38,6 +39,17 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
 
     return () => clearTimeout(timer);
   }, [delay]);
+
+  // Paint-fill hover effect: track mouse position via CSS custom properties.
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = cardRef.current;
+
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+
+    el.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    el.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  }, []);
 
   const renderEmailLogin = () => (
     <>
@@ -545,7 +557,11 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
 
   return (
     <Card
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
       sx={{
+        '--mouse-x': '50%',
+        '--mouse-y': '50%',
         width: sideCard ? 300 : 340,
         p: 3.5,
         textAlign: 'left',
@@ -558,6 +574,16 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
             opacity: 1,
             transform: 'translateY(0)',
           },
+        },
+        '@keyframes shimmerSweep': {
+          '0%': {transform: 'translateX(-100%) skewX(-12deg)', opacity: 0},
+          '10%': {opacity: 1},
+          '90%': {opacity: 1},
+          '100%': {transform: 'translateX(250%) skewX(-12deg)', opacity: 0},
+        },
+        '@keyframes borderGlow': {
+          '0%, 100%': {opacity: 0.3},
+          '50%': {opacity: 0.55},
         },
         ...(entryDone
           ? {}
@@ -574,6 +600,21 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
         // Shimmer sweep overlay — very subtle
         overflow: 'hidden',
         position: 'relative',
+        // Paint-fill radial glow that follows the cursor
+        '& > .paint-fill-overlay': {
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 0,
+          opacity: 0,
+          transition: 'opacity 0.4s ease',
+          background: isDark
+            ? 'radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), rgba(255, 140, 0, 0.07) 0%, transparent 100%)'
+            : 'radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), rgba(255, 107, 0, 0.05) 0%, transparent 100%)',
+        },
+        '&:hover > .paint-fill-overlay': {
+          opacity: 1,
+        },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -619,6 +660,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
         ...sx,
       }}
     >
+      {/* Paint-fill overlay — radial glow follows the cursor */}
+      <Box className="paint-fill-overlay" />
       {variant === 'social' && renderSocialLogin()}
       {variant === 'email' && renderEmailLogin()}
       {variant === 'mfa' && renderMfaLogin()}

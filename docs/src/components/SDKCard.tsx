@@ -24,7 +24,7 @@ interface SDKCardProps {
   icon: ReactNode;
   title: string;
   packageName?: string;
-  packageManager?: 'npm' | 'yarn' | 'pnpm' | 'go' | 'pip' | 'pod' | 'gradle';
+  packageManager?: 'npm' | 'yarn' | 'pnpm' | 'go' | 'pip' | 'pub' | 'pod' | 'gradle';
   version?: string;
   description: string;
   comingSoon?: boolean;
