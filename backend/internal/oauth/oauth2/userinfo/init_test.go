@@ -28,16 +28,18 @@ import (
 
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 type InitTestSuite struct {
 	suite.Suite
-	mockJWTService  *jwtmock.JWTServiceInterfaceMock
-	mockAppService  *applicationmock.ApplicationServiceInterfaceMock
-	mockUserService *usersvcmock.UserServiceInterfaceMock
-	mockOUService   *oumock.OrganizationUnitServiceInterfaceMock
+	mockJWTService     *jwtmock.JWTServiceInterfaceMock
+	mockTokenValidator *tokenservicemock.TokenValidatorInterfaceMock
+	mockAppService     *applicationmock.ApplicationServiceInterfaceMock
+	mockUserService    *usersvcmock.UserServiceInterfaceMock
+	mockOUService      *oumock.OrganizationUnitServiceInterfaceMock
 }
 
 func TestInitTestSuite(t *testing.T) {
@@ -46,6 +48,7 @@ func TestInitTestSuite(t *testing.T) {
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
@@ -54,7 +57,8 @@ func (suite *InitTestSuite) SetupTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockJWTService, suite.mockAppService,
+	service := Initialize(mux, suite.mockJWTService,
+		suite.mockTokenValidator, suite.mockAppService,
 		suite.mockUserService, suite.mockOUService)
 
 	assert.NotNil(suite.T(), service)
@@ -63,7 +67,8 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockJWTService, suite.mockAppService,
+	_ = Initialize(mux, suite.mockJWTService,
+		suite.mockTokenValidator, suite.mockAppService,
 		suite.mockUserService, suite.mockOUService)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
