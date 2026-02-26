@@ -16,62 +16,38 @@
  * under the License.
  */
 
-import {useState, useMemo} from 'react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiError} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Custom hook to delete a user by ID
- * @returns Object containing deleteUser function, loading state, error, and reset function
+ * Custom hook to delete a user by ID.
+ *
+ * @returns TanStack Query mutation object for deleting users
  */
-export default function useDeleteUser() {
+export default function useDeleteUser(): UseMutationResult<void, Error, string> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
-
-  const deleteUser = async (userId: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setError(null);
+  return useMutation<void, Error, string>({
+    mutationFn: async (userId: string): Promise<void> => {
+      const serverUrl: string = getServerUrl();
 
       await http.request({
-        url: `${API_BASE_URL}/users/${userId}`,
+        url: `${serverUrl}/users/${userId}`,
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
       } as unknown as Parameters<typeof http.request>[0]);
-
-      setError(null);
-      return true;
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'DELETE_USER_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to delete user',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reset = () => {
-    setError(null);
-  };
-
-  return {
-    deleteUser,
-    loading,
-    error,
-    reset,
-  };
+    },
+    onSuccess: (_data, userId) => {
+      queryClient.removeQueries({queryKey: [UserQueryKeys.USER, userId]});
+      queryClient.invalidateQueries({queryKey: [UserQueryKeys.USERS]}).catch(() => {
+        // Ignore invalidation errors
+      });
+    },
+  });
 }

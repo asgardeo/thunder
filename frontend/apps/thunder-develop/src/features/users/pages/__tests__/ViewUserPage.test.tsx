@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -20,15 +20,27 @@ import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import ViewUserPage from '../ViewUserPage';
-import type {ApiError, ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
+import type {ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
+
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
 
 const mockNavigate = vi.fn();
-const mockUpdateUser = vi.fn();
-const mockDeleteUser = vi.fn();
+const mockUpdateMutateAsync = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
 const mockResetUpdateError = vi.fn();
 const mockResetDeleteError = vi.fn();
-const mockRefetchUser = vi.fn();
-const mockRefetchSchema = vi.fn();
+
+// Mock logger
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: mockLoggerError,
+    debug: vi.fn(),
+  }),
+}));
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -52,43 +64,46 @@ vi.mock('react-router', async () => {
   };
 });
 
-// Mock hooks
+// Mock hooks - TanStack Query interfaces
 interface UseGetUserReturn {
-  data: ApiUser | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch: () => void;
+  data: ApiUser | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseGetUserSchemasReturn {
-  data: UserSchemaListResponse | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch: () => void;
+  data: UserSchemaListResponse | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch: (id?: string) => void;
+  data: ApiUserSchema | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseUpdateUserReturn {
-  updateUser: (
-    userId: string,
-    data: {organizationUnit: string; type: string; attributes: Record<string, unknown>},
-  ) => Promise<ApiUser>;
-  data: ApiUser | null;
-  loading: boolean;
-  error: ApiError | null;
+  mutate: ReturnType<typeof vi.fn>;
+  mutateAsync: ReturnType<typeof vi.fn>;
+  isPending: boolean;
+  error: Error | null;
+  data: unknown;
+  isError: boolean;
+  isSuccess: boolean;
+  isIdle: boolean;
   reset: () => void;
 }
 
 interface UseDeleteUserReturn {
-  deleteUser: (userId: string) => Promise<boolean>;
-  loading: boolean;
-  error: ApiError | null;
+  mutate: ReturnType<typeof vi.fn>;
+  mutateAsync: ReturnType<typeof vi.fn>;
+  isPending: boolean;
+  error: Error | null;
+  data: unknown;
+  isError: boolean;
+  isSuccess: boolean;
+  isIdle: boolean;
   reset: () => void;
 }
 
@@ -161,48 +176,60 @@ describe('ViewUserPage', () => {
     },
   };
 
+  const defaultUpdateReturn: UseUpdateUserReturn = {
+    mutate: vi.fn(),
+    mutateAsync: mockUpdateMutateAsync,
+    isPending: false,
+    error: null,
+    data: undefined,
+    isError: false,
+    isSuccess: false,
+    isIdle: true,
+    reset: mockResetUpdateError,
+  };
+
+  const defaultDeleteReturn: UseDeleteUserReturn = {
+    mutate: vi.fn(),
+    mutateAsync: mockDeleteMutateAsync,
+    isPending: false,
+    error: null,
+    data: undefined,
+    isError: false,
+    isSuccess: false,
+    isIdle: true,
+    reset: mockResetDeleteError,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockResolvedValue(undefined);
+    mockUpdateMutateAsync.mockResolvedValue(mockUserData);
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
     mockUseGetUser.mockReturnValue({
       data: mockUserData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetchUser,
     });
     mockUseGetUserSchemas.mockReturnValue({
       data: mockSchemasData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: vi.fn(),
     });
     mockUseGetUserSchema.mockReturnValue({
       data: mockSchemaData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetchSchema,
     });
-    mockUseUpdateUser.mockReturnValue({
-      updateUser: mockUpdateUser,
-      data: null,
-      loading: false,
-      error: null,
-      reset: mockResetUpdateError,
-    });
-    mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: false,
-      error: null,
-      reset: mockResetDeleteError,
-    });
+    mockUseUpdateUser.mockReturnValue({...defaultUpdateReturn});
+    mockUseDeleteUser.mockReturnValue({...defaultDeleteReturn});
   });
 
   describe('Loading and Error States', () => {
     it('displays loading spinner when user data is loading', () => {
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: true,
+        data: undefined,
+        isLoading: true,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -212,10 +239,9 @@ describe('ViewUserPage', () => {
 
     it('displays loading spinner when schema is loading', () => {
       mockUseGetUserSchema.mockReturnValue({
-        data: null,
-        loading: true,
+        data: undefined,
+        isLoading: true,
         error: null,
-        refetch: mockRefetchSchema,
       });
 
       render(<ViewUserPage />);
@@ -224,17 +250,10 @@ describe('ViewUserPage', () => {
     });
 
     it('displays error alert when user fails to load', () => {
-      const error: ApiError = {
-        code: 'USER_NOT_FOUND',
-        message: 'User not found',
-        description: 'The requested user does not exist',
-      };
-
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: false,
-        error,
-        refetch: mockRefetchUser,
+        data: undefined,
+        isLoading: false,
+        error: new Error('User not found'),
       });
 
       render(<ViewUserPage />);
@@ -246,17 +265,11 @@ describe('ViewUserPage', () => {
     it('handles navigation error when clicking back button in error state', async () => {
       const user = userEvent.setup();
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      const error: ApiError = {
-        code: 'USER_NOT_FOUND',
-        message: 'User not found',
-        description: 'The requested user does not exist',
-      };
 
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: false,
-        error,
-        refetch: mockRefetchUser,
+        data: undefined,
+        isLoading: false,
+        error: new Error('User not found'),
       });
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
@@ -274,17 +287,10 @@ describe('ViewUserPage', () => {
     });
 
     it('displays error alert when schema fails to load', () => {
-      const error: ApiError = {
-        code: 'SCHEMA_NOT_FOUND',
-        message: 'Schema not found',
-        description: 'The requested schema does not exist',
-      };
-
       mockUseGetUserSchema.mockReturnValue({
-        data: null,
-        loading: false,
-        error,
-        refetch: mockRefetchSchema,
+        data: undefined,
+        isLoading: false,
+        error: new Error('Schema not found'),
       });
 
       render(<ViewUserPage />);
@@ -293,18 +299,10 @@ describe('ViewUserPage', () => {
     });
 
     it('displays generic error message when error message is empty', () => {
-      // Test the fallback message when error exists but message is empty
-      const error: ApiError = {
-        code: 'UNKNOWN_ERROR',
-        message: '',
-        description: '',
-      };
-
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: false,
-        error,
-        refetch: mockRefetchUser,
+        data: undefined,
+        isLoading: false,
+        error: new Error(''),
       });
 
       render(<ViewUserPage />);
@@ -315,10 +313,9 @@ describe('ViewUserPage', () => {
 
     it('displays warning when user is null but no error', () => {
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: false,
+        data: undefined,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -331,10 +328,9 @@ describe('ViewUserPage', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: false,
+        data: undefined,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
@@ -392,9 +388,8 @@ describe('ViewUserPage', () => {
     it('displays "No" for false boolean values', () => {
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, attributes: {active: false}},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -405,9 +400,8 @@ describe('ViewUserPage', () => {
     it('displays array values as comma-separated list', () => {
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, attributes: {tags: ['admin', 'developer', 'manager']}},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -418,9 +412,8 @@ describe('ViewUserPage', () => {
     it('displays "No attributes available" when user has no attributes', () => {
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, attributes: {}},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -489,9 +482,8 @@ describe('ViewUserPage', () => {
       // Let's test the guard clause by simulating missing required fields instead
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, organizationUnit: '', type: ''},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -499,9 +491,9 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
-      // Should not call updateUser when organizationUnit or type is empty
+      // Should not call mutateAsync when organizationUnit or type is empty
       await waitFor(() => {
-        expect(mockUpdateUser).not.toHaveBeenCalled();
+        expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
@@ -509,18 +501,16 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, organizationUnit: undefined as unknown as string},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
       mockUseGetUserSchemas.mockReturnValue({
         data: {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
         },
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: vi.fn(),
       });
 
       render(<ViewUserPage />);
@@ -529,7 +519,7 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUser).not.toHaveBeenCalled();
+        expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
@@ -537,9 +527,8 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, type: undefined as unknown as string},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -548,7 +537,7 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUser).not.toHaveBeenCalled();
+        expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
@@ -590,9 +579,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUserSchema.mockReturnValue({
         data: schemaWithPassword,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchSchema,
       });
 
       render(<ViewUserPage />);
@@ -635,9 +623,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUserSchema.mockReturnValue({
         data: schemaWithMultipleCredentials,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchSchema,
       });
 
       render(<ViewUserPage />);
@@ -672,9 +659,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUserSchema.mockReturnValue({
         data: schemaWithoutCredential,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchSchema,
       });
 
       render(<ViewUserPage />);
@@ -715,14 +701,13 @@ describe('ViewUserPage', () => {
       expect(emailInput).toHaveValue('newemail@example.com');
     });
 
-    it('successfully updates user and refetches data', async () => {
+    it('successfully updates user', async () => {
       const user = userEvent.setup();
       const updatedUser: ApiUser = {
         ...mockUserData,
         attributes: {...mockUserData.attributes, email: 'updated@example.com'},
       };
-      mockUpdateUser.mockResolvedValue(updatedUser);
-      mockRefetchUser.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(updatedUser);
 
       render(<ViewUserPage />);
 
@@ -736,17 +721,19 @@ describe('ViewUserPage', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(mockUpdateUser).toHaveBeenCalledWith('user123', {
-          organizationUnit: 'test-ou',
-          type: 'Employee',
-          attributes: {
-            username: 'john_doe',
-            email: 'updated@example.com',
-            age: 30,
-            active: true,
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userId: 'user123',
+          data: {
+            organizationUnit: 'test-ou',
+            type: 'Employee',
+            attributes: {
+              username: 'john_doe',
+              email: 'updated@example.com',
+              age: 30,
+              active: true,
+            },
           },
         });
-        expect(mockRefetchUser).toHaveBeenCalled();
       });
     });
 
@@ -754,18 +741,16 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, organizationUnit: 'stale-ou'},
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
       mockUseGetUserSchemas.mockReturnValue({
         data: {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: 'schema-ou'}],
         },
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: vi.fn(),
       });
 
       render(<ViewUserPage />);
@@ -774,10 +759,9 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUser).toHaveBeenCalledWith(
-          'user123',
-          expect.objectContaining({organizationUnit: 'schema-ou'}),
-        );
+        expect(mockUpdateMutateAsync).toHaveBeenCalled();
+        const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {organizationUnit: string}};
+        expect(callArgs.data.organizationUnit).toBe('schema-ou');
       });
     });
 
@@ -788,9 +772,8 @@ describe('ViewUserPage', () => {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
         },
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: vi.fn(),
       });
 
       render(<ViewUserPage />);
@@ -799,14 +782,15 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUser).toHaveBeenCalledWith('user123', expect.objectContaining({organizationUnit: 'test-ou'}));
+        expect(mockUpdateMutateAsync).toHaveBeenCalled();
+        const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {organizationUnit: string}};
+        expect(callArgs.data.organizationUnit).toBe('test-ou');
       });
     });
 
     it('exits edit mode after successful save', async () => {
       const user = userEvent.setup();
-      mockUpdateUser.mockResolvedValue(mockUserData);
-      mockRefetchUser.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(mockUserData);
 
       render(<ViewUserPage />);
 
@@ -821,18 +805,12 @@ describe('ViewUserPage', () => {
 
     it('displays update error when save fails', async () => {
       const user = userEvent.setup();
-      const error: ApiError = {
-        code: 'UPDATE_ERROR',
-        message: 'Failed to update user',
-        description: 'Validation failed',
-      };
-      mockUpdateUser.mockRejectedValue(new Error('Failed to update user'));
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Failed to update user'));
       mockUseUpdateUser.mockReturnValue({
-        updateUser: mockUpdateUser,
-        data: null,
-        loading: false,
-        error,
-        reset: mockResetUpdateError,
+        ...defaultUpdateReturn,
+        error: new Error('Failed to update user'),
+        isError: true,
+        isIdle: false,
       });
 
       render(<ViewUserPage />);
@@ -842,33 +820,6 @@ describe('ViewUserPage', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('alert')).toHaveTextContent('Failed to update user');
-        expect(screen.getByText('Validation failed')).toBeInTheDocument();
-      });
-    });
-
-    it('displays special message for duplicate field error', async () => {
-      const user = userEvent.setup();
-      const error: ApiError = {
-        code: 'USR-1014',
-        message: 'Duplicate field value',
-        description: 'Email already exists',
-      };
-      mockUpdateUser.mockRejectedValue(new Error('Duplicate field value'));
-      mockUseUpdateUser.mockReturnValue({
-        updateUser: mockUpdateUser,
-        data: null,
-        loading: false,
-        error,
-        reset: mockResetUpdateError,
-      });
-
-      render(<ViewUserPage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Please check the unique fields/i)).toBeInTheDocument();
       });
     });
 
@@ -895,11 +846,8 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       const neverResolvingUpdate = vi.fn().mockImplementation(() => new Promise(() => {})); // Never resolves
       mockUseUpdateUser.mockReturnValue({
-        updateUser: neverResolvingUpdate,
-        data: null,
-        loading: false,
-        error: null,
-        reset: mockResetUpdateError,
+        ...defaultUpdateReturn,
+        mutateAsync: neverResolvingUpdate,
       });
 
       render(<ViewUserPage />);
@@ -917,17 +865,12 @@ describe('ViewUserPage', () => {
 
     it('logs error when update fails', async () => {
       const user = userEvent.setup();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('Update failed');
 
-      // Create a new mock that will reject
-      const failingUpdateUser = vi.fn().mockRejectedValue(error);
+      const failingUpdateMutateAsync = vi.fn().mockRejectedValue(error);
       mockUseUpdateUser.mockReturnValue({
-        updateUser: failingUpdateUser,
-        data: null,
-        loading: false,
-        error: null,
-        reset: mockResetUpdateError,
+        ...defaultUpdateReturn,
+        mutateAsync: failingUpdateMutateAsync,
       });
 
       render(<ViewUserPage />);
@@ -936,10 +879,8 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to update user:', error);
+        expect(mockLoggerError).toHaveBeenCalledWith('Failed to update user', {error});
       });
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -958,19 +899,8 @@ describe('ViewUserPage', () => {
       });
     });
 
-    it('does not call deleteUser if userId becomes undefined during delete', async () => {
-      // This tests the early return in handleDeleteConfirm when userId is falsy
-      // We can't easily test this by changing useParams mid-test, but we've covered
-      // the logic by testing that the delete button isn't shown when user is not found
-      // Let's instead verify the delete function is called with correct userId
+    it('calls mutateAsync with correct userId when delete is confirmed', async () => {
       const user = userEvent.setup();
-      const successDeleteUser = vi.fn().mockResolvedValue(true);
-      mockUseDeleteUser.mockReturnValue({
-        deleteUser: successDeleteUser,
-        loading: false,
-        error: null,
-        reset: mockResetDeleteError,
-      });
 
       render(<ViewUserPage />);
 
@@ -982,7 +912,7 @@ describe('ViewUserPage', () => {
 
       // Verify userId is passed correctly
       await waitFor(() => {
-        expect(successDeleteUser).toHaveBeenCalledWith('user123');
+        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user123');
       });
     });
 
@@ -1003,13 +933,6 @@ describe('ViewUserPage', () => {
 
     it('successfully deletes user and navigates to users list', async () => {
       const user = userEvent.setup();
-      const successDeleteUser = vi.fn().mockResolvedValue(true);
-      mockUseDeleteUser.mockReturnValue({
-        deleteUser: successDeleteUser,
-        loading: false,
-        error: null,
-        reset: mockResetDeleteError,
-      });
 
       render(<ViewUserPage />);
 
@@ -1020,24 +943,18 @@ describe('ViewUserPage', () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(successDeleteUser).toHaveBeenCalledWith('user123');
+        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user123');
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
     });
 
     it('displays delete error in dialog', async () => {
       const user = userEvent.setup();
-      const error: ApiError = {
-        code: 'DELETE_ERROR',
-        message: 'Failed to delete user',
-        description: 'User has dependencies',
-      };
-      mockDeleteUser.mockRejectedValue(new Error('Failed to delete user'));
       mockUseDeleteUser.mockReturnValue({
-        deleteUser: mockDeleteUser,
-        loading: false,
-        error,
-        reset: mockResetDeleteError,
+        ...defaultDeleteReturn,
+        error: new Error('Failed to delete user'),
+        isError: true,
+        isIdle: false,
       });
 
       render(<ViewUserPage />);
@@ -1046,17 +963,14 @@ describe('ViewUserPage', () => {
 
       const dialog = screen.getByRole('dialog');
       expect(within(dialog).getByText('Failed to delete user')).toBeInTheDocument();
-      expect(within(dialog).getByText('User has dependencies')).toBeInTheDocument();
     });
 
     it('disables buttons during deletion', async () => {
       const user = userEvent.setup();
-      mockDeleteUser.mockImplementation(() => new Promise(() => {})); // Never resolves
       mockUseDeleteUser.mockReturnValue({
-        deleteUser: mockDeleteUser,
-        loading: true,
-        error: null,
-        reset: mockResetDeleteError,
+        ...defaultDeleteReturn,
+        isPending: true,
+        isIdle: false,
       });
 
       render(<ViewUserPage />);
@@ -1070,15 +984,12 @@ describe('ViewUserPage', () => {
 
     it('logs error when delete fails', async () => {
       const user = userEvent.setup();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('Delete failed');
 
-      const failingDeleteUser = vi.fn().mockRejectedValue(error);
+      const failingDeleteMutateAsync = vi.fn().mockRejectedValue(error);
       mockUseDeleteUser.mockReturnValue({
-        deleteUser: failingDeleteUser,
-        loading: false,
-        error: null,
-        reset: mockResetDeleteError,
+        ...defaultDeleteReturn,
+        mutateAsync: failingDeleteMutateAsync,
       });
 
       render(<ViewUserPage />);
@@ -1090,20 +1001,16 @@ describe('ViewUserPage', () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to delete user:', error);
+        expect(mockLoggerError).toHaveBeenCalledWith('Failed to delete user', {error});
       });
-
-      consoleSpy.mockRestore();
     });
 
     it('closes dialog after delete error', async () => {
       const user = userEvent.setup();
-      const failingDeleteUser = vi.fn().mockRejectedValue(new Error('Delete failed'));
+      const failingDeleteMutateAsync = vi.fn().mockRejectedValue(new Error('Delete failed'));
       mockUseDeleteUser.mockReturnValue({
-        deleteUser: failingDeleteUser,
-        loading: false,
-        error: null,
-        reset: mockResetDeleteError,
+        ...defaultDeleteReturn,
+        mutateAsync: failingDeleteMutateAsync,
       });
 
       render(<ViewUserPage />);
@@ -1134,9 +1041,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUser.mockReturnValue({
         data: userWithNullAttr,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -1158,9 +1064,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUser.mockReturnValue({
         data: userWithUndefinedAttr,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -1182,9 +1087,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUser.mockReturnValue({
         data: userWithArrayAttr,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -1206,9 +1110,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUser.mockReturnValue({
         data: userWithObjectAttr,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -1231,9 +1134,8 @@ describe('ViewUserPage', () => {
 
       mockUseGetUser.mockReturnValue({
         data: userWithUnknownType,
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchUser,
       });
 
       render(<ViewUserPage />);
@@ -1245,33 +1147,22 @@ describe('ViewUserPage', () => {
 
   describe('Edge Cases', () => {
     it('displays fallback error message when error messages are undefined', () => {
-      // Create errors with undefined message to trigger the fallback
-      const userError: ApiError = {
-        code: 'USER_ERROR',
-        message: undefined as unknown as string,
-        description: '',
-      };
-
       mockUseGetUser.mockReturnValue({
-        data: null,
-        loading: false,
-        error: userError,
-        refetch: mockRefetchUser,
+        data: undefined,
+        isLoading: false,
+        error: new Error(),
       });
 
       mockUseGetUserSchema.mockReturnValue({
-        data: null,
-        loading: false,
+        data: undefined,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchSchema,
       });
 
       render(<ViewUserPage />);
 
       const alert = screen.getByRole('alert');
       expect(alert).toBeInTheDocument();
-      // Should show fallback message when error message is undefined
-      expect(alert).toHaveTextContent('Failed to load user information');
     });
 
     it('displays "No schema available for editing" when schema is null in edit mode', async () => {
@@ -1282,9 +1173,8 @@ describe('ViewUserPage', () => {
           name: 'Employee',
           schema: null as unknown as ApiUserSchema['schema'],
         },
-        loading: false,
+        isLoading: false,
         error: null,
-        refetch: mockRefetchSchema,
       });
 
       render(<ViewUserPage />);

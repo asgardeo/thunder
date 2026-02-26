@@ -16,88 +16,43 @@
  * under the License.
  */
 
-import {useState, useMemo} from 'react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiError} from '../types/users';
+import type {ApiUser, CreateUserRequest} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Request body for creating a new user
+ * Custom hook to create a new user.
+ *
+ * @returns TanStack Query mutation object for creating users
  */
-export interface CreateUserRequest {
-  organizationUnit: string;
-  type: string;
-  groups?: string[];
-  attributes: Record<string, unknown>;
-}
-
-/**
- * Response after creating a user
- */
-export interface CreateUserResponse {
-  id: string;
-  organizationUnit: string;
-  type: string;
-  attributes: Record<string, unknown>;
-}
-
-/**
- * Custom hook to create a new user
- * @returns Object containing createUser function, data, loading state, error, and reset function
- */
-export default function useCreateUser() {
+export default function useCreateUser(): UseMutationResult<ApiUser, Error, CreateUserRequest> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<CreateUserResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
+  return useMutation<ApiUser, Error, CreateUserRequest>({
+    mutationFn: async (userData: CreateUserRequest): Promise<ApiUser> => {
+      const serverUrl: string = getServerUrl();
 
-  const createUser = async (userData: CreateUserRequest): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      setData(null);
-
-      const response = await http.request({
-        url: `${API_BASE_URL}/users`,
+      const response: {
+        data: ApiUser;
+      } = await http.request({
+        url: `${serverUrl}/users`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        data: userData,
+        data: JSON.stringify(userData),
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as CreateUserResponse;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'CREATE_USER_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to create user',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reset = () => {
-    setData(null);
-    setError(null);
-  };
-
-  return {
-    createUser,
-    data,
-    loading,
-    error,
-    reset,
-  };
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: [UserQueryKeys.USERS]}).catch(() => {
+        // Ignore invalidation errors
+      });
+    },
+  });
 }
