@@ -55,12 +55,12 @@ export default function UsersList(props: UsersListProps) {
   const logger = useLogger('UsersList');
   const dataGridLocaleText = useDataGridLocaleText();
 
-  const {data: userData, loading: isUsersRequestLoading, error: usersRequestError, refetch} = useGetUsers();
-  const {deleteUser, loading: isDeleting, error: deleteUserError} = useDeleteUser();
+  const {data: userData, isLoading: isUsersRequestLoading, error: usersRequestError} = useGetUsers();
+  const deleteUserMutation = useDeleteUser();
 
   const {
     data: defaultUserSchema,
-    loading: isDefaultUserSchemaRequestLoading,
+    isLoading: isDefaultUserSchemaRequestLoading,
     error: defaultUserSchemaRequestError,
   } = useGetUserSchema(selectedSchema);
 
@@ -107,11 +107,9 @@ export default function UsersList(props: UsersListProps) {
     if (!selectedUserId) return;
 
     try {
-      await deleteUser(selectedUserId);
+      await deleteUserMutation.mutateAsync(selectedUserId);
       setDeleteDialogOpen(false);
       setSelectedUserId(null);
-      // Refetch users list after successful deletion
-      await refetch();
     } catch (err) {
       // Error is already handled in the hook
       setDeleteDialogOpen(false);
@@ -367,17 +365,16 @@ export default function UsersList(props: UsersListProps) {
         <DialogTitle>{t('users:deleteUser')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('users:confirmDeleteUser')}</DialogContentText>
-          {deleteUserError && (
+          {deleteUserMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserError.message}
+                {deleteUserMutation.error.message}
               </Typography>
-              {deleteUserError.description && <Typography variant="caption">{deleteUserError.description}</Typography>}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserMutation.isPending}>
             {t('common:actions.cancel')}
           </Button>
           <Button
@@ -388,9 +385,9 @@ export default function UsersList(props: UsersListProps) {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserMutation.isPending}
           >
-            {isDeleting ? t('common:status.loading') : t('common:actions.delete')}
+            {deleteUserMutation.isPending ? t('common:status.loading') : t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

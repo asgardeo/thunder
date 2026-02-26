@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,389 +16,440 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
-import useUpdateUser, {type UpdateUserRequest} from '../useUpdateUser';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {waitFor, act, renderHook} from '@thunder/test-utils';
+import useUpdateUser, {type UpdateUserVariables} from '../useUpdateUser';
 import type {ApiUser} from '../../types/users';
+import UserQueryKeys from '../../constants/user-query-keys';
 
-// Mock useAsgardeo
-const mockHttpRequest = vi.fn();
+// Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+  useAsgardeo: vi.fn(),
 }));
 
-// Mock useConfig
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
-    useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
-    }),
+    useConfig: vi.fn(),
   };
 });
 
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
+
 describe('useUpdateUser', () => {
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+
+  const mockUser: ApiUser = {
+    id: 'user-1',
+    organizationUnit: 'ou-1',
+    type: 'Employee',
+    attributes: {username: 'john-updated', email: 'john@test.com'},
+  };
+
+  const mockVariables: UpdateUserVariables = {
+    userId: 'user-1',
+    data: {
+      organizationUnit: 'ou-1',
+      type: 'Employee',
+      attributes: {username: 'john-updated', email: 'john@test.com'},
+    },
+  };
+
   beforeEach(() => {
-    mockHttpRequest.mockReset();
+    mockHttpRequest = vi.fn();
+    mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: mockGetServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with correct default values', () => {
+  it('should initialize with idle state', () => {
     const {result} = renderHook(() => useUpdateUser());
 
-    expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(false);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
-    expect(typeof result.current.updateUser).toBe('function');
-    expect(typeof result.current.reset).toBe('function');
+    expect(result.current.isPending).toBe(false);
+    expect(result.current.isIdle).toBe(true);
+    expect(result.current.isSuccess).toBe(false);
+    expect(result.current.isError).toBe(false);
+    expect(typeof result.current.mutate).toBe('function');
+    expect(typeof result.current.mutateAsync).toBe('function');
   });
 
-  it('should update a user successfully', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    const mockResponse: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockResponse});
+  it('should successfully update a user', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
 
     const {result} = renderHook(() => useUpdateUser());
 
-    await result.current.updateUser('user-123', mockRequest);
+    result.current.mutate(mockVariables);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.data).toEqual(mockResponse);
-      expect(result.current.error).toBeNull();
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockUser);
+    expect(result.current.error).toBeNull();
+    expect(result.current.isPending).toBe(false);
+  });
+
+  it('should make correct API call with user ID and data', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    result.current.mutate(mockVariables);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
     });
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/users/user-123',
+        url: `https://api.test.com/users/${mockVariables.userId}`,
         method: 'PUT',
-        data: mockRequest,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify(mockVariables.data),
       }),
     );
   });
 
-  it('should handle API error with JSON response', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    mockHttpRequest.mockRejectedValueOnce(new Error('Validation failed'));
+  it('should set pending state during update', async () => {
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(
+          () =>
+            resolve({
+              data: mockUser,
+            }),
+          100,
+        );
+      }),
+    );
 
     const {result} = renderHook(() => useUpdateUser());
 
-    try {
-      await result.current.updateUser('user-123', mockRequest);
-    } catch {
-      // Expected to throw
-    }
+    result.current.mutate(mockVariables);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toEqual({
-        code: 'UPDATE_USER_ERROR',
-        message: 'Validation failed',
-        description: 'Failed to update user',
-      });
-      expect(result.current.data).toBeNull();
+      expect(result.current.isPending).toBe(true);
     });
+
+    await waitFor(
+      () => {
+        expect(result.current.isSuccess).toBe(true);
+      },
+      {timeout: 200},
+    );
+
+    expect(result.current.isPending).toBe(false);
   });
 
-  it('should handle API error without JSON response', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    mockHttpRequest.mockRejectedValueOnce(new Error('Internal Server Error'));
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to update user');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const {result} = renderHook(() => useUpdateUser());
 
-    try {
-      await result.current.updateUser('user-123', mockRequest);
-    } catch {
-      // Expected to throw
-    }
+    result.current.mutate(mockVariables);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toEqual({
-        code: 'UPDATE_USER_ERROR',
-        message: 'Internal Server Error',
-        description: 'Failed to update user',
-      });
-      expect(result.current.data).toBeNull();
+      expect(result.current.isError).toBe(true);
     });
+
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isPending).toBe(false);
   });
 
   it('should handle network error', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
+    const networkError = new Error('Network request failed');
+    mockHttpRequest.mockRejectedValueOnce(networkError);
 
     const {result} = renderHook(() => useUpdateUser());
 
-    try {
-      await result.current.updateUser('user-123', mockRequest);
-    } catch {
-      // Expected to throw
-    }
+    result.current.mutate(mockVariables);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toEqual({
-        code: 'UPDATE_USER_ERROR',
-        message: 'Network error',
-        description: 'Failed to update user',
-      });
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(networkError);
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isPending).toBe(false);
+  });
+
+  it('should invalidate user and users queries on success', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const {result, queryClient} = renderHook(() => useUpdateUser());
+
+    // Pre-populate cache with original user
+    const originalUser = {...mockUser, attributes: {username: 'john', email: 'john@test.com'}};
+    queryClient.setQueryData([UserQueryKeys.USER, mockVariables.userId], originalUser);
+    queryClient.setQueryData([UserQueryKeys.USERS], {
+      users: [originalUser],
+      totalResults: 1,
+      count: 1,
+    });
+
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    result.current.mutate(mockVariables);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Verify that invalidateQueries was called for both the specific user and the list
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: [UserQueryKeys.USER, mockVariables.userId],
+      }),
+    );
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: [UserQueryKeys.USERS],
+      }),
+    );
+  });
+
+  it('should handle invalidateQueries rejection gracefully', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const {result, queryClient} = renderHook(() => useUpdateUser());
+
+    // Mock invalidateQueries to reject
+    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
+
+    result.current.mutate(mockVariables);
+
+    // The mutation should still succeed even if invalidateQueries fails
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockUser);
+  });
+
+  it('should support mutateAsync for promise-based workflows', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    const promise = result.current.mutateAsync(mockVariables);
+
+    await expect(promise).resolves.toEqual(mockUser);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(result.current.data).toEqual(mockUser);
+  });
+
+  it('should reject mutateAsync on error', async () => {
+    const apiError = new Error('Update failed');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    const promise = result.current.mutateAsync(mockVariables);
+
+    await expect(promise).rejects.toEqual(apiError);
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
     });
   });
 
-  it('should set loading state correctly during request', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    const mockResponse: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    // Create a promise we can control
-    let resolveRequest: (value: {data: ApiUser}) => void;
-    const requestPromise = new Promise<{data: ApiUser}>((resolve) => {
-      resolveRequest = resolve;
+  it('should reset mutation state', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
     });
-
-    mockHttpRequest.mockReturnValueOnce(requestPromise);
 
     const {result} = renderHook(() => useUpdateUser());
 
-    expect(result.current.loading).toBe(false);
+    result.current.mutate(mockVariables);
 
-    const promise = result.current.updateUser('user-123', mockRequest);
-
-    // Loading should become true
     await waitFor(() => {
-      expect(result.current.loading).toBe(true);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    // Now resolve the request
-    resolveRequest!({data: mockResponse});
-
-    await promise;
-
-    // Loading should become false after completion
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should reset state correctly', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    const mockResponse: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockResponse});
-
-    const {result} = renderHook(() => useUpdateUser());
-
-    await result.current.updateUser('user-123', mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockResponse);
-    });
-
-    await waitFor(() => {
+    act(() => {
       result.current.reset();
     });
 
     await waitFor(() => {
-      expect(result.current.data).toBeNull();
-      expect(result.current.error).toBeNull();
-    });
-  });
-
-  it('should clear previous data when updating', async () => {
-    const mockRequest1: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    const mockResponse1: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
-
-    const mockRequest2: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'Jane Updated',
-        email: 'jane.updated@example.com',
-      },
-    };
-
-    const mockResponse2: ApiUser = {
-      id: 'user-789',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'Jane Updated',
-        email: 'jane.updated@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockResponse1}).mockResolvedValueOnce({data: mockResponse2});
-
-    const {result} = renderHook(() => useUpdateUser());
-
-    await result.current.updateUser('user-123', mockRequest1);
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockResponse1);
-    });
-
-    await result.current.updateUser('user-789', mockRequest2);
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockResponse2);
-    });
-  });
-
-  it('should handle partial user attribute updates', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        email: 'newemail@example.com',
-      },
-    };
-
-    const mockResponse: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'newemail@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockResponse});
-
-    const {result} = renderHook(() => useUpdateUser());
-
-    await result.current.updateUser('user-123', mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockResponse);
+      expect(result.current.data).toBeUndefined();
     });
     expect(result.current.error).toBeNull();
+    expect(result.current.isIdle).toBe(true);
+    expect(result.current.isSuccess).toBe(false);
   });
 
-  it('should handle non-Error rejection', async () => {
-    const mockRequest: UpdateUserRequest = {
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Updated',
-        email: 'john.updated@example.com',
-      },
-    };
+  it('should handle multiple sequential updates', async () => {
+    const user1 = {...mockUser, attributes: {username: 'update-1', email: 'john@test.com'}};
+    const user2 = {...mockUser, attributes: {username: 'update-2', email: 'john@test.com'}};
 
-    mockHttpRequest.mockRejectedValueOnce('String error');
+    mockHttpRequest.mockResolvedValueOnce({data: user1}).mockResolvedValueOnce({data: user2});
 
     const {result} = renderHook(() => useUpdateUser());
 
-    await expect(result.current.updateUser('user-123', mockRequest)).rejects.toBe('String error');
+    // First update
+    result.current.mutate(mockVariables);
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'UPDATE_USER_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to update user',
-      });
-      expect(result.current.data).toBeNull();
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
+
+    expect(result.current.data).toEqual(user1);
+
+    // Second update
+    result.current.mutate({
+      ...mockVariables,
+      data: {...mockVariables.data, attributes: {username: 'update-2', email: 'john@test.com'}},
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(user2);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('should update different users independently', async () => {
+    const user1 = {...mockUser, id: 'user-1', attributes: {username: 'user1-updated', email: 'user1@test.com'}};
+    const user2 = {...mockUser, id: 'user-2', attributes: {username: 'user2-updated', email: 'user2@test.com'}};
+
+    mockHttpRequest.mockResolvedValueOnce({data: user1}).mockResolvedValueOnce({data: user2});
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    // Update first user
+    result.current.mutate({
+      userId: 'user-1',
+      data: mockVariables.data,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.id).toBe('user-1');
+
+    // Update second user
+    result.current.mutate({
+      userId: 'user-2',
+      data: mockVariables.data,
+    });
+
+    await waitFor(() => {
+      expect(result.current.data?.id).toBe('user-2');
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('should use correct server URL from config', async () => {
+    const customServerUrl = 'https://custom-server.com:9090';
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: () => customServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
+
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    result.current.mutate(mockVariables);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `${customServerUrl}/users/${mockVariables.userId}`,
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify(mockVariables.data),
+      }),
+    );
+  });
+
+  it('should properly serialize request data as JSON', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    result.current.mutate(mockVariables);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.data).toBe(JSON.stringify(mockVariables.data));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('should clear error state on successful retry', async () => {
+    const apiError = new Error('Temporary error');
+    mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce({data: mockUser});
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    // First attempt - should fail
+    result.current.mutate(mockVariables);
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(apiError);
+
+    // Second attempt - should succeed
+    result.current.mutate(mockVariables);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
   });
 });

@@ -16,104 +16,39 @@
  * under the License.
  */
 
-import {useState, useEffect, useMemo} from 'react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiUser, ApiError} from '../types/users';
+import type {ApiUser} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Custom hook to fetch a single user by ID
+ * Custom hook to fetch a single user by ID.
+ *
  * @param userId - The ID of the user to fetch
- * @returns Object containing data, loading state, error, and refetch function
+ * @returns TanStack Query result object containing user data, loading state, and error information
  */
-export default function useGetUser(userId: string | undefined) {
+export default function useGetUser(userId: string | undefined): UseQueryResult<ApiUser> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<ApiUser | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
+  return useQuery<ApiUser>({
+    queryKey: [UserQueryKeys.USER, userId],
+    queryFn: async (): Promise<ApiUser> => {
+      const serverUrl: string = getServerUrl();
 
-  useEffect(() => {
-    if (!userId) {
-      return;
-    }
-
-    const fetchUser = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await http.request({
-          url: `${API_BASE_URL}/users/${userId}`,
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        } as unknown as Parameters<typeof http.request>[0]);
-
-        const jsonData = response.data as ApiUser;
-        setData(jsonData);
-        setError(null);
-      } catch (err) {
-        const apiError: ApiError = {
-          code: 'FETCH_ERROR',
-          message: err instanceof Error ? err.message : 'An unknown error occurred',
-          description: 'Failed to fetch user',
-        };
-        setError(apiError);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser().catch(() => {
-      // Error already handled
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
-  const refetch = async (): Promise<void> => {
-    if (!userId) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await http.request({
-        url: `${API_BASE_URL}/users/${userId}`,
+      const response: {
+        data: ApiUser;
+      } = await http.request({
+        url: `${serverUrl}/users/${userId}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUser;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'FETCH_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to fetch user',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    refetch,
-  };
+      return response.data;
+    },
+    enabled: Boolean(userId),
+  });
 }

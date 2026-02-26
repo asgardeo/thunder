@@ -62,7 +62,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
     }),
     [paginationModel],
   );
-  const {data: usersData, loading: usersLoading, error: usersError} = useGetUsers(usersParams);
+  const {data: usersData, isLoading: usersLoading, error: usersError} = useGetUsers(usersParams);
 
   const users: ApiUser[] = useMemo(() => usersData?.users ?? [], [usersData]);
 

@@ -38,6 +38,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Save, X, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import useGetUser from '../api/useGetUser';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
@@ -50,14 +51,15 @@ type UpdateUserFormData = Record<string, string | number | boolean>;
 export default function ViewUserPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('ViewUserPage');
   const {userId} = useParams<{userId: string}>();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const {data: user, loading: isUserLoading, error: userError, refetch: refetchUser} = useGetUser(userId);
-  const {updateUser, error: updateUserError, reset: resetUpdateError} = useUpdateUser();
-  const {deleteUser, loading: isDeleting, error: deleteUserError} = useDeleteUser();
+  const {data: user, isLoading: isUserLoading, error: userError} = useGetUser(userId);
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
 
   // Get all schemas to find the schema ID from the schema name
   const {data: userSchemas} = useGetUserSchemas();
@@ -75,7 +77,7 @@ export default function ViewUserPage() {
   const trimmedOuId = matchedSchema?.ouId?.trim();
   const schemaOuId = trimmedOuId === '' ? undefined : trimmedOuId;
 
-  const {data: userSchema, loading: isSchemaLoading, error: schemaError} = useGetUserSchema(schemaId);
+  const {data: userSchema, isLoading: isSchemaLoading, error: schemaError} = useGetUserSchema(schemaId);
 
   const {
     control,
@@ -109,18 +111,14 @@ export default function ViewUserPage() {
         attributes: data,
       };
 
-      await updateUser(userId, requestBody);
-
-      // Refetch user data to show updated values
-      await refetchUser();
+      await updateUserMutation.mutateAsync({userId, data: requestBody});
 
       // Exit edit mode
       setIsEditMode(false);
-    } catch (error) {
+    } catch (err) {
       // Error is already handled in the hook and displayed in the UI
       // Keep the form in edit mode so the user can correct the error
-      // eslint-disable-next-line no-console
-      console.error('Failed to update user:', error);
+      logger.error('Failed to update user', {error: err});
     } finally {
       setIsSubmitting(false);
     }
@@ -128,7 +126,7 @@ export default function ViewUserPage() {
 
   const handleCancel = () => {
     setIsEditMode(false);
-    resetUpdateError();
+    updateUserMutation.reset();
     // Reset form to original values
     if (user?.attributes && userSchema?.schema) {
       Object.entries(user.attributes).forEach(([key, value]) => {
@@ -153,14 +151,13 @@ export default function ViewUserPage() {
     if (!userId) return;
 
     try {
-      await deleteUser(userId);
+      await deleteUserMutation.mutateAsync(userId);
       setDeleteDialogOpen(false);
       // Navigate back to users list after successful deletion
       await navigate('/users');
-    } catch (error) {
+    } catch (err) {
       // Error is already handled in the hook
-      // eslint-disable-next-line no-console
-      console.error('Failed to delete user:', error);
+      logger.error('Failed to delete user', {error: err});
       setDeleteDialogOpen(false);
     }
   };
@@ -334,20 +331,11 @@ export default function ViewUserPage() {
               )}
 
               {/* Update User Error Display */}
-              {updateUserError && (
+              {updateUserMutation.error && (
                 <Alert severity="error" sx={{mt: 2}}>
                   <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                    {updateUserError.message}
+                    {updateUserMutation.error.message}
                   </Typography>
-                  {updateUserError.description && (
-                    <Typography variant="body2">{updateUserError.description}</Typography>
-                  )}
-                  {updateUserError.code === 'USR-1014' && (
-                    <Typography variant="body2" sx={{mt: 1, fontStyle: 'italic'}}>
-                      Please check the unique fields (e.g., email, username) and ensure they are not already in use by
-                      another user.
-                    </Typography>
-                  )}
                 </Alert>
               )}
 
@@ -377,17 +365,16 @@ export default function ViewUserPage() {
           <DialogContentText>
             Are you sure you want to delete this user? This action cannot be undone.
           </DialogContentText>
-          {deleteUserError && (
+          {deleteUserMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserError.message}
+                {deleteUserMutation.error.message}
               </Typography>
-              {deleteUserError.description && <Typography variant="caption">{deleteUserError.description}</Typography>}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserMutation.isPending}>
             Cancel
           </Button>
           <Button
@@ -398,9 +385,9 @@ export default function ViewUserPage() {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserMutation.isPending}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {deleteUserMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
