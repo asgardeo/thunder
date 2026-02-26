@@ -173,7 +173,6 @@ func (tam TokenEndpointAuthMethod) IsValid() bool {
 // OAuth2 token types.
 const (
 	TokenTypeBearer = "Bearer"
-	TokenTypeJWT    = "JWT"
 )
 
 // TokenTypeIdentifier defines a type for RFC 8693 token type identifiers.
