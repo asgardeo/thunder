@@ -44,7 +44,6 @@ type NodeContext struct {
 	RuntimeData    map[string]string
 	ForwardedData  map[string]interface{}
 
-	HTTPContext       context.Context
 	Application       appmodel.Application
 	AuthenticatedUser authncm.AuthenticatedUser
 	ExecutionHistory  map[string]*common.NodeExecutionRecord

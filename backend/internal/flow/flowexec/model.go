@@ -50,7 +50,6 @@ type EngineContext struct {
 	Graph       core.GraphInterface
 	Application appmodel.Application
 
-	HTTPContext       context.Context
 	AuthenticatedUser authncm.AuthenticatedUser
 	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
