@@ -51,7 +51,8 @@
     "overrides": {
       "minimatch@10.1.1": ">=10.2.1",
       "vite": "catalog:",
-      "nx>axios": ">=1.13.5"
+      "nx>axios": ">=1.13.5",
+      "rollup": ">=4.59.0"
     },
     "auditConfig": {
       "ignoreCves": [
