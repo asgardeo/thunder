@@ -147,12 +147,7 @@ func (s *flowStore) CreateFlow(flowID string, flow *FlowDefinition) (*CompleteFl
 			return fmt.Errorf("failed to create flow: %w", err)
 		}
 
-		internalID, err := s.getFlowInternalIDWithTx(tx, flowID)
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.Exec(queryInsertFlowVersion, internalID, 1, string(nodesJSON), s.deploymentID)
+		_, err = tx.Exec(queryInsertFlowVersion, flowID, 1, string(nodesJSON), s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to create flow version: %w", err)
 		}
@@ -230,13 +225,8 @@ func (s *flowStore) UpdateFlow(flowID string, flow *FlowDefinition) (*CompleteFl
 
 		newVersion := int(currentVersion) + 1
 
-		internalID, err := s.getFlowInternalIDWithTx(tx, flowID)
-		if err != nil {
-			return err
-		}
-
 		// Insert the new version first to ensure it succeeds before updating the flow
-		if err := s.pushToVersionStack(tx, internalID, newVersion, string(nodesJSON)); err != nil {
+		if err := s.pushToVersionStack(tx, flowID, newVersion, string(nodesJSON)); err != nil {
 			return err
 		}
 
@@ -302,12 +292,7 @@ func (s *flowStore) ListFlowVersions(flowID string) ([]BasicFlowVersion, error) 
 	var versions []BasicFlowVersion
 
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		internalID, err := s.getFlowInternalID(dbClient, flowID)
-		if err != nil {
-			return err
-		}
-
-		results, err := dbClient.Query(queryListFlowVersions, internalID, s.deploymentID)
+		results, err := dbClient.Query(queryListFlowVersions, flowID, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to list flow versions: %w", err)
 		}
@@ -365,12 +350,7 @@ func (s *flowStore) RestoreFlowVersion(flowID string, version int) (*CompleteFlo
 			return errFlowNotFound
 		}
 
-		internalID, err := s.getFlowInternalIDWithTx(tx, flowID)
-		if err != nil {
-			return err
-		}
-
-		versionResults, err := tx.Query(queryGetFlowVersion, internalID, version, s.deploymentID)
+		versionResults, err := tx.Query(queryGetFlowVersion, flowID, version, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to get version to restore: %w", err)
 		}
@@ -386,7 +366,7 @@ func (s *flowStore) RestoreFlowVersion(flowID string, version int) (*CompleteFlo
 		newVersion := int(currentVersion) + 1
 
 		// Insert the new version first to ensure it succeeds before updating the flow
-		if err := s.pushToVersionStack(tx, internalID, newVersion, nodesJSON); err != nil {
+		if err := s.pushToVersionStack(tx, flowID, newVersion, nodesJSON); err != nil {
 			return err
 		}
 
@@ -407,13 +387,13 @@ func (s *flowStore) RestoreFlowVersion(flowID string, version int) (*CompleteFlo
 // pushToVersionStack adds a new version to the version history and removes the oldest version
 // if the count exceeds max_version_history.
 func (s *flowStore) pushToVersionStack(tx model.TxInterface,
-	flowInternalID int64, version int, nodesJSON string) error {
-	_, err := tx.Exec(queryInsertFlowVersion, flowInternalID, version, nodesJSON, s.deploymentID)
+	flowID string, version int, nodesJSON string) error {
+	_, err := tx.Exec(queryInsertFlowVersion, flowID, version, nodesJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to insert flow version: %w", err)
 	}
 
-	countResults, err := tx.Query(queryCountFlowVersions, flowInternalID, s.deploymentID)
+	countResults, err := tx.Query(queryCountFlowVersions, flowID, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to count versions: %w", err)
 	}
@@ -427,60 +407,12 @@ func (s *flowStore) pushToVersionStack(tx model.TxInterface,
 	}
 
 	if versionCount > s.maxVersionHistory {
-		if _, err := tx.Exec(queryDeleteOldestVersion, flowInternalID, s.deploymentID); err != nil {
+		if _, err := tx.Exec(queryDeleteOldestVersion, flowID, s.deploymentID); err != nil {
 			return fmt.Errorf("failed to delete oldest version: %w", err)
 		}
 	}
 
 	return nil
-}
-
-// getFlowInternalIDWithTx retrieves the internal ID of a flow by its flow ID within a transaction.
-func (s *flowStore) getFlowInternalIDWithTx(tx model.TxInterface, flowID string) (int64, error) {
-	results, err := tx.Query(queryGetFlowInternalID, flowID, s.deploymentID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get flow internal ID: %w", err)
-	}
-
-	if !results.Next() {
-		_ = results.Close()
-		return 0, errFlowNotFound
-	}
-
-	var internalID int64
-	if err := results.Scan(&internalID); err != nil {
-		_ = results.Close()
-		return 0, fmt.Errorf("failed to scan internal ID: %w", err)
-	}
-	if closeErr := results.Close(); closeErr != nil {
-		s.logger.Error("Failed to close internal ID results", log.Error(closeErr))
-	}
-
-	return internalID, nil
-}
-
-// getFlowInternalID retrieves the internal ID of a flow by its flow ID.
-func (s *flowStore) getFlowInternalID(dbClient provider.DBClientInterface, flowID string) (int64, error) {
-	results, err := dbClient.Query(queryGetFlowInternalID, flowID, s.deploymentID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get flow internal ID: %w", err)
-	}
-
-	if len(results) == 0 {
-		return 0, errFlowNotFound
-	}
-
-	internalIDVal, ok := results[0]["id"]
-	if !ok {
-		return 0, fmt.Errorf("internal ID field not found in result")
-	}
-
-	internalID, ok := internalIDVal.(int64)
-	if !ok {
-		return 0, fmt.Errorf("unexpected internal ID type: %T", internalIDVal)
-	}
-
-	return internalID, nil
 }
 
 // getConfigDBClient retrieves the configuration database client.
