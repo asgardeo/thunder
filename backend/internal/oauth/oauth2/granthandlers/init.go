@@ -36,9 +36,10 @@ func Initialize(
 	userService user.UserServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
+	tokenBuilder tokenservice.TokenBuilderInterface,
+	tokenValidator tokenservice.TokenValidatorInterface,
 ) GrantHandlerProviderInterface {
 	authzService := authz.Initialize(mux, applicationService, jwtService, flowExecService)
-	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	grantHandlerProvider := newGrantHandlerProvider(
 		jwtService, userService, authzService, tokenBuilder, tokenValidator)
 	return grantHandlerProvider

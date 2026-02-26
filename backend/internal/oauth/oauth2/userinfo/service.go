@@ -47,6 +47,7 @@ type userInfoServiceInterface interface {
 // userInfoService implements the userInfoServiceInterface.
 type userInfoService struct {
 	jwtService         jwt.JWTServiceInterface
+	tokenValidator     tokenservice.TokenValidatorInterface
 	applicationService application.ApplicationServiceInterface
 	userService        user.UserServiceInterface
 	ouService          ou.OrganizationUnitServiceInterface
@@ -56,12 +57,14 @@ type userInfoService struct {
 // newUserInfoService creates a new userInfoService instance.
 func newUserInfoService(
 	jwtService jwt.JWTServiceInterface,
+	tokenValidator tokenservice.TokenValidatorInterface,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 ) userInfoServiceInterface {
 	return &userInfoService{
 		jwtService:         jwtService,
+		tokenValidator:     tokenValidator,
 		applicationService: applicationService,
 		userService:        userService,
 		ouService:          ouService,
@@ -77,15 +80,13 @@ func (s *userInfoService) GetUserInfo(
 		return nil, &errorInvalidAccessToken
 	}
 
-	tokenClaims, svcErr := s.validateAndDecodeToken(accessToken)
-	if svcErr != nil {
-		return nil, svcErr
+	accessTokenClaims, err := s.tokenValidator.ValidateAccessToken(accessToken)
+	if err != nil {
+		s.logger.Debug("Failed to verify access token", log.Error(err))
+		return nil, &errorInvalidAccessToken
 	}
-
-	sub, svcErr := s.extractSubClaim(tokenClaims)
-	if svcErr != nil {
-		return nil, svcErr
-	}
+	tokenClaims := accessTokenClaims.Claims
+	sub := accessTokenClaims.Sub
 
 	if svcErr := s.validateGrantType(tokenClaims); svcErr != nil {
 		return nil, svcErr
@@ -169,32 +170,6 @@ func (s *userInfoService) generateJWSUserInfo(
 		Type:    appmodel.UserInfoResponseTypeJWS,
 		JWTBody: signedJWT,
 	}, nil
-}
-
-// validateAndDecodeToken validates the JWT signature and decodes the payload.
-func (s *userInfoService) validateAndDecodeToken(accessToken string) (
-	map[string]interface{}, *serviceerror.ServiceError) {
-	if err := s.jwtService.VerifyJWT(accessToken, "", ""); err != nil {
-		s.logger.Debug("Failed to verify access token", log.String("error", err.Error))
-		return nil, &errorInvalidAccessToken
-	}
-
-	claims, err := jwt.DecodeJWTPayload(accessToken)
-	if err != nil {
-		s.logger.Debug("Failed to decode access token", log.Error(err))
-		return nil, &errorInvalidAccessToken
-	}
-
-	return claims, nil
-}
-
-// extractSubClaim extracts and validates the sub claim from the token claims.
-func (s *userInfoService) extractSubClaim(claims map[string]interface{}) (string, *serviceerror.ServiceError) {
-	sub, ok := claims[constants.ClaimSub].(string)
-	if !ok || sub == "" {
-		return "", &errorMissingSubClaim
-	}
-	return sub, nil
 }
 
 // validateGrantType validates that the token was not issued using client_credentials grant.
