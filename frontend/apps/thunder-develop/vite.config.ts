@@ -94,12 +94,14 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['@thunder/test-utils/setup'],
+    reporters: process.env.CI ? ['dot'] : ['default'],
+    restoreMocks: true,
     css: {
       modules: {
         classNameStrategy: 'non-scoped',
       },
     },
-    // Added to fix test failures dues to css imports from oxygen-ui. Need to check if can fix from oxygen-ui library.
+    // Inline deps that need Vite's CSS pipeline or have Node.js-style imports.
     server: {
       deps: {
         inline: [
@@ -108,15 +110,22 @@ export default defineConfig({
           '@wso2/oxygen-ui',
           '@wso2/oxygen-ui-icons-react',
           '@mui/x-data-grid',
-          '@mui/x-date-pickers',
-          '@mui/x-tree-view',
-          '@mui/x-charts',
         ],
+      },
+    },
+    // Pre-bundle remaining heavy dependencies with esbuild for faster test imports.
+    deps: {
+      optimizer: {
+        client: {
+          include: ['@mui/x-date-pickers', '@mui/x-tree-view', '@mui/x-charts'],
+        },
       },
     },
     coverage: {
       provider: 'istanbul',
-      reporter: ['text', 'json', 'html', ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]],
+      reporter: process.env.CI
+        ? [['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]]
+        : ['text', 'json', 'html', ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]],
       exclude: [
         'node_modules/',
         'dist/',
