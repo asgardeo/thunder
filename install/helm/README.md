@@ -325,9 +325,15 @@ Each database section (`identity`, `runtime`, `user`) supports these fields:
 | `configuration.tls.keyFile`                       | Server TLS key file path                                                                                  | `repository/resources/security/server.key`  |
 | `configuration.crypto.encryption.key`             | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production) | `file://repository/resources/security/crypto.key` |
 | `configuration.crypto.passwordHashing.algorithm`  | Password hashing algorithm                                                                            | `PBKDF2`                     |
-| `configuration.crypto.passwordHashing.parameters.iterations` | Password hashing iterations                                                                | `600000`                     |
-| `configuration.crypto.passwordHashing.parameters.keySize`    | Password hashing key size                                                                  | `32`                         |
-| `configuration.crypto.passwordHashing.parameters.saltSize`   | Password hashing salt size                                                                 | `16`                         |
+| `configuration.crypto.passwordHashing.pbkdf2.salt_size` | PBKDF2 salt size                                                                                     | `16`                         |
+| `configuration.crypto.passwordHashing.pbkdf2.iterations` | PBKDF2 iterations                                                                                   | `600000`                     |
+| `configuration.crypto.passwordHashing.pbkdf2.key_size` | PBKDF2 key size                                                                                     | `32`                         |
+| `configuration.crypto.passwordHashing.argon2id.salt_size` | Argon2id salt size                                                                                  | `16`                         |
+| `configuration.crypto.passwordHashing.argon2id.iterations` | Argon2id iterations                                                                                  | `2`                          |
+| `configuration.crypto.passwordHashing.argon2id.key_size` | Argon2id key size                                                                                   | `32`                         |
+| `configuration.crypto.passwordHashing.argon2id.memory` | Argon2id memory                                                                                      | `19456`                      |
+| `configuration.crypto.passwordHashing.argon2id.parallelism` | Argon2id parallelism                                                                                 | `1`                          |
+| `configuration.crypto.passwordHashing.sha256.salt_size` | SHA256 salt size                                                                                     | `16`                         |
 | `configuration.crypto.keys[].id`                  | Signing key identifier                                                                                | `default-key`                |
 | `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                         | `repository/resources/security/signing.cert` |
 | `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                 | `repository/resources/security/signing.key`  |

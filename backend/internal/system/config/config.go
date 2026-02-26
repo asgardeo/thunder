@@ -165,15 +165,31 @@ type EncryptionConfig struct {
 
 // PasswordHashingConfig holds the password hashing configuration details.
 type PasswordHashingConfig struct {
-	Algorithm  string                      `yaml:"algorithm" json:"algorithm"`
-	Parameters PasswordHashingParamsConfig `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+	Algorithm string         `yaml:"algorithm" json:"algorithm"`
+	Argon2ID  Argon2IDConfig `yaml:"argon2id" json:"argon2id"`
+	PBKDF2    PBKDF2Config   `yaml:"pbkdf2" json:"pbkdf2"`
+	SHA256    SHA256Config   `yaml:"sha256" json:"sha256"`
 }
 
-// PasswordHashingParamsConfig holds the parameters for password hashing.
-type PasswordHashingParamsConfig struct {
-	Iterations int `yaml:"iterations,omitempty" json:"iterations,omitempty"`
-	KeySize    int `yaml:"key_size,omitempty" json:"key_size,omitempty"`
-	SaltSize   int `yaml:"salt_size,omitempty" json:"salt_size,omitempty"`
+// Argon2IDConfig holds the Argon2id password hashing configuration details.
+type Argon2IDConfig struct {
+	Iterations  int `yaml:"iterations" json:"iterations"`
+	Memory      int `yaml:"memory" json:"memory"`
+	Parallelism int `yaml:"parallelism" json:"parallelism"`
+	KeySize     int `yaml:"key_size" json:"key_size"`
+	SaltSize    int `yaml:"salt_size" json:"salt_size"`
+}
+
+// PBKDF2Config holds the PBKDF2 password hashing configuration details.
+type PBKDF2Config struct {
+	Iterations int `yaml:"iterations" json:"iterations"`
+	KeySize    int `yaml:"key_size" json:"key_size"`
+	SaltSize   int `yaml:"salt_size" json:"salt_size"`
+}
+
+// SHA256Config holds the SHA256 password hashing configuration details.
+type SHA256Config struct {
+	SaltSize int `yaml:"salt_size" json:"salt_size"`
 }
 
 // CORSConfig holds the configuration details for the CORS.
