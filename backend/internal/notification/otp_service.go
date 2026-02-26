@@ -287,7 +287,8 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 	validityPeriod := (sessionData.ExpiryTime - time.Now().UnixMilli()) / 1000
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 
-	token, _, err := s.jwtService.GenerateJWT("otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims)
+	token, _, err := s.jwtService.GenerateJWT(
+		"otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT token: %v", err)
 	}

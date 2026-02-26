@@ -158,6 +158,7 @@ func (s *userInfoService) generateJWSUserInfo(
 		issuer,
 		validity,
 		response,
+		jwt.TokenTypeJWT,
 	)
 	if err != nil {
 		s.logger.Error("Failed to generate signed UserInfo JWT")

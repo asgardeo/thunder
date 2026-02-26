@@ -1196,6 +1196,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
+		mock.Anything,
 	).Return("signed.jwt.token", int64(0), nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -1253,6 +1254,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
+		mock.Anything,
 		mock.Anything,
 	).Return("", int64(0),
 		&serviceerror.ServiceError{
