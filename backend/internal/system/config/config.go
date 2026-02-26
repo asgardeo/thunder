@@ -261,6 +261,16 @@ type ApplicationConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// RoleConfig holds the role service configuration.
+type RoleConfig struct {
+	// Store defines the storage mode for roles.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // PasskeyConfig holds the passkey configuration details.
 type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
@@ -304,6 +314,7 @@ type Config struct {
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
+	Role                 RoleConfig             `yaml:"role" json:"role"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

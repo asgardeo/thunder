@@ -110,6 +110,29 @@ var (
 		Error:            "Invalid permissions",
 		ErrorDescription: "One or more permissions do not exist in the resource management system",
 	}
+	// ErrorImmutableRole is the error returned when attempting to modify a declarative role.
+	ErrorImmutableRole = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1013",
+		Error:            "Cannot modify declarative role",
+		ErrorDescription: "The role is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorImmutableAssignment is the error returned when attempting to modify a declarative assignment.
+	ErrorImmutableAssignment = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1014",
+		Error:            "Cannot modify declarative assignment",
+		ErrorDescription: "The assignment is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorDeclarativeModeCreateNotAllowed is the error returned when attempting to create
+	// a role in declarative-only mode.
+	ErrorDeclarativeModeCreateNotAllowed = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "ROL-1015",
+		Error: "Cannot create role in declarative-only mode",
+		ErrorDescription: "Role creation is not allowed when running in declarative-only mode. " +
+			"Roles must be defined in declarative configuration files",
+	}
 )
 
 // Server errors for role management operations.

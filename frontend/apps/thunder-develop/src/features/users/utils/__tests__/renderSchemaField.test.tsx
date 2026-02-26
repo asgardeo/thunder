@@ -407,4 +407,65 @@ describe('renderSchemaField', () => {
       expect(input).toHaveValue(25);
     });
   });
+
+  describe('Credential fields', () => {
+    it('renders credential string field as password input', () => {
+      const fieldDef: PropertyDefinition = {type: 'string', credential: true};
+      render(<TestForm fieldName="password" fieldDef={fieldDef} />);
+
+      const input = screen.getByPlaceholderText('Enter password');
+      expect(input).toHaveAttribute('type', 'password');
+    });
+
+    it('renders non-credential string field as text input', () => {
+      const fieldDef: PropertyDefinition = {type: 'string', credential: false};
+      render(<TestForm fieldName="username" fieldDef={fieldDef} />);
+
+      const input = screen.getByPlaceholderText('Enter username');
+      expect(input).toHaveAttribute('type', 'text');
+    });
+
+    it('renders toggle password visibility button for credential fields', () => {
+      const fieldDef: PropertyDefinition = {type: 'string', credential: true};
+      render(<TestForm fieldName="password" fieldDef={fieldDef} />);
+
+      expect(screen.getByLabelText('show password')).toBeInTheDocument();
+    });
+
+    it('does not render toggle button for non-credential fields', () => {
+      const fieldDef: PropertyDefinition = {type: 'string'};
+      render(<TestForm fieldName="username" fieldDef={fieldDef} />);
+
+      expect(screen.queryByLabelText('show password')).not.toBeInTheDocument();
+    });
+
+    it('toggles password visibility when icon button is clicked', async () => {
+      const user = userEvent.setup();
+      const fieldDef: PropertyDefinition = {type: 'string', credential: true};
+      render(<TestForm fieldName="secret" fieldDef={fieldDef} />);
+
+      const input = screen.getByPlaceholderText('Enter secret');
+      expect(input).toHaveAttribute('type', 'password');
+
+      const toggleButton = screen.getByLabelText('show password');
+      await user.click(toggleButton);
+      expect(input).toHaveAttribute('type', 'text');
+      expect(toggleButton).toHaveAttribute('aria-label', 'hide password');
+
+      await user.click(toggleButton);
+      expect(input).toHaveAttribute('type', 'password');
+      expect(toggleButton).toHaveAttribute('aria-label', 'show password');
+    });
+
+    it('allows typing in credential field', async () => {
+      const user = userEvent.setup();
+      const fieldDef: PropertyDefinition = {type: 'string', credential: true};
+      render(<TestForm fieldName="pin" fieldDef={fieldDef} />);
+
+      const input = screen.getByPlaceholderText('Enter pin');
+      await user.type(input, 'secret123');
+
+      expect(input).toHaveValue('secret123');
+    });
+  });
 });

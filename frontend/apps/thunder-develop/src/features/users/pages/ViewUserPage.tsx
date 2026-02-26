@@ -325,7 +325,7 @@ export default function ViewUserPage() {
               {/* Dynamic Schema Fields */}
               {userSchema?.schema ? (
                 Object.entries(userSchema.schema)
-                  .filter(([fieldName]) => fieldName !== 'password')
+                  .filter(([, fieldDef]) => !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential))
                   .map(([fieldName, fieldDef]) => renderSchemaField(fieldName, fieldDef, control, errors))
               ) : (
                 <Typography variant="body2" color="text.secondary">
