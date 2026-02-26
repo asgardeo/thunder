@@ -19,17 +19,71 @@
 package hash
 
 import (
+	"crypto/pbkdf2"
+	"crypto/sha256"
+	"encoding/hex"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 
+	"golang.org/x/crypto/argon2"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+)
+
+const (
+	defaultSaltSize            = 16
+	defaultPBKDF2Iterations    = 600000
+	defaultPBKDF2KeySize       = 32
+	defaultArgon2idMemory      = 19456 // 19 MB
+	defaultArgon2idIterations  = 2
+	defaultArgon2idParallelism = 1
+	defaultArgon2idKeySize     = 32
 )
 
 type HashServiceTestSuite struct {
 	suite.Suite
 	input []byte
+}
+
+func sha256Hex(input string, saltHex string) string {
+	saltBytes, err := hex.DecodeString(saltHex)
+	if err != nil {
+		panic(err)
+	}
+	data := append([]byte(input), saltBytes...)
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func pbkdf2Hex(input string, saltHex string, iterations, keySize int) string {
+	saltBytes, err := hex.DecodeString(saltHex)
+	if err != nil {
+		panic(err)
+	}
+	hash, err := pbkdf2.Key(sha256.New, input, saltBytes, iterations, keySize)
+	if err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(hash)
+}
+
+func argon2idHex(input string, saltHex string, iterations, memory uint32, parallelism uint8, keySize uint32) string {
+	saltBytes, err := hex.DecodeString(saltHex)
+	if err != nil {
+		panic(err)
+	}
+	hash := argon2.IDKey(
+		[]byte(input),
+		saltBytes,
+		iterations,
+		memory,
+		parallelism,
+		keySize,
+	)
+	return hex.EncodeToString(hash)
 }
 
 func TestHashServiceSuite(t *testing.T) {
@@ -50,13 +104,19 @@ func (suite *HashServiceTestSuite) TestGenerateSha256() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(SHA256),
+				SHA256: config.SHA256Config{
+					SaltSize: defaultSaltSize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
 
 	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), SHA256, cred.Algorithm, "Algorithm should be SHA256")
@@ -71,7 +131,7 @@ func (suite *HashServiceTestSuite) TestSHA256HashWithCustomSaltSize() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(SHA256),
-				Parameters: config.PasswordHashingParamsConfig{
+				SHA256: config.SHA256Config{
 					SaltSize: customSaltSize,
 				},
 			},
@@ -80,7 +140,10 @@ func (suite *HashServiceTestSuite) TestSHA256HashWithCustomSaltSize() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
 	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), SHA256, cred.Algorithm, "Algorithm should be SHA256")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
@@ -92,43 +155,26 @@ func (suite *HashServiceTestSuite) TestSHA256HashWithCustomSaltSize() {
 		"Salt should be hex encoded with expected length")
 
 	// Verify that the generated credential can be verified
-	ok, err := newHashService().Verify(suite.input, cred)
+	ok, err := hashService.Verify(suite.input, cred)
 	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
 	assert.True(suite.T(), ok, "Hash verification should succeed for the same input with custom salt size")
 }
 
 func (suite *HashServiceTestSuite) TestVerifySha256() {
 	testCases := []struct {
-		name     string
-		input    string
-		expected Credential
+		name    string
+		input   string
+		saltHex string
 	}{
 		{
-			name:  "EmptyStringAndSalt",
-			input: "",
-			expected: Credential{
-				Algorithm: SHA256,
-				Hash:      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			},
+			name:    "EmptyStringWithSalt",
+			input:   "",
+			saltHex: "12f4576d7432bd8020db7202b6492a37",
 		},
 		{
-			name:  "NormalStringWithoutSalt",
-			input: "password",
-			expected: Credential{
-				Algorithm: SHA256,
-				Hash:      "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
-			},
-		},
-		{
-			name:  "NormalStringWithSalt",
-			input: "password",
-			expected: Credential{
-				Algorithm: SHA256,
-				Hash:      "4b2dcea502b405a479a69fd2478ea891fa9f02966db9ee5cbcbee53137c8ae4d",
-				Parameters: CredParameters{
-					Salt: "12f4576d7432bd8020db7202b6492a37",
-				},
-			},
+			name:    "NormalStringWithSalt",
+			input:   "password",
+			saltHex: "12f4576d7432bd8020db7202b6492a37",
 		},
 	}
 
@@ -136,15 +182,28 @@ func (suite *HashServiceTestSuite) TestVerifySha256() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(SHA256),
+				SHA256: config.SHA256Config{
+					SaltSize: defaultSaltSize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			expected := Credential{
+				Algorithm: SHA256,
+				Hash:      sha256Hex(tc.input, tc.saltHex),
+				Parameters: CredParameters{
+					Salt: tc.saltHex,
+				},
+			}
+			ok, err := hashService.Verify([]byte(tc.input), expected)
 			assert.NoError(t, err, "Error should be nil when verifying hash")
 			assert.True(t, ok)
 		})
@@ -164,6 +223,9 @@ func (suite *HashServiceTestSuite) TestVerifySha256_Failure() {
 			expected: Credential{
 				Algorithm: SHA256,
 				Hash:      "incorrecthashvalue",
+				Parameters: CredParameters{
+					Salt: "12f4576d7432bd8020db7202b6492a37",
+				},
 			},
 			error: false,
 		},
@@ -172,9 +234,21 @@ func (suite *HashServiceTestSuite) TestVerifySha256_Failure() {
 			input: "password",
 			expected: Credential{
 				Algorithm: SHA256,
-				Hash:      "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+				Hash:      sha256Hex("password", "12f4576d7432bd8020db7202b6492a37"),
 				Parameters: CredParameters{
 					Salt: "incorrectsalt",
+				},
+			},
+			error: true,
+		},
+		{
+			name:  "MissingSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: SHA256,
+				Hash:      sha256Hex("password", "12f4576d7432bd8020db7202b6492a37"),
+				Parameters: CredParameters{
+					Salt: "",
 				},
 			},
 			error: true,
@@ -185,15 +259,21 @@ func (suite *HashServiceTestSuite) TestVerifySha256_Failure() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(SHA256),
+				SHA256: config.SHA256Config{
+					SaltSize: defaultSaltSize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			ok, err := hashService.Verify([]byte(tc.input), tc.expected)
 			assert.False(t, ok)
 			if !tc.error {
 				assert.NoError(t, err, "Error should be nil when verifying hash")
@@ -210,7 +290,7 @@ func (suite *HashServiceTestSuite) TestSha256HashAndVerify() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(SHA256),
-				Parameters: config.PasswordHashingParamsConfig{
+				SHA256: config.SHA256Config{
 					SaltSize: 16,
 				},
 			},
@@ -219,10 +299,13 @@ func (suite *HashServiceTestSuite) TestSha256HashAndVerify() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
 	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 
-	ok, err := newHashService().Verify(suite.input, cred)
+	ok, err := hashService.Verify(suite.input, cred)
 	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
 	assert.True(suite.T(), ok, "Hash verification should succeed for the same input")
 }
@@ -233,13 +316,21 @@ func (suite *HashServiceTestSuite) TestGeneratePBKDF2() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(PBKDF2),
+				PBKDF2: config.PBKDF2Config{
+					SaltSize:   defaultSaltSize,
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
 	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), PBKDF2, cred.Algorithm, "Algorithm should be PBKDF2")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
@@ -255,7 +346,7 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithCustomParameters() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(PBKDF2),
-				Parameters: config.PasswordHashingParamsConfig{
+				PBKDF2: config.PBKDF2Config{
 					SaltSize:   customSaltSize,
 					Iterations: customIterations,
 					KeySize:    customKeySize,
@@ -266,7 +357,10 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithCustomParameters() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
 	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), PBKDF2, cred.Algorithm, "Algorithm should be PBKDF2")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
@@ -287,7 +381,7 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithCustomParameters() {
 		"Hash length should match configured key size")
 
 	// Verify that the generated credential can be verified
-	ok, err := newHashService().Verify(suite.input, cred)
+	ok, err := hashService.Verify(suite.input, cred)
 	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
 	assert.True(suite.T(), ok, "Hash verification should succeed for the same input with custom parameters")
 }
@@ -298,8 +392,10 @@ func (suite *HashServiceTestSuite) TestGeneratePBKDF2_Failure() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(PBKDF2),
-				Parameters: config.PasswordHashingParamsConfig{
-					KeySize: 137438953473,
+				PBKDF2: config.PBKDF2Config{
+					SaltSize:   defaultSaltSize,
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    -1,
 				},
 			},
 		},
@@ -307,45 +403,31 @@ func (suite *HashServiceTestSuite) TestGeneratePBKDF2_Failure() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
-	assert.Error(suite.T(), err, "Error should not be nil when generating hash with invalid parameters")
-	assert.Empty(suite.T(), cred.Hash, "Hash should be empty")
+	_, err := newHashService()
+	assert.Error(suite.T(), err, "Error should not be nil when initializing hash service with invalid parameters")
 }
 
 func (suite *HashServiceTestSuite) TestVerifyBKDF2() {
 	testCases := []struct {
-		name     string
-		input    string
-		expected Credential
+		name    string
+		input   string
+		saltHex string
+		iter    int
+		keySize int
 	}{
 		{
-			name:  "EmptyStringAndSalt",
-			input: "",
-			expected: Credential{
-				Algorithm: PBKDF2,
-				Hash:      "3106cb5743a54114a36bb7d3b2afa0242360b58243264728a9ca208548082281",
-			},
+			name:    "EmptyStringWithSalt",
+			input:   "",
+			saltHex: "36d2dde7dfbafe8e04ea49450f659b1c",
+			iter:    defaultPBKDF2Iterations,
+			keySize: defaultPBKDF2KeySize,
 		},
 		{
-			name:  "NormalStringWithoutSalt",
-			input: "password",
-			expected: Credential{
-				Algorithm: PBKDF2,
-				Hash:      "fdc25be00b18ba5c79d8bf7a452d98c248b11f2c7e9c871d24f1f880381e95cf",
-			},
-		},
-		{
-			name:  "NormalStringWithSaltAndParameters",
-			input: "password",
-			expected: Credential{
-				Algorithm: PBKDF2,
-				Hash:      "b500f5369698b4bcdde08267c406c12ff95e8de1d431e4472bf6ea95b620da5c",
-				Parameters: CredParameters{
-					Salt:       "36d2dde7dfbafe8e04ea49450f659b1c",
-					Iterations: defaultPBKDF2Iterations,
-					KeySize:    defaultPBKDF2KeySize,
-				},
-			},
+			name:    "NormalStringWithSalt",
+			input:   "password",
+			saltHex: "36d2dde7dfbafe8e04ea49450f659b1c",
+			iter:    defaultPBKDF2Iterations,
+			keySize: defaultPBKDF2KeySize,
 		},
 	}
 
@@ -353,15 +435,32 @@ func (suite *HashServiceTestSuite) TestVerifyBKDF2() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(PBKDF2),
+				PBKDF2: config.PBKDF2Config{
+					SaltSize:   defaultSaltSize,
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			expected := Credential{
+				Algorithm: PBKDF2,
+				Hash:      pbkdf2Hex(tc.input, tc.saltHex, tc.iter, tc.keySize),
+				Parameters: CredParameters{
+					Salt:       tc.saltHex,
+					Iterations: tc.iter,
+					KeySize:    tc.keySize,
+				},
+			}
+			ok, err := hashService.Verify([]byte(tc.input), expected)
 			assert.NoError(t, err, "Error should be nil when verifying hash")
 			assert.True(t, ok)
 		})
@@ -381,6 +480,11 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 			expected: Credential{
 				Algorithm: PBKDF2,
 				Hash:      "incorrecthashvalue",
+				Parameters: CredParameters{
+					Salt:       "36d2dde7dfbafe8e04ea49450f659b1c",
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
+				},
 			},
 			error: false,
 		},
@@ -389,9 +493,16 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 			input: "password",
 			expected: Credential{
 				Algorithm: PBKDF2,
-				Hash:      "fdc25be00b18ba5c79d8bf7a452d98c248b11f2c7e9c871d24f1f880381e95cf",
+				Hash: pbkdf2Hex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultPBKDF2Iterations,
+					defaultPBKDF2KeySize,
+				),
 				Parameters: CredParameters{
-					Salt: "incorrectsalt",
+					Salt:       "incorrectsalt",
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
 				},
 			},
 			error: true,
@@ -401,10 +512,35 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 			input: "password",
 			expected: Credential{
 				Algorithm: PBKDF2,
-				Hash:      "b500f5369698b4bcdde08267c406c12ff95e8de1d431e4472bf6ea95b620da5c",
+				Hash: pbkdf2Hex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultPBKDF2Iterations,
+					defaultPBKDF2KeySize,
+				),
 				Parameters: CredParameters{
-					Salt:    "36d2dde7dfbafe8e04ea49450f659b1c",
-					KeySize: 137438953473,
+					Salt:       "36d2dde7dfbafe8e04ea49450f659b1c",
+					Iterations: -1,
+					KeySize:    defaultPBKDF2KeySize,
+				},
+			},
+			error: true,
+		},
+		{
+			name:  "MissingSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: PBKDF2,
+				Hash: pbkdf2Hex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultPBKDF2Iterations,
+					defaultPBKDF2KeySize,
+				),
+				Parameters: CredParameters{
+					Salt:       "",
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
 				},
 			},
 			error: true,
@@ -415,15 +551,23 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(PBKDF2),
+				PBKDF2: config.PBKDF2Config{
+					SaltSize:   defaultSaltSize,
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			ok, err := hashService.Verify([]byte(tc.input), tc.expected)
 			if !tc.error {
 				assert.NoError(t, err, "Error should be nil when verifying hash")
 			} else {
@@ -440,18 +584,355 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithAndVerify() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(PBKDF2),
+				PBKDF2: config.PBKDF2Config{
+					SaltSize:   defaultSaltSize,
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred, err := newHashService().Generate(suite.input)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
 	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 
-	ok, err := newHashService().Verify(suite.input, cred)
+	ok, err := hashService.Verify(suite.input, cred)
 	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
 	assert.True(suite.T(), ok, "Hash verification should succeed for the same input")
+}
+
+func TestArgon2idHex(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       string
+		saltHex     string
+		iterations  uint32
+		memory      uint32
+		parallelism uint8
+		keySize     uint32
+	}{
+		{
+			name:        "DefaultParameters",
+			input:       "password",
+			saltHex:     "36d2dde7dfbafe8e04ea49450f659b1c",
+			iterations:  defaultArgon2idIterations,
+			memory:      defaultArgon2idMemory,
+			parallelism: defaultArgon2idParallelism,
+			keySize:     defaultArgon2idKeySize,
+		},
+		{
+			name:        "HigherIterations",
+			input:       "password",
+			saltHex:     "36d2dde7dfbafe8e04ea49450f659b1c",
+			iterations:  4,
+			memory:      defaultArgon2idMemory,
+			parallelism: defaultArgon2idParallelism,
+			keySize:     defaultArgon2idKeySize,
+		},
+		{
+			name:        "HigherMemory",
+			input:       "password",
+			saltHex:     "36d2dde7dfbafe8e04ea49450f659b1c",
+			iterations:  defaultArgon2idIterations,
+			memory:      65536,
+			parallelism: defaultArgon2idParallelism,
+			keySize:     defaultArgon2idKeySize,
+		},
+		{
+			name:        "LargerKeySize",
+			input:       "password",
+			saltHex:     "36d2dde7dfbafe8e04ea49450f659b1c",
+			iterations:  defaultArgon2idIterations,
+			memory:      defaultArgon2idMemory,
+			parallelism: defaultArgon2idParallelism,
+			keySize:     64,
+		},
+		{
+			name:        "EmptyInput",
+			input:       "",
+			saltHex:     "36d2dde7dfbafe8e04ea49450f659b1c",
+			iterations:  defaultArgon2idIterations,
+			memory:      defaultArgon2idMemory,
+			parallelism: defaultArgon2idParallelism,
+			keySize:     defaultArgon2idKeySize,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			hash := argon2idHex(
+				tc.input,
+				tc.saltHex,
+				tc.iterations,
+				tc.memory,
+				tc.parallelism,
+				tc.keySize,
+			)
+
+			assert.NotEmpty(t, hash, "Hash should not be empty")
+
+			hashBytes, err := hex.DecodeString(hash)
+			assert.NoError(t, err, "Hash should be valid hex")
+			assert.Equal(t, int(tc.keySize), len(hashBytes), "Hash length should match keySize")
+		})
+	}
+}
+
+func TestArgon2idHexConsistency(t *testing.T) {
+	input := "password"
+	saltHex := "36d2dde7dfbafe8e04ea49450f659b1c"
+	iterations := uint32(2)
+	memory := uint32(19456)
+	parallelism := uint8(1)
+	keySize := uint32(32)
+
+	hash1 := argon2idHex(input, saltHex, iterations, memory, parallelism, keySize)
+	hash2 := argon2idHex(input, saltHex, iterations, memory, parallelism, keySize)
+
+	assert.Equal(t, hash1, hash2, "Same inputs should produce same hash")
+}
+
+func TestArgon2idHexInvalidSaltHex(t *testing.T) {
+	invalidSalts := []string{
+		"zzzz",
+		"36d2dde7dfbafe8e04ea49450f659b1",
+		"36d2dde7dfbafe8e04ea49450f659b1czz",
+	}
+
+	for _, saltHex := range invalidSalts {
+		t.Run(saltHex, func(t *testing.T) {
+			require.Panics(t, func() {
+				argon2idHex("password", saltHex, 2, 19456, 1, 32)
+			}, "Invalid salt hex should cause panic")
+		})
+	}
+}
+
+func (suite *HashServiceTestSuite) TestGenerateArgon2id() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(ARGON2ID),
+				Argon2ID: config.Argon2IDConfig{
+					SaltSize:    defaultSaltSize,
+					Memory:      defaultArgon2idMemory,
+					Iterations:  defaultArgon2idIterations,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	cred, err := hashService.Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
+	assert.Equal(suite.T(), ARGON2ID, cred.Algorithm, "Algorithm should be Argon2id")
+	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
+}
+
+func (suite *HashServiceTestSuite) TestVerifyArgon2id() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(ARGON2ID),
+				Argon2ID: config.Argon2IDConfig{
+					SaltSize:    defaultSaltSize,
+					Memory:      defaultArgon2idMemory,
+					Iterations:  defaultArgon2idIterations,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	expected := Credential{
+		Algorithm: ARGON2ID,
+		Hash: argon2idHex(
+			"password",
+			"36d2dde7dfbafe8e04ea49450f659b1c",
+			defaultArgon2idIterations,
+			defaultArgon2idMemory,
+			defaultArgon2idParallelism,
+			defaultArgon2idKeySize,
+		),
+		Parameters: CredParameters{
+			Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+			Iterations:  defaultArgon2idIterations,
+			Memory:      defaultArgon2idMemory,
+			Parallelism: defaultArgon2idParallelism,
+			KeySize:     defaultArgon2idKeySize,
+		},
+	}
+
+	ok, err := hashService.Verify([]byte("password"), expected)
+	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
+	assert.True(suite.T(), ok)
+}
+
+func (suite *HashServiceTestSuite) TestVerifyArgon2id_Failure() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(ARGON2ID),
+				Argon2ID: config.Argon2IDConfig{
+					SaltSize:    defaultSaltSize,
+					Memory:      defaultArgon2idMemory,
+					Iterations:  defaultArgon2idIterations,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	testCases := []struct {
+		name     string
+		input    string
+		expected Credential
+		error    bool
+	}{
+		{
+			name:  "IncorrectHash",
+			input: "password",
+			expected: Credential{
+				Algorithm: ARGON2ID,
+				Hash:      "incorrecthashvalue",
+				Parameters: CredParameters{
+					Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+					Iterations:  defaultArgon2idIterations,
+					Memory:      defaultArgon2idMemory,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+			error: false,
+		},
+		{
+			name:  "IncorrectSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: ARGON2ID,
+				Hash: argon2idHex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultArgon2idIterations,
+					defaultArgon2idMemory,
+					defaultArgon2idParallelism,
+					defaultArgon2idKeySize,
+				),
+				Parameters: CredParameters{
+					Salt:        "incorrectsalt",
+					Iterations:  defaultArgon2idIterations,
+					Memory:      defaultArgon2idMemory,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+			error: true,
+		},
+		{
+			name:  "IncorrectParameters",
+			input: "password",
+			expected: Credential{
+				Algorithm: ARGON2ID,
+				Hash: argon2idHex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultArgon2idIterations,
+					defaultArgon2idMemory,
+					defaultArgon2idParallelism,
+					defaultArgon2idKeySize,
+				),
+				Parameters: CredParameters{
+					Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+					Iterations:  -1,
+					Memory:      defaultArgon2idMemory,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+			error: true,
+		},
+		{
+			name:  "MissingSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: ARGON2ID,
+				Hash: argon2idHex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultArgon2idIterations,
+					defaultArgon2idMemory,
+					defaultArgon2idParallelism,
+					defaultArgon2idKeySize,
+				),
+				Parameters: CredParameters{
+					Salt:        "",
+					Iterations:  defaultArgon2idIterations,
+					Memory:      defaultArgon2idMemory,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+			error: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			ok, err := hashService.Verify([]byte(tc.input), tc.expected)
+			if !tc.error {
+				assert.NoError(t, err, "Error should be nil when verifying hash")
+			} else {
+				assert.Error(t, err, "Error should not be nil when verifying hash with invalid parameters")
+			}
+			assert.False(t, ok)
+		})
+	}
+}
+
+func (suite *HashServiceTestSuite) TestGenerateArgon2id_Failure() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(ARGON2ID),
+				Argon2ID: config.Argon2IDConfig{
+					SaltSize:    defaultSaltSize,
+					Memory:      -1,
+					Iterations:  defaultArgon2idIterations,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	_, err := newHashService()
+	assert.Error(suite.T(), err,
+		"Error should not be nil when initializing Argon2id hash service with invalid parameters")
 }
 
 func (suite *HashServiceTestSuite) TestUnsupportedAlgorithm_Failure() {
@@ -465,35 +946,36 @@ func (suite *HashServiceTestSuite) TestUnsupportedAlgorithm_Failure() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	// Expecting error log and empty credential
-	defer func() {
-		if r := recover(); r != nil {
-			suite.T().Logf("Recovered from panic: %v", r)
-		}
-	}()
-
-	// Expecting error log and empty credential
-	cred, err := newHashService().Generate(suite.input)
-	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
-	assert.Equal(suite.T(), Credential{}, cred, "Credential should be empty for unsupported algorithm")
+	_, err := newHashService()
+	assert.Error(suite.T(), err, "Error should not be nil for unsupported algorithm")
 }
 
 func (suite *HashServiceTestSuite) TestUnsupportedAlgorithmVerify_Failure() {
-	referenceCredential := Credential{
-		Algorithm: "UNSUPPORTED",
-		Hash:      "somehash",
-		Parameters: CredParameters{
-			Salt: "somesalt",
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(SHA256),
+				SHA256: config.SHA256Config{
+					SaltSize: defaultSaltSize,
+				},
+			},
 		},
 	}
-	// Expecting error log and empty credential
-	defer func() {
-		if r := recover(); r != nil {
-			suite.T().Logf("Recovered from panic: %v", r)
-		}
-	}()
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	ok, err := newHashService().Verify(suite.input, referenceCredential)
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	referenceCredential := Credential{
+		Algorithm: "UNSUPPORTED",
+		Hash:      sha256Hex("password", "12f4576d7432bd8020db7202b6492a37"),
+		Parameters: CredParameters{
+			Salt: "12f4576d7432bd8020db7202b6492a37",
+		},
+	}
+
+	ok, err := hashService.Verify(suite.input, referenceCredential)
 	assert.Error(suite.T(), err, "Error should not be nil when verifying hash with unsupported algorithm")
 	assert.False(suite.T(), ok, "Verification should fail for unsupported algorithm")
 }
@@ -512,4 +994,311 @@ func (suite *HashServiceTestSuite) TestGenerateSaltUniqueness() {
 	assert.NoError(suite.T(), err, "Error should be nil when generating salt")
 
 	assert.NotEqual(suite.T(), salt1, salt2, "Generated salts should be different")
+}
+
+func (suite *HashServiceTestSuite) TestInitialize() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(SHA256),
+				SHA256: config.SHA256Config{
+					SaltSize: defaultSaltSize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	hashService, err := Initialize()
+	assert.NoError(suite.T(), err, "Error should be nil when initializing hash service")
+	assert.NotNil(suite.T(), hashService, "Hash service should not be nil")
+}
+
+func (suite *HashServiceTestSuite) TestInitialize_Failure() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: "UNSUPPORTED",
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	_, err := Initialize()
+	assert.Error(suite.T(), err, "Error should not be nil when initializing hash service with unsupported algorithm")
+}
+
+func (suite *HashServiceTestSuite) TestVerifyPBKDF2_InvalidKeySize() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(PBKDF2),
+				PBKDF2: config.PBKDF2Config{
+					SaltSize:   defaultSaltSize,
+					Iterations: defaultPBKDF2Iterations,
+					KeySize:    defaultPBKDF2KeySize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	credential := Credential{
+		Algorithm: PBKDF2,
+		Hash: pbkdf2Hex(
+			"password",
+			"36d2dde7dfbafe8e04ea49450f659b1c",
+			defaultPBKDF2Iterations,
+			defaultPBKDF2KeySize,
+		),
+		Parameters: CredParameters{
+			Salt:       "36d2dde7dfbafe8e04ea49450f659b1c",
+			Iterations: defaultPBKDF2Iterations,
+			KeySize:    -1,
+		},
+	}
+	ok, err := hashService.Verify([]byte("password"), credential)
+	assert.Error(suite.T(), err, "Error should not be nil when verifying with invalid key size")
+	assert.False(suite.T(), ok)
+}
+
+func (suite *HashServiceTestSuite) TestVerifyArgon2id_InvalidMemory() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(ARGON2ID),
+				Argon2ID: config.Argon2IDConfig{
+					SaltSize:    defaultSaltSize,
+					Memory:      defaultArgon2idMemory,
+					Iterations:  defaultArgon2idIterations,
+					Parallelism: defaultArgon2idParallelism,
+					KeySize:     defaultArgon2idKeySize,
+				},
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	hashService, err := newHashService()
+	require.NoError(suite.T(), err)
+
+	testCases := []struct {
+		name   string
+		params CredParameters
+	}{
+		{
+			name: "NegativeMemory",
+			params: CredParameters{
+				Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+				Memory:      -1,
+				Iterations:  defaultArgon2idIterations,
+				Parallelism: defaultArgon2idParallelism,
+				KeySize:     defaultArgon2idKeySize,
+			},
+		},
+		{
+			name: "MemoryExceedsMax",
+			params: CredParameters{
+				Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+				Memory:      maxUint32 + 1,
+				Iterations:  defaultArgon2idIterations,
+				Parallelism: defaultArgon2idParallelism,
+				KeySize:     defaultArgon2idKeySize,
+			},
+		},
+		{
+			name: "NegativeParallelism",
+			params: CredParameters{
+				Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+				Memory:      defaultArgon2idMemory,
+				Iterations:  defaultArgon2idIterations,
+				Parallelism: -1,
+				KeySize:     defaultArgon2idKeySize,
+			},
+		},
+		{
+			name: "ParallelismExceedsMax",
+			params: CredParameters{
+				Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+				Memory:      defaultArgon2idMemory,
+				Iterations:  defaultArgon2idIterations,
+				Parallelism: maxUint8 + 1,
+				KeySize:     defaultArgon2idKeySize,
+			},
+		},
+		{
+			name: "NegativeKeySize",
+			params: CredParameters{
+				Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+				Memory:      defaultArgon2idMemory,
+				Iterations:  defaultArgon2idIterations,
+				Parallelism: defaultArgon2idParallelism,
+				KeySize:     -1,
+			},
+		},
+		{
+			name: "KeySizeExceedsMax",
+			params: CredParameters{
+				Salt:        "36d2dde7dfbafe8e04ea49450f659b1c",
+				Memory:      defaultArgon2idMemory,
+				Iterations:  defaultArgon2idIterations,
+				Parallelism: defaultArgon2idParallelism,
+				KeySize:     maxUint32 + 1,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			credential := Credential{
+				Algorithm: ARGON2ID,
+				Hash: argon2idHex(
+					"password",
+					"36d2dde7dfbafe8e04ea49450f659b1c",
+					defaultArgon2idIterations,
+					defaultArgon2idMemory,
+					defaultArgon2idParallelism,
+					defaultArgon2idKeySize,
+				),
+				Parameters: tc.params,
+			}
+			ok, err := hashService.Verify([]byte("password"), credential)
+			assert.Error(t, err, "Error should not be nil for invalid parameter: %s", tc.name)
+			assert.False(t, ok)
+		})
+	}
+}
+
+func (suite *HashServiceTestSuite) TestNewHashService_InvalidConfigs() {
+	testCases := []struct {
+		name   string
+		config *config.Config
+	}{
+		{
+			name: "SHA256InvalidSaltSize",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(SHA256),
+						SHA256:    config.SHA256Config{SaltSize: -1},
+					},
+				},
+			},
+		},
+		{
+			name: "PBKDF2InvalidSaltSize",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(PBKDF2),
+						PBKDF2: config.PBKDF2Config{
+							SaltSize:   -1,
+							Iterations: defaultPBKDF2Iterations,
+							KeySize:    defaultPBKDF2KeySize,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "PBKDF2InvalidIterations",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(PBKDF2),
+						PBKDF2: config.PBKDF2Config{
+							SaltSize:   defaultSaltSize,
+							Iterations: -1,
+							KeySize:    defaultPBKDF2KeySize,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Argon2idInvalidSaltSize",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(ARGON2ID),
+						Argon2ID: config.Argon2IDConfig{
+							SaltSize:    -1,
+							Memory:      defaultArgon2idMemory,
+							Iterations:  defaultArgon2idIterations,
+							Parallelism: defaultArgon2idParallelism,
+							KeySize:     defaultArgon2idKeySize,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Argon2idInvalidIterations",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(ARGON2ID),
+						Argon2ID: config.Argon2IDConfig{
+							SaltSize:    defaultSaltSize,
+							Memory:      defaultArgon2idMemory,
+							Iterations:  -1,
+							Parallelism: defaultArgon2idParallelism,
+							KeySize:     defaultArgon2idKeySize,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Argon2idInvalidParallelism",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(ARGON2ID),
+						Argon2ID: config.Argon2IDConfig{
+							SaltSize:    defaultSaltSize,
+							Memory:      defaultArgon2idMemory,
+							Iterations:  defaultArgon2idIterations,
+							Parallelism: -1,
+							KeySize:     defaultArgon2idKeySize,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Argon2idInvalidKeySize",
+			config: &config.Config{
+				Crypto: config.CryptoConfig{
+					PasswordHashing: config.PasswordHashingConfig{
+						Algorithm: string(ARGON2ID),
+						Argon2ID: config.Argon2IDConfig{
+							SaltSize:    defaultSaltSize,
+							Memory:      defaultArgon2idMemory,
+							Iterations:  defaultArgon2idIterations,
+							Parallelism: defaultArgon2idParallelism,
+							KeySize:     -1,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			config.ResetThunderRuntime()
+			_ = config.InitializeThunderRuntime("/test/thunder/home", tc.config)
+
+			_, err := newHashService()
+			assert.Error(t, err, "Error should not be nil for invalid config: %s", tc.name)
+		})
+	}
 }

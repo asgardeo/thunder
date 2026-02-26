@@ -118,9 +118,19 @@
     },
     "password_hashing": {
       "algorithm": "PBKDF2",
-      "parameters": {
+      "argon2id": {
+        "iterations": 2,
+        "memory": 19456,
+        "parallelism": 1,
+        "key_size": 32,
+        "salt_size": 16
+      },
+      "pbkdf2": {
         "iterations": 600000,
         "key_size": 32,
+        "salt_size": 16
+      },
+      "sha256": {
         "salt_size": 16
       }
     },

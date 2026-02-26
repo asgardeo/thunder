@@ -19,7 +19,10 @@
 package hash
 
 // Initialize initializes the HashService.
-func Initialize() HashServiceInterface {
-	hashService := newHashService()
-	return hashService
+func Initialize() (HashServiceInterface, error) {
+	hashService, err := newHashService()
+	if err != nil {
+		return nil, err
+	}
+	return hashService, nil
 }
