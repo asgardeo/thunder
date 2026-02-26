@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,558 +16,356 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetUserSchemas from '../useGetUserSchemas';
 import type {UserSchemaListResponse} from '../../types/users';
+import UserQueryKeys from '../../constants/user-query-keys';
 
-// Mock useAsgardeo
-const mockHttpRequest = vi.fn();
+// Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+  useAsgardeo: vi.fn(),
 }));
 
-// Mock useConfig
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
-    useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
-    }),
+    useConfig: vi.fn(),
   };
 });
 
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
+
 describe('useGetUserSchemas', () => {
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+
+  const mockSchemasResponse: UserSchemaListResponse = {
+    totalResults: 2,
+    startIndex: 0,
+    count: 2,
+    schemas: [
+      {id: 'schema-1', name: 'Employee', ouId: 'ou-1'},
+      {id: 'schema-2', name: 'Contractor', ouId: 'ou-2'},
+    ],
+  };
+
   beforeEach(() => {
-    mockHttpRequest.mockReset();
+    mockHttpRequest = vi.fn();
+    mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: mockGetServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with correct default values', () => {
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    expect(result.current.data).toBeNull();
-    expect(result.current.error).toBeNull();
-    expect(typeof result.current.refetch).toBe('function');
-  });
-
-  it('should fetch user schemas on mount', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 2,
-      startIndex: 0,
-      count: 2,
-      schemas: [
-        {
-          id: 'schema-1',
-          name: 'Customer',
-          ouId: 'root-ou',
-        },
-        {
-          id: 'schema-2',
-          name: 'Employee',
-          ouId: 'child-ou',
-        },
-      ],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
+  it('should initialize with loading state', () => {
+    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
     const {result} = renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.data).toEqual(mockResponse);
-    expect(result.current.error).toBeNull();
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas',
-        method: 'GET',
-      }),
-    );
-  });
-
-  it('should fetch user schemas with query parameters', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 100,
-      startIndex: 10,
-      count: 20,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas({limit: 20, offset: 10}));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.data).toEqual(mockResponse);
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=20&offset=10',
-        method: 'GET',
-      }),
-    );
-  });
-
-  it('should fetch user schemas with limit parameter only', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 50,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas({limit: 10}));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.data).toEqual(mockResponse);
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=10',
-        method: 'GET',
-      }),
-    );
-  });
-
-  it('should fetch user schemas with offset parameter only', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 50,
-      startIndex: 20,
-      count: 30,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas({offset: 20}));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.data).toEqual(mockResponse);
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?offset=20',
-        method: 'GET',
-      }),
-    );
-  });
-
-  it('should handle API error with JSON response', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Unauthorized access'));
-
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Unauthorized access',
-      description: 'Failed to fetch user schemas',
-    });
-    expect(result.current.data).toBeNull();
-  });
-
-  it('should handle API error without JSON response', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Internal Server Error'));
-
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Internal Server Error',
-      description: 'Failed to fetch user schemas',
-    });
-
-    expect(result.current.data).toBeNull();
-  });
-
-  it('should handle network error', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Network error'));
-
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Network error',
-      description: 'Failed to fetch user schemas',
-    });
-    expect(result.current.data).toBeNull();
-  });
-
-  it('should abort previous request when params change', async () => {
-    const mockResponse2: UserSchemaListResponse = {
-      totalResults: 20,
-      startIndex: 0,
-      count: 20,
-      schemas: [],
-    };
-
-    const abortError = new Error('Aborted');
-    abortError.name = 'AbortError';
-
-    mockHttpRequest.mockImplementation(({url}: {url?: string}) =>
-      url!.includes('limit=10') ? Promise.reject(abortError) : Promise.resolve({data: mockResponse2}),
-    );
-
-    const {result, rerender} = renderHook(
-      ({params}: {params?: {limit?: number; offset?: number}}) => useGetUserSchemas(params),
-      {
-        initialProps: {params: {limit: 10}},
-      },
-    );
-
-    // Quickly change params to trigger abort
-    rerender({params: {limit: 20}});
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Should have the data from the second request
-    expect(result.current.data).toEqual(mockResponse2);
-    // Error should be null since AbortError is ignored
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
   });
 
-  it('should refetch with new parameters', async () => {
-    const mockResponse1: UserSchemaListResponse = {
-      totalResults: 10,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    const mockResponse2: UserSchemaListResponse = {
-      totalResults: 5,
-      startIndex: 0,
-      count: 5,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse1});
-
-    const {result} = renderHook(() => useGetUserSchemas({limit: 10}));
-
-    // Wait for initial fetch to complete with mockResponse1
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.data?.count).toBe(10);
+  it('should successfully fetch user schemas list', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
     });
 
-    // Now update the mock to return mockResponse2 for the refetch
-    mockHttpRequest.mockResolvedValue({data: mockResponse2});
+    const {result} = renderHook(() => useGetUserSchemas());
 
-    // Call refetch with new parameters
-    await result.current.refetch({limit: 5});
-
-    // Wait for refetch to complete with mockResponse2
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.data?.count).toBe(5);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockHttpRequest).toHaveBeenCalled();
+    expect(result.current.data).toEqual(mockSchemasResponse);
+    expect(result.current.data?.schemas).toHaveLength(2);
+    expect(result.current.data?.totalResults).toBe(2);
+    expect(result.current.data?.count).toBe(2);
   });
 
-  it('should refetch with original parameters when no new params provided', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 10,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas({limit: 10}));
-
-    // Wait for initial fetch to complete
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+  it('should fetch schemas without query parameters when no params provided', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
     });
-    expect(result.current.data).toEqual(mockResponse);
 
-    // Clear mock calls from initial fetch
-    vi.clearAllMocks();
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
+    renderHook(() => useGetUserSchemas());
 
-    // Call refetch without parameters
-    await result.current.refetch();
-
-    // Wait for refetch to complete
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
-    // Should use the same parameters as initial call
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=10',
-        method: 'GET',
-      }),
-    );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas');
   });
 
-  it('should cleanup and abort request on unmount', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 10,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result, unmount} = renderHook(() => useGetUserSchemas());
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockResponse);
+  it('should use custom pagination parameters', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
     });
 
-    unmount();
+    renderHook(() => useGetUserSchemas({limit: 10, offset: 5}));
 
-    // The abort should have been called during cleanup
-    // This is difficult to assert directly, but we can verify no errors occur
-    expect(true).toBe(true);
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toContain('limit=10');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toContain('offset=5');
+  });
+
+  it('should use limit parameter only', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
+    });
+
+    renderHook(() => useGetUserSchemas({limit: 20}));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toContain('limit=20');
+  });
+
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to fetch user schemas');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
+
+    const {result} = renderHook(() => useGetUserSchemas());
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('should handle network error', async () => {
+    const networkError = new Error('Network request failed');
+    mockHttpRequest.mockRejectedValueOnce(networkError);
+
+    const {result} = renderHook(() => useGetUserSchemas());
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(networkError);
+  });
+
+  it('should use correct server URL from config', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
+    });
+
+    renderHook(() => useGetUserSchemas());
+
+    await waitFor(() => {
+      expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toContain('https://api.test.com/user-schemas');
+  });
+
+  it('should include correct headers', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
+    });
+
+    renderHook(() => useGetUserSchemas());
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.method).toBe('GET');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('should use correct query key with pagination params', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
+    });
+
+    const {result, queryClient} = renderHook(() => useGetUserSchemas({limit: 20, offset: 10}));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const cache = queryClient.getQueryCache();
+    const queries = cache.findAll({
+      queryKey: [UserQueryKeys.USER_SCHEMAS, {limit: 20, offset: 10}],
+    });
+
+    expect(queries).toHaveLength(1);
+  });
+
+  it('should cache results for same parameters', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
+    });
+
+    // First call - get the queryClient from the render result
+    const {result: result1, queryClient} = renderHook(() => useGetUserSchemas({limit: 10, offset: 0}));
+
+    await waitFor(() => {
+      expect(result1.current.isSuccess).toBe(true);
+    });
+
+    // Set the data as fresh to prevent refetch
+    queryClient.setQueryDefaults([UserQueryKeys.USER_SCHEMAS, {limit: 10, offset: 0}], {
+      staleTime: Infinity,
+    });
+
+    // Second call with same queryClient should use cache
+    const {result: result2} = renderHook(() => useGetUserSchemas({limit: 10, offset: 0}), {
+      queryClient,
+    });
+
+    await waitFor(() => {
+      expect(result2.current.data).toEqual(mockSchemasResponse);
+    });
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1); // Should not make another request
+  });
+
+  it('should make new request for different parameters', async () => {
+    mockHttpRequest.mockResolvedValue({
+      data: mockSchemasResponse,
+    });
+
+    const {result: result1} = renderHook(() => useGetUserSchemas({limit: 10, offset: 0}));
+
+    await waitFor(() => {
+      expect(result1.current.isSuccess).toBe(true);
+    });
+
+    // Second call with different parameters should make new request
+    const {result: result2} = renderHook(() => useGetUserSchemas({limit: 20, offset: 5}));
+
+    await waitFor(() => {
+      expect(result2.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('should support refetching data', async () => {
+    mockHttpRequest.mockResolvedValue({
+      data: mockSchemasResponse,
+    });
+
+    const {result} = renderHook(() => useGetUserSchemas());
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Refetch the data
+    await result.current.refetch();
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
   });
 
   it('should handle empty schemas list', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const emptyResponse: UserSchemaListResponse = {
       totalResults: 0,
       startIndex: 0,
       count: 0,
       schemas: [],
     };
 
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
+    mockHttpRequest.mockResolvedValueOnce({
+      data: emptyResponse,
+    });
 
     const {result} = renderHook(() => useGetUserSchemas());
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.data).toEqual(mockResponse);
+    expect(result.current.data).toEqual(emptyResponse);
     expect(result.current.data?.schemas).toHaveLength(0);
-    expect(result.current.error).toBeNull();
+    expect(result.current.data?.totalResults).toBe(0);
   });
 
-  it('should handle large offset pagination', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 1000,
-      startIndex: 900,
-      count: 50,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas({limit: 50, offset: 900}));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+  it('should properly construct query string with pagination parameters', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchemasResponse,
     });
 
-    expect(result.current.data).toEqual(mockResponse);
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=50&offset=900',
-        method: 'GET',
-      }),
-    );
+    renderHook(() => useGetUserSchemas({limit: 50, offset: 100}));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const url = callArgs.url as string;
+    expect(url).toContain('user-schemas?');
+    expect(url).toContain('limit=50');
+    expect(url).toContain('offset=100');
   });
 
-  it('should refetch with only offset parameter', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 100,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
+  it('should maintain correct loading state during fetch', async () => {
+    let resolveRequest: (value: {data: UserSchemaListResponse}) => void;
+    const requestPromise = new Promise<{data: UserSchemaListResponse}>((resolve) => {
+      resolveRequest = resolve;
+    });
 
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
+    mockHttpRequest.mockReturnValueOnce(requestPromise);
 
     const {result} = renderHook(() => useGetUserSchemas());
 
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isFetching).toBe(true);
+    expect(result.current.data).toBeUndefined();
 
-    // Call refetch with only offset parameter
-    await result.current.refetch({offset: 30});
-
-    // Wait for refetch to complete
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Verify the last call included only the offset parameter
-    expect(mockHttpRequest).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?offset=30',
-        method: 'GET',
-      }),
-    );
-  });
-
-  it('should handle AbortError in refetch and not set error', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 10,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Mock AbortError for refetch
-    const abortError = new Error('Request aborted');
-    abortError.name = 'AbortError';
-    mockHttpRequest.mockRejectedValue(abortError);
-
-    // Call refetch - it should not throw
-    await result.current.refetch();
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Error should still be null since AbortError is ignored
-    expect(result.current.error).toBeNull();
-  });
-
-  it('should handle refetch error and throw', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 10,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.data).toEqual(mockResponse);
-    });
-
-    // Mock error for refetch
-    mockHttpRequest.mockRejectedValue(new Error('Refetch failed'));
-
-    // Call refetch and expect it to throw
-    await expect(result.current.refetch()).rejects.toThrow('Refetch failed');
-
-    // Wait for error state to be set
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_ERROR',
-        message: 'Refetch failed',
-        description: 'Failed to fetch user schemas',
-      });
-    });
-
-    expect(result.current.loading).toBe(false);
-  });
-
-  it('should handle non-Error object in refetch catch block', async () => {
-    const mockResponse: UserSchemaListResponse = {
-      totalResults: 10,
-      startIndex: 0,
-      count: 10,
-      schemas: [],
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockResponse});
-
-    const {result} = renderHook(() => useGetUserSchemas());
-
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.data).toEqual(mockResponse);
-    });
-
-    // Mock non-Error rejection for refetch
-    mockHttpRequest.mockRejectedValue('String error');
-
-    // Call refetch and expect it to throw
-    let refetchError;
-    try {
-      await result.current.refetch();
-    } catch (err) {
-      refetchError = err;
-    }
-
-    // Verify the error was thrown
-    expect(refetchError).toEqual('String error');
-
-    // Wait for error state to be set
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to fetch user schemas',
-      });
-    });
-
-    expect(result.current.loading).toBe(false);
-  });
-
-  it('should handle non-Error object during initial fetch', async () => {
-    mockHttpRequest.mockRejectedValue('String error during initial fetch');
-
-    const {result} = renderHook(() => useGetUserSchemas());
+    resolveRequest!({data: mockSchemasResponse});
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'An unknown error occurred',
-      description: 'Failed to fetch user schemas',
-    });
-    expect(result.current.data).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toEqual(mockSchemasResponse);
   });
 });

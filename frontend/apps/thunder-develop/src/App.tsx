@@ -33,6 +33,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
+import UserCreateProvider from './features/users/contexts/UserCreate/UserCreateProvider';
 import FlowsListPage from './features/flows/pages/FlowsListPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
 import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
@@ -57,7 +58,6 @@ export default function App(): JSX.Element {
         >
           <Route index element={<UsersListPage />} />
           <Route path="users" element={<UsersListPage />} />
-          <Route path="users/create" element={<CreateUserPage />} />
           <Route path="users/:userId" element={<ViewUserPage />} />
           <Route path="user-types" element={<UserTypesListPage />} />
           <Route path="user-types/:id" element={<ViewUserTypePage />} />
@@ -94,6 +94,18 @@ export default function App(): JSX.Element {
           }
         >
           <Route index element={<CreateGroupPage />} />
+        </Route>
+        <Route
+          path="/users/create"
+          element={
+            <ProtectedRoute>
+              <UserCreateProvider>
+                <FullScreenLayout />
+              </UserCreateProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CreateUserPage />} />
         </Route>
         <Route
           path="/user-types/create"

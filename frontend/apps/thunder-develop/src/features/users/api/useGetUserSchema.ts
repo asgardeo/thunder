@@ -16,119 +16,39 @@
  * under the License.
  */
 
-import {useState, useEffect, useRef, useMemo} from 'react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiUserSchema, ApiError} from '../types/users';
+import type {ApiUserSchema} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Custom hook to fetch a single user schema by ID
+ * Custom hook to fetch a single user schema by ID.
+ *
  * @param id - The ID of the user schema to fetch
- * @returns Object containing data, loading state, error, and refetch function
+ * @returns TanStack Query result object containing schema data, loading state, and error information
  */
-export default function useGetUserSchema(id?: string) {
+export default function useGetUserSchema(id?: string): UseQueryResult<ApiUserSchema> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<ApiUserSchema | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
-  const hasFetchedRef = useRef(false);
-  const lastIdRef = useRef<string | undefined>(undefined);
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
+  return useQuery<ApiUserSchema>({
+    queryKey: [UserQueryKeys.USER_SCHEMA, id],
+    queryFn: async (): Promise<ApiUserSchema> => {
+      const serverUrl: string = getServerUrl();
 
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    // Prevent double fetch in React Strict Mode and check if ID changed
-    if (hasFetchedRef.current && lastIdRef.current === id) {
-      return;
-    }
-    hasFetchedRef.current = true;
-    lastIdRef.current = id;
-
-    const fetchUserSchema = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await http.request({
-          url: `${API_BASE_URL}/user-schemas/${id}`,
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        } as unknown as Parameters<typeof http.request>[0]);
-
-        const jsonData = response.data as ApiUserSchema;
-        setData(jsonData);
-        setError(null);
-      } catch (err) {
-        const apiError: ApiError = {
-          code: 'FETCH_ERROR',
-          message: err instanceof Error ? err.message : 'An unknown error occurred',
-          description: 'Failed to fetch user schema',
-        };
-        setError(apiError);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserSchema().catch(() => {
-      // Error already handled
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  const refetch = async (newId?: string): Promise<void> => {
-    const schemaId = newId ?? id;
-    if (!schemaId) {
-      setError({
-        code: 'INVALID_ID',
-        message: 'Invalid schema ID',
-        description: 'Schema ID is required',
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas/${schemaId}`,
+      const response: {
+        data: ApiUserSchema;
+      } = await http.request({
+        url: `${serverUrl}/user-schemas/${id}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUserSchema;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'FETCH_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to fetch user schema',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    refetch,
-  };
+      return response.data;
+    },
+    enabled: Boolean(id),
+  });
 }
