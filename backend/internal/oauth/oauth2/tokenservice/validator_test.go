@@ -1583,3 +1583,246 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpJustIns
 	assert.Equal(suite.T(), "user123", result.Sub)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
+
+// createTestAccessToken creates a test JWT token with the "at+jwt" typ header.
+func (suite *TokenValidatorTestSuite) createTestAccessToken(
+	claims map[string]interface{},
+) string {
+	header := map[string]interface{}{
+		"alg": "RS256",
+		"typ": "at+jwt",
+	}
+
+	headerJSON, _ := json.Marshal(header)
+	claimsJSON, _ := json.Marshal(claims)
+
+	headerB64 := base64.RawURLEncoding.EncodeToString(headerJSON)
+	claimsB64 := base64.RawURLEncoding.EncodeToString(claimsJSON)
+
+	return fmt.Sprintf("%s.%s.signature", headerB64, claimsB64)
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success() {
+	claims := map[string]interface{}{
+		"sub":        "user123",
+		"iss":        "https://thunder.io",
+		"aud":        "test-app",
+		"scope":      "openid profile",
+		"client_id":  "test-client",
+		"grant_type": "authorization_code",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "test-app", result.Aud)
+	assert.Equal(suite.T(), "test-client", result.ClientID)
+	assert.Equal(suite.T(), "authorization_code", result.GrantType)
+	assert.Equal(suite.T(), []string{"openid", "profile"}, result.Scopes)
+	assert.NotNil(suite.T(), result.Claims)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Success_MinClaims() {
+	// Token with only the mandatory claims and no optional ones.
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://thunder.io",
+		"aud":       "test-app",
+		"client_id": "test-client",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), "test-app", result.Aud)
+	assert.Equal(suite.T(), "test-client", result.ClientID)
+	assert.Empty(suite.T(), result.GrantType)
+	assert.Empty(suite.T(), result.Scopes)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_VerifyFails() {
+	token := "invalid.token.signature"
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").
+		Return(&serviceerror.ServiceError{
+			Type:  serviceerror.ServerErrorType,
+			Code:  "JWT-1004",
+			Error: "Invalid token signature",
+		})
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(),
+		"access token verification failed")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_WrongTyp() {
+	// Token with typ "JWT" instead of "at+jwt" should be rejected.
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+	}
+	token := suite.createTestJWT(claims) // Uses typ: "JWT"
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "invalid token type")
+	assert.Contains(suite.T(), err.Error(), "at+jwt")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingTyp() {
+	// Token without a typ header should be rejected.
+	header := map[string]interface{}{
+		"alg": "RS256",
+	}
+	claims := map[string]interface{}{
+		"sub": "user123",
+	}
+
+	headerJSON, _ := json.Marshal(header)
+	claimsJSON, _ := json.Marshal(claims)
+	headerB64 := base64.RawURLEncoding.EncodeToString(headerJSON)
+	claimsB64 := base64.RawURLEncoding.EncodeToString(claimsJSON)
+	token := fmt.Sprintf("%s.%s.signature", headerB64, claimsB64)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "invalid token type")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingSub() {
+	claims := map[string]interface{}{
+		"iss":       "https://thunder.io",
+		"aud":       "test-app",
+		"client_id": "test-client",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing required 'sub' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingAud() {
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://thunder.io",
+		"client_id": "test-client",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing required 'aud' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingIss() {
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"aud":       "test-app",
+		"client_id": "test-client",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing required 'iss' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_MissingClientID() {
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": "test-app",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing required 'client_id' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_EmptySub() {
+	claims := map[string]interface{}{
+		"sub":       "",
+		"iss":       "https://thunder.io",
+		"aud":       "test-app",
+		"client_id": "test-client",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing required 'sub' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_EmptyClientID() {
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://thunder.io",
+		"aud":       "test-app",
+		"client_id": "",
+	}
+	token := suite.createTestAccessToken(claims)
+
+	suite.mockJWTService.On("VerifyJWT", token, "", "https://thunder.io").Return(nil)
+
+	result, err := suite.validator.ValidateAccessToken(token)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing required 'client_id' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
