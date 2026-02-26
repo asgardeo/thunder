@@ -19,7 +19,7 @@
 /**
  * Dashboard & Main Views — Accessibility Tests
  *
- * Validates WCAG 2.1 AA compliance on authenticated pages:
+ * Validates WCAG 2.2 AA compliance on authenticated pages:
  * dashboard, navigation, and user management.
  *
  * These tests use the stored authentication state from the setup project,
@@ -48,13 +48,13 @@ test.describe("Accessibility — Dashboard & Main Views @accessibility", () => {
     });
 
     test(
-      "TC-A11Y-DASH-001: Dashboard page meets WCAG 2.1 AA standards",
+      "TC-A11Y-DASH-001: Dashboard page meets WCAG 2.2 AA standards",
       async ({ page }, testInfo) => {
-        await test.step("Run axe-core WCAG 2.1 AA audit on dashboard", async () => {
+        await test.step("Run axe-core WCAG 2.2 AA audit on dashboard", async () => {
           await expectNoA11yViolations(
             page,
             {
-              tags: A11Y_RULE_SETS.WCAG_21_AA,
+              tags: A11Y_RULE_SETS.WCAG_22_AA,
               excludeRules: KNOWN_VIOLATIONS,
             },
             testInfo,
@@ -173,13 +173,13 @@ test.describe("Accessibility — Dashboard & Main Views @accessibility", () => {
     });
 
     test(
-      "TC-A11Y-DASH-007: User management page meets WCAG 2.1 AA standards",
+      "TC-A11Y-DASH-007: User management page meets WCAG 2.2 AA standards",
       async ({ page }, testInfo) => {
-        await test.step("Run full WCAG 2.1 AA audit on user management page", async () => {
+        await test.step("Run full WCAG 2.2 AA audit on user management page", async () => {
           await expectNoA11yViolations(
             page,
             {
-              tags: A11Y_RULE_SETS.WCAG_21_AA,
+              tags: A11Y_RULE_SETS.WCAG_22_AA,
               excludeRules: KNOWN_VIOLATIONS,
             },
             testInfo,
@@ -211,21 +211,4 @@ test.describe("Accessibility — Dashboard & Main Views @accessibility", () => {
     );
   });
 
-  test.describe("Comprehensive WCAG 2.2 AA", () => {
-    test(
-      "TC-A11Y-DASH-009: Dashboard passes WCAG 2.2 AA audit",
-      async ({ page }, testInfo) => {
-        await page.goto("/", { waitUntil: "networkidle" });
-
-        await expectNoA11yViolations(
-          page,
-          {
-            tags: A11Y_RULE_SETS.WCAG_22_AA,
-            excludeRules: KNOWN_VIOLATIONS,
-          },
-          testInfo,
-        );
-      },
-    );
-  });
 });

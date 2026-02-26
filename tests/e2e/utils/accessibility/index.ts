@@ -50,7 +50,7 @@ export type A11ySeverity = "minor" | "moderate" | "serious" | "critical";
  * Configuration options for accessibility checks.
  */
 export interface A11yOptions {
-  /** WCAG tag sets to validate against (e.g., 'wcag2a', 'wcag21aa'). Defaults to WCAG 2.1 AA. */
+  /** WCAG tag sets to validate against (e.g., 'wcag2a', 'wcag22aa'). Used when runAllRules is false. Defaults to WCAG 2.2 AA. */
   tags?: readonly string[];
 
   /** Specific axe-core rule IDs to include (runs only these rules). */
@@ -191,7 +191,7 @@ const SEVERITY_COLORS: Record<A11ySeverity, string> = {
  * Default options for accessibility checks.
  */
 const DEFAULT_OPTIONS: Required<A11yOptions> = {
-  tags: A11Y_RULE_SETS.WCAG_21_AA,
+  tags: A11Y_RULE_SETS.WCAG_22_AA,
   includeRules: [],
   excludeRules: [],
   includeSelectors: [],
@@ -378,7 +378,13 @@ export async function checkA11yWithReport(
   page: Page,
   options: A11yOptions = {},
 ): Promise<A11yAuditResult> {
-  const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
+  const mergedOptions: Required<A11yOptions> = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    // If tags were explicitly passed, keep audit tag-scoped unless caller explicitly opts into all rules.
+    runAllRules:
+      options.runAllRules ?? (options.tags !== undefined ? false : DEFAULT_OPTIONS.runAllRules),
+  };
   const { builder, skipped } = await createAxeBuilder(page, mergedOptions);
 
   // If all includeSelectors were invalid, return a clean pass
@@ -428,7 +434,7 @@ export async function checkA11yWithReport(
  * @throws {Error} If violations at or above `failOnSeverity` are found
  *
  * @example
- * // Basic usage — WCAG 2.1 AA, fail on serious+
+ * // Basic usage — WCAG 2.2 AA, fail on serious+
  * await expectNoA11yViolations(page);
  *
  * @example
@@ -446,6 +452,12 @@ export async function expectNoA11yViolations(
 ): Promise<void> {
   const result = await checkA11yWithReport(page, options);
   const pageUrl = page.url();
+
+  const runAllRules =
+    options.runAllRules ?? (options.tags !== undefined ? false : DEFAULT_OPTIONS.runAllRules);
+  const auditScope = runAllRules
+    ? "all enabled axe-core rules"
+    : (options.tags ?? DEFAULT_OPTIONS.tags).join(", ");
 
   // Log warnings (below threshold)
   if (result.warningViolations.length > 0) {
@@ -497,7 +509,7 @@ export async function expectNoA11yViolations(
   }
 
   // Success
-  console.log(`✅ No accessibility violations (${options.tags?.join(", ") ?? "wcag21aa"}) on: ${pageUrl}`);
+  console.log(`✅ No accessibility violations (${auditScope}) on: ${pageUrl}`);
 }
 
 /**
