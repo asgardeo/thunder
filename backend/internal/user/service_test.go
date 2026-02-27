@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -4385,4 +4386,90 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 			require.Equal(t, tc.wantErrCode, err.Code)
 		})
 	}
+}
+
+// ServiceIsUserDeclarativeTestSuite tests the IsUserDeclarative method in user service.
+type ServiceIsUserDeclarativeTestSuite struct {
+	suite.Suite
+	service   *userService
+	storeMock *userStoreInterfaceMock
+}
+
+// SetupTest sets up the test environment.
+func (suite *ServiceIsUserDeclarativeTestSuite) SetupTest() {
+	// Create mocks
+	suite.storeMock = newUserStoreInterfaceMock(suite.T())
+
+	// Create service with mocks
+	suite.service = &userService{
+		userStore: suite.storeMock,
+	}
+}
+
+// TestIsUserDeclarative_Success tests successfully identifying a declarative user.
+func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_Success() {
+	ctx := context.Background()
+
+	suite.storeMock.On("IsUserDeclarative", ctx, "user-1").Return(true, nil).Once()
+
+	isDeclarative, err := suite.service.IsUserDeclarative(ctx, "user-1")
+	suite.Nil(err)
+	suite.True(isDeclarative)
+}
+
+// TestIsUserDeclarative_Mutable tests identifying a mutable user.
+func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_Mutable() {
+	ctx := context.Background()
+
+	suite.storeMock.On("IsUserDeclarative", ctx, "user-1").Return(false, nil).Once()
+
+	isDeclarative, err := suite.service.IsUserDeclarative(ctx, "user-1")
+	suite.Nil(err)
+	suite.False(isDeclarative)
+}
+
+// TestIsUserDeclarative_UserNotFound tests handling when user is not found.
+func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_UserNotFound() {
+	ctx := context.Background()
+
+	suite.storeMock.On("IsUserDeclarative", ctx, "non-existent").Return(false, ErrUserNotFound).Once()
+
+	isDeclarative, err := suite.service.IsUserDeclarative(ctx, "non-existent")
+	suite.NotNil(err)
+	suite.False(isDeclarative)
+}
+
+// TestIsUserDeclarative_StoreError tests handling store errors.
+func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_StoreError() {
+	ctx := context.Background()
+
+	suite.storeMock.On("IsUserDeclarative", ctx, "user-1").
+		Return(false, errors.New("database error")).Once()
+
+	isDeclarative, err := suite.service.IsUserDeclarative(ctx, "user-1")
+	suite.NotNil(err)
+	suite.False(isDeclarative)
+}
+
+// TestIsUserDeclarative_EmptyUserID tests handling empty user ID.
+func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_EmptyUserID() {
+	ctx := context.Background()
+
+	isDeclarative, err := suite.service.IsUserDeclarative(ctx, "")
+	suite.NotNil(err)
+	suite.False(isDeclarative)
+}
+
+// TestIsUserDeclarative_WhitespaceUserID tests handling whitespace-only user ID.
+func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_WhitespaceUserID() {
+	ctx := context.Background()
+
+	isDeclarative, err := suite.service.IsUserDeclarative(ctx, "   ")
+	suite.NotNil(err)
+	suite.False(isDeclarative)
+}
+
+// TestServiceIsUserDeclarativeTestSuite runs the test suite.
+func TestServiceIsUserDeclarativeTestSuite(t *testing.T) {
+	suite.Run(t, new(ServiceIsUserDeclarativeTestSuite))
 }

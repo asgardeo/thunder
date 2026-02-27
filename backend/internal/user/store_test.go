@@ -160,6 +160,16 @@ func (suite *UserStoreTestSuite) TestSyncIndexedAttributes_EmptyAttributes() {
 	suite.NoError(err)
 }
 
+func (suite *UserStoreTestSuite) TestMaskMapValues() {
+	input := map[string]interface{}{
+		"token": "secret",
+		"count": 10,
+	}
+	masked := maskMapValues(input)
+	suite.NotEqual(input["token"], masked["token"])
+	suite.Equal("***", masked["count"])
+}
+
 func (suite *UserStoreTestSuite) TestSyncIndexedAttributes_Success_StringValues() {
 	attributes := json.RawMessage(`{
 		"username": "john.doe",
@@ -589,6 +599,49 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_NotFound() {
 	suite.Nil(id)
 }
 
+func (suite *UserStoreTestSuite) TestGetUserListCountByOUIDs_Empty() {
+	count, err := suite.store.GetUserListCountByOUIDs(context.Background(), []string{}, nil)
+	suite.NoError(err)
+	suite.Equal(0, count)
+}
+
+func (suite *UserStoreTestSuite) TestGetUserListCountByOUIDs_Success() {
+	ouIDs := []string{"ou-1"}
+
+	suite.mockDB.On("QueryContext", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]map[string]interface{}{{"total": int64(1)}}, nil)
+
+	count, err := suite.store.GetUserListCountByOUIDs(context.Background(), ouIDs, nil)
+	suite.NoError(err)
+	suite.Equal(1, count)
+}
+
+func (suite *UserStoreTestSuite) TestGetUserListByOUIDs_Success() {
+	ouIDs := []string{"ou-1"}
+	row := map[string]interface{}{
+		"user_id":    "user-1",
+		"ou_id":      "ou-1",
+		"type":       "person",
+		"attributes": `{"username":"alice"}`,
+	}
+
+	suite.mockDB.On(
+		"QueryContext",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).
+		Return([]map[string]interface{}{row}, nil)
+
+	users, err := suite.store.GetUserListByOUIDs(context.Background(), ouIDs, 10, 0, nil)
+	suite.NoError(err)
+	suite.Len(users, 1)
+	suite.Equal("user-1", users[0].ID)
+}
+
 func (suite *UserStoreTestSuite) TestCreateUser_DBError() {
 	suite.mockDB.On("ExecuteContext", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -598,6 +651,21 @@ func (suite *UserStoreTestSuite) TestCreateUser_DBError() {
 	suite.Error(err)
 }
 
+func (suite *UserStoreTestSuite) TestIsUserDeclarative_DBStore() {
+	row := map[string]interface{}{
+		"user_id":    "user-1",
+		"ou_id":      "ou-1",
+		"type":       "person",
+		"attributes": `{"username":"alice"}`,
+	}
+
+	suite.mockDB.On("QueryContext", mock.Anything, mock.Anything, "user-1", testDeploymentID).
+		Return([]map[string]interface{}{row}, nil)
+
+	isDeclarative, err := suite.store.IsUserDeclarative(context.Background(), "user-1")
+	suite.NoError(err)
+	suite.False(isDeclarative)
+}
 func (suite *UserStoreTestSuite) TestUpdateUser_DBError() {
 	suite.mockDB.On("ExecuteContext", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).

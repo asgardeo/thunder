@@ -816,6 +816,72 @@ func (_c *userStoreInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// IsUserDeclarative provides a mock function for the type userStoreInterfaceMock
+func (_mock *userStoreInterfaceMock) IsUserDeclarative(ctx context.Context, id string) (bool, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsUserDeclarative")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// userStoreInterfaceMock_IsUserDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsUserDeclarative'
+type userStoreInterfaceMock_IsUserDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsUserDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *userStoreInterfaceMock_Expecter) IsUserDeclarative(ctx interface{}, id interface{}) *userStoreInterfaceMock_IsUserDeclarative_Call {
+	return &userStoreInterfaceMock_IsUserDeclarative_Call{Call: _e.mock.On("IsUserDeclarative", ctx, id)}
+}
+
+func (_c *userStoreInterfaceMock_IsUserDeclarative_Call) Run(run func(ctx context.Context, id string)) *userStoreInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_IsUserDeclarative_Call) Return(b bool, err error) *userStoreInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_IsUserDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) (bool, error)) *userStoreInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUser provides a mock function for the type userStoreInterfaceMock
 func (_mock *userStoreInterfaceMock) UpdateUser(ctx context.Context, user1 *user.User) error {
 	ret := _mock.Called(ctx, user1)
