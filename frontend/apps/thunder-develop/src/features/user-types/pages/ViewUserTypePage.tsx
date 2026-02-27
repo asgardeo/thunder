@@ -68,9 +68,9 @@ export default function ViewUserTypePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const {data: userType, loading: isUserTypeLoading, error: userTypeError, refetch} = useGetUserType(id);
-  const {updateUserType, error: updateUserTypeError, reset: resetUpdateError} = useUpdateUserType();
-  const {deleteUserType, loading: isDeleting, error: deleteUserTypeError} = useDeleteUserType();
+  const {data: userType, isLoading: isUserTypeLoading, error: userTypeError} = useGetUserType(id);
+  const updateUserTypeMutation = useUpdateUserType();
+  const deleteUserTypeMutation = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
     isLoading: organizationUnitsLoading,
@@ -122,7 +122,7 @@ export default function ViewUserTypePage() {
 
   const handleCancel = () => {
     setIsEditMode(false);
-    resetUpdateError();
+    updateUserTypeMutation.reset();
     if (userType) {
       setName(userType.name);
       setOuId(userType.ouId);
@@ -235,23 +235,22 @@ export default function ViewUserTypePage() {
         schema[prop.name.trim()] = propDef as PropertyDefinition;
       });
 
-      await updateUserType(id, {
-        name: name.trim(),
-        ouId: trimmedOuId,
-        allowSelfRegistration,
-        schema,
+      await updateUserTypeMutation.mutateAsync({
+        userTypeId: id,
+        data: {
+          name: name.trim(),
+          ouId: trimmedOuId,
+          allowSelfRegistration,
+          schema,
+        },
       });
-
-      // Refetch user type data to show updated values
-      await refetch(id);
 
       // Exit edit mode
       setIsEditMode(false);
     } catch (error) {
       // Error is already handled in the hook and displayed in the UI
       // Keep the form in edit mode so the user can correct the error
-      // eslint-disable-next-line no-console
-      console.error('Failed to update user type:', error);
+      logger.error('Failed to update user type', {error: error as Error, userTypeId: id});
     } finally {
       setIsSubmitting(false);
     }
@@ -263,19 +262,20 @@ export default function ViewUserTypePage() {
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
+    deleteUserTypeMutation.reset();
   };
 
   const handleDeleteConfirm = async () => {
     if (!id) return;
 
     try {
-      await deleteUserType(id);
+      await deleteUserTypeMutation.mutateAsync(id);
       setDeleteDialogOpen(false);
       // Navigate back to user types list after successful deletion
       await navigate('/user-types');
-    } catch (error) {
-      logger.error('Failed to delete user type', {error, userTypeId: id});
-      setDeleteDialogOpen(false);
+    } catch (err) {
+      // Keep dialog open so inline error is visible and user can retry
+      logger.error('Failed to delete user type', {error: err as Error, userTypeId: id});
     }
   };
 
@@ -675,14 +675,11 @@ export default function ViewUserTypePage() {
               ))}
 
               {/* Update Error Display */}
-              {updateUserTypeError && (
+              {updateUserTypeMutation.error && (
                 <Alert severity="error" sx={{mt: 2}}>
                   <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                    {updateUserTypeError.message}
+                    {updateUserTypeMutation.error.message}
                   </Typography>
-                  {updateUserTypeError.description && (
-                    <Typography variant="body2">{updateUserTypeError.description}</Typography>
-                  )}
                 </Alert>
               )}
 
@@ -717,19 +714,16 @@ export default function ViewUserTypePage() {
             Are you sure you want to delete this user type? This action cannot be undone and may affect existing users
             of this type.
           </DialogContentText>
-          {deleteUserTypeError && (
+          {deleteUserTypeMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserTypeError.message}
+                {deleteUserTypeMutation.error.message}
               </Typography>
-              {deleteUserTypeError.description && (
-                <Typography variant="caption">{deleteUserTypeError.description}</Typography>
-              )}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserTypeMutation.isPending}>
             Cancel
           </Button>
           <Button
@@ -740,9 +734,9 @@ export default function ViewUserTypePage() {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserTypeMutation.isPending}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {deleteUserTypeMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

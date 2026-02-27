@@ -79,8 +79,8 @@ describe('AccessSection', () => {
     it('should render the settings card with title and description', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -93,8 +93,8 @@ describe('AccessSection', () => {
     it('should render allowed user types autocomplete', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -104,8 +104,8 @@ describe('AccessSection', () => {
     it('should render application URL field', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -116,8 +116,8 @@ describe('AccessSection', () => {
     it('should render redirect URIs section when OAuth2 config is provided', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -135,8 +135,8 @@ describe('AccessSection', () => {
     it('should not render redirect URIs section when OAuth2 config is not provided', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -148,7 +148,7 @@ describe('AccessSection', () => {
     it('should show loading indicator while fetching user types', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: undefined,
-        loading: true,
+        isLoading: true,
       } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
@@ -159,8 +159,8 @@ describe('AccessSection', () => {
     it('should not show loading indicator when user types are loaded', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -172,8 +172,8 @@ describe('AccessSection', () => {
     it('should display selected user types from application', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -184,8 +184,8 @@ describe('AccessSection', () => {
     it('should display selected user types from editedApp over application', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -203,8 +203,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -222,8 +222,8 @@ describe('AccessSection', () => {
     it('should display URL from application', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -234,8 +234,8 @@ describe('AccessSection', () => {
     it('should display URL from editedApp over application', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -253,8 +253,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -271,8 +271,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection application={{...mockApplication, url: ''}} editedApp={{}} onFieldChange={mockOnFieldChange} />,
@@ -291,8 +291,8 @@ describe('AccessSection', () => {
     it('should display existing redirect URIs', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithMultipleUris = {
         ...mockOAuth2Config,
@@ -316,8 +316,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -339,8 +339,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithMultipleUris = {
         ...mockOAuth2Config,
@@ -369,8 +369,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -410,8 +410,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -441,8 +441,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -471,8 +471,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -502,7 +502,7 @@ describe('AccessSection', () => {
     it('should handle undefined user types data gracefully', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: undefined,
-        loading: false,
+        isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
@@ -513,8 +513,8 @@ describe('AccessSection', () => {
     it('should handle null application allowed_user_types', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const appWithNullTypes = {
         ...mockApplication,
@@ -538,8 +538,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -569,8 +569,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
@@ -603,8 +603,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
@@ -641,8 +641,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const appWithMixedConfig: Application = {
         ...mockApplication,
@@ -692,8 +692,8 @@ describe('AccessSection', () => {
     it('should display editedApp URL over application URL', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(
         <AccessSection
@@ -710,8 +710,8 @@ describe('AccessSection', () => {
     it('should display application URL when editedApp URL is not provided', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -722,8 +722,8 @@ describe('AccessSection', () => {
     it('should display empty string when neither editedApp nor application have URL', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const appWithoutUrl = {...mockApplication, url: undefined};
       render(
@@ -743,8 +743,8 @@ describe('AccessSection', () => {
     it('should not update redirect URIs when oauth2Config is undefined', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -760,8 +760,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithMultipleUris = {
         ...mockOAuth2Config,
@@ -794,8 +794,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
@@ -831,8 +831,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
@@ -865,8 +865,8 @@ describe('AccessSection', () => {
       const user = userEvent.setup();
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
@@ -902,8 +902,8 @@ describe('AccessSection', () => {
     it('should update redirect URIs state when oauth2Config prop changes', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
-        loading: false,
-      } as MockedUseGetUserTypes);
+        isLoading: false,
+      } as unknown as MockedUseGetUserTypes);
 
       const initialConfig = {
         ...mockOAuth2Config,

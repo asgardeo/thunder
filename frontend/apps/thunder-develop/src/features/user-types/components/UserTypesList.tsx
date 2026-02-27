@@ -59,11 +59,10 @@ export default function UserTypesList() {
 
   const {
     data: userTypesData,
-    loading: isUserTypesRequestLoading,
+    isLoading: isUserTypesRequestLoading,
     error: userTypesRequestError,
-    refetch,
   } = useGetUserTypes();
-  const {deleteUserType, loading: isDeleting, error: deleteUserTypeError} = useDeleteUserType();
+  const deleteUserTypeMutation = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
     isLoading: organizationUnitsLoading,
@@ -118,20 +117,18 @@ export default function UserTypesList() {
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setSelectedUserTypeId(null);
+    deleteUserTypeMutation.reset();
   };
 
   const handleDeleteConfirm = async () => {
     if (!selectedUserTypeId) return;
 
     try {
-      await deleteUserType(selectedUserTypeId);
+      await deleteUserTypeMutation.mutateAsync(selectedUserTypeId);
       setDeleteDialogOpen(false);
       setSelectedUserTypeId(null);
-      // Refetch user types list after successful deletion
-      await refetch();
     } catch {
-      // Error is already handled in the hook
-      setDeleteDialogOpen(false);
+      // Keep dialog open so inline error is visible and user can retry
     }
   };
 
@@ -290,19 +287,16 @@ export default function UserTypesList() {
         <DialogTitle>{t('userTypes:deleteUserType')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('userTypes:confirmDeleteUserType')}</DialogContentText>
-          {deleteUserTypeError && (
+          {deleteUserTypeMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserTypeError.message}
+                {deleteUserTypeMutation.error.message}
               </Typography>
-              {deleteUserTypeError.description && (
-                <Typography variant="caption">{deleteUserTypeError.description}</Typography>
-              )}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserTypeMutation.isPending}>
             {t('common:actions.cancel')}
           </Button>
           <Button
@@ -313,9 +307,9 @@ export default function UserTypesList() {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserTypeMutation.isPending}
           >
-            {isDeleting ? t('common:status.loading') : t('common:actions.delete')}
+            {deleteUserTypeMutation.isPending ? t('common:status.loading') : t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

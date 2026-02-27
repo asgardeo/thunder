@@ -85,7 +85,7 @@ export default function AccessSection({
   onFieldChange,
 }: AccessSectionProps) {
   const {t} = useTranslation();
-  const {data: userTypesData, loading: loadingUserTypes} = useGetUserTypes();
+  const {data: userTypesData, isLoading: loadingUserTypes} = useGetUserTypes();
 
   const [redirectUris, setRedirectUris] = useState<string[]>(oauth2Config?.redirect_uris ?? []);
   const [uriErrors, setUriErrors] = useState<Record<number, string>>({});

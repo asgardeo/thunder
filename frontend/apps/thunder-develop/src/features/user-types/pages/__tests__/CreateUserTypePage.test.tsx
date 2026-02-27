@@ -19,12 +19,12 @@
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent, within} from '@thunder/test-utils';
+import type useCreateUserTypeHook from '../../api/useCreateUserType';
 import CreateUserTypePage from '../CreateUserTypePage';
 import UserTypeCreateProvider from '../../contexts/UserTypeCreate/UserTypeCreateProvider';
-import type {ApiError, CreateUserSchemaRequest} from '../../types/user-types';
 
 const mockNavigate = vi.fn();
-const mockCreateUserType = vi.fn();
+const mockMutateAsync = vi.fn();
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -48,13 +48,7 @@ vi.mock('react-router', async () => {
 });
 
 // Mock useCreateUserType hook
-interface UseCreateUserTypeReturn {
-  createUserType: (data: CreateUserSchemaRequest) => Promise<void>;
-  loading: boolean;
-  error: ApiError | null;
-}
-
-const mockUseCreateUserType = vi.fn<() => UseCreateUserTypeReturn>();
+const mockUseCreateUserType = vi.fn<() => ReturnType<typeof useCreateUserTypeHook>>();
 
 vi.mock('../../api/useCreateUserType', () => ({
   default: () => mockUseCreateUserType(),
@@ -138,10 +132,12 @@ describe('CreateUserTypePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseCreateUserType.mockReturnValue({
-      createUserType: mockCreateUserType,
-      loading: false,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
       error: null,
-    });
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCreateUserTypeHook>);
   });
 
   // ============================================================================
@@ -553,7 +549,7 @@ describe('CreateUserTypePage', () => {
 
   it('successfully creates user type with valid data', async () => {
     const user = userEvent.setup();
-    mockCreateUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     renderPage();
 
@@ -585,7 +581,7 @@ describe('CreateUserTypePage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalledWith({
+      expect(mockMutateAsync).toHaveBeenCalledWith({
         name: 'Employee',
         ouId: 'root-ou',
         schema: {
@@ -604,7 +600,7 @@ describe('CreateUserTypePage', () => {
 
   it('submits organization unit and registration flag when provided', async () => {
     const user = userEvent.setup();
-    mockCreateUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     renderPage();
 
@@ -630,7 +626,7 @@ describe('CreateUserTypePage', () => {
     await user.click(screen.getByRole('button', {name: /Create User Type/i}));
 
     await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalledWith({
+      expect(mockMutateAsync).toHaveBeenCalledWith({
         name: 'Employee',
         ouId: 'ou-123',
         allowSelfRegistration: true,
@@ -654,7 +650,7 @@ describe('CreateUserTypePage', () => {
     const submitButton = screen.getByRole('button', {name: /Create User Type/i});
     expect(submitButton).toBeDisabled();
 
-    expect(mockCreateUserType).not.toHaveBeenCalled();
+    expect(mockMutateAsync).not.toHaveBeenCalled();
   });
 
   it('shows validation error for duplicate property names', async () => {
@@ -682,26 +678,23 @@ describe('CreateUserTypePage', () => {
       expect(screen.getByText(/Duplicate property names found/i)).toBeInTheDocument();
     });
 
-    expect(mockCreateUserType).not.toHaveBeenCalled();
+    expect(mockMutateAsync).not.toHaveBeenCalled();
   });
 
   it('displays error from API', () => {
-    const error: ApiError = {
-      code: 'CREATE_ERROR',
-      message: 'Failed to create user type',
-      description: 'User type already exists',
-    };
+    const error = new Error('Failed to create user type');
 
     mockUseCreateUserType.mockReturnValue({
-      createUserType: mockCreateUserType,
-      loading: false,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
       error,
-    });
+      isError: true,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCreateUserTypeHook>);
 
     renderPage();
 
     expect(screen.getByText('Failed to create user type')).toBeInTheDocument();
-    expect(screen.getByText('User type already exists')).toBeInTheDocument();
   });
 
   it('shows loading state during submission on last step', async () => {
@@ -716,10 +709,12 @@ describe('CreateUserTypePage', () => {
 
     // Now switch to loading state
     mockUseCreateUserType.mockReturnValue({
-      createUserType: mockCreateUserType,
-      loading: true,
+      mutateAsync: mockMutateAsync,
+      isPending: true,
       error: null,
-    });
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCreateUserTypeHook>);
 
     // Trigger a re-render by typing (the hook return value will update)
     await user.type(screen.getByPlaceholderText(/e\.g\., email, age, address/i), '2');
@@ -732,7 +727,7 @@ describe('CreateUserTypePage', () => {
 
   it('creates schema with enum property correctly', {timeout: 15_000}, async () => {
     const user = userEvent.setup();
-    mockCreateUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     renderPage();
 
@@ -763,7 +758,7 @@ describe('CreateUserTypePage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalledWith({
+      expect(mockMutateAsync).toHaveBeenCalledWith({
         name: 'Complex Type',
         ouId: 'root-ou',
         schema: {
@@ -780,7 +775,7 @@ describe('CreateUserTypePage', () => {
 
   it('creates schema with string property containing regex pattern', async () => {
     const user = userEvent.setup();
-    mockCreateUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     renderPage();
 
@@ -800,7 +795,7 @@ describe('CreateUserTypePage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalledWith({
+      expect(mockMutateAsync).toHaveBeenCalledWith({
         name: 'RegexTest',
         ouId: 'root-ou',
         schema: {
@@ -816,7 +811,7 @@ describe('CreateUserTypePage', () => {
 
   it('creates schema with number property that is unique', async () => {
     const user = userEvent.setup();
-    mockCreateUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     renderPage();
 
@@ -841,7 +836,7 @@ describe('CreateUserTypePage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalledWith({
+      expect(mockMutateAsync).toHaveBeenCalledWith({
         name: 'NumberTest',
         ouId: 'root-ou',
         schema: {
@@ -857,7 +852,7 @@ describe('CreateUserTypePage', () => {
 
   it('handles create error gracefully', async () => {
     const user = userEvent.setup();
-    mockCreateUserType.mockRejectedValue(new Error('Create failed'));
+    mockMutateAsync.mockRejectedValue(new Error('Create failed'));
 
     renderPage();
 
@@ -869,7 +864,7 @@ describe('CreateUserTypePage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockCreateUserType).toHaveBeenCalled();
+      expect(mockMutateAsync).toHaveBeenCalled();
       expect(mockNavigate).not.toHaveBeenCalledWith('/user-types');
     });
   });
