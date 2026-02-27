@@ -23,8 +23,11 @@ import (
 	"strings"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -37,23 +40,127 @@ func Initialize(
 	userSchemaService userschema.UserSchemaServiceInterface,
 	hashService hash.HashServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
-) (UserServiceInterface, error) {
-	userStore, err := newUserStore()
+) (UserServiceInterface, declarativeresource.ResourceExporter, error) {
+	// Step 1: Determine store mode and initialize store structure
+	storeMode := getUserStoreMode()
+	userStore, err := initializeStore(storeMode)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Get transactioner from DB provider
-	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
-	if err != nil {
-		return nil, err
+	// Step 2: Get database transactioner (only needed for mutable modes)
+	var transactioner transaction.Transactioner
+	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeMutable {
+		dbProvider := provider.GetDBProvider()
+		dbClient, err := dbProvider.GetUserDBClient()
+		if err != nil {
+			return nil, nil, err
+		}
+		transactioner, err = dbClient.GetTransactioner()
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
+	// Step 3: Create service with store
 	userService := newUserService(authzService, userStore, ouService, userSchemaService, hashService, transactioner)
 	setUserService(userService) // Set the provider for backward compatibility
+
+	// Step 4: Load declarative resources into store (if applicable)
+	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
+		if err := loadDeclarativeUserResources(userStore); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)
-	return userService, nil
+
+	// Create and return exporter
+	exporter := newUserExporter(userService)
+	return userService, exporter, nil
+}
+
+// Store Selection (based on user.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All users are mutable
+//   - Export functionality exports DB-backed users
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All users are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime users (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative users cannot be updated or deleted
+//   - Export only exports DB-backed users (not YAML)
+//
+// Configuration Fallback:
+// - If user.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore(storeMode serverconst.StoreMode) (userStoreInterface, error) {
+	var userStore userStoreInterface
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newUserFileBasedStore()
+		dbStore, err := newUserStore()
+		if err != nil {
+			return nil, err
+		}
+		userStore = newCompositeUserStore(fileStore.(*userFileBasedStore), dbStore)
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newUserFileBasedStore()
+		userStore = fileStore
+
+	default:
+		dbStore, err := newUserStore()
+		if err != nil {
+			return nil, err
+		}
+		userStore = dbStore
+	}
+
+	return userStore, nil
+}
+
+// loadDeclarativeUserResources loads declarative user resources from files.
+func loadDeclarativeUserResources(userStore userStoreInterface) error {
+	var fileStore userStoreInterface
+	var dbStore userStoreInterface
+
+	// Determine store type and extract file store
+	switch store := userStore.(type) {
+	case *compositeUserStore:
+		// Composite mode: extract file store and db store from composite
+		fileStore = store.fileStore
+		dbStore = store.dbStore
+	case *userFileBasedStore:
+		// Declarative-only mode: only file store available
+		fileStore = store
+		dbStore = nil
+	default:
+		return nil // Mutable mode: no declarative resources to load
+	}
+
+	// Type assert to access Storer interface for resource loading
+	fileBasedStore, ok := fileStore.(*userFileBasedStore)
+	if !ok {
+		return nil // Not a file-based store
+	}
+
+	return loadDeclarativeResources(fileBasedStore, dbStore)
 }
 
 // registerRoutes registers the routes for user management operations.

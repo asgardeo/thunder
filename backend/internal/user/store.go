@@ -48,6 +48,7 @@ type userStoreInterface interface {
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
 	GetCredentials(ctx context.Context, id string) (User, Credentials, error)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
+	IsUserDeclarative(ctx context.Context, id string) (bool, error)
 }
 
 // userStore is the default implementation of userStoreInterface.
@@ -770,4 +771,13 @@ func validateIndexedAttributesConfig(configuredAttrs []string) error {
 			len(configuredAttrs), MaxIndexedAttributesCount)
 	}
 	return nil
+}
+
+// IsUserDeclarative returns false for database store (all database users are mutable).
+func (us *userStore) IsUserDeclarative(ctx context.Context, id string) (bool, error) {
+	_, err := us.GetUser(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
