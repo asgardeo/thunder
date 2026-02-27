@@ -767,6 +767,69 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_Basic() {
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithNonce() {
+	ctx := &IDTokenBuildContext{
+		Subject:        "user123",
+		Audience:       "app123",
+		Scopes:         []string{"openid"},
+		UserAttributes: map[string]interface{}{"sub": "user123"},
+		AuthTime:       time.Now().Unix(),
+		OAuthApp:       suite.oauthApp,
+		Nonce:          "test-nonce-123",
+	}
+
+	expectedToken := testIDToken
+	expectedIat := time.Now().Unix()
+
+	suite.mockJWTService.On("GenerateJWT",
+		"user123",
+		"app123",
+		"https://thunder.io",
+		int64(3600),
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			return claims["nonce"] == "test-nonce-123"
+		}), mock.Anything,
+	).Return(expectedToken, expectedIat, nil)
+
+	result, err := suite.builder.BuildIDToken(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithoutNonce() {
+	ctx := &IDTokenBuildContext{
+		Subject:        "user123",
+		Audience:       "app123",
+		Scopes:         []string{"openid"},
+		UserAttributes: map[string]interface{}{"sub": "user123"},
+		AuthTime:       time.Now().Unix(),
+		OAuthApp:       suite.oauthApp,
+		Nonce:          "",
+	}
+
+	expectedToken := testIDToken
+	expectedIat := time.Now().Unix()
+
+	suite.mockJWTService.On("GenerateJWT",
+		"user123",
+		"app123",
+		"https://thunder.io",
+		int64(3600),
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			_, exists := claims["nonce"]
+			return !exists
+		}), mock.Anything,
+	).Return(expectedToken, expectedIat, nil)
+
+	result, err := suite.builder.BuildIDToken(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoAuthTime() {
 	ctx := &IDTokenBuildContext{
 		Subject:        "user123",

@@ -168,6 +168,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 			AuthTime:       authCode.TimeCreated.Unix(),
 			OAuthApp:       oauthApp,
 			ClaimsRequest:  authCode.ClaimsRequest,
+			Nonce:          authCode.Nonce,
 		})
 		if err != nil {
 			logger.Error("Failed to generate ID token", log.Error(err))

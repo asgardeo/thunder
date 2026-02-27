@@ -49,6 +49,7 @@ type AuthorizationCode struct {
 	Resource            string
 	ClaimsRequest       *oauth2model.ClaimsRequest
 	ClaimsLocales       string
+	Nonce               string
 }
 
 // AuthZPostRequest represents the request body for the authorization POST request.

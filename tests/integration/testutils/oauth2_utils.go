@@ -34,20 +34,20 @@ import (
 
 // InitiateAuthorizationFlow starts the OAuth2 authorization flow
 func InitiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state string) (*http.Response, error) {
-	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, "", "", "", "", "")
+	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, "", "", "", "", "", "")
 }
 
 // InitiateAuthorizationFlowWithResource starts the OAuth2 authorization flow with resource parameter
 func InitiateAuthorizationFlowWithResource(clientID, redirectURI, responseType, scope, state,
 	resource string) (*http.Response, error) {
-	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource, "", "", "", "")
+	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource, "", "", "", "", "")
 }
 
 // InitiateAuthorizationFlowWithPKCE starts the OAuth2 authorization flow with PKCE parameters
 func InitiateAuthorizationFlowWithPKCE(clientID, redirectURI, responseType, scope, state, resource,
 	codeChallenge, codeChallengeMethod string) (*http.Response, error) {
 	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource,
-		codeChallenge, codeChallengeMethod, "", "")
+		codeChallenge, codeChallengeMethod, "", "", "")
 }
 
 // InitiateAuthorizationFlowWithClaims starts the OAuth2 authorization flow with claims parameter
@@ -55,8 +55,7 @@ func InitiateAuthorizationFlowWithClaims(
 	clientID, redirectURI, responseType, scope, state, claimsParam string,
 ) (*http.Response, error) {
 	return initiateAuthorizationFlow(
-		clientID, redirectURI, responseType, scope, state, "", "", "", claimsParam, "",
-	)
+		clientID, redirectURI, responseType, scope, state, "", "", "", claimsParam, "", "")
 }
 
 // InitiateAuthorizationFlowWithClaimsLocales starts the OAuth2 authorization flow with claims_locales parameter
@@ -64,7 +63,17 @@ func InitiateAuthorizationFlowWithClaimsLocales(
 	clientID, redirectURI, responseType, scope, state, claimsLocales string,
 ) (*http.Response, error) {
 	return initiateAuthorizationFlow(
-		clientID, redirectURI, responseType, scope, state, "", "", "", "", claimsLocales,
+		clientID, redirectURI, responseType, scope, state, "", "", "", "", claimsLocales, "",
+	)
+}
+
+// InitiateAuthorizationFlowWithNonce starts the OAuth2 authorization flow with nonce parameter
+func InitiateAuthorizationFlowWithNonce(
+	clientID, redirectURI, responseType, scope, state, nonce string,
+) (*http.Response, error) {
+	return initiateAuthorizationFlow(
+		clientID, redirectURI, responseType, scope, state,
+		"", "", "", "", "", nonce,
 	)
 }
 
@@ -72,7 +81,7 @@ func InitiateAuthorizationFlowWithClaimsLocales(
 // clientID, redirectURI, responseType, scope, and state are required parameters.
 // resource, codeChallenge, codeChallengeMethod, claimsParam, and claimsLocales are optional parameters.
 func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource,
-	codeChallenge, codeChallengeMethod, claimsParam, claimsLocales string) (*http.Response, error) {
+	codeChallenge, codeChallengeMethod, claimsParam, claimsLocales, nonce string) (*http.Response, error) {
 	authURL := TestServerURL + "/oauth2/authorize"
 	params := url.Values{}
 	params.Set("client_id", clientID)
@@ -92,6 +101,9 @@ func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state
 	}
 	if claimsLocales != "" {
 		params.Set("claims_locales", claimsLocales)
+	}
+	if nonce != "" {
+		params.Set("nonce", nonce)
 	}
 
 	req, err := http.NewRequest("GET", authURL+"?"+params.Encode(), nil)

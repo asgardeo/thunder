@@ -33,6 +33,7 @@ const (
 	jsonKeyResource            = "resource"
 	jsonKeyClaimsRequest       = "claims_request"
 	jsonKeyClaimsLocales       = "claims_locales"
+	jsonKeyNonce               = "nonce"
 )
 
 // Database column names for authorization request storage.
