@@ -83,14 +83,12 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
 // AssertionConfig represents the assertion configuration (for application-level).
 type AssertionConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }

@@ -33,15 +33,15 @@
     "typecheck": "nx run-many --target=typecheck --all --parallel"
   },
   "devDependencies": {
-    "@nx/js": "21.6.4",
-    "@swc-node/register": "1.9.1",
-    "@swc/core": "1.5.7",
-    "@swc/helpers": "0.5.11",
+    "@nx/js": "22.5.1",
+    "@swc-node/register": "1.11.1",
+    "@swc/core": "1.15.8",
+    "@swc/helpers": "0.5.18",
     "@thunder/logger": "workspace:^",
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "eslint": "catalog:",
-    "nx": "21.6.4",
+    "nx": "22.5.1",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",
@@ -49,8 +49,10 @@
   },
   "pnpm": {
     "overrides": {
+      "minimatch@10.1.1": ">=10.2.1",
       "vite": "catalog:",
-      "nx>axios": ">=1.13.5"
+      "nx>axios": ">=1.13.5",
+      "rollup": ">=4.59.0"
     }
   }
 }

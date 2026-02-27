@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
 
 	"gopkg.in/yaml.v3"
 )
@@ -63,21 +65,27 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all user schema IDs.
-func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(serverconst.MaxPageSize, 0)
+// In composite mode, this excludes declarative (YAML-based) user schemas.
+func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
 	ids := make([]string, 0, len(response.Schemas))
 	for _, schema := range response.Schemas {
-		ids = append(ids, schema.ID)
+		// Only include mutable (database-backed) user schemas
+		if !schema.IsReadOnly {
+			ids = append(ids, schema.ID)
+		}
 	}
 	return ids, nil
 }
 
 // GetResourceByID retrieves a user schema by its ID.
-func (e *UserSchemaExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	schema, err := e.service.GetUserSchema(id)
+func (e *UserSchemaExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
+	schema, err := e.service.GetUserSchema(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -114,10 +122,27 @@ func (e *UserSchemaExporter) GetResourceRules() *declarativeresource.ResourceRul
 }
 
 // loadDeclarativeResources loads declarative user schema resources from files.
+// Works in both declarative-only and composite modes:
+// - In declarative mode: userSchemaStore is a fileBasedStore
+// - In composite mode: userSchemaStore is a compositeUserSchemaStore (contains both file and DB stores)
 func loadDeclarativeResources(
 	userSchemaStore userSchemaStoreInterface, ouService oupkg.OrganizationUnitServiceInterface) error {
+	var fileStore userSchemaStoreInterface
+
+	// Determine store type and extract file store
+	switch store := userSchemaStore.(type) {
+	case *compositeUserSchemaStore:
+		// Composite mode: extract file store from composite
+		fileStore = store.fileStore
+	case *userSchemaFileBasedStore:
+		// Declarative-only mode: only file store available
+		fileStore = store
+	default:
+		return fmt.Errorf("invalid store type for loading declarative resources")
+	}
+
 	// Type assert to access Storer interface for resource loading
-	fileBasedStore, ok := userSchemaStore.(*userSchemaFileBasedStore)
+	fileBasedStore, ok := fileStore.(*userSchemaFileBasedStore)
 	if !ok {
 		return fmt.Errorf("failed to assert userSchemaStore to *userSchemaFileBasedStore")
 	}
@@ -194,7 +219,7 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 	}
 
 	// Validate organization unit exists
-	_, err := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
+	_, err := ouService.GetOrganizationUnit(security.WithRuntimeContext(context.TODO()), schemaDTO.OrganizationUnitID)
 	if err != nil {
 		return fmt.Errorf("organization unit '%s' not found for user schema '%s'",
 			schemaDTO.OrganizationUnitID, schemaDTO.Name)

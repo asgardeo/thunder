@@ -14,6 +14,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -51,3 +52,4 @@ spec:
     - {{ .Values.ingress.hostname | quote }}
     secretName: {{ .Values.ingress.tlsSecretsName  }}
   {{- end }}
+{{- end }}

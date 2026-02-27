@@ -25,7 +25,9 @@ import (
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
@@ -38,8 +40,12 @@ func Initialize(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
-) RoleServiceInterface {
-	roleStore := newRoleStore()
+) (RoleServiceInterface, declarativeresource.ResourceExporter, error) {
+	// Step 1: Initialize store based on configuration
+	roleStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Get transactioner from DB provider
 	dbProvider := provider.GetDBProvider()
@@ -52,10 +58,67 @@ func Initialize(
 		log.GetLogger().Fatal("Failed to get transactioner", log.Error(err))
 	}
 
+	// Step 2: Create service with store
 	roleService := newRoleService(roleStore, userService, groupService, ouService, resourceService, transactioner)
 	roleHandler := newRoleHandler(roleService)
 	registerRoutes(mux, roleHandler)
-	return roleService
+	exporter := newRoleExporter(roleService)
+	return roleService, exporter, nil
+}
+
+// Store Selection (based on role.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All roles are mutable
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All roles are immutable (read-only)
+//   - No create/update/delete operations allowed
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime roles (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative roles cannot be updated or deleted
+//
+// Configuration Fallback:
+// - If role.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore() (roleStoreInterface, error) {
+	var roleStore roleStoreInterface
+
+	storeMode := getRoleStoreMode()
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStoreInterface := newFileBasedStore()
+		fileStore := fileStoreInterface.(*fileBasedStore)
+		dbStore := newRoleStore()
+		roleStore = newCompositeRoleStore(fileStoreInterface, dbStore)
+		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
+			return nil, err
+		}
+
+	case serverconst.StoreModeDeclarative:
+		fileStoreInterface := newFileBasedStore()
+		fileStore := fileStoreInterface.(*fileBasedStore)
+		roleStore = fileStoreInterface
+		if err := loadDeclarativeResources(fileStore, nil); err != nil {
+			return nil, err
+		}
+
+	default:
+		dbStore := newRoleStore()
+		roleStore = dbStore
+	}
+
+	return roleStore, nil
 }
 
 // registerRoutes registers the routes for role management operations.

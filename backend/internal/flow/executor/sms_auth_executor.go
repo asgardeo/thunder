@@ -30,23 +30,16 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
-const (
-	userInputOTP             = "otp"
-	errorInvalidOTP          = "invalid OTP provided"
-	smsOTPExecutorModeSend   = "send"
-	smsOTPExecutorModeVerify = "verify"
-)
-
-// mobileNumberInput is the input definition for mobile number collection.
-var mobileNumberInput = common.Input{
+// MobileNumberInput is the input definition for mobile number collection.
+var MobileNumberInput = common.Input{
 	Ref:        "mobile_number_input",
 	Identifier: userAttributeMobileNumber,
-	Type:       "PHONE_INPUT",
+	Type:       common.InputTypePhone,
 	Required:   true,
 }
 
@@ -54,7 +47,7 @@ var mobileNumberInput = common.Input{
 type smsOTPAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userService      user.UserServiceInterface
+	userProvider     userprovider.UserProviderInterface
 	otpService       notification.OTPServiceInterface
 	observabilitySvc observability.ObservabilityServiceInterface
 	logger           *log.Logger
@@ -66,9 +59,9 @@ var _ identifyingExecutorInterface = (*smsOTPAuthExecutor)(nil)
 // newSMSOTPAuthExecutor creates a new instance of SMSOTPAuthExecutor.
 func newSMSOTPAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
 	otpService notification.OTPServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *smsOTPAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -79,21 +72,21 @@ func newSMSOTPAuthExecutor(
 		},
 	}
 	prerequisites := []common.Input{
-		mobileNumberInput,
+		MobileNumberInput,
 	}
 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "SMSOTPAuthExecutor"),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameSMSAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameSMSAuth, defaultInputs, prerequisites,
-		flowFactory, userService)
+		flowFactory, userProvider)
 	base := flowFactory.CreateExecutor(ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
 	return &smsOTPAuthExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
-		userService:                  userService,
+		userProvider:                 userProvider,
 		otpService:                   otpService,
 		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
@@ -117,9 +110,9 @@ func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 
 	// Determine the executor mode
 	switch ctx.ExecutorMode {
-	case smsOTPExecutorModeSend:
+	case ExecutorModeSend:
 		return s.executeSend(ctx, execResp)
-	case smsOTPExecutorModeVerify:
+	case ExecutorModeVerify:
 		return s.executeVerify(ctx, execResp)
 	default:
 		return execResp, fmt.Errorf("invalid executor mode: %s", ctx.ExecutorMode)
@@ -274,8 +267,7 @@ func (s *smsOTPAuthExecutor) ValidatePrerequisites(ctx *core.NodeContext,
 	if ctx.FlowType == common.FlowTypeRegistration {
 		logger.Debug("Prerequisites not met for registration flow, prompting for mobile number")
 		execResp.Status = common.ExecUserInputRequired
-		execResp.Inputs = []common.Input{mobileNumberInput}
-		execResp.Meta = s.getMobileInputMeta()
+		execResp.Inputs = []common.Input{MobileNumberInput}
 		return false
 	}
 
@@ -419,9 +411,9 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, svcErr := s.userService.IdentifyUser(context.TODO(), filters)
-		if svcErr != nil {
-			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, svcErr.Error)
+		userID, providerErr := s.userProvider.IdentifyUser(filters)
+		if providerErr != nil {
+			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, providerErr.Error())
 		}
 		if userID != nil && *userID != "" {
 			logger.Debug("User ID resolved from attribute", log.String("attributeName", attributeName),
@@ -452,9 +444,9 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 
 	// Mobile number not in context, fetch from user store
 	logger.Debug("Mobile number not in context, fetching from user store")
-	user, svcErr := s.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return "", fmt.Errorf("failed to retrieve user details: %s", svcErr.Error)
+	user, providerErr := s.userProvider.GetUser(userID)
+	if providerErr != nil {
+		return "", fmt.Errorf("failed to retrieve user details: %s", providerErr.Error())
 	}
 
 	// Extract mobile number from user attributes
@@ -512,7 +504,7 @@ func (s *smsOTPAuthExecutor) generateAndSendOTP(mobileNumber string, ctx *core.N
 		Channel:   string(notifcommon.ChannelTypeSMS),
 	}
 
-	sendResult, svcErr := s.otpService.SendOTP(sendOTPRequest)
+	sendResult, svcErr := s.otpService.SendOTP(context.TODO(), sendOTPRequest)
 	if svcErr != nil {
 		return fmt.Errorf("failed to send OTP: %s", svcErr.ErrorDescription)
 	}
@@ -571,7 +563,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 	if providedOTP == "" {
 		logger.Debug("Provided OTP is empty", log.String("userID", userID))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = errorInvalidOTP
+		execResp.FailureReason = failureReasonInvalidOTP
 		return nil
 	}
 
@@ -587,7 +579,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 		OTPCode:      providedOTP,
 	}
 
-	verifyResult, svcErr := s.otpService.VerifyOTP(verifyOTPRequest)
+	verifyResult, svcErr := s.otpService.VerifyOTP(context.TODO(), verifyOTPRequest)
 	if svcErr != nil {
 		logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
 		return fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription)
@@ -599,7 +591,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 			log.String("status", string(verifyResult.Status)))
 
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = errorInvalidOTP
+		execResp.FailureReason = failureReasonInvalidOTP
 		return nil
 	}
 
@@ -646,9 +638,9 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// User not available in context, fetch from user store
 	logger.Debug("Fetching user details from user store", log.String("userID", userID))
-	user, svcErr := s.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
+	user, providerErr := s.userProvider.GetUser(userID)
+	if providerErr != nil {
+		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
 
 	// Extract user attributes
@@ -667,24 +659,11 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated:    true,
-		UserID:             user.ID,
-		OrganizationUnitID: user.OrganizationUnit,
-		UserType:           user.Type,
+		UserID:             user.UserID,
+		OrganizationUnitID: user.OrganizationUnitID,
+		UserType:           user.UserType,
 		Attributes:         attrs,
 	}
 
 	return authenticatedUser, nil
-}
-
-// getMobileInputMeta returns the meta structure for mobile number input prompt.
-func (s *smsOTPAuthExecutor) getMobileInputMeta() interface{} {
-	return core.NewMetaBuilder().
-		WithIDPrefix("mobile_number").
-		WithHeading("{{ t(signup:heading) }}").
-		WithInput(mobileNumberInput, core.MetaInputConfig{
-			Label:       "{{ t(elements:fields.mobile.label) }}",
-			Placeholder: "{{ t(elements:fields.mobile.placeholder) }}",
-		}).
-		WithSubmitButton("{{ t(elements:buttons.submit.text) }}").
-		Build()
 }

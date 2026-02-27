@@ -143,7 +143,8 @@
                   "name": "GoogleOIDCAuthExecutor"
                 },
                 "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               },
               "properties": {
                 "idpId": "{{IDP_ID}}"
@@ -250,7 +251,8 @@
                   "name": "GithubOAuthExecutor"
                 },
                 "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               },
               "properties": {
                 "idpId": "{{IDP_ID}}"
@@ -363,7 +365,8 @@
                   "name": "SendEmailOTPExecutor"
                 },
                 "onSuccess": "{{EMAIL_OTP_VERIFICATION_STEP_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               }
             }
           },
@@ -448,7 +451,8 @@
                   "name": "VerifyEmailOTPExecutor"
                 },
                 "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               }
             }
           },
@@ -616,7 +620,8 @@
                   "mode": "send"
                 },
                 "onSuccess": "{{SMS_OTP_VERIFICATION_STEP_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               }
             }
           },
@@ -702,7 +707,8 @@
                   "mode": "verify"
                 },
                 "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               }
             }
           },
@@ -911,7 +917,8 @@
                   "mode": "challenge"
                 },
                 "onSuccess": "{{PASSKEY_VERIFY_EXECUTOR_ID}}",
-                "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}"
+                "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}",
+                "onIncomplete": ""
               },
               "properties": {
                 "relyingPartyId": "localhost",
@@ -938,7 +945,8 @@
                   "mode": "verify"
                 },
                 "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               }
             }
           },
@@ -1021,7 +1029,8 @@
                   "name": "BasicAuthExecutor"
                 },
                 "onSuccess": "{{PASSKEY_REGISTER_START_EXECUTOR_ID}}",
-                "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}"
+                "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}",
+                "onIncomplete": ""
               }
             }
           },
@@ -1044,7 +1053,8 @@
                   "mode": "register_start"
                 },
                 "onSuccess": "{{PASSKEY_REGISTER_FINISH_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               },
               "properties": {
                 "relyingPartyId": "localhost",
@@ -1071,7 +1081,8 @@
                   "mode": "register_finish"
                 },
                 "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
-                "onFailure": ""
+                "onFailure": "",
+                "onIncomplete": ""
               }
             }
           },

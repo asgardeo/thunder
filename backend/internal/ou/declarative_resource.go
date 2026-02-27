@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -66,10 +67,10 @@ func (e *OUExporter) GetParameterizerType() string {
 // GetAllResourceIDs retrieves all organization unit IDs from the database store.
 // Note: This only exports DB-backed OUs (runtime OUs). YAML-based declarative resources
 // are not included in the export as they are already defined in YAML files.
-func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all OUs by requesting a large limit from the service
 	// In composite mode, this returns OUs from both file-based and database stores
-	ous, err := e.service.GetOrganizationUnitList(serverconst.MaxPageSize, 0)
+	ous, err := e.service.GetOrganizationUnitList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
-		childIDs, err := e.getAllChildIDs(id)
+		childIDs, err := e.getAllChildIDs(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -106,8 +107,8 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 }
 
 // getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
-func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.ServiceError) {
-	children, err := e.service.GetOrganizationUnitChildren(parentID, serverconst.MaxPageSize, 0)
+func (e *OUExporter) getAllChildIDs(ctx context.Context, parentID string) ([]string, *serviceerror.ServiceError) {
+	children, err := e.service.GetOrganizationUnitChildren(ctx, parentID, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,7 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 		// Only include mutable children (exclude immutable ones)
 		if !e.service.IsOrganizationUnitDeclarative(childBasic.ID) {
 			allIDs = append(allIDs, childBasic.ID)
-			grandchildIDs, err := e.getAllChildIDs(childBasic.ID)
+			grandchildIDs, err := e.getAllChildIDs(ctx, childBasic.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -129,8 +130,8 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 }
 
 // GetResourceByID retrieves an organization unit by its ID.
-func (e *OUExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	ou, err := e.service.GetOrganizationUnit(id)
+func (e *OUExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
+	ou, err := e.service.GetOrganizationUnit(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -199,28 +200,13 @@ func parseToOUWrapper(data []byte) (interface{}, error) {
 
 // parseToOU parses YAML data to OrganizationUnit.
 func parseToOU(data []byte) (*OrganizationUnit, error) {
-	var ouRequest struct {
-		ID          string  `yaml:"id"`
-		Handle      string  `yaml:"handle"`
-		Name        string  `yaml:"name"`
-		Description string  `yaml:"description,omitempty"`
-		Parent      *string `yaml:"parent,omitempty"`
-	}
-
-	err := yaml.Unmarshal(data, &ouRequest)
+	var ou OrganizationUnit
+	err := yaml.Unmarshal(data, &ou)
 	if err != nil {
 		return nil, err
 	}
 
-	ou := &OrganizationUnit{
-		ID:          ouRequest.ID,
-		Handle:      ouRequest.Handle,
-		Name:        ouRequest.Name,
-		Description: ouRequest.Description,
-		Parent:      ouRequest.Parent,
-	}
-
-	return ou, nil
+	return &ou, nil
 }
 
 // validateOUWrapper wraps validateOU to match ResourceConfig.Validator signature.

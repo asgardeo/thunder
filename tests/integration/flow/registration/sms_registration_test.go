@@ -45,7 +45,60 @@ var (
 				"executor": map[string]interface{}{
 					"name": "UserTypeResolver",
 				},
-				"onSuccess": "prompt_mobile",
+				"onSuccess":    "prompt_mobile",
+				"onIncomplete": "prompt_usertype",
+			},
+			{
+				"id":   "prompt_usertype",
+				"type": "PROMPT",
+				"meta": map[string]interface{}{
+					"components": []map[string]interface{}{
+						{
+							"type":    "TEXT",
+							"id":      "heading_usertype",
+							"label":   "Sign Up",
+							"variant": "HEADING_2",
+						},
+						{
+							"type": "BLOCK",
+							"id":   "block_usertype",
+							"components": []map[string]interface{}{
+								{
+									"type":        "SELECT",
+									"id":          "usertype_input",
+									"ref":         "userType",
+									"label":       "User Type",
+									"placeholder": "Select your user type",
+									"required":    true,
+									"options":     []interface{}{},
+								},
+								{
+									"type":      "ACTION",
+									"id":        "action_usertype",
+									"label":     "Continue",
+									"variant":   "PRIMARY",
+									"eventType": "SUBMIT",
+								},
+							},
+						},
+					},
+				},
+				"prompts": []map[string]interface{}{
+					{
+						"inputs": []map[string]interface{}{
+							{
+								"ref":        "usertype_input",
+								"identifier": "userType",
+								"type":       "SELECT",
+								"required":   true,
+							},
+						},
+						"action": map[string]interface{}{
+							"ref":      "action_usertype",
+							"nextNode": "user_type_resolver",
+						},
+					},
+				},
 			},
 			{
 				"id":   "prompt_mobile",
@@ -175,6 +228,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -280,8 +334,8 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 
 	// Update registration flow with created sender ID
 	smsNodes := smsRegistrationFlow.Nodes.([]map[string]interface{})
-	smsNodes[3]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_send node
-	smsNodes[5]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_verify node
+	smsNodes[4]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_send node
+	smsNodes[6]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_verify node
 	smsRegistrationFlow.Nodes = smsNodes
 
 	// Create the SMS registration flow

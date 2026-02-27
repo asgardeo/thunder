@@ -142,9 +142,7 @@ function extractActionsFromPrompts(prompts: FlowPrompt[] | undefined): FlowNodeA
     return [];
   }
 
-  return prompts
-    .filter((prompt) => prompt.action !== undefined)
-    .map((prompt) => prompt.action!);
+  return prompts.filter((prompt) => prompt.action !== undefined).map((prompt) => prompt.action!);
 }
 
 /**
@@ -161,10 +159,7 @@ function getNodeActions(apiNode: FlowNode): FlowNodeAction[] | undefined {
  * Recursively restores components from the API format to canvas format.
  * This handles nested components (like forms containing inputs and buttons).
  */
-function restoreComponents(
-  components: unknown[] | undefined,
-  nodeActions: FlowNodeAction[] | undefined,
-): Element[] {
+function restoreComponents(components: unknown[] | undefined, nodeActions: FlowNodeAction[] | undefined): Element[] {
   if (!components || components.length === 0) {
     return [];
   }
@@ -187,10 +182,7 @@ function restoreComponents(
     if (restoredComponent.components && Array.isArray(restoredComponent.components)) {
       restoredComponent = {
         ...restoredComponent,
-        components: restoreComponents(
-          restoredComponent.components as unknown[],
-          nodeActions,
-        ),
+        components: restoreComponents(restoredComponent.components as unknown[], nodeActions),
       };
     }
 
@@ -234,10 +226,7 @@ function transformNodeToCanvas(apiNode: FlowNode): CanvasNode {
   if (stepType === StepTypes.View && apiNode.meta?.components) {
     // Get actions from prompts
     const nodeActions = getNodeActions(apiNode);
-    const restoredComponents = restoreComponents(
-      apiNode.meta.components,
-      nodeActions,
-    );
+    const restoredComponents = restoreComponents(apiNode.meta.components, nodeActions);
 
     canvasNode.data = {
       components: restoredComponents,
@@ -256,6 +245,7 @@ function transformNodeToCanvas(apiNode: FlowNode): CanvasNode {
         executor: apiNode.executor,
         onSuccess: apiNode.onSuccess,
         onFailure: apiNode.onFailure,
+        ...(apiNode.onIncomplete !== undefined ? {onIncomplete: apiNode.onIncomplete} : {}),
       },
     };
 
@@ -271,10 +261,7 @@ function transformNodeToCanvas(apiNode: FlowNode): CanvasNode {
   if (stepType === StepTypes.End) {
     if (apiNode.meta?.components) {
       const nodeActions = getNodeActions(apiNode);
-      const restoredComponents = restoreComponents(
-        apiNode.meta.components,
-        nodeActions,
-      );
+      const restoredComponents = restoreComponents(apiNode.meta.components, nodeActions);
       canvasNode.data = {
         components: restoredComponents,
       };
@@ -375,6 +362,21 @@ function generateEdgesFromNodes(apiNodes: FlowNode[]): Edge[] {
           },
         });
       }
+
+      // Handle onIncomplete for TASK_EXECUTION nodes
+      if (node.onIncomplete && nodeIds.has(node.onIncomplete)) {
+        edges.push({
+          id: `${node.id}-incomplete-to-${node.onIncomplete}`,
+          source: node.id,
+          sourceHandle: `${node.id}${VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX}`,
+          target: node.onIncomplete,
+          type: 'smoothstep',
+          animated: false,
+          markerEnd: {
+            type: MarkerType.Arrow,
+          },
+        });
+      }
     }
 
     // Handle DECISION/RULE node connections
@@ -465,9 +467,7 @@ function calculateViewport(nodes: CanvasNode[]): {x: number; y: number; zoom: nu
  */
 export function transformFlowToCanvas(flowData: FlowDefinitionResponse): ReactFlowCanvasData {
   // Transform API nodes to canvas nodes
-  const canvasNodes: CanvasNode[] = flowData.nodes.map((node) =>
-    transformNodeToCanvas(node),
-  );
+  const canvasNodes: CanvasNode[] = flowData.nodes.map((node) => transformNodeToCanvas(node));
 
   // Generate edges from node connections
   const canvasEdges: Edge[] = generateEdgesFromNodes(flowData.nodes);

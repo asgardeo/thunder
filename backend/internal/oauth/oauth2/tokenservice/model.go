@@ -101,3 +101,14 @@ type SubjectTokenClaims struct {
 	UserAttributes map[string]interface{}
 	NestedAct      map[string]interface{}
 }
+
+// AccessTokenClaims represents the validated claims from an access token.
+type AccessTokenClaims struct {
+	Sub       string
+	Iss       string
+	Aud       string
+	GrantType string
+	Scopes    []string
+	ClientID  string
+	Claims    map[string]interface{}
+}

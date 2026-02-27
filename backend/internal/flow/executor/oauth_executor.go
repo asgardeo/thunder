@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -31,7 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	systemutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -62,9 +63,9 @@ type oAuthExecutorInterface interface {
 		code string) (*OAuthTokenResponse, error)
 	GetUserInfo(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 		accessToken string) (map[string]string, error)
-	GetInternalUser(sub string, execResp *common.ExecutorResponse) (*user.User, error)
+	GetInternalUser(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error)
 	ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse,
-		sub string, internalUser *user.User) (*authncm.AuthenticatedUser, error)
+		sub string, internalUser *userprovider.User) (*authncm.AuthenticatedUser, error)
 	GetIdpID(ctx *core.NodeContext) (string, error)
 }
 
@@ -351,7 +352,7 @@ func (o *oAuthExecutor) getIDPName(idpID string) (string, error) {
 	logger := o.logger
 	logger.Debug("Retrieving IDP name for the given IDP ID")
 
-	idp, svcErr := o.idpService.GetIdentityProvider(idpID)
+	idp, svcErr := o.idpService.GetIdentityProvider(context.TODO(), idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return "", fmt.Errorf("failed to get identity provider: %s", svcErr.ErrorDescription)
@@ -365,7 +366,7 @@ func (o *oAuthExecutor) getIDPName(idpID string) (string, error) {
 	return idp.Name, nil
 }
 
-func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*user.User, error) {
+func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error) {
 	logger := o.logger
 	logger.Debug("Resolving internal user with the given sub claim")
 
@@ -383,7 +384,7 @@ func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorRes
 			log.String("description", svcErr.ErrorDescription))
 		return nil, errors.New("error while retrieving internal user")
 	}
-	if user == nil || user.ID == "" {
+	if user == nil || user.UserID == "" {
 		return nil, nil
 	}
 
@@ -392,7 +393,7 @@ func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorRes
 
 // ResolveContextUser resolves the authenticated user in context with the attributes.
 func (o *oAuthExecutor) ResolveContextUser(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, sub string, internalUser *user.User) (
+	execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (
 	*authncm.AuthenticatedUser, error) {
 	if ctx.FlowType == common.FlowTypeAuthentication {
 		return o.getContextUserForAuthentication(ctx, execResp, sub, internalUser)
@@ -402,7 +403,7 @@ func (o *oAuthExecutor) ResolveContextUser(ctx *core.NodeContext,
 
 // getContextUserForAuthentication resolves the authenticated user in context for authentication flows.
 func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, sub string, internalUser *user.User) (
+	execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (
 	*authncm.AuthenticatedUser, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -445,9 +446,9 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 	execResp.Status = common.ExecComplete
 	authenticatedUser := authncm.AuthenticatedUser{
 		IsAuthenticated:    true,
-		UserID:             internalUser.ID,
-		OrganizationUnitID: internalUser.OrganizationUnit,
-		UserType:           internalUser.Type,
+		UserID:             internalUser.UserID,
+		OrganizationUnitID: internalUser.OrganizationUnitID,
+		UserType:           internalUser.UserType,
 	}
 
 	return &authenticatedUser, nil
@@ -455,7 +456,7 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 
 // getContextUserForRegistration resolves the authenticated user in context for registration flows.
 func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, sub string, internalUser *user.User) (
+	execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (
 	*authncm.AuthenticatedUser, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -487,9 +488,9 @@ func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
 
 		return &authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
-			UserID:             internalUser.ID,
-			OrganizationUnitID: internalUser.OrganizationUnit,
-			UserType:           internalUser.Type,
+			UserID:             internalUser.UserID,
+			OrganizationUnitID: internalUser.OrganizationUnitID,
+			UserType:           internalUser.UserType,
 		}, nil
 	}
 
@@ -515,7 +516,7 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 	// Filter allowed user types to only those with self-registration enabled
 	selfRegEnabledSchemas := make([]userschema.UserSchema, 0)
 	for _, userType := range ctx.Application.AllowedUserTypes {
-		userSchema, svcErr := o.userSchemaService.GetUserSchemaByName(userType)
+		userSchema, svcErr := o.userSchemaService.GetUserSchemaByName(context.TODO(), userType)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				execResp.Status = common.ExecFailure

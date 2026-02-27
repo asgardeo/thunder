@@ -59,11 +59,15 @@ type Application struct {
 
 // OrganizationUnit represents an organization unit in the system
 type OrganizationUnit struct {
-	ID          string  `json:"id,omitempty"`
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent,omitempty"`
+	ID              string  `json:"id,omitempty"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
 }
 
 // IDPProperty represents a property of an identity provider

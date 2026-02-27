@@ -271,52 +271,6 @@ func (_c *RepresentationNodeInterfaceMock_GetID_Call) RunAndReturn(run func() st
 	return _c
 }
 
-// GetMeta provides a mock function for the type RepresentationNodeInterfaceMock
-func (_mock *RepresentationNodeInterfaceMock) GetMeta() interface{} {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetMeta")
-	}
-
-	var r0 interface{}
-	if returnFunc, ok := ret.Get(0).(func() interface{}); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	return r0
-}
-
-// RepresentationNodeInterfaceMock_GetMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMeta'
-type RepresentationNodeInterfaceMock_GetMeta_Call struct {
-	*mock.Call
-}
-
-// GetMeta is a helper method to define mock.On call
-func (_e *RepresentationNodeInterfaceMock_Expecter) GetMeta() *RepresentationNodeInterfaceMock_GetMeta_Call {
-	return &RepresentationNodeInterfaceMock_GetMeta_Call{Call: _e.mock.On("GetMeta")}
-}
-
-func (_c *RepresentationNodeInterfaceMock_GetMeta_Call) Run(run func()) *RepresentationNodeInterfaceMock_GetMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *RepresentationNodeInterfaceMock_GetMeta_Call) Return(ifaceVal interface{}) *RepresentationNodeInterfaceMock_GetMeta_Call {
-	_c.Call.Return(ifaceVal)
-	return _c
-}
-
-func (_c *RepresentationNodeInterfaceMock_GetMeta_Call) RunAndReturn(run func() interface{}) *RepresentationNodeInterfaceMock_GetMeta_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetNextNodeList provides a mock function for the type RepresentationNodeInterfaceMock
 func (_mock *RepresentationNodeInterfaceMock) GetNextNodeList() []string {
 	ret := _mock.Called()
@@ -813,46 +767,6 @@ func (_c *RepresentationNodeInterfaceMock_SetCondition_Call) Return() *Represent
 }
 
 func (_c *RepresentationNodeInterfaceMock_SetCondition_Call) RunAndReturn(run func(condition *NodeCondition)) *RepresentationNodeInterfaceMock_SetCondition_Call {
-	_c.Run(run)
-	return _c
-}
-
-// SetMeta provides a mock function for the type RepresentationNodeInterfaceMock
-func (_mock *RepresentationNodeInterfaceMock) SetMeta(meta interface{}) {
-	_mock.Called(meta)
-	return
-}
-
-// RepresentationNodeInterfaceMock_SetMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetMeta'
-type RepresentationNodeInterfaceMock_SetMeta_Call struct {
-	*mock.Call
-}
-
-// SetMeta is a helper method to define mock.On call
-//   - meta interface{}
-func (_e *RepresentationNodeInterfaceMock_Expecter) SetMeta(meta interface{}) *RepresentationNodeInterfaceMock_SetMeta_Call {
-	return &RepresentationNodeInterfaceMock_SetMeta_Call{Call: _e.mock.On("SetMeta", meta)}
-}
-
-func (_c *RepresentationNodeInterfaceMock_SetMeta_Call) Run(run func(meta interface{})) *RepresentationNodeInterfaceMock_SetMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 interface{}
-		if args[0] != nil {
-			arg0 = args[0].(interface{})
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *RepresentationNodeInterfaceMock_SetMeta_Call) Return() *RepresentationNodeInterfaceMock_SetMeta_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *RepresentationNodeInterfaceMock_SetMeta_Call) RunAndReturn(run func(meta interface{})) *RepresentationNodeInterfaceMock_SetMeta_Call {
 	_c.Run(run)
 	return _c
 }

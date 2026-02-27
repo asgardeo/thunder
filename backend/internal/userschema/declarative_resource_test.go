@@ -19,10 +19,12 @@
 package userschema_test
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -70,9 +72,9 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
 		},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -86,9 +88,9 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(nil, expectedError)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -99,9 +101,9 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 		Schemas: []userschema.UserSchemaListItem{},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -113,9 +115,9 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test Schema",
 	}
 
-	s.mockService.EXPECT().GetUserSchema("schema1").Return(expectedSchema, nil)
+	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(expectedSchema, nil)
 
-	resource, name, err := s.exporter.GetResourceByID("schema1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "schema1")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Schema", name)
@@ -128,9 +130,9 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchema("schema1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(nil, expectedError)
 
-	resource, name, err := s.exporter.GetResourceByID("schema1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "schema1")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)
@@ -190,6 +192,14 @@ func (s *UserSchemaExporterTestSuite) TestValidateResource_NoSchema() {
 	// Should still succeed but log a warning
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Schema", name)
+}
+
+func (s *UserSchemaExporterTestSuite) TestGetResourceRules() {
+	rules := s.exporter.GetResourceRules()
+
+	assert.NotNil(s.T(), rules)
+	// ResourceRules is currently an empty struct, but the function should return a valid pointer
+	assert.IsType(s.T(), &declarativeresource.ResourceRules{}, rules)
 }
 
 func (s *UserSchemaExporterTestSuite) TestUserSchemaExporterImplementsInterface() {

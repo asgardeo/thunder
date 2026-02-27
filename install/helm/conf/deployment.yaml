@@ -109,6 +109,8 @@ oauth:
     validity_period: {{ .Values.configuration.oauth.refreshToken.validityPeriod }}
   authorization_code:
     validity_period: {{ .Values.configuration.oauth.authorizationCode.validityPeriod }}
+  dcr:
+    insecure: {{ .Values.configuration.oauth.dcr.insecure }}
 
 flow:
   default_auth_flow_handle: {{ .Values.configuration.flow.defaultAuthFlowHandle | quote }}

@@ -28,9 +28,9 @@ const OUTPUT_FILE = join(__dirname, '..', 'content', 'releases.md');
 const GITHUB_REPO = 'asgardeo/thunder';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 
-const logger = createLogger('merge-openapi-specs');
+const logger = createLogger('generate-changelog');
 
-// Cache for user avatars to avoid repeated API calls
+// Cache for user avatars to avoid repeated API calls.
 const userAvatarCache = {};
 
 async function fetchReleases() {
@@ -39,7 +39,7 @@ async function fetchReleases() {
         const response = await fetch(GITHUB_API_URL, {
             headers: {
                 'User-Agent': 'Thunder-Docs-Changelog-Generator',
-                // Add Authorization header if GITHUB_TOKEN is present to avoid rate limits
+                // Add Authorization header if GITHUB_TOKEN is present to avoid rate limits.
                 ...(process.env.GITHUB_TOKEN ? { Authorization: `token ${process.env.GITHUB_TOKEN}` } : {})
             }
         });
@@ -57,34 +57,34 @@ async function fetchReleases() {
 }
 
 function sanitizeReleaseBody(body, releaseTag) {
-    // Convert HTML img tags to Markdown img syntax and remove p tags
-    // This prevents MDX compilation errors with mixed HTML and Markdown
+    // Convert HTML img tags to Markdown img syntax and remove p tags.
+    // This prevents MDX compilation errors with mixed HTML and Markdown.
     let sanitized = body
         .replace(/<p\s+align="left">\s*<img\s+src="([^"]+)"\s+alt="([^"]*)"\s+width="([^"]+)">\s*<\/p>/g, '![$2]($1)')
         .replace(/<p\s+align="left">/g, '')
         .replace(/<\/p>/g, '')
         .replace(/<img\s+src="([^"]+)"\s+alt="([^"]*)"\s+width="([^"]+)">/g, '![$2]($1)');
 
-    // Convert relative image paths to absolute GitHub URLs
-    // Matches markdown image syntax: ![alt](path)
+    // Convert relative image paths to absolute GitHub URLs.
+    // Matches markdown image syntax: ![alt](path).
     sanitized = sanitized.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        // If the path is relative (doesn't start with http), convert to GitHub raw content URL
+        // If the path is relative (doesn't start with http), convert to GitHub raw content URL.
         if (!src.startsWith('http')) {
-            // Use the tag_name from the release to construct the correct GitHub URL
+            // Use the tag_name from the release to construct the correct GitHub URL.
             const githubRawUrl = `https://raw.githubusercontent.com/asgardeo/thunder/${releaseTag}/${src}`;
             return `![${alt}](${githubRawUrl})`;
         }
         return match;
     });
 
-    // Escape angle brackets that look like template variables (e.g., <os>, <arch>, <version>)
-    // to prevent MDX parser from treating them as JSX tags
-    // This regex matches <word> patterns that are not part of valid HTML tags
+    // Escape angle brackets that look like template variables (e.g., <os>, <arch>, <version>).
+    // to prevent MDX parser from treating them as JSX tags.
+    // This regex matches <word> patterns that are not part of valid HTML tags.
     sanitized = sanitized.replace(/<([a-zA-Z_-]+)>/g, (match, word) => {
         // List of actual HTML tags to preserve
         const htmlTags = ['div', 'img', 'p', 'span', 'a', 'strong', 'em', 'br', 'hr'];
         if (!htmlTags.includes(word.toLowerCase())) {
-            // Replace with HTML entities to prevent MDX parser issues
+            // Replace with HTML entities to prevent MDX parser issues.
             return `&lt;${word}&gt;`;
         }
         return match;
@@ -94,7 +94,7 @@ function sanitizeReleaseBody(body, releaseTag) {
 }
 
 async function fetchUserAvatar(username) {
-    // Return cached avatar if available
+    // Return cached avatar if available.
     if (userAvatarCache[username]) {
         return userAvatarCache[username];
     }
@@ -123,25 +123,25 @@ async function fetchUserAvatar(username) {
 }
 
 function extractContributorsFromBody(body) {
-    // Extract unique usernames mentioned with @ symbol
+    // Extract unique usernames mentioned with @ symbol.
     const mentions = body.match(/@([a-zA-Z0-9-]+)/g) || [];
     const uniqueContributors = [...new Set(mentions.map(m => m.substring(1)))];
 
-    // Filter out common non-user mentions
+    // Filter out common non-user mentions and known non-user references.
     return uniqueContributors.filter(username =>
-        !['dependabot', 'renovate'].includes(username.toLowerCase())
+        !['dependabot', 'renovate', 'asgardeo', 'thunder', 'example', 'wso2', '123'].includes(username.toLowerCase())
     );
 }
 
 function cleanChangeText(text) {
-    // Remove "by @username in PR_LINK" pattern
-    // Pattern: " by @<username> in https://github.com/..."
+    // Remove "by @username in PR_LINK" pattern.
+    // Pattern: " by @<username> in https://github.com/...".
     return text.replace(/\s+by\s+@[\w-]+\s+in\s+https:\/\/github\.com\/\S+/, '').trim();
 }
 
 function extractNewContributorUsernames(body) {
-    // Extract usernames from "New Contributors" section
-    // Pattern: "* @username made their first contribution..."
+    // Extract usernames from "New Contributors" section.
+    // Pattern: "* @username made their first contribution...".
     const newContributorsMatch = body.match(/New Contributors[\s\S]*?(?=###|$)/);
     if (!newContributorsMatch) {
         return [];
@@ -150,14 +150,14 @@ function extractNewContributorUsernames(body) {
     const mentions = (newContributorsMatch[0] || '').match(/@([a-zA-Z0-9-]+)/g) || [];
     const usernames = [...new Set(mentions.map(m => m.substring(1)))];
 
-    // Filter out common non-user mentions
+    // Filter out common non-user mentions and known non-user references.
     return usernames.filter(username =>
-        !['dependabot', 'renovate'].includes(username.toLowerCase())
+        !['dependabot', 'renovate', 'asgardeo', 'thunder', 'example', 'wso2', '123'].includes(username.toLowerCase())
     );
 }
 
 function extractChanges(body) {
-    // Extract and categorize changes from the release body
+    // Extract and categorize changes from the release body.
     const categories = {
         breaking: [],
         features: [],
@@ -185,7 +185,7 @@ function extractChanges(body) {
         } else if (trimmed.startsWith('*') && currentCategory) {
             const cleanedText = cleanChangeText(trimmed.substring(1).trim());
 
-            // Filter out unwanted lines
+            // Filter out unwanted lines.
             const isFullChangelog = cleanedText.toLowerCase().includes('full changelog');
             const isNoteAboutSampleApp = cleanedText.toLowerCase().includes('note the id of the sample app');
             const isEmptyOrLink = !cleanedText || cleanedText.startsWith('http');
@@ -201,7 +201,7 @@ function extractChanges(body) {
 
 async function formatChangelog(releases) {
     let content = '# Releases\n\n';
-    content += 'Explore the latest updates, features, and improvements to **WSO2 Thunder**.\n\n';
+    content += 'Explore the latest updates, features, and improvements to **Thunder**.\n\n';
     content += '---\n\n';
 
     if (releases.length === 0) {
@@ -217,9 +217,9 @@ async function formatChangelog(releases) {
             month: 'long',
             day: 'numeric'
         });
-        const versionName = release.tag_name; // Use tag_name for shorter TOC entries (e.g., v0.21.0)
+        const versionName = release.tag_name; // Use tag_name for shorter TOC entries.
 
-        // Visual Header for the Release
+        // Visual Header for the Release.
         content += `## ${versionName} {#${release.tag_name.toLowerCase().replace(/\./g, '-')}}\n`;
         content += `<p style={{ fontSize: '0.9rem', color: '#666', marginTop: '-10px', marginBottom: '20px' }}>\n`;
         content += `  <span>📅 Published on <strong>${date}</strong></span> • \n`;
@@ -229,7 +229,7 @@ async function formatChangelog(releases) {
         const sanitizedBody = sanitizeReleaseBody(release.body, release.tag_name);
         const changes = extractChanges(sanitizedBody);
 
-        // Render Contributors with a better layout
+        // Render Contributors with a better layout.
         const contributors = extractContributorsFromBody(sanitizedBody);
         if (contributors.length > 0) {
             content += `<div style={{ padding: '15px', marginBottom: '10px',}}>\n`;
@@ -247,7 +247,7 @@ async function formatChangelog(releases) {
             content += `</div></div>\n\n`;
         }
 
-        // Render New Contributors section
+        // Render New Contributors section.
         const newContributors = extractNewContributorUsernames(sanitizedBody);
         if (newContributors.length > 0) {
             content += `<div style={{ padding: '15px', marginBottom: '40px',}}>\n`;
@@ -265,7 +265,7 @@ async function formatChangelog(releases) {
             content += `</div></div>\n\n`;
         }
 
-        // Categorized Changes with cleaner list styling
+        // Categorized Changes with cleaner list styling.
         const renderCategory = (title, items, icon) => {
             if (items.length === 0) return '';
             let section = `#### ${icon} ${title}\n\n`;

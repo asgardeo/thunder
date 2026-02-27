@@ -116,7 +116,6 @@ export type BasicApplication = Pick<
  *       response_types: ['code'],
  *       scopes: ['openid', 'profile', 'email'],
  *       token: {
- *         issuer: 'thunder',
  *         access_token: {
  *           validity_period: 3600,
  *           user_attributes: ['email', 'username']

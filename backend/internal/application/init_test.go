@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -145,7 +146,6 @@ is_registration_flow_enabled: true
 url: https://example.com
 logo_url: https://example.com/logo.png
 assertion:
-  issuer: test-issuer
   validity_period: 3600
   user_attributes:
     - email
@@ -168,7 +168,8 @@ inbound_auth_config:
       pkce_required: true
       public_client: false
       token:
-        issuer: oauth-issuer
+        access_token:
+          validity_period: 3600
 `
 
 	// Execute
@@ -187,7 +188,6 @@ inbound_auth_config:
 
 	// Verify token config
 	assert.NotNil(suite.T(), appDTO.Assertion)
-	assert.Equal(suite.T(), "test-issuer", appDTO.Assertion.Issuer)
 	// Note: ValidityPeriod and UserAttributes might be 0/nil if not properly parsed
 	// This could be due to YAML structure differences
 
@@ -217,7 +217,6 @@ inbound_auth_config:
 
 	// Verify OAuth token config
 	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Token)
-	assert.Equal(suite.T(), "oauth-issuer", appDTO.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 	// Note: OAuthTokenConfig doesn't have ValidityPeriod and UserAttributes directly
 	// Those are in AccessToken and IDToken sub-configs
 }
@@ -353,8 +352,6 @@ inbound_auth_config:
       token_endpoint_auth_method: client_secret_post
       pkce_required: false
       public_client: true
-      token:
-        issuer: custom-issuer
 `
 
 	// Execute
@@ -381,10 +378,8 @@ inbound_auth_config:
 	assert.False(suite.T(), oauthConfig.PKCERequired)
 	assert.True(suite.T(), oauthConfig.PublicClient)
 
-	// Verify OAuth token configuration
-	assert.NotNil(suite.T(), oauthConfig.Token)
-	assert.Equal(suite.T(), "custom-issuer", oauthConfig.Token.Issuer)
-	// Note: OAuthTokenConfig structure uses AccessToken and IDToken sub-configs
+	// Note: No token section in YAML, so Token is nil (default)
+	assert.Nil(suite.T(), oauthConfig.Token)
 }
 
 // Benchmark tests for performance
@@ -581,47 +576,205 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
 }
 
-// TestInitialize_WithMCPServer_Standalone tests Initialize function with MCP server
-func TestInitialize_WithMCPServer_Standalone(t *testing.T) {
-	// Setup minimal config for testing
-	testConfig := &config.Config{
-		DeclarativeResources: config.DeclarativeResources{
-			Enabled: false,
-		},
-	}
-
-	// Reset and initialize with test config
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
-	assert.NoError(t, err)
-
-	defer config.ResetThunderRuntime() // Clean up after test
-
-	mux := http.NewServeMux()
-	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-
-	// Create a mock MCP server
-	mcpServer := mcp.NewServer(&mcp.Implementation{
-		Name:    "test-mcp-server",
-		Version: "1.0.0",
-	}, nil)
+// TestParseToApplicationDTO_WithScopeClaims tests parsing with scope claims including custom claims
+func (suite *InitTestSuite) TestParseToApplicationDTO_WithScopeClaims() {
+	yamlData := `
+id: "test-app-scope-claims"
+name: "App With Scope Claims"
+inbound_auth_config:
+  - type: oauth2
+    config:
+      client_id: "client-456"
+      scope_claims:
+        profile:
+          - "name"
+          - "email"
+          - "customClaim"
+        email:
+          - "email"
+`
 
 	// Execute
-	service, _, err := Initialize(
-		mux,
-		mcpServer,
-		mockCertService,
-		mockFlowMgtService,
-		nil, // themeMgtService - not needed for this test
-		nil, // layoutMgtService - not needed for this test
-		mockUserSchemaService,
-	)
+	appDTO, err := parseToApplicationDTO([]byte(yamlData))
 
 	// Assert
-	assert.NoError(t, err)
-	assert.NotNil(t, service)
-	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
-	assert.NotNil(t, mcpServer)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), appDTO)
+	require.Len(suite.T(), appDTO.InboundAuthConfig, 1,
+		"InboundAuthConfig should have exactly 1 entry before accessing index 0")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig,
+		"OAuthAppConfig should not be nil before accessing fields")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims,
+		"ScopeClaims should not be nil before accessing map keys")
+	scopeClaims := appDTO.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims
+	require.Contains(suite.T(), scopeClaims, "profile", "ScopeClaims should contain 'profile' key")
+	require.NotNil(suite.T(), scopeClaims["profile"], "profile scope claims should not be nil")
+	assert.Len(suite.T(), scopeClaims["profile"], 3)
+	assert.Contains(suite.T(), scopeClaims["profile"], "customClaim")
+}
+
+// TestParseToApplicationDTO_WithScopes tests parsing with custom scopes
+func (suite *InitTestSuite) TestParseToApplicationDTO_WithScopes() {
+	yamlData := `
+id: "test-app-scopes"
+name: "App With Scopes"
+inbound_auth_config:
+  - type: oauth2
+    config:
+      client_id: "client-123"
+      scopes:
+        - "openid"
+        - "profile"
+`
+
+	// Execute
+	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), appDTO)
+	require.Len(suite.T(), appDTO.InboundAuthConfig, 1,
+		"InboundAuthConfig should have exactly 1 entry before accessing index 0")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig,
+		"OAuthAppConfig should not be nil before accessing fields")
+	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes)
+	assert.Len(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes, 2)
+	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes, "openid")
+	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes, "profile")
+}
+
+// TestParseToApplicationDTO_WithUserInfo tests parsing with UserInfo configuration
+func (suite *InitTestSuite) TestParseToApplicationDTO_WithUserInfo() {
+	yamlData := `
+id: "test-app-userinfo"
+name: "App With UserInfo"
+inbound_auth_config:
+  - type: oauth2
+    config:
+      client_id: "client-789"
+      user_info:
+        user_attributes:
+          - "sub"
+          - "email"
+          - "name"
+`
+
+	// Execute
+	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), appDTO)
+	require.Len(suite.T(), appDTO.InboundAuthConfig, 1,
+		"InboundAuthConfig should have exactly 1 entry before accessing index 0")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig,
+		"OAuthAppConfig should not be nil before accessing fields")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.UserInfo,
+		"UserInfo should not be nil before accessing UserAttributes")
+	assert.Len(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.UserInfo.UserAttributes, 3)
+}
+
+// TestParseToApplicationDTO_WithAllOAuthFieldsIncludingFixedFields tests all OAuth fields
+// including Scopes, UserInfo, and ScopeClaims (the fix for GitHub issue #1445)
+func (suite *InitTestSuite) TestParseToApplicationDTO_WithAllOAuthFieldsIncludingFixedFields() {
+	yamlData := `
+id: "test-app-complete"
+name: "Complete OAuth App"
+inbound_auth_config:
+  - type: oauth2
+    config:
+      client_id: "complete-client"
+      client_secret: "secret-value"
+      redirect_uris:
+        - "https://example.com/callback"
+      grant_types:
+        - "authorization_code"
+      response_types:
+        - "code"
+      token_endpoint_auth_method: "client_secret_basic"
+      pkce_required: true
+      public_client: false
+      token:
+        id_token:
+          user_attributes:
+            - "sub"
+            - "email"
+      scopes:
+        - "openid"
+      user_info:
+        user_attributes:
+          - "profile"
+      scope_claims:
+        profile:
+          - "name"
+`
+
+	// Execute
+	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), appDTO)
+	require.NotEmpty(suite.T(), appDTO.InboundAuthConfig,
+		"InboundAuthConfig should not be empty before accessing index 0")
+	oauth := appDTO.InboundAuthConfig[0].OAuthAppConfig
+	require.NotNil(suite.T(), oauth, "OAuthAppConfig should not be nil before accessing fields")
+	assert.Equal(suite.T(), "complete-client", oauth.ClientID)
+	assert.Equal(suite.T(), "secret-value", oauth.ClientSecret)
+	assert.Len(suite.T(), oauth.RedirectURIs, 1)
+	assert.Equal(suite.T(), "https://example.com/callback", oauth.RedirectURIs[0])
+	assert.Len(suite.T(), oauth.GrantTypes, 1)
+	assert.True(suite.T(), oauth.PKCERequired)
+	assert.False(suite.T(), oauth.PublicClient)
+	assert.NotNil(suite.T(), oauth.Token)
+	// Verify the fixed fields are properly copied
+	assert.NotNil(suite.T(), oauth.Scopes)
+	assert.NotNil(suite.T(), oauth.UserInfo)
+	assert.NotNil(suite.T(), oauth.ScopeClaims)
+}
+
+// TestParseToApplicationDTO_GithubIssue1445_CustomClaimsInScopeClaims tests the exact scenario from GitHub issue #1445
+func (suite *InitTestSuite) TestParseToApplicationDTO_GithubIssue1445_CustomClaimsInScopeClaims() {
+	// This is the exact scenario from the GitHub issue where scope_claims, scopes, and user_info were being dropped
+	yamlData := `
+id: "test-app-custom-claims"
+name: "App With Custom Claims"
+inbound_auth_config:
+  - type: oauth2
+    config:
+      client_id: "MY_APP"
+      token:
+        id_token:
+          user_attributes:
+            - "email"
+            - "name"
+            - "customClaim"
+      scope_claims:
+        profile:
+          - "name"
+          - "customClaim"
+        email:
+          - "email"
+`
+
+	// Execute
+	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+
+	// Assert
+	require.NoError(suite.T(), err, "parseToApplicationDTO should not return error")
+	require.NotNil(suite.T(), appDTO, "appDTO should not be nil")
+	require.NotEmpty(suite.T(), appDTO.InboundAuthConfig,
+		"InboundAuthConfig should not be empty before accessing index 0")
+	oauth := appDTO.InboundAuthConfig[0].OAuthAppConfig
+	require.NotNil(suite.T(), oauth, "OAuthAppConfig should not be nil before accessing fields")
+
+	// Verify scope_claims are properly copied (this was the bug in issue #1445)
+	assert.NotNil(suite.T(), oauth.ScopeClaims, "ScopeClaims should not be nil")
+	assert.Len(suite.T(), oauth.ScopeClaims, 2, "ScopeClaims should have 2 entries (profile and email)")
+	assert.Contains(suite.T(), oauth.ScopeClaims, "profile", "ScopeClaims should contain 'profile'")
+	assert.Contains(suite.T(), oauth.ScopeClaims, "email", "ScopeClaims should contain 'email'")
+	assert.Len(suite.T(), oauth.ScopeClaims["profile"], 2, "profile scope should have 2 claims")
+	assert.Contains(suite.T(), oauth.ScopeClaims["profile"], "name", "profile scope should contain 'name'")
+	assert.Contains(suite.T(), oauth.ScopeClaims["profile"], "customClaim",
+		"profile scope should contain 'customClaim'")
 }

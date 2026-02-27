@@ -28,7 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -49,9 +49,9 @@ type githubOAuthAuthnService struct {
 
 // newGithubOAuthAuthnService creates a new instance of GitHub OAuth authenticator service.
 func newGithubOAuthAuthnService(idpSvc idp.IDPServiceInterface,
-	userSvc user.UserServiceInterface) GithubOAuthAuthnServiceInterface {
+	userProvider userprovider.UserProviderInterface) GithubOAuthAuthnServiceInterface {
 	httpClient := syshttp.NewHTTPClient()
-	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userSvc)
+	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userProvider)
 
 	service := &githubOAuthAuthnService{
 		internal:   internal,
@@ -148,7 +148,7 @@ func (g *githubOAuthAuthnService) fetchPrimaryEmail(
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
+func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
 	return g.internal.GetInternalUser(sub)
 }
 

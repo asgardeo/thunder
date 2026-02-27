@@ -19,9 +19,11 @@
 package idp_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/idp"
@@ -68,9 +70,9 @@ func (s *IDPExporterTestSuite) TestGetAllResourceIDs_Success() {
 		{ID: "idp2", Name: "IDP 2"},
 	}
 
-	s.mockService.EXPECT().GetIdentityProviderList().Return(expectedIDPs, nil)
+	s.mockService.EXPECT().GetIdentityProviderList(mock.Anything).Return(expectedIDPs, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -84,9 +86,9 @@ func (s *IDPExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetIdentityProviderList().Return(nil, expectedError)
+	s.mockService.EXPECT().GetIdentityProviderList(mock.Anything).Return(nil, expectedError)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -95,9 +97,9 @@ func (s *IDPExporterTestSuite) TestGetAllResourceIDs_Error() {
 func (s *IDPExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 	expectedIDPs := []idp.BasicIDPDTO{}
 
-	s.mockService.EXPECT().GetIdentityProviderList().Return(expectedIDPs, nil)
+	s.mockService.EXPECT().GetIdentityProviderList(mock.Anything).Return(expectedIDPs, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -109,9 +111,9 @@ func (s *IDPExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test IDP",
 	}
 
-	s.mockService.EXPECT().GetIdentityProvider("idp1").Return(expectedIDP, nil)
+	s.mockService.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(expectedIDP, nil)
 
-	resource, name, err := s.exporter.GetResourceByID("idp1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "idp1")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test IDP", name)
@@ -124,9 +126,9 @@ func (s *IDPExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetIdentityProvider("idp1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(nil, expectedError)
 
-	resource, name, err := s.exporter.GetResourceByID("idp1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "idp1")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)

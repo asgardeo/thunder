@@ -182,14 +182,9 @@ func createHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux
 	securityMiddleware := createSecurityMiddleware(logger, mux, jwtService)
 
 	// Build the middleware chain with proper execution order.
-	// Request flow: CorrelationID (outermost) -> AccessLog -> Security (if enabled) -> Route Handler (innermost)
+	// Request flow: CorrelationID (outermost) -> AccessLog -> Security -> Route Handler (innermost)
 	// Note: Middlewares are wrapped in reverse order - the last added will execute first.
-	var handler http.Handler
-	if securityMiddleware != nil {
-		handler = log.AccessLogHandler(logger, securityMiddleware)
-	} else {
-		handler = log.AccessLogHandler(logger, mux)
-	}
+	handler := log.AccessLogHandler(logger, securityMiddleware)
 	handler = middleware.CorrelationIDMiddleware(handler)
 
 	// Build the server address using hostname and port from the configurations.
@@ -226,20 +221,6 @@ func createTLSListener(logger *log.Logger, server *http.Server, tlsConfig *tls.C
 
 func createSecurityMiddleware(logger *log.Logger, mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface) http.Handler {
-	// Check if security should be skipped via environment variable
-	skipSecurity := os.Getenv("THUNDER_SKIP_SECURITY")
-	if skipSecurity == "true" {
-		logger.Warn("============================================================")
-		logger.Warn("|       WARNING: SECURITY MIDDLEWARE DISABLED              |")
-		logger.Warn("|                                                          |")
-		logger.Warn("|        THUNDER_SKIP_SECURITY is set to 'true'            |")
-		logger.Warn("|  This is NOT RECOMMENDED for production environments!    |")
-		logger.Warn("| All endpoints will be accessible without authentication  |")
-		logger.Warn("|                                                          |")
-		logger.Warn("============================================================")
-		return nil
-	}
-
 	middlewareFunc, err := security.Initialize(jwtService)
 	if err != nil {
 		logger.Fatal("Failed to initialize security middleware", log.Error(err))

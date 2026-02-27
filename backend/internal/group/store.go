@@ -47,6 +47,8 @@ type groupStoreInterface interface {
 	GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error)
 	GetGroupsByOrganizationUnit(
 		ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
+	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
+	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
 }
 
 // groupStore is the default implementation of groupStoreInterface.
@@ -248,11 +250,6 @@ func (s *groupStore) UpdateGroup(ctx context.Context, group GroupDAO) error {
 		return ErrGroupNotFound
 	}
 
-	err = updateGroupMembers(ctx, dbClient, group.ID, group.Members, s.deploymentID)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -401,6 +398,36 @@ func (s *groupStore) GetGroupsByOrganizationUnit(
 	return groups, nil
 }
 
+// AddGroupMembers adds members to a group.
+func (s *groupStore) AddGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	return addMembersToGroup(ctx, dbClient, groupID, members, s.deploymentID)
+}
+
+// RemoveGroupMembers removes members from a group.
+func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	for _, member := range members {
+		_, err := dbClient.ExecuteContext(
+			ctx, QueryDeleteGroupMember,
+			groupID, member.Type, member.ID, s.deploymentID,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to remove member from group: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // buildGroupFromResultRow constructs a GroupDAO from a database result row.
 func buildGroupFromResultRow(row map[string]interface{}) (GroupDAO, error) {
 	groupID, ok := row["group_id"].(string)
@@ -446,27 +473,6 @@ func addMembersToGroup(
 		if err != nil {
 			return fmt.Errorf("failed to add member to group: %w", err)
 		}
-	}
-	return nil
-}
-
-// updateGroupMembers updates the members assigned to the group by first deleting existing members and
-// then adding new ones.
-func updateGroupMembers(
-	ctx context.Context,
-	dbClient provider.DBClientInterface,
-	groupID string,
-	members []Member,
-	deploymentID string,
-) error {
-	_, err := dbClient.ExecuteContext(ctx, QueryDeleteGroupMembers, groupID, deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to delete existing group member assignments: %w", err)
-	}
-
-	err = addMembersToGroup(ctx, dbClient, groupID, members, deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to assign members to group: %w", err)
 	}
 	return nil
 }

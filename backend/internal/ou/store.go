@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -33,6 +34,7 @@ const storeLoggerComponentName = "OrganizationUnitStore"
 type organizationUnitStoreInterface interface {
 	GetOrganizationUnitListCount() (int, error)
 	GetOrganizationUnitList(limit, offset int) ([]OrganizationUnitBasic, error)
+	GetOrganizationUnitsByIDs(ids []string) ([]OrganizationUnitBasic, error)
 	CreateOrganizationUnit(ou OrganizationUnit) error
 	GetOrganizationUnit(id string) (OrganizationUnit, error)
 	GetOrganizationUnitByPath(handles []string) (OrganizationUnit, error)
@@ -113,11 +115,52 @@ func (s *organizationUnitStore) GetOrganizationUnitList(limit, offset int) ([]Or
 	return ous, nil
 }
 
+// GetOrganizationUnitsByIDs retrieves organization units matching the given IDs.
+func (s *organizationUnitStore) GetOrganizationUnitsByIDs(ids []string) ([]OrganizationUnitBasic, error) {
+	if len(ids) == 0 {
+		return []OrganizationUnitBasic{}, nil
+	}
+
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetOrganizationUnitsByIDsQuery(ids)
+	args := make([]interface{}, 0, len(ids)+1)
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	args = append(args, s.deploymentID)
+
+	results, err := dbClient.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	ous := make([]OrganizationUnitBasic, 0, len(results))
+	for _, row := range results {
+		ou, err := buildOrganizationUnitBasicFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build organization unit basic: %w", err)
+		}
+		ous = append(ous, ou)
+	}
+
+	return ous, nil
+}
+
 // CreateOrganizationUnit creates a new organization unit in the database.
 func (s *organizationUnitStore) CreateOrganizationUnit(ou OrganizationUnit) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	// Serialize OU Metadata data
+	ouMetadataBytes, err := getOUMetadataDataBytes(&ou)
+	if err != nil {
+		return fmt.Errorf("failed to serialize OU Metadata: %w", err)
 	}
 
 	_, err = dbClient.Execute(
@@ -129,7 +172,7 @@ func (s *organizationUnitStore) CreateOrganizationUnit(ou OrganizationUnit) erro
 		ou.Description,
 		ou.ThemeID,
 		ou.LayoutID,
-		ou.LogoURL,
+		string(ouMetadataBytes),
 		s.deploymentID,
 	)
 	if err != nil {
@@ -251,6 +294,12 @@ func (s *organizationUnitStore) UpdateOrganizationUnit(ou OrganizationUnit) erro
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	// Serialize OU Metadata data
+	ouMetadataBytes, err := getOUMetadataDataBytes(&ou)
+	if err != nil {
+		return fmt.Errorf("failed to serialize OU Metadata: %w", err)
+	}
+
 	_, err = dbClient.Execute(
 		queryUpdateOrganizationUnit,
 		ou.ID,
@@ -260,7 +309,7 @@ func (s *organizationUnitStore) UpdateOrganizationUnit(ou OrganizationUnit) erro
 		ou.Description,
 		ou.ThemeID,
 		ou.LayoutID,
-		ou.LogoURL,
+		string(ouMetadataBytes),
 		s.deploymentID,
 	)
 	if err != nil {
@@ -565,15 +614,45 @@ func buildOrganizationUnitFromResultRow(
 		}
 	}
 
+	// Extract OU Metadata data
+	ouMetadataData, err := parseOUMetadata(row)
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to parse OU Metadata: %w", err)
+	}
+
+	// Extract fields from OU Metadata
+	logoURL, err := extractStringFromOUMetadata(ouMetadataData, "logo_url")
+	if err != nil {
+		return OrganizationUnit{}, err
+	}
+
+	tosURI, err := extractStringFromOUMetadata(ouMetadataData, "tos_uri")
+	if err != nil {
+		return OrganizationUnit{}, err
+	}
+
+	policyURI, err := extractStringFromOUMetadata(ouMetadataData, "policy_uri")
+	if err != nil {
+		return OrganizationUnit{}, err
+	}
+
+	cookiePolicyURI, err := extractStringFromOUMetadata(ouMetadataData, "cookie_policy_uri")
+	if err != nil {
+		return OrganizationUnit{}, err
+	}
+
 	return OrganizationUnit{
-		ID:          ou.ID,
-		Handle:      ou.Handle,
-		Name:        ou.Name,
-		Description: ou.Description,
-		Parent:      parentID,
-		ThemeID:     themeID,
-		LayoutID:    layoutID,
-		LogoURL:     ou.LogoURL,
+		ID:              ou.ID,
+		Handle:          ou.Handle,
+		Name:            ou.Name,
+		Description:     ou.Description,
+		Parent:          parentID,
+		ThemeID:         themeID,
+		LayoutID:        layoutID,
+		LogoURL:         logoURL,
+		TosURI:          tosURI,
+		PolicyURI:       policyURI,
+		CookiePolicyURI: cookiePolicyURI,
 	}, nil
 }
 
@@ -610,4 +689,62 @@ func (s *organizationUnitStore) checkConflict(
 	}
 
 	return false, nil
+}
+
+// getOUMetadataDataBytes constructs the JSON data bytes for the organization unit.
+func getOUMetadataDataBytes(ou *OrganizationUnit) ([]byte, error) {
+	jsonData := map[string]interface{}{
+		"logo_url":          ou.LogoURL,
+		"tos_uri":           ou.TosURI,
+		"policy_uri":        ou.PolicyURI,
+		"cookie_policy_uri": ou.CookiePolicyURI,
+	}
+
+	jsonBytes, err := json.Marshal(jsonData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal OU Metadata: %w", err)
+	}
+
+	return jsonBytes, nil
+}
+
+// parseOUMetadata parses the OU Metadata from the database result row.
+func parseOUMetadata(row map[string]interface{}) (map[string]interface{}, error) {
+	ouMetadataInterface, exists := row["metadata"]
+	if !exists || ouMetadataInterface == nil {
+		return map[string]interface{}{}, nil
+	}
+
+	var ouMetadataStr string
+	switch v := ouMetadataInterface.(type) {
+	case string:
+		ouMetadataStr = v
+	case []byte:
+		ouMetadataStr = string(v)
+	default:
+		return nil, fmt.Errorf("failed to parse metadata as string or []byte, got type: %T", ouMetadataInterface)
+	}
+
+	if ouMetadataStr == "" {
+		return map[string]interface{}{}, nil
+	}
+
+	var ouMetadataData map[string]interface{}
+	if err := json.Unmarshal([]byte(ouMetadataStr), &ouMetadataData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal OU Metadata: %w", err)
+	}
+
+	return ouMetadataData, nil
+}
+
+// extractStringFromOUMetadata extracts a string value from OU Metadata data,
+// returns empty string if not found or invalid.
+func extractStringFromOUMetadata(data map[string]interface{}, key string) (string, error) {
+	if data[key] == nil {
+		return "", nil
+	}
+	if str, ok := data[key].(string); ok {
+		return str, nil
+	}
+	return "", fmt.Errorf("failed to parse %s from OU Metadata", key)
 }

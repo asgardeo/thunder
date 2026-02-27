@@ -17,7 +17,7 @@
  */
 
 import {useNavigate} from 'react-router';
-import {Box, Stack, Typography, Button} from '@wso2/oxygen-ui';
+import {Button, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -29,17 +29,12 @@ export default function UserTypesListPage() {
   const logger = useLogger('UserTypesListPage');
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            {t('userTypes:title')}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {t('userTypes:createDescription')}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2}>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.Header>{t('userTypes:title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('userTypes:subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
           <Button
             variant="contained"
             startIcon={<Plus size={18} />}
@@ -55,9 +50,10 @@ export default function UserTypesListPage() {
           >
             {t('userTypes:createUserType')}
           </Button>
-        </Stack>
-      </Stack>
+        </PageTitle.Actions>
+      </PageTitle>
+
       <UserTypesList />
-    </Box>
+    </PageContent>
   );
 }

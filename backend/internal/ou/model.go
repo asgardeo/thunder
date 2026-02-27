@@ -30,25 +30,31 @@ type OrganizationUnitBasic struct {
 
 // OrganizationUnit represents an organization unit.
 type OrganizationUnit struct {
-	ID          string  `json:"id" yaml:"id"`
-	Handle      string  `json:"handle" yaml:"handle"`
-	Name        string  `json:"name" yaml:"name"`
-	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
-	Parent      *string `json:"parent" yaml:"parent"`
-	ThemeID     string  `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
-	LayoutID    string  `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
-	LogoURL     string  `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
+	ID              string  `json:"id" yaml:"id"`
+	Handle          string  `json:"handle" yaml:"handle"`
+	Name            string  `json:"name" yaml:"name"`
+	Description     string  `json:"description,omitempty" yaml:"description,omitempty"`
+	Parent          *string `json:"parent" yaml:"parent"`
+	ThemeID         string  `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty" yaml:"cookie_policy_uri,omitempty"`
 }
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.
 type OrganizationUnitRequest struct {
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent"`
-	ThemeID     string  `json:"theme_id,omitempty"`
-	LayoutID    string  `json:"layout_id,omitempty"`
-	LogoURL     string  `json:"logo_url,omitempty"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent"`
+	ThemeID         string  `json:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
 }
 
 // Link represents a pagination link.

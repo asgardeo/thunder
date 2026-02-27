@@ -44,6 +44,9 @@ const AuthSchemeBasic = "Basic "
 // ContentTypeJSON is the content type for JSON data.
 const ContentTypeJSON = "application/json"
 
+// ContentTypeJWT is the content type for JWT data.
+const ContentTypeJWT = "application/jwt"
+
 // ContentTypeFormURLEncoded is the content type for form-urlencoded data.
 const ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
 

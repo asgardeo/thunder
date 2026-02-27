@@ -35,20 +35,19 @@ func TestAuthContextSuite(t *testing.T) {
 
 const (
 	testModifiedValue = "modified"
+	testUserID        = "user123"
 )
 
 func (s *SecurityContextTestSuite) TestNewSecurityContext() {
-	userID := "user123"
+	userID := testUserID
 	ouID := "ou456"
-	appID := "app789"
 	token := "test-token-123"
 	attributes := map[string]interface{}{
 		"sub":   userID,
-		"scope": "users:read users:write",
 		"roles": []string{"admin", "user"},
 	}
 
-	authCtx := newSecurityContext(userID, ouID, appID, token, attributes)
+	authCtx := newSecurityContext(userID, ouID, token, nil, attributes)
 
 	if authCtx == nil {
 		s.T().Fatal("Expected non-nil SecurityContext")
@@ -57,22 +56,18 @@ func (s *SecurityContextTestSuite) TestNewSecurityContext() {
 	// Access the context through the getter methods
 	ctx := withSecurityContext(context.Background(), authCtx)
 
-	if GetUserID(ctx) != userID {
-		s.T().Errorf("Expected userID %s, got %s", userID, GetUserID(ctx))
+	if GetSubject(ctx) != userID {
+		s.T().Errorf("Expected userID %s, got %s", userID, GetSubject(ctx))
 	}
 
 	if GetOUID(ctx) != ouID {
 		s.T().Errorf("Expected ouID %s, got %s", ouID, GetOUID(ctx))
 	}
-
-	if GetAppID(ctx) != appID {
-		s.T().Errorf("Expected appID %s, got %s", appID, GetAppID(ctx))
-	}
 }
 
 func (s *SecurityContextTestSuite) TestWithSecurityContext_NilContext() {
-	authCtx := newSecurityContext("user123", "ou456", "app789", "token", map[string]interface{}{
-		"sub": "user123",
+	authCtx := newSecurityContext(testUserID, "ou456", "token", nil, map[string]interface{}{
+		"sub": testUserID,
 	})
 
 	ctx := withSecurityContext(nil, authCtx) //nolint:staticcheck // Testing nil context handling
@@ -81,7 +76,7 @@ func (s *SecurityContextTestSuite) TestWithSecurityContext_NilContext() {
 		s.T().Fatal("Expected non-nil context")
 	}
 
-	if GetUserID(ctx) != "user123" {
+	if GetSubject(ctx) != testUserID {
 		s.T().Error("Expected userID to be accessible from context created with nil base")
 	}
 }
@@ -94,7 +89,7 @@ func (s *SecurityContextTestSuite) TestWithSecurityContext_NilAuthContext() {
 	}
 
 	// Should return empty values when no auth context is set
-	if GetUserID(ctx) != "" {
+	if GetSubject(ctx) != "" {
 		s.T().Error("Expected empty userID when SecurityContext is nil")
 	}
 }
@@ -108,10 +103,10 @@ func (s *SecurityContextTestSuite) TestGetUserID() {
 		{
 			name: "Valid security context",
 			setup: func() context.Context {
-				authCtx := newSecurityContext("user123", "ou456", "app789", "token", nil)
+				authCtx := newSecurityContext(testUserID, "ou456", "token", nil, nil)
 				return withSecurityContext(context.Background(), authCtx)
 			},
-			expected: "user123",
+			expected: testUserID,
 		},
 		{
 			name: "Nil context",
@@ -137,7 +132,7 @@ func (s *SecurityContextTestSuite) TestGetUserID() {
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
 			ctx := tt.setup()
-			userID := GetUserID(ctx)
+			userID := GetSubject(ctx)
 			if userID != tt.expected {
 				t.Errorf("Expected userID %s, got %s", tt.expected, userID)
 			}
@@ -147,10 +142,6 @@ func (s *SecurityContextTestSuite) TestGetUserID() {
 
 func (s *SecurityContextTestSuite) TestGetOUID() {
 	s.testContextGetter("ouID", "ou456", GetOUID)
-}
-
-func (s *SecurityContextTestSuite) TestGetAppID() {
-	s.testContextGetter("appID", "app789", GetAppID)
 }
 
 // testContextGetter is a helper function to test context getter functions
@@ -164,7 +155,7 @@ func (s *SecurityContextTestSuite) testContextGetter(fieldName, expectedValue st
 		{
 			name: "Valid security context",
 			setup: func() context.Context {
-				authCtx := newSecurityContext("user123", "ou456", "app789", "token", nil)
+				authCtx := newSecurityContext(testUserID, "ou456", "token", nil, nil)
 				return withSecurityContext(context.Background(), authCtx)
 			},
 			expected: expectedValue,
@@ -205,7 +196,7 @@ func (s *SecurityContextTestSuite) TestGetAttribute() {
 		"nil_attribute": nil,
 	}
 
-	authCtx := newSecurityContext("user", "ou", "app", "token", attributes)
+	authCtx := newSecurityContext("user", "ou", "token", nil, attributes)
 	ctx := withSecurityContext(context.Background(), authCtx)
 
 	tests := []struct {
@@ -351,9 +342,147 @@ func (s *SecurityContextTestSuite) TestGetAttribute() {
 	})
 }
 
+func (s *SecurityContextTestSuite) TestGetPermissions() {
+	tests := []struct {
+		name                string
+		setup               func() context.Context
+		expectedPermissions []string
+	}{
+		{
+			name: "With permissions set",
+			setup: func() context.Context {
+				authCtx := newSecurityContext("user", "ou", "token",
+					[]string{"users:read", "users:write"}, nil)
+				return withSecurityContext(context.Background(), authCtx)
+			},
+			expectedPermissions: []string{"users:read", "users:write"},
+		},
+		{
+			name: "With empty permissions",
+			setup: func() context.Context {
+				authCtx := newSecurityContext("user", "ou", "token", []string{}, nil)
+				return withSecurityContext(context.Background(), authCtx)
+			},
+			expectedPermissions: []string{},
+		},
+		{
+			name: "With nil permissions",
+			setup: func() context.Context {
+				authCtx := newSecurityContext("user", "ou", "token", nil, nil)
+				return withSecurityContext(context.Background(), authCtx)
+			},
+			expectedPermissions: []string{},
+		},
+		{
+			name: "Nil security context",
+			setup: func() context.Context {
+				return withSecurityContext(context.Background(), nil)
+			},
+			expectedPermissions: []string{},
+		},
+		{
+			name:                "Context without security context",
+			setup:               context.Background,
+			expectedPermissions: []string{},
+		},
+		{
+			name: "Nil context",
+			setup: func() context.Context {
+				return nil
+			},
+			expectedPermissions: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		s.T().Run(tt.name, func(t *testing.T) {
+			ctx := tt.setup()
+			permissions := GetPermissions(ctx)
+			if len(permissions) != len(tt.expectedPermissions) {
+				t.Errorf("Expected %v permissions, got %v", tt.expectedPermissions, permissions)
+				return
+			}
+			permSet := make(map[string]struct{}, len(permissions))
+			for _, p := range permissions {
+				permSet[p] = struct{}{}
+			}
+			for _, expected := range tt.expectedPermissions {
+				if _, ok := permSet[expected]; !ok {
+					t.Errorf("Expected permission %q not found in %v", expected, permissions)
+				}
+			}
+		})
+	}
+}
+
+func (s *SecurityContextTestSuite) TestIsSecuritySkipped() {
+	tests := []struct {
+		name     string
+		setup    func() context.Context
+		expected bool
+	}{
+		{
+			name:     "Nil context",
+			setup:    func() context.Context { return nil },
+			expected: false,
+		},
+		{
+			name:     "Plain background context",
+			setup:    context.Background,
+			expected: false,
+		},
+		{
+			name: "Context with securitySkipped marker",
+			setup: func() context.Context {
+				return withSecuritySkipped(context.Background())
+			},
+			expected: true,
+		},
+		{
+			name: "Context with normal security context only",
+			setup: func() context.Context {
+				authCtx := newSecurityContext("user", "ou", "token", nil, nil)
+				return withSecurityContext(context.Background(), authCtx)
+			},
+			expected: false,
+		},
+		{
+			name: "Context with both security context and skipped marker",
+			setup: func() context.Context {
+				authCtx := newSecurityContext("user", "ou", "token", nil, nil)
+				ctx := withSecurityContext(context.Background(), authCtx)
+				return withSecuritySkipped(ctx)
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		s.T().Run(tt.name, func(t *testing.T) {
+			ctx := tt.setup()
+			result := IsSecuritySkipped(ctx)
+			if result != tt.expected {
+				t.Errorf("Expected IsSecuritySkipped=%v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+func (s *SecurityContextTestSuite) TestWithSecuritySkipped_NilContext() {
+	ctx := withSecuritySkipped(nil) //nolint:staticcheck // Testing nil context handling
+
+	if ctx == nil {
+		s.T().Fatal("Expected non-nil context")
+	}
+
+	if !IsSecuritySkipped(ctx) {
+		s.T().Error("Expected IsSecuritySkipped to be true for context created with nil base")
+	}
+}
+
 func (s *SecurityContextTestSuite) TestGetSecurityContext() {
 	s.T().Run("Valid security context", func(t *testing.T) {
-		authCtx := newSecurityContext("user", "ou", "app", "token", nil)
+		authCtx := newSecurityContext("user", "ou", "token", nil, nil)
 		ctx := withSecurityContext(context.Background(), authCtx)
 
 		retrievedCtx := getSecurityContext(ctx)
@@ -362,7 +491,7 @@ func (s *SecurityContextTestSuite) TestGetSecurityContext() {
 		}
 
 		// Verify it's the same context by checking user ID
-		if GetUserID(ctx) != "user" {
+		if GetSubject(ctx) != "user" {
 			t.Error("Retrieved context doesn't match original")
 		}
 	})
@@ -387,6 +516,50 @@ func (s *SecurityContextTestSuite) TestGetSecurityContext() {
 		retrievedCtx := getSecurityContext(ctx)
 		if retrievedCtx != nil {
 			t.Error("Expected nil security context for context with wrong type")
+		}
+	})
+}
+
+func (s *SecurityContextTestSuite) TestWithRuntimeContext() {
+	s.T().Run("Marks context as runtime", func(t *testing.T) {
+		ctx := WithRuntimeContext(context.Background())
+		if !IsRuntimeContext(ctx) {
+			t.Error("Expected IsRuntimeContext to return true after WithRuntimeContext")
+		}
+	})
+
+	s.T().Run("Non-runtime context returns false", func(t *testing.T) {
+		ctx := context.Background()
+		if IsRuntimeContext(ctx) {
+			t.Error("Expected IsRuntimeContext to return false for plain context")
+		}
+	})
+
+	s.T().Run("Nil context returns false", func(t *testing.T) {
+		if IsRuntimeContext(nil) { //nolint:staticcheck // Testing nil context handling
+			t.Error("Expected IsRuntimeContext to return false for nil context")
+		}
+	})
+
+	s.T().Run("Nil base context uses background", func(t *testing.T) {
+		ctx := WithRuntimeContext(nil) //nolint:staticcheck // Testing nil context handling
+		if ctx == nil {
+			t.Fatal("Expected non-nil context from WithRuntimeContext(nil)")
+		}
+		if !IsRuntimeContext(ctx) {
+			t.Error("Expected IsRuntimeContext to return true after WithRuntimeContext(nil)")
+		}
+	})
+
+	s.T().Run("Preserves existing security context values", func(t *testing.T) {
+		authCtx := newSecurityContext(testUserID, "ou456", "token", nil, nil)
+		base := withSecurityContext(context.Background(), authCtx)
+		ctx := WithRuntimeContext(base)
+		if !IsRuntimeContext(ctx) {
+			t.Error("Expected IsRuntimeContext to return true")
+		}
+		if GetSubject(ctx) != testUserID {
+			t.Errorf("Expected subject '%s', got '%s'", testUserID, GetSubject(ctx))
 		}
 	})
 }

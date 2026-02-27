@@ -17,11 +17,13 @@
  */
 
 import {Navigate, type RouteProps} from 'react-router';
+import {CallbackRoute} from '@asgardeo/react-router';
 import ROUTES from '../constants/routes';
 import DefaultLayout from '../layouts/DefaultLayout';
 import SignInPage from '../pages/SignInPage';
 import SignUpPage from '../pages/SignUpPage';
 import AcceptInvitePage from '../pages/AcceptInvitePage';
+import ErrorPage from '../pages/ErrorPage';
 
 /**
  * Interface representing an application route configuration.
@@ -62,6 +64,8 @@ const appRoutes: AppRoute[] = [
       {path: ROUTES.AUTH.SIGN_IN, element: <SignInPage />},
       {path: ROUTES.AUTH.SIGN_UP, element: <SignUpPage />},
       {path: ROUTES.AUTH.INVITE, element: <AcceptInvitePage />},
+      {path: ROUTES.AUTH.CALLBACK, element: <CallbackRoute />},
+      {path: ROUTES.AUTH.ERROR, element: <ErrorPage />},
     ],
   },
 ];

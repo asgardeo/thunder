@@ -29,7 +29,7 @@ import (
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -59,9 +59,9 @@ type oidcAuthnService struct {
 
 // newOIDCAuthnService creates a new instance of OIDC authenticator service.
 func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
+	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
-	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userSvc)
+	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userProvider)
 
 	service := &oidcAuthnService{
 		internal:   internal,
@@ -77,9 +77,9 @@ func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
 // [Deprecated: use dependency injection to get the instance instead].
 // TODO: Should be removed when executors are migrated to di pattern.
 func NewOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
+	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
-	return newOIDCAuthnService(httpClient, idpSvc, userSvc, jwtSvc)
+	return newOIDCAuthnService(httpClient, idpSvc, userProvider, jwtSvc)
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
@@ -206,7 +206,7 @@ func (s *oidcAuthnService) FetchUserInfo(idpID, accessToken string) (
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oidcAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
+func (s *oidcAuthnService) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
 	return s.internal.GetInternalUser(sub)
 }
 

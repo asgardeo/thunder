@@ -29,12 +29,15 @@ type PromptNodeInterface interface {
 	NodeInterface
 	GetPrompts() []common.Prompt
 	SetPrompts(prompts []common.Prompt)
+	GetMeta() interface{}
+	SetMeta(meta interface{})
 }
 
 // promptNode represents a node that prompts for user input/ action in the flow execution.
 type promptNode struct {
 	*node
 	prompts []common.Prompt
+	meta    interface{}
 	logger  *log.Logger
 }
 
@@ -78,36 +81,23 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 		}
 	}
 
-	hasAllInputs := n.hasRequiredInputs(ctx, nodeResp)
-	hasAction := n.hasSelectedAction(ctx, nodeResp)
+	if n.resolvePromptInputs(ctx, nodeResp) {
+		logger.Debug("All required inputs and action are available, returning complete status")
 
-	if hasAllInputs {
-		// If inputs are satisfied but no action selected, try to auto-select single action
-		if !hasAction && n.tryAutoSelectSingleAction(ctx) {
-			hasAction = true
-			// Clear actions from response since we auto-selected
-			nodeResp.Actions = make([]common.Action, 0)
-		}
-
-		// If both inputs and action are satisfied, complete the node
-		if hasAction {
-			logger.Debug("All required inputs and action are available, returning complete status")
-
-			if ctx.CurrentAction != "" {
-				if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction, logger); nextNode != "" {
-					nodeResp.NextNodeID = nextNode
-				} else {
-					logger.Debug("Invalid action selected", log.String("actionRef", ctx.CurrentAction))
-					nodeResp.Status = common.NodeStatusFailure
-					nodeResp.FailureReason = "Invalid action selected"
-					return nodeResp, nil
-				}
+		if ctx.CurrentAction != "" {
+			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction, logger); nextNode != "" {
+				nodeResp.NextNodeID = nextNode
+			} else {
+				logger.Debug("Invalid action selected", log.String("actionRef", ctx.CurrentAction))
+				nodeResp.Status = common.NodeStatusFailure
+				nodeResp.FailureReason = "Invalid action selected"
+				return nodeResp, nil
 			}
-
-			nodeResp.Status = common.NodeStatusComplete
-			nodeResp.Type = ""
-			return nodeResp, nil
 		}
+
+		nodeResp.Status = common.NodeStatusComplete
+		nodeResp.Type = ""
+		return nodeResp, nil
 	}
 
 	// If required inputs or action is not yet available, prompt for user interaction
@@ -132,6 +122,40 @@ func (n *promptNode) GetPrompts() []common.Prompt {
 // SetPrompts sets the prompts for the prompt node
 func (n *promptNode) SetPrompts(prompts []common.Prompt) {
 	n.prompts = prompts
+}
+
+// GetMeta returns the meta object for the prompt node
+func (n *promptNode) GetMeta() interface{} {
+	return n.meta
+}
+
+// SetMeta sets the meta object for the prompt node
+func (n *promptNode) SetMeta(meta interface{}) {
+	n.meta = meta
+}
+
+// resolvePromptInputs resolves the inputs and actions for the prompt node.
+// It checks for missing required inputs, validates action selection, attempts auto-selection
+// if applicable, and enriches inputs with dynamic data from ForwardedData.
+// Returns true if all required inputs are available and a valid action is selected, otherwise false.
+func (n *promptNode) resolvePromptInputs(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
+	// Check for required inputs and collect missing ones
+	hasAllInputs := n.hasRequiredInputs(ctx, nodeResp)
+
+	// Enrich inputs from ForwardedData
+	n.enrichInputsFromForwardedData(ctx, nodeResp)
+
+	// Check for action selection
+	hasAction := n.hasSelectedAction(ctx, nodeResp)
+
+	// If inputs are satisfied but no action selected, try to auto-select single action
+	if hasAllInputs && !hasAction && n.tryAutoSelectSingleAction(ctx) {
+		hasAction = true
+		// Clear actions from response since we auto-selected
+		nodeResp.Actions = make([]common.Action, 0)
+	}
+
+	return hasAllInputs && hasAction
 }
 
 // hasRequiredInputs checks if all required inputs are available in the context. Adds missing
@@ -185,6 +209,46 @@ func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.Node
 	}
 
 	return requireInputs
+}
+
+// enrichInputsFromForwardedData enriches the inputs in the node response with dynamic data
+// from ForwardedData. Currently only enriches Options for inputs that match by Identifier.
+func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *common.NodeResponse) {
+	if ctx.ForwardedData == nil || len(nodeResp.Inputs) == 0 {
+		return
+	}
+
+	// Check if ForwardedData contains inputs
+	forwardedInputsData, ok := ctx.ForwardedData[common.ForwardedDataKeyInputs]
+	if !ok {
+		return
+	}
+
+	// Type assert to []common.Input
+	forwardedInputs, ok := forwardedInputsData.([]common.Input)
+	if !ok {
+		n.logger.Debug("ForwardedData contains 'inputs' key but value is not []common.Input, skipping enrichment")
+		return
+	}
+
+	// Build a map of forwarded inputs by Identifier for quick lookup
+	forwardedInputMap := make(map[string]common.Input)
+	for _, fwdInput := range forwardedInputs {
+		forwardedInputMap[fwdInput.Identifier] = fwdInput
+	}
+
+	// Enrich each prompt input with data from matching forwarded input
+	for i := range nodeResp.Inputs {
+		if fwdInput, found := forwardedInputMap[nodeResp.Inputs[i].Identifier]; found {
+			// Only enrich Options - do not overwrite other fields like Ref, Type, Required
+			if len(fwdInput.Options) > 0 {
+				nodeResp.Inputs[i].Options = fwdInput.Options
+				n.logger.Debug("Enriched input with options from ForwardedData",
+					log.String("identifier", nodeResp.Inputs[i].Identifier),
+					log.Int("optionsCount", len(fwdInput.Options)))
+			}
+		}
+	}
 }
 
 // hasSelectedAction checks if a valid action has been selected when actions are defined. Adds actions

@@ -57,18 +57,12 @@ func JoinScopes(scopes []string) string {
 }
 
 // resolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
-// Both access and ID tokens use the same OAuth-level issuer.
 func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
 	conf := config.GetThunderRuntime().Config
 
 	tokenConfig := &TokenConfig{
 		Issuer:         conf.JWT.Issuer,
 		ValidityPeriod: conf.JWT.ValidityPeriod,
-	}
-
-	// Use OAuth-level issuer for all token types if app config is available
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.Issuer != "" {
-		tokenConfig.Issuer = oauthApp.Token.Issuer
 	}
 
 	// Override with token-type specific configuration if available
@@ -94,7 +88,7 @@ func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType
 	return tokenConfig
 }
 
-// extractStringClaim safely extracts a string claim from a claims map.
+// extractStringClaim safely extracts a non-empty string claim from a claims map.
 func extractStringClaim(claims map[string]interface{}, key string) (string, error) {
 	value, ok := claims[key]
 	if !ok {
@@ -104,6 +98,10 @@ func extractStringClaim(claims map[string]interface{}, key string) (string, erro
 	strValue, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("claim %s is not a string", key)
+	}
+
+	if strValue == "" {
+		return "", fmt.Errorf("claim %s is empty", key)
 	}
 
 	return strValue, nil
@@ -220,12 +218,13 @@ func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO
 // FetchUserAttributes fetches user attributes and merges default claims and groups into the return map.
 // Callers should log errors with their own context.
 func FetchUserAttributes(
+	ctx context.Context,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	userID string,
 	allowedClaims []string,
 ) (map[string]interface{}, error) {
-	userData, svcErr := userService.GetUser(context.TODO(), userID)
+	userData, svcErr := userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
 	}
@@ -263,7 +262,7 @@ func FetchUserAttributes(
 		// Only fetch OU details if ouHandle or ouName are requested
 		needsOUDetails := shouldInclude(constants.ClaimOUHandle) || shouldInclude(constants.ClaimOUName)
 		if needsOUDetails && ouService != nil {
-			ouDetails, ouErr := ouService.GetOrganizationUnit(userData.OrganizationUnit)
+			ouDetails, ouErr := ouService.GetOrganizationUnit(ctx, userData.OrganizationUnit)
 			if ouErr != nil {
 				return nil, fmt.Errorf("failed to fetch organization unit details: %s", ouErr.Error)
 			}
@@ -279,7 +278,7 @@ func FetchUserAttributes(
 
 	// Fetch and add groups if requested
 	if shouldInclude(constants.UserAttributeGroups) {
-		groups, svcErr := userService.GetUserGroups(context.TODO(), userID, constants.DefaultGroupListLimit, 0)
+		groups, svcErr := userService.GetUserGroups(ctx, userID, constants.DefaultGroupListLimit, 0)
 		if svcErr != nil {
 			return nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
 		}
@@ -308,7 +307,7 @@ func BuildClaims(
 	result := make(map[string]interface{})
 
 	// Check for openid scope first
-	hasOpenIDScope := slices.Contains(scopes, "openid")
+	hasOpenIDScope := slices.Contains(scopes, constants.ScopeOpenID)
 	if !hasOpenIDScope || userAttributes == nil {
 		return result
 	}

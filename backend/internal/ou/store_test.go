@@ -401,7 +401,8 @@ func TestBuildOrganizationUnitFromResultRow(t *testing.T) {
 			"parent_id":   nil,
 			"theme_id":    "theme-abc",
 			"layout_id":   "layout-def",
-			"logo_url":    "https://example.com/logo.png",
+			"metadata": `{"logo_url":"https://example.com/logo.png","tos_uri":""` +
+				`,"policy_uri":"","cookie_policy_uri":""}`,
 		}
 
 		ou, err := buildOrganizationUnitFromResultRow(row)
@@ -973,7 +974,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1008,7 +1009,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"https://example.com/logo.png",`+
+							`"policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1031,7 +1033,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("update failed")).
@@ -1491,7 +1493,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1522,7 +1524,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"https://example.com/logo.png",`+
+							`"policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1550,7 +1553,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("insert failed")).
@@ -1756,4 +1759,122 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			suite.Equal(tc.want, count)
 		})
 	}
+}
+
+func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByIDs() {
+	tests := []struct {
+		name          string
+		ids           []string
+		setup         func(ids []string)
+		assert        func(ous []OrganizationUnitBasic)
+		wantErrString string
+	}{
+		{
+			name: "success",
+			ids:  []string{"ou1", "ou2"},
+			setup: func(ids []string) {
+				suite.expectDBClient()
+				rows := []map[string]interface{}{
+					makeOUResultRow("ou1", "root1", "Root1", "desc1", nil),
+					makeOUResultRow("ou2", "root2", "Root2", "desc2", nil),
+				}
+				suite.dbClientMock.
+					On("Query", mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything, mock.Anything).
+					Return(rows, nil).
+					Once()
+			},
+			assert: func(ous []OrganizationUnitBasic) {
+				suite.Len(ous, 2)
+				suite.Equal("ou1", ous[0].ID)
+				suite.Equal("ou2", ous[1].ID)
+			},
+		},
+		{
+			name: "empty ids",
+			ids:  []string{},
+			assert: func(ous []OrganizationUnitBasic) {
+				suite.Len(ous, 0)
+			},
+		},
+		{
+			name: "query error",
+			ids:  []string{"ou1"},
+			setup: func(ids []string) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("Query", mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything).
+					Return(nil, errors.New("query error")).
+					Once()
+			},
+			wantErrString: "failed to execute query",
+		},
+		{
+			name: "builder error",
+			ids:  []string{"ou1"},
+			setup: func(ids []string) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("Query", mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything).
+					Return([]map[string]interface{}{{"ou_id": 123}}, nil).
+					Once()
+			},
+			wantErrString: "failed to build organization unit basic",
+		},
+		{
+			name: "db client error",
+			ids:  []string{"ou1"},
+			setup: func(ids []string) {
+				suite.providerMock.
+					On("GetUserDBClient").
+					Return(nil, errors.New("db err")).
+					Once()
+			},
+			wantErrString: "failed to get database client",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			if tc.setup != nil {
+				tc.setup(tc.ids)
+			}
+
+			ous, err := suite.store.GetOrganizationUnitsByIDs(tc.ids)
+
+			if tc.wantErrString != "" {
+				suite.Require().Error(err)
+				suite.Nil(ous)
+				suite.Contains(err.Error(), tc.wantErrString)
+				return
+			}
+
+			suite.Require().NoError(err)
+			if tc.assert != nil {
+				tc.assert(ous)
+			}
+		})
+	}
+}
+
+func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitDeclarative() {
+	suite.Run("returns false", func() {
+		suite.SetupTest()
+		res := suite.store.IsOrganizationUnitDeclarative("ou1")
+		suite.Require().False(res)
+	})
+}
+
+func (suite *OrganizationUnitStoreTestSuite) TestOUStore_buildGetOrganizationUnitsByIDsQuery() {
+	suite.Run("builds query with correct placeholders", func() {
+		ids := []string{"id1", "id2", "id3"}
+		query := buildGetOrganizationUnitsByIDsQuery(ids)
+
+		suite.Require().Equal("OUQ-OU_MGT-21", query.ID)
+		suite.Require().Contains(query.PostgresQuery, "$1, $2, $3")
+		suite.Require().Contains(query.PostgresQuery, "DEPLOYMENT_ID = $4")
+		suite.Require().Contains(query.SQLiteQuery, "?, ?, ?")
+		suite.Require().Contains(query.SQLiteQuery, "DEPLOYMENT_ID = ?")
+	})
 }

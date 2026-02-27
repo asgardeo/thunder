@@ -35,7 +35,7 @@ var (
 	// queryGetResourceServerByID retrieves a resource server by ID.
 	queryGetResourceServerByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-02",
-		Query: `SELECT ID, RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
+		Query: `SELECT RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
 			FROM RESOURCE_SERVER
 			WHERE RESOURCE_SERVER_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
@@ -43,7 +43,7 @@ var (
 	// queryGetResourceServerList retrieves a list of resource servers with pagination.
 	queryGetResourceServerList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-03",
-		Query: `SELECT ID, RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
+		Query: `SELECT RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
 			FROM RESOURCE_SERVER
 			WHERE DEPLOYMENT_ID = $3
 			ORDER BY CREATED_AT DESC
@@ -110,20 +110,20 @@ var (
 	// queryGetResourceByID retrieves a resource by ID.
 	queryGetResourceByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-11",
-		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
+			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
 			WHERE r.RESOURCE_ID = $1 AND r.RESOURCE_SERVER_ID = $2 AND r.DEPLOYMENT_ID = $3`,
 	}
 
 	// queryGetResourceList retrieves a list of resources with pagination.
 	queryGetResourceList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-12",
-		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
+			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
 			WHERE r.RESOURCE_SERVER_ID = $1 AND r.DEPLOYMENT_ID = $4
 			ORDER BY r.CREATED_AT DESC LIMIT $2 OFFSET $3`,
 	}
@@ -131,10 +131,10 @@ var (
 	// queryGetResourceListByParent retrieves resources by parent ID with pagination.
 	queryGetResourceListByParent = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-13",
-		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
+			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
 			WHERE r.RESOURCE_SERVER_ID = $1 AND r.PARENT_RESOURCE_ID = $2 AND r.DEPLOYMENT_ID = $5
 			ORDER BY r.CREATED_AT DESC LIMIT $3 OFFSET $4`,
 	}
@@ -142,10 +142,10 @@ var (
 	// queryGetResourceListByNullParent retrieves top-level resources with pagination.
 	queryGetResourceListByNullParent = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-14",
-		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-		        LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
+		        LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
 		        WHERE r.RESOURCE_SERVER_ID = $1 AND r.PARENT_RESOURCE_ID IS NULL AND r.DEPLOYMENT_ID = $4
 		        ORDER BY r.CREATED_AT DESC LIMIT $2 OFFSET $3`,
 	}
@@ -229,12 +229,13 @@ var (
 	queryCheckCircularDependency = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-23",
 		Query: `WITH RECURSIVE parent_hierarchy AS (
-			SELECT ID, RESOURCE_ID, PARENT_RESOURCE_ID, DEPLOYMENT_ID FROM RESOURCE 
+			SELECT RESOURCE_ID, PARENT_RESOURCE_ID, DEPLOYMENT_ID FROM RESOURCE
 			WHERE RESOURCE_ID = $1 AND DEPLOYMENT_ID = $3
 			UNION ALL
-			SELECT r.ID, r.RESOURCE_ID, r.PARENT_RESOURCE_ID, r.DEPLOYMENT_ID
+			SELECT r.RESOURCE_ID, r.PARENT_RESOURCE_ID, r.DEPLOYMENT_ID
 			FROM RESOURCE r
-			INNER JOIN parent_hierarchy ph ON ph.PARENT_RESOURCE_ID = r.ID AND ph.DEPLOYMENT_ID = r.DEPLOYMENT_ID
+			INNER JOIN parent_hierarchy ph ON ph.PARENT_RESOURCE_ID = r.RESOURCE_ID
+				AND ph.DEPLOYMENT_ID = r.DEPLOYMENT_ID
 		)
 		SELECT COUNT(*) as count FROM parent_hierarchy WHERE RESOURCE_ID = $2`,
 	}
@@ -254,7 +255,7 @@ var (
 	// queryGetActionByID retrieves an action by ID.
 	queryGetActionByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-25",
-		Query: `SELECT a.ID, a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
+		Query: `SELECT a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
 		        FROM ACTION a
 		        WHERE a.ACTION_ID = $1
 		          AND a.RESOURCE_SERVER_ID = $2
@@ -265,7 +266,7 @@ var (
 	// queryGetActionList retrieves actions with pagination.
 	queryGetActionList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-26",
-		Query: `SELECT a.ID, a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
+		Query: `SELECT a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
 		        FROM ACTION a
 		        WHERE a.RESOURCE_SERVER_ID = $1
 		          AND (a.RESOURCE_ID = $2 OR (a.RESOURCE_ID IS NULL AND $2 IS NULL))

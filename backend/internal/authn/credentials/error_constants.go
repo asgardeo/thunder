@@ -44,4 +44,11 @@ var (
 		Error:            "authentication failed",
 		ErrorDescription: "An error occurred while authenticating the user",
 	}
+	// ErrorInvalidToken is the error when the provided token is invalid.
+	ErrorInvalidToken = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUTH-CRED-1004",
+		Error:            "Invalid token",
+		ErrorDescription: "The provided token is invalid",
+	}
 )

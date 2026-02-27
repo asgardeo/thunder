@@ -86,7 +86,7 @@ var (
 	QueryAddMemberToGroup = dbmodel.DBQuery{
 		ID: "GRQ-GROUP_MGT-10",
 		Query: `INSERT INTO GROUP_MEMBER_REFERENCE (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) ` +
-			`VALUES ($1, $2, $3, $4)`,
+			`VALUES ($1, $2, $3, $4) ON CONFLICT (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) DO NOTHING`,
 	}
 
 	// QueryCheckGroupNameConflict is the query to check if a group name conflicts within the same organization unit.
@@ -113,6 +113,13 @@ var (
 		ID: "GRQ-GROUP_MGT-14",
 		Query: `SELECT GROUP_ID, OU_ID, NAME, DESCRIPTION FROM "GROUP" ` +
 			`WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
+	}
+
+	// QueryDeleteGroupMember is the query to delete a specific member from a group.
+	QueryDeleteGroupMember = dbmodel.DBQuery{
+		ID: "GRQ-GROUP_MGT-16",
+		Query: `DELETE FROM GROUP_MEMBER_REFERENCE ` +
+			`WHERE GROUP_ID = $1 AND MEMBER_TYPE = $2 AND MEMBER_ID = $3 AND DEPLOYMENT_ID = $4`,
 	}
 )
 

@@ -85,6 +85,7 @@ describe('TechnologyGuide', () => {
   const originalClipboard = navigator.clipboard;
 
   beforeEach(() => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     vi.clearAllMocks();
     mockWriteText.mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
@@ -97,6 +98,8 @@ describe('TechnologyGuide', () => {
   });
 
   afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
     Object.defineProperty(navigator, 'clipboard', {
       value: originalClipboard,
       writable: true,

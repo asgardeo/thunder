@@ -136,12 +136,8 @@ func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_Wit
 			// Execute
 			handler := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
 
-			// Assert
-			if tc.expectSecuritySkip {
-				assert.Nil(suite.T(), handler, "Handler should be nil when security is skipped")
-			} else {
-				assert.NotNil(suite.T(), handler, "Handler should not be nil when security is enabled")
-			}
+			// Assert - handler is always returned now, regardless of skip security flag
+			assert.NotNil(suite.T(), handler, "Handler should always be non-nil")
 
 			// Cleanup for next iteration
 			_ = os.Unsetenv("THUNDER_SKIP_SECURITY")
@@ -171,7 +167,7 @@ func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_Run
 	// Disable security
 	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
 	handler2 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-	assert.Nil(suite.T(), handler2, "Second handler should be nil when security is disabled")
+	assert.NotNil(suite.T(), handler2, "Second handler should not be nil (skipSecurity is handled internally)")
 
 	// Re-enable security
 	_ = os.Unsetenv("THUNDER_SKIP_SECURITY")

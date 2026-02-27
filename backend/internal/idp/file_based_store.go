@@ -19,6 +19,7 @@
 package idp
 
 import (
+	"context"
 	"errors"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -32,21 +33,21 @@ type idpFileBasedStore struct {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *idpFileBasedStore) Create(id string, data interface{}) error {
 	idp := data.(*IDPDTO)
-	return f.CreateIdentityProvider(*idp)
+	return f.CreateIdentityProvider(context.Background(), *idp)
 }
 
 // CreateIdentityProvider implements idpStoreInterface.
-func (f *idpFileBasedStore) CreateIdentityProvider(idp IDPDTO) error {
+func (f *idpFileBasedStore) CreateIdentityProvider(ctx context.Context, idp IDPDTO) error {
 	return f.GenericFileBasedStore.Create(idp.ID, &idp)
 }
 
 // DeleteIdentityProvider implements idpStoreInterface.
-func (f *idpFileBasedStore) DeleteIdentityProvider(id string) error {
+func (f *idpFileBasedStore) DeleteIdentityProvider(ctx context.Context, id string) error {
 	return errors.New("DeleteIdentityProvider is not supported in file-based store")
 }
 
 // GetIdentityProvider implements idpStoreInterface.
-func (f *idpFileBasedStore) GetIdentityProvider(idpID string) (*IDPDTO, error) {
+func (f *idpFileBasedStore) GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, error) {
 	data, err := f.GenericFileBasedStore.Get(idpID)
 	if err != nil {
 		return nil, ErrIDPNotFound
@@ -60,7 +61,7 @@ func (f *idpFileBasedStore) GetIdentityProvider(idpID string) (*IDPDTO, error) {
 }
 
 // GetIdentityProviderByName implements idpStoreInterface.
-func (f *idpFileBasedStore) GetIdentityProviderByName(idpName string) (*IDPDTO, error) {
+func (f *idpFileBasedStore) GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, error) {
 	data, err := f.GenericFileBasedStore.GetByField(idpName, func(d interface{}) string {
 		return d.(*IDPDTO).Name
 	})
@@ -71,7 +72,7 @@ func (f *idpFileBasedStore) GetIdentityProviderByName(idpName string) (*IDPDTO, 
 }
 
 // GetIdentityProviderList implements idpStoreInterface.
-func (f *idpFileBasedStore) GetIdentityProviderList() ([]BasicIDPDTO, error) {
+func (f *idpFileBasedStore) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -93,7 +94,7 @@ func (f *idpFileBasedStore) GetIdentityProviderList() ([]BasicIDPDTO, error) {
 }
 
 // UpdateIdentityProvider implements idpStoreInterface.
-func (f *idpFileBasedStore) UpdateIdentityProvider(idp *IDPDTO) error {
+func (f *idpFileBasedStore) UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error {
 	return errors.New("UpdateIdentityProvider is not supported in file-based store")
 }
 

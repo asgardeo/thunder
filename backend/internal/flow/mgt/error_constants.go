@@ -143,6 +143,13 @@ var (
 		Error:            "Graph build failure",
 		ErrorDescription: "Failed to build executable graph from flow definition",
 	}
+	// ErrorFlowDeclarativeReadOnly is the error returned when trying to modify a declarative (immutable) flow.
+	ErrorFlowDeclarativeReadOnly = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "FLM-1017",
+		Error:            "Flow is immutable",
+		ErrorDescription: "Declarative flows cannot be modified or deleted",
+	}
 )
 
 // Internal errors

@@ -67,7 +67,6 @@ describe('useUpdateApplication', () => {
           token_endpoint_auth_method: 'none',
           public_client: true,
           token: {
-            issuer: 'https://localhost:8090/oauth2/token',
             access_token: {
               validity_period: 3600,
               user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],

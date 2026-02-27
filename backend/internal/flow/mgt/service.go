@@ -63,6 +63,7 @@ type flowMgtService struct {
 	inferenceService flowInferenceServiceInterface
 	graphBuilder     graphBuilderInterface
 	executorRegistry executor.ExecutorRegistryInterface
+	compositeStore   *compositeFlowStore
 	logger           *log.Logger
 }
 
@@ -72,12 +73,14 @@ func newFlowMgtService(
 	inferenceService flowInferenceServiceInterface,
 	graphBuilder graphBuilderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	compositeStore *compositeFlowStore,
 ) FlowMgtServiceInterface {
 	return &flowMgtService{
 		store:            store,
 		inferenceService: inferenceService,
 		graphBuilder:     graphBuilder,
 		executorRegistry: executorRegistry,
+		compositeStore:   compositeStore,
 		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
@@ -137,11 +140,6 @@ func (s *flowMgtService) CreateFlow(flowDef *FlowDefinition) (
 	}
 	if exists {
 		return nil, &ErrorDuplicateFlowHandle
-	}
-
-	svcErr := s.applyExecutorDefaultMeta(flowDef)
-	if svcErr != nil {
-		return nil, svcErr
 	}
 
 	flowID, genErr := utils.GenerateUUIDv7()
@@ -231,6 +229,11 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 		return nil, &serviceerror.InternalServerError
 	}
 
+	// Prevent updating declarative (immutable) flows
+	if s.isFlowDeclarative(flowID) {
+		return nil, &ErrorFlowDeclarativeReadOnly
+	}
+
 	// Prevent changing the flow type
 	if existingFlow.FlowType != flowDef.FlowType {
 		return nil, &ErrorCannotUpdateFlowType
@@ -239,11 +242,6 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 	// Prevent changing the handle
 	if existingFlow.Handle != flowDef.Handle {
 		return nil, &ErrorHandleUpdateNotAllowed
-	}
-
-	svcErr := s.applyExecutorDefaultMeta(flowDef)
-	if svcErr != nil {
-		return nil, svcErr
 	}
 
 	updatedFlow, err := s.store.UpdateFlow(flowID, flowDef)
@@ -280,6 +278,11 @@ func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
 		}
 		logger.Error("Failed to get existing flow", log.Error(err))
 		return &serviceerror.InternalServerError
+	}
+
+	// Prevent deleting declarative (immutable) flows
+	if s.isFlowDeclarative(flowID) {
+		return &ErrorFlowDeclarativeReadOnly
 	}
 
 	err = s.store.DeleteFlow(flowID)
@@ -553,13 +556,6 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 		return
 	}
 
-	metaErr := s.applyExecutorDefaultMeta(regFlowDef)
-	if metaErr != nil {
-		logger.Error("Failed to apply executor default meta to inferred registration flow",
-			log.String("error", metaErr.Code))
-		return
-	}
-
 	regFlowID, uuidErr := utils.GenerateUUIDv7()
 	if uuidErr != nil {
 		logger.Error("Failed to generate UUID for inferred registration flow", log.Error(uuidErr))
@@ -575,41 +571,6 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 	logger.Debug("Successfully inferred and created registration flow",
 		log.String("authFlowName", authFlowDef.Name), log.String("regFlowID", regFlowID),
 		log.String("regFlowName", regFlowDef.Name))
-}
-
-// applyExecutorDefaultMeta applies default meta from executors to TASK_EXECUTION nodes.
-func (s *flowMgtService) applyExecutorDefaultMeta(flowDef *FlowDefinition) *serviceerror.ServiceError {
-	if s.executorRegistry == nil {
-		s.logger.Error("Executor registry is nil, cannot apply default meta")
-		return &serviceerror.InternalServerError
-	}
-
-	for i := range flowDef.Nodes {
-		node := &flowDef.Nodes[i]
-
-		if node.Type != string(common.NodeTypeTaskExecution) || node.Executor == nil {
-			continue
-		}
-		if node.Meta != nil {
-			s.logger.Debug("Node already has meta, skipping default meta application",
-				log.String("nodeID", node.ID), log.String("executorName", node.Executor.Name))
-			continue
-		}
-
-		exec, err := s.executorRegistry.GetExecutor(node.Executor.Name)
-		if err != nil {
-			s.logger.Error("Failed to get executor for default meta application",
-				log.String("nodeID", node.ID), log.String("executorName", node.Executor.Name), log.Error(err))
-			return &serviceerror.InternalServerError
-		}
-
-		meta := exec.GetDefaultMeta()
-		if meta != nil {
-			node.Meta = meta
-		}
-	}
-
-	return nil
 }
 
 // hasPasskeyRegistrationModes checks if the flow contains PasskeyAuthExecutor with both
@@ -634,4 +595,30 @@ func (s *flowMgtService) hasPasskeyRegistrationModes(flowDef *FlowDefinition) bo
 	}
 
 	return hasRegStart && hasRegFinish
+}
+
+// isFlowDeclarative checks if a flow is declarative (read-only from file store).
+// Returns true only if the flow exists in the file store but NOT in the database store.
+// Database flows take precedence - if a flow exists in both stores, it's treated as mutable (not declarative).
+func (s *flowMgtService) isFlowDeclarative(flowID string) bool {
+	if s.compositeStore == nil {
+		return false
+	}
+
+	// Check DB store first - if flow exists in DB, it's mutable (not declarative)
+	if s.compositeStore.dbStore != nil {
+		_, err := s.compositeStore.dbStore.GetFlowByID(flowID)
+		if err == nil {
+			// Flow exists in DB, so it's mutable (not declarative)
+			return false
+		}
+	}
+
+	// Flow not in DB, check if it exists in file store
+	if s.compositeStore.fileStore != nil {
+		_, err := s.compositeStore.fileStore.GetFlowByID(flowID)
+		return err == nil
+	}
+
+	return false
 }

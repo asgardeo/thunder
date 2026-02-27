@@ -428,6 +428,14 @@ func (suite *UserStoreTestSuite) TestUpdateUser() {
 	suite.NoError(err)
 }
 
+func (suite *UserStoreTestSuite) TestGetUserListCountByOUIDs_EmptyOUIDs() {
+	// No DB call should be made when the OU slice is empty.
+	count, err := suite.store.GetUserListCountByOUIDs(context.Background(), []string{}, nil)
+	suite.NoError(err)
+	suite.Equal(0, count)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
 func (suite *UserStoreTestSuite) TestGetUserList() {
 	limit := 10
 	offset := 0

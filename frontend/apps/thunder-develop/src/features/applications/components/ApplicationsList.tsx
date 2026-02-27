@@ -19,20 +19,8 @@
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
-import {
-  Box,
-  Avatar,
-  Chip,
-  IconButton,
-  Typography,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  DataGrid,
-  useTheme,
-} from '@wso2/oxygen-ui';
-import {AppWindow, EllipsisVertical, Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Box, Avatar, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
+import {AppWindow, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../api/useGetApplications';
@@ -48,95 +36,67 @@ export default function ApplicationsList(): JSX.Element {
   const dataGridLocaleText = useDataGridLocaleText();
   const {data, isLoading, error} = useGetApplications();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, appId: string) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+  const handleDeleteClick = useCallback((appId: string): void => {
     setSelectedAppId(appId);
+    setDeleteDialogOpen(true);
   }, []);
 
-  const handleMenuClose = (): void => {
-    setAnchorEl(null);
-  };
-
-  const handleDeleteClick = (): void => {
-    handleMenuClose();
-    setDeleteDialogOpen(true);
-  };
+  const handleEditClick = useCallback(
+    (appId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/applications/${appId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to application', {error: _error, applicationId: appId});
+      });
+    },
+    [logger, navigate],
+  );
 
   const handleDeleteDialogClose = (): void => {
     setDeleteDialogOpen(false);
     setSelectedAppId(null);
   };
 
-  const handleViewClick = (): void => {
-    handleMenuClose();
-    if (selectedAppId) {
-      (async (): Promise<void> => {
-        await navigate(`/applications/${selectedAppId}`);
-      })().catch((_error: unknown) => {
-        logger.error('Failed to navigate to application details', {error: _error, applicationId: selectedAppId});
-      });
-    }
-  };
-
   const columns: DataGrid.GridColDef<BasicApplication>[] = useMemo(
     () => [
       {
-        field: 'avatar',
-        headerName: '',
-        width: 70,
-        sortable: false,
-        filterable: false,
-        renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
-          >
-            <Avatar
-              src={params.row.logo_url}
-              slotProps={{
-                img: {
-                  onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
-                    e.currentTarget.src = '';
-                  },
-                },
-              }}
-              sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {
-                  backgroundColor: theme.vars?.palette.grey[900],
-                }),
-              }}
-            >
-              <AppWindow size={14} />
-            </Avatar>
-          </Box>
-        ),
-      },
-      {
         field: 'name',
         headerName: t('applications:listing.columns.name'),
-        flex: 1,
-        minWidth: 200,
-      },
-      {
-        field: 'description',
-        headerName: t('common:edit.general.description.label'),
-        flex: 1.5,
-        minWidth: 250,
-        valueGetter: (_value, row): string => row.description ?? '-',
+        flex: 2,
+        minWidth: 260,
+        renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
+          <ListingTable.CellIcon
+            sx={{width: '100%'}}
+            icon={
+              <Avatar
+                src={params.row.logo_url}
+                slotProps={{
+                  img: {
+                    onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.src = '';
+                    },
+                  },
+                }}
+                sx={{
+                  backgroundColor: theme.vars?.palette.grey[500],
+                  width: 30,
+                  height: 30,
+                  fontSize: '0.875rem',
+                  ...theme.applyStyles('dark', {
+                    backgroundColor: theme.vars?.palette.grey[900],
+                  }),
+                }}
+              >
+                <AppWindow size={14} />
+              </Avatar>
+            }
+            primary={params.row.name}
+            secondary={params.row.description}
+          />
+        ),
       },
       {
         field: 'template',
@@ -192,24 +152,42 @@ export default function ApplicationsList(): JSX.Element {
       {
         field: 'actions',
         headerName: t('applications:listing.columns.actions'),
-        width: 80,
+        width: 150,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
         filterable: false,
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
-          <IconButton
-            size="small"
-            aria-label="Open actions menu"
-            onClick={(e) => {
-              handleMenuOpen(e, params.row.id);
-            }}
-          >
-            <EllipsisVertical size={16} />
-          </IconButton>
+          <ListingTable.RowActions visibility="hover">
+            <Tooltip title={t('common:actions.edit')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(params.row.id);
+                }}
+              >
+                <Pencil size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('common:actions.delete')}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(params.row.id);
+                }}
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            </Tooltip>
+          </ListingTable.RowActions>
         ),
       },
     ],
-    [handleMenuOpen, t, theme],
+    [handleDeleteClick, handleEditClick, t, theme],
   );
 
   if (error) {
@@ -227,51 +205,32 @@ export default function ApplicationsList(): JSX.Element {
 
   return (
     <>
-      <Box sx={{height: 600, width: '100%'}}>
-        <DataGrid.DataGrid
-          rows={data?.applications ?? []}
-          columns={columns}
-          loading={isLoading}
-          getRowId={(row): string => row.id}
-          onRowClick={(params) => {
-            const applicationId = (params.row as BasicApplication).id;
-            (async (): Promise<void> => {
-              await navigate(`/applications/${applicationId}`);
-            })().catch((_error: unknown) => {
-              logger.error('Failed to navigate to application', {error: _error, applicationId});
-            });
-          }}
-          initialState={{
-            pagination: {
-              paginationModel: {pageSize: 10},
-            },
-          }}
-          pageSizeOptions={[5, 10, 25, 50]}
-          disableRowSelectionOnClick
-          localeText={dataGridLocaleText}
-          sx={{
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-            },
-          }}
-        />
-      </Box>
-
-      {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleViewClick}>
-          <ListItemIcon>
-            <Eye size={16} />
-          </ListItemIcon>
-          <ListItemText>{t('common:actions.view')}</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleDeleteClick}>
-          <ListItemIcon>
-            <Trash2 size={16} color={theme.vars?.palette.error.main} />
-          </ListItemIcon>
-          <ListItemText sx={{color: 'error.main'}}>{t('common:actions.delete')}</ListItemText>
-        </MenuItem>
-      </Menu>
+      <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
+        <ListingTable.Container disablePaper>
+          <ListingTable.DataGrid
+            rows={data?.applications ?? []}
+            columns={columns}
+            getRowId={(row): string => (row as BasicApplication).id}
+            onRowClick={(params) => {
+              handleEditClick((params.row as BasicApplication).id);
+            }}
+            initialState={{
+              pagination: {
+                paginationModel: {pageSize: 10},
+              },
+            }}
+            pageSizeOptions={[5, 10, 25, 50]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            sx={{
+              height: 'auto',
+              '& .MuiDataGrid-row': {
+                cursor: 'pointer',
+              },
+            }}
+          />
+        </ListingTable.Container>
+      </ListingTable.Provider>
 
       <ApplicationDeleteDialog
         open={deleteDialogOpen}

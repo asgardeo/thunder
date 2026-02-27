@@ -39,6 +39,7 @@ type EngineContext struct {
 	Verbose        bool
 	UserInputs     map[string]string
 	RuntimeData    map[string]string
+	ForwardedData  map[string]interface{}
 	AdditionalData map[string]string
 	TraceID        string
 
@@ -49,7 +50,6 @@ type EngineContext struct {
 	Graph       core.GraphInterface
 	Application appmodel.Application
 
-	HTTPContext       context.Context
 	AuthenticatedUser authncm.AuthenticatedUser
 	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord

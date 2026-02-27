@@ -74,6 +74,6 @@ var (
 	// queryGetApplicationsCountByThemeID retrieves the count of applications using a theme.
 	queryGetApplicationsCountByThemeID = dbmodel.DBQuery{
 		ID:    "THQ-THEME_MGT-08",
-		Query: "SELECT COUNT(*) as total FROM SP_APP WHERE THEME_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT COUNT(*) as total FROM APPLICATION WHERE THEME_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 )

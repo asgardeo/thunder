@@ -33,7 +33,6 @@ interface TokenValidationSectionProps {
     validityPeriod: number;
     accessTokenValidity: number;
     idTokenValidity: number;
-    issuer?: string | undefined;
   }>;
   /**
    * Form validation errors
@@ -42,7 +41,6 @@ interface TokenValidationSectionProps {
     validityPeriod: number;
     accessTokenValidity: number;
     idTokenValidity: number;
-    issuer?: string | undefined;
   }>;
   /**
    * Type of token being configured

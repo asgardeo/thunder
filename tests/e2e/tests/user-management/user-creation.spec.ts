@@ -70,10 +70,17 @@ test.describe("User Management - CRUD Operations", () => {
         console.log("Clicked Add User button");
       });
 
-      await test.step("Verify user creation form appears", async () => {
+      await test.step("Verify user creation wizard appears", async () => {
         await usersPage.waitForUserForm();
-        console.log("User creation form appeared");
-        await usersPage.screenshot("debug-create-user-form");
+        console.log("User creation wizard appeared");
+        await usersPage.screenshot("debug-create-user-wizard");
+      });
+
+      await test.step("Select user type and continue", async () => {
+        console.log("Selecting user type...");
+        await usersPage.selectUserTypeAndContinue();
+        console.log("User type selected, advanced to details step");
+        await usersPage.screenshot("debug-user-details-step");
       });
 
       await test.step("Fill in user details", async () => {

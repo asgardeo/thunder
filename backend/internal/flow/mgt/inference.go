@@ -76,14 +76,24 @@ func (s *flowInferenceService) InferRegistrationFlow(authFlow *FlowDefinition) (
 	}
 
 	if !s.hasUserTypeResolverNode(regNodes) {
-		userTypeResolverNode := s.createUserTypeResolverNode(hasLayout)
+		userTypePromptNode := s.createUserTypePromptNode(userTypeResolverNodeID, hasLayout)
+		userTypeResolverNode := s.createUserTypeResolverNode(userTypePromptNodeID, hasLayout)
+
+		// Insert resolver after START
 		if err := s.insertNodeAfterStart(&regNodes, userTypeResolverNode, startNodeID); err != nil {
 			return nil, err
 		}
-		s.logger.Debug("Inserted user type resolver node into registration flow")
+
+		// Append the prompt node to the flow
+		regNodes = append(regNodes, userTypePromptNode)
+
+		s.logger.Debug("Inserted user type resolver node with prompt into registration flow")
 	} else {
 		s.logger.Debug("User type resolver node already exists, skipping insertion")
 	}
+
+	// Insert phone input prompt if SMS OTP send nodes are present
+	s.insertPhoneInputPromptIfNeeded(&regNodes, hasLayout)
 
 	return &FlowDefinition{
 		Name:     regFlowName,
@@ -262,12 +272,75 @@ func (s *flowInferenceService) hasUserTypeResolverNode(nodes []NodeDefinition) b
 }
 
 // createUserTypeResolverNode creates a TASK_EXECUTION node with UserTypeResolverExecutor
-func (s *flowInferenceService) createUserTypeResolverNode(includeLayout bool) NodeDefinition {
+func (s *flowInferenceService) createUserTypeResolverNode(promptNodeID string, includeLayout bool) NodeDefinition {
 	node := NodeDefinition{
 		ID:   userTypeResolverNodeID,
 		Type: string(common.NodeTypeTaskExecution),
 		Executor: &ExecutorDefinition{
 			Name: executor.ExecutorNameUserTypeResolver,
+		},
+		OnIncomplete: promptNodeID,
+	}
+
+	if includeLayout {
+		s.addDefaultLayout(&node)
+	}
+
+	return node
+}
+
+// createUserTypePromptNode creates a PROMPT node for collecting user type selection
+func (s *flowInferenceService) createUserTypePromptNode(nextNodeID string, includeLayout bool) NodeDefinition {
+	node := NodeDefinition{
+		ID:   userTypePromptNodeID,
+		Type: string(common.NodeTypePrompt),
+		Meta: map[string]interface{}{
+			"components": []map[string]interface{}{
+				{
+					"type":    "TEXT",
+					"id":      "heading_usertype",
+					"label":   "{{ t(signup:heading) }}",
+					"variant": "HEADING_2",
+				},
+				{
+					"type": "BLOCK",
+					"id":   "block_usertype",
+					"components": []map[string]interface{}{
+						{
+							"type":        "SELECT",
+							"id":          "usertype_input",
+							"ref":         "userType",
+							"label":       "{{ t(elements:fields.usertype.label) }}",
+							"placeholder": "{{ t(elements:fields.usertype.placeholder) }}",
+							"required":    true,
+							"options":     []interface{}{},
+						},
+						{
+							"type":      "ACTION",
+							"id":        "action_usertype",
+							"label":     "{{ t(elements:buttons.submit.text) }}",
+							"variant":   "PRIMARY",
+							"eventType": "SUBMIT",
+						},
+					},
+				},
+			},
+		},
+		Prompts: []PromptDefinition{
+			{
+				Inputs: []InputDefinition{
+					{
+						Ref:        "usertype_input",
+						Identifier: "userType",
+						Type:       "SELECT",
+						Required:   true,
+					},
+				},
+				Action: &ActionDefinition{
+					Ref:      "action_usertype",
+					NextNode: nextNodeID,
+				},
+			},
 		},
 	}
 
@@ -276,6 +349,146 @@ func (s *flowInferenceService) createUserTypeResolverNode(includeLayout bool) No
 	}
 
 	return node
+}
+
+// createInputPromptNode creates a generic PROMPT node for collecting a specific input
+func (s *flowInferenceService) createInputPromptNode(nodeID string, input common.Input,
+	nextNodeID string, includeLayout bool) NodeDefinition {
+	// Determine the component type based on input type
+	componentType := input.Type
+	if componentType == "" {
+		componentType = common.InputTypeText
+	}
+
+	// Create label from identifier by capitalizing the first letter
+	label := input.Identifier
+	if len(label) > 0 {
+		label = strings.ToUpper(label[:1]) + label[1:]
+	}
+
+	// Create placeholder by converting label to lowercase
+	placeholder := "Enter your " + strings.ToLower(label)
+
+	node := NodeDefinition{
+		ID:   nodeID,
+		Type: string(common.NodeTypePrompt),
+		Meta: map[string]interface{}{
+			"components": []map[string]interface{}{
+				{
+					"type":    "TEXT",
+					"id":      "heading_" + input.Identifier,
+					"label":   "{{ t(signup:heading) }}",
+					"variant": "HEADING_2",
+				},
+				{
+					"type": "BLOCK",
+					"id":   "block_" + input.Identifier,
+					"components": []map[string]interface{}{
+						{
+							"type":        componentType,
+							"id":          input.Ref,
+							"ref":         input.Identifier,
+							"label":       label,
+							"placeholder": placeholder,
+							"required":    input.Required,
+						},
+						{
+							"type":      "ACTION",
+							"id":        "action_" + input.Identifier,
+							"label":     "{{ t(elements:buttons.submit.text) }}",
+							"variant":   "PRIMARY",
+							"eventType": "SUBMIT",
+						},
+					},
+				},
+			},
+		},
+		Prompts: []PromptDefinition{
+			{
+				Inputs: []InputDefinition{
+					{
+						Ref:        input.Ref,
+						Identifier: input.Identifier,
+						Type:       componentType,
+						Required:   input.Required,
+					},
+				},
+				Action: &ActionDefinition{
+					Ref:      "action_" + input.Identifier,
+					NextNode: nextNodeID,
+				},
+			},
+		},
+	}
+
+	if includeLayout {
+		s.addDefaultLayout(&node)
+	}
+
+	return node
+}
+
+// insertPhoneInputPromptIfNeeded scans all nodes to determine if an SMS OTP send node exists
+// and whether a PHONE_INPUT is already collected by any prompt node in the flow. If SMS OTP send
+// is present but no PHONE_INPUT prompt exists, it inserts a phone input prompt before the SMS send node.
+func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(nodes *[]NodeDefinition, includeLayout bool) {
+	var smsSendNodeID string
+	hasPhoneInputPrompt := false
+
+	// Scan all the existing nodes
+	for _, node := range *nodes {
+		// Check for SMS OTP send node
+		if node.Executor != nil &&
+			node.Executor.Name == executor.ExecutorNameSMSAuth &&
+			node.Executor.Mode == executor.ExecutorModeSend &&
+			smsSendNodeID == "" {
+			smsSendNodeID = node.ID
+		}
+
+		// Check if any prompt node collects a PHONE_INPUT
+		if node.Type == string(common.NodeTypePrompt) {
+			for _, prompt := range node.Prompts {
+				for _, input := range prompt.Inputs {
+					if input.Type == common.InputTypePhone {
+						hasPhoneInputPrompt = true
+						break
+					}
+				}
+				if hasPhoneInputPrompt {
+					break
+				}
+			}
+		}
+	}
+
+	// If no SMS OTP send node found, nothing to do
+	if smsSendNodeID == "" {
+		return
+	}
+
+	// If phone input already collected by an existing prompt, no need to insert another prompt
+	if hasPhoneInputPrompt {
+		s.logger.Debug("Phone input already collected in the flow, skipping insertion")
+		return
+	}
+
+	// Create and insert a phone input prompt node before the SMS send node
+	phonePromptNode := s.createInputPromptNode(
+		phoneInputPromptNodeID,
+		executor.MobileNumberInput,
+		smsSendNodeID,
+		includeLayout,
+	)
+
+	err := s.insertNodeBefore(nodes, phonePromptNode, smsSendNodeID)
+	if err != nil {
+		s.logger.Warn("Failed to insert phone input prompt before SMS send node",
+			log.String("nodeID", smsSendNodeID), log.Error(err))
+		return
+	}
+
+	s.logger.Debug("Inserted phone input prompt before SMS send node",
+		log.String("smsNodeID", smsSendNodeID))
 }
 
 // insertNodeBefore inserts a node before the target node by updating all nodes that point to the target

@@ -25,23 +25,32 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 )
 
 // Initialize initializes the organization unit service and registers its routes.
-func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, declarativeresource.ResourceExporter, error) {
+// It returns the service, a hierarchy resolver (for injection into the authz service to
+// avoid an import cycle), and the declarative resource exporter.
+func Initialize(
+	mux *http.ServeMux, authzService sysauthz.SystemAuthorizationServiceInterface,
+) (OrganizationUnitServiceInterface, sysauthz.OUHierarchyResolver, declarativeresource.ResourceExporter, error) {
 	ouStore, err := initializeStore()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	ouService := newOrganizationUnitService(ouStore)
+	ouService := newOrganizationUnitService(authzService, ouStore)
 
 	ouHandler := newOrganizationUnitHandler(ouService)
 	registerRoutes(mux, ouHandler)
 
+	// Create the hierarchy resolver backed directly by the store (no authz checks) so
+	// the authz service can traverse the OU tree without recursive authorization calls.
+	hierarchyResolver := newOUHierarchyAdapter(ouStore)
+
 	// Create and return exporter
 	exporter := newOUExporter(ouService)
-	return ouService, exporter, nil
+	return ouService, hierarchyResolver, exporter, nil
 }
 
 // Store Selection (based on organization_unit.store configuration):

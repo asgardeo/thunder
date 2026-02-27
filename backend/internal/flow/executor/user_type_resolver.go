@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -83,28 +84,46 @@ func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
+		ForwardedData:  make(map[string]interface{}),
 	}
 
+	switch ctx.FlowType {
+	case common.FlowTypeAuthentication:
+		return u.handleAuthenticationFlows(ctx, execResp)
+	case common.FlowTypeRegistration:
+		return u.handleRegistrationFlows(ctx, execResp)
+	case common.FlowTypeUserOnboarding:
+		return u.handleUserOnboardingFlows(ctx, execResp)
+	default:
+		logger.Debug("User type resolver is not applicable for the flow type",
+			log.String("flowType", string(ctx.FlowType)))
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+}
+
+// handleAuthenticationFlows handles user type resolution for authentication flows.
+func (u *userTypeResolver) handleAuthenticationFlows(ctx *core.NodeContext, execResp *common.ExecutorResponse) (
+	*common.ExecutorResponse, error) {
+	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+
+	// Validate that allowed user types are defined
+	if len(ctx.Application.AllowedUserTypes) == 0 {
+		logger.Debug("No allowed user types configured for authentication")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Authentication not available for this application"
+		return execResp, nil
+	}
+
+	execResp.Status = common.ExecComplete
+	return execResp, nil
+}
+
+// handleRegistrationFlows handles user type resolution for registration flows.
+func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execResp *common.ExecutorResponse) (
+	*common.ExecutorResponse, error) {
+	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	allowed := ctx.Application.AllowedUserTypes
-
-	if ctx.FlowType == common.FlowTypeAuthentication {
-		// For authentication flows, validate that allowed user types are defined
-		if len(allowed) == 0 {
-			logger.Debug("No allowed user types configured for authentication")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Authentication not available for this application"
-			return execResp, nil
-		}
-
-		execResp.Status = common.ExecComplete
-		return execResp, nil
-	} else if ctx.FlowType == common.FlowTypeUserOnboarding {
-		return u.resolveForUserOnboarding(ctx, execResp)
-	} else if ctx.FlowType != common.FlowTypeRegistration {
-		logger.Debug("User type resolver is only applicable for registration, user onboarding and authentication flows")
-		execResp.Status = common.ExecComplete
-		return execResp, nil
-	}
 
 	// Check for allowed user types to decide next steps
 	if len(allowed) == 0 {
@@ -120,40 +139,77 @@ func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 
 	// Check if userType is provided in inputs
 	if u.HasRequiredInputs(ctx, execResp) {
-		err := u.resolveUserTypeFromInput(execResp, ctx.UserInputs[userTypeKey], allowed)
+		err := u.resolveUserTypeFromInput(context.TODO(), execResp, ctx.UserInputs[userTypeKey], allowed)
 		return execResp, err
 	}
 
+	// If only one allowed user type, select it automatically
 	if len(allowed) == 1 {
-		err := u.resolveUserTypeFromSingleAllowed(execResp, allowed[0])
+		err := u.resolveUserTypeFromSingleAllowed(context.TODO(), execResp, allowed[0])
 		return execResp, err
 	}
 
-	err := u.resolveUserTypeFromMultipleAllowed(execResp, allowed)
+	// If multiple allowed user types, prompt the user to select one
+	err := u.resolveUserTypeFromMultipleAllowed(context.TODO(), execResp, allowed)
+
 	return execResp, err
 }
 
-// GetDefaultMeta returns the default meta structure for the user type selection page.
-func (u *userTypeResolver) GetDefaultMeta() interface{} {
-	return core.NewMetaBuilder().
-		WithIDPrefix("usertype").
-		WithHeading("{{ t(signup:heading) }}").
-		WithInput(u.GetDefaultInputs()[0], core.MetaInputConfig{
-			Label:       "{{ t(elements:fields.usertype.label) }}",
-			Placeholder: "{{ t(elements:fields.usertype.placeholder) }}",
-		}).
-		WithSubmitButton("{{ t(elements:buttons.submit.text) }}").
-		Build()
+// handleUserOnboardingFlows handles user type resolution for user onboarding flows.
+func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
+	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
+	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+
+	// If userType already provided, validate and set runtime data
+	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
+		userSchema, ouID, err := u.getUserSchemaAndOU(context.TODO(), userType)
+		if err != nil {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "Invalid user type"
+			return execResp, nil
+		}
+
+		execResp.RuntimeData[userTypeKey] = userType
+		execResp.RuntimeData[defaultOUIDKey] = ouID
+		logger.Debug("User type resolved for user onboarding", log.String(userTypeKey, userType),
+			log.String(ouIDKey, userSchema.OrganizationUnitID))
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
+	// List all available user schemas
+	schemas, svcErr := u.userSchemaService.GetUserSchemaList(context.TODO(), 100, 0)
+	if svcErr != nil {
+		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Failed to retrieve user types"
+		return execResp, nil
+	}
+
+	if len(schemas.Schemas) == 0 {
+		logger.Debug("No user schemas available")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "No user types available"
+		return execResp, nil
+	}
+
+	options := make([]string, 0, len(schemas.Schemas))
+	for _, schema := range schemas.Schemas {
+		options = append(options, schema.Name)
+	}
+
+	u.promptUserSelection(execResp, options)
+	return execResp, nil
 }
 
 // resolveUserTypeFromInput resolves the user type from input and updates the executor response.
-func (u *userTypeResolver) resolveUserTypeFromInput(execResp *common.ExecutorResponse,
+func (u *userTypeResolver) resolveUserTypeFromInput(ctx context.Context, execResp *common.ExecutorResponse,
 	userType string, allowed []string) error {
 	logger := u.logger
 	if slices.Contains(allowed, userType) {
 		logger.Debug("User type resolved from input", log.String(userTypeKey, userType))
 
-		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
+		userSchema, ouID, err := u.getUserSchemaAndOU(ctx, userType)
 		if err != nil {
 			return err
 		}
@@ -178,10 +234,10 @@ func (u *userTypeResolver) resolveUserTypeFromInput(execResp *common.ExecutorRes
 }
 
 // resolveUserTypeFromSingleAllowed resolves the user type when there is only a single allowed user type.
-func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *common.ExecutorResponse,
+func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(ctx context.Context, execResp *common.ExecutorResponse,
 	allowedUserType string) error {
 	logger := u.logger
-	userSchema, ouID, err := u.getUserSchemaAndOU(allowedUserType)
+	userSchema, ouID, err := u.getUserSchemaAndOU(ctx, allowedUserType)
 	if err != nil {
 		return err
 	}
@@ -204,14 +260,14 @@ func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *common.Exe
 }
 
 // resolveUserTypeFromMultipleAllowed resolves the user type when multiple allowed user types exist.
-func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.ExecutorResponse,
+func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(ctx context.Context, execResp *common.ExecutorResponse,
 	allowed []string) error {
 	logger := u.logger
 
 	// Filter self registration enabled user types
 	selfRegEnabledUserTypes := make([]schemaWithOU, 0)
 	for _, userType := range allowed {
-		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
+		userSchema, ouID, err := u.getUserSchemaAndOU(ctx, userType)
 		if err != nil {
 			return err
 		}
@@ -258,10 +314,12 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.E
 }
 
 // getUserSchemaAndOU retrieves the user schema by name and returns the schema and organization unit ID.
-func (u *userTypeResolver) getUserSchemaAndOU(userType string) (*userschema.UserSchema, string, error) {
+func (u *userTypeResolver) getUserSchemaAndOU(
+	ctx context.Context, userType string,
+) (*userschema.UserSchema, string, error) {
 	logger := u.logger.With(log.String(userTypeKey, userType))
 
-	userSchema, svcErr := u.userSchemaService.GetUserSchemaByName(userType)
+	userSchema, svcErr := u.userSchemaService.GetUserSchemaByName(ctx, userType)
 	if svcErr != nil {
 		logger.Error("Failed to resolve user schema for user type",
 			log.String(userTypeKey, userType), log.String("error", svcErr.Error))
@@ -278,53 +336,6 @@ func (u *userTypeResolver) getUserSchemaAndOU(userType string) (*userschema.User
 	return userSchema, userSchema.OrganizationUnitID, nil
 }
 
-// resolveForUserOnboarding handles user type resolution for user onboarding flows.
-func (u *userTypeResolver) resolveForUserOnboarding(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
-
-	// If userType already provided, validate and set runtime data
-	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
-		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
-		if err != nil {
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Invalid user type"
-			return execResp, nil
-		}
-
-		execResp.RuntimeData[userTypeKey] = userType
-		execResp.RuntimeData[defaultOUIDKey] = ouID
-		logger.Debug("User type resolved for user onboarding", log.String(userTypeKey, userType),
-			log.String(ouIDKey, userSchema.OrganizationUnitID))
-		execResp.Status = common.ExecComplete
-		return execResp, nil
-	}
-
-	// List all available user schemas
-	schemas, svcErr := u.userSchemaService.GetUserSchemaList(100, 0)
-	if svcErr != nil {
-		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to retrieve user types"
-		return execResp, nil
-	}
-
-	if len(schemas.Schemas) == 0 {
-		logger.Debug("No user schemas available")
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "No user types available"
-		return execResp, nil
-	}
-
-	options := make([]string, 0, len(schemas.Schemas))
-	for _, schema := range schemas.Schemas {
-		options = append(options, schema.Name)
-	}
-
-	u.promptUserSelection(execResp, options)
-	return execResp, nil
-}
-
 // promptUserSelection prompts the user to select a user type from the provided options.
 func (u *userTypeResolver) promptUserSelection(execResp *common.ExecutorResponse, options []string) {
 	u.logger.Debug("Prompting user for user type selection", log.Any("userTypes", options))
@@ -337,5 +348,8 @@ func (u *userTypeResolver) promptUserSelection(execResp *common.ExecutorResponse
 		input := inputs[0]
 		input.Options = options
 		execResp.Inputs = []common.Input{input}
+
+		// Forward the input with options to the next node
+		execResp.ForwardedData[common.ForwardedDataKeyInputs] = execResp.Inputs
 	}
 }

@@ -883,7 +883,7 @@ jobs:
         uses: ./.github/actions/deploy-docs
         with:
           docs-artifact-name: 'thunder-docs'
-          build-docs: 'false'
+          build-docs: 'true'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: '📚 Deploy documentation for ${{ needs.build-thunder.outputs.version }}'
 

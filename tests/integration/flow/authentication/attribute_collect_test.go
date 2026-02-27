@@ -123,6 +123,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"firstName": map[string]interface{}{
 				"type": "string",
@@ -432,7 +433,7 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 	errorResp, err := common.CompleteFlow(flowStep.FlowID, invalidCredentials, "")
 	ts.Require().NoError(err, "Expected error response for invalid credentials")
 	ts.Require().NotEmpty(errorResp.FailureReason, "Expected failure reason for invalid credentials")
-	ts.Require().Contains(errorResp.FailureReason, "No user found",
+	ts.Require().Contains(errorResp.FailureReason, "User not found",
 		"Expected failure reason to indicate user not found")
 }
 

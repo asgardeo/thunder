@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -32,11 +34,22 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
+	return operation(ctx)
+}
+
 type IDPServiceTestSuite struct {
 	suite.Suite
 	mockStore  *idpStoreInterfaceMock
 	idpService IDPServiceInterface
 }
+
+const (
+	declarativeIDPTestID = "declarative-idp"
+	mutableIDPTestID     = "mutable-idp"
+)
 
 func TestIDPServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(IDPServiceTestSuite))
@@ -53,7 +66,7 @@ func (s *IDPServiceTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
 
 	s.mockStore = newIdpStoreInterfaceMock(s.T())
-	s.idpService = newIDPService(s.mockStore)
+	s.idpService = newIDPService(s.mockStore, &mockTransactioner{})
 }
 
 func (s *IDPServiceTestSuite) TearDownTest() {
@@ -78,12 +91,12 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_Success() {
 		Properties:  createOIDCProperties(),
 	}
 
-	s.mockStore.On("GetIdentityProviderByName", "Test IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
-	s.mockStore.On("CreateIdentityProvider", mock.MatchedBy(func(dto IDPDTO) bool {
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Test IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("CreateIdentityProvider", mock.Anything, mock.MatchedBy(func(dto IDPDTO) bool {
 		return dto.Name == "Test IDP" && dto.Type == IDPTypeOIDC && dto.ID != ""
 	})).Return(nil)
 
-	result, err := s.idpService.CreateIdentityProvider(idp)
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -94,7 +107,7 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_Success() {
 
 // TestCreateIdentityProvider_NilIDP tests nil IDP validation
 func (s *IDPServiceTestSuite) TestCreateIdentityProvider_NilIDP() {
-	result, err := s.idpService.CreateIdentityProvider(nil)
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), nil)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -119,7 +132,7 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_InvalidName() {
 				Type: IDPTypeOIDC,
 			}
 
-			result, err := s.idpService.CreateIdentityProvider(idp)
+			result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 			s.Nil(result)
 			s.NotNil(err)
@@ -145,7 +158,7 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_InvalidType() {
 				Type: tc.idpType,
 			}
 
-			result, err := s.idpService.CreateIdentityProvider(idp)
+			result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 			s.Nil(result)
 			s.NotNil(err)
@@ -163,9 +176,9 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_AlreadyExists() {
 	}
 
 	existingIDP := &IDPDTO{ID: "existing-id", Name: "Existing IDP"}
-	s.mockStore.On("GetIdentityProviderByName", "Existing IDP").Return(existingIDP, nil)
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Existing IDP").Return(existingIDP, nil)
 
-	result, err := s.idpService.CreateIdentityProvider(idp)
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -181,9 +194,10 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_CheckExistingStoreError
 		Properties: createOIDCProperties(),
 	}
 
-	s.mockStore.On("GetIdentityProviderByName", "Test IDP").Return((*IDPDTO)(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Test IDP").
+		Return((*IDPDTO)(nil), errors.New("database error"))
 
-	result, err := s.idpService.CreateIdentityProvider(idp)
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -199,10 +213,10 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_StoreError() {
 		Properties: createOIDCProperties(),
 	}
 
-	s.mockStore.On("GetIdentityProviderByName", "Test IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
-	s.mockStore.On("CreateIdentityProvider", mock.Anything).Return(errors.New("database error"))
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Test IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("CreateIdentityProvider", mock.Anything, mock.Anything).Return(errors.New("database error"))
 
-	result, err := s.idpService.CreateIdentityProvider(idp)
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -217,9 +231,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderList_Success() {
 		{ID: "idp-2", Name: "IDP 2", Type: IDPTypeGoogle},
 	}
 
-	s.mockStore.On("GetIdentityProviderList").Return(idpList, nil)
+	s.mockStore.On("GetIdentityProviderList", mock.Anything).Return(idpList, nil)
 
-	result, err := s.idpService.GetIdentityProviderList()
+	result, err := s.idpService.GetIdentityProviderList(context.Background())
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -230,9 +244,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderList_Success() {
 
 // TestGetIdentityProviderList_EmptyList tests empty list
 func (s *IDPServiceTestSuite) TestGetIdentityProviderList_EmptyList() {
-	s.mockStore.On("GetIdentityProviderList").Return([]BasicIDPDTO{}, nil)
+	s.mockStore.On("GetIdentityProviderList", mock.Anything).Return([]BasicIDPDTO{}, nil)
 
-	result, err := s.idpService.GetIdentityProviderList()
+	result, err := s.idpService.GetIdentityProviderList(context.Background())
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -242,9 +256,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderList_EmptyList() {
 
 // TestGetIdentityProviderList_StoreError tests store error handling
 func (s *IDPServiceTestSuite) TestGetIdentityProviderList_StoreError() {
-	s.mockStore.On("GetIdentityProviderList").Return([]BasicIDPDTO(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProviderList", mock.Anything).Return([]BasicIDPDTO(nil), errors.New("database error"))
 
-	result, err := s.idpService.GetIdentityProviderList()
+	result, err := s.idpService.GetIdentityProviderList(context.Background())
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -261,9 +275,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProvider_Success() {
 		Type:        IDPTypeOIDC,
 	}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(idp, nil)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(idp, nil)
 
-	result, err := s.idpService.GetIdentityProvider("idp-123")
+	result, err := s.idpService.GetIdentityProvider(context.Background(), "idp-123")
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -274,7 +288,7 @@ func (s *IDPServiceTestSuite) TestGetIdentityProvider_Success() {
 
 // TestGetIdentityProvider_EmptyID tests empty ID validation
 func (s *IDPServiceTestSuite) TestGetIdentityProvider_EmptyID() {
-	result, err := s.idpService.GetIdentityProvider("")
+	result, err := s.idpService.GetIdentityProvider(context.Background(), "")
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -283,9 +297,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProvider_EmptyID() {
 
 // TestGetIdentityProvider_NotFound tests IDP not found
 func (s *IDPServiceTestSuite) TestGetIdentityProvider_NotFound() {
-	s.mockStore.On("GetIdentityProvider", "non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
 
-	result, err := s.idpService.GetIdentityProvider("non-existent")
+	result, err := s.idpService.GetIdentityProvider(context.Background(), "non-existent")
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -295,9 +309,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProvider_NotFound() {
 
 // TestGetIdentityProvider_StoreError tests store error handling
 func (s *IDPServiceTestSuite) TestGetIdentityProvider_StoreError() {
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return((*IDPDTO)(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return((*IDPDTO)(nil), errors.New("database error"))
 
-	result, err := s.idpService.GetIdentityProvider("idp-123")
+	result, err := s.idpService.GetIdentityProvider(context.Background(), "idp-123")
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -313,9 +327,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_Success() {
 		Type: IDPTypeOIDC,
 	}
 
-	s.mockStore.On("GetIdentityProviderByName", "Test IDP").Return(idp, nil)
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Test IDP").Return(idp, nil)
 
-	result, err := s.idpService.GetIdentityProviderByName("Test IDP")
+	result, err := s.idpService.GetIdentityProviderByName(context.Background(), "Test IDP")
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -325,7 +339,7 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_Success() {
 
 // TestGetIdentityProviderByName_EmptyName tests empty name validation
 func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_EmptyName() {
-	result, err := s.idpService.GetIdentityProviderByName("")
+	result, err := s.idpService.GetIdentityProviderByName(context.Background(), "")
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -334,9 +348,9 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_EmptyName() {
 
 // TestGetIdentityProviderByName_NotFound tests IDP not found
 func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_NotFound() {
-	s.mockStore.On("GetIdentityProviderByName", "Non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
 
-	result, err := s.idpService.GetIdentityProviderByName("Non-existent")
+	result, err := s.idpService.GetIdentityProviderByName(context.Background(), "Non-existent")
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -346,9 +360,10 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_NotFound() {
 
 // TestGetIdentityProviderByName_StoreError tests store error handling
 func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_StoreError() {
-	s.mockStore.On("GetIdentityProviderByName", "Test").Return((*IDPDTO)(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Test").
+		Return((*IDPDTO)(nil), errors.New("database error"))
 
-	result, err := s.idpService.GetIdentityProviderByName("Test")
+	result, err := s.idpService.GetIdentityProviderByName(context.Background(), "Test")
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -371,13 +386,13 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_Success() {
 		Properties: createOIDCProperties(),
 	}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("GetIdentityProviderByName", "Updated IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
-	s.mockStore.On("UpdateIdentityProvider", mock.MatchedBy(func(dto *IDPDTO) bool {
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Updated IDP").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("UpdateIdentityProvider", mock.Anything, mock.MatchedBy(func(dto *IDPDTO) bool {
 		return dto.ID == "idp-123" && dto.Name == "Updated IDP"
 	})).Return(nil)
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -390,7 +405,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_Success() {
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_EmptyID() {
 	idp := &IDPDTO{Name: "Test", Type: IDPTypeOIDC, Properties: createOIDCProperties()}
 
-	result, err := s.idpService.UpdateIdentityProvider("", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -401,9 +416,9 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_EmptyID() {
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_NotFound() {
 	idp := &IDPDTO{Name: "Test", Type: IDPTypeOIDC, Properties: createOIDCProperties()}
 
-	s.mockStore.On("GetIdentityProvider", "non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
 
-	result, err := s.idpService.UpdateIdentityProvider("non-existent", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "non-existent", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -420,10 +435,10 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_NameConflict() {
 	conflictIDP := &IDPDTO{ID: "idp-456", Name: "Existing Name", Type: IDPTypeOIDC,
 		Properties: createOIDCProperties()}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("GetIdentityProviderByName", "Existing Name").Return(conflictIDP, nil)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "Existing Name").Return(conflictIDP, nil)
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -439,10 +454,10 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SameNameUpdate() {
 	existingIDP := &IDPDTO{ID: "idp-123", Name: "Same Name", Type: IDPTypeOIDC,
 		Properties: createOIDCProperties()}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("UpdateIdentityProvider", mock.Anything).Return(nil)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("UpdateIdentityProvider", mock.Anything, mock.Anything).Return(nil)
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -475,7 +490,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_InvalidData() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			result, err := s.idpService.UpdateIdentityProvider("idp-123", tc.idp)
+			result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", tc.idp)
 
 			s.Nil(result)
 			s.NotNil(err)
@@ -488,9 +503,9 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_InvalidData() {
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_GetStoreError() {
 	idp := &IDPDTO{Name: "Test", Type: IDPTypeOIDC, Properties: createOIDCProperties()}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return((*IDPDTO)(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return((*IDPDTO)(nil), errors.New("database error"))
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -504,10 +519,11 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_CheckNameStoreError() {
 
 	existingIDP := &IDPDTO{ID: "idp-123", Name: "Old Name", Type: IDPTypeOIDC, Properties: createOIDCProperties()}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("GetIdentityProviderByName", "New Name").Return((*IDPDTO)(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("GetIdentityProviderByName", mock.Anything, "New Name").
+		Return((*IDPDTO)(nil), errors.New("database error"))
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -521,10 +537,10 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_StoreError() {
 
 	existingIDP := &IDPDTO{ID: "idp-123", Name: "Test", Type: IDPTypeOIDC, Properties: createOIDCProperties()}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("UpdateIdentityProvider", mock.Anything).Return(errors.New("database error"))
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("UpdateIdentityProvider", mock.Anything, mock.Anything).Return(errors.New("database error"))
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -536,10 +552,10 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_StoreError() {
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_Success() {
 	existingIDP := &IDPDTO{ID: "idp-123", Name: "Test IDP"}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("DeleteIdentityProvider", "idp-123").Return(nil)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("DeleteIdentityProvider", mock.Anything, "idp-123").Return(nil)
 
-	err := s.idpService.DeleteIdentityProvider("idp-123")
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
 
 	s.Nil(err)
 	s.mockStore.AssertExpectations(s.T())
@@ -547,7 +563,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_Success() {
 
 // TestDeleteIdentityProvider_EmptyID tests empty ID validation
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_EmptyID() {
-	err := s.idpService.DeleteIdentityProvider("")
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "")
 
 	s.NotNil(err)
 	s.Equal(ErrorInvalidIDPID.Code, err.Code)
@@ -555,9 +571,9 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_EmptyID() {
 
 // TestDeleteIdentityProvider_NotFound tests deleting non-existent IDP
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_NotFound() {
-	s.mockStore.On("GetIdentityProvider", "non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "non-existent").Return((*IDPDTO)(nil), ErrIDPNotFound)
 
-	err := s.idpService.DeleteIdentityProvider("non-existent")
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "non-existent")
 
 	s.Nil(err) // Delete is idempotent, returns nil for non-existent
 	s.mockStore.AssertExpectations(s.T())
@@ -565,9 +581,9 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_NotFound() {
 
 // TestDeleteIdentityProvider_GetStoreError tests store error when checking existing IDP
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_GetStoreError() {
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return((*IDPDTO)(nil), errors.New("database error"))
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return((*IDPDTO)(nil), errors.New("database error"))
 
-	err := s.idpService.DeleteIdentityProvider("idp-123")
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
 
 	s.NotNil(err)
 	s.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -578,10 +594,10 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_GetStoreError() {
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_StoreError() {
 	existingIDP := &IDPDTO{ID: "idp-123", Name: "Test IDP"}
 
-	s.mockStore.On("GetIdentityProvider", "idp-123").Return(existingIDP, nil)
-	s.mockStore.On("DeleteIdentityProvider", "idp-123").Return(errors.New("database error"))
+	s.mockStore.On("GetIdentityProvider", mock.Anything, "idp-123").Return(existingIDP, nil)
+	s.mockStore.On("DeleteIdentityProvider", mock.Anything, "idp-123").Return(errors.New("database error"))
 
-	err := s.idpService.DeleteIdentityProvider("idp-123")
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
 
 	s.NotNil(err)
 	s.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -605,7 +621,7 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_DeclarativeModeEnabled(
 		Type: IDPTypeOIDC,
 	}
 
-	result, err := s.idpService.CreateIdentityProvider(idp)
+	result, err := s.idpService.CreateIdentityProvider(context.Background(), idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -629,7 +645,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_DeclarativeModeEnabled(
 		Type: IDPTypeOIDC,
 	}
 
-	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+	result, err := s.idpService.UpdateIdentityProvider(context.Background(), "idp-123", idp)
 
 	s.Nil(result)
 	s.NotNil(err)
@@ -648,7 +664,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_DeclarativeModeEnabled(
 	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	err := s.idpService.DeleteIdentityProvider("idp-123")
+	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
 
 	s.NotNil(err)
 	s.Equal(declarativeresource.ErrorDeclarativeResourceDeleteOperation.Code, err.Code)
@@ -718,4 +734,180 @@ func (s *IDPServiceTestSuite) TestValidateIDP() {
 			}
 		})
 	}
+}
+
+// TestUpdateIdentityProvider_FailsForDeclarativeIDP verifies immutability in composite mode
+func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := declarativeIDPTestID
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Declarative IDP",
+		Description: "From file store",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP exists in file store (declarative) - dbStore should return not found, fileStore returns the IDP
+	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
+
+	// Mock GetIdentityProviderByName check (name is changing)
+	dbStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	fileStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").
+		Return((*IDPDTO)(nil), ErrIDPNotFound)
+
+	service := newIDPService(compositeStore, &mockTransactioner{})
+
+	updatedIDP := &IDPDTO{
+		Name:        "Updated Name",
+		Description: "Updated Description",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	result, err := service.UpdateIdentityProvider(context.Background(), idpID, updatedIDP)
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal("IDP-1010", err.Code)
+	s.Equal("Identity provider is immutable", err.Error)
+
+	config.ResetThunderRuntime()
+}
+
+// TestUpdateIdentityProvider_SucceedsForMutableIDP verifies update works for DB IDPs
+func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := mutableIDPTestID
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Mutable IDP",
+		Description: "From database",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP only exists in database (not in file store)
+	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+	fileStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").
+		Return((*IDPDTO)(nil), ErrIDPNotFound)
+	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
+	dbStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	dbStore.On("UpdateIdentityProvider", context.Background(), mock.MatchedBy(func(dto *IDPDTO) bool {
+		return dto.ID == idpID && dto.Name == "Updated Name"
+	})).Return(nil)
+
+	service := newIDPService(compositeStore, &mockTransactioner{})
+
+	updatedIDP := &IDPDTO{
+		Name:        "Updated Name",
+		Description: "Updated Description",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	result, err := service.UpdateIdentityProvider(context.Background(), idpID, updatedIDP)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Equal("Updated Name", result.Name)
+
+	config.ResetThunderRuntime()
+}
+
+// TestDeleteIdentityProvider_FailsForDeclarativeIDP verifies immutability for deletes
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := "declarative-idp"
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Declarative IDP",
+		Description: "From file store",
+		Type:        IDPTypeOIDC,
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP exists in file store (declarative) - dbStore should return not found, fileStore returns the IDP
+	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
+
+	service := newIDPService(compositeStore, &mockTransactioner{})
+
+	err := service.DeleteIdentityProvider(context.Background(), idpID)
+
+	s.NotNil(err)
+	s.Equal("IDP-1010", err.Code)
+	s.Equal("Identity provider is immutable", err.Error)
+
+	config.ResetThunderRuntime()
+}
+
+// TestDeleteIdentityProvider_SucceedsForMutableIDP verifies delete works for DB IDPs
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := "mutable-idp"
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Mutable IDP",
+		Description: "From database",
+		Type:        IDPTypeOIDC,
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP only exists in database (not in file store)
+	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
+	dbStore.On("DeleteIdentityProvider", context.Background(), idpID).Return(nil)
+
+	service := newIDPService(compositeStore, &mockTransactioner{})
+
+	err := service.DeleteIdentityProvider(context.Background(), idpID)
+
+	s.Nil(err)
+	dbStore.AssertCalled(s.T(), "DeleteIdentityProvider", context.Background(), idpID)
+
+	config.ResetThunderRuntime()
 }

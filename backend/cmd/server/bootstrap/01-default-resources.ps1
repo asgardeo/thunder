@@ -143,6 +143,11 @@ $userSchemaData = ([ordered]@{
             type = "boolean"
             required = $false
         }
+        password = @{
+            type = "string"
+            required = $true
+            credential = $true
+        }
     }
 } | ConvertTo-Json -Depth 5)
 
@@ -299,33 +304,226 @@ else {
 Write-Host ""
 
 # ============================================================================
-# Create System Action
+# Create System Resource Permissions (hierarchical permission model)
+# ============================================================================
+#
+# Permission auto-derivation:
+#   Resource Server identifier "system"
+#   └── Resource handle "system"     → permission "system"
+#       └── Resource handle "ou"     → permission "system:ou"
+#           └── Action handle "view" → permission "system:ou:view"
+#       └── Resource handle "user"   → permission "system:user"
+#           └── Action handle "view" → permission "system:user:view"
 # ============================================================================
 
-Log-Info "Creating 'system' action on resource server..."
+Log-Info "Creating 'system' resource under the system resource server..."
 
 if (-not $SYSTEM_RS_ID) {
-    Log-Error "System resource server ID is not available. Cannot create action."
+    Log-Error "System resource server ID is not available. Cannot create system resource."
     exit 1
 }
 
-$actionData = @{
-    name = "System Access"
-    description = "Full system access permission"
-    handle = "system"
+$systemResourceData = @{
+    name        = "System"
+    description = "System resource"
+    handle      = "system"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/actions" -Data $actionData
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $systemResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "System action created successfully"
+    Log-Success "System resource created successfully (permission: system)"
+    $body = $response.Body | ConvertFrom-Json
+    $SYSTEM_RESOURCE_ID = $body.id
+    if ($SYSTEM_RESOURCE_ID) {
+        Log-Info "System resource ID: $SYSTEM_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract system resource ID from response"
+        exit 1
+    }
 }
 elseif ($response.StatusCode -eq 409) {
-    Log-Warning "System action already exists, skipping"
+    Log-Warning "System resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $systemResource = $body.resources | Where-Object { $_.handle -eq "system" } | Select-Object -First 1
+
+        if ($systemResource) {
+            $SYSTEM_RESOURCE_ID = $systemResource.id
+            Log-Success "Found system resource ID: $SYSTEM_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find system resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
 }
 else {
-    Log-Error "Failed to create system action (HTTP $($response.StatusCode))"
+    Log-Error "Failed to create system resource (HTTP $($response.StatusCode))"
     Write-Host "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'ou' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create OU resource."
+    exit 1
+}
+
+$ouResourceData = @{
+    name        = "Organization Unit"
+    description = "Organization unit resource"
+    handle      = "ou"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $ouResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "OU resource created successfully (permission: system:ou)"
+    $body = $response.Body | ConvertFrom-Json
+    $OU_RESOURCE_ID = $body.id
+    if ($OU_RESOURCE_ID) {
+        Log-Info "OU resource ID: $OU_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract OU resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "OU resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $ouResource = $body.resources | Where-Object { $_.handle -eq "ou" } | Select-Object -First 1
+
+        if ($ouResource) {
+            $OU_RESOURCE_ID = $ouResource.id
+            Log-Success "Found OU resource ID: $OU_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find OU resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create OU resource (HTTP $($response.StatusCode))"
+    Write-Host "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'ou' resource..."
+
+$ouViewActionData = @{
+    name        = "View"
+    description = "Read-only access to organization units"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$OU_RESOURCE_ID/actions" -Data $ouViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "OU view action created successfully (permission: system:ou:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "OU view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create OU view action (HTTP $($response.StatusCode))"
+    Write-Host "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'user' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create user resource."
+    exit 1
+}
+
+$userResourceData = @{
+    name        = "User"
+    description = "User resource"
+    handle      = "user"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User resource created successfully (permission: system:user)"
+    $body = $response.Body | ConvertFrom-Json
+    $USER_RESOURCE_ID = $body.id
+    if ($USER_RESOURCE_ID) {
+        Log-Info "User resource ID: $USER_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract user resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $userResource = $body.resources | Where-Object { $_.handle -eq "user" } | Select-Object -First 1
+
+        if ($userResource) {
+            $USER_RESOURCE_ID = $userResource.id
+            Log-Success "Found user resource ID: $USER_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find user resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create user resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'user' resource..."
+
+$userViewActionData = @{
+    name        = "View"
+    description = "Read-only access to users"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_RESOURCE_ID/actions" -Data $userViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User view action created successfully (permission: system:user:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create user view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
     exit 1
 }
 
@@ -391,9 +589,6 @@ else {
 
 Write-Host ""
 
-# ============================================================================
-# Create Default Flows
-# ============================================================================
 
 Log-Info "Creating default flows..."
 
@@ -747,7 +942,7 @@ $appData = @{
     registration_flow_id = $DEVELOP_REG_FLOW_ID
     is_registration_flow_enabled = $false
     allowed_user_types = @("Person")
-    user_attributes = @("given_name", "family_name", "email", "groups", "name")
+    user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
     inbound_auth_config = @(
         @{
             type = "oauth2"
@@ -760,14 +955,13 @@ $appData = @{
                 token_endpoint_auth_method = "none"
                 public_client = $true
                 token = @{
-                    issuer = $PUBLIC_URL
                     access_token = @{
                         validity_period = 3600
-                        user_attributes = @("given_name", "family_name", "email", "groups", "name")
+                        user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
                     }
                     id_token = @{
                         validity_period = 3600
-                        user_attributes = @("given_name", "family_name", "email", "groups", "name")
+                        user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
                         scope_claims = @{
                             profile = @("name", "given_name", "family_name", "picture")
                             email = @("email", "email_verified")

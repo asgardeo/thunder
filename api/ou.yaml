@@ -1208,6 +1208,18 @@ components:
           type: string
           format: uri
           description: "Logo URL for the organization unit"
+        tos_uri:
+          type: string
+          format: uri
+          description: "Terms of Service URI"
+        policy_uri:
+          type: string
+          format: uri
+          description: "Privacy Policy URI"
+        cookie_policy_uri:
+          type: string
+          format: uri
+          description: "Cookie Policy URI"
 
     UpdateOrganizationUnitByHandleRequest:
       type: object
@@ -1237,6 +1249,18 @@ components:
           type: string
           format: uri
           description: "Logo URL for the organization unit"
+        tos_uri:
+          type: string
+          format: uri
+          description: "Terms of Service URI"
+        policy_uri:
+          type: string
+          format: uri
+          description: "Privacy Policy URI"
+        cookie_policy_uri:
+          type: string
+          format: uri
+          description: "Cookie Policy URI"
 
     CreateOrganizationUnitRequest:
       allOf:

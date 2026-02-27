@@ -18,7 +18,7 @@
 
 import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {useNavigate, useParams, useLocation} from 'react-router';
+import {useNavigate, useParams, useLocation, Link} from 'react-router';
 import {
   Avatar,
   Box,
@@ -33,6 +33,8 @@ import {
   Tabs,
   Tab,
   Snackbar,
+  PageContent,
+  PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Building} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
@@ -167,7 +169,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
 
   if (fetchError) {
     return (
-      <Box sx={{maxWidth: 1200, mx: 'auto', px: 2, pt: 6}}>
+      <PageContent>
         <Alert severity="error" sx={{mb: 2}}>
           {fetchError.message ?? t('organizationUnits:edit.page.error')}
         </Alert>
@@ -181,13 +183,13 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         >
           {t('organizationUnits:edit.page.back')}
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   if (!organizationUnit) {
     return (
-      <Box sx={{maxWidth: 1200, mx: 'auto', px: 2, pt: 6}}>
+      <PageContent>
         <Alert severity="warning" sx={{mb: 2}}>
           {t('organizationUnits:edit.page.notFound')}
         </Alert>
@@ -201,181 +203,166 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         >
           {t('organizationUnits:edit.page.back')}
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   return (
-    <Box>
+    <PageContent>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Button
-          onClick={() => {
-            handleBack().catch((error: unknown) => {
-              logger.error('Failed to navigate back', {error});
-            });
-          }}
-          variant="text"
-          startIcon={<ArrowLeft size={16} />}
-        >
+      <PageTitle>
+        <PageTitle.BackButton component={<Link to={fromOU ? `/organization-units/${fromOU.id}` : listUrl} />}>
           {backButtonText}
-        </Button>
-      </Stack>
-
-      {/* Organization Unit Header */}
-      <Box sx={{p: 3, mb: 3}}>
-        <Stack direction="row" spacing={3} alignItems="center">
-          <Box sx={{position: 'relative'}}>
-            <Avatar
-              src={editedOU.logo_url ?? organizationUnit.logo_url ?? undefined}
-              slotProps={{
-                img: {
-                  onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
-                    e.currentTarget.style.display = 'none';
-                  },
+        </PageTitle.BackButton>
+        <PageTitle.Avatar sx={{position: 'relative', overflow: 'visible'}}>
+          <Avatar
+            src={editedOU.logo_url ?? organizationUnit.logo_url ?? undefined}
+            slotProps={{
+              img: {
+                onError: (e: SyntheticEvent<HTMLImageElement>) => {
+                  e.currentTarget.style.display = 'none';
                 },
-              }}
-              sx={{
-                width: 80,
-                height: 80,
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8,
-                },
-              }}
-              onClick={() => setIsLogoModalOpen(true)}
-            >
-              <Building size={32} />
-            </Avatar>
-            <IconButton
-              size="small"
-              sx={{
-                position: 'absolute',
-                bottom: -4,
-                right: -4,
-                bgcolor: 'background.paper',
-                boxShadow: 1,
-                '&:hover': {bgcolor: 'action.hover'},
-              }}
-              onClick={() => setIsLogoModalOpen(true)}
-            >
-              <Edit size={14} />
-            </IconButton>
-          </Box>
-          <Box flex={1}>
-            <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-              {isEditingName ? (
-                <TextField
-                  autoFocus
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  onBlur={() => {
+              },
+            }}
+            sx={{
+              cursor: 'pointer',
+              '&:hover': {
+                opacity: 0.8,
+              },
+            }}
+            onClick={() => setIsLogoModalOpen(true)}
+          >
+            <Building size={32} />
+          </Avatar>
+          <IconButton
+            size="small"
+            aria-label={t('organizationUnits:edit.page.logoUpdate.label')}
+            sx={{
+              position: 'absolute',
+              bottom: -4,
+              right: -4,
+              bgcolor: 'background.paper',
+              boxShadow: 1,
+              '&:hover': {bgcolor: 'action.hover'},
+            }}
+            onClick={() => setIsLogoModalOpen(true)}
+          >
+            <Edit size={14} />
+          </IconButton>
+        </PageTitle.Avatar>
+        <PageTitle.Header>
+          <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+            {isEditingName ? (
+              <TextField
+                autoFocus
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={() => {
+                  if (tempName.trim()) {
+                    handleFieldChange('name', tempName.trim());
+                  }
+                  setIsEditingName(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
                     if (tempName.trim()) {
                       handleFieldChange('name', tempName.trim());
                     }
                     setIsEditingName(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      if (tempName.trim()) {
-                        handleFieldChange('name', tempName.trim());
-                      }
-                      setIsEditingName(false);
-                    } else if (e.key === 'Escape') {
-                      setTempName(editedOU.name ?? organizationUnit.name);
-                      setIsEditingName(false);
-                    }
-                  }}
+                  } else if (e.key === 'Escape') {
+                    setTempName(editedOU.name ?? organizationUnit.name);
+                    setIsEditingName(false);
+                  }
+                }}
+                size="small"
+              />
+            ) : (
+              <>
+                <Typography variant="h3">{editedOU.name ?? organizationUnit.name}</Typography>
+                <IconButton
                   size="small"
-                />
-              ) : (
-                <>
-                  <Typography variant="h3">{editedOU.name ?? organizationUnit.name}</Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setTempName(editedOU.name ?? organizationUnit.name);
-                      setIsEditingName(true);
-                    }}
-                    sx={{
-                      opacity: 0.6,
-                      '&:hover': {opacity: 1},
-                    }}
-                  >
-                    <Edit size={16} />
-                  </IconButton>
-                </>
-              )}
-            </Stack>
-            <Stack direction="row" alignItems="flex-start" spacing={1}>
-              {isEditingDescription ? (
-                <TextField
-                  autoFocus
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={tempDescription}
-                  onChange={(e) => setTempDescription(e.target.value)}
-                  onBlur={() => {
+                  onClick={() => {
+                    setTempName(editedOU.name ?? organizationUnit.name);
+                    setIsEditingName(true);
+                  }}
+                  sx={{
+                    opacity: 0.6,
+                    '&:hover': {opacity: 1},
+                  }}
+                >
+                  <Edit size={16} />
+                </IconButton>
+              </>
+            )}
+          </Stack>
+        </PageTitle.Header>
+        <PageTitle.SubHeader>
+          <Stack direction="row" alignItems="flex-start" spacing={1}>
+            {isEditingDescription ? (
+              <TextField
+                autoFocus
+                fullWidth
+                multiline
+                rows={2}
+                value={tempDescription}
+                onChange={(e) => setTempDescription(e.target.value)}
+                onBlur={() => {
+                  const trimmedDescription = tempDescription.trim();
+                  if (trimmedDescription !== (organizationUnit.description ?? '')) {
+                    handleFieldChange('description', trimmedDescription || null);
+                  }
+                  setIsEditingDescription(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
                     const trimmedDescription = tempDescription.trim();
                     if (trimmedDescription !== (organizationUnit.description ?? '')) {
                       handleFieldChange('description', trimmedDescription || null);
                     }
                     setIsEditingDescription(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      const trimmedDescription = tempDescription.trim();
-                      if (trimmedDescription !== (organizationUnit.description ?? '')) {
-                        handleFieldChange('description', trimmedDescription || null);
-                      }
-                      setIsEditingDescription(false);
-                    } else if (e.key === 'Escape') {
-                      setTempDescription(
-                        (editedOU.description !== undefined ? editedOU.description : organizationUnit.description) ??
-                          '',
-                      );
-                      setIsEditingDescription(false);
-                    }
-                  }}
+                  } else if (e.key === 'Escape') {
+                    setTempDescription(
+                      (editedOU.description !== undefined ? editedOU.description : organizationUnit.description) ?? '',
+                    );
+                    setIsEditingDescription(false);
+                  }
+                }}
+                size="small"
+                placeholder={t('organizationUnits:edit.page.description.placeholder')}
+                sx={{
+                  maxWidth: '600px',
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.875rem',
+                  },
+                }}
+              />
+            ) : (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  {(editedOU.description !== undefined ? editedOU.description : organizationUnit.description) ??
+                    t('organizationUnits:edit.page.description.empty')}
+                </Typography>
+                <IconButton
                   size="small"
-                  placeholder={t('organizationUnits:edit.page.description.placeholder')}
-                  sx={{
-                    maxWidth: '600px',
-                    '& .MuiInputBase-root': {
-                      fontSize: '0.875rem',
-                    },
+                  onClick={() => {
+                    setTempDescription(
+                      (editedOU.description !== undefined ? editedOU.description : organizationUnit.description) ?? '',
+                    );
+                    setIsEditingDescription(true);
                   }}
-                />
-              ) : (
-                <>
-                  <Typography variant="body2" color="text.secondary">
-                    {(editedOU.description !== undefined ? editedOU.description : organizationUnit.description) ??
-                      t('organizationUnits:edit.page.description.empty')}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setTempDescription(
-                        (editedOU.description !== undefined ? editedOU.description : organizationUnit.description) ??
-                          '',
-                      );
-                      setIsEditingDescription(true);
-                    }}
-                    sx={{
-                      opacity: 0.6,
-                      '&:hover': {opacity: 1},
-                      mt: -0.5,
-                    }}
-                  >
-                    <Edit size={14} />
-                  </IconButton>
-                </>
-              )}
-            </Stack>
-          </Box>
-        </Stack>
-      </Box>
+                  sx={{
+                    opacity: 0.6,
+                    '&:hover': {opacity: 1},
+                    mt: -0.5,
+                  }}
+                >
+                  <Edit size={14} />
+                </IconButton>
+              </>
+            )}
+          </Stack>
+        </PageTitle.SubHeader>
+      </PageTitle>
 
       {/* Tabs */}
       <Tabs value={activeTab} onChange={handleTabChange} aria-label="organization unit settings tabs">
@@ -532,6 +519,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
           </Stack>
         </Paper>
       )}
-    </Box>
+    </PageContent>
   );
 }

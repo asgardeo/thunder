@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,16 +27,24 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 const (
 	testCryptoKey = "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
 )
+
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
+}
 
 // InitTestSuite contains comprehensive tests for the init.go file.
 type InitTestSuite struct {
@@ -63,6 +72,12 @@ func (suite *InitTestSuite) TestInitialize() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -79,6 +94,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -101,6 +122,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -116,11 +143,48 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	suite.NotEqual(http.StatusNotFound, w.Code)
 }
 
+// TestInitialize_DBTransactionerError tests Initialize when DBTransactioner fails
+func (suite *InitTestSuite) TestInitialize_DBTransactionerError() {
+	// Ensure any previously initialized DB clients are closed so it forces re-initialization
+	_ = provider.GetDBProviderCloser().Close()
+	defer func() {
+		_ = provider.GetDBProviderCloser().Close()
+	}()
+
+	// Configure with invalid DB driver to force an error during GetConfigDBTransactioner
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "invalid-db-type",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(suite.T(), err)
+
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.Error(suite.T(), err)
+	if err != nil {
+		assert.Contains(suite.T(), err.Error(), "failed to get config database client")
+	}
+}
+
 // TestRegisterRoutes_GetByIDEndpoint tests that the get by ID endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -143,6 +207,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -163,6 +233,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -185,6 +261,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -205,6 +287,12 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -401,22 +489,309 @@ func TestInitialize_Standalone(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 
 	config.ResetThunderRuntime()
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
-	defer config.ResetThunderRuntime()
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	service, exporter, err := Initialize(mux, mockOUService)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, service)
+	assert.NotNil(t, exporter)
+}
+
+// TestInitializeStore_MutableMode tests initializeStore with mutable mode (database only).
+func TestInitializeStore_MutableMode(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "mutable",
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
+
+	store := initializeStore(getUserSchemaStoreMode())
+
+	assert.NotNil(t, store)
+	// In mutable mode, should return userSchemaStore (not composite or file-based)
+	_, isComposite := store.(*compositeUserSchemaStore)
+	assert.False(t, isComposite, "Store should not be composite in mutable mode")
+	_, isFileBased := store.(*userSchemaFileBasedStore)
+	assert.False(t, isFileBased, "Store should not be file-based in mutable mode")
+}
+
+// TestInitializeStore_DeclarativeMode tests initializeStore with declarative mode (file-based only).
+func TestInitializeStore_DeclarativeMode(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "declarative",
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
+
+	store := initializeStore(getUserSchemaStoreMode())
+
+	assert.NotNil(t, store)
+	// In declarative mode, should return file-based store
+	_, isFileBased := store.(*userSchemaFileBasedStore)
+	assert.True(t, isFileBased, "Store should be file-based in declarative mode")
+}
+
+// TestInitializeStore_CompositeMode tests initializeStore with composite mode (both stores).
+func TestInitializeStore_CompositeMode(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "composite",
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
+
+	store := initializeStore(getUserSchemaStoreMode())
+
+	assert.NotNil(t, store)
+	// In composite mode, should return composite store
+	compositeStore, isComposite := store.(*compositeUserSchemaStore)
+	assert.True(t, isComposite, "Store should be composite in composite mode")
+	assert.NotNil(t, compositeStore.fileStore, "Composite store should have file store")
+	assert.NotNil(t, compositeStore.dbStore, "Composite store should have db store")
+}
+
+// TestInitializeStore_DefaultFallbackToMutable tests that default config falls back to mutable mode.
+func TestInitializeStore_DefaultFallbackToMutable(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false, // Disabled, should default to mutable
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "", // Not specified
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
+
+	store := initializeStore(getUserSchemaStoreMode())
+
+	assert.NotNil(t, store)
+	// Should default to mutable mode (database store)
+	_, isComposite := store.(*compositeUserSchemaStore)
+	assert.False(t, isComposite, "Store should not be composite when not specified")
+	_, isFileBased := store.(*userSchemaFileBasedStore)
+	assert.False(t, isFileBased, "Store should not be file-based when declarative disabled")
+}
+
+// TestInitializeStore_GlobalDeclarativeEnabled tests fallback to global declarative setting.
+func TestInitializeStore_GlobalDeclarativeEnabled(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true, // Global declarative enabled
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "", // Not specified, should use global setting
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
+
+	store := initializeStore(getUserSchemaStoreMode())
+
+	assert.NotNil(t, store)
+	// Should use declarative mode when global declarative resources enabled
+	_, isFileBased := store.(*userSchemaFileBasedStore)
+	assert.True(t, isFileBased, "Store should be file-based when global declarative enabled")
+}
+
+// TestInitialize_MutableMode tests Initialize with mutable mode (no transactioner needed).
+func TestInitialize_MutableMode(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "mutable",
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
 
 	mux := http.NewServeMux()
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
-	service, _, err := Initialize(mux, mockOUService)
+	service, exporter, err := Initialize(mux, mockOUService)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, service)
+	assert.NotNil(t, exporter)
+	assert.Implements(t, (*UserSchemaServiceInterface)(nil), service)
+}
+
+// TestInitialize_DeclarativeMode tests Initialize with declarative mode (no transactioner needed).
+func TestInitialize_DeclarativeMode(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "declarative",
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	// Mock OU service for potential declarative resource loading
+	mockOUService.On("GetOrganizationUnit", mock.Anything, mock.Anything).
+		Return(&oupkg.OrganizationUnit{ID: "ou-1"}, nil).
+		Maybe()
+
+	service, exporter, err := Initialize(mux, mockOUService)
+
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
-	assert.Implements(t, (*UserSchemaServiceInterface)(nil), service)
+	assert.NotNil(t, exporter)
+}
+
+// TestInitialize_CompositeMode tests Initialize with composite mode.
+func TestInitialize_CompositeMode(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		UserSchema: config.UserSchemaConfig{
+			Store: "composite",
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(t, err)
+
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	// Mock OU service for potential declarative resource loading
+	mockOUService.On("GetOrganizationUnit", mock.Anything, mock.Anything).
+		Return(&oupkg.OrganizationUnit{ID: "ou-1"}, nil).
+		Maybe()
+
+	service, exporter, err := Initialize(mux, mockOUService)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, service)
+	assert.NotNil(t, exporter)
+}
+
+// TestRegisterRoutes_AllEndpoints tests that all expected routes are registered.
+func TestRegisterRoutes_AllEndpoints(t *testing.T) {
+	mux := http.NewServeMux()
+	// Create a mock service to avoid nil pointer issues
+	mockService := NewUserSchemaServiceInterfaceMock(t)
+	mockHandler := newUserSchemaHandler(mockService)
+
+	registerRoutes(mux, mockHandler)
+
+	// Test that OPTIONS endpoints are registered for CORS
+	endpoints := []struct {
+		method string
+		path   string
+	}{
+		{http.MethodOptions, "/user-schemas"},
+		{http.MethodOptions, "/user-schemas/test-id"},
+	}
+
+	for _, ep := range endpoints {
+		req := httptest.NewRequest(ep.method, ep.path, nil)
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		// Should not return 404 if route is registered, should return 204 for OPTIONS
+		assert.NotEqual(t, http.StatusNotFound, w.Code,
+			"Route %s %s should be registered", ep.method, ep.path)
+	}
 }
 
 // TestParseToUserSchemaDTO_InvalidJSONSchema tests parsing with invalid JSON in schema field
@@ -590,13 +965,13 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 
 			// Mock the GetOrganizationUnit call that happens in Initialize()
 			if tc.ouServiceError != nil {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{}, tc.ouServiceError).Once()
 			} else if tc.ouExists {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{ID: tc.ouID}, (*serviceerror.ServiceError)(nil)).Once()
 			} else {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 						Code:             "OUS-1002",
 						Type:             serviceerror.ClientErrorType,
@@ -606,7 +981,7 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 			}
 
 			// Simulate the OU validation logic from Initialize()
-			_, svcErr := mockOUService.GetOrganizationUnit(tc.ouID)
+			_, svcErr := mockOUService.GetOrganizationUnit(context.Background(), tc.ouID)
 
 			switch tc.expectedResult {
 			case "success":
@@ -860,7 +1235,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Mock OU service to return an error
-	mockOUService.On("GetOrganizationUnit", "550e8400-e29b-41d4-a716-446655440000").
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "550e8400-e29b-41d4-a716-446655440000").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 			Code:             "OUS-1002",
 			Type:             serviceerror.ClientErrorType,

@@ -762,17 +762,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 }
 
 func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
-	groupWithMembers := GroupDAO{
-		ID:                 "grp-001",
-		Name:               "Engineering",
-		Description:        "Core",
-		OrganizationUnitID: "ou-1",
-		Members: []Member{
-			{ID: "user-1", Type: MemberTypeUser},
-		},
-	}
-
-	groupWithoutMembers := GroupDAO{
+	groupDAO := GroupDAO{
 		ID:                 "grp-001",
 		Name:               "Engineering",
 		Description:        "Core",
@@ -790,7 +780,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 	}{
 		{
 			name:  "rows affected zero",
-			group: groupWithMembers,
+			group: groupDAO,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
@@ -804,10 +794,10 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"ExecuteContext",
 						mock.Anything,
 						QueryUpdateGroup,
-						groupWithMembers.ID,
-						groupWithMembers.OrganizationUnitID,
-						groupWithMembers.Name,
-						groupWithMembers.Description,
+						groupDAO.ID,
+						groupDAO.OrganizationUnitID,
+						groupDAO.Name,
+						groupDAO.Description,
 						testDeploymentID,
 					).
 					Return(int64(0), nil).
@@ -857,94 +847,8 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 			expectErr: "failed to execute query",
 		},
 		{
-			name:  "delete members error",
-			group: groupWithoutMembers,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryUpdateGroup,
-						groupWithoutMembers.ID,
-						groupWithoutMembers.OrganizationUnitID,
-						groupWithoutMembers.Name,
-						groupWithoutMembers.Description,
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryDeleteGroupMembers,
-						groupWithoutMembers.ID,
-						testDeploymentID,
-					).
-					Return(int64(0), errors.New("delete fail")).
-					Once()
-			},
-			expectErr: "failed to delete existing group member assignments",
-		},
-		{
-			name:  "add members error",
-			group: groupWithMembers,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryUpdateGroup,
-						groupWithMembers.ID,
-						groupWithMembers.OrganizationUnitID,
-						groupWithMembers.Name,
-						groupWithMembers.Description,
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryDeleteGroupMembers,
-						groupWithMembers.ID,
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryAddMemberToGroup,
-						groupWithMembers.ID,
-						MemberTypeUser,
-						"user-1",
-						testDeploymentID,
-					).
-					Return(int64(0), errors.New("member fail")).
-					Once()
-			},
-			expectErr: "failed to add member to group",
-		},
-		{
 			name:  "success",
-			group: groupWithMembers,
+			group: groupDAO,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
@@ -958,32 +862,10 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"ExecuteContext",
 						mock.Anything,
 						QueryUpdateGroup,
-						groupWithMembers.ID,
-						groupWithMembers.OrganizationUnitID,
-						groupWithMembers.Name,
-						groupWithMembers.Description,
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryDeleteGroupMembers,
-						groupWithMembers.ID,
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryAddMemberToGroup,
-						groupWithMembers.ID,
-						MemberTypeUser,
-						"user-1",
+						groupDAO.ID,
+						groupDAO.OrganizationUnitID,
+						groupDAO.Name,
+						groupDAO.Description,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1840,122 +1722,4 @@ func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError()
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to add member to group")
-}
-
-func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
-	testCases := []struct {
-		name      string
-		setup     func(*providermock.DBClientInterfaceMock)
-		members   []Member
-		expectErr string
-	}{
-		{
-			name: "success",
-			setup: func(
-				dbClientMock *providermock.DBClientInterfaceMock,
-			) {
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryAddMemberToGroup,
-						"grp-001",
-						mock.Anything, // MemberType to avoid type mismatch
-						"usr-1",
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-			},
-			members: []Member{{ID: "usr-1", Type: MemberTypeUser}},
-		},
-		{
-			name: "delete error",
-			setup: func(
-				dbClientMock *providermock.DBClientInterfaceMock,
-			) {
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(int64(0), errors.New("delete fail")).
-					Once()
-			},
-			expectErr: "failed to delete existing group member assignments",
-		},
-		{
-			name: "add member error",
-			setup: func(
-				dbClientMock *providermock.DBClientInterfaceMock,
-			) {
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(int64(1), nil).
-					Once()
-
-				dbClientMock.
-					On(
-						"ExecuteContext",
-						mock.Anything,
-						QueryAddMemberToGroup,
-						"grp-001",
-						mock.Anything, // MemberType to avoid type mismatch
-						"usr-1",
-						testDeploymentID,
-					).
-					Return(int64(0), errors.New("member fail")).
-					Once()
-			},
-			members:   []Member{{ID: "usr-1", Type: MemberTypeUser}},
-			expectErr: "failed to assign members to group",
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(tc.name, func() {
-			dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
-			if tc.setup != nil {
-				tc.setup(dbClientMock)
-			}
-
-			err := updateGroupMembers(
-				context.Background(),
-				dbClientMock,
-				"grp-001",
-				tc.members,
-				testDeploymentID,
-			)
-
-			if tc.expectErr != "" {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expectErr)
-			} else {
-				suite.Require().NoError(err)
-			}
-
-			dbClientMock.AssertExpectations(suite.T())
-		})
-	}
 }

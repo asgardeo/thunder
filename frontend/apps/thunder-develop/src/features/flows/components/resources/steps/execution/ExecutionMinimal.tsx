@@ -57,6 +57,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
   // This indicates the node supports branching and should show both handles
   const stepData = resource.data as StepData | undefined;
   const hasBranchingSupport = stepData?.action && 'onFailure' in stepData.action;
+  const hasIncompleteSupport = stepData?.action && 'onIncomplete' in stepData.action;
 
   const handleConfigClick = (): void => {
     if (stepId !== null) {
@@ -153,6 +154,19 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
         <Tooltip title={t('flows:core.executions.handles.failure')} placement="bottom">
           <Box className="handle-wrapper failure-wrapper">
             <Handle type="source" position={Position.Bottom} id="failure" className="execution-handle-failure" />
+          </Box>
+        </Tooltip>
+      )}
+      {/* Incomplete handle - shown at the top when the action supports incomplete (has onIncomplete property) */}
+      {hasIncompleteSupport && (
+        <Tooltip title={t('flows:core.executions.handles.incomplete')} placement="top">
+          <Box className="handle-wrapper incomplete-wrapper">
+            <Handle
+              type="source"
+              position={Position.Top}
+              id={`${resource.id}${VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX}`}
+              className="execution-handle-incomplete"
+            />
           </Box>
         </Tooltip>
       )}

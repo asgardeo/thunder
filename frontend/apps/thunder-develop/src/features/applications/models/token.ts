@@ -33,14 +33,6 @@
  */
 export interface TokenConfig {
   /**
-   * Token issuer identifier
-   * The entity that issues the tokens (typically your authorization server URL)
-   * This value appears in the 'iss' claim of JWT tokens
-   * @example 'https://auth.example.com' or 'thunder'
-   */
-  issuer?: string;
-
-  /**
    * Token validity period in seconds
    * Determines how long the token remains valid after issuance
    * @example 3600 (1 hour)

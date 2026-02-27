@@ -16,7 +16,17 @@
  * under the License.
  */
 
-import {Box, Stack, Button, IconButton, LinearProgress, Breadcrumbs, Typography, Alert, CircularProgress} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Stack,
+  Button,
+  IconButton,
+  LinearProgress,
+  Breadcrumbs,
+  Typography,
+  Alert,
+  CircularProgress,
+} from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useNavigate} from 'react-router';
@@ -51,7 +61,6 @@ import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import type {BasicFlowDefinition} from '../../flows/models/responses';
-
 
 export default function ApplicationCreatePage(): JSX.Element {
   const {t} = useTranslation();

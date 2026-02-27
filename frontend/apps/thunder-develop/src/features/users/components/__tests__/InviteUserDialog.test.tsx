@@ -23,6 +23,19 @@ import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react'
 import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react';
 import InviteUserDialog from '../InviteUserDialog';
 
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: mockLoggerError,
+    debug: vi.fn(),
+  }),
+}));
+
 // Mock InviteUser component
 const mockHandleInputChange = vi.fn();
 const mockHandleInputBlur = vi.fn();
@@ -46,6 +59,7 @@ const mockInviteUserRenderProps: InviteUserRenderProps = {
   inviteLinkCopied: false,
   resetFlow: mockResetFlow,
   isValid: false,
+  meta: null,
 };
 
 // Track whether to simulate an error in the InviteUser mock
@@ -56,13 +70,21 @@ vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual<typeof import('@asgardeo/react')>('@asgardeo/react');
   return {
     ...actual,
-    InviteUser: ({children, onInviteLinkGenerated, onError}: {
+    InviteUser: ({
+      children,
+      onInviteLinkGenerated,
+      onError,
+    }: {
       children: (props: InviteUserRenderProps) => JSX.Element;
       onInviteLinkGenerated?: (link: string) => void;
       onError?: (error: Error) => void;
     }) => {
       // Call onInviteLinkGenerated if invite is generated
-      if (mockInviteUserRenderProps.isInviteGenerated && mockInviteUserRenderProps.inviteLink && onInviteLinkGenerated) {
+      if (
+        mockInviteUserRenderProps.isInviteGenerated &&
+        mockInviteUserRenderProps.inviteLink &&
+        onInviteLinkGenerated
+      ) {
         // Use setTimeout to simulate async behavior
         setTimeout(() => {
           onInviteLinkGenerated(mockInviteUserRenderProps.inviteLink!);
@@ -904,7 +926,7 @@ describe('InviteUserDialog', () => {
     // Find the "Close" button (not the X icon button which has aria-label="close")
     const closeButtons = screen.getAllByRole('button', {name: /close/i});
     // The "Close" text button should be in the generated invite screen
-    const closeTextButton = closeButtons.find(btn => btn.textContent === 'Close');
+    const closeTextButton = closeButtons.find((btn) => btn.textContent === 'Close');
     expect(closeTextButton).toBeDefined();
     await user.click(closeTextButton!);
 
@@ -1095,7 +1117,7 @@ describe('InviteUserDialog', () => {
     expect(screen.getByText('Authentication failed')).toBeInTheDocument();
     // Find the "Close" text button (not the X icon button)
     const closeButtons = screen.getAllByRole('button', {name: /close/i});
-    const closeTextButton = closeButtons.find(btn => btn.textContent === 'Close');
+    const closeTextButton = closeButtons.find((btn) => btn.textContent === 'Close');
     expect(closeTextButton).toBeDefined();
   });
 
@@ -1209,7 +1231,10 @@ describe('InviteUserDialog', () => {
       label: 'Subscription Tier',
       placeholder: 'Select tier',
       required: false,
-      options: [{value: 'free', label: 'Free'}, {value: 'pro', label: 'Pro'}],
+      options: [
+        {value: 'free', label: 'Free'},
+        {value: 'pro', label: 'Pro'},
+      ],
       hint: 'Choose your subscription level',
     } as EmbeddedFlowComponent;
 
@@ -1508,9 +1533,7 @@ describe('InviteUserDialog', () => {
       label: 'Unknown',
       placeholder: 'Select option',
       required: true,
-      options: [
-        {value: 'admin', label: 'Administrator'},
-      ],
+      options: [{value: 'admin', label: 'Administrator'}],
     };
 
     const submitAction: EmbeddedFlowComponent = {
@@ -1561,8 +1584,6 @@ describe('InviteUserDialog', () => {
   });
 
   it('logs error when onError callback is triggered', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
     // Enable error simulation
     simulateInviteUserError = true;
 
@@ -1570,9 +1591,7 @@ describe('InviteUserDialog', () => {
 
     // Wait for the onError callback to be triggered
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('User onboarding error:', mockInviteUserError);
+      expect(mockLoggerError).toHaveBeenCalledWith('User onboarding error', {error: mockInviteUserError});
     });
-
-    consoleSpy.mockRestore();
   });
 });

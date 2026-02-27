@@ -74,6 +74,6 @@ var (
 	// queryGetApplicationsCountByLayoutID retrieves the count of applications using a layout.
 	queryGetApplicationsCountByLayoutID = dbmodel.DBQuery{
 		ID:    "LAQ-LAYOUT_MGT-08",
-		Query: "SELECT COUNT(*) as total FROM SP_APP WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT COUNT(*) as total FROM APPLICATION WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 )

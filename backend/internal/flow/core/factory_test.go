@@ -298,51 +298,45 @@ func (s *FlowFactoryTestSuite) TestCloneTaskExecutionNodeWithOnSuccess() {
 }
 
 func (s *FlowFactoryTestSuite) TestCloneNodeWithMeta() {
-	// Test meta cloning on task execution node
-	taskNode, _ := s.factory.CreateNode("task-1", string(common.NodeTypeTaskExecution),
-		map[string]interface{}{}, false, false)
-	taskMeta := map[string]interface{}{"title": "Task Title", "description": "Task Description"}
-	taskNode.SetMeta(taskMeta)
-
-	clonedTaskNode, err := s.factory.CloneNode(taskNode)
-
-	s.NoError(err)
-	s.NotNil(clonedTaskNode)
-	s.Equal(taskMeta, clonedTaskNode.GetMeta())
-
-	// Test meta cloning on prompt node
 	promptNode, _ := s.factory.CreateNode("prompt-1", string(common.NodeTypePrompt),
 		map[string]interface{}{}, false, false)
 	promptMeta := map[string]interface{}{"components": []string{"input1", "button1"}}
-	promptNode.SetMeta(promptMeta)
+
+	// Type assert to PromptNodeInterface to access SetMeta
+	if pn, ok := promptNode.(PromptNodeInterface); ok {
+		pn.SetMeta(promptMeta)
+	} else {
+		s.Fail("Prompt node should implement PromptNodeInterface")
+	}
 
 	clonedPromptNode, err := s.factory.CloneNode(promptNode)
 
 	s.NoError(err)
 	s.NotNil(clonedPromptNode)
-	s.Equal(promptMeta, clonedPromptNode.GetMeta())
 
-	// Test meta cloning on representation node (START)
-	startNode, _ := s.factory.CreateNode("start-1", string(common.NodeTypeStart),
-		map[string]interface{}{}, true, false)
-	startMeta := "start-meta"
-	startNode.SetMeta(startMeta)
+	// Type assert cloned node to verify meta was copied
+	if cpn, ok := clonedPromptNode.(PromptNodeInterface); ok {
+		s.Equal(promptMeta, cpn.GetMeta())
 
-	clonedStartNode, err := s.factory.CloneNode(startNode)
+		// Verify deep-copy: mutating the cloned meta should not affect the source
+		clonedMeta := cpn.GetMeta().(map[string]interface{})
+		clonedMeta["extra"] = "added"
+		s.NotEqual(promptMeta, clonedMeta, "Mutated clone meta should differ from source")
+		_, exists := promptMeta["extra"]
+		s.False(exists, "Source meta should not be affected by mutations to cloned meta")
+	} else {
+		s.Fail("Cloned prompt node should implement PromptNodeInterface")
+	}
 
-	s.NoError(err)
-	s.NotNil(clonedStartNode)
-	s.Equal(startMeta, clonedStartNode.GetMeta())
-
-	// Verify that nil meta is not copied (stays nil)
-	nodeWithoutMeta, _ := s.factory.CreateNode("task-2", string(common.NodeTypeTaskExecution),
+	// Verify that task nodes do not have meta
+	taskNode, _ := s.factory.CreateNode("task-1", string(common.NodeTypeTaskExecution),
 		map[string]interface{}{}, false, false)
-	s.Nil(nodeWithoutMeta.GetMeta())
-
-	clonedNodeWithoutMeta, err := s.factory.CloneNode(nodeWithoutMeta)
-
+	clonedTaskNode, err := s.factory.CloneNode(taskNode)
 	s.NoError(err)
-	s.Nil(clonedNodeWithoutMeta.GetMeta())
+	s.NotNil(clonedTaskNode)
+	// Should not be able to type assert to PromptNodeInterface
+	_, isPromptNode := clonedTaskNode.(PromptNodeInterface)
+	s.False(isPromptNode, "Task node should not implement PromptNodeInterface")
 }
 
 func (s *FlowFactoryTestSuite) TestCloneNodesSuccess() {
@@ -474,17 +468,17 @@ func (f *fakeExecutorBackedNode) GetOnFailure() string {
 
 func (f *fakeExecutorBackedNode) SetOnFailure(nodeID string) {}
 
+func (f *fakeExecutorBackedNode) GetOnIncomplete() string {
+	return ""
+}
+
+func (f *fakeExecutorBackedNode) SetOnIncomplete(nodeID string) {}
+
 func (f *fakeExecutorBackedNode) GetMode() string {
 	return ""
 }
 
 func (f *fakeExecutorBackedNode) SetMode(mode string) {}
-
-func (f *fakeExecutorBackedNode) GetMeta() interface{} {
-	return nil
-}
-
-func (f *fakeExecutorBackedNode) SetMeta(meta interface{}) {}
 
 func (s *FlowFactoryTestSuite) TestCloneNodeMismatchExecutorBacked() {
 	// source claims to be executor-backed but GetType returns Prompt which

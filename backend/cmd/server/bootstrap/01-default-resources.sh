@@ -133,6 +133,11 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
     "phone_number_verified": {
       "type": "boolean",
       "required": false
+    },
+    "password": {
+      "type": "string",
+      "required": true,
+      "credential": true
     }
   }
 }')
@@ -288,19 +293,28 @@ fi
 echo ""
 
 # ============================================================================
-# Create System Action
+# Create System Resource Permissions (hierarchical permission model)
+# ============================================================================
+#
+# Permission auto-derivation:
+#   Resource Server identifier "system"
+#   └── Resource handle "system"     → permission "system"
+#       └── Resource handle "ou"     → permission "system:ou"
+#           └── Action handle "view" → permission "system:ou:view"
+#       └── Resource handle "user"   → permission "system:user"
+#           └── Action handle "view" → permission "system:user:view"
 # ============================================================================
 
-log_info "Creating 'system' action on resource server..."
+log_info "Creating 'system' resource under the system resource server..."
 
 if [[ -z "$SYSTEM_RS_ID" ]]; then
-    log_error "System resource server ID is not available. Cannot create action."
+    log_error "System resource server ID is not available. Cannot create system resource."
     exit 1
 fi
 
-RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/actions" '{
-  "name": "System Access",
-  "description": "Full system access permission",
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" '{
+  "name": "System",
+  "description": "System resource",
   "handle": "system"
 }')
 
@@ -308,11 +322,171 @@ HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "System action created successfully"
+    log_success "System resource created successfully (permission: system)"
+    SYSTEM_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$SYSTEM_RESOURCE_ID" ]]; then
+        log_info "System resource ID: $SYSTEM_RESOURCE_ID"
+    else
+        log_error "Could not extract system resource ID from response"
+        exit 1
+    fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
-    log_warning "System action already exists, skipping"
+    log_warning "System resource already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        SYSTEM_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"system"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$SYSTEM_RESOURCE_ID" ]]; then
+            log_success "Found system resource ID: $SYSTEM_RESOURCE_ID"
+        else
+            log_error "Could not find system resource in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
+        exit 1
+    fi
 else
-    log_error "Failed to create system action (HTTP $HTTP_CODE)"
+    log_error "Failed to create system resource (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'ou' sub-resource under the 'system' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
+  \"name\": \"Organization Unit\",
+  \"description\": \"Organization unit resource\",
+  \"handle\": \"ou\",
+  \"parent\": \"${SYSTEM_RESOURCE_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "OU resource created successfully (permission: system:ou)"
+    OU_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$OU_RESOURCE_ID" ]]; then
+        log_info "OU resource ID: $OU_RESOURCE_ID"
+    else
+        log_error "Could not extract OU resource ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "OU resource already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources?parentId=${SYSTEM_RESOURCE_ID}")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        OU_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"ou"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$OU_RESOURCE_ID" ]]; then
+            log_success "Found OU resource ID: $OU_RESOURCE_ID"
+        else
+            log_error "Could not find OU resource in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create OU resource (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'view' action under the 'ou' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${OU_RESOURCE_ID}/actions" '{
+  "name": "View",
+  "description": "Read-only access to organization units",
+  "handle": "view"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "OU view action created successfully (permission: system:ou:view)"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "OU view action already exists, skipping"
+else
+    log_error "Failed to create OU view action (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'user' sub-resource under the 'system' resource..."
+
+if [[ -z "$SYSTEM_RESOURCE_ID" ]]; then
+    log_error "System resource ID is not available. Cannot create user resource."
+    exit 1
+fi
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
+  \"name\": \"User\",
+  \"description\": \"User resource\",
+  \"handle\": \"user\",
+  \"parent\": \"${SYSTEM_RESOURCE_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "User resource created successfully (permission: system:user)"
+    USER_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$USER_RESOURCE_ID" ]]; then
+        log_info "User resource ID: $USER_RESOURCE_ID"
+    else
+        log_error "Could not extract user resource ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "User resource already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources?parentId=${SYSTEM_RESOURCE_ID}")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        USER_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"user"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$USER_RESOURCE_ID" ]]; then
+            log_success "Found user resource ID: $USER_RESOURCE_ID"
+        else
+            log_error "Could not find user resource in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create user resource (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'view' action under the 'user' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${USER_RESOURCE_ID}/actions" '{
+  "name": "View",
+  "description": "Read-only access to users",
+  "handle": "view"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "User view action created successfully (permission: system:user:view)"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "User view action already exists, skipping"
+else
+    log_error "Failed to create user view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi
@@ -760,7 +934,7 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
   \"registration_flow_id\": \"${DEVELOP_REG_FLOW_ID}\",
   \"is_registration_flow_enabled\": false,
   \"allowed_user_types\": [\"Person\"],
-  \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\"],
+  \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\", \"ouId\"],
   \"inbound_auth_config\": [{
     \"type\": \"oauth2\",
     \"config\": {
@@ -772,14 +946,13 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
       \"token_endpoint_auth_method\": \"none\",
       \"public_client\": true,
       \"token\": {
-        \"issuer\": \"${PUBLIC_URL}\",
         \"access_token\": {
           \"validity_period\": 3600,
-          \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\"]
+          \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\", \"ouId\"]
         },
         \"id_token\": {
           \"validity_period\": 3600,
-          \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\"],
+          \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\", \"ouId\"],
           \"scope_claims\": {
             \"profile\": [\"name\",\"given_name\",\"family_name\",\"picture\"],
             \"email\": [\"email\",\"email_verified\"],

@@ -72,19 +72,18 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
 // UserInfoConfig represents the UserInfo endpoint configuration.
 type UserInfoConfig struct {
+	ResponseType   string   `json:"response_type,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
 // AssertionConfig represents the assertion configuration (used for application-level assertion config).
 type AssertionConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
@@ -174,8 +173,7 @@ func (app *Application) equals(expectedApp Application) bool {
 
 	// Assertion config
 	if (app.Assertion != nil) && (expectedApp.Assertion != nil) {
-		if app.Assertion.Issuer != expectedApp.Assertion.Issuer ||
-			app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
+		if app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
 			return false
 		}
 		if !compareStringSlices(app.Assertion.UserAttributes, expectedApp.Assertion.UserAttributes) {
@@ -265,6 +263,9 @@ func (app *Application) equals(expectedApp Application) bool {
 				// Compare UserInfo config - lenient if expected is nil but actual is empty
 				if expectedOAuth.UserInfo != nil {
 					if oauth.UserInfo == nil {
+						return false
+					}
+					if oauth.UserInfo.ResponseType != expectedOAuth.UserInfo.ResponseType {
 						return false
 					}
 					if !compareStringSlices(oauth.UserInfo.UserAttributes, expectedOAuth.UserInfo.UserAttributes) {

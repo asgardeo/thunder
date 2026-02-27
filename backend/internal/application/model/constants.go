@@ -28,6 +28,17 @@ const (
 	OAuthInboundAuthType InboundAuthType = "oauth2"
 )
 
+// UserInfoResponseType represents the response format of the UserInfo endpoint.
+type UserInfoResponseType string
+
+const (
+	// UserInfoResponseTypeJSON represents the JSON userinfo response type.
+	UserInfoResponseTypeJSON UserInfoResponseType = "JSON"
+
+	// UserInfoResponseTypeJWS represents the JWS userinfo response type.
+	UserInfoResponseTypeJWS UserInfoResponseType = "JWS"
+)
+
 // ApplicationNotFoundError is the error returned when an application is not found.
 var ApplicationNotFoundError error = errors.New("application not found")
 

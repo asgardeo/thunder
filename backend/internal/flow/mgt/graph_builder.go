@@ -195,6 +195,22 @@ func (b *graphBuilder) configureNodeNavigation(nodeDef *NodeDefinition, allNodes
 		edges[nodeDef.ID] = append(edges[nodeDef.ID], nodeDef.OnFailure)
 	}
 
+	// Set onIncomplete if defined
+	if nodeDef.OnIncomplete != "" {
+		if err := b.validateOnIncompleteTarget(allNodes, nodeDef.OnIncomplete); err != nil {
+			return fmt.Errorf("invalid onIncomplete configuration for node %s: %w", nodeDef.ID, err)
+		}
+		if taskNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
+			taskNode.SetOnIncomplete(nodeDef.OnIncomplete)
+		}
+
+		// Add edge for graph structure
+		if _, exists := edges[nodeDef.ID]; !exists {
+			edges[nodeDef.ID] = []string{}
+		}
+		edges[nodeDef.ID] = append(edges[nodeDef.ID], nodeDef.OnIncomplete)
+	}
+
 	return nil
 }
 
@@ -209,6 +225,19 @@ func (b *graphBuilder) validateOnFailureTarget(nodes []NodeDefinition, targetNod
 		}
 	}
 	return errors.New("onFailure target node not found")
+}
+
+// validateOnIncompleteTarget validates that the onIncomplete target node is a PROMPT node.
+func (b *graphBuilder) validateOnIncompleteTarget(nodes []NodeDefinition, targetNodeID string) error {
+	for _, node := range nodes {
+		if node.ID == targetNodeID {
+			if node.Type != "PROMPT" {
+				return errors.New("onIncomplete must point to a PROMPT node")
+			}
+			return nil
+		}
+	}
+	return errors.New("onIncomplete target node not found")
 }
 
 // configureNodeInputs configures the inputs for executor-backed nodes.
@@ -240,12 +269,16 @@ func (b *graphBuilder) configureNodeInputs(nodeDef *NodeDefinition, node core.No
 	executorNode.SetInputs(inputs)
 }
 
-// configureNodeMeta configures the meta object for a node.
+// configureNodeMeta configures the meta object for a prompt node.
 func (b *graphBuilder) configureNodeMeta(nodeDef *NodeDefinition, node core.NodeInterface) {
 	if nodeDef.Meta == nil {
 		return
 	}
-	node.SetMeta(nodeDef.Meta)
+
+	// Set meta only if the node is a prompt node
+	if promptNode, ok := node.(core.PromptNodeInterface); ok {
+		promptNode.SetMeta(nodeDef.Meta)
+	}
 }
 
 // configureNodeCondition configures the condition for a node.

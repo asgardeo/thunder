@@ -20,6 +20,7 @@ package flowmgt
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/executor"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -39,22 +41,14 @@ func Initialize(
 	executorRegistry executor.ExecutorRegistryInterface,
 	graphCache core.GraphCacheInterface,
 ) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
-	var store flowStoreInterface
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		store = newFileBasedStore()
-	} else {
-		store = newCacheBackedFlowStore()
+	store, compositeStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	inferenceService := newFlowInferenceService()
 	graphBuilder := newGraphBuilder(flowFactory, executorRegistry, graphCache)
-	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry)
-
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		if err := loadDeclarativeResources(store); err != nil {
-			return nil, nil, err
-		}
-	}
+	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry, compositeStore)
 
 	handler := newFlowMgtHandler(service)
 	registerRoutes(mux, handler)
@@ -67,6 +61,85 @@ func Initialize(
 	// Create and return exporter
 	exporter := newFlowGraphExporter(service)
 	return service, exporter, nil
+}
+
+// Store Selection (based on flow.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only
+//   - Supports full CRUD operations
+//   - All flows are mutable
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only
+//   - All flows are immutable (read-only)
+//   - No create/update/delete operations allowed
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store
+//   - Database store handles runtime flows
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative flows cannot be updated or deleted
+func initializeStore() (flowStoreInterface, *compositeFlowStore, error) {
+	var store flowStoreInterface
+	var compositeStore *compositeFlowStore
+
+	storeMode := getFlowStoreMode()
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newFileBasedStore()
+		dbStore := newCacheBackedFlowStore()
+		compositeStore = newCompositeFlowStore(fileStore, dbStore)
+		store = compositeStore
+		if err := loadDeclarativeResources(fileStore); err != nil {
+			return nil, nil, err
+		}
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newFileBasedStore()
+		store = fileStore
+
+		if err := loadDeclarativeResources(fileStore); err != nil {
+			return nil, nil, err
+		}
+
+	default:
+		store = newCacheBackedFlowStore()
+	}
+
+	return store, compositeStore, nil
+}
+
+// getFlowStoreMode determines the store mode for flows.
+// Resolution order:
+//  1. If Flow.Store is explicitly configured, use it
+//  2. Otherwise, fall back to global DeclarativeResources.Enabled
+func getFlowStoreMode() serverconst.StoreMode {
+	cfg := config.GetThunderRuntime().Config
+	// Check if service-level configuration is explicitly set
+	if cfg.Flow.Store != "" {
+		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.Flow.Store)))
+		// Validate and normalize
+		switch mode {
+		case serverconst.StoreModeMutable, serverconst.StoreModeDeclarative, serverconst.StoreModeComposite:
+			return mode
+		}
+	}
+
+	// Fall back to global declarative resources setting
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		return serverconst.StoreModeDeclarative
+	}
+
+	return serverconst.StoreModeMutable
+}
+
+// isCompositeModeEnabled checks if composite store mode is enabled for flows.
+func isCompositeModeEnabled() bool {
+	return getFlowStoreMode() == serverconst.StoreModeComposite
 }
 
 // registerRoutes registers the HTTP routes for flow management.

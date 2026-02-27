@@ -189,6 +189,50 @@ describe('OrganizationUnitDeleteDialog', () => {
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
+
+  it('should use error message when response has no description', async () => {
+    const onError = vi.fn();
+    mockMutate.mockImplementation((_id: string, options: {onError: (err: Error) => void}) => {
+      options.onError(
+        Object.assign(new Error('Something went wrong'), {
+          response: {data: {code: 'ERR', message: 'fail'}},
+        }),
+      );
+    });
+
+    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith('Something went wrong');
+    });
+  });
+
+  it('should use fallback when error message is only whitespace', async () => {
+    const onError = vi.fn();
+    mockMutate.mockImplementation((_id: string, options: {onError: (err: Error) => void}) => {
+      options.onError(new Error('   '));
+    });
+
+    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith('Failed to delete organization unit. Please try again.');
+    });
+  });
+
+  it('should render warning disclaimer alert', () => {
+    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+
+    expect(
+      screen.getByText(
+        'Warning: All associated data, configurations, and user assignments will be permanently removed.',
+      ),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('OrganizationUnitDeleteDialog - pending state', () => {

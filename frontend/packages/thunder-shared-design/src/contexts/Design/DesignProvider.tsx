@@ -21,7 +21,6 @@ import {useConfig} from '@thunder/shared-contexts';
 import DesignContext, {type DesignContextType} from './DesignContext';
 import useGetDesignResolve from '../../api/useGetDesignResolve';
 import {DesignResolveType} from '../../models/design';
-import oxygenUIThemeTransformer from '../../utils/oxygenUIThemeTransformer';
 
 /**
  * Props for the DesignProvider component.
@@ -35,8 +34,8 @@ export type DesignProviderProps = PropsWithChildren;
  * to all child components.
  *
  * This component loads design data from the server using the client UUID
- * and provides it through React context. It resolves the theme and layout
- * for use throughout the application.
+ * and provides it through React context. Theme transformation is handled
+ * at the hook level via useDesign().
  *
  * @param props - The component props
  * @param props.children - React children to be wrapped with the design context
@@ -66,19 +65,18 @@ export default function DesignProvider({children}: DesignProviderProps) {
     },
   );
 
-  const contextValue: DesignContextType = useMemo(() => {
-    const transformedTheme = design ? oxygenUIThemeTransformer(design.theme) : undefined;
-
-    return {
+  const contextValue: DesignContextType = useMemo(
+    () => ({
       design,
       isDesignEnabled: Boolean(design),
       isLoading,
       error,
-      transformedTheme,
+      transformedTheme: undefined,
       theme: design?.theme,
       layout: design?.layout,
-    };
-  }, [design, isLoading, error]);
+    }),
+    [design, isLoading, error],
+  );
 
   return <DesignContext.Provider value={contextValue}>{children}</DesignContext.Provider>;
 }

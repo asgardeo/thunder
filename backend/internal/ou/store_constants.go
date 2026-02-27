@@ -18,7 +18,12 @@
 
 package ou
 
-import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+import (
+	"fmt"
+	"strings"
+
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+)
 
 var (
 	// queryGetRootOrganizationUnitListCount is the query to get total count of organization units.
@@ -30,7 +35,7 @@ var (
 	// queryGetRootOrganizationUnitList is the query to get organization units with pagination.
 	queryGetRootOrganizationUnitList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-02",
-		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID, LOGO_URL FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID FROM ORGANIZATION_UNIT ` +
 			`WHERE PARENT_ID IS NULL AND DEPLOYMENT_ID = $3 ORDER BY NAME LIMIT $1 OFFSET $2`,
 	}
 
@@ -38,7 +43,7 @@ var (
 	queryCreateOrganizationUnit = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-03",
 		Query: `INSERT INTO ORGANIZATION_UNIT (
-			OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, LOGO_URL, DEPLOYMENT_ID
+			OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA, DEPLOYMENT_ID
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9
 		)`,
@@ -47,7 +52,7 @@ var (
 	// queryGetOrganizationUnitByID is the query to get an organization unit by id.
 	queryGetOrganizationUnitByID = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-04",
-		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, LOGO_URL
+		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA
 		FROM ORGANIZATION_UNIT
 		WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
@@ -55,7 +60,7 @@ var (
 	// queryGetRootOrganizationUnitByHandle is the query to get a root organization unit by handle.
 	queryGetRootOrganizationUnitByHandle = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-05",
-		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, LOGO_URL
+		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA
 		FROM ORGANIZATION_UNIT
 		WHERE HANDLE = $1 AND PARENT_ID IS NULL AND DEPLOYMENT_ID = $2`,
 	}
@@ -63,7 +68,7 @@ var (
 	// queryGetOrganizationUnitByHandle is the query to get an organization unit by handle and parent.
 	queryGetOrganizationUnitByHandle = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-06",
-		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, LOGO_URL
+		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA
 		FROM ORGANIZATION_UNIT
 		WHERE HANDLE = $1 AND PARENT_ID = $2 AND DEPLOYMENT_ID = $3`,
 	}
@@ -78,7 +83,7 @@ var (
 	queryUpdateOrganizationUnit = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-08",
 		Query: `UPDATE ORGANIZATION_UNIT SET PARENT_ID = $2, HANDLE = $3, NAME = $4, DESCRIPTION = $5, ` +
-			`THEME_ID = $6, LAYOUT_ID = $7, LOGO_URL = $8 WHERE OU_ID = $1 AND DEPLOYMENT_ID = $9`,
+			`THEME_ID = $6, LAYOUT_ID = $7, METADATA = $8 WHERE OU_ID = $1 AND DEPLOYMENT_ID = $9`,
 	}
 
 	// queryDeleteOrganizationUnit is the query to delete an organization unit.
@@ -96,7 +101,7 @@ var (
 	// queryGetOrganizationUnitChildrenList is the query to get child organization units with pagination.
 	queryGetOrganizationUnitChildrenList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-11",
-		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, LOGO_URL FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
 			`WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
@@ -166,3 +171,33 @@ var (
 					(SELECT COUNT(*) FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2) as count`,
 	}
 )
+
+// buildGetOrganizationUnitsByIDsQuery dynamically builds a query to retrieve organization units by a list of IDs.
+// For PostgreSQL: WHERE OU_ID IN ($1, $2, ...) AND DEPLOYMENT_ID = $N
+// For SQLite: WHERE OU_ID IN (?, ?, ...) AND DEPLOYMENT_ID = ?
+func buildGetOrganizationUnitsByIDsQuery(ids []string) dbmodel.DBQuery {
+	n := len(ids)
+
+	// Build PostgreSQL placeholders: $1, $2, ..., $N
+	pgPlaceholders := make([]string, n)
+	for i := range ids {
+		pgPlaceholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	pgInClause := strings.Join(pgPlaceholders, ", ")
+	deploymentIDParam := fmt.Sprintf("$%d", n+1)
+
+	// Build SQLite placeholders: ?, ?, ...
+	sqlitePlaceholders := make([]string, n)
+	for i := range ids {
+		sqlitePlaceholders[i] = "?"
+	}
+	sqliteInClause := strings.Join(sqlitePlaceholders, ", ")
+
+	return dbmodel.DBQuery{
+		ID: "OUQ-OU_MGT-21",
+		PostgresQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+			`WHERE OU_ID IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + deploymentIDParam + ` ORDER BY NAME`,
+		SQLiteQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ? ORDER BY NAME`,
+	}
+}

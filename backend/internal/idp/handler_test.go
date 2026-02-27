@@ -75,7 +75,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPPostRequest_Success() {
 		Properties:  []cmodels.Property{*prop1},
 	}
 
-	s.mockService.On("CreateIdentityProvider", mock.MatchedBy(func(dto *IDPDTO) bool {
+	s.mockService.On("CreateIdentityProvider", mock.Anything, mock.MatchedBy(func(dto *IDPDTO) bool {
 		return dto.Name == testIdpName && dto.Type == IDPTypeOIDC && len(dto.Properties) == 1
 	})).Return(createdIDP, (*serviceerror.ServiceError)(nil))
 
@@ -137,7 +137,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPPostRequest_ServiceError() {
 
 			mockService := NewIDPServiceInterfaceMock(s.T())
 			handler := newIDPHandler(mockService)
-			mockService.On("CreateIdentityProvider", mock.MatchedBy(func(dto *IDPDTO) bool {
+			mockService.On("CreateIdentityProvider", mock.Anything, mock.MatchedBy(func(dto *IDPDTO) bool {
 				return dto.Name == testIdpName && dto.Type == IDPTypeOIDC
 			})).Return((*IDPDTO)(nil), &tc.serviceError)
 
@@ -159,7 +159,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_Success() {
 		{ID: "idp-2", Name: "IDP 2", Type: IDPTypeGoogle},
 	}
 
-	s.mockService.On("GetIdentityProviderList").Return(idpList, (*serviceerror.ServiceError)(nil))
+	s.mockService.On("GetIdentityProviderList", mock.Anything).Return(idpList, (*serviceerror.ServiceError)(nil))
 
 	s.handler.HandleIDPListRequest(rr, req)
 
@@ -170,6 +170,36 @@ func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_Success() {
 	s.Len(response, 2)
 	s.Equal("idp-1", response[0].ID)
 	s.Equal("IDP 1", response[0].Name)
+	s.False(response[0].IsReadOnly, "First IDP should be mutable")
+	s.False(response[1].IsReadOnly, "Second IDP should be mutable")
+}
+
+// TestHandleIDPListRequest_WithReadOnlyIDPs tests IDP list retrieval with read-only IDPs
+func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_WithReadOnlyIDPs() {
+	req := httptest.NewRequest(http.MethodGet, "/identity-providers", nil)
+	rr := httptest.NewRecorder()
+
+	idpList := []BasicIDPDTO{
+		{ID: "idp-1", Name: "IDP 1", Type: IDPTypeOIDC, IsReadOnly: false},
+		{ID: "idp-2", Name: "IDP 2", Type: IDPTypeGoogle, IsReadOnly: true},
+		{ID: "idp-3", Name: "IDP 3", Type: IDPTypeOIDC, IsReadOnly: false},
+	}
+
+	s.mockService.On("GetIdentityProviderList", mock.Anything).Return(idpList, (*serviceerror.ServiceError)(nil))
+
+	s.handler.HandleIDPListRequest(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	var response []basicIDPResponse
+	err := json.NewDecoder(rr.Body).Decode(&response)
+	s.NoError(err)
+	s.Len(response, 3)
+	s.Equal("idp-1", response[0].ID)
+	s.False(response[0].IsReadOnly)
+	s.Equal("idp-2", response[1].ID)
+	s.True(response[1].IsReadOnly)
+	s.Equal("idp-3", response[2].ID)
+	s.False(response[2].IsReadOnly)
 }
 
 // TestHandleIDPListRequest_EmptyList tests empty IDP list
@@ -177,7 +207,8 @@ func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_EmptyList() {
 	req := httptest.NewRequest(http.MethodGet, "/identity-providers", nil)
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("GetIdentityProviderList").Return([]BasicIDPDTO{}, (*serviceerror.ServiceError)(nil))
+	s.mockService.On("GetIdentityProviderList", mock.Anything).
+		Return([]BasicIDPDTO{}, (*serviceerror.ServiceError)(nil))
 
 	s.handler.HandleIDPListRequest(rr, req)
 
@@ -193,7 +224,8 @@ func (s *IDPHandlerTestSuite) TestHandleIDPListRequest_ServiceError() {
 	req := httptest.NewRequest(http.MethodGet, "/identity-providers", nil)
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("GetIdentityProviderList").Return([]BasicIDPDTO(nil), &serviceerror.InternalServerError)
+	s.mockService.On("GetIdentityProviderList", mock.Anything).
+		Return([]BasicIDPDTO(nil), &serviceerror.InternalServerError)
 
 	s.handler.HandleIDPListRequest(rr, req)
 
@@ -214,7 +246,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPGetRequest_Success() {
 		Type:        IDPTypeOIDC,
 	}
 
-	s.mockService.On("GetIdentityProvider", "idp-123").Return(idp, (*serviceerror.ServiceError)(nil))
+	s.mockService.On("GetIdentityProvider", mock.Anything, "idp-123").Return(idp, (*serviceerror.ServiceError)(nil))
 
 	s.handler.HandleIDPGetRequest(rr, req)
 
@@ -244,7 +276,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPGetRequest_IDPNotFound() {
 	req.SetPathValue("id", "non-existent")
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("GetIdentityProvider", "non-existent").Return((*IDPDTO)(nil), &ErrorIDPNotFound)
+	s.mockService.On("GetIdentityProvider", mock.Anything, "non-existent").Return((*IDPDTO)(nil), &ErrorIDPNotFound)
 
 	s.handler.HandleIDPGetRequest(rr, req)
 
@@ -272,7 +304,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPPutRequest_Success() {
 		Properties:  []cmodels.Property{},
 	}
 
-	s.mockService.On("UpdateIdentityProvider", "idp-123", &IDPDTO{
+	s.mockService.On("UpdateIdentityProvider", mock.Anything, "idp-123", &IDPDTO{
 		ID:          "idp-123",
 		Name:        "Updated IDP",
 		Description: "Updated Description",
@@ -321,7 +353,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPDeleteRequest_Success() {
 	req.SetPathValue("id", "idp-123")
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("DeleteIdentityProvider", "idp-123").Return((*serviceerror.ServiceError)(nil))
+	s.mockService.On("DeleteIdentityProvider", mock.Anything, "idp-123").Return((*serviceerror.ServiceError)(nil))
 
 	s.handler.HandleIDPDeleteRequest(rr, req)
 
@@ -346,7 +378,7 @@ func (s *IDPHandlerTestSuite) TestHandleIDPDeleteRequest_IDPNotFound() {
 	req.SetPathValue("id", "non-existent")
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("DeleteIdentityProvider", "non-existent").Return(&ErrorIDPNotFound)
+	s.mockService.On("DeleteIdentityProvider", mock.Anything, "non-existent").Return(&ErrorIDPNotFound)
 
 	s.handler.HandleIDPDeleteRequest(rr, req)
 

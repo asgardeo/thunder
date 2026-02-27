@@ -19,7 +19,11 @@
 package thememgt
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -105,7 +109,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_Success() {
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.Nil(svcErr)
@@ -123,7 +127,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_ServiceError
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.NotNil(svcErr)
@@ -138,7 +142,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetAllResourceIDs_EmptyList() 
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	ids, svcErr := exporter.GetAllResourceIDs()
+	ids, svcErr := exporter.GetAllResourceIDs(context.Background())
 
 	// Assert
 	s.Nil(svcErr)
@@ -160,7 +164,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceByID_Success() {
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	resource, displayName, svcErr := exporter.GetResourceByID("theme-001")
+	resource, displayName, svcErr := exporter.GetResourceByID(context.Background(), "theme-001")
 
 	// Assert
 	s.Nil(svcErr)
@@ -181,7 +185,7 @@ func (s *ThemeDeclarativeSuite) TestThemeExporter_GetResourceByID_NotFound() {
 	exporter := &themeExporter{service: mockService}
 
 	// Act
-	resource, displayName, svcErr := exporter.GetResourceByID("non-existent")
+	resource, displayName, svcErr := exporter.GetResourceByID(context.Background(), "non-existent")
 
 	// Assert
 	s.NotNil(svcErr)
@@ -300,12 +304,32 @@ func (s *ThemeDeclarativeSuite) TestLoadDeclarativeResources_Integration() {
 		GenericFileBasedStore: genericStore,
 	}
 
-	// This should not panic even with empty directory
-	err := loadDeclarativeResources(store)
+	// This should not panic even with empty directory (pass nil for dbStore in test)
+	err := loadDeclarativeResources(store, nil)
 
 	// Error is expected if directory doesn't exist, which is acceptable for this test
 	// We're verifying that the function can be called without panicking
 	_ = err
+}
+
+func (s *ThemeDeclarativeSuite) TestLoadDeclarativeResources_WithDBStore() {
+	thunderHome := config.GetThunderRuntime().ThunderHome
+	resourceDir := filepath.Join(thunderHome, "repository", "resources", "themes")
+	err := os.MkdirAll(resourceDir, 0o750)
+	s.Require().NoError(err)
+
+	yamlData := []byte("id: theme-dup\ndisplayName: Theme Dup\ntheme:\n  color: blue\n")
+	err = os.WriteFile(filepath.Join(resourceDir, "theme-dup.yaml"), yamlData, 0o600)
+	s.Require().NoError(err)
+
+	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeTheme)
+	store := &themeFileBasedStore{GenericFileBasedStore: genericStore}
+
+	dbStore := newThemeMgtStoreInterfaceMock(s.T())
+	dbStore.On("IsThemeExist", "theme-dup").Return(false, nil)
+
+	err = loadDeclarativeResources(store, dbStore)
+	s.NoError(err)
 }
 
 func (s *ThemeDeclarativeSuite) TestThemeExporter_ValidateResource_EmptyThemeWarning() {
@@ -356,12 +380,42 @@ func (s *ThemeDeclarativeSuite) TestValidateThemeWrapper() {
 		Theme:       json.RawMessage(`{"color": "blue"}`),
 	}
 
-	err := validateThemeWrapper(theme)
+	err := validateThemeWrapper(theme, nil)
 	s.NoError(err)
 }
 
+func (s *ThemeDeclarativeSuite) TestValidateThemeWrapper_DBStoreDuplicate() {
+	theme := &Theme{
+		ID:          "theme1",
+		DisplayName: "Test",
+		Theme:       json.RawMessage(`{"color": "blue"}`),
+	}
+
+	dbStore := newThemeMgtStoreInterfaceMock(s.T())
+	dbStore.On("IsThemeExist", "theme1").Return(true, nil)
+
+	err := validateThemeWrapper(theme, dbStore)
+	s.Error(err)
+	s.Contains(err.Error(), "already exists in database")
+}
+
+func (s *ThemeDeclarativeSuite) TestValidateThemeWrapper_DBStoreError() {
+	theme := &Theme{
+		ID:          "theme1",
+		DisplayName: "Test",
+		Theme:       json.RawMessage(`{"color": "blue"}`),
+	}
+
+	dbStore := newThemeMgtStoreInterfaceMock(s.T())
+	dbStore.On("IsThemeExist", "theme1").Return(false, errors.New("db error"))
+
+	err := validateThemeWrapper(theme, dbStore)
+	s.Error(err)
+	s.Contains(err.Error(), "failed to check for duplicate theme ID")
+}
+
 func (s *ThemeDeclarativeSuite) TestValidateThemeWrapper_InvalidType() {
-	err := validateThemeWrapper("not a theme")
+	err := validateThemeWrapper("not a theme", nil)
 	s.Error(err)
 	s.Contains(err.Error(), "invalid type")
 }

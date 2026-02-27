@@ -119,7 +119,6 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 func (suite *ServiceTestSuite) TestGetDefaultAssertionConfigFromDeployment() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test-issuer.com",
 			ValidityPeriod: 7200,
 		},
 	}
@@ -131,14 +130,12 @@ func (suite *ServiceTestSuite) TestGetDefaultAssertionConfigFromDeployment() {
 	result := getDefaultAssertionConfigFromDeployment()
 
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "https://test-issuer.com", result.Issuer)
 	assert.Equal(suite.T(), int64(7200), result.ValidityPeriod)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -150,38 +147,31 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 	tests := []struct {
 		name                    string
 		app                     *model.ApplicationDTO
-		expectedRootIssuer      string
 		expectedRootValidity    int64
 		expectedAccessValidity  int64
 		expectedIDTokenValidity int64
-		expectedTokenIssuer     string
 	}{
 		{
 			name: "No token config - uses defaults",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  3600,
 			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://default-issuer.com",
 		},
 		{
 			name: "Custom root token config",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 				Assertion: &model.AssertionConfig{
-					Issuer:         "https://custom-issuer.com",
 					ValidityPeriod: 7200,
 					UserAttributes: []string{"email", "name"},
 				},
 			},
-			expectedRootIssuer:      "https://custom-issuer.com",
 			expectedRootValidity:    7200,
 			expectedAccessValidity:  7200,
 			expectedIDTokenValidity: 7200,
-			expectedTokenIssuer:     "https://custom-issuer.com",
 		},
 		{
 			name: "Partial root token config",
@@ -191,14 +181,12 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					ValidityPeriod: 5000,
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    5000,
 			expectedAccessValidity:  5000,
 			expectedIDTokenValidity: 5000,
-			expectedTokenIssuer:     "https://default-issuer.com",
 		},
 		{
-			name: "OAuth token config with custom issuer",
+			name: "OAuth token config with custom validity periods",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
@@ -206,7 +194,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							Token: &model.OAuthTokenConfig{
-								Issuer: "https://oauth-issuer.com",
 								AccessToken: &model.AccessTokenConfig{
 									ValidityPeriod: 1800,
 								},
@@ -218,11 +205,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					},
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  1800,
 			expectedIDTokenValidity: 900,
-			expectedTokenIssuer:     "https://oauth-issuer.com",
 		},
 		{
 			name: "OAuth token with only access token config",
@@ -242,40 +227,16 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					},
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  2400,
 			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://default-issuer.com",
-		},
-		{
-			name: "OAuth token with issuer but no root token",
-			app: &model.ApplicationDTO{
-				Name: "Test App",
-				InboundAuthConfig: []model.InboundAuthConfigDTO{
-					{
-						Type: model.OAuthInboundAuthType,
-						OAuthAppConfig: &model.OAuthAppConfigDTO{
-							Token: &model.OAuthTokenConfig{
-								Issuer: "https://oauth-only-issuer.com",
-							},
-						},
-					},
-				},
-			},
-			expectedRootIssuer:      "https://default-issuer.com",
-			expectedRootValidity:    3600,
-			expectedAccessValidity:  3600,
-			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://oauth-only-issuer.com",
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(tt.app)
+			rootAssertion, accessToken, idToken := processTokenConfiguration(tt.app)
 
-			assert.Equal(suite.T(), tt.expectedRootIssuer, rootAssertion.Issuer)
 			assert.Equal(suite.T(), tt.expectedRootValidity, rootAssertion.ValidityPeriod)
 			assert.NotNil(suite.T(), rootAssertion.UserAttributes)
 
@@ -284,8 +245,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 
 			assert.Equal(suite.T(), tt.expectedIDTokenValidity, idToken.ValidityPeriod)
 			assert.NotNil(suite.T(), idToken.UserAttributes)
-
-			assert.Equal(suite.T(), tt.expectedTokenIssuer, tokenIssuer)
 		})
 	}
 }
@@ -1055,8 +1014,9 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
 	app := &model.ApplicationProcessedDTO{
-		ID:   "app123",
-		Name: "Test App",
+		ID:       "app123",
+		Name:     "Test App",
+		Metadata: map[string]interface{}{"service_key": "service_val"},
 	}
 
 	mockStore.On("GetApplicationByID", "app123").Return(app, nil)
@@ -1068,6 +1028,7 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "app123", result.ID)
+	assert.Equal(suite.T(), map[string]interface{}{"service_key": "service_val"}, result.Metadata)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
@@ -1195,6 +1156,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_NotFound() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(model.ApplicationNotFoundError)
 
 	svcErr := service.DeleteApplication("app123")
@@ -1216,6 +1178,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(errors.New("store error"))
 
 	svcErr := service.DeleteApplication("app123")
@@ -1236,6 +1199,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil)
@@ -1258,6 +1222,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().
 		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
@@ -1535,7 +1500,6 @@ func (suite *ServiceTestSuite) TestValidateRedirectURIs_InvalidParsedURI() {
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -1562,14 +1526,13 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() 
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(1200), idToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email"}, idToken.UserAttributes)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
@@ -1918,7 +1881,8 @@ func (suite *ServiceTestSuite) TestDeleteApplication_DeclarativeResourcesEnabled
 	require.NoError(suite.T(), err)
 	defer config.ResetThunderRuntime()
 
-	service, _, _, _ := suite.setupTestService()
+	service, mockStore, _, _ := suite.setupTestService()
+	mockStore.On("IsApplicationDeclarative", "app123").Return(true)
 
 	svcErr := service.DeleteApplication("app123")
 
@@ -1975,7 +1939,6 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -1987,27 +1950,23 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "https://custom-issuer.com",
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://custom-issuer.com", rootAssertion.Issuer)
 	assert.Equal(suite.T(), int64(1800), rootAssertion.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email", "name"}, rootAssertion.UserAttributes)
-	assert.Equal(suite.T(), "https://custom-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2019,25 +1978,21 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaul
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "",
 			ValidityPeriod: 0,
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://default-issuer.com", rootAssertion.Issuer)
 	assert.Equal(suite.T(), int64(3600), rootAssertion.ValidityPeriod)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2063,20 +2018,18 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"sub", "email"}, accessToken.UserAttributes)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2102,7 +2055,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootAssertion, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2115,7 +2068,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2142,7 +2094,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 		},
 	}
 
-	rootAssertion, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2152,44 +2104,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 	assert.Len(suite.T(), idToken.UserAttributes, 0)
 }
 
-func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthTokenIssuer() {
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
-			ValidityPeriod: 3600,
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetThunderRuntime()
-
-	app := &model.ApplicationDTO{
-		Name: "Test App",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
-			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					Token: &model.OAuthTokenConfig{
-						Issuer: "https://oauth-issuer.com",
-					},
-				},
-			},
-		},
-	}
-
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
-
-	assert.NotNil(suite.T(), rootAssertion)
-	assert.NotNil(suite.T(), accessToken)
-	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://oauth-issuer.com", tokenIssuer)
-}
-
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilUserAttributes() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2201,7 +2118,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "https://root-issuer.com",
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
@@ -2220,7 +2136,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2229,13 +2145,11 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
 	assert.Len(suite.T(), accessToken.UserAttributes, 0)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://root-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmptyUserAttributes() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2261,7 +2175,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmpt
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2269,7 +2183,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmpt
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
 	assert.Len(suite.T(), accessToken.UserAttributes, 0)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_RedirectURIError() {
@@ -2602,6 +2515,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 		Name: "Updated App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	// Return an error that's not ApplicationNotFoundError
 	mockStore.On("GetApplicationByID", "app123").Return(nil, errors.New("database connection error"))
 
@@ -2634,6 +2548,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 		Name: "New App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	// Return an error that's not ApplicationNotFoundError when checking name
 	mockStore.On("GetApplicationByName", "New App").Return(nil, errors.New("database connection error"))
@@ -2689,6 +2604,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 		},
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything).Return(true).Maybe()
 	// Return an error that's not ApplicationNotFoundError when checking client ID
@@ -2733,6 +2649,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 		},
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
@@ -3373,7 +3290,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 
 	// Mock GetUserSchemaList to return empty list (first call)
 	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
+		GetUserSchemaList(mock.Anything, mock.Anything, 0).
 		Return(&userschema.UserSchemaListResponse{
 			TotalResults: 0,
 			Count:        0,
@@ -3406,7 +3323,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 
 	// Mock GetUserSchemaList to return a list with one valid user type
 	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
+		GetUserSchemaList(mock.Anything, mock.Anything, 0).
 		Return(&userschema.UserSchemaListResponse{
 			TotalResults: 1,
 			Count:        1,
@@ -3716,6 +3633,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
 		Name: "New Name",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(nil, model.ApplicationNotFoundError)
 
 	result, svcErr := service.UpdateApplication("app123", app)
@@ -3752,6 +3670,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 		Name: "New Name",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockStore.On("GetApplicationByName", "New Name").Return(existingAppWithName, nil)
 
@@ -3760,6 +3679,73 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"old_key": "old_value",
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"new_key":     "new_value",
+			"another_key": "another_value",
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.On("IsValidFlow", "default-auth-flow").Return(true)
+	mockFlowMgtService.On("IsValidFlow", "default-reg-flow").Return(true)
+	// Mock certificate service to return no certificate (nil, nil)
+	mockCertService.On("GetCertificateByReference", mock.Anything, cert.CertificateReferenceTypeApplication, "").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", existingApp, mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+		// Verify that metadata is properly set in the processed DTO
+		if dto.Metadata == nil {
+			return false
+		}
+		if dto.Metadata["new_key"] != "new_value" {
+			return false
+		}
+		if dto.Metadata["another_key"] != "another_value" {
+			return false
+		}
+		// Ensure old metadata is not present
+		if _, exists := dto.Metadata["old_key"]; exists {
+			return false
+		}
+		return true
+	})).Return(nil)
+
+	result, svcErr := service.UpdateApplication("app123", updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "new_value", result.Metadata["new_key"])
+	assert.Equal(suite.T(), "another_value", result.Metadata["another_key"])
+	mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PublicClient() {

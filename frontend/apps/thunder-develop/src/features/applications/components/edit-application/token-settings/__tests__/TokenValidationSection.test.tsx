@@ -26,7 +26,6 @@ interface FormValues {
   validityPeriod: number;
   accessTokenValidity: number;
   idTokenValidity: number;
-  issuer?: string;
 }
 
 // Mock the SettingsCard component
@@ -53,7 +52,6 @@ function TestWrapper({
       validityPeriod: 3600,
       accessTokenValidity: 3600,
       idTokenValidity: 3600,
-      issuer: '',
       ...defaultValues,
     },
   });
@@ -72,7 +70,7 @@ describe('TokenValidationSection', () => {
 
       expect(screen.getByTestId('card-title')).toHaveTextContent('Token Validation');
       expect(screen.getByTestId('card-description')).toHaveTextContent(
-        'Configure token validation settings such as issuer URL and audience',
+        'Configure token validation settings such as audience and validity',
       );
     });
 

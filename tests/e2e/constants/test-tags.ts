@@ -56,6 +56,9 @@ export const TestTags = {
 
   /** API related tests */
   API: "@api",
+
+  /** Accessibility (a11y) related tests */
+  ACCESSIBILITY: "@accessibility",
 } as const;
 
 export type TestTag = (typeof TestTags)[keyof typeof TestTags];

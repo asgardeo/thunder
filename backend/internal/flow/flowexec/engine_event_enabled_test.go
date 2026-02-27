@@ -28,7 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
+	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 )
 
 // setupMockObservability creates a mock observability service for testing

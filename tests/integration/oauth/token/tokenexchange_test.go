@@ -62,6 +62,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -268,8 +269,12 @@ func (ts *TokenExchangeTestSuite) deleteApplication(appID string) {
 
 func (ts *TokenExchangeTestSuite) getUserAssertion() string {
 	authRequest := map[string]interface{}{
-		"username": tokenExchangeTestUser,
-		"password": tokenExchangeTestPassword,
+		"identifiers": map[string]interface{}{
+			"username": tokenExchangeTestUser,
+		},
+		"credentials": map[string]interface{}{
+			"password": tokenExchangeTestPassword,
+		},
 	}
 
 	requestJSON, err := json.Marshal(authRequest)

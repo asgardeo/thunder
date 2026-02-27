@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -62,11 +63,11 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema() {
 		Schema:                json.RawMessage(schemaJSON),
 	}
 
-	err := suite.store.CreateUserSchema(schema)
+	err := suite.store.CreateUserSchema(context.Background(), schema)
 	assert.NoError(suite.T(), err)
 
 	// Verify schema was stored
-	retrieved, err := suite.store.GetUserSchemaByID("schema-1")
+	retrieved, err := suite.store.GetUserSchemaByID(context.Background(), "schema-1")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), schema.ID, retrieved.ID)
 	assert.Equal(suite.T(), schema.Name, retrieved.Name)
@@ -85,18 +86,18 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema_DuplicateID() {
 	}
 
 	// Create first schema
-	err := suite.store.CreateUserSchema(schema)
+	err := suite.store.CreateUserSchema(context.Background(), schema)
 	assert.NoError(suite.T(), err)
 
 	// Try to create duplicate - should succeed in file-based store as it doesn't check duplicates
-	err = suite.store.CreateUserSchema(schema)
+	err = suite.store.CreateUserSchema(context.Background(), schema)
 	// File-based store may allow duplicate or return error depending on implementation
 	// Just verify it doesn't panic
 	_ = err
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByID_NotFound() {
-	_, err := suite.store.GetUserSchemaByID("non-existent-id")
+	_, err := suite.store.GetUserSchemaByID(context.Background(), "non-existent-id")
 	assert.Error(suite.T(), err)
 }
 
@@ -110,18 +111,18 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName() {
 		Schema:                json.RawMessage(schemaJSON),
 	}
 
-	err := suite.store.CreateUserSchema(schema)
+	err := suite.store.CreateUserSchema(context.Background(), schema)
 	assert.NoError(suite.T(), err)
 
 	// Get by name
-	retrieved, err := suite.store.GetUserSchemaByName("basic_schema")
+	retrieved, err := suite.store.GetUserSchemaByName(context.Background(), "basic_schema")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), schema.ID, retrieved.ID)
 	assert.Equal(suite.T(), schema.Name, retrieved.Name)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName_NotFound() {
-	_, err := suite.store.GetUserSchemaByName("non-existent-name")
+	_, err := suite.store.GetUserSchemaByName(context.Background(), "non-existent-name")
 	assert.Error(suite.T(), err)
 }
 
@@ -152,12 +153,12 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList() {
 		},
 	}
 	for _, schema := range schemas {
-		err := suite.store.CreateUserSchema(schema)
+		err := suite.store.CreateUserSchema(context.Background(), schema)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Get list with pagination
-	list, err := suite.store.GetUserSchemaList(10, 0)
+	list, err := suite.store.GetUserSchemaList(context.Background(), 10, 0)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 3)
 }
@@ -173,28 +174,28 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList_WithPagination() {
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		}
-		err := suite.store.CreateUserSchema(schema)
+		err := suite.store.CreateUserSchema(context.Background(), schema)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Get first page
-	list, err := suite.store.GetUserSchemaList(2, 0)
+	list, err := suite.store.GetUserSchemaList(context.Background(), 2, 0)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 2)
 
 	// Get second page
-	list, err = suite.store.GetUserSchemaList(2, 2)
+	list, err = suite.store.GetUserSchemaList(context.Background(), 2, 2)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 2)
 
 	// Get last page
-	list, err = suite.store.GetUserSchemaList(2, 4)
+	list, err = suite.store.GetUserSchemaList(context.Background(), 2, 4)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 1)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList_EmptyStore() {
-	list, err := suite.store.GetUserSchemaList(10, 0)
+	list, err := suite.store.GetUserSchemaList(context.Background(), 10, 0)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 0)
 }
@@ -209,20 +210,20 @@ func (suite *FileBasedStoreTestSuite) TestUpdateUserSchemaByID_ReturnsError() {
 		Schema:                json.RawMessage(schemaJSON),
 	}
 
-	err := suite.store.UpdateUserSchemaByID("schema-1", schema)
+	err := suite.store.UpdateUserSchemaByID(context.Background(), "schema-1", schema)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "not supported")
 }
 
 func (suite *FileBasedStoreTestSuite) TestDeleteUserSchemaByID_ReturnsError() {
-	err := suite.store.DeleteUserSchemaByID("schema-1")
+	err := suite.store.DeleteUserSchemaByID(context.Background(), "schema-1")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "not supported")
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCount() {
 	// Initially empty
-	count, err := suite.store.GetUserSchemaListCount()
+	count, err := suite.store.GetUserSchemaListCount(context.Background())
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 0, count)
 
@@ -236,12 +237,12 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCount() {
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		}
-		err := suite.store.CreateUserSchema(schema)
+		err := suite.store.CreateUserSchema(context.Background(), schema)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Check count
-	count, err = suite.store.GetUserSchemaListCount()
+	count, err = suite.store.GetUserSchemaListCount(context.Background())
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 3, count)
 }

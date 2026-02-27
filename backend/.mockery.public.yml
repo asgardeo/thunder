@@ -344,9 +344,17 @@ packages:
   github.com/asgardeo/thunder/internal/observability:
     config:
       all: true
-      dir: tests/mocks/observabilitymock
+      dir: tests/mocks/observability/observabilitymock
       structname: '{{.InterfaceName}}Mock'
       pkgname: observabilitymock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/observability/adapter:
+    config:
+      all: true
+      dir: tests/mocks/observability/adaptermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: adaptermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/design/theme/mgt:
@@ -363,6 +371,22 @@ packages:
       dir: tests/mocks/design/layoutmock
       structname: '{{.InterfaceName}}Mock'
       pkgname: layoutmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/design/resolve:
+    config:
+      all: true
+      dir: tests/mocks/design/resolvemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resolvemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/system/i18n/mgt:
+    config:
+      all: true
+      dir: tests/mocks/i18n/mgtmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: mgtmock
       filename: "{{.InterfaceName}}_mock.go"
   
   github.com/asgardeo/thunder/internal/system/crypto/hash:
@@ -388,3 +412,28 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: resourcemock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/authnprovider:
+    config:
+      all: true
+      dir: tests/mocks/authnprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: authnprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/userprovider:
+    config:
+      all: true
+      dir: tests/mocks/userprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: userprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+  
+  github.com/asgardeo/thunder/internal/system/sysauthz:
+    interfaces:
+      SystemAuthorizationServiceInterface:
+        config:
+          dir: tests/mocks/sysauthzmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: sysauthzmock
+          filename: "{{.InterfaceName}}_mock.go"

@@ -32,11 +32,13 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authn/reactsdk"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // AuthServiceRegistry holds references to all authentication services.
@@ -58,9 +60,11 @@ func Initialize(
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
 	userSvc user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 	otpSvc notification.OTPServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
 ) (AuthenticationServiceInterface, *AuthServiceRegistry) {
-	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc, userSvc, otpSvc)
+	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc, userSvc, userProvider, otpSvc, authnProvider)
 	authnService := newAuthenticationService(
 		idpSvc,
 		jwtSvc,
@@ -90,15 +94,17 @@ func createAuthServiceRegistry(
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
 	userSvc user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 	otpSvc notification.OTPServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
 ) *AuthServiceRegistry {
 	return &AuthServiceRegistry{
-		CredentialsAuthnService: credentials.Initialize(userSvc),
-		OTPAuthnService:         otp.Initialize(otpSvc, userSvc),
-		OAuthAuthnService:       oauth.Initialize(idpSvc, userSvc),
-		OIDCAuthnService:        oidc.Initialize(idpSvc, userSvc, jwtSvc),
-		GithubOAuthAuthnService: github.Initialize(idpSvc, userSvc),
-		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userSvc, jwtSvc),
+		CredentialsAuthnService: credentials.Initialize(authnProvider),
+		OTPAuthnService:         otp.Initialize(otpSvc, userProvider),
+		OAuthAuthnService:       oauth.Initialize(idpSvc, userProvider),
+		OIDCAuthnService:        oidc.Initialize(idpSvc, userProvider, jwtSvc),
+		GithubOAuthAuthnService: github.Initialize(idpSvc, userProvider),
+		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userProvider, jwtSvc),
 		PasskeyService:          passkey.Initialize(userSvc),
 		AuthAssertGenerator:     assert.Initialize(),
 	}

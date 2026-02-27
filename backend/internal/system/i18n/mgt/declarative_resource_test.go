@@ -19,6 +19,7 @@
 package mgt
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -79,7 +80,7 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceByID() {
 
 	s.mockStore.On("GetTranslations").Return(translations, nil)
 
-	resource, name, err := s.exporter.GetResourceByID("en-US")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "en-US")
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "en-US", name)
 	assert.NotNil(s.T(), resource)
@@ -94,7 +95,7 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceByID() {
 func (s *DeclarativeResourceTestSuite) TestGetResourceByID_NotFound() {
 	s.mockStore.On("GetTranslations").Return(map[string]map[string]Translation{}, nil)
 
-	_, _, err := s.exporter.GetResourceByID("fr-FR")
+	_, _, err := s.exporter.GetResourceByID(context.Background(), "fr-FR")
 	assert.NotNil(s.T(), err)
 	assert.Equal(s.T(), "TRANSLATION_NOT_FOUND", err.Code)
 }
@@ -102,7 +103,7 @@ func (s *DeclarativeResourceTestSuite) TestGetResourceByID_NotFound() {
 func (s *DeclarativeResourceTestSuite) TestGetResourceByID_StoreError() {
 	s.mockStore.On("GetTranslations").Return(nil, errors.New("db error"))
 
-	_, _, err := s.exporter.GetResourceByID("en-US")
+	_, _, err := s.exporter.GetResourceByID(context.Background(), "en-US")
 	assert.NotNil(s.T(), err)
 	assert.Equal(s.T(), "I18N_FETCH_ERROR", err.Code)
 }
@@ -157,7 +158,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs() {
 	languages := []string{"en-US", "fr-FR"}
 	s.mockStore.On("GetDistinctLanguages").Return(languages, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
 	assert.Contains(s.T(), ids, "en-US")
@@ -167,7 +168,7 @@ func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs() {
 func (s *DeclarativeResourceTestSuite) TestGetAllResourceIDs_StoreError() {
 	s.mockStore.On("GetDistinctLanguages").Return(nil, errors.New("db error"))
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 	assert.NotNil(s.T(), err)
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), "I18N_EXPORT_ERROR", err.Code)

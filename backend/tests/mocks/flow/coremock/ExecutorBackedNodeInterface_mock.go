@@ -408,52 +408,6 @@ func (_c *ExecutorBackedNodeInterfaceMock_GetInputs_Call) RunAndReturn(run func(
 	return _c
 }
 
-// GetMeta provides a mock function for the type ExecutorBackedNodeInterfaceMock
-func (_mock *ExecutorBackedNodeInterfaceMock) GetMeta() interface{} {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetMeta")
-	}
-
-	var r0 interface{}
-	if returnFunc, ok := ret.Get(0).(func() interface{}); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	return r0
-}
-
-// ExecutorBackedNodeInterfaceMock_GetMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMeta'
-type ExecutorBackedNodeInterfaceMock_GetMeta_Call struct {
-	*mock.Call
-}
-
-// GetMeta is a helper method to define mock.On call
-func (_e *ExecutorBackedNodeInterfaceMock_Expecter) GetMeta() *ExecutorBackedNodeInterfaceMock_GetMeta_Call {
-	return &ExecutorBackedNodeInterfaceMock_GetMeta_Call{Call: _e.mock.On("GetMeta")}
-}
-
-func (_c *ExecutorBackedNodeInterfaceMock_GetMeta_Call) Run(run func()) *ExecutorBackedNodeInterfaceMock_GetMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *ExecutorBackedNodeInterfaceMock_GetMeta_Call) Return(ifaceVal interface{}) *ExecutorBackedNodeInterfaceMock_GetMeta_Call {
-	_c.Call.Return(ifaceVal)
-	return _c
-}
-
-func (_c *ExecutorBackedNodeInterfaceMock_GetMeta_Call) RunAndReturn(run func() interface{}) *ExecutorBackedNodeInterfaceMock_GetMeta_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetMode provides a mock function for the type ExecutorBackedNodeInterfaceMock
 func (_mock *ExecutorBackedNodeInterfaceMock) GetMode() string {
 	ret := _mock.Called()
@@ -584,6 +538,50 @@ func (_c *ExecutorBackedNodeInterfaceMock_GetOnFailure_Call) Return(s string) *E
 }
 
 func (_c *ExecutorBackedNodeInterfaceMock_GetOnFailure_Call) RunAndReturn(run func() string) *ExecutorBackedNodeInterfaceMock_GetOnFailure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetOnIncomplete provides a mock function for the type ExecutorBackedNodeInterfaceMock
+func (_mock *ExecutorBackedNodeInterfaceMock) GetOnIncomplete() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOnIncomplete")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOnIncomplete'
+type ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call struct {
+	*mock.Call
+}
+
+// GetOnIncomplete is a helper method to define mock.On call
+func (_e *ExecutorBackedNodeInterfaceMock_Expecter) GetOnIncomplete() *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call {
+	return &ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call{Call: _e.mock.On("GetOnIncomplete")}
+}
+
+func (_c *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call) Run(run func()) *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call) Return(s string) *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call) RunAndReturn(run func() string) *ExecutorBackedNodeInterfaceMock_GetOnIncomplete_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1162,46 +1160,6 @@ func (_c *ExecutorBackedNodeInterfaceMock_SetInputs_Call) RunAndReturn(run func(
 	return _c
 }
 
-// SetMeta provides a mock function for the type ExecutorBackedNodeInterfaceMock
-func (_mock *ExecutorBackedNodeInterfaceMock) SetMeta(meta interface{}) {
-	_mock.Called(meta)
-	return
-}
-
-// ExecutorBackedNodeInterfaceMock_SetMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetMeta'
-type ExecutorBackedNodeInterfaceMock_SetMeta_Call struct {
-	*mock.Call
-}
-
-// SetMeta is a helper method to define mock.On call
-//   - meta interface{}
-func (_e *ExecutorBackedNodeInterfaceMock_Expecter) SetMeta(meta interface{}) *ExecutorBackedNodeInterfaceMock_SetMeta_Call {
-	return &ExecutorBackedNodeInterfaceMock_SetMeta_Call{Call: _e.mock.On("SetMeta", meta)}
-}
-
-func (_c *ExecutorBackedNodeInterfaceMock_SetMeta_Call) Run(run func(meta interface{})) *ExecutorBackedNodeInterfaceMock_SetMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 interface{}
-		if args[0] != nil {
-			arg0 = args[0].(interface{})
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *ExecutorBackedNodeInterfaceMock_SetMeta_Call) Return() *ExecutorBackedNodeInterfaceMock_SetMeta_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *ExecutorBackedNodeInterfaceMock_SetMeta_Call) RunAndReturn(run func(meta interface{})) *ExecutorBackedNodeInterfaceMock_SetMeta_Call {
-	_c.Run(run)
-	return _c
-}
-
 // SetMode provides a mock function for the type ExecutorBackedNodeInterfaceMock
 func (_mock *ExecutorBackedNodeInterfaceMock) SetMode(mode string) {
 	_mock.Called(mode)
@@ -1318,6 +1276,46 @@ func (_c *ExecutorBackedNodeInterfaceMock_SetOnFailure_Call) Return() *ExecutorB
 }
 
 func (_c *ExecutorBackedNodeInterfaceMock_SetOnFailure_Call) RunAndReturn(run func(nodeID string)) *ExecutorBackedNodeInterfaceMock_SetOnFailure_Call {
+	_c.Run(run)
+	return _c
+}
+
+// SetOnIncomplete provides a mock function for the type ExecutorBackedNodeInterfaceMock
+func (_mock *ExecutorBackedNodeInterfaceMock) SetOnIncomplete(nodeID string) {
+	_mock.Called(nodeID)
+	return
+}
+
+// ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetOnIncomplete'
+type ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call struct {
+	*mock.Call
+}
+
+// SetOnIncomplete is a helper method to define mock.On call
+//   - nodeID string
+func (_e *ExecutorBackedNodeInterfaceMock_Expecter) SetOnIncomplete(nodeID interface{}) *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call {
+	return &ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call{Call: _e.mock.On("SetOnIncomplete", nodeID)}
+}
+
+func (_c *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call) Run(run func(nodeID string)) *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call) Return() *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call) RunAndReturn(run func(nodeID string)) *ExecutorBackedNodeInterfaceMock_SetOnIncomplete_Call {
 	_c.Run(run)
 	return _c
 }

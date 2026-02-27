@@ -16,127 +16,52 @@
  * under the License.
  */
 
-import {useState, useEffect, useMemo} from 'react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiError, UserListParams, UserListResponse} from '../types/users';
+import type {UserListParams, UserListResponse} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Custom hook to fetch a list of users
+ * Custom hook to fetch a list of users.
+ *
  * @param params - Optional query parameters for filtering and pagination
- * @returns Object containing data, loading state, error, and refetch function
+ * @returns TanStack Query result object containing user list data, loading state, and error information
  */
-export default function useGetUsers(params?: UserListParams) {
+export default function useGetUsers(params?: UserListParams): UseQueryResult<UserListResponse> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<UserListResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
+  const {limit, offset, filter} = params ?? {};
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
+  return useQuery<UserListResponse>({
+    queryKey: [UserQueryKeys.USERS, {limit, offset, filter}],
+    queryFn: async (): Promise<UserListResponse> => {
+      const serverUrl: string = getServerUrl();
+      const searchParams: URLSearchParams = new URLSearchParams();
 
-  useEffect(() => {
-    const fetchUsers = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const searchParams = new URLSearchParams();
-
-        if (params?.limit !== undefined) {
-          searchParams.append('limit', String(params.limit));
-        }
-        if (params?.offset !== undefined) {
-          searchParams.append('offset', String(params.offset));
-        }
-        if (params?.filter) {
-          searchParams.append('filter', params.filter);
-        }
-
-        const queryString = searchParams.toString();
-
-        const response = await http.request({
-          url: `${API_BASE_URL}/users${queryString ? `?${queryString}` : ''}`,
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        } as unknown as Parameters<typeof http.request>[0]);
-
-        const jsonData = response.data as UserListResponse;
-        setData(jsonData);
-        setError(null);
-      } catch (err) {
-        const apiError: ApiError = {
-          code: 'FETCH_ERROR',
-          message: err instanceof Error ? err.message : 'An unknown error occurred',
-          description: 'Failed to fetch users',
-        };
-        setError(apiError);
-      } finally {
-        setLoading(false);
+      if (limit !== undefined) {
+        searchParams.append('limit', String(limit));
       }
-    };
-
-    fetchUsers().catch(() => {
-      // Error already handled
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
-
-  const refetch = async (newParams?: UserListParams): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const searchParams = new URLSearchParams();
-      const finalParams = newParams ?? params;
-
-      if (finalParams?.limit !== undefined) {
-        searchParams.append('limit', String(finalParams.limit));
+      if (offset !== undefined) {
+        searchParams.append('offset', String(offset));
       }
-      if (finalParams?.offset !== undefined) {
-        searchParams.append('offset', String(finalParams.offset));
-      }
-      if (finalParams?.filter) {
-        searchParams.append('filter', finalParams.filter);
+      if (filter) {
+        searchParams.append('filter', filter);
       }
 
-      const queryString = searchParams.toString();
+      const queryString: string = searchParams.toString();
 
-      const response = await http.request({
-        url: `${API_BASE_URL}/users${queryString ? `?${queryString}` : ''}`,
+      const response: {
+        data: UserListResponse;
+      } = await http.request({
+        url: `${serverUrl}/users${queryString ? `?${queryString}` : ''}`,
         method: 'GET',
         headers: {
-          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as UserListResponse;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'FETCH_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to fetch users',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    refetch,
-  };
+      return response.data;
+    },
+  });
 }

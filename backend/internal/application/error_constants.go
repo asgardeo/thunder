@@ -18,7 +18,18 @@
 
 package application
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"errors"
+
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
+
+// Store-level errors for application operations.
+var (
+	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
+)
 
 // Client errors for application operations.
 var (
@@ -221,6 +232,20 @@ var (
 		Code:             "APP-1028",
 		Error:            "Error retrieving flow definition",
 		ErrorDescription: "An error occurred while retrieving the flow definition",
+	}
+	// ErrorResultLimitExceeded is the error returned when the result limit is exceeded in composite mode.
+	ErrorResultLimitExceeded = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1029",
+		Error:            "Result limit exceeded",
+		ErrorDescription: serverconst.CompositeStoreLimitWarning,
+	}
+	// ErrorCannotModifyDeclarativeResource is the error returned when trying to modify a declarative resource.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1030",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The application is declarative and cannot be modified or deleted",
 	}
 )
 

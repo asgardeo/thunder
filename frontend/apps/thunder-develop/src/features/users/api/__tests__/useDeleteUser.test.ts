@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,242 +16,412 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useDeleteUser from '../useDeleteUser';
+import UserQueryKeys from '../../constants/user-query-keys';
 
-// Mock useAsgardeo
-const mockHttpRequest = vi.fn();
+// Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+  useAsgardeo: vi.fn(),
 }));
 
-// Mock useConfig
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
-    useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
-    }),
+    useConfig: vi.fn(),
   };
 });
 
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
+
 describe('useDeleteUser', () => {
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
-    mockHttpRequest.mockReset();
+    mockHttpRequest = vi.fn();
+    mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: mockGetServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with correct default values', () => {
+  it('should initialize with idle state', () => {
     const {result} = renderHook(() => useDeleteUser());
 
-    expect(result.current.loading).toBe(false);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
-    expect(typeof result.current.deleteUser).toBe('function');
+    expect(result.current.isPending).toBe(false);
+    expect(result.current.isIdle).toBe(true);
+    expect(result.current.isSuccess).toBe(false);
+    expect(result.current.isError).toBe(false);
+    expect(typeof result.current.mutate).toBe('function');
+    expect(typeof result.current.mutateAsync).toBe('function');
   });
 
-  it('should delete a user successfully', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: null});
+  it('should successfully delete a user', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
 
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    const deleteResult = await result.current.deleteUser('user-123');
+    result.current.mutate(userId);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(deleteResult).toBe(true);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
+    expect(result.current.isPending).toBe(false);
+  });
+
+  it('should make correct API call with user ID', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const userId = 'user-1';
+    const {result} = renderHook(() => useDeleteUser());
+
+    result.current.mutate(userId);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/users/user-123',
+        url: `https://api.test.com/users/${userId}`,
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
     );
   });
 
-  it('should handle API error with JSON response', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('User not found'));
+  it('should set pending state during deletion', async () => {
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve(undefined), 100);
+      }),
+    );
 
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    try {
-      await result.current.deleteUser('user-123');
-    } catch {
-      // Expected to throw
-    }
+    result.current.mutate(userId);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_ERROR',
-        message: 'User not found',
-        description: 'Failed to delete user',
-      });
+      expect(result.current.isPending).toBe(true);
     });
+
+    await waitFor(
+      () => {
+        expect(result.current.isSuccess).toBe(true);
+      },
+      {timeout: 200},
+    );
+
+    expect(result.current.isPending).toBe(false);
   });
 
-  it('should handle API error without JSON response', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('Internal Server Error'));
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to delete user');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
 
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    try {
-      await result.current.deleteUser('user-123');
-    } catch {
-      // Expected to throw
-    }
+    result.current.mutate(userId);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_ERROR',
-        message: 'Internal Server Error',
-        description: 'Failed to delete user',
-      });
+      expect(result.current.isError).toBe(true);
     });
+
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isPending).toBe(false);
   });
 
   it('should handle network error', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
+    const networkError = new Error('Network request failed');
+    mockHttpRequest.mockRejectedValueOnce(networkError);
 
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    try {
-      await result.current.deleteUser('user-123');
-    } catch {
-      // Expected to throw
-    }
+    result.current.mutate(userId);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_ERROR',
-        message: 'Network error',
-        description: 'Failed to delete user',
-      });
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(networkError);
+    expect(result.current.isPending).toBe(false);
+  });
+
+  it('should remove user from cache on successful deletion', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const userId = 'user-1';
+    const {result, queryClient} = renderHook(() => useDeleteUser());
+
+    // Pre-populate cache with user
+    queryClient.setQueryData([UserQueryKeys.USER, userId], {
+      id: userId,
+      organizationUnit: 'ou-1',
+      type: 'Employee',
+      attributes: {username: 'john'},
+    });
+
+    const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
+
+    result.current.mutate(userId);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Verify that removeQueries was called for the specific user
+    expect(removeQueriesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: [UserQueryKeys.USER, userId],
+      }),
+    );
+  });
+
+  it('should invalidate users list on successful deletion', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const userId = 'user-1';
+    const {result, queryClient} = renderHook(() => useDeleteUser());
+
+    // Pre-populate cache with users list
+    queryClient.setQueryData([UserQueryKeys.USERS], {
+      users: [
+        {
+          id: userId,
+          organizationUnit: 'ou-1',
+          type: 'Employee',
+          attributes: {username: 'john'},
+        },
+      ],
+      totalResults: 1,
+      count: 1,
+    });
+
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    result.current.mutate(userId);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Verify that invalidateQueries was called for the users list
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: [UserQueryKeys.USERS],
+      }),
+    );
+  });
+
+  it('should handle invalidateQueries rejection gracefully', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const userId = 'user-1';
+    const {result, queryClient} = renderHook(() => useDeleteUser());
+
+    // Mock invalidateQueries to reject
+    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
+
+    result.current.mutate(userId);
+
+    // The mutation should still succeed even if invalidateQueries fails
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
     });
   });
 
-  it('should set loading state correctly during request', async () => {
-    let resolveRequest: () => void;
-    const requestPromise = new Promise<void>((resolve) => {
-      resolveRequest = resolve;
-    });
+  it('should handle sequential deletions', async () => {
+    mockHttpRequest.mockResolvedValue(undefined);
 
-    mockHttpRequest.mockImplementationOnce(() => requestPromise.then(() => ({data: null})));
+    const user1Id = 'user-1';
+    const user2Id = 'user-2';
 
     const {result} = renderHook(() => useDeleteUser());
 
-    const promise = result.current.deleteUser('user-123');
+    // Delete first user
+    result.current.mutate(user1Id);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(true);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    resolveRequest!();
-    await promise;
+    // Delete second user
+    result.current.mutate(user2Id);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+    expect(mockHttpRequest).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        url: `https://api.test.com/users/${user1Id}`,
+      }),
+    );
+    expect(mockHttpRequest).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        url: `https://api.test.com/users/${user2Id}`,
+      }),
+    );
+  });
+
+  it('should use mutateAsync for promise-based deletion', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const userId = 'user-1';
+    const {result} = renderHook(() => useDeleteUser());
+
+    const deletePromise = result.current.mutateAsync(userId);
+
+    await expect(deletePromise).resolves.toBeUndefined();
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
     });
   });
 
-  it('should clear previous error on new delete attempt', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('User not found')).mockResolvedValueOnce({data: null});
+  it('should reject mutateAsync on error', async () => {
+    const apiError = new Error('Deletion failed');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
 
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    try {
-      await result.current.deleteUser('user-123');
-    } catch {
-      // Expected to throw
-    }
+    const deletePromise = result.current.mutateAsync(userId);
+
+    await expect(deletePromise).rejects.toEqual(apiError);
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_ERROR',
-        message: 'User not found',
-        description: 'Failed to delete user',
-      });
-    });
-
-    await result.current.deleteUser('user-456');
-
-    await waitFor(() => {
-      expect(result.current.error).toBeNull();
+      expect(result.current.isError).toBe(true);
     });
   });
 
-  it('should handle multiple delete operations', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: null}).mockResolvedValueOnce({data: null});
+  it('should clear error state on successful retry', async () => {
+    const apiError = new Error('Temporary error');
+    mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce(undefined);
 
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    const deleteResult1 = await result.current.deleteUser('user-123');
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-    expect(deleteResult1).toBe(true);
+    // First attempt - should fail
+    result.current.mutate(userId);
 
-    const deleteResult2 = await result.current.deleteUser('user-456');
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isError).toBe(true);
     });
-    expect(deleteResult2).toBe(true);
 
+    expect(result.current.error).toEqual(apiError);
+
+    // Second attempt - should succeed
+    result.current.mutate(userId);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.error).toBeNull();
     expect(mockHttpRequest).toHaveBeenCalledTimes(2);
   });
 
-  it('should reset error state when reset is called', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('User not found'));
+  it('should not affect other cached users on deletion', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
 
-    const {result} = renderHook(() => useDeleteUser());
+    const user1Id = 'user-1';
+    const user2Id = 'user-2';
 
-    try {
-      await result.current.deleteUser('user-123');
-    } catch {
-      // Expected to throw
-    }
+    // Pre-populate cache with two users
+    const user1Data = {id: user1Id, organizationUnit: 'ou-1', type: 'Employee'};
+    const user2Data = {id: user2Id, organizationUnit: 'ou-1', type: 'Employee'};
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_ERROR',
-        message: 'User not found',
-        description: 'Failed to delete user',
-      });
-    });
+    const {result, queryClient} = renderHook(() => useDeleteUser());
 
-    result.current.reset?.();
+    queryClient.setQueryData([UserQueryKeys.USER, user1Id], user1Data);
+    queryClient.setQueryData([UserQueryKeys.USER, user2Id], user2Data);
+
+    // Delete first user
+    result.current.mutate(user1Id);
 
     await waitFor(() => {
-      expect(result.current.error).toBeNull();
+      expect(result.current.isSuccess).toBe(true);
     });
+
+    // Verify that user2 is still in the cache
+    const user2InCache = queryClient.getQueryData([UserQueryKeys.USER, user2Id]);
+    expect(user2InCache).toEqual(user2Data);
   });
 
-  it('should handle non-Error rejection', async () => {
-    mockHttpRequest.mockRejectedValueOnce('String error');
+  it('should use correct server URL from config', async () => {
+    const customServerUrl = 'https://custom-server.com:9090';
 
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: () => customServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
+
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const userId = 'user-1';
     const {result} = renderHook(() => useDeleteUser());
 
-    await expect(result.current.deleteUser('user-123')).rejects.toBe('String error');
+    result.current.mutate(userId);
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to delete user',
-      });
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
+
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `${customServerUrl}/users/${userId}`,
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    );
+  });
+
+  it('should pass through server error messages', async () => {
+    const serverError = new Error('User has active sessions and cannot be deleted');
+    mockHttpRequest.mockRejectedValueOnce(serverError);
+
+    const userId = 'user-1';
+    const {result} = renderHook(() => useDeleteUser());
+
+    result.current.mutate(userId);
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(serverError);
+    expect(result.current.error?.message).toBe('User has active sessions and cannot be deleted');
   });
 });

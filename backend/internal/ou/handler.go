@@ -46,6 +46,7 @@ func newOrganizationUnitHandler(service OrganizationUnitServiceInterface) *organ
 
 // HandleOUListRequest handles the list organization units request.
 func (ouh *organizationUnitHandler) HandleOUListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -58,7 +59,7 @@ func (ouh *organizationUnitHandler) HandleOUListRequest(w http.ResponseWriter, r
 		limit = serverconst.DefaultPageSize
 	}
 
-	ouListResponse, svcErr := ouh.service.GetOrganizationUnitList(limit, offset)
+	ouListResponse, svcErr := ouh.service.GetOrganizationUnitList(ctx, limit, offset)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -74,6 +75,7 @@ func (ouh *organizationUnitHandler) HandleOUListRequest(w http.ResponseWriter, r
 
 // HandleOUPostRequest handles the create organization unit request.
 func (ouh *organizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[OrganizationUnitRequest](r)
@@ -88,7 +90,7 @@ func (ouh *organizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r
 
 	sanitizedRequest := ouh.sanitizeOrganizationUnitRequest(*createRequest)
 
-	createdOU, svcErr := ouh.service.CreateOrganizationUnit(sanitizedRequest)
+	createdOU, svcErr := ouh.service.CreateOrganizationUnit(ctx, sanitizedRequest)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -101,6 +103,7 @@ func (ouh *organizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r
 
 // HandleOUGetRequest handles the get organization unit by id request.
 func (ouh *organizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id, idValidateFailed := extractAndValidateID(w, r)
@@ -108,7 +111,7 @@ func (ouh *organizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	ou, svcErr := ouh.service.GetOrganizationUnit(id)
+	ou, svcErr := ouh.service.GetOrganizationUnit(ctx, id)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -121,6 +124,7 @@ func (ouh *organizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r 
 
 // HandleOUPutRequest handles the update organization unit request.
 func (ouh *organizationUnitHandler) HandleOUPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id, idValidateFailed := extractAndValidateID(w, r)
@@ -133,7 +137,7 @@ func (ouh *organizationUnitHandler) HandleOUPutRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	ou, svcErr := ouh.service.UpdateOrganizationUnit(id, sanitizedRequest)
+	ou, svcErr := ouh.service.UpdateOrganizationUnit(ctx, id, sanitizedRequest)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -146,6 +150,7 @@ func (ouh *organizationUnitHandler) HandleOUPutRequest(w http.ResponseWriter, r 
 
 // HandleOUDeleteRequest handles the delete organization unit request.
 func (ouh *organizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id, idValidateFailed := extractAndValidateID(w, r)
@@ -153,7 +158,7 @@ func (ouh *organizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter,
 		return
 	}
 
-	svcErr := ouh.service.DeleteOrganizationUnit(id)
+	svcErr := ouh.service.DeleteOrganizationUnit(ctx, id)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -165,25 +170,28 @@ func (ouh *organizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter,
 
 // HandleOUChildrenListRequest handles the list child organization units request.
 func (ouh *organizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ouh.handleResourceListRequest(w, r, "child organization units",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitChildren(id, limit, offset)
+			return ouh.service.GetOrganizationUnitChildren(ctx, id, limit, offset)
 		})
 }
 
 // HandleOUUsersListRequest handles the list users in organization unit request.
 func (ouh *organizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ouh.handleResourceListRequest(w, r, "users",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitUsers(id, limit, offset)
+			return ouh.service.GetOrganizationUnitUsers(ctx, id, limit, offset)
 		})
 }
 
 // HandleOUGroupsListRequest handles the list groups in organization unit request.
 func (ouh *organizationUnitHandler) HandleOUGroupsListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ouh.handleResourceListRequest(w, r, "groups",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitGroups(id, limit, offset)
+			return ouh.service.GetOrganizationUnitGroups(ctx, id, limit, offset)
 		})
 }
 
@@ -202,6 +210,8 @@ func (ouh *organizationUnitHandler) handleError(w http.ResponseWriter, svcErr *s
 			svcErr.Code == ErrorInvalidOffset.Code ||
 			svcErr.Code == ErrorInvalidHandlePath.Code {
 			statusCode = http.StatusBadRequest
+		} else if svcErr.Code == serviceerror.ErrorUnauthorized.Code {
+			statusCode = http.StatusForbidden
 		}
 	default:
 		statusCode = http.StatusInternalServerError
@@ -219,13 +229,16 @@ func (ouh *organizationUnitHandler) sanitizeOrganizationUnitRequest(
 	request OrganizationUnitRequest,
 ) OrganizationUnitRequest {
 	return OrganizationUnitRequest{
-		Handle:      sysutils.SanitizeString(request.Handle),
-		Name:        sysutils.SanitizeString(request.Name),
-		Description: sysutils.SanitizeString(request.Description),
-		Parent:      request.Parent,
-		ThemeID:     request.ThemeID,
-		LayoutID:    request.LayoutID,
-		LogoURL:     request.LogoURL,
+		Handle:          sysutils.SanitizeString(request.Handle),
+		Name:            sysutils.SanitizeString(request.Name),
+		Description:     sysutils.SanitizeString(request.Description),
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
 	}
 }
 
@@ -335,6 +348,7 @@ func (ouh *organizationUnitHandler) handleResourceListRequest(
 
 // HandleOUGetByPathRequest handles the get organization unit by hierarchical handle path request.
 func (ouh *organizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -342,7 +356,7 @@ func (ouh *organizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWrit
 		return
 	}
 
-	ou, svcErr := ouh.service.GetOrganizationUnitByPath(path)
+	ou, svcErr := ouh.service.GetOrganizationUnitByPath(ctx, path)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -355,6 +369,7 @@ func (ouh *organizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWrit
 
 // HandleOUPutByPathRequest handles the update organization unit by hierarchical handle path request.
 func (ouh *organizationUnitHandler) HandleOUPutByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -367,7 +382,7 @@ func (ouh *organizationUnitHandler) HandleOUPutByPathRequest(w http.ResponseWrit
 		return
 	}
 
-	ou, svcErr := ouh.service.UpdateOrganizationUnitByPath(path, sanitizedRequest)
+	ou, svcErr := ouh.service.UpdateOrganizationUnitByPath(ctx, path, sanitizedRequest)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -380,6 +395,7 @@ func (ouh *organizationUnitHandler) HandleOUPutByPathRequest(w http.ResponseWrit
 
 // HandleOUDeleteByPathRequest handles the delete organization unit by hierarchical handle path request.
 func (ouh *organizationUnitHandler) HandleOUDeleteByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -387,7 +403,7 @@ func (ouh *organizationUnitHandler) HandleOUDeleteByPathRequest(w http.ResponseW
 		return
 	}
 
-	svcErr := ouh.service.DeleteOrganizationUnitByPath(path)
+	svcErr := ouh.service.DeleteOrganizationUnitByPath(ctx, path)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -450,25 +466,28 @@ func (ouh *organizationUnitHandler) handleResourceListByPathRequest(
 
 // HandleOUChildrenListByPathRequest handles the list child organization units by path request.
 func (ouh *organizationUnitHandler) HandleOUChildrenListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ouh.handleResourceListByPathRequest(w, r, "child organization units",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitChildrenByPath(path, limit, offset)
+			return ouh.service.GetOrganizationUnitChildrenByPath(ctx, path, limit, offset)
 		})
 }
 
 // HandleOUUsersListByPathRequest handles the list users in organization unit by path request.
 func (ouh *organizationUnitHandler) HandleOUUsersListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ouh.handleResourceListByPathRequest(w, r, "users",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitUsersByPath(path, limit, offset)
+			return ouh.service.GetOrganizationUnitUsersByPath(ctx, path, limit, offset)
 		})
 }
 
 // HandleOUGroupsListByPathRequest handles the list groups in organization unit by path request.
 func (ouh *organizationUnitHandler) HandleOUGroupsListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ouh.handleResourceListByPathRequest(w, r, "groups",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitGroupsByPath(path, limit, offset)
+			return ouh.service.GetOrganizationUnitGroupsByPath(ctx, path, limit, offset)
 		})
 }
 

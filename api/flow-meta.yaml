@@ -1,0 +1,384 @@
+openapi: 3.0.3
+info:
+  title: Flow Metadata API
+  version: "1.0"
+  description: API to retrieve aggregated metadata for flows, including application details, organization unit information, design configuration, and i18n translations.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: flow-meta
+    description: Operations for retrieving flow metadata
+
+paths:
+  /flow/meta:
+    get:
+      tags:
+        - flow-meta
+      security: []
+      summary: Get flow metadata
+      description: |
+        Retrieves aggregated metadata for a flow, including:
+        - Application or OU details based on type
+        - Resolved design configuration (theme and layout)
+        - i18n translations based on language and namespace filters
+        - Registration flow enablement status
+        
+        **Note:** When `type=APP`, the OU metadata is only included in the response
+        when the deployment has exactly one organization unit (i.e., `totalResults == 1`).
+        For deployments with multiple OUs, the OU metadata will be omitted from APP-type responses.
+      operationId: getFlowMetadata
+      parameters:
+        - name: type
+          in: query
+          required: true
+          description: The type of entity to retrieve metadata for
+          schema:
+            type: string
+            enum: [APP, OU]
+          example: APP
+        - name: id
+          in: query
+          required: true
+          description: The UUID of the entity (application ID or organization unit ID)
+          schema:
+            type: string
+            format: uuid
+          example: "60a9b38b-6eba-9f9e-55f9-267067de4680"
+        - name: language
+          in: query
+          required: false
+          description: Language tag in BCP 47 format for i18n translations (e.g., `en`, `es`, `fr-CA`)
+          schema:
+            type: string
+            pattern: '^[a-z]{2}(-[A-Z]{2})?(-[A-Za-z]+)?$'
+          example: en
+        - name: namespace
+          in: query
+          required: false
+          description: Filter translations by namespace (e.g., `auth`, `errors`, `common`)
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9_-]+$'
+          example: auth
+      responses:
+        '200':
+          description: Flow metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowMetadataResponse'
+              examples:
+                app-metadata:
+                  summary: Application metadata with i18n
+                  value:
+                    is_registration_flow_enabled: true
+                    application:
+                      id: "60a9b38b-6eba-9f9e-55f9-267067de4680"
+                      name: "My Web Application"
+                      logo_url: "https://myapp.example.com/logo.png"
+                      url: "https://myapp.example.com"
+                      tos_uri: "https://myapp.example.com/terms"
+                      policy_uri: "https://myapp.example.com/privacy"
+                    ou:
+                      id: "fe447a2f-29c5-4e33-ac8f-d77be15fdb32"
+                      handle: "default"
+                      name: "Default Organization Unit"
+                      logo_url: "https://myapp.example.com/logo.png"
+                      tos_uri: "https://myapp.example.com/terms"
+                      policy_uri: "https://myapp.example.com/privacy"
+                      cookie_policy_uri: "https://myapp.example.com/cookies"
+                    design:
+                      theme:
+                        direction: "ltr"
+                        defaultColorScheme: "dark"
+                        colorSchemes:
+                          dark:
+                            palette:
+                              primary:
+                                main: "#BD93F9"
+                      layout:
+                        header:
+                          logo:
+                            url: "https://example.com/logo.png"
+                    i18n:
+                      languages:
+                        - en
+                        - es
+                      language: en
+                      totalResults: 3
+                      translations:
+                        auth:
+                          login.button: Login
+                          login.title: Welcome
+                          logout.button: Logout
+                ou-metadata:
+                  summary: Organization unit metadata
+                  value:
+                    is_registration_flow_enabled: false
+                    ou:
+                      id: "fe447a2f-29c5-4e33-ac8f-d77be15fdb32"
+                      handle: "default"
+                      name: "Default Organization Unit"
+                      logo_url: "https://myapp.example.com/logo.png"
+                    design:
+                      theme: {}
+                      layout: {}
+                    i18n:
+                      languages:
+                        - en
+                      language: en
+                      totalResults: 0
+                      translations: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    FlowMetadataResponse:
+      type: object
+      required:
+        - is_registration_flow_enabled
+        - design
+        - i18n
+      properties:
+        is_registration_flow_enabled:
+          type: boolean
+          description: Indicates if registration flow is enabled for the entity
+          example: true
+        application:
+          $ref: '#/components/schemas/ApplicationMetadata'
+        ou:
+          $ref: '#/components/schemas/OUMetadata'
+        design:
+          $ref: '#/components/schemas/DesignMetadata'
+        i18n:
+          $ref: '#/components/schemas/I18nMetadata'
+
+    ApplicationMetadata:
+      type: object
+      description: Application metadata (only present when type=APP)
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Application ID
+          example: "60a9b38b-6eba-9f9e-55f9-267067de4680"
+        name:
+          type: string
+          description: Application name
+          example: "My Web Application"
+        logo_url:
+          type: string
+          format: uri
+          description: Application logo URL
+          example: "https://myapp.example.com/logo.png"
+        url:
+          type: string
+          format: uri
+          description: Application URL
+          example: "https://myapp.example.com"
+        tos_uri:
+          type: string
+          format: uri
+          description: Terms of Service URI
+          example: "https://myapp.example.com/terms"
+        policy_uri:
+          type: string
+          format: uri
+          description: Privacy Policy URI
+          example: "https://myapp.example.com/privacy"
+
+    OUMetadata:
+      type: object
+      description: |
+        Organization unit metadata.
+        - Always present when `type=OU`
+        - For `type=APP`, only included when deployment has exactly one OU
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Organization unit ID
+          example: "fe447a2f-29c5-4e33-ac8f-d77be15fdb32"
+        handle:
+          type: string
+          description: Organization unit handle
+          example: "default"
+        name:
+          type: string
+          description: Organization unit name
+          example: "Default Organization Unit"
+        description:
+          type: string
+          description: Organization unit description
+          example: "Default organization unit for the deployment"
+        logo_url:
+          type: string
+          format: uri
+          description: Organization unit logo URL
+          example: "https://myapp.example.com/logo.png"
+        tos_uri:
+          type: string
+          format: uri
+          description: Terms of Service URI
+          example: "https://myapp.example.com/terms"
+        policy_uri:
+          type: string
+          format: uri
+          description: Privacy Policy URI
+          example: "https://myapp.example.com/privacy"
+        cookie_policy_uri:
+          type: string
+          format: uri
+          description: Cookie Policy URI
+          example: "https://myapp.example.com/cookies"
+
+    DesignMetadata:
+      type: object
+      required:
+        - theme
+        - layout
+      properties:
+        theme:
+          type: object
+          description: Resolved theme configuration
+          additionalProperties: true
+        layout:
+          type: object
+          description: Resolved layout configuration
+          additionalProperties: true
+
+    I18nMetadata:
+      type: object
+      required:
+        - languages
+        - language
+        - translations
+      properties:
+        languages:
+          type: array
+          items:
+            type: string
+          description: List of available languages
+          example:
+            - en
+            - es
+        language:
+          type: string
+          description: The language used for translations (defaults to 'en' if not specified)
+          example: en
+        totalResults:
+          type: integer
+          description: Total number of translation keys returned
+          example: 3
+        translations:
+          type: object
+          description: Translations organized by namespace
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            auth:
+              login.button: Login
+              login.title: Welcome
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "FLM-1001"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid request"
+        description:
+          type: string
+          description: Detailed error description
+          example: "The 'type' parameter must be either 'APP' or 'OU'"
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid-type:
+              summary: Invalid type parameter
+              value:
+                code: "FLM-1001"
+                message: "Invalid request"
+                description: "The 'type' parameter must be either 'APP' or 'OU'"
+            missing-type:
+              summary: Missing type parameter
+              value:
+                code: "FLM-1004"
+                message: "Missing required parameter"
+                description: "The 'type' query parameter is required"
+            missing-id:
+              summary: Missing id parameter
+              value:
+                code: "FLM-1005"
+                message: "Missing required parameter"
+                description: "The 'id' query parameter is required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            application-not-found:
+              summary: Application not found
+              value:
+                code: "FLM-1002"
+                message: "Resource not found"
+                description: "The specified application does not exist"
+            ou-not-found:
+              summary: Organization unit not found
+              value:
+                code: "FLM-1003"
+                message: "Resource not found"
+                description: "The specified organization unit does not exist"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            application-fetch-failed:
+              summary: Application fetch failed
+              value:
+                code: "FLM-5001"
+                message: "Internal server error"
+                description: "Failed to retrieve application information"
+            ou-fetch-failed:
+              summary: Organization unit fetch failed
+              value:
+                code: "FLM-5002"
+                message: "Internal server error"
+                description: "Failed to retrieve organization unit information"

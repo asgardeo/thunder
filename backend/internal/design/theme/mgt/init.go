@@ -21,32 +21,81 @@ package thememgt
 import (
 	"net/http"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the theme management service and registers its routes.
 func Initialize(mux *http.ServeMux) (ThemeMgtServiceInterface, declarativeresource.ResourceExporter, error) {
-	var themeMgtStore themeMgtStoreInterface
-	if declarativeresource.IsDeclarativeModeEnabled() {
-		themeMgtStore = newThemeFileBasedStore()
-	} else {
-		themeMgtStore = newThemeMgtStore()
+	// Step 1: Initialize store based on configuration
+	themeMgtStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, err
 	}
 
+	// Step 2: Create service with store
 	themeMgtService := newThemeMgtService(themeMgtStore)
-
-	if declarativeresource.IsDeclarativeModeEnabled() {
-		if err := loadDeclarativeResources(themeMgtStore); err != nil {
-			return nil, nil, err
-		}
-	}
-
 	themeMgtHandler := newThemeMgtHandler(themeMgtService)
 	registerRoutes(mux, themeMgtHandler)
 
 	exporter := newThemeExporter(themeMgtService)
 	return themeMgtService, exporter, nil
+}
+
+// Store Selection (based on theme.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All themes are mutable
+//   - Export functionality exports DB-backed themes
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All themes are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime themes (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative themes cannot be updated or deleted
+//   - Export only exports DB-backed themes (not YAML)
+//
+// Configuration Fallback:
+// - If theme.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore() (themeMgtStoreInterface, error) {
+	var themeMgtStore themeMgtStoreInterface
+
+	storeMode := getThemeStoreMode()
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newThemeFileBasedStore()
+		dbStore := newThemeMgtStore()
+		themeMgtStore = newCompositeThemeStore(fileStore, dbStore)
+		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
+			return nil, err
+		}
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newThemeFileBasedStore()
+		themeMgtStore = fileStore
+		if err := loadDeclarativeResources(fileStore, nil); err != nil {
+			return nil, err
+		}
+
+	default:
+		themeMgtStore = newThemeMgtStore()
+	}
+
+	return themeMgtStore, nil
 }
 
 // registerRoutes registers the routes for theme management operations.

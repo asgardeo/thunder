@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 )
 
 const (
@@ -245,4 +246,727 @@ func (s *InitTestSuite) TestRegisterRoutes_PreflightRequests() {
 			s.NotEmpty(w.Header().Get("Access-Control-Allow-Headers"))
 		})
 	}
+}
+
+// Store Mode Detection tests
+func (s *InitTestSuite) TestGetFlowStoreMode_Mutable() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeMutable),
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+func (s *InitTestSuite) TestGetFlowStoreMode_Declarative() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeDeclarative),
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	s.Equal(serverconst.StoreModeDeclarative, mode)
+}
+
+func (s *InitTestSuite) TestGetFlowStoreMode_Composite() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeComposite),
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	s.Equal(serverconst.StoreModeComposite, mode)
+}
+
+func (s *InitTestSuite) TestGetFlowStoreMode_DefaultMutable() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+func (s *InitTestSuite) TestIsCompositeModeEnabled_Enabled() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeComposite),
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	enabled := isCompositeModeEnabled()
+
+	s.True(enabled)
+}
+
+func (s *InitTestSuite) TestIsCompositeModeEnabled_Disabled() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeMutable),
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	enabled := isCompositeModeEnabled()
+
+	s.False(enabled)
+}
+
+// Additional tests for init.go - store mode detection and initialization
+
+// Test getFlowStoreMode with invalid store mode (should fall back to mutable)
+func (s *InitTestSuite) TestGetFlowStoreMode_InvalidMode() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "invalid-mode",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should default to mutable when invalid mode is provided
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+// Test getFlowStoreMode with whitespace in mode
+func (s *InitTestSuite) TestGetFlowStoreMode_WithWhitespace() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "  composite  ",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should trim whitespace and recognize composite
+	s.Equal(serverconst.StoreModeComposite, mode)
+}
+
+// Test getFlowStoreMode with mixed case
+func (s *InitTestSuite) TestGetFlowStoreMode_MixedCase() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "Declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should convert to lowercase and recognize declarative
+	s.Equal(serverconst.StoreModeDeclarative, mode)
+}
+
+// Test getFlowStoreMode fallback to global DeclarativeResources.Enabled=true
+func (s *InitTestSuite) TestGetFlowStoreMode_FallbackToGlobalDeclarative() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "", // Not explicitly set
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should fall back to declarative when global setting is enabled
+	s.Equal(serverconst.StoreModeDeclarative, mode)
+}
+
+// Test getFlowStoreMode fallback to global DeclarativeResources.Enabled=false
+func (s *InitTestSuite) TestGetFlowStoreMode_FallbackToGlobalMutable() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "", // Not explicitly set
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should default to mutable when global setting is disabled
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+// Test getFlowStoreMode - explicit setting overrides global
+func (s *InitTestSuite) TestGetFlowStoreMode_ExplicitOverridesGlobal() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeMutable), // Explicitly set to mutable
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true, // Global says declarative
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Explicit setting should override global
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+// Test isCompositeModeEnabled - true case
+func (s *InitTestSuite) TestIsCompositeModeEnabled_True() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeComposite),
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	enabled := isCompositeModeEnabled()
+
+	s.True(enabled)
+}
+
+// Test isCompositeModeEnabled - false for mutable
+func (s *InitTestSuite) TestIsCompositeModeEnabled_FalseForMutable() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeMutable),
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	enabled := isCompositeModeEnabled()
+
+	s.False(enabled)
+}
+
+// Test isCompositeModeEnabled - false for declarative
+func (s *InitTestSuite) TestIsCompositeModeEnabled_FalseForDeclarative() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeDeclarative),
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	enabled := isCompositeModeEnabled()
+
+	s.False(enabled)
+}
+
+// Test getFlowStoreMode with uppercase
+func (s *InitTestSuite) TestGetFlowStoreMode_Uppercase() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "COMPOSITE",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should handle uppercase correctly
+	s.Equal(serverconst.StoreModeComposite, mode)
+}
+
+// Test getFlowStoreMode with special characters (should fall back to mutable)
+func (s *InitTestSuite) TestGetFlowStoreMode_SpecialCharacters() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "mutable@#$",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should default to mutable when invalid characters are present
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+// Test getFlowStoreMode fallback when Flow config is nil
+func (s *InitTestSuite) TestGetFlowStoreMode_NilFlowConfig() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	mode := getFlowStoreMode()
+
+	// Should default to mutable
+	s.Equal(serverconst.StoreModeMutable, mode)
+}
+
+// Test mode resolution priority
+func (s *InitTestSuite) TestGetFlowStoreMode_PriorityOrder() {
+	testCases := []struct {
+		name               string
+		flowStore          string
+		declarativeEnabled bool
+		expectedMode       serverconst.StoreMode
+	}{
+		{
+			name:               "Explicit composite overrides global",
+			flowStore:          string(serverconst.StoreModeComposite),
+			declarativeEnabled: false,
+			expectedMode:       serverconst.StoreModeComposite,
+		},
+		{
+			name:               "Explicit declarative overrides global",
+			flowStore:          string(serverconst.StoreModeDeclarative),
+			declarativeEnabled: false,
+			expectedMode:       serverconst.StoreModeDeclarative,
+		},
+		{
+			name:               "Explicit mutable overrides global declarative",
+			flowStore:          string(serverconst.StoreModeMutable),
+			declarativeEnabled: true,
+			expectedMode:       serverconst.StoreModeMutable,
+		},
+		{
+			name:               "Empty flow store, global declarative enabled",
+			flowStore:          "",
+			declarativeEnabled: true,
+			expectedMode:       serverconst.StoreModeDeclarative,
+		},
+		{
+			name:               "Empty flow store, global declarative disabled",
+			flowStore:          "",
+			declarativeEnabled: false,
+			expectedMode:       serverconst.StoreModeMutable,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			testConfig := &config.Config{
+				Flow: config.FlowConfig{
+					Store: tc.flowStore,
+				},
+				DeclarativeResources: config.DeclarativeResources{
+					Enabled: tc.declarativeEnabled,
+				},
+			}
+			config.ResetThunderRuntime()
+			_ = config.InitializeThunderRuntime("test", testConfig)
+			defer config.ResetThunderRuntime()
+
+			mode := getFlowStoreMode()
+
+			s.Equal(tc.expectedMode, mode)
+		})
+	}
+}
+
+// Test all valid store mode values
+func (s *InitTestSuite) TestGetFlowStoreMode_AllValidModes() {
+	validModes := []serverconst.StoreMode{
+		serverconst.StoreModeMutable,
+		serverconst.StoreModeDeclarative,
+		serverconst.StoreModeComposite,
+	}
+
+	for _, validMode := range validModes {
+		s.Run("Mode_"+string(validMode), func() {
+			testConfig := &config.Config{
+				Flow: config.FlowConfig{
+					Store: string(validMode),
+				},
+			}
+			config.ResetThunderRuntime()
+			_ = config.InitializeThunderRuntime("test", testConfig)
+			defer config.ResetThunderRuntime()
+
+			mode := getFlowStoreMode()
+
+			s.Equal(validMode, mode)
+		})
+	}
+}
+
+// Test edge case: empty string vs nil
+func (s *InitTestSuite) TestGetFlowStoreMode_EmptyStringVsNil() {
+	s.Run("Empty string falls back to global", func() {
+		testConfig := &config.Config{
+			Flow: config.FlowConfig{
+				Store: "",
+			},
+			DeclarativeResources: config.DeclarativeResources{
+				Enabled: true,
+			},
+		}
+		config.ResetThunderRuntime()
+		_ = config.InitializeThunderRuntime("test", testConfig)
+		defer config.ResetThunderRuntime()
+
+		mode := getFlowStoreMode()
+
+		s.Equal(serverconst.StoreModeDeclarative, mode)
+	})
+}
+
+// Test mode normalization edge cases
+func (s *InitTestSuite) TestGetFlowStoreMode_NormalizationCases() {
+	testCases := []struct {
+		name         string
+		input        string
+		expectedMode serverconst.StoreMode
+	}{
+		{"Leading spaces", "  mutable", serverconst.StoreModeMutable},
+		{"Trailing spaces", "mutable  ", serverconst.StoreModeMutable},
+		{"Mixed case 1", "MuTaBlE", serverconst.StoreModeMutable},
+		{"Mixed case 2", "CoMpOsItE", serverconst.StoreModeComposite},
+		{"Tabs and spaces", "\t composite \t", serverconst.StoreModeComposite},
+		{"All uppercase", "DECLARATIVE", serverconst.StoreModeDeclarative},
+		{"Invalid normalized", "  invalid  ", serverconst.StoreModeMutable},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			testConfig := &config.Config{
+				Flow: config.FlowConfig{
+					Store: tc.input,
+				},
+			}
+			config.ResetThunderRuntime()
+			_ = config.InitializeThunderRuntime("test", testConfig)
+			defer config.ResetThunderRuntime()
+
+			mode := getFlowStoreMode()
+
+			s.Equal(tc.expectedMode, mode)
+		})
+	}
+}
+
+// Test initializeStore with mutable mode
+func (s *InitTestSuite) TestInitializeStore_MutableMode() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeMutable),
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	s.NoError(err)
+	s.NotNil(store)
+	s.Nil(compositeStore, "compositeStore should be nil in mutable mode")
+	// Verify it's a cacheBackedFlowStore
+	_, ok := store.(*cacheBackedFlowStore)
+	s.True(ok, "store should be of type *cacheBackedFlowStore")
+}
+
+// Test initializeStore with declarative mode
+func (s *InitTestSuite) TestInitializeStore_DeclarativeMode() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeDeclarative),
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	// Note: err might occur if declarative resources path doesn't exist, but that's expected
+	// We're testing store type initialization, not resource loading
+	_ = err // Ignore error for this test
+	s.NotNil(store)
+	s.Nil(compositeStore, "compositeStore should be nil in declarative mode")
+	// Verify it's a fileBasedStore
+	_, ok := store.(*fileBasedStore)
+	s.True(ok, "store should be of type *fileBasedStore")
+}
+
+// Test initializeStore with composite mode
+func (s *InitTestSuite) TestInitializeStore_CompositeMode() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeComposite),
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	// Note: err might occur if declarative resources path doesn't exist, but that's expected
+	// We're testing store type initialization, not resource loading
+	_ = err // Ignore error for this test
+	s.NotNil(store)
+	s.NotNil(compositeStore, "compositeStore should not be nil in composite mode")
+	// Verify it's a compositeFlowStore
+	_, ok := store.(*compositeFlowStore)
+	s.True(ok, "store should be of type *compositeFlowStore")
+	// Verify compositeStore is the same instance as store
+	s.Equal(compositeStore, store, "compositeStore should be the same instance as store")
+}
+
+// Test initializeStore with declarative mode handles resource loading errors
+func (s *InitTestSuite) TestInitializeStore_DeclarativeMode_ResourceLoadingError() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeDeclarative),
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	// When declarative resources path doesn't exist or has issues, error is returned
+	// The store and compositeStore should be nil when error occurs
+	if err != nil {
+		s.Nil(store)
+		s.Nil(compositeStore)
+	} else {
+		// If no error (e.g., empty directory), store should be created
+		s.NotNil(store)
+		s.Nil(compositeStore)
+	}
+}
+
+// Test initializeStore with composite mode handles resource loading errors
+func (s *InitTestSuite) TestInitializeStore_CompositeMode_ResourceLoadingError() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: string(serverconst.StoreModeComposite),
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	// When declarative resources path doesn't exist or has issues, error is returned
+	// The store and compositeStore should be nil when error occurs
+	if err != nil {
+		s.Nil(store)
+		s.Nil(compositeStore)
+	} else {
+		// If no error (e.g., empty directory), stores should be created
+		s.NotNil(store)
+		s.NotNil(compositeStore)
+	}
+}
+
+// Test initializeStore with default mode (fallback to mutable)
+func (s *InitTestSuite) TestInitializeStore_DefaultMode() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "", // Empty should fallback to mutable
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	s.NoError(err)
+	s.NotNil(store)
+	s.Nil(compositeStore, "compositeStore should be nil in default (mutable) mode")
+	// Verify it's a cacheBackedFlowStore
+	_, ok := store.(*cacheBackedFlowStore)
+	s.True(ok, "store should be of type *cacheBackedFlowStore")
+}
+
+// Test initializeStore validates store mode normalization
+func (s *InitTestSuite) TestInitializeStore_ModeNormalization() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			Store: "  COMPOSITE  ", // Should normalize to composite
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	store, compositeStore, err := initializeStore()
+
+	// Note: err might occur if declarative resources path doesn't exist, but that's expected
+	// We're testing store type initialization and mode normalization
+	_ = err // Ignore error for this test
+	s.NotNil(store)
+	s.NotNil(compositeStore, "compositeStore should not be nil")
+	// Verify it's a compositeFlowStore
+	_, ok := store.(*compositeFlowStore)
+	s.True(ok, "store should be of type *compositeFlowStore")
 }

@@ -1,3 +1,3 @@
 module github.com/asgardeo/thunder/tools/i18n-extractor
 
-go 1.25
+go 1.26

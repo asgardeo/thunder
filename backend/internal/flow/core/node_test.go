@@ -124,34 +124,3 @@ func (s *NodeTestSuite) TestInputsAndProperties() {
 	execNode.SetInputs(inputs)
 	s.Equal(inputs, execNode.GetInputs())
 }
-
-func (s *NodeTestSuite) TestMetaGetterSetter() {
-	// Test meta on task execution node (inherits from base node)
-	taskNode := newTaskExecutionNode("task-1", nil, false, false)
-
-	// Initially nil
-	s.Nil(taskNode.GetMeta())
-
-	// Set and get meta
-	metaData := map[string]interface{}{"key": "value", "nested": map[string]string{"a": "b"}}
-	taskNode.SetMeta(metaData)
-	s.Equal(metaData, taskNode.GetMeta())
-
-	// Test meta on prompt node (also inherits from base node)
-	promptNode := newPromptNode("prompt-1", nil, false, false)
-
-	s.Nil(promptNode.GetMeta())
-
-	promptMeta := map[string]interface{}{"components": []string{"input1", "button1"}}
-	promptNode.SetMeta(promptMeta)
-	s.Equal(promptMeta, promptNode.GetMeta())
-
-	// Test meta on representation node (START/END)
-	startNode := newRepresentationNode("start-1", common.NodeTypeStart, nil, true, false)
-
-	s.Nil(startNode.GetMeta())
-
-	// Even representation nodes can have meta set (though typically unused)
-	startNode.SetMeta("unused-meta")
-	s.Equal("unused-meta", startNode.GetMeta())
-}

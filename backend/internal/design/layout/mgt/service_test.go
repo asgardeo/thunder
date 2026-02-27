@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 // Test Suite
@@ -40,6 +42,18 @@ func TestLayoutServiceTestSuite(t *testing.T) {
 }
 
 func (suite *LayoutServiceTestSuite) SetupTest() {
+	// Initialize config runtime with default values
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if err != nil {
+		suite.Fail("Failed to initialize runtime", err)
+	}
+
 	suite.mockStore = newLayoutMgtStoreInterfaceMock(suite.T())
 	suite.service = newLayoutMgtService(suite.mockStore)
 }
@@ -146,6 +160,24 @@ func (suite *LayoutServiceTestSuite) TestCreateLayout_MissingDisplayName() {
 	assert.Equal(suite.T(), "LAY-1005", err.Code)
 }
 
+// Test CreateLayout - Declarative mode enabled
+func (suite *LayoutServiceTestSuite) TestCreateLayout_DeclarativeModeEnabled() {
+	runtime := config.GetThunderRuntime()
+	runtime.Config.Layout.Store = "declarative"
+
+	layoutRequest := CreateLayoutRequest{
+		DisplayName: "Declarative Layout",
+		Description: "Should be blocked",
+		Layout:      json.RawMessage(`{"structure": "grid"}`),
+	}
+
+	result, err := suite.service.CreateLayout(layoutRequest)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), "LAY-1015", err.Code)
+}
+
 // Test CreateLayout - Invalid Layout JSON
 func (suite *LayoutServiceTestSuite) TestCreateLayout_InvalidJSON() {
 	layoutRequest := CreateLayoutRequest{
@@ -235,6 +267,7 @@ func (suite *LayoutServiceTestSuite) TestUpdateLayout_Success() {
 		Layout:      json.RawMessage(`{"structure": "flex"}`),
 	}
 
+	suite.mockStore.On("IsLayoutDeclarative", "layout-123").Return(false)
 	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
 	suite.mockStore.On("UpdateLayout", "layout-123", updateRequest).Return(nil)
 
@@ -284,6 +317,7 @@ func (suite *LayoutServiceTestSuite) TestUpdateLayout_NotFound() {
 		Layout:      json.RawMessage(`{"structure": "grid"}`),
 	}
 
+	suite.mockStore.On("IsLayoutDeclarative", "non-existent").Return(false)
 	suite.mockStore.On("IsLayoutExist", "non-existent").Return(false, nil)
 
 	result, err := suite.service.UpdateLayout("non-existent", updateRequest)
@@ -300,7 +334,7 @@ func (suite *LayoutServiceTestSuite) TestUpdateLayout_InvalidJSON() {
 		Description: "A layout",
 		Layout:      json.RawMessage(`{invalid}`),
 	}
-
+	suite.mockStore.On("IsLayoutDeclarative", "layout-123").Return(false)
 	result, err := suite.service.UpdateLayout("layout-123", updateRequest)
 
 	assert.Nil(suite.T(), result)
@@ -310,6 +344,7 @@ func (suite *LayoutServiceTestSuite) TestUpdateLayout_InvalidJSON() {
 
 // Test DeleteLayout - Success
 func (suite *LayoutServiceTestSuite) TestDeleteLayout_Success() {
+	suite.mockStore.On("IsLayoutDeclarative", "layout-123").Return(false)
 	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
 	suite.mockStore.On("GetApplicationsCountByLayoutID", "layout-123").Return(0, nil)
 	suite.mockStore.On("DeleteLayout", "layout-123").Return(nil)
@@ -329,6 +364,7 @@ func (suite *LayoutServiceTestSuite) TestDeleteLayout_InvalidID() {
 
 // Test DeleteLayout - Not Found (idempotent delete returns success)
 func (suite *LayoutServiceTestSuite) TestDeleteLayout_NotFound() {
+	suite.mockStore.On("IsLayoutDeclarative", "non-existent").Return(false)
 	suite.mockStore.On("IsLayoutExist", "non-existent").Return(false, nil)
 
 	err := suite.service.DeleteLayout("non-existent")
@@ -338,6 +374,7 @@ func (suite *LayoutServiceTestSuite) TestDeleteLayout_NotFound() {
 
 // Test DeleteLayout - Layout In Use
 func (suite *LayoutServiceTestSuite) TestDeleteLayout_InUse() {
+	suite.mockStore.On("IsLayoutDeclarative", "layout-123").Return(false)
 	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
 	suite.mockStore.On("GetApplicationsCountByLayoutID", "layout-123").Return(5, nil)
 
@@ -350,6 +387,7 @@ func (suite *LayoutServiceTestSuite) TestDeleteLayout_InUse() {
 
 // Test DeleteLayout - Store Error
 func (suite *LayoutServiceTestSuite) TestDeleteLayout_StoreError() {
+	suite.mockStore.On("IsLayoutDeclarative", "layout-123").Return(false)
 	suite.mockStore.On("IsLayoutExist", "layout-123").Return(true, nil)
 	suite.mockStore.On("GetApplicationsCountByLayoutID", "layout-123").Return(0, nil)
 	suite.mockStore.On("DeleteLayout", "layout-123").Return(errors.New("database error"))

@@ -33,7 +33,6 @@ type ExecutorInterface interface {
 	GetName() string
 	GetType() common.ExecutorType
 	GetDefaultInputs() []common.Input
-	GetDefaultMeta() interface{}
 	GetPrerequisites() []common.Input
 	HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool
 	ValidatePrerequisites(ctx *NodeContext, execResp *common.ExecutorResponse) bool
@@ -89,11 +88,6 @@ func (e *executor) GetPrerequisites() []common.Input {
 	return e.Prerequisites
 }
 
-// GetDefaultMeta returns the default meta structure for the executor.
-func (e *executor) GetDefaultMeta() interface{} {
-	return nil
-}
-
 // HasRequiredInputs checks if the required inputs are provided in the context and appends any
 // missing inputs to the executor response. Returns true if required inputs are found, otherwise false.
 func (e *executor) HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
@@ -107,7 +101,7 @@ func (e *executor) HasRequiredInputs(ctx *NodeContext, execResp *common.Executor
 	if execResp.Inputs == nil {
 		execResp.Inputs = make([]common.Input, 0)
 	}
-	if len(ctx.UserInputs) == 0 && len(ctx.RuntimeData) == 0 {
+	if len(ctx.UserInputs) == 0 && len(ctx.RuntimeData) == 0 && len(ctx.ForwardedData) == 0 {
 		execResp.Inputs = append(execResp.Inputs, requiredData...)
 		return false
 	}
@@ -142,11 +136,22 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 
 		if _, ok := ctx.UserInputs[prerequisite.Identifier]; !ok {
 			if _, ok := ctx.RuntimeData[prerequisite.Identifier]; !ok {
-				logger.Debug("Prerequisite not met for the executor",
-					log.String("identifier", prerequisite.Identifier))
-				execResp.Status = common.ExecFailure
-				execResp.FailureReason = "Prerequisite not met: " + prerequisite.Identifier
-				return false
+				if value, ok := ctx.ForwardedData[prerequisite.Identifier]; !ok {
+					logger.Debug("Prerequisite not met for the executor",
+						log.String("identifier", prerequisite.Identifier))
+					execResp.Status = common.ExecFailure
+					execResp.FailureReason = "Prerequisite not met: " + prerequisite.Identifier
+					return false
+				} else {
+					// ForwardedData found but verify it's a string value
+					if _, isString := value.(string); !isString {
+						logger.Debug("Prerequisite not met for the executor (non-string in ForwardedData)",
+							log.String("identifier", prerequisite.Identifier))
+						execResp.Status = common.ExecFailure
+						execResp.FailureReason = "Prerequisite not met: " + prerequisite.Identifier
+						return false
+					}
+				}
 			}
 		}
 	}
@@ -189,6 +194,14 @@ func (e *executor) appendMissingInputs(ctx *NodeContext, execResp *common.Execut
 				logger.Debug("Input available in runtime data, skipping",
 					log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 				continue
+			}
+
+			if value, ok := ctx.ForwardedData[input.Identifier]; ok {
+				if _, isString := value.(string); isString {
+					logger.Debug("Input available in forwarded data, skipping",
+						log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
+					continue
+				}
 			}
 
 			requireData = true

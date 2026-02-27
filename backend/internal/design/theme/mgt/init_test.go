@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -67,4 +68,38 @@ func (suite *ThemeInitTestSuite) TestRegisterRoutes() {
 	assert.NotPanics(suite.T(), func() {
 		registerRoutes(mux, handler)
 	})
+}
+
+func (suite *ThemeInitTestSuite) TestInitializeStore_CompositeMode() {
+	// Initialize runtime with temp home
+	tempDir := suite.T().TempDir()
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime(tempDir, &config.Config{})
+	suite.Require().NoError(err)
+
+	runtime := config.GetThunderRuntime()
+	runtime.Config.Theme.Store = "composite"
+
+	store, err := initializeStore()
+
+	suite.NoError(err)
+	_, ok := store.(*compositeThemeStore)
+	suite.True(ok)
+}
+
+func (suite *ThemeInitTestSuite) TestInitializeStore_DeclarativeMode() {
+	// Initialize runtime with temp home
+	tempDir := suite.T().TempDir()
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime(tempDir, &config.Config{})
+	suite.Require().NoError(err)
+
+	runtime := config.GetThunderRuntime()
+	runtime.Config.Theme.Store = "declarative"
+
+	store, err := initializeStore()
+
+	suite.NoError(err)
+	_, ok := store.(*themeFileBasedStore)
+	suite.True(ok)
 }

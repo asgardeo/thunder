@@ -33,36 +33,45 @@ type OrganizationUnitBasic struct {
 
 // OrganizationUnit represents an organization unit.
 type OrganizationUnit struct {
-	ID          string  `json:"id"`
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent"`
-	LogoURL     string  `json:"logo_url,omitempty"`
-	ThemeID     string  `json:"theme_id,omitempty"`
-	LayoutID    string  `json:"layout_id,omitempty"`
+	ID              string  `json:"id"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
+	ThemeID         string  `json:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty"`
 }
 
 // CreateOURequest represents the request body for creating an organization unit.
 type CreateOURequest struct {
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent,omitempty"`
-	LogoURL     string  `json:"logo_url,omitempty"`
-	ThemeID     string  `json:"theme_id,omitempty"`
-	LayoutID    string  `json:"layout_id,omitempty"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
+	ThemeID         string  `json:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty"`
 }
 
 // UpdateOURequest represents the request body for updating an organization unit.
 type UpdateOURequest struct {
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent,omitempty"`
-	LogoURL     string  `json:"logo_url,omitempty"`
-	ThemeID     string  `json:"theme_id,omitempty"`
-	LayoutID    string  `json:"layout_id,omitempty"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
+	ThemeID         string  `json:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.

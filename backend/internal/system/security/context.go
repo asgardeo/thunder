@@ -27,30 +27,36 @@ type contextKey string
 const (
 	// securityContextKey is the context key for storing security context.
 	securityContextKey contextKey = "security_context"
+
+	// securitySkippedKey is the context key for marking that security enforcement was skipped.
+	securitySkippedKey contextKey = "security_skipped"
+
+	// runtimeContextKey is the context key for marking a context as an internal runtime caller.
+	runtimeContextKey contextKey = "runtime_context"
 )
 
-// SecurityContext holds immutable authenticated user information.
+// SecurityContext holds immutable authenticated subject information.
 type SecurityContext struct {
-	userID     string
-	ouID       string
-	appID      string
-	token      string
-	attributes map[string]interface{}
+	subject     string
+	ouID        string
+	token       string
+	permissions []string
+	attributes  map[string]interface{}
 }
 
 // newSecurityContext creates a new immutable SecurityContext.
-func newSecurityContext(userID, ouID, appID, token string,
-	attributes map[string]interface{}) *SecurityContext {
+func newSecurityContext(subject, ouID, token string,
+	permissions []string, attributes map[string]interface{}) *SecurityContext {
 	return &SecurityContext{
-		userID:     userID,
-		ouID:       ouID,
-		appID:      appID,
-		token:      token,
-		attributes: attributes,
+		subject:     subject,
+		ouID:        ouID,
+		token:       token,
+		permissions: permissions,
+		attributes:  attributes,
 	}
 }
 
-// WithSecurityContext adds security context to the request context.
+// withSecurityContext adds security context to the request context.
 func withSecurityContext(ctx context.Context, authCtx *SecurityContext) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -58,12 +64,30 @@ func withSecurityContext(ctx context.Context, authCtx *SecurityContext) context.
 	return context.WithValue(ctx, securityContextKey, authCtx)
 }
 
-// GetUserID retrieves the authenticated user ID from the context.
+// withSecuritySkipped marks the context to indicate that security enforcement was skipped.
+func withSecuritySkipped(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, securitySkippedKey, true)
+}
+
+// IsSecuritySkipped returns true if security enforcement was skipped for this context.
+// Consumers such as sysauthz use this to bypass authorization when THUNDER_SKIP_SECURITY is enabled.
+func IsSecuritySkipped(ctx context.Context) bool {
+	if ctx == nil {
+		return false
+	}
+	v, _ := ctx.Value(securitySkippedKey).(bool)
+	return v
+}
+
+// GetSubject retrieves the authenticated subject from the context.
 // Returns empty string if no security context is present.
-func GetUserID(ctx context.Context) string {
+func GetSubject(ctx context.Context) string {
 	authCtx := getSecurityContext(ctx)
 	if authCtx != nil {
-		return authCtx.userID
+		return authCtx.subject
 	}
 	return ""
 }
@@ -78,14 +102,16 @@ func GetOUID(ctx context.Context) string {
 	return ""
 }
 
-// GetAppID retrieves the application ID from the context.
-// Returns empty string if no security context is present.
-func GetAppID(ctx context.Context) string {
+// GetPermissions retrieves the granted permissions for the authenticated caller from the context.
+// Returns a defensive copy to prevent callers from modifying the underlying permissions data.
+func GetPermissions(ctx context.Context) []string {
 	authCtx := getSecurityContext(ctx)
 	if authCtx != nil {
-		return authCtx.appID
+		result := make([]string, len(authCtx.permissions))
+		copy(result, authCtx.permissions)
+		return result
 	}
-	return ""
+	return []string{}
 }
 
 // GetAttribute retrieves a specific attribute from the security token.
@@ -122,6 +148,27 @@ func GetAttribute(ctx context.Context, key string) interface{} {
 		// Immutable types (string, int, bool, etc.) are safe to return directly
 		return value
 	}
+}
+
+// WithRuntimeContext marks the context as an internal runtime caller.
+// Runtime contexts bypass standard subject-based authorization checks without requiring an
+// authenticated subject. This is intended for internal system operations initiated from public
+// paths (e.g., flow executors during registration, token enrichment) where no user token is available.
+func WithRuntimeContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, runtimeContextKey, true)
+}
+
+// IsRuntimeContext returns true if the context was marked as an internal runtime caller
+// via WithRuntimeContext.
+func IsRuntimeContext(ctx context.Context) bool {
+	if ctx == nil {
+		return false
+	}
+	v, _ := ctx.Value(runtimeContextKey).(bool)
+	return v
 }
 
 // getSecurityContext is an internal helper to retrieve the security context.

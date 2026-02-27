@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import type {OrganizationUnitListParams} from '@/features/organization-units/models/requests';
@@ -35,6 +36,18 @@ vi.mock('react-router', async () => {
     ...actual,
     useNavigate: () => mockNavigate,
     useParams: () => ({id: 'schema-123'}),
+    Link: ({to, children = undefined, ...props}: {to: string; children?: ReactNode; [key: string]: unknown}) => (
+      <a
+        {...(props as Record<string, unknown>)}
+        href={to}
+        onClick={(e) => {
+          e.preventDefault();
+          Promise.resolve(mockNavigate(to)).catch(() => {});
+        }}
+      >
+        {children}
+      </a>
+    ),
   };
 });
 
@@ -233,8 +246,8 @@ describe('ViewUserTypePage', () => {
     it('renders user type details in view mode', () => {
       render(<ViewUserTypePage />);
 
-      expect(screen.getByText('User Type Details')).toBeInTheDocument();
-      expect(screen.getByText('View and manage user type schema')).toBeInTheDocument();
+      expect(screen.getByText('Manage User Type')).toBeInTheDocument();
+      expect(screen.getByText('View and manage user type information')).toBeInTheDocument();
       expect(screen.getByText('schema-123')).toBeInTheDocument();
       expect(screen.getByText('Employee Schema')).toBeInTheDocument();
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
@@ -277,7 +290,7 @@ describe('ViewUserTypePage', () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
-      const backButton = screen.getByRole('button', {name: /go back/i});
+      const backButton = screen.getByRole('button', {name: /^back$/i});
       await user.click(backButton);
 
       await waitFor(() => {

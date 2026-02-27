@@ -68,6 +68,7 @@ func isPublicEndpoint(path string) bool {
 		"/health/",
 		"/auth/",
 		"/flow/execute",
+		"/flow/meta",
 		"/oauth2/",
 		"/.well-known/openid-configuration",
 		"/.well-known/oauth-authorization-server",
