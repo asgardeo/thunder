@@ -31,6 +31,8 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema/model"
 )
@@ -69,6 +71,7 @@ type userSchemaService struct {
 	userSchemaStore userSchemaStoreInterface
 	ouService       oupkg.OrganizationUnitServiceInterface
 	transactioner   transaction.Transactioner
+	authzService    sysauthz.SystemAuthorizationServiceInterface
 }
 
 // newUserSchemaService creates a new instance of userSchemaService.
@@ -76,11 +79,13 @@ func newUserSchemaService(
 	ouService oupkg.OrganizationUnitServiceInterface,
 	store userSchemaStoreInterface,
 	transactioner transaction.Transactioner,
+	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) UserSchemaServiceInterface {
 	return &userSchemaService{
 		userSchemaStore: store,
 		ouService:       ouService,
 		transactioner:   transactioner,
+		authzService:    authzService,
 	}
 }
 
@@ -93,6 +98,26 @@ func (us *userSchemaService) GetUserSchemaList(ctx context.Context, limit, offse
 		return nil, err
 	}
 
+	// Resolve the set of user schemas the caller is authorized to see.
+	accessible, svcErr := us.getAccessibleResources(ctx, security.ActionListUserSchemas)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	// Unfiltered path: the caller can see all user schemas.
+	if accessible.AllAllowed {
+		logger.Info("Caller has access to all user schemas, retrieving without OU filtering")
+		return us.listAllUserSchemas(ctx, limit, offset, logger)
+	}
+
+	// Filtered path: the caller has a restricted set of accessible OUs.
+	return us.listAccessibleUserSchemas(ctx, accessible.IDs, limit, offset, logger)
+}
+
+// listAllUserSchemas retrieves user schemas without authorization filtering.
+func (us *userSchemaService) listAllUserSchemas(
+	ctx context.Context, limit, offset int, logger *log.Logger,
+) (*UserSchemaListResponse, *serviceerror.ServiceError) {
 	totalCount, err := us.userSchemaStore.GetUserSchemaListCount(ctx)
 	if err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to get user schema list count", err)
@@ -103,15 +128,46 @@ func (us *userSchemaService) GetUserSchemaList(ctx context.Context, limit, offse
 		return nil, logAndReturnServerError(logger, "Failed to get user schema list", err)
 	}
 
-	response := &UserSchemaListResponse{
+	return &UserSchemaListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(userSchemas),
 		Schemas:      userSchemas,
 		Links:        buildPaginationLinks(limit, offset, totalCount),
+	}, nil
+}
+
+// listAccessibleUserSchemas retrieves only the user schemas belonging to the caller's accessible OUs.
+func (us *userSchemaService) listAccessibleUserSchemas(
+	ctx context.Context, ouIDs []string, limit, offset int, logger *log.Logger,
+) (*UserSchemaListResponse, *serviceerror.ServiceError) {
+	if len(ouIDs) == 0 {
+		return &UserSchemaListResponse{
+			TotalResults: 0,
+			StartIndex:   offset + 1,
+			Count:        0,
+			Schemas:      []UserSchemaListItem{},
+			Links:        buildPaginationLinks(limit, offset, 0),
+		}, nil
 	}
 
-	return response, nil
+	totalCount, err := us.userSchemaStore.GetUserSchemaListCountByOUIDs(ctx, ouIDs)
+	if err != nil {
+		return nil, logAndReturnServerError(logger, "Failed to get accessible user schema count", err)
+	}
+
+	userSchemas, err := us.userSchemaStore.GetUserSchemaListByOUIDs(ctx, ouIDs, limit, offset)
+	if err != nil {
+		return nil, logAndReturnServerError(logger, "Failed to get accessible user schema list", err)
+	}
+
+	return &UserSchemaListResponse{
+		TotalResults: totalCount,
+		StartIndex:   offset + 1,
+		Count:        len(userSchemas),
+		Schemas:      userSchemas,
+		Links:        buildPaginationLinks(limit, offset, totalCount),
+	}, nil
 }
 
 // CreateUserSchema creates a new user schema.
@@ -138,6 +194,12 @@ func (us *userSchemaService) CreateUserSchema(
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(
 		ctx, request.OrganizationUnitID, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
+	// Check authorization
+	if svcErr := us.checkUserSchemaAccess(
+		ctx, security.ActionCreateUserSchema, request.OrganizationUnitID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -193,6 +255,12 @@ func (us *userSchemaService) GetUserSchema(
 		return nil, logAndReturnServerError(logger, "Failed to get user schema", err)
 	}
 
+	// Check authorization
+	if svcErr := us.checkUserSchemaAccess(
+		ctx, security.ActionReadUserSchema, userSchema.OrganizationUnitID); svcErr != nil {
+		return nil, svcErr
+	}
+
 	return &userSchema, nil
 }
 
@@ -212,6 +280,12 @@ func (us *userSchemaService) GetUserSchemaByName(
 			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logAndReturnServerError(logger, "Failed to get user schema by name", err)
+	}
+
+	// Check authorization
+	if svcErr := us.checkUserSchemaAccess(
+		ctx, security.ActionReadUserSchema, userSchema.OrganizationUnitID); svcErr != nil {
+		return nil, svcErr
 	}
 
 	return &userSchema, nil
@@ -260,6 +334,20 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		return nil, logAndReturnServerError(logger, "Failed to get existing user schema", err)
 	}
 
+	// Check authorization
+	if svcErr := us.checkUserSchemaAccess(
+		ctx, security.ActionUpdateUserSchema, existingSchema.OrganizationUnitID); svcErr != nil {
+		return nil, svcErr
+	}
+
+	// If OU is being changed, validate access to the target OU as well.
+	if request.OrganizationUnitID != existingSchema.OrganizationUnitID {
+		if svcErr := us.checkUserSchemaAccess(
+			ctx, security.ActionUpdateUserSchema, request.OrganizationUnitID); svcErr != nil {
+			return nil, svcErr
+		}
+	}
+
 	if request.Name != existingSchema.Name {
 		_, err := us.userSchemaStore.GetUserSchemaByName(ctx, request.Name)
 		if err == nil {
@@ -301,16 +389,34 @@ func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID stri
 		return invalidSchemaRequestError("schema id must not be empty")
 	}
 
+	// Fetch the schema to get its OU ID for authorization check.
+	existingSchema, err := us.userSchemaStore.GetUserSchemaByID(ctx, schemaID)
+	if err != nil {
+		if errors.Is(err, ErrUserSchemaNotFound) {
+			// Check authorization before revealing whether the schema exists.
+			if svcErr := us.checkUserSchemaAccess(
+				ctx, security.ActionDeleteUserSchema, ""); svcErr != nil {
+				return svcErr
+			}
+			// Authorized caller — schema doesn't exist, return nil for idempotent delete.
+			return nil
+		}
+		return logAndReturnServerError(logger, "Failed to get user schema for delete", err)
+	}
+
+	// Check authorization against the schema's OU.
+	if svcErr := us.checkUserSchemaAccess(
+		ctx, security.ActionDeleteUserSchema, existingSchema.OrganizationUnitID); svcErr != nil {
+		return svcErr
+	}
+
 	// Check if schema is declarative (immutable) in composite mode
 	if us.userSchemaStore.IsUserSchemaDeclarative(schemaID) {
 		return &ErrorCannotModifyDeclarativeResource
 	}
 
 	if err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if err := us.userSchemaStore.DeleteUserSchemaByID(txCtx, schemaID); err != nil {
-			return err
-		}
-		return nil
+		return us.userSchemaStore.DeleteUserSchemaByID(txCtx, schemaID)
 	}); err != nil {
 		return logAndReturnServerError(logger, "Failed to delete user schema", err)
 	}
@@ -422,6 +528,40 @@ func (us *userSchemaService) getCompiledSchemaForUserType(
 	}
 
 	return compiled, nil
+}
+
+// checkUserSchemaAccess validates that the caller is authorized to perform the given action on a user schema.
+// Pass the user schema's OU ID to scope the authorization check to the caller's organization unit membership.
+func (us *userSchemaService) checkUserSchemaAccess(
+	ctx context.Context, action security.Action, ouID string,
+) *serviceerror.ServiceError {
+	if us.authzService == nil {
+		return nil
+	}
+	allowed, svcErr := us.authzService.IsActionAllowed(ctx, action,
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: ouID})
+	if svcErr != nil {
+		return &ErrorInternalServerError
+	}
+	if !allowed {
+		return &serviceerror.ErrorUnauthorized
+	}
+	return nil
+}
+
+// getAccessibleResources returns the set of OU IDs the caller is permitted to access for user schemas.
+func (us *userSchemaService) getAccessibleResources(
+	ctx context.Context, action security.Action,
+) (*sysauthz.AccessibleResources, *serviceerror.ServiceError) {
+	if us.authzService == nil {
+		return &sysauthz.AccessibleResources{AllAllowed: true}, nil
+	}
+	accessible, svcErr := us.authzService.GetAccessibleResources(
+		ctx, action, security.ResourceTypeUserSchema)
+	if svcErr != nil {
+		return nil, &ErrorInternalServerError
+	}
+	return accessible, nil
 }
 
 // ensureOrganizationUnitExists validates that the provided organization unit exists using the OU service.

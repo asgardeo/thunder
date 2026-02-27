@@ -120,7 +120,8 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 		Attributes:       userUpdateConfig.Attributes,
 	}
 
-	userResult, err := p.userSvc.UpdateUser(security.WithRuntimeContext(context.Background()), userID, updatedUser)
+	userResult, err := p.userSvc.UpdateUser(
+		security.WithRuntimeContext(context.Background()), userID, updatedUser)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorUserNotFound.Code, user.ErrorMissingUserID.Code:

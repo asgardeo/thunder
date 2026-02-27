@@ -122,6 +122,7 @@ func (u *userTypeResolver) handleAuthenticationFlows(ctx *core.NodeContext, exec
 // handleRegistrationFlows handles user type resolution for registration flows.
 func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execResp *common.ExecutorResponse) (
 	*common.ExecutorResponse, error) {
+	reqCtx := ctx.Context
 	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	allowed := ctx.Application.AllowedUserTypes
 
@@ -139,18 +140,18 @@ func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execRe
 
 	// Check if userType is provided in inputs
 	if u.HasRequiredInputs(ctx, execResp) {
-		err := u.resolveUserTypeFromInput(context.TODO(), execResp, ctx.UserInputs[userTypeKey], allowed)
+		err := u.resolveUserTypeFromInput(reqCtx, execResp, ctx.UserInputs[userTypeKey], allowed)
 		return execResp, err
 	}
 
 	// If only one allowed user type, select it automatically
 	if len(allowed) == 1 {
-		err := u.resolveUserTypeFromSingleAllowed(context.TODO(), execResp, allowed[0])
+		err := u.resolveUserTypeFromSingleAllowed(reqCtx, execResp, allowed[0])
 		return execResp, err
 	}
 
 	// If multiple allowed user types, prompt the user to select one
-	err := u.resolveUserTypeFromMultipleAllowed(context.TODO(), execResp, allowed)
+	err := u.resolveUserTypeFromMultipleAllowed(reqCtx, execResp, allowed)
 
 	return execResp, err
 }
@@ -162,7 +163,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 
 	// If userType already provided, validate and set runtime data
 	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
-		userSchema, ouID, err := u.getUserSchemaAndOU(context.TODO(), userType)
+		userSchema, ouID, err := u.getUserSchemaAndOU(ctx.Context, userType)
 		if err != nil {
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Invalid user type"
@@ -178,7 +179,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	}
 
 	// List all available user schemas
-	schemas, svcErr := u.userSchemaService.GetUserSchemaList(context.TODO(), 100, 0)
+	schemas, svcErr := u.userSchemaService.GetUserSchemaList(ctx.Context, 100, 0)
 	if svcErr != nil {
 		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
 		execResp.Status = common.ExecFailure

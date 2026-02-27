@@ -236,7 +236,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 				OrganizationUnitID:    tc.expectedOUID,
 				AllowSelfRegistration: true,
 			}
-			suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), tc.providedUserType).
+			suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, tc.providedUserType).
 				Return(userSchema, nil)
 
 			result, err := suite.executor.Execute(ctx)
@@ -273,7 +273,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 		OrganizationUnitID:    "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -329,7 +329,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 		Error:            "Internal Server Error",
 		ErrorDescription: "Failed to retrieve OU",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -381,7 +381,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 		OrganizationUnitID:    "ou-123",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -414,7 +414,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 		OrganizationUnitID:    "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -444,7 +444,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 		Error:            "Internal Server Error",
 		ErrorDescription: "Failed to retrieve OU",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -476,7 +476,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 			OrganizationUnitID:    "ou-" + userType,
 			AllowSelfRegistration: true,
 		}
-		suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), userType).
+		suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, userType).
 			Return(userSchema, nil)
 	}
 
@@ -521,7 +521,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 			OrganizationUnitID:    "ou-" + userType,
 			AllowSelfRegistration: true,
 		}
-		suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), userType).
+		suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, userType).
 			Return(userSchema, nil)
 	}
 
@@ -637,11 +637,11 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 		AllowSelfRegistration: false,
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "customer").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "customer").
 		Return(customerSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "partner").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "partner").
 		Return(partnerSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -681,9 +681,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 		AllowSelfRegistration: false,
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "customer").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "customer").
 		Return(customerSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -722,9 +722,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 		ErrorDescription: "Failed to retrieve schema",
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "customer").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "customer").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -744,10 +744,10 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_Success() {
 		OrganizationUnitID:    "ou-123",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(userSchema, nil)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.TODO(), "employee")
+	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.Background(), "employee")
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), schema)
@@ -765,10 +765,10 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_NoOUFound() {
 		OrganizationUnitID:    "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(userSchema, nil)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.TODO(), "employee")
+	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.Background(), "employee")
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), schema)
@@ -786,10 +786,10 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_SchemaNotFound() 
 		Error:            "Not Found",
 		ErrorDescription: "User schema not found",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(nil, svcErr)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.TODO(), "employee")
+	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.Background(), "employee")
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), schema)
@@ -815,7 +815,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 		Name:               "employee",
 		OrganizationUnitID: "ou-123",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -848,7 +848,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 		Error:            "Not Found",
 		ErrorDescription: "User schema not found",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", context.TODO(), "invalid_user").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "invalid_user").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -875,7 +875,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	emptyList := &userschema.UserSchemaListResponse{
 		Schemas: []userschema.UserSchemaListItem{},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", context.TODO(), 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(emptyList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -900,7 +900,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 		Type:  serviceerror.ServerErrorType,
 		Error: "Simulated Error",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", context.TODO(), 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -928,7 +928,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 			{Name: "customer"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", context.TODO(), 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)

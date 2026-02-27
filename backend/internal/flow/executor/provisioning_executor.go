@@ -391,13 +391,13 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	var groupErr, roleErr error
 	// Assign to group
 	if groupID != "" {
-		if err := p.assignToGroup(context.TODO(), userID, groupID, logger); err != nil {
+		if err := p.assignToGroup(ctx.Context, userID, groupID, logger); err != nil {
 			groupErr = fmt.Errorf("failed to assign user to group %s: %w", groupID, err)
 		}
 	}
 	// Assign to role
 	if roleID != "" {
-		if err := p.assignToRole(context.TODO(), userID, roleID, logger); err != nil {
+		if err := p.assignToRole(ctx.Context, userID, roleID, logger); err != nil {
 			roleErr = fmt.Errorf("failed to assign user to role %s: %w", roleID, err)
 		}
 	}
