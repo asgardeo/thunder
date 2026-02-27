@@ -18,10 +18,12 @@
 
 package authnprovider
 
+import "context"
+
 // AuthnProviderInterface defines the interface for authentication providers.
 type AuthnProviderInterface interface {
-	Authenticate(identifiers, credentials map[string]interface{}, metadata *AuthnMetadata) (
+	Authenticate(ctx context.Context, identifiers, credentials map[string]interface{}, metadata *AuthnMetadata) (
 		*AuthnResult, *AuthnProviderError)
-	GetAttributes(token string, requestedAttributes *RequestedAttributes, metadata *GetAttributesMetadata) (
-		*GetAttributesResult, *AuthnProviderError)
+	GetAttributes(ctx context.Context, token string, requestedAttributes *RequestedAttributes,
+		metadata *GetAttributesMetadata) (*GetAttributesResult, *AuthnProviderError)
 }

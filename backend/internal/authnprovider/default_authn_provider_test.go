@@ -19,6 +19,7 @@
 package authnprovider
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -68,7 +69,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	// Expect GetUser call
 	suite.mockService.On("GetUser", mock.Anything, "user123").Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
 
-	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
@@ -89,7 +90,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_UserNotFound() {
 	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
 		Return(nil, userNotFoundErr).Once()
 
-	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -104,7 +105,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 
 	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).Return(nil, authFailedErr).Once()
 
-	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -119,7 +120,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_SystemError_Prepare
 
 	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).Return(nil, sysErr).Once()
 
-	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -137,7 +138,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 
 	suite.mockService.On("GetUser", mock.Anything, token).Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
 
-	result, err := suite.provider.GetAttributes(token, nil, nil)
+	result, err := suite.provider.GetAttributes(context.Background(), token, nil, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
@@ -162,7 +163,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered()
 			"email": nil,
 		},
 	}
-	result, err := suite.provider.GetAttributes(token, reqAttrs, nil)
+	result, err := suite.provider.GetAttributes(context.Background(), token, reqAttrs, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
@@ -177,7 +178,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 
 	suite.mockService.On("GetUser", mock.Anything, token).Return(nil, notFoundErr).Once()
 
-	result, err := suite.provider.GetAttributes(token, nil, nil)
+	result, err := suite.provider.GetAttributes(context.Background(), token, nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -202,7 +203,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
 	userNotFoundErr := &user.ErrorUserNotFound
 	suite.mockService.On("GetUser", mock.Anything, "user123").Return(nil, userNotFoundErr).Once()
 
-	result, err := suite.provider.Authenticate(identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)

@@ -293,8 +293,8 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
 			var err error
 			metadata := a.buildGetAttributesMetadata(ctx)
-			attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID, ctx.AuthenticatedUser.Token, userAttributes,
-				metadata)
+			attrs, err = a.getUserAttributes(ctx.Context, ctx.AuthenticatedUser.UserID,
+				ctx.AuthenticatedUser.Token, userAttributes, metadata)
 			if err != nil {
 				return err
 			}
@@ -313,8 +313,8 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string, token string, requestedAttributes []string,
-	metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributes(ctx context.Context, userID string, token string,
+	requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
 	var jsonAttrs json.RawMessage
@@ -330,7 +330,7 @@ func (a *authAssertExecutor) getUserAttributes(userID string, token string, requ
 			reqAttrs.Attributes[attrName] = nil
 		}
 
-		res, svcErr := a.credsAuthSvc.GetAttributes(token, reqAttrs, metadata)
+		res, svcErr := a.credsAuthSvc.GetAttributes(ctx, token, reqAttrs, metadata)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				return nil, errors.New("something went wrong while fetching user attributes")

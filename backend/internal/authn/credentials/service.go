@@ -20,6 +20,8 @@
 package credentials
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -32,9 +34,10 @@ const (
 
 // CredentialsAuthnServiceInterface defines the contract for credentials-based authenticator services.
 type CredentialsAuthnServiceInterface interface {
-	Authenticate(identifiers, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (
-		*authnprovider.AuthnResult, *serviceerror.ServiceError)
+	Authenticate(ctx context.Context, identifiers, credentials map[string]interface{},
+		metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError)
 	GetAttributes(
+		ctx context.Context,
 		token string,
 		requestedAttributes *authnprovider.RequestedAttributes,
 		metadata *authnprovider.GetAttributesMetadata,
@@ -58,13 +61,13 @@ func newCredentialsAuthnService(authnProvider authnprovider.AuthnProviderInterfa
 	return service
 }
 
-func (c *credentialsAuthnService) Authenticate(identifiers, credentials map[string]interface{},
+func (c *credentialsAuthnService) Authenticate(ctx context.Context, identifiers, credentials map[string]interface{},
 	metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError) {
 	if len(identifiers) == 0 || len(credentials) == 0 {
 		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	authnResult, err := c.authnProvider.Authenticate(identifiers, credentials, metadata)
+	authnResult, err := c.authnProvider.Authenticate(ctx, identifiers, credentials, metadata)
 	if err != nil {
 		switch err.Code {
 		case authnprovider.ErrorCodeAuthenticationFailed:
@@ -80,9 +83,10 @@ func (c *credentialsAuthnService) Authenticate(identifiers, credentials map[stri
 	return authnResult, nil
 }
 
-func (c *credentialsAuthnService) GetAttributes(token string, requestedAttributes *authnprovider.RequestedAttributes,
-	metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError) {
-	result, err := c.authnProvider.GetAttributes(token, requestedAttributes, metadata)
+func (c *credentialsAuthnService) GetAttributes(ctx context.Context, token string,
+	requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata) (
+	*authnprovider.GetAttributesResult, *serviceerror.ServiceError) {
+	result, err := c.authnProvider.GetAttributes(ctx, token, requestedAttributes, metadata)
 	if err != nil {
 		switch err.Code {
 		case authnprovider.ErrorCodeInvalidToken:

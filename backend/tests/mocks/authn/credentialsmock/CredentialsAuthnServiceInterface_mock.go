@@ -5,6 +5,8 @@
 package credentialsmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
@@ -38,8 +40,8 @@ func (_m *CredentialsAuthnServiceInterfaceMock) EXPECT() *CredentialsAuthnServic
 }
 
 // Authenticate provides a mock function for the type CredentialsAuthnServiceInterfaceMock
-func (_mock *CredentialsAuthnServiceInterfaceMock) Authenticate(identifiers map[string]interface{}, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError) {
-	ret := _mock.Called(identifiers, credentials, metadata)
+func (_mock *CredentialsAuthnServiceInterfaceMock) Authenticate(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, identifiers, credentials, metadata)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Authenticate")
@@ -47,18 +49,18 @@ func (_mock *CredentialsAuthnServiceInterfaceMock) Authenticate(identifiers map[
 
 	var r0 *authnprovider.AuthnResult
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, map[string]interface{}, *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError)); ok {
-		return returnFunc(identifiers, credentials, metadata)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, identifiers, credentials, metadata)
 	}
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, map[string]interface{}, *authnprovider.AuthnMetadata) *authnprovider.AuthnResult); ok {
-		r0 = returnFunc(identifiers, credentials, metadata)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *authnprovider.AuthnMetadata) *authnprovider.AuthnResult); ok {
+		r0 = returnFunc(ctx, identifiers, credentials, metadata)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*authnprovider.AuthnResult)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}, map[string]interface{}, *authnprovider.AuthnMetadata) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(identifiers, credentials, metadata)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}, *authnprovider.AuthnMetadata) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, identifiers, credentials, metadata)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -73,31 +75,37 @@ type CredentialsAuthnServiceInterfaceMock_Authenticate_Call struct {
 }
 
 // Authenticate is a helper method to define mock.On call
+//   - ctx context.Context
 //   - identifiers map[string]interface{}
 //   - credentials map[string]interface{}
 //   - metadata *authnprovider.AuthnMetadata
-func (_e *CredentialsAuthnServiceInterfaceMock_Expecter) Authenticate(identifiers interface{}, credentials interface{}, metadata interface{}) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
-	return &CredentialsAuthnServiceInterfaceMock_Authenticate_Call{Call: _e.mock.On("Authenticate", identifiers, credentials, metadata)}
+func (_e *CredentialsAuthnServiceInterfaceMock_Expecter) Authenticate(ctx interface{}, identifiers interface{}, credentials interface{}, metadata interface{}) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
+	return &CredentialsAuthnServiceInterfaceMock_Authenticate_Call{Call: _e.mock.On("Authenticate", ctx, identifiers, credentials, metadata)}
 }
 
-func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) Run(run func(identifiers map[string]interface{}, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata)) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
+func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata)) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 map[string]interface{}
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(map[string]interface{})
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 map[string]interface{}
 		if args[1] != nil {
 			arg1 = args[1].(map[string]interface{})
 		}
-		var arg2 *authnprovider.AuthnMetadata
+		var arg2 map[string]interface{}
 		if args[2] != nil {
-			arg2 = args[2].(*authnprovider.AuthnMetadata)
+			arg2 = args[2].(map[string]interface{})
+		}
+		var arg3 *authnprovider.AuthnMetadata
+		if args[3] != nil {
+			arg3 = args[3].(*authnprovider.AuthnMetadata)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -108,14 +116,14 @@ func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) Return(authnRe
 	return _c
 }
 
-func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) RunAndReturn(run func(identifiers map[string]interface{}, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError)) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
+func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError)) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetAttributes provides a mock function for the type CredentialsAuthnServiceInterfaceMock
-func (_mock *CredentialsAuthnServiceInterfaceMock) GetAttributes(token string, requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError) {
-	ret := _mock.Called(token, requestedAttributes, metadata)
+func (_mock *CredentialsAuthnServiceInterfaceMock) GetAttributes(ctx context.Context, token string, requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, token, requestedAttributes, metadata)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAttributes")
@@ -123,18 +131,18 @@ func (_mock *CredentialsAuthnServiceInterfaceMock) GetAttributes(token string, r
 
 	var r0 *authnprovider.GetAttributesResult
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, *authnprovider.RequestedAttributes, *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError)); ok {
-		return returnFunc(token, requestedAttributes, metadata)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *authnprovider.RequestedAttributes, *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, token, requestedAttributes, metadata)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *authnprovider.RequestedAttributes, *authnprovider.GetAttributesMetadata) *authnprovider.GetAttributesResult); ok {
-		r0 = returnFunc(token, requestedAttributes, metadata)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *authnprovider.RequestedAttributes, *authnprovider.GetAttributesMetadata) *authnprovider.GetAttributesResult); ok {
+		r0 = returnFunc(ctx, token, requestedAttributes, metadata)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*authnprovider.GetAttributesResult)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *authnprovider.RequestedAttributes, *authnprovider.GetAttributesMetadata) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(token, requestedAttributes, metadata)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *authnprovider.RequestedAttributes, *authnprovider.GetAttributesMetadata) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, token, requestedAttributes, metadata)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -149,31 +157,37 @@ type CredentialsAuthnServiceInterfaceMock_GetAttributes_Call struct {
 }
 
 // GetAttributes is a helper method to define mock.On call
+//   - ctx context.Context
 //   - token string
 //   - requestedAttributes *authnprovider.RequestedAttributes
 //   - metadata *authnprovider.GetAttributesMetadata
-func (_e *CredentialsAuthnServiceInterfaceMock_Expecter) GetAttributes(token interface{}, requestedAttributes interface{}, metadata interface{}) *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call {
-	return &CredentialsAuthnServiceInterfaceMock_GetAttributes_Call{Call: _e.mock.On("GetAttributes", token, requestedAttributes, metadata)}
+func (_e *CredentialsAuthnServiceInterfaceMock_Expecter) GetAttributes(ctx interface{}, token interface{}, requestedAttributes interface{}, metadata interface{}) *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call {
+	return &CredentialsAuthnServiceInterfaceMock_GetAttributes_Call{Call: _e.mock.On("GetAttributes", ctx, token, requestedAttributes, metadata)}
 }
 
-func (_c *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call) Run(run func(token string, requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata)) *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call {
+func (_c *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call) Run(run func(ctx context.Context, token string, requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata)) *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 *authnprovider.RequestedAttributes
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*authnprovider.RequestedAttributes)
+			arg1 = args[1].(string)
 		}
-		var arg2 *authnprovider.GetAttributesMetadata
+		var arg2 *authnprovider.RequestedAttributes
 		if args[2] != nil {
-			arg2 = args[2].(*authnprovider.GetAttributesMetadata)
+			arg2 = args[2].(*authnprovider.RequestedAttributes)
+		}
+		var arg3 *authnprovider.GetAttributesMetadata
+		if args[3] != nil {
+			arg3 = args[3].(*authnprovider.GetAttributesMetadata)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -184,7 +198,7 @@ func (_c *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call) Return(getAtt
 	return _c
 }
 
-func (_c *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call) RunAndReturn(run func(token string, requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError)) *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call {
+func (_c *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call) RunAndReturn(run func(ctx context.Context, token string, requestedAttributes *authnprovider.RequestedAttributes, metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError)) *CredentialsAuthnServiceInterfaceMock_GetAttributes_Call {
 	_c.Call.Return(run)
 	return _c
 }

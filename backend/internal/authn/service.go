@@ -54,7 +54,7 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
-	AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
+	AuthenticateWithCredentials(ctx context.Context, identifiers, credentials map[string]interface{},
 		skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
@@ -124,13 +124,13 @@ func newAuthenticationService(
 }
 
 // AuthenticateWithCredentials authenticates a user using credentials.
-func (as *authenticationService) AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
-	skipAssertion bool, existingAssertion string) (
+func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context, identifiers,
+	credentials map[string]interface{}, skipAssertion bool, existingAssertion string) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Authenticating with credentials")
 
-	authenticateResp, svcErr := as.credentialsService.Authenticate(identifiers, credentials, nil)
+	authenticateResp, svcErr := as.credentialsService.Authenticate(ctx, identifiers, credentials, nil)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -151,7 +151,7 @@ func (as *authenticationService) AuthenticateWithCredentials(identifiers, creden
 		}
 	}
 
-	authUser, svcErr := as.credentialsService.GetAttributes(authenticateResp.Token, requestedAttributes, nil)
+	authUser, svcErr := as.credentialsService.GetAttributes(ctx, authenticateResp.Token, requestedAttributes, nil)
 	if svcErr != nil {
 		return nil, svcErr
 	}

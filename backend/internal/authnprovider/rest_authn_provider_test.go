@@ -19,6 +19,7 @@
 package authnprovider
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -72,7 +73,7 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {
 	identifiers := map[string]interface{}{"username": "user"}
 	credentials := map[string]interface{}{"password": "pass"}
 
-	result, err := provider.Authenticate(identifiers, credentials, nil)
+	result, err := provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
@@ -90,7 +91,7 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Failure() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
-	result, err := provider.Authenticate(nil, nil, nil)
+	result, err := provider.Authenticate(context.Background(), nil, nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -128,7 +129,7 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
 			"email": nil,
 		},
 	}
-	result, err := provider.GetAttributes("token123", reqAttrs, nil)
+	result, err := provider.GetAttributes(context.Background(), "token123", reqAttrs, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
@@ -146,7 +147,7 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
-	result, err := provider.GetAttributes("invalid", nil, nil)
+	result, err := provider.GetAttributes(context.Background(), "invalid", nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -162,7 +163,7 @@ func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
-	result, err := provider.Authenticate(nil, nil, nil)
+	result, err := provider.Authenticate(context.Background(), nil, nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
