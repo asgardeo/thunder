@@ -89,13 +89,13 @@ func buildRuntimeCtx() context.Context {
 
 func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 	tests := []struct {
-		name             string
-		ctx              context.Context
-		action           security.Action
-		actionCtx        *ActionContext
-		wantAllowed      bool
-		wantErr          bool
-		overridePolicies []authorizationPolicy
+		name           string
+		ctx            context.Context
+		action         security.Action
+		actionCtx      *ActionContext
+		wantAllowed    bool
+		wantErr        bool
+		overridePolicy authorizationPolicy
 	}{
 		{
 			// Step 1: THUNDER_SKIP_SECURITY flag bypasses all checks.
@@ -269,18 +269,19 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			action:      security.ActionCreateUser,
 			wantAllowed: false,
 			wantErr:     true,
-			overridePolicies: []authorizationPolicy{
-				&stubPolicy{actionErr: &serviceerror.ServiceError{Code: "ERR-001", Error: "policy failure"}},
+			overridePolicy: &stubPolicy{
+				actionErr: &serviceerror.ServiceError{Code: "ERR-001", Error: "policy failure"},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			if tt.overridePolicies != nil {
-				original := globalPolicies
-				globalPolicies = tt.overridePolicies
-				defer func() { globalPolicies = original }()
+			if tt.overridePolicy != nil {
+				svc := s.service.(*systemAuthorizationService)
+				original := svc.policies.membershipPolicy
+				svc.policies.membershipPolicy = tt.overridePolicy
+				defer func() { svc.policies.membershipPolicy = original }()
 			}
 			allowed, svcErr := s.service.IsActionAllowed(tt.ctx, tt.action, tt.actionCtx)
 			assert.Equal(t, tt.wantAllowed, allowed)
@@ -299,14 +300,14 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 
 func (s *SystemAuthzTestSuite) TestGetAccessibleResources() {
 	tests := []struct {
-		name             string
-		ctx              context.Context
-		action           security.Action
-		resourceType     security.ResourceType
-		wantAllAllowed   bool
-		wantIDs          []string
-		wantErr          bool
-		overridePolicies []authorizationPolicy
+		name           string
+		ctx            context.Context
+		action         security.Action
+		resourceType   security.ResourceType
+		wantAllAllowed bool
+		wantIDs        []string
+		wantErr        bool
+		overridePolicy authorizationPolicy
 	}{
 		{
 			// Step 1: THUNDER_SKIP_SECURITY flag → all resources accessible.
@@ -393,21 +394,20 @@ func (s *SystemAuthzTestSuite) TestGetAccessibleResources() {
 			action:       security.ActionListUsers,
 			resourceType: security.ResourceTypeUser,
 			wantErr:      true,
-			overridePolicies: []authorizationPolicy{
-				&stubPolicy{
-					applicable:  true,
-					resourceErr: &serviceerror.ServiceError{Code: "ERR-002", Error: "resource policy error"},
-				},
+			overridePolicy: &stubPolicy{
+				applicable:  true,
+				resourceErr: &serviceerror.ServiceError{Code: "ERR-002", Error: "resource policy error"},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			if tt.overridePolicies != nil {
-				original := globalPolicies
-				globalPolicies = tt.overridePolicies
-				defer func() { globalPolicies = original }()
+			if tt.overridePolicy != nil {
+				svc := s.service.(*systemAuthorizationService)
+				original := svc.policies.membershipPolicy
+				svc.policies.membershipPolicy = tt.overridePolicy
+				defer func() { svc.policies.membershipPolicy = original }()
 			}
 			result, svcErr := s.service.GetAccessibleResources(tt.ctx, tt.action, tt.resourceType)
 			if tt.wantErr {
@@ -423,4 +423,90 @@ func (s *SystemAuthzTestSuite) TestGetAccessibleResources() {
 			}
 		})
 	}
+}
+
+// ---------------------------------------------------------------------------
+// SetOUHierarchyResolver + inheritance policy integration
+// ---------------------------------------------------------------------------
+
+func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_EnablesInheritancePolicy() {
+	// Build a stub resolver: resource's OU ("parent-ou") is an ancestor of the caller's OU
+	// ("child-ou"), so read access should be granted.
+	resolver := &stubOUHierarchyResolver{
+		isAncestorResult: true,
+		ancestorIDs:      []string{"child-ou", "parent-ou"},
+	}
+	s.service.SetOUHierarchyResolver(resolver)
+	defer s.service.SetOUHierarchyResolver(nil) // restore nil for subsequent tests
+
+	ctx := buildCtxWithOU("system:userschema:view", "child-ou")
+	actionCtx := &ActionContext{
+		OuID:         "parent-ou",
+		ResourceType: security.ResourceTypeUserSchema,
+		ResourceID:   "schema-1",
+	}
+
+	// IsActionAllowed: child-ou caller reading a schema owned by parent-ou → allowed.
+	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
+	assert.True(s.T(), allowed)
+	assert.Nil(s.T(), svcErr)
+}
+
+func (s *SystemAuthzTestSuite) TestInheritancePolicy_DeniesWriteFromChildOU() {
+	// Resolver says caller is a descendant — but write actions must NOT use the
+	// inheritance policy, so ouMembershipPolicy kicks in and denies cross-OU writes.
+	resolver := &stubOUHierarchyResolver{
+		isAncestorResult: true, // this should NOT be consulted for write actions
+	}
+	s.service.SetOUHierarchyResolver(resolver)
+	defer s.service.SetOUHierarchyResolver(nil)
+
+	ctx := buildCtxWithOU("system:userschema", "child-ou")
+	actionCtx := &ActionContext{
+		OuID:         "parent-ou",
+		ResourceType: security.ResourceTypeUserSchema,
+	}
+
+	// UpdateUserSchema is a write action → not inheritance-eligible → falls back to
+	// ouMembershipPolicy → child-ou ≠ parent-ou → denied.
+	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionUpdateUserSchema, actionCtx)
+	assert.False(s.T(), allowed)
+	assert.Nil(s.T(), svcErr)
+}
+
+func (s *SystemAuthzTestSuite) TestGetAccessibleResources_InheritancePolicy_ReturnsAncestors() {
+	resolver := &stubOUHierarchyResolver{
+		ancestorIDs: []string{"child-ou", "parent-ou", "root-ou"},
+	}
+	s.service.SetOUHierarchyResolver(resolver)
+	defer s.service.SetOUHierarchyResolver(nil)
+
+	ctx := buildCtxWithOU("system:userschema:view", "child-ou")
+
+	result, svcErr := s.service.GetAccessibleResources(
+		ctx, security.ActionListUserSchemas, security.ResourceTypeUserSchema)
+	assert.Nil(s.T(), svcErr)
+	assert.NotNil(s.T(), result)
+	assert.False(s.T(), result.AllAllowed)
+	assert.ElementsMatch(s.T(), []string{"child-ou", "parent-ou", "root-ou"}, result.IDs)
+}
+
+func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_NilResolver_FallsBackToMembershipPolicy() {
+	// No resolver set (nil) → ouMembershipPolicy is used, same-OU access only.
+	ctx := buildCtxWithOU("system:userschema:view", "ou1")
+	actionCtx := &ActionContext{
+		OuID:         "ou1",
+		ResourceType: security.ResourceTypeUserSchema,
+	}
+
+	// Same OU → ouMembershipPolicy allows.
+	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
+	assert.True(s.T(), allowed)
+	assert.Nil(s.T(), svcErr)
+
+	// Different OU → ouMembershipPolicy denies.
+	actionCtx.OuID = "other-ou"
+	allowed, svcErr = s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
+	assert.False(s.T(), allowed)
+	assert.Nil(s.T(), svcErr)
 }

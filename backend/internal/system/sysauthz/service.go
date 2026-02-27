@@ -44,18 +44,48 @@ type SystemAuthorizationServiceInterface interface {
 	// When AllAllowed is false, the store should restrict results to the returned IDs.
 	GetAccessibleResources(ctx context.Context, action security.Action,
 		resourceType security.ResourceType) (*AccessibleResources, *serviceerror.ServiceError)
+
+	// SetOUHierarchyResolver injects the OU hierarchy resolver used by inheritance-based
+	// policies. This must be called once at application startup after the ou package has
+	// been initialized, completing the two-phase initialization that avoids an import cycle
+	// between sysauthz (which ou already imports) and the ou package itself.
+	SetOUHierarchyResolver(resolver OUHierarchyResolver)
 }
 
 // systemAuthorizationService is the default implementation of SystemAuthorizationServiceInterface.
 type systemAuthorizationService struct {
-	logger *log.Logger
+	logger   *log.Logger
+	policies *policies
+}
+
+type policies struct {
+	// membershipPolicy enforces same-OU access for standard operations.
+	// Declared as an interface so that tests can inject stubs without importing
+	// the concrete type directly.
+	membershipPolicy authorizationPolicy
+	// inheritancePolicy grants child-OU callers read access to parent-OU resources.
+	// nil when no OUHierarchyResolver has been injected yet.
+	inheritancePolicy authorizationPolicy
 }
 
 // newSystemAuthorizationService returns a new systemAuthorizationService.
 func newSystemAuthorizationService() SystemAuthorizationServiceInterface {
 	return &systemAuthorizationService{
 		logger: log.GetLogger().With(log.String("component", "SystemAuthorizationService")),
+		policies: &policies{
+			membershipPolicy: &ouMembershipPolicy{},
+		},
 	}
+}
+
+// SetOUHierarchyResolver injects the OU hierarchy resolver into the service.
+// It is called once at application startup after the ou package is initialized.
+// The ouInheritancePolicy is built once here and reused for every subsequent authz call.
+func (s *systemAuthorizationService) SetOUHierarchyResolver(resolver OUHierarchyResolver) {
+	if resolver == nil {
+		return
+	}
+	s.policies.inheritancePolicy = &ouInheritancePolicy{resolver: resolver}
 }
 
 // IsActionAllowed evaluates whether the authenticated caller may perform the given action.
@@ -114,7 +144,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 	}
 
 	// Step 7: Evaluate global policies (e.g., OU scope check).
-	allowed, svcErr := isActionAllowedByPolicies(ctx, actionCtx)
+	allowed, svcErr := isActionAllowedByPolicies(ctx, s.policies, action, actionCtx)
 	if svcErr != nil {
 		return false, svcErr
 	}
@@ -208,7 +238,7 @@ func (s *systemAuthorizationService) GetAccessibleResources(ctx context.Context,
 	}
 
 	// Step 6: Delegate to the policy chain to determine the accessible resource set.
-	result, svcErr := getAccessibleResourcesByPolicies(ctx, action, resourceType)
+	result, svcErr := getAccessibleResourcesByPolicies(ctx, s.policies, action, resourceType)
 	if svcErr != nil {
 		return nil, svcErr
 	}

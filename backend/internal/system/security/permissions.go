@@ -54,7 +54,7 @@ var publicPaths = []string{
 type ResourceType string
 
 // ResourceType defines the category of system resource being acted upon.
-// ResourceTypeOU, ResourceTypeUser, and ResourceTypeGroup are the supported values.
+// ResourceTypeOU, ResourceTypeUser, ResourceTypeGroup, and ResourceTypeUserSchema are the supported values.
 const (
 	// ResourceTypeOU identifies an organization unit resource.
 	ResourceTypeOU ResourceType = "ou"
@@ -62,6 +62,8 @@ const (
 	ResourceTypeUser ResourceType = "user"
 	// ResourceTypeGroup identifies a group resource.
 	ResourceTypeGroup ResourceType = "group"
+	// ResourceTypeUserSchema identifies a user schema resource.
+	ResourceTypeUserSchema ResourceType = "userschema"
 )
 
 // ---- Actions ----
@@ -104,6 +106,17 @@ const (
 	ActionDeleteGroup Action = "group:delete"
 	// ActionListGroups lists groups.
 	ActionListGroups Action = "group:list"
+
+	// ActionCreateUserSchema creates a new user schema.
+	ActionCreateUserSchema Action = "userschema:create"
+	// ActionReadUserSchema reads a user schema.
+	ActionReadUserSchema Action = "userschema:read"
+	// ActionUpdateUserSchema updates a user schema.
+	ActionUpdateUserSchema Action = "userschema:update"
+	// ActionDeleteUserSchema deletes a user schema.
+	ActionDeleteUserSchema Action = "userschema:delete"
+	// ActionListUserSchemas lists user schemas.
+	ActionListUserSchemas Action = "userschema:list"
 )
 
 // ---- Permissions ----
@@ -115,12 +128,14 @@ const SystemPermission = "system"
 // Fine-grained permissions. Each constant is a child scope of SystemPermission.
 // Hierarchy uses ":" as delimiter: "system:ou" covers "system:ou:view".
 const (
-	PermissionOU        = "system:ou"
-	PermissionOUView    = "system:ou:view"
-	PermissionUser      = "system:user"
-	PermissionUserView  = "system:user:view"
-	PermissionGroup     = "system:group"
-	PermissionGroupView = "system:group:view"
+	PermissionOU             = "system:ou"
+	PermissionOUView         = "system:ou:view"
+	PermissionUser           = "system:user"
+	PermissionUserView       = "system:user:view"
+	PermissionGroup          = "system:group"
+	PermissionGroupView      = "system:group:view"
+	PermissionUserSchema     = "system:userschema"
+	PermissionUserSchemaView = "system:userschema:view"
 )
 
 // ---- Action → Permission map ----
@@ -149,6 +164,13 @@ var actionPermissionMap = map[Action]string{
 	ActionUpdateGroup: PermissionGroup,
 	ActionDeleteGroup: PermissionGroup,
 	ActionListGroups:  PermissionGroupView,
+
+	// User schema actions.
+	ActionCreateUserSchema: PermissionUserSchema,
+	ActionReadUserSchema:   PermissionUserSchemaView,
+	ActionUpdateUserSchema: PermissionUserSchema,
+	ActionDeleteUserSchema: PermissionUserSchema,
+	ActionListUserSchemas:  PermissionUserSchemaView,
 }
 
 // ---- API → Permission map ----

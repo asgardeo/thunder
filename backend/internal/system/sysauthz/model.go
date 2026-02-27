@@ -18,7 +18,31 @@
 
 package sysauthz
 
-import "github.com/asgardeo/thunder/internal/system/security"
+import (
+	"context"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/security"
+)
+
+// OUHierarchyResolver provides read-only traversal of the organization unit tree.
+// It is defined here in the sysauthz package (rather than in the ou package) to break the
+// potential import cycle: ou already imports sysauthz for its authz checks, so if sysauthz
+// were to import ou for hierarchy traversal it would form a cycle.
+// The ou package implements this interface and injects a concrete instance via
+// SystemAuthorizationServiceInterface.SetOUHierarchyResolver at application startup.
+type OUHierarchyResolver interface {
+	// IsAncestorOrSelf returns true when ancestorOUID is the same as descendantOUID, or
+	// when ancestorOUID appears anywhere in the parent chain above descendantOUID.
+	// A non-nil ServiceError indicates a traversal failure; the caller should treat the
+	// result as false (deny-safe).
+	IsAncestorOrSelf(ctx context.Context, ancestorOUID, descendantOUID string) (bool, *serviceerror.ServiceError)
+
+	// GetAncestorOUIDs returns the ouID itself followed by every ancestor OU ID walking up
+	// to the root of the tree. The list always contains at least ouID itself (when the OU
+	// has no parent). A non-nil ServiceError indicates a traversal failure.
+	GetAncestorOUIDs(ctx context.Context, ouID string) ([]string, *serviceerror.ServiceError)
+}
 
 // ActionContext provides contextual information used to make an authorization decision.
 // Not all fields are required for every action; populate only those relevant to the operation.
