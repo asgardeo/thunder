@@ -315,6 +315,10 @@ func (tb *tokenBuilder) buildIDTokenClaims(ctx *IDTokenBuildContext) map[string]
 		claims["auth_time"] = ctx.AuthTime
 	}
 
+	if ctx.Nonce != "" {
+		claims[constants.RequestParamNonce] = ctx.Nonce
+	}
+
 	userAttributes := ctx.UserAttributes
 	if userAttributes == nil {
 		userAttributes = make(map[string]interface{})

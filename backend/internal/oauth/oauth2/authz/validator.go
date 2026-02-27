@@ -90,6 +90,11 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 			return true, constants.ErrorInvalidRequest, "Invalid PKCE parameters"
 		}
 	}
+	// Validate nonce length (FAPI 2.0 aligned)
+	nonce := msg.RequestQueryParams[constants.RequestParamNonce]
+	if nonce != "" && len(nonce) > constants.MaxNonceLength {
+		return true, constants.ErrorInvalidRequest, "nonce exceeds maximum allowed length"
+	}
 
 	// Validate resource parameter if present
 	resource := msg.RequestQueryParams[constants.RequestParamResource]

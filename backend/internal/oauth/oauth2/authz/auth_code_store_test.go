@@ -688,3 +688,41 @@ func (suite *AuthorizationCodeStoreTestSuite) TestUpdateAuthorizationCodeState_E
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
 }
+
+func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_WithNonce() {
+	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
+
+	authzData := map[string]interface{}{
+		"redirect_uri":       "https://client.example.com/callback",
+		"authorized_user_id": "test-user-id",
+		"scopes":             "read write",
+		"nonce":              "test-nonce-123",
+	}
+
+	authzDataJSON, _ := json.Marshal(authzData)
+
+	suite.mockDBClient.On("Query",
+		queryGetAuthorizationCode,
+		"test-client-id",
+		"test-code",
+		testDeploymentID,
+	).Return([]map[string]interface{}{
+		{
+			"code_id":            "test-code-id",
+			"authorization_code": "test-code",
+			"client_id":          "test-client-id",
+			"state":              AuthCodeStateActive,
+			"authz_data":         string(authzDataJSON),
+			"time_created":       "2023-01-01 12:00:00",
+			"expiry_time":        "2023-01-01 12:10:00",
+		},
+	}, nil)
+
+	result, err := suite.store.GetAuthorizationCode("test-client-id", "test-code")
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-nonce-123", result.Nonce)
+
+	suite.mockdbProvider.AssertExpectations(suite.T())
+	suite.mockDBClient.AssertExpectations(suite.T())
+}

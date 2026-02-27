@@ -123,6 +123,8 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage)
 	// Extract claims_locales parameter.
 	claimsLocales := msg.RequestQueryParams[oauth2const.RequestParamClaimsLocales]
 
+	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
+
 	if clientID == "" {
 		return nil, &AuthorizationError{
 			Code:    oauth2const.ErrorInvalidRequest,
@@ -196,6 +198,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage)
 		Resource:            resource,
 		ClaimsRequest:       claimsRequest,
 		ClaimsLocales:       claimsLocales,
+		Nonce:               nonce,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -533,6 +536,7 @@ func createAuthorizationCode(
 		Resource:            resource,
 		ClaimsRequest:       authRequestCtx.OAuthParameters.ClaimsRequest,
 		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
+		Nonce:               authRequestCtx.OAuthParameters.Nonce,
 	}, nil
 }
 
