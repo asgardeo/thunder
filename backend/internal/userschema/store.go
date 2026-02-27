@@ -220,9 +220,9 @@ func (s *userSchemaStore) IsUserSchemaDeclarative(schemaID string) bool {
 
 // parseUserSchemaFromRow parses a user schema from a database row.
 func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
-	schemaID, ok := row["schema_id"].(string)
+	schemaID, ok := row["id"].(string)
 	if !ok {
-		return UserSchema{}, fmt.Errorf("failed to parse schema_id as string")
+		return UserSchema{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)
@@ -263,9 +263,9 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 
 // parseUserSchemaListItemFromRow parses a simplified user schema list item from a database row.
 func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListItem, error) {
-	schemaID, ok := row["schema_id"].(string)
+	schemaID, ok := row["id"].(string)
 	if !ok {
-		return UserSchemaListItem{}, fmt.Errorf("failed to parse schema_id as string")
+		return UserSchemaListItem{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)

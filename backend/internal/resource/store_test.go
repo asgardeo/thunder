@@ -184,13 +184,13 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 					queryGetResourceServerByID, "rs1", "test-deployment").
 					Return([]map[string]interface{}{
 						{
-							"id":                 7,
-							"resource_server_id": "rs1",
-							"ou_id":              "ou1",
-							"name":               "Test Server",
-							"description":        "Test Description",
-							"identifier":         "test-identifier",
-							"properties":         []byte(`{"delimiter":"/"}`),
+							"internal_id": 7,
+							"id":          "rs1",
+							"ou_id":       "ou1",
+							"name":        "Test Server",
+							"description": "Test Description",
+							"identifier":  "test-identifier",
+							"properties":  []byte(`{"delimiter":"/"}`),
 						},
 					}, nil)
 			},
@@ -293,20 +293,20 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 					queryGetResourceServerList, 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
-							"id":                 1,
-							"resource_server_id": "rs1",
-							"ou_id":              "ou1",
-							"name":               "Server 1",
-							"description":        "Description 1",
-							"identifier":         "identifier-1",
+							"internal_id": 1,
+							"id":          "rs1",
+							"ou_id":       "ou1",
+							"name":        "Server 1",
+							"description": "Description 1",
+							"identifier":  "identifier-1",
 						},
 						{
-							"id":                 2,
-							"resource_server_id": "rs2",
-							"ou_id":              "ou1",
-							"name":               "Server 2",
-							"description":        "Description 2",
-							"identifier":         "identifier-2",
+							"internal_id": 2,
+							"id":          "rs2",
+							"ou_id":       "ou1",
+							"name":        "Server 2",
+							"description": "Description 2",
+							"identifier":  "identifier-2",
 						},
 					}, nil)
 			},
@@ -338,10 +338,10 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 					queryGetResourceServerList, 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
-							"id":                 3,
-							"resource_server_id": 123, // Invalid type
-							"ou_id":              "ou1",
-							"name":               "Server 1",
+							"internal_id": 3,
+							"id":          123, // Invalid type
+							"ou_id":       "ou1",
+							"name":        "Server 1",
 						},
 					}, nil)
 			},
@@ -948,8 +948,8 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 					queryGetResourceByID, "res1", "rs1",
 					"test-deployment").Return([]map[string]interface{}{
 					{
-						"id":                 11,
-						"resource_id":        "res1",
+						"internal_id":        11,
+						"id":                 "res1",
 						"resource_server_id": "rs1",
 						"name":               "Test Resource",
 						"handle":             "test-handle",
@@ -1047,8 +1047,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 					queryGetResourceList, "rs1", 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
-							"id":                 21,
-							"resource_id":        "res1",
+							"internal_id":        21,
+							"id":                 "res1",
 							"resource_server_id": "rs1",
 							"name":               "Resource 1",
 							"handle":             "resource-1",
@@ -1056,8 +1056,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 							"permission":         "perm:r1",
 						},
 						{
-							"id":                 22,
-							"resource_id":        "res2",
+							"internal_id":        22,
+							"id":                 "res2",
 							"resource_server_id": "rs1",
 							"name":               "Resource 2",
 							"handle":             "resource-2",
@@ -1101,8 +1101,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 					queryGetResourceList, "rs1", 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
-							"id":                 23,
-							"resource_id":        123, // Invalid type
+							"internal_id":        23,
+							"id":                 123, // Invalid type
 							"resource_server_id": "rs1",
 							"name":               "Resource 1",
 						},
@@ -1172,8 +1172,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent() {
 					queryGetResourceListByNullParent, "rs1", 10, 0,
 					"test-deployment").Return([]map[string]interface{}{
 					{
-						"id":                 31,
-						"resource_id":        "res1",
+						"internal_id":        31,
+						"id":                 "res1",
 						"resource_server_id": "rs1",
 						"name":               "Resource 1",
 						"handle":             "resource-1",
@@ -1196,8 +1196,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent() {
 					queryGetResourceListByParent, "rs1", *parentID, 10, 0,
 					"test-deployment").Return([]map[string]interface{}{
 					{
-						"id":                 32,
-						"resource_id":        "res1",
+						"internal_id":        32,
+						"id":                 "res1",
 						"resource_server_id": "rs1",
 						"name":               "Resource 1",
 						"handle":             "resource-1",
@@ -1944,7 +1944,7 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 					queryGetActionByID, "action1", "rs1",
 					nilResID, "test-deployment").Return([]map[string]interface{}{
 					{
-						"action_id":          "action1",
+						"id":                 "action1",
 						"resource_server_id": "rs1",
 						"name":               "Test Action",
 						"handle":             "test-handle",
@@ -1967,7 +1967,7 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 					queryGetActionByID, "action1", "rs1",
 					resourceID, "test-deployment").Return([]map[string]interface{}{
 					{
-						"action_id":          "action1",
+						"id":                 "action1",
 						"resource_server_id": "rs1",
 						"resource_id":        testResourceID1,
 						"name":               "Test Action",
@@ -2072,7 +2072,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 					queryGetActionList, "rs1", nilResID,
 					limit, offset, "test-deployment").Return([]map[string]interface{}{
 					{
-						"action_id":          "action1",
+						"id":                 "action1",
 						"resource_server_id": "rs1",
 						"name":               "Action 1",
 						"handle":             "action-1",
@@ -2080,7 +2080,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 						"permission":         "perm:1",
 					},
 					{
-						"action_id":          "action2",
+						"id":                 "action2",
 						"resource_server_id": "rs1",
 						"name":               "Action 2",
 						"handle":             "action-2",
@@ -2121,8 +2121,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 					queryGetActionList, "rs1", nilResID,
 					limit, offset, "test-deployment").Return([]map[string]interface{}{
 					{
-						"action_id": 123, // Invalid type
-						"name":      "Action 1",
+						"internal_id": 123, // Invalid type
+						"name":        "Action 1",
 					},
 				}, nil)
 			},
@@ -2140,7 +2140,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 					queryGetActionList, "rs1", resourceID, 10, 0,
 					"test-deployment").Return([]map[string]interface{}{
 					{
-						"action_id":          "action1",
+						"id":                 "action1",
 						"resource_server_id": "rs1",
 						"resource_id":        "res1",
 						"name":               "Action 1",
@@ -2909,13 +2909,13 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Success_AllFields",
 			row: map[string]interface{}{
-				"id":                 50,
-				"resource_server_id": "rs1",
-				"ou_id":              "ou1",
-				"name":               "Test Server",
-				"description":        "Test Description",
-				"identifier":         "test-identifier",
-				"properties":         []byte(`{"delimiter":"|"}`),
+				"internal_id": 50,
+				"id":          "rs1",
+				"ou_id":       "ou1",
+				"name":        "Test Server",
+				"description": "Test Description",
+				"identifier":  "test-identifier",
+				"properties":  []byte(`{"delimiter":"|"}`),
 			},
 			expectedResourceServer: ResourceServer{
 				ID:                 "rs1",
@@ -2930,10 +2930,10 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Success_OptionalFields",
 			row: map[string]interface{}{
-				"id":                 51,
-				"resource_server_id": "rs1",
-				"ou_id":              "ou1",
-				"name":               "Test Server",
+				"internal_id": 51,
+				"id":          "rs1",
+				"ou_id":       "ou1",
+				"name":        "Test Server",
 			},
 			expectedResourceServer: ResourceServer{
 				ID:                 "rs1",
@@ -2947,11 +2947,11 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Success_PropertiesString",
 			row: map[string]interface{}{
-				"id":                 52,
-				"resource_server_id": "rs1",
-				"ou_id":              "ou1",
-				"name":               "Test Server",
-				"properties":         `{"delimiter":"."}`,
+				"internal_id": 52,
+				"id":          "rs1",
+				"ou_id":       "ou1",
+				"name":        "Test Server",
+				"properties":  `{"delimiter":"."}`,
 			},
 			expectedResourceServer: ResourceServer{
 				ID:                 "rs1",
@@ -2964,30 +2964,30 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_MissingResourceServerID",
 			row: map[string]interface{}{
-				"id":    60,
-				"ou_id": "ou1",
-				"name":  "Test Server",
+				"internal_id": 60,
+				"ou_id":       "ou1",
+				"name":        "Test Server",
 			},
 			shouldErr:   true,
-			errContains: "resource_server_id",
+			errContains: "id",
 		},
 		{
 			name: "Error_InvalidResourceServerID",
 			row: map[string]interface{}{
-				"id":                 61,
-				"resource_server_id": 123,
-				"ou_id":              "ou1",
-				"name":               "Test Server",
+				"internal_id": 61,
+				"id":          123,
+				"ou_id":       "ou1",
+				"name":        "Test Server",
 			},
 			shouldErr:   true,
-			errContains: "resource_server_id",
+			errContains: "id",
 		},
 		{
 			name: "Error_MissingOuID",
 			row: map[string]interface{}{
-				"id":                 62,
-				"resource_server_id": "rs1",
-				"name":               "Test Server",
+				"internal_id": 62,
+				"id":          "rs1",
+				"name":        "Test Server",
 			},
 			shouldErr:   true,
 			errContains: "ou_id",
@@ -2995,10 +2995,10 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_InvalidOuID",
 			row: map[string]interface{}{
-				"id":                 63,
-				"resource_server_id": "rs1",
-				"ou_id":              123,
-				"name":               "Test Server",
+				"internal_id": 63,
+				"id":          "rs1",
+				"ou_id":       123,
+				"name":        "Test Server",
 			},
 			shouldErr:   true,
 			errContains: "ou_id",
@@ -3006,9 +3006,9 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_MissingName",
 			row: map[string]interface{}{
-				"id":                 64,
-				"resource_server_id": "rs1",
-				"ou_id":              "ou1",
+				"internal_id": 64,
+				"id":          "rs1",
+				"ou_id":       "ou1",
 			},
 			shouldErr:   true,
 			errContains: "name",
@@ -3016,10 +3016,10 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_InvalidName",
 			row: map[string]interface{}{
-				"id":                 65,
-				"resource_server_id": "rs1",
-				"ou_id":              "ou1",
-				"name":               123,
+				"internal_id": 65,
+				"id":          "rs1",
+				"ou_id":       "ou1",
+				"name":        123,
 			},
 			shouldErr:   true,
 			errContains: "name",
@@ -3058,8 +3058,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Success_WithParent",
 			row: map[string]interface{}{
-				"id":                 70,
-				"resource_id":        "res1",
+				"internal_id":        70,
+				"id":                 "res1",
 				"resource_server_id": "rs1",
 				"name":               "Test Resource",
 				"handle":             "test-handle",
@@ -3080,8 +3080,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Success_NullParent",
 			row: map[string]interface{}{
-				"id":                 71,
-				"resource_id":        "res1",
+				"internal_id":        71,
+				"id":                 "res1",
 				"resource_server_id": "rs1",
 				"name":               "Test Resource",
 				"handle":             "test-handle",
@@ -3102,8 +3102,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Success_EmptyDescription",
 			row: map[string]interface{}{
-				"id":          72,
-				"resource_id": "res1",
+				"internal_id": 72,
+				"id":          "res1",
 				"name":        "Test Resource",
 				"handle":      "test-handle",
 				"description": "",
@@ -3122,8 +3122,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Success_MissingDescription",
 			row: map[string]interface{}{
-				"id":          73,
-				"resource_id": "res1",
+				"internal_id": 73,
+				"id":          "res1",
 				"name":        "Test Resource",
 				"handle":      "test-handle",
 				"permission":  "perm:r",
@@ -3141,29 +3141,29 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_MissingResourceID",
 			row: map[string]interface{}{
-				"id":     80,
-				"name":   "Test Resource",
-				"handle": "test-handle",
-			},
-			shouldErr:   true,
-			errContains: "resource_id",
-		},
-		{
-			name: "Error_InvalidResourceID",
-			row: map[string]interface{}{
-				"id":          81,
-				"resource_id": 123,
+				"internal_id": 80,
 				"name":        "Test Resource",
 				"handle":      "test-handle",
 			},
 			shouldErr:   true,
-			errContains: "resource_id",
+			errContains: "id",
+		},
+		{
+			name: "Error_InvalidResourceID",
+			row: map[string]interface{}{
+				"internal_id": 81,
+				"id":          123,
+				"name":        "Test Resource",
+				"handle":      "test-handle",
+			},
+			shouldErr:   true,
+			errContains: "id",
 		},
 		{
 			name: "Error_MissingName",
 			row: map[string]interface{}{
-				"id":          82,
-				"resource_id": "res1",
+				"internal_id": 82,
+				"id":          "res1",
 				"handle":      "test-handle",
 			},
 			shouldErr:   true,
@@ -3172,8 +3172,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_InvalidName",
 			row: map[string]interface{}{
-				"id":          83,
-				"resource_id": "res1",
+				"internal_id": 83,
+				"id":          "res1",
 				"name":        123,
 				"handle":      "test-handle",
 			},
@@ -3183,8 +3183,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_MissingHandle",
 			row: map[string]interface{}{
-				"id":          84,
-				"resource_id": "res1",
+				"internal_id": 84,
+				"id":          "res1",
 				"name":        "Test Resource",
 			},
 			shouldErr:   true,
@@ -3193,8 +3193,8 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_InvalidHandle",
 			row: map[string]interface{}{
-				"id":          85,
-				"resource_id": "res1",
+				"internal_id": 85,
+				"id":          "res1",
 				"name":        "Test Resource",
 				"handle":      123,
 			},
@@ -3239,7 +3239,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Success_WithResourceID",
 			row: map[string]interface{}{
-				"action_id":          "action1",
+				"id":                 "action1",
 				"resource_server_id": "rs1",
 				"resource_id":        testResourceID1,
 				"name":               "Test Action",
@@ -3257,7 +3257,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Success_NullResource",
 			row: map[string]interface{}{
-				"action_id":          "action1",
+				"id":                 "action1",
 				"resource_server_id": "rs1",
 				"resource_id":        "",
 				"name":               "Test Action",
@@ -3275,7 +3275,7 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Success_EmptyDescription",
 			row: map[string]interface{}{
-				"action_id":   "action1",
+				"id":          "action1",
 				"name":        "Test Action",
 				"handle":      "test-handle",
 				"description": "",
@@ -3291,9 +3291,9 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Success_MissingDescription",
 			row: map[string]interface{}{
-				"action_id": "action1",
-				"name":      "Test Action",
-				"handle":    "test-handle",
+				"id":     "action1",
+				"name":   "Test Action",
+				"handle": "test-handle",
 			},
 			expectedAction: Action{
 				ID:          "action1",
@@ -3310,23 +3310,23 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 				"handle": "test-handle",
 			},
 			shouldErr:   true,
-			errContains: "action_id",
+			errContains: "id",
 		},
 		{
 			name: "Error_InvalidActionID",
 			row: map[string]interface{}{
-				"action_id": 123,
-				"name":      "Test Action",
-				"handle":    "test-handle",
+				"id":     123,
+				"name":   "Test Action",
+				"handle": "test-handle",
 			},
 			shouldErr:   true,
-			errContains: "action_id",
+			errContains: "id",
 		},
 		{
 			name: "Error_MissingName",
 			row: map[string]interface{}{
-				"action_id": "action1",
-				"handle":    "test-handle",
+				"id":     "action1",
+				"handle": "test-handle",
 			},
 			shouldErr:   true,
 			errContains: "name",
@@ -3334,9 +3334,9 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Error_InvalidName",
 			row: map[string]interface{}{
-				"action_id": "action1",
-				"name":      123,
-				"handle":    "test-handle",
+				"id":     "action1",
+				"name":   123,
+				"handle": "test-handle",
 			},
 			shouldErr:   true,
 			errContains: "name",
@@ -3344,8 +3344,8 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Error_MissingHandle",
 			row: map[string]interface{}{
-				"action_id": "action1",
-				"name":      "Test Action",
+				"id":   "action1",
+				"name": "Test Action",
 			},
 			shouldErr:   true,
 			errContains: "handle",
@@ -3353,9 +3353,9 @@ func (suite *ResourceStoreTestSuite) TestBuildActionFromResultRow() {
 		{
 			name: "Error_InvalidHandle",
 			row: map[string]interface{}{
-				"action_id": "action1",
-				"name":      "Test Action",
-				"handle":    123,
+				"id":     "action1",
+				"name":   "Test Action",
+				"handle": 123,
 			},
 			shouldErr:   true,
 			errContains: "handle",

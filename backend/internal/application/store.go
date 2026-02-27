@@ -587,9 +587,9 @@ func deleteOAuthAppQuery(clientID string, deploymentID string) func(tx dbmodel.T
 
 // buildBasicApplicationFromResultRow constructs a BasicApplicationDTO from a database result row.
 func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.BasicApplicationDTO, error) {
-	appID, ok := row["app_id"].(string)
+	appID, ok := row["id"].(string)
 	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse app_id as string")
+		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	appName, ok := row["app_name"].(string)

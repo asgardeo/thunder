@@ -28,22 +28,22 @@ var (
 	queryCreateResourceServer = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-01",
 		Query: `INSERT INTO RESOURCE_SERVER
-			(RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES, DEPLOYMENT_ID)
+			(ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES, DEPLOYMENT_ID)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 	}
 
 	// queryGetResourceServerByID retrieves a resource server by ID.
 	queryGetResourceServerByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-02",
-		Query: `SELECT RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
+		Query: `SELECT ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
 			FROM RESOURCE_SERVER
-			WHERE RESOURCE_SERVER_ID = $1 AND DEPLOYMENT_ID = $2`,
+			WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetResourceServerList retrieves a list of resource servers with pagination.
 	queryGetResourceServerList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-03",
-		Query: `SELECT RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
+		Query: `SELECT ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
 			FROM RESOURCE_SERVER
 			WHERE DEPLOYMENT_ID = $3
 			ORDER BY CREATED_AT DESC
@@ -61,13 +61,13 @@ var (
 		ID: "RSQ-RES_MGT-05",
 		Query: `UPDATE RESOURCE_SERVER
 			SET OU_ID = $1, NAME = $2, DESCRIPTION = $3, IDENTIFIER = $4, PROPERTIES = $5
-			WHERE RESOURCE_SERVER_ID = $6 AND DEPLOYMENT_ID = $7`,
+			WHERE ID = $6 AND DEPLOYMENT_ID = $7`,
 	}
 
 	// queryDeleteResourceServer deletes a resource server.
 	queryDeleteResourceServer = dbmodel.DBQuery{
 		ID:    "RSQ-RES_MGT-06",
-		Query: `DELETE FROM RESOURCE_SERVER WHERE RESOURCE_SERVER_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM RESOURCE_SERVER WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCheckResourceServerNameExists checks if a resource server name already exists.
@@ -102,7 +102,7 @@ var (
 	queryCreateResource = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-10",
 		Query: `INSERT INTO RESOURCE
-		        (RESOURCE_ID, RESOURCE_SERVER_ID, NAME, HANDLE, DESCRIPTION, PERMISSION, PROPERTIES,
+		        (ID, RESOURCE_SERVER_ID, NAME, HANDLE, DESCRIPTION, PERMISSION, PROPERTIES,
 				PARENT_RESOURCE_ID, DEPLOYMENT_ID)
 		        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 	}
@@ -110,20 +110,20 @@ var (
 	// queryGetResourceByID retrieves a resource by ID.
 	queryGetResourceByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-11",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
-				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
+		Query: `SELECT r.ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+				r.PROPERTIES, pr.ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
-			WHERE r.RESOURCE_ID = $1 AND r.RESOURCE_SERVER_ID = $2 AND r.DEPLOYMENT_ID = $3`,
+			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
+			WHERE r.ID = $1 AND r.RESOURCE_SERVER_ID = $2 AND r.DEPLOYMENT_ID = $3`,
 	}
 
 	// queryGetResourceList retrieves a list of resources with pagination.
 	queryGetResourceList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-12",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
-				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
+		Query: `SELECT r.ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+				r.PROPERTIES, pr.ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
+			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
 			WHERE r.RESOURCE_SERVER_ID = $1 AND r.DEPLOYMENT_ID = $4
 			ORDER BY r.CREATED_AT DESC LIMIT $2 OFFSET $3`,
 	}
@@ -131,10 +131,10 @@ var (
 	// queryGetResourceListByParent retrieves resources by parent ID with pagination.
 	queryGetResourceListByParent = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-13",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
-				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
+		Query: `SELECT r.ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+				r.PROPERTIES, pr.ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
+			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
 			WHERE r.RESOURCE_SERVER_ID = $1 AND r.PARENT_RESOURCE_ID = $2 AND r.DEPLOYMENT_ID = $5
 			ORDER BY r.CREATED_AT DESC LIMIT $3 OFFSET $4`,
 	}
@@ -142,10 +142,10 @@ var (
 	// queryGetResourceListByNullParent retrieves top-level resources with pagination.
 	queryGetResourceListByNullParent = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-14",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
-				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
+		Query: `SELECT r.ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
+				r.PROPERTIES, pr.ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
-		        LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.RESOURCE_ID
+		        LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
 		        WHERE r.RESOURCE_SERVER_ID = $1 AND r.PARENT_RESOURCE_ID IS NULL AND r.DEPLOYMENT_ID = $4
 		        ORDER BY r.CREATED_AT DESC LIMIT $2 OFFSET $3`,
 	}
@@ -181,7 +181,7 @@ var (
 		        SET NAME = $1,
 				    DESCRIPTION = $2,
 		            PROPERTIES = $3
-		        WHERE RESOURCE_ID = $4
+		        WHERE ID = $4
 		          AND RESOURCE_SERVER_ID = $5
 		          AND DEPLOYMENT_ID = $6`,
 	}
@@ -190,7 +190,7 @@ var (
 	queryDeleteResource = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-19",
 		Query: `DELETE FROM RESOURCE
-		        WHERE RESOURCE_ID = $1
+		        WHERE ID = $1
 		          AND RESOURCE_SERVER_ID = $2
 		          AND DEPLOYMENT_ID = $3`,
 	}
@@ -229,15 +229,15 @@ var (
 	queryCheckCircularDependency = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-23",
 		Query: `WITH RECURSIVE parent_hierarchy AS (
-			SELECT RESOURCE_ID, PARENT_RESOURCE_ID, DEPLOYMENT_ID FROM RESOURCE
-			WHERE RESOURCE_ID = $1 AND DEPLOYMENT_ID = $3
+			SELECT ID, PARENT_RESOURCE_ID, DEPLOYMENT_ID FROM RESOURCE
+			WHERE ID = $1 AND DEPLOYMENT_ID = $3
 			UNION ALL
-			SELECT r.RESOURCE_ID, r.PARENT_RESOURCE_ID, r.DEPLOYMENT_ID
+			SELECT r.ID, r.PARENT_RESOURCE_ID, r.DEPLOYMENT_ID
 			FROM RESOURCE r
-			INNER JOIN parent_hierarchy ph ON ph.PARENT_RESOURCE_ID = r.RESOURCE_ID
+			INNER JOIN parent_hierarchy ph ON ph.PARENT_RESOURCE_ID = r.ID
 				AND ph.DEPLOYMENT_ID = r.DEPLOYMENT_ID
 		)
-		SELECT COUNT(*) as count FROM parent_hierarchy WHERE RESOURCE_ID = $2`,
+		SELECT COUNT(*) as count FROM parent_hierarchy WHERE ID = $2`,
 	}
 )
 
@@ -247,7 +247,7 @@ var (
 	queryCreateAction = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-24",
 		Query: `INSERT INTO ACTION
-		        (ACTION_ID, RESOURCE_SERVER_ID, RESOURCE_ID, NAME, HANDLE, DESCRIPTION, PERMISSION,
+		        (ID, RESOURCE_SERVER_ID, RESOURCE_ID, NAME, HANDLE, DESCRIPTION, PERMISSION,
 				PROPERTIES, DEPLOYMENT_ID)
 		        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 	}
@@ -255,9 +255,9 @@ var (
 	// queryGetActionByID retrieves an action by ID.
 	queryGetActionByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-25",
-		Query: `SELECT a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
+		Query: `SELECT a.ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
 		        FROM ACTION a
-		        WHERE a.ACTION_ID = $1
+		        WHERE a.ID = $1
 		          AND a.RESOURCE_SERVER_ID = $2
 		          AND (a.RESOURCE_ID = $3 OR (a.RESOURCE_ID IS NULL AND $3 IS NULL))
 		          AND a.DEPLOYMENT_ID = $4`,
@@ -266,7 +266,7 @@ var (
 	// queryGetActionList retrieves actions with pagination.
 	queryGetActionList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-26",
-		Query: `SELECT a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
+		Query: `SELECT a.ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
 		        FROM ACTION a
 		        WHERE a.RESOURCE_SERVER_ID = $1
 		          AND (a.RESOURCE_ID = $2 OR (a.RESOURCE_ID IS NULL AND $2 IS NULL))
@@ -289,7 +289,7 @@ var (
 		ID: "RSQ-RES_MGT-28",
 		Query: `UPDATE ACTION
 		        SET NAME = $1, DESCRIPTION = $2, PROPERTIES = $3
-		        WHERE ACTION_ID = $4
+		        WHERE ID = $4
 		          AND RESOURCE_SERVER_ID = $5
 		          AND (RESOURCE_ID = $6 OR (RESOURCE_ID IS NULL AND $6 IS NULL))
 		          AND DEPLOYMENT_ID = $7`,
@@ -299,7 +299,7 @@ var (
 	queryDeleteAction = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-29",
 		Query: `DELETE FROM ACTION
-		        WHERE ACTION_ID = $1
+		        WHERE ID = $1
 		          AND RESOURCE_SERVER_ID = $2
 		          AND (RESOURCE_ID = $3 OR (RESOURCE_ID IS NULL AND $3 IS NULL))
 		          AND DEPLOYMENT_ID = $4`,
@@ -310,7 +310,7 @@ var (
 		ID: "RSQ-RES_MGT-30",
 		Query: `SELECT COUNT(*) as count
 		        FROM ACTION a
-		        WHERE a.ACTION_ID = $1
+		        WHERE a.ID = $1
 		          AND a.RESOURCE_SERVER_ID = $2
 		          AND (a.RESOURCE_ID = $3 OR (a.RESOURCE_ID IS NULL AND $3 IS NULL))
 		          AND a.DEPLOYMENT_ID = $4`,

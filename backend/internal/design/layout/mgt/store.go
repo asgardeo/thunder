@@ -267,9 +267,9 @@ func (s *layoutMgtStore) getTimestamp(row map[string]interface{}, key string) (s
 
 // buildLayoutListItemFromResultRow builds a Layout from a database result row (list view).
 func (s *layoutMgtStore) buildLayoutListItemFromResultRow(row map[string]interface{}) (Layout, error) {
-	id, ok := row["layout_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Layout{}, fmt.Errorf("layout_id not found or invalid type")
+		return Layout{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)
@@ -303,9 +303,9 @@ func (s *layoutMgtStore) buildLayoutListItemFromResultRow(row map[string]interfa
 
 // buildLayoutFromResultRow builds a Layout from a database result row (detail view).
 func (s *layoutMgtStore) buildLayoutFromResultRow(row map[string]interface{}) (Layout, error) {
-	id, ok := row["layout_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Layout{}, fmt.Errorf("layout_id not found or invalid type")
+		return Layout{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)

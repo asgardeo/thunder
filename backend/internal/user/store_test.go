@@ -372,7 +372,7 @@ func (suite *UserStoreTestSuite) TestGetUser() {
 	}
 
 	row := map[string]interface{}{
-		"user_id":    expectedUser.ID,
+		"id":         expectedUser.ID,
 		"ou_id":      expectedUser.OrganizationUnit,
 		"type":       expectedUser.Type,
 		"attributes": string(attributesBytes),
@@ -441,7 +441,7 @@ func (suite *UserStoreTestSuite) TestGetUserList() {
 	offset := 0
 
 	row := map[string]interface{}{
-		"user_id":    svcTestUserID1,
+		"id":         svcTestUserID1,
 		"ou_id":      "ou-1",
 		"type":       "customer",
 		"attributes": `{"username": "john.doe"}`,
@@ -473,7 +473,7 @@ func (suite *UserStoreTestSuite) TestGetCredentials() {
 	credentialsJSON, _ := json.Marshal(credentials)
 
 	row := map[string]interface{}{
-		"user_id":     userID,
+		"id":          userID,
 		"ou_id":       "ou-1",
 		"type":        "customer",
 		"attributes":  string(attributesBytes),
@@ -504,9 +504,9 @@ func (suite *UserStoreTestSuite) TestGetUserGroups() {
 	offset := 0
 
 	row := map[string]interface{}{
-		"group_id": "group-1",
-		"name":     "admin",
-		"ou_id":    "ou-1",
+		"id":    "group-1",
+		"name":  "admin",
+		"ou_id": "ou-1",
 	}
 
 	suite.mockDB.On("QueryContext", mock.Anything, QueryGetGroupsForUser, userID, limit, offset, testDeploymentID).
@@ -527,8 +527,8 @@ func (suite *UserStoreTestSuite) TestValidateUserIDs() {
 		return strings.Contains(query.Query, "SELECT USER_ID FROM \"USER\"") || query.ID == "ASQ-USER_MGT-09"
 	}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return([]map[string]interface{}{
-			{"user_id": svcTestUserID1},
-			{"user_id": "user-2"},
+			{"id": svcTestUserID1},
+			{"id": "user-2"},
 		}, nil)
 
 	invalid, err := suite.store.ValidateUserIDs(context.Background(), userIDs)
@@ -542,7 +542,7 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_NoIndexedFilters() {
 	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(query dbmodel.DBQuery) bool {
 		return query.ID == "ASQ-USER_MGT-08"
 	}), mock.Anything, mock.Anything).
-		Return([]map[string]interface{}{{"user_id": svcTestUserID1}}, nil)
+		Return([]map[string]interface{}{{"id": svcTestUserID1}}, nil)
 
 	id, err := suite.store.IdentifyUser(context.Background(), filters)
 	suite.NoError(err)
@@ -555,7 +555,7 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_AllIndexed() {
 	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(query dbmodel.DBQuery) bool {
 		return strings.Contains(query.Query, "USER_INDEXED_ATTRIBUTES")
 	}), mock.Anything, mock.Anything, mock.Anything).
-		Return([]map[string]interface{}{{"user_id": "user-indexed"}}, nil)
+		Return([]map[string]interface{}{{"id": "user-indexed"}}, nil)
 
 	id, err := suite.store.IdentifyUser(context.Background(), filters)
 	suite.NoError(err)
@@ -571,7 +571,7 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_Hybrid() {
 	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(query dbmodel.DBQuery) bool {
 		return strings.Contains(query.Query, "JOIN USER_INDEXED_ATTRIBUTES")
 	}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return([]map[string]interface{}{{"user_id": "user-hybrid"}}, nil)
+		Return([]map[string]interface{}{{"id": "user-hybrid"}}, nil)
 
 	id, err := suite.store.IdentifyUser(context.Background(), filters)
 	suite.NoError(err)

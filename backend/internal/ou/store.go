@@ -424,11 +424,11 @@ func (s *organizationUnitStore) GetOrganizationUnitUsersList(ouID string, limit,
 
 	users := make([]User, 0, len(results))
 	for _, row := range results {
-		if userIDInterface, exists := row["user_id"]; exists {
+		if userIDInterface, exists := row["id"]; exists {
 			if userID, ok := userIDInterface.(string); ok {
 				users = append(users, User{ID: userID})
 			} else {
-				return nil, fmt.Errorf("expected user_id to be a string")
+				return nil, fmt.Errorf("expected id to be a string")
 			}
 		}
 	}
@@ -477,11 +477,11 @@ func (s *organizationUnitStore) GetOrganizationUnitGroupsList(ouID string, limit
 	for _, row := range results {
 		var group Group
 
-		if groupIDInterface, exists := row["group_id"]; exists {
+		if groupIDInterface, exists := row["id"]; exists {
 			if groupID, ok := groupIDInterface.(string); ok {
 				group.ID = groupID
 			} else {
-				return nil, fmt.Errorf("expected group_id to be a string")
+				return nil, fmt.Errorf("expected id to be a string")
 			}
 		}
 

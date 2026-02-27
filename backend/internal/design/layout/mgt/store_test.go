@@ -91,14 +91,14 @@ func (suite *LayoutStoreTestSuite) TestGetLayoutListCount_QueryError() {
 func (suite *LayoutStoreTestSuite) TestGetLayoutList_Success() {
 	results := []map[string]interface{}{
 		{
-			"layout_id":    "layout-1",
+			"id":           "layout-1",
 			"display_name": "Layout 1",
 			"description":  "Description 1",
 			"created_at":   "2024-01-15T10:30:00Z",
 			"updated_at":   "2024-01-15T10:30:00Z",
 		},
 		{
-			"layout_id":    "layout-2",
+			"id":           "layout-2",
 			"display_name": "Layout 2",
 			"description":  "Description 2",
 			"created_at":   "2024-01-15T10:30:00Z",
@@ -145,7 +145,7 @@ func (suite *LayoutStoreTestSuite) TestCreateLayout_Success() {
 func (suite *LayoutStoreTestSuite) TestGetLayout_Success() {
 	results := []map[string]interface{}{
 		{
-			"layout_id":    "layout-123",
+			"id":           "layout-123",
 			"display_name": "Test Layout",
 			"description":  "A test layout",
 			"layout":       `{"structure": "centered"}`,
@@ -178,8 +178,8 @@ func (suite *LayoutStoreTestSuite) TestGetLayout_NotFound() {
 // Test GetLayout - Multiple results (unexpected)
 func (suite *LayoutStoreTestSuite) TestGetLayout_MultipleResults() {
 	results := []map[string]interface{}{
-		{"layout_id": "1", "display_name": "A", "description": "X", "layout": `{}`},
-		{"layout_id": "2", "display_name": "B", "description": "Y", "layout": `{}`},
+		{"id": "1", "display_name": "A", "description": "X", "layout": `{}`},
+		{"id": "2", "display_name": "B", "description": "Y", "layout": `{}`},
 	}
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Query", mock.Anything, "layout-123", "test-deployment").Return(results, nil)
@@ -277,7 +277,7 @@ func (suite *LayoutStoreTestSuite) TestParseCountResult_UnsupportedType() {
 // Test buildLayoutListItemFromResultRow helper
 func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_Success() {
 	row := map[string]interface{}{
-		"layout_id":    "layout-1",
+		"id":           "layout-1",
 		"display_name": "Test Layout",
 		"description":  "A description",
 		"created_at":   "2024-01-15T10:30:00Z",
@@ -304,7 +304,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_MissingI
 
 func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_MissingDisplayName() {
 	row := map[string]interface{}{
-		"layout_id":   "layout-1",
+		"id":          "layout-1",
 		"description": "Desc",
 	}
 
@@ -314,7 +314,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_MissingD
 
 func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_NilDescription() {
 	row := map[string]interface{}{
-		"layout_id":    "layout-1",
+		"id":           "layout-1",
 		"display_name": "Test",
 		"description":  nil,
 		"created_at":   "2024-01-15T10:30:00Z",
@@ -329,7 +329,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_NilDescr
 // Test buildLayoutFromResultRow helper
 func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_StringLayout() {
 	row := map[string]interface{}{
-		"layout_id":    "layout-1",
+		"id":           "layout-1",
 		"display_name": "Test Layout",
 		"description":  "A description",
 		"layout":       `{"structure": "centered"}`,
@@ -346,7 +346,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_StringLayout() {
 
 func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_ByteLayout() {
 	row := map[string]interface{}{
-		"layout_id":    "layout-1",
+		"id":           "layout-1",
 		"display_name": "Test Layout",
 		"description":  "Desc",
 		"layout":       []byte(`{"structure": "grid"}`),
@@ -362,7 +362,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_ByteLayout() {
 
 func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_MissingLayout() {
 	row := map[string]interface{}{
-		"layout_id":    "layout-1",
+		"id":           "layout-1",
 		"display_name": "Test",
 		"description":  "Desc",
 	}
@@ -373,7 +373,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_MissingLayout() 
 
 func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_UnsupportedLayoutType() {
 	row := map[string]interface{}{
-		"layout_id":    "layout-1",
+		"id":           "layout-1",
 		"display_name": "Test",
 		"description":  "Desc",
 		"layout":       12345,

@@ -231,9 +231,9 @@ func (s *notificationStore) deleteSender(ctx context.Context, id string) error {
 // buildSenderFromResultRow constructs a NotificationSenderDTO from a database result row.
 func (s *notificationStore) buildSenderFromResultRow(
 	row map[string]interface{}) (*common.NotificationSenderDTO, error) {
-	senderID, ok := row["sender_id"].(string)
+	senderID, ok := row["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse sender_id as string")
+		return nil, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)

@@ -158,7 +158,7 @@ func (suite *StoreTestSuite) TestListSenders_WithPropertiesStringAndBytes() {
 
 	// two rows: one with string properties, one with []byte properties
 	row1 := map[string]interface{}{
-		"sender_id":   "s1",
+		"id":          "s1",
 		"name":        "n1",
 		"description": "d1",
 		"type":        "message",
@@ -166,7 +166,7 @@ func (suite *StoreTestSuite) TestListSenders_WithPropertiesStringAndBytes() {
 		"properties":  propsJSON,
 	}
 	row2 := map[string]interface{}{
-		"sender_id":   "s2",
+		"id":          "s2",
 		"name":        "n2",
 		"description": "d2",
 		"type":        "message",
@@ -215,7 +215,7 @@ func (suite *StoreTestSuite) TestListSenders_WithError() {
 
 	// deserialize properties error (invalid JSON)
 	row := map[string]interface{}{
-		"sender_id":   "s1",
+		"id":          "s1",
 		"name":        "n1",
 		"description": "d1",
 		"type":        "message",
@@ -235,7 +235,7 @@ func (suite *StoreTestSuite) TestListSenders_WithError() {
 func (suite *StoreTestSuite) TestGetSenderByID() {
 	// success single row
 	row := map[string]interface{}{
-		"sender_id":   "s1",
+		"id":          "s1",
 		"name":        "n1",
 		"description": "d1",
 		"type":        "message",
@@ -305,7 +305,7 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 			name: "multiple results",
 			setup: func(t *testing.T) {
 				row := map[string]interface{}{
-					"sender_id":   "s1",
+					"id":          "s1",
 					"name":        "n1",
 					"description": "d1",
 					"type":        "message",
@@ -333,7 +333,7 @@ func (suite *StoreTestSuite) TestGetSender_WithError() {
 			name: "deserialize error",
 			setup: func(t *testing.T) {
 				row := map[string]interface{}{
-					"sender_id":   "s1",
+					"id":          "s1",
 					"name":        "n1",
 					"description": "d1",
 					"type":        "message",
@@ -367,7 +367,7 @@ func (suite *StoreTestSuite) TestGetSender_WithProperties() {
 	suite.NoError(err)
 
 	row := map[string]interface{}{
-		"sender_id":   "s1",
+		"id":          "s1",
 		"name":        "n1",
 		"description": "d1",
 		"type":        "message",
@@ -529,7 +529,7 @@ func (suite *StoreTestSuite) TestBuildSenderFromResultRow_WithError() {
 	suite.Error(err)
 
 	// wrong type for sender_id
-	row2 := map[string]interface{}{"sender_id": 123, "name": "n1", "description": "d1",
+	row2 := map[string]interface{}{"id": 123, "name": "n1", "description": "d1",
 		"type": "message", "provider": "p"}
 	_, err = s.buildSenderFromResultRow(row2)
 	suite.Error(err)
@@ -541,25 +541,25 @@ func (suite *StoreTestSuite) TestBuildSenderFromResultRow_MissingFields() {
 	}
 
 	// missing name
-	row := map[string]interface{}{"sender_id": "s1", "description": "d1", "type": "message", "provider": "p"}
+	row := map[string]interface{}{"id": "s1", "description": "d1", "type": "message", "provider": "p"}
 	_, err := s.buildSenderFromResultRow(row)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to parse name")
 
 	// missing description
-	row2 := map[string]interface{}{"sender_id": "s1", "name": "n1", "type": "message", "provider": "p"}
+	row2 := map[string]interface{}{"id": "s1", "name": "n1", "type": "message", "provider": "p"}
 	_, err = s.buildSenderFromResultRow(row2)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to parse description")
 
 	// missing type
-	row3 := map[string]interface{}{"sender_id": "s1", "name": "n1", "description": "d1", "provider": "p"}
+	row3 := map[string]interface{}{"id": "s1", "name": "n1", "description": "d1", "provider": "p"}
 	_, err = s.buildSenderFromResultRow(row3)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to parse type")
 
 	// missing provider
-	row4 := map[string]interface{}{"sender_id": "s1", "name": "n1", "description": "d1", "type": "message"}
+	row4 := map[string]interface{}{"id": "s1", "name": "n1", "description": "d1", "type": "message"}
 	_, err = s.buildSenderFromResultRow(row4)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to parse provider")
@@ -570,7 +570,7 @@ func (suite *StoreTestSuite) TestBuildSenderFromResultRow() {
 		deploymentID: testSenderID,
 	}
 	row := map[string]interface{}{
-		"sender_id":   "sid",
+		"id":          "sid",
 		"name":        "name",
 		"description": "desc",
 		"type":        "message",

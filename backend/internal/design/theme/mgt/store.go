@@ -273,9 +273,9 @@ func (s *themeMgtStore) getTimestamp(row map[string]interface{}, key string) (st
 
 // buildThemeListItemFromResultRow builds a Theme from a database result row (list view).
 func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface{}) (Theme, error) {
-	id, ok := row["theme_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Theme{}, fmt.Errorf("theme_id not found or invalid type")
+		return Theme{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)
@@ -309,9 +309,9 @@ func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface
 
 // buildThemeFromResultRow builds a Theme from a database result row (detail view).
 func (s *themeMgtStore) buildThemeFromResultRow(row map[string]interface{}) (Theme, error) {
-	id, ok := row["theme_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Theme{}, fmt.Errorf("theme_id not found or invalid type")
+		return Theme{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)

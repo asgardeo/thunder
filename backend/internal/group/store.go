@@ -302,7 +302,7 @@ func (s *groupStore) ValidateGroupIDs(ctx context.Context, groupIDs []string) ([
 
 	existingGroupIDs := make(map[string]bool)
 	for _, row := range results {
-		if groupID, ok := row["group_id"].(string); ok {
+		if groupID, ok := row["id"].(string); ok {
 			existingGroupIDs[groupID] = true
 		}
 	}
@@ -383,7 +383,7 @@ func (s *groupStore) GetGroupsByOrganizationUnit(
 	groups := make([]GroupBasicDAO, 0, len(results))
 	for _, result := range results {
 		group := GroupBasicDAO{
-			ID:                 result["group_id"].(string),
+			ID:                 result["id"].(string),
 			OrganizationUnitID: result["ou_id"].(string),
 			Name:               result["name"].(string),
 		}
@@ -430,9 +430,9 @@ func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, mem
 
 // buildGroupFromResultRow constructs a GroupDAO from a database result row.
 func buildGroupFromResultRow(row map[string]interface{}) (GroupDAO, error) {
-	groupID, ok := row["group_id"].(string)
+	groupID, ok := row["id"].(string)
 	if !ok {
-		return GroupDAO{}, fmt.Errorf("failed to parse group_id as string")
+		return GroupDAO{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)
