@@ -16,60 +16,37 @@
  * under the License.
  */
 
-import {useState, useMemo} from 'react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-
-import type {ApiError} from '../types/user-types';
+import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 
 /**
- * Custom hook to delete a user schema (user type)
- * @returns Object containing deleteUserType function, loading state, error, and reset function
+ * Custom React hook to delete a user schema (user type) from the Thunder server.
+ *
+ * @returns TanStack Query mutation object for deleting user types
  */
-export default function useDeleteUserType() {
+export default function useDeleteUserType(): UseMutationResult<void, Error, string> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
-
-  const deleteUserType = async (userTypeId: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  return useMutation<void, Error, string>({
+    mutationFn: async (userTypeId: string): Promise<void> => {
+      const serverUrl: string = getServerUrl();
       await http.request({
-        url: `${API_BASE_URL}/user-schemas/${userTypeId}`,
+        url: `${serverUrl}/user-schemas/${userTypeId}`,
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       } as unknown as Parameters<typeof http.request>[0]);
-
-      setError(null);
-      return true;
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'DELETE_USER_TYPE_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to delete user type',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reset = () => {
-    setError(null);
-  };
-
-  return {
-    deleteUserType,
-    loading,
-    error,
-    reset,
-  };
+    },
+    onSuccess: (_data, userTypeId) => {
+      queryClient.removeQueries({queryKey: [UserTypeQueryKeys.USER_TYPE, userTypeId]});
+      queryClient.invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPES]}).catch(() => {
+        // Ignore invalidation errors
+      });
+    },
+  });
 }

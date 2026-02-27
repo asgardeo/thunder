@@ -24,16 +24,14 @@ import type * as OxygenUI from '@wso2/oxygen-ui';
 import UserTypesList from '../UserTypesList';
 import type useGetUserTypesHook from '../../api/useGetUserTypes';
 import type useDeleteUserTypeHook from '../../api/useDeleteUserType';
-import type {UserSchemaListResponse, ApiError, UserSchemaListItem} from '../../types/user-types';
+import type {UserSchemaListResponse, UserSchemaListItem} from '../../types/user-types';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
 }));
 
 const mockNavigate = vi.fn();
-const mockRefetch = vi.fn<() => Promise<void>>();
-const mockDeleteUserType = vi.fn();
-const mockResetDeleteUserType = vi.fn();
+const mockMutateAsync = vi.fn();
 
 type MockDataGridRow = UserSchemaListItem & Record<string, unknown>;
 
@@ -200,16 +198,15 @@ describe('UserTypesList', () => {
     vi.clearAllMocks();
     mockUseGetUserTypes.mockReturnValue({
       data: mockUserTypesData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: false,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
       error: null,
-      reset: mockResetDeleteUserType,
-    });
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useDeleteUserTypeHook>);
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
       isLoading: false,
@@ -251,10 +248,9 @@ describe('UserTypesList', () => {
         ...mockUserTypesData,
         schemas: [{...mockUserTypesData.schemas[0], ouId: ''}],
       },
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -263,11 +259,10 @@ describe('UserTypesList', () => {
 
   it('displays loading state', () => {
     mockUseGetUserTypes.mockReturnValue({
-      data: null,
-      loading: true,
+      data: undefined,
+      isLoading: true,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -275,18 +270,13 @@ describe('UserTypesList', () => {
   });
 
   it('displays error in snackbar', async () => {
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load user types',
-      description: 'Error description',
-    };
+    const error = new Error('Failed to load user types');
 
     mockUseGetUserTypes.mockReturnValue({
-      data: null,
-      loading: false,
+      data: undefined,
+      isLoading: false,
       error,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -350,7 +340,7 @@ describe('UserTypesList', () => {
 
   it('deletes user type when confirmed', async () => {
     const user = userEvent.setup();
-    mockDeleteUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     render(<UserTypesList />);
 
@@ -365,25 +355,20 @@ describe('UserTypesList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUserType).toHaveBeenCalledWith('schema1');
-      expect(mockRefetch).toHaveBeenCalled();
+      expect(mockMutateAsync).toHaveBeenCalledWith('schema1');
     });
   });
 
   it('displays delete error in dialog', async () => {
     const user = userEvent.setup();
-    const deleteError: ApiError = {
-      code: 'DELETE_ERROR',
-      message: 'Failed to delete',
-      description: 'Cannot delete user type',
-    };
+    const deleteError = new Error('Failed to delete');
 
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: false,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
       error: deleteError,
-      reset: mockResetDeleteUserType,
-    });
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useDeleteUserTypeHook>);
 
     render(<UserTypesList />);
 
@@ -392,7 +377,6 @@ describe('UserTypesList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Failed to delete')).toBeInTheDocument();
-      expect(screen.getByText('Cannot delete user type')).toBeInTheDocument();
     });
   });
 
@@ -412,18 +396,13 @@ describe('UserTypesList', () => {
 
   it('closes snackbar when close button is clicked', async () => {
     const user = userEvent.setup();
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load user types',
-      description: 'Error description',
-    };
+    const error = new Error('Failed to load user types');
 
     mockUseGetUserTypes.mockReturnValue({
-      data: null,
-      loading: false,
+      data: undefined,
+      isLoading: false,
       error,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -442,11 +421,11 @@ describe('UserTypesList', () => {
   it('displays deleting state on confirm button', async () => {
     const user = userEvent.setup();
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: true,
+      mutateAsync: mockMutateAsync,
+      isPending: true,
       error: null,
-      reset: mockResetDeleteUserType,
-    });
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useDeleteUserTypeHook>);
 
     render(<UserTypesList />);
 
@@ -466,10 +445,9 @@ describe('UserTypesList', () => {
         count: 0,
         schemas: [],
       },
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -478,9 +456,9 @@ describe('UserTypesList', () => {
     expect(grid).toHaveAttribute('data-loading', 'false');
   });
 
-  it('closes delete dialog on delete error', async () => {
+  it('keeps delete dialog open on delete error', async () => {
     const user = userEvent.setup();
-    mockDeleteUserType.mockRejectedValue(new Error('Delete failed'));
+    mockMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
     render(<UserTypesList />);
 
@@ -495,23 +473,17 @@ describe('UserTypesList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUserType).toHaveBeenCalledWith('schema1');
-      // Dialog should be closed on error
-      expect(screen.queryByText('Delete User Type')).not.toBeInTheDocument();
+      expect(mockMutateAsync).toHaveBeenCalledWith('schema1');
+      // Dialog stays open so user can see error and retry
+      expect(screen.getByText('Delete User Type')).toBeInTheDocument();
     });
   });
 
   it('displays error from organization units in snackbar', async () => {
-    const orgError: ApiError = {
-      code: 'ORG_ERROR',
-      message: 'Failed to load organization units',
-      description: 'Error description',
-    };
-
     mockUseGetOrganizationUnits.mockReturnValue({
       data: undefined,
       isLoading: false,
-      error: new Error(orgError.message),
+      error: new Error('Failed to load organization units'),
       refetch: mockRefetchOrganizationUnits,
     });
 
