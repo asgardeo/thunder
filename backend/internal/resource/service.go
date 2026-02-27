@@ -57,6 +57,7 @@ type ResourceServiceInterface interface {
 		ctx context.Context, id string, rs ResourceServer,
 	) (*ResourceServer, *serviceerror.ServiceError)
 	DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError
+	IsResourceServerDeclarative(id string) bool
 
 	// Resource operations
 	CreateResource(ctx context.Context, resourceServerID string, res Resource) (*Resource, *serviceerror.ServiceError)
@@ -277,6 +278,18 @@ func (rs *resourceService) UpdateResourceServer(
 		return nil, &serviceerror.InternalServerError
 	}
 
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(id) {
+		rs.logger.Debug("Cannot modify declarative resource server", log.String("id", id))
+		errorMsg := fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription, id)
+		return nil, &serviceerror.ServiceError{
+			Type:             ErrorImmutableResourceServer.Type,
+			Code:             ErrorImmutableResourceServer.Code,
+			Error:            ErrorImmutableResourceServer.Error,
+			ErrorDescription: errorMsg,
+		}
+	}
+
 	// Preserve the immutable delimiter from existing record
 	resourceServer.Delimiter = existingResServer.Delimiter
 
@@ -344,6 +357,18 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 		return &ErrorMissingID
 	}
 
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(id) {
+		rs.logger.Debug("Cannot delete declarative resource server", log.String("id", id))
+		errorMsg := fmt.Sprintf(ErrorImmutableResourceServer.ErrorDescription, id)
+		return &serviceerror.ServiceError{
+			Type:             ErrorImmutableResourceServer.Type,
+			Code:             ErrorImmutableResourceServer.Code,
+			Error:            ErrorImmutableResourceServer.Error,
+			ErrorDescription: errorMsg,
+		}
+	}
+
 	_, err := rs.resourceStore.GetResourceServer(ctx, id)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
@@ -377,9 +402,14 @@ func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) 
 	return nil
 }
 
-// Resource Methods
+// IsResourceServerDeclarative checks if a resource server is declarative (immutable).
+func (rs *resourceService) IsResourceServerDeclarative(id string) bool {
+	return rs.resourceStore.IsResourceServerDeclarative(id)
+}
 
-// CreateResource creates a new resource.
+// Resource operations
+
+// CreateResource creates a new resource under a resource server.
 func (rs *resourceService) CreateResource(
 	ctx context.Context,
 	resourceServerID string, resource Resource,
@@ -543,6 +573,21 @@ func (rs *resourceService) UpdateResource(
 		return nil, &ErrorMissingID
 	}
 
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(resourceServerID) {
+		rs.logger.Debug(
+			"Cannot modify resource in declarative resource server",
+			log.String("resource_server_id", resourceServerID),
+		)
+		errorMsg := fmt.Sprintf(ErrorImmutableResource.ErrorDescription, id)
+		return nil, &serviceerror.ServiceError{
+			Type:             ErrorImmutableResource.Type,
+			Code:             ErrorImmutableResource.Code,
+			Error:            ErrorImmutableResource.Error,
+			ErrorDescription: errorMsg,
+		}
+	}
+
 	// Validate resource server exists
 	_, svcErr := rs.validateAndGetResourceServer(ctx, resourceServerID)
 	if svcErr != nil {
@@ -595,6 +640,21 @@ func (rs *resourceService) UpdateResource(
 func (rs *resourceService) DeleteResource(ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError {
 	if id == "" || resourceServerID == "" {
 		return &ErrorMissingID
+	}
+
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(resourceServerID) {
+		rs.logger.Debug(
+			"Cannot delete resource in declarative resource server",
+			log.String("resource_server_id", resourceServerID),
+		)
+		errorMsg := fmt.Sprintf(ErrorImmutableResource.ErrorDescription, id)
+		return &serviceerror.ServiceError{
+			Type:             ErrorImmutableResource.Type,
+			Code:             ErrorImmutableResource.Code,
+			Error:            ErrorImmutableResource.Error,
+			ErrorDescription: errorMsg,
+		}
 	}
 
 	// Validate resource server exists
@@ -837,6 +897,15 @@ func (rs *resourceService) UpdateAction(
 		return nil, &ErrorMissingID
 	}
 
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(resourceServerID) {
+		return nil, &ErrorImmutableAction
+	}
+
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(resourceServerID) {
+		return nil, &ErrorImmutableAction
+	}
 	// Validate resource server exists
 	_, svcErr := rs.validateAndGetResourceServer(ctx, resourceServerID)
 	if svcErr != nil {
@@ -907,6 +976,21 @@ func (rs *resourceService) DeleteAction(
 
 	if resourceID != nil && *resourceID == "" {
 		return &ErrorMissingID
+	}
+
+	// Check if resource server is declarative (immutable)
+	if rs.IsResourceServerDeclarative(resourceServerID) {
+		rs.logger.Debug(
+			"Cannot delete action in declarative resource server",
+			log.String("resource_server_id", resourceServerID),
+		)
+		errorMsg := fmt.Sprintf(ErrorImmutableAction.ErrorDescription, id)
+		return &serviceerror.ServiceError{
+			Type:             ErrorImmutableAction.Type,
+			Code:             ErrorImmutableAction.Code,
+			Error:            ErrorImmutableAction.Error,
+			ErrorDescription: errorMsg,
+		}
 	}
 
 	// Validate resource server exists

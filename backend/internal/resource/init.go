@@ -19,33 +19,77 @@
 package resource
 
 import (
+	"fmt"
 	"net/http"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the resource service and registers its routes.
+// Returns the service interface and resource server exporter for declarative resource export functionality.
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-) (ResourceServiceInterface, error) {
-	resourceStore := newResourceStore()
+) (ResourceServiceInterface, declarativeresource.ResourceExporter, error) {
+	// Initialize store based on configuration
+	resourceStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to initialize resource store: %w", err)
+	}
 
 	// Get transactioner from DB provider
 	transactioner, err := provider.GetDBProvider().GetConfigDBTransactioner()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	resourceService, err := newResourceService(ouService, resourceStore, transactioner)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	// Load declarative resources if applicable (declarative or composite mode)
+	storeMode := getResourceStoreMode()
+	if storeMode == serverconst.StoreModeDeclarative || storeMode == serverconst.StoreModeComposite {
+		if err := loadDeclarativeResources(resourceStore, resourceService); err != nil {
+			return nil, nil, fmt.Errorf("failed to load declarative resources: %w", err)
+		}
+	}
+
+	// Create exporter for declarative resource export functionality
+	exporter := newResourceServerExporter(resourceService)
+
 	resourceHandler := newResourceHandler(resourceService)
 	registerRoutes(mux, resourceHandler)
-	return resourceService, nil
+
+	return resourceService, exporter, nil
+}
+
+// initializeStore creates and initializes the appropriate store based on configuration.
+func initializeStore() (resourceStoreInterface, error) {
+	storeMode := getResourceStoreMode()
+	switch storeMode {
+	case serverconst.StoreModeMutable:
+		// Mutable mode: use database store only
+		return newResourceStore(), nil
+	case serverconst.StoreModeDeclarative:
+		// Declarative mode: use file-based store only
+		return newFileBasedResourceStore()
+	case serverconst.StoreModeComposite:
+		// Composite mode: use both file-based and database stores
+		fileStore, err := newFileBasedResourceStore()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create file-based store: %w", err)
+		}
+		dbStore := newResourceStore()
+		return newCompositeResourceStore(fileStore, dbStore), nil
+	default:
+		return nil, fmt.Errorf("unsupported store mode: %s", storeMode)
+	}
 }
 
 // registerRoutes registers all routes for the resource management API.

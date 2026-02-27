@@ -37,9 +37,8 @@ var (
 
 const (
 	// Test constants for IDs and pagination
-	testResourceServerInternalID = 5
-	testLimit                    = 10
-	testOffset                   = 0
+	testLimit  = 10
+	testOffset = 0
 )
 
 // ResourceStoreTestSuite is the test suite for resourceStore.
@@ -967,7 +966,7 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 				Handle:      "test-handle",
 				Description: "Test Description",
 				Permission:  "perm:read",
-				Parent:      func() *string { p := testParentID1; return &p }(),
+				Parent:      &testParentID1,
 			},
 			shouldErr: false,
 		},
@@ -1018,6 +1017,8 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 				if tc.expectedResource.Parent != nil {
 					suite.NotNil(res.Parent)
 					suite.Equal(*tc.expectedResource.Parent, *res.Parent)
+				} else {
+					suite.Nil(res.Parent)
 				}
 			}
 		})
@@ -3625,6 +3626,84 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 				suite.NoError(err)
 				suite.Equal(tc.expectedInvalid, invalidPerms)
 			}
+		})
+	}
+}
+
+// TestIsResourceServerDeclarative tests that database store always returns false
+func (suite *ResourceStoreTestSuite) TestIsResourceServerDeclarative() {
+	testCases := []struct {
+		name       string
+		resourceID string
+		expected   bool
+	}{
+		{
+			name:       "DatabaseStoreIsNotDeclarative_RS1",
+			resourceID: "rs1",
+			expected:   false,
+		},
+		{
+			name:       "DatabaseStoreIsNotDeclarative_RS2",
+			resourceID: "rs2",
+			expected:   false,
+		},
+		{
+			name:       "DatabaseStoreIsNotDeclarative_AnyID",
+			resourceID: "any-resource-server-id",
+			expected:   false,
+		},
+		{
+			name:       "DatabaseStoreIsNotDeclarative_EmptyID",
+			resourceID: "",
+			expected:   false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result := suite.store.IsResourceServerDeclarative(tc.resourceID)
+			suite.Equal(tc.expected, result)
+		})
+	}
+}
+
+// TestBuildPropertiesJSONFunction tests the buildPropertiesJSON function
+// This is a helper function test that constructs JSON properties from a ResourceServer
+func (suite *ResourceStoreTestSuite) TestBuildPropertiesJSONFunction() {
+	testCases := []struct {
+		name           string
+		resourceServer ResourceServer
+	}{
+		{
+			name: "Success_SlashDelimiter",
+			resourceServer: ResourceServer{
+				Delimiter: "/",
+			},
+		},
+		{
+			name: "Success_ColonDelimiter",
+			resourceServer: ResourceServer{
+				Delimiter: ":",
+			},
+		},
+		{
+			name: "Success_DotDelimiter",
+			resourceServer: ResourceServer{
+				Delimiter: ".",
+			},
+		},
+		{
+			name: "Success_EmptyDelimiter",
+			resourceServer: ResourceServer{
+				Delimiter: "",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result := buildPropertiesJSON(tc.resourceServer)
+			suite.NotNil(result)
 		})
 	}
 }
