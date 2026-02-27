@@ -110,11 +110,7 @@ components:
           type: string
           description: Authentication token
         requestedAttributes:
-          type: array
-          maxItems: 100
-          items:
-            type: string
-          description: List of requested attribute names
+          $ref: '#/components/schemas/RequestedAttributes'
         metadata:
           $ref: '#/components/schemas/GetAttributesMetadata'
       required:
@@ -151,27 +147,11 @@ components:
         token:
           type: string
         availableAttributes:
-          type: array
-          items:
-            $ref: '#/components/schemas/AvailableAttribute'
+          $ref: '#/components/schemas/AvailableAttributes'
       required:
         - userId
         - userType
         - ouId
-
-    AvailableAttribute:
-      type: object
-      properties:
-        name:
-          type: string
-        displayName:
-          type: string
-        verified:
-          type: boolean
-      required:
-        - name
-        - displayName
-        - verified
 
     GetAttributesResult:
       type: object
@@ -182,14 +162,143 @@ components:
           type: string
         ouId:
           type: string
-        attributes:
-          type: object
-          additionalProperties: true
-          description: Map of user attributes
+        attributeResponse:
+          $ref: '#/components/schemas/AttributesResponse'
       required:
         - userId
         - userType
         - ouId
+
+    AvailableAttributes:
+      type: object
+      properties:
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AttributeMetadataResponse'
+          description: Map of attribute names to their metadata
+        verifications:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/VerificationResponse'
+          description: Map of verification IDs to verification details
+
+    AttributeMetadataResponse:
+      type: object
+      properties:
+        assuranceMetadataResponse:
+          $ref: '#/components/schemas/AssuranceMetadataResponse'
+
+    AssuranceMetadataResponse:
+      type: object
+      properties:
+        isVerified:
+          type: boolean
+          description: Whether the attribute is verified
+        verificationId:
+          type: string
+          description: Key of the corresponding verification response in the verifications map
+
+    VerificationResponse:
+      type: object
+      properties:
+        trustFramework:
+          type: string
+          description: Trust framework used for verification
+        time:
+          type: string
+          description: Time of verification
+        verificationProcess:
+          type: string
+          description: Verification process used
+
+    RequestedAttributes:
+      type: object
+      properties:
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AttributeMetadataRequest'
+          description: Map of attribute names to their request metadata
+        verifications:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/VerificationRequest'
+          description: Map of verification IDs to verification requests
+
+    AttributeMetadataRequest:
+      type: object
+      properties:
+        genericMetadataRequest:
+          $ref: '#/components/schemas/GenericMetadataRequest'
+        assuranceMetadataRequest:
+          $ref: '#/components/schemas/AssuranceMetadataRequest'
+
+    GenericMetadataRequest:
+      type: object
+      properties:
+        essential:
+          type: boolean
+          description: Whether this claim is essential
+        value:
+          type: string
+          description: Specific value requested
+        values:
+          type: array
+          items:
+            type: string
+          description: List of acceptable values
+
+    GenericTimeMetadataRequest:
+      allOf:
+        - $ref: '#/components/schemas/GenericMetadataRequest'
+        - type: object
+          properties:
+            maxAge:
+              type: integer
+              description: Maximum age in seconds
+
+    AssuranceMetadataRequest:
+      type: object
+      properties:
+        shouldVerify:
+          type: boolean
+          description: Whether verification is requested
+        verificationId:
+          type: string
+          description: Key of the corresponding verification request in the verifications map
+
+    VerificationRequest:
+      type: object
+      properties:
+        trustFramework:
+          $ref: '#/components/schemas/GenericMetadataRequest'
+        verificationProcess:
+          $ref: '#/components/schemas/GenericMetadataRequest'
+        time:
+          $ref: '#/components/schemas/GenericTimeMetadataRequest'
+
+    AttributesResponse:
+      type: object
+      properties:
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AttributeResponse'
+          description: Map of attribute names to their values and metadata
+        verifications:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/VerificationResponse'
+          description: Map of verification IDs to verification details
+
+    AttributeResponse:
+      type: object
+      properties:
+        value:
+          description: The attribute value
+        assuranceMetadataResponse:
+          $ref: '#/components/schemas/AssuranceMetadataResponse'
 
     ErrorCode:
       type: string

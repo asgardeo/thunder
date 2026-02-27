@@ -168,12 +168,14 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "username", DisplayName: "username", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"username": {},
+			},
 		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
@@ -216,12 +218,14 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+			},
 		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		"email": "test@example.com",
 	}, map[string]interface{}{
 		"password": "password123",
@@ -291,13 +295,15 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "phone", DisplayName: "phone", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+				"phone": {},
+			},
 		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		"email": "test@example.com",
 		"phone": "+1234567890",
 	}, map[string]interface{}{
@@ -344,7 +350,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "wrongpassword",
@@ -375,7 +381,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 	}
 
 	// Authenticate internally calls IdentifyUser and returns user not found error
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "nonexistent",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
@@ -432,7 +438,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 	}
 
 	// Authenticate returns a server error (e.g., database error)
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
@@ -460,7 +466,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockCredsService.On("Authenticate", mock.Anything, mock.Anything, mock.Anything).
+	suite.mockCredsService.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Error: "internal server error",
@@ -494,13 +500,15 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "phone", DisplayName: "phone", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+				"phone": {},
+			},
 		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
@@ -517,8 +525,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	assert.Equal(suite.T(), testUserID, result.UserID)
 	assert.Equal(suite.T(), "ou-123", result.OrganizationUnitID)
 	assert.Equal(suite.T(), "person", result.UserType)
-	assert.Equal(suite.T(), "email", result.AvailableAttributes[0].Name)
-	assert.Equal(suite.T(), "phone", result.AvailableAttributes[1].Name)
+	assert.Contains(suite.T(), result.AvailableAttributes.Attributes, "email")
+	assert.Contains(suite.T(), result.AvailableAttributes.Attributes, "phone")
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -541,14 +549,16 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "username", DisplayName: "username", Verified: true},
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "role", DisplayName: "role", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"username": {},
+				"email":    {},
+				"role":     {},
+			},
 		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
@@ -595,13 +605,15 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "phone", DisplayName: "phone", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+				"phone": {},
+			},
 		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",
@@ -692,7 +704,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_RetryableAuthenticationErro
 				RuntimeData: make(map[string]string),
 			}
 
-			suite.mockCredsService.On("Authenticate", map[string]interface{}{
+			suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 				userAttributeUsername: tt.username,
 			}, map[string]interface{}{
 				userAttributePassword: tt.password,
@@ -728,7 +740,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_Re
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}, map[string]interface{}{
 		userAttributePassword: "password123",

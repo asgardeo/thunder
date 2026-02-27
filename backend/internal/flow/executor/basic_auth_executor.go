@@ -180,7 +180,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// For authentication flows, call Authenticate directly.
 	metadata := b.buildAuthnMetadata(ctx)
-	authnResult, svcErr := b.credsAuthSvc.Authenticate(userIdentifiers, userCredentials, metadata)
+	authnResult, svcErr := b.credsAuthSvc.Authenticate(ctx.Context, userIdentifiers, userCredentials, metadata)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecUserInputRequired

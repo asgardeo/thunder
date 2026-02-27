@@ -111,7 +111,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", identifiers, credentials, false, "").Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
+		false, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -145,7 +146,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		OrganizationUnit: "test-ou",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", identifiers, credentials, true, "").Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
+		true, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -181,8 +183,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		Assertion:        "updated.jwt.token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", identifiers, credentials, false, existingAssertion).
-		Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
+		false, existingAssertion).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -291,8 +293,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			m := NewAuthenticationServiceInterfaceMock(t)
-			m.On("AuthenticateWithCredentials", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-				Return(nil, tc.serviceError)
+			m.On("AuthenticateWithCredentials", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+				mock.Anything).Return(nil, tc.serviceError)
 			h := &authenticationHandler{authService: m}
 
 			body, _ := json.Marshal(tc.authRequest)
