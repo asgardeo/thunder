@@ -40,6 +40,7 @@ type layoutMgtStoreInterface interface {
 	UpdateLayout(id string, layout UpdateLayoutRequest) error
 	DeleteLayout(id string) error
 	GetApplicationsCountByLayoutID(id string) (int, error)
+	IsLayoutDeclarative(id string) bool
 }
 
 // layoutMgtStore is the default implementation of layoutMgtStoreInterface.
@@ -210,6 +211,11 @@ func (s *layoutMgtStore) GetApplicationsCountByLayoutID(id string) (int, error) 
 	}
 
 	return parseCountResult(results)
+}
+
+// IsLayoutDeclarative checks if a layout is immutable (in database store, all layouts are mutable).
+func (s *layoutMgtStore) IsLayoutDeclarative(id string) bool {
+	return false
 }
 
 // getIdentityDBClient retrieves the identity database client.

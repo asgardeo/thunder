@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 // Test Suite
@@ -40,6 +42,18 @@ func TestThemeServiceTestSuite(t *testing.T) {
 }
 
 func (suite *ThemeServiceTestSuite) SetupTest() {
+	// Initialize config runtime with default values
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	if err != nil {
+		suite.Fail("Failed to initialize runtime", err)
+	}
+
 	suite.mockStore = newThemeMgtStoreInterfaceMock(suite.T())
 	suite.service = newThemeMgtService(suite.mockStore)
 }
@@ -146,6 +160,24 @@ func (suite *ThemeServiceTestSuite) TestCreateTheme_MissingDisplayName() {
 	assert.Equal(suite.T(), "THM-1005", err.Code)
 }
 
+// Test CreateTheme - Declarative mode enabled
+func (suite *ThemeServiceTestSuite) TestCreateTheme_DeclarativeModeEnabled() {
+	runtime := config.GetThunderRuntime()
+	runtime.Config.Theme.Store = "declarative"
+
+	themeRequest := CreateThemeRequest{
+		DisplayName: "Declarative Theme",
+		Description: "Should be blocked",
+		Theme:       json.RawMessage(`{"colors": {"primary": "#ff0000"}}`),
+	}
+
+	result, err := suite.service.CreateTheme(themeRequest)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), "THM-1014", err.Code)
+}
+
 // Test CreateTheme - Invalid Theme JSON
 func (suite *ThemeServiceTestSuite) TestCreateTheme_InvalidJSON() {
 	themeRequest := CreateThemeRequest{
@@ -234,6 +266,7 @@ func (suite *ThemeServiceTestSuite) TestUpdateTheme_Success() {
 		Theme:       json.RawMessage(`{"colors": {"primary": "#00ff00"}}`),
 	}
 
+	suite.mockStore.On("IsThemeDeclarative", "theme-123").Return(false)
 	suite.mockStore.On("IsThemeExist", "theme-123").Return(true, nil)
 	suite.mockStore.On("UpdateTheme", "theme-123", updateRequest).Return(nil)
 
@@ -283,6 +316,7 @@ func (suite *ThemeServiceTestSuite) TestUpdateTheme_NotFound() {
 		Theme:       json.RawMessage(`{"colors": {}}`),
 	}
 
+	suite.mockStore.On("IsThemeDeclarative", "non-existent").Return(false)
 	suite.mockStore.On("IsThemeExist", "non-existent").Return(false, nil)
 
 	result, err := suite.service.UpdateTheme("non-existent", updateRequest)
@@ -299,7 +333,7 @@ func (suite *ThemeServiceTestSuite) TestUpdateTheme_InvalidJSON() {
 		Description: "A theme",
 		Theme:       json.RawMessage(`{invalid}`),
 	}
-
+	suite.mockStore.On("IsThemeDeclarative", "theme-123").Return(false)
 	result, err := suite.service.UpdateTheme("theme-123", updateRequest)
 
 	assert.Nil(suite.T(), result)
@@ -309,6 +343,7 @@ func (suite *ThemeServiceTestSuite) TestUpdateTheme_InvalidJSON() {
 
 // Test DeleteTheme - Success
 func (suite *ThemeServiceTestSuite) TestDeleteTheme_Success() {
+	suite.mockStore.On("IsThemeDeclarative", "theme-123").Return(false)
 	suite.mockStore.On("IsThemeExist", "theme-123").Return(true, nil)
 	suite.mockStore.On("GetApplicationsCountByThemeID", "theme-123").Return(0, nil)
 	suite.mockStore.On("DeleteTheme", "theme-123").Return(nil)
@@ -328,6 +363,7 @@ func (suite *ThemeServiceTestSuite) TestDeleteTheme_InvalidID() {
 
 // Test DeleteTheme - Not Found (idempotent delete returns success)
 func (suite *ThemeServiceTestSuite) TestDeleteTheme_NotFound() {
+	suite.mockStore.On("IsThemeDeclarative", "non-existent").Return(false)
 	suite.mockStore.On("IsThemeExist", "non-existent").Return(false, nil)
 
 	err := suite.service.DeleteTheme("non-existent")
@@ -337,6 +373,7 @@ func (suite *ThemeServiceTestSuite) TestDeleteTheme_NotFound() {
 
 // Test DeleteTheme - Theme In Use
 func (suite *ThemeServiceTestSuite) TestDeleteTheme_InUse() {
+	suite.mockStore.On("IsThemeDeclarative", "theme-123").Return(false)
 	suite.mockStore.On("IsThemeExist", "theme-123").Return(true, nil)
 	suite.mockStore.On("GetApplicationsCountByThemeID", "theme-123").Return(3, nil)
 
@@ -348,6 +385,7 @@ func (suite *ThemeServiceTestSuite) TestDeleteTheme_InUse() {
 
 // Test DeleteTheme - Store Error
 func (suite *ThemeServiceTestSuite) TestDeleteTheme_StoreError() {
+	suite.mockStore.On("IsThemeDeclarative", "theme-123").Return(false)
 	suite.mockStore.On("IsThemeExist", "theme-123").Return(true, nil)
 	suite.mockStore.On("GetApplicationsCountByThemeID", "theme-123").Return(0, nil)
 	suite.mockStore.On("DeleteTheme", "theme-123").Return(errors.New("database error"))

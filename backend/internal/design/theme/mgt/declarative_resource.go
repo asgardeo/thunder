@@ -56,17 +56,34 @@ func (e *themeExporter) GetParameterizerType() string {
 	return paramTypeTheme
 }
 
-// GetAllResourceIDs retrieves all theme IDs.
+// GetAllResourceIDs retrieves all theme IDs from the database store.
+// In composite mode, this excludes declarative (YAML-based) themes.
 func (e *themeExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
-	themeList, err := e.service.GetThemeList(100, 0) // Get a large number to fetch all
-	if err != nil {
-		return nil, err
+	const pageSize = 100
+	var allIDs []string
+	offset := 0
+
+	for {
+		themeList, err := e.service.GetThemeList(pageSize, offset)
+		if err != nil {
+			return nil, err
+		}
+
+		// Accumulate IDs from this page
+		for _, theme := range themeList.Themes {
+			allIDs = append(allIDs, theme.ID)
+		}
+
+		// Stop if we got fewer items than requested (last page)
+		if themeList.Count < pageSize {
+			break
+		}
+
+		// Move to next page
+		offset += pageSize
 	}
-	ids := make([]string, 0, len(themeList.Themes))
-	for _, theme := range themeList.Themes {
-		ids = append(ids, theme.ID)
-	}
-	return ids, nil
+
+	return allIDs, nil
 }
 
 // GetResourceByID retrieves a theme by its ID.
@@ -110,18 +127,21 @@ func (e *themeExporter) GetResourceRules() *declarativeresource.ResourceRules {
 }
 
 // loadDeclarativeResources loads declarative theme resources from files.
-func loadDeclarativeResources(themeStore themeMgtStoreInterface) error {
+// The dbStore parameter is optional (can be nil) and is used for duplicate checking in composite mode.
+func loadDeclarativeResources(fileStore themeMgtStoreInterface, dbStore themeMgtStoreInterface) error {
 	// Type assert to access Storer interface for resource loading
-	fileBasedStore, ok := themeStore.(*themeFileBasedStore)
+	fileBasedStore, ok := fileStore.(*themeFileBasedStore)
 	if !ok {
-		return fmt.Errorf("failed to assert themeStore to *themeFileBasedStore")
+		return fmt.Errorf("failed to assert fileStore to *themeFileBasedStore")
 	}
 
 	resourceConfig := declarativeresource.ResourceConfig{
 		ResourceType:  "Theme",
 		DirectoryName: "themes",
 		Parser:        parseToThemeWrapper,
-		Validator:     validateThemeWrapper,
+		Validator: func(data interface{}) error {
+			return validateThemeWrapper(data, dbStore)
+		},
 		IDExtractor: func(data interface{}) string {
 			if theme, ok := data.(*Theme); ok {
 				return theme.ID
@@ -183,12 +203,30 @@ func parseToTheme(data []byte) (*Theme, error) {
 }
 
 // validateThemeWrapper wraps validateThemeForDeclarativeResource to match ResourceConfig.Validator signature.
-func validateThemeWrapper(dto interface{}) error {
+// It also checks for duplicates across database stores in composite mode.
+func validateThemeWrapper(dto interface{}, dbStore themeMgtStoreInterface) error {
 	theme, ok := dto.(*Theme)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *Theme")
 	}
-	return validateThemeForDeclarativeResource(theme)
+
+	// Basic validation
+	if err := validateThemeForDeclarativeResource(theme); err != nil {
+		return err
+	}
+
+	// In composite mode, check for duplicates in database store
+	if dbStore != nil {
+		exists, err := dbStore.IsThemeExist(theme.ID)
+		if err != nil {
+			return fmt.Errorf("failed to check for duplicate theme ID '%s': %w", theme.ID, err)
+		}
+		if exists {
+			return fmt.Errorf("theme with ID '%s' already exists in database", theme.ID)
+		}
+	}
+
+	return nil
 }
 
 // validateThemeForDeclarativeResource validates a theme for declarative resource loading.

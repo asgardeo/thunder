@@ -140,6 +140,11 @@ func (f *layoutFileBasedStore) GetApplicationsCountByLayoutID(id string) (int, e
 	return 0, nil
 }
 
+// IsLayoutDeclarative checks if a layout is immutable (in file-based store, all layouts are immutable).
+func (f *layoutFileBasedStore) IsLayoutDeclarative(id string) bool {
+	return true
+}
+
 // newLayoutFileBasedStore creates a new instance of a file-based store.
 func newLayoutFileBasedStore() layoutMgtStoreInterface {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeLayout)

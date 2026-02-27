@@ -18,7 +18,11 @@
 
 package layoutmgt
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"errors"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
 
 var (
 	// ErrorInvalidLayoutData is returned when invalid layout data is provided.
@@ -116,4 +120,45 @@ var (
 		Error:            "Invalid offset",
 		ErrorDescription: "Offset must be a valid integer",
 	}
+
+	// ErrorCannotUpdateDeclarativeLayout is returned when attempting to update a declarative layout.
+	ErrorCannotUpdateDeclarativeLayout = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "LAY-1013",
+		Error:            "Cannot update declarative layout",
+		ErrorDescription: "Layout is defined in declarative resources and cannot be modified",
+	}
+
+	// ErrorCannotDeleteDeclarativeLayout is returned when attempting to delete a declarative layout.
+	ErrorCannotDeleteDeclarativeLayout = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "LAY-1014",
+		Error:            "Cannot delete declarative layout",
+		ErrorDescription: "Layout is defined in declarative resources and cannot be deleted",
+	}
+
+	// ErrorResultLimitExceededInCompositeMode is returned when composite store result count exceeds max limit.
+	ErrorResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "LAY-5001",
+		Error:            "Result limit exceeded",
+		ErrorDescription: "Total count of layouts exceeds maximum allowed limit in composite mode",
+	}
+
+	// ErrorCannotModifyDeclarativeResource is returned when attempting to modify a declarative layout.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "LAY-1015",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The layout is declarative and cannot be modified or deleted",
+	}
 )
+
+// errCannotUpdateDeclarativeLayout is an internal error for composite store operations.
+var errCannotUpdateDeclarativeLayout = errors.New("cannot update declarative layout")
+
+// errCannotDeleteDeclarativeLayout is an internal error for composite store operations.
+var errCannotDeleteDeclarativeLayout = errors.New("cannot delete declarative layout")
+
+// errResultLimitExceededInCompositeMode is returned when composite store result count exceeds max limit.
+var errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")

@@ -140,6 +140,11 @@ func (f *themeFileBasedStore) GetApplicationsCountByThemeID(id string) (int, err
 	return 0, nil
 }
 
+// IsThemeDeclarative checks if a theme is immutable (in file-based store, all themes are immutable).
+func (f *themeFileBasedStore) IsThemeDeclarative(id string) bool {
+	return true
+}
+
 // newThemeFileBasedStore creates a new instance of a file-based store.
 func newThemeFileBasedStore() themeMgtStoreInterface {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeTheme)

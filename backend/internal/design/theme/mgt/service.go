@@ -94,6 +94,11 @@ func (ts *themeMgtService) CreateTheme(theme CreateThemeRequest) (*Theme, *servi
 		return nil, &ErrorMissingDisplayName
 	}
 
+	// Check if store is in pure declarative mode
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
 	if err := ts.validateThemePreferences(theme.Theme); err != nil {
 		return nil, err
 	}
@@ -154,6 +159,11 @@ func (ts *themeMgtService) UpdateTheme(id string, theme UpdateThemeRequest) (*Th
 		return nil, &ErrorMissingDisplayName
 	}
 
+	// Check if the theme is declarative (read-only)
+	if ts.themeMgtStore.IsThemeDeclarative(id) {
+		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
 	if err := ts.validateThemePreferences(theme.Theme); err != nil {
 		return nil, err
 	}
@@ -191,6 +201,11 @@ func (ts *themeMgtService) DeleteTheme(id string) *serviceerror.ServiceError {
 
 	if id == "" {
 		return &ErrorInvalidThemeID
+	}
+
+	// Check if the theme is declarative (read-only)
+	if ts.themeMgtStore.IsThemeDeclarative(id) {
+		return &ErrorCannotModifyDeclarativeResource
 	}
 
 	// Check if theme exists. Return success for non-existing themes (idempotent delete).

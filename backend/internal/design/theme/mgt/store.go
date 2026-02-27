@@ -40,6 +40,7 @@ type themeMgtStoreInterface interface {
 	UpdateTheme(id string, theme UpdateThemeRequest) error
 	DeleteTheme(id string) error
 	GetApplicationsCountByThemeID(id string) (int, error)
+	IsThemeDeclarative(id string) bool
 }
 
 // themeMgtStore is the default implementation of themeMgtStoreInterface.
@@ -210,6 +211,11 @@ func (s *themeMgtStore) GetApplicationsCountByThemeID(id string) (int, error) {
 	}
 
 	return parseCountResult(results)
+}
+
+// IsThemeDeclarative checks if a theme is immutable (in database store, all themes are mutable).
+func (s *themeMgtStore) IsThemeDeclarative(id string) bool {
+	return false
 }
 
 // getIdentityDBClient retrieves the identity database client.
