@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -100,6 +101,74 @@ func (s *FlowStoreTestSuite) TestListFlowsQueryError() {
 	s.Nil(flows)
 }
 
+func (s *FlowStoreTestSuite) TestListFlowsSuccess() {
+	flowsData := []map[string]interface{}{
+		{
+			colFlowID:        "flow-1",
+			colHandle:        "handle-1",
+			colName:          "Flow 1",
+			colFlowType:      string(common.FlowTypeAuthentication),
+			colActiveVersion: int64(1),
+			colCreatedAt:     "2025-01-01T00:00:00Z",
+			colUpdatedAt:     "2025-01-01T00:00:00Z",
+		},
+		{
+			colFlowID:        "flow-2",
+			colHandle:        "handle-2",
+			colName:          "Flow 2",
+			colFlowType:      string(common.FlowTypeRegistration),
+			colActiveVersion: int64(2),
+			colCreatedAt:     "2025-01-02T00:00:00Z",
+			colUpdatedAt:     "2025-01-02T00:00:00Z",
+		},
+	}
+
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().Query(queryCountFlows, "test-deployment").
+		Return([]map[string]interface{}{{colCount: int64(2)}}, nil).Once()
+	s.mockDBClient.EXPECT().Query(queryListFlows, "test-deployment", 10, 0).
+		Return(flowsData, nil).Once()
+
+	flows, count, err := s.store.ListFlows(10, 0, "")
+
+	s.NoError(err)
+	s.Equal(2, count)
+	s.Len(flows, 2)
+	s.Equal("flow-1", flows[0].ID)
+	s.Equal("Flow 1", flows[0].Name)
+	s.Equal("flow-2", flows[1].ID)
+	s.Equal("Flow 2", flows[1].Name)
+}
+
+func (s *FlowStoreTestSuite) TestListFlowsWithTypeSuccess() {
+	flowsData := []map[string]interface{}{
+		{
+			colFlowID:        "flow-1",
+			colHandle:        "auth-handle",
+			colName:          "Auth Flow",
+			colFlowType:      string(common.FlowTypeAuthentication),
+			colActiveVersion: int64(1),
+			colCreatedAt:     "2025-01-01T00:00:00Z",
+			colUpdatedAt:     "2025-01-01T00:00:00Z",
+		},
+	}
+
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().Query(queryCountFlowsWithType, string(common.FlowTypeAuthentication), "test-deployment").
+		Return([]map[string]interface{}{{colCount: int64(1)}}, nil).Once()
+	s.mockDBClient.EXPECT().
+		Query(queryListFlowsWithType, string(common.FlowTypeAuthentication), "test-deployment", 10, 0).
+		Return(flowsData, nil).Once()
+
+	flows, count, err := s.store.ListFlows(10, 0, string(common.FlowTypeAuthentication))
+
+	s.NoError(err)
+	s.Equal(1, count)
+	s.Len(flows, 1)
+	s.Equal("flow-1", flows[0].ID)
+	s.Equal(common.FlowTypeAuthentication, flows[0].FlowType)
+}
+
 // GetFlowByID Tests
 
 func (s *FlowStoreTestSuite) TestGetFlowByIDNotFound() {
@@ -112,6 +181,34 @@ func (s *FlowStoreTestSuite) TestGetFlowByIDNotFound() {
 	s.Error(err)
 	s.ErrorIs(err, errFlowNotFound)
 	s.Nil(flow)
+}
+
+func (s *FlowStoreTestSuite) TestGetFlowByIDSuccess() {
+	flowData := map[string]interface{}{
+		colFlowID:        "flow-123",
+		colHandle:        "test-handle",
+		colName:          "Test Flow",
+		colFlowType:      string(common.FlowTypeAuthentication),
+		colActiveVersion: int64(1),
+		colNodes:         `[{"id":"START","type":"START"}]`,
+		colCreatedAt:     "2025-01-01T00:00:00Z",
+		colUpdatedAt:     "2025-01-01T00:00:00Z",
+	}
+
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().Query(queryGetFlow, "flow-123", "test-deployment").
+		Return([]map[string]interface{}{flowData}, nil).Once()
+
+	flow, err := s.store.GetFlowByID("flow-123")
+
+	s.NoError(err)
+	s.NotNil(flow)
+	s.Equal("flow-123", flow.ID)
+	s.Equal("test-handle", flow.Handle)
+	s.Equal("Test Flow", flow.Name)
+	s.Equal(common.FlowTypeAuthentication, flow.FlowType)
+	s.Equal(1, flow.ActiveVersion)
+	s.Len(flow.Nodes, 1)
 }
 
 func (s *FlowStoreTestSuite) TestGetFlowByIDDBError() {
@@ -339,16 +436,32 @@ func (s *FlowStoreTestSuite) TestListFlowVersionsDBError() {
 	s.Nil(versions)
 }
 
-func (s *FlowStoreTestSuite) TestListFlowVersionsFlowNotFound() {
+func (s *FlowStoreTestSuite) TestListFlowVersionsSuccess() {
+	versionData := []map[string]interface{}{
+		{
+			colVersion:       int64(2),
+			colCreatedAt:     "2025-01-02T00:00:00Z",
+			colActiveVersion: int64(2),
+		},
+		{
+			colVersion:       int64(1),
+			colCreatedAt:     "2025-01-01T00:00:00Z",
+			colActiveVersion: int64(2),
+		},
+	}
+
 	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
-	s.mockDBClient.EXPECT().Query(queryGetFlowInternalID, "flow-1", "test-deployment").
-		Return([]map[string]interface{}{}, nil).Once()
+	s.mockDBClient.EXPECT().Query(queryListFlowVersions, "flow-123", s.store.deploymentID).
+		Return(versionData, nil).Once()
 
-	versions, err := s.store.ListFlowVersions("flow-1")
+	versions, err := s.store.ListFlowVersions("flow-123")
 
-	s.Error(err)
-	s.Contains(err.Error(), "flow not found")
-	s.Nil(versions)
+	s.NoError(err)
+	s.Len(versions, 2)
+	s.Equal(2, versions[0].Version)
+	s.True(versions[0].IsActive)
+	s.Equal(1, versions[1].Version)
+	s.False(versions[1].IsActive)
 }
 
 // GetFlowVersion Tests
@@ -363,6 +476,32 @@ func (s *FlowStoreTestSuite) TestGetFlowVersionNotFound() {
 	s.Error(err)
 	s.ErrorIs(err, errVersionNotFound)
 	s.Nil(version)
+}
+
+func (s *FlowStoreTestSuite) TestGetFlowVersionSuccess() {
+	versionData := map[string]interface{}{
+		colFlowID:        "flow-123",
+		colHandle:        "test-handle",
+		colName:          "Test Flow",
+		colFlowType:      string(common.FlowTypeAuthentication),
+		colVersion:       int64(2),
+		colActiveVersion: int64(3),
+		colNodes:         `[{"id":"node-1","type":"basic-auth"}]`,
+		colCreatedAt:     "2025-01-02T00:00:00Z",
+	}
+
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().Query(queryGetFlowVersionWithMetadata, "flow-123", 2, "test-deployment").
+		Return([]map[string]interface{}{versionData}, nil).Once()
+
+	version, err := s.store.GetFlowVersion("flow-123", 2)
+
+	s.NoError(err)
+	s.NotNil(version)
+	s.Equal("flow-123", version.ID)
+	s.Equal(2, version.Version)
+	s.False(version.IsActive) // Version 2, but active is 3
+	s.Len(version.Nodes, 1)
 }
 
 func (s *FlowStoreTestSuite) TestGetFlowVersionDBError() {
@@ -424,13 +563,7 @@ func (s *FlowStoreTestSuite) TestListFlowsBuildFlowError() {
 
 func (s *FlowStoreTestSuite) TestListFlowVersionsQueryError() {
 	expectedError := errors.New("query failed")
-	// First mock getFlowInternalID call
-	s.mockDBClient.EXPECT().Query(queryGetFlowInternalID, "flow-123", s.store.deploymentID).Return(
-		[]map[string]interface{}{
-			{"id": int64(1)},
-		}, nil)
-	// Then mock the list query that fails
-	s.mockDBClient.EXPECT().Query(queryListFlowVersions, int64(1), s.store.deploymentID).Return(
+	s.mockDBClient.EXPECT().Query(queryListFlowVersions, "flow-123", s.store.deploymentID).Return(
 		nil, expectedError)
 	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
 
@@ -442,13 +575,7 @@ func (s *FlowStoreTestSuite) TestListFlowVersionsQueryError() {
 }
 
 func (s *FlowStoreTestSuite) TestListFlowVersionsBuildVersionError() {
-	// First mock getFlowInternalID call
-	s.mockDBClient.EXPECT().Query(queryGetFlowInternalID, "flow-123", s.store.deploymentID).Return(
-		[]map[string]interface{}{
-			{"id": int64(1)},
-		}, nil)
-	// Then mock the list query with invalid data
-	s.mockDBClient.EXPECT().Query(queryListFlowVersions, int64(1), s.store.deploymentID).Return(
+	s.mockDBClient.EXPECT().Query(queryListFlowVersions, "flow-123", s.store.deploymentID).Return(
 		[]map[string]interface{}{
 			{colVersion: "invalid"}, // Invalid version type
 		}, nil)
@@ -486,44 +613,6 @@ func (s *FlowStoreTestSuite) TestGetFlowVersionBuildError() {
 	s.Error(err)
 	s.Nil(version)
 	s.Contains(err.Error(), "flow_id field")
-}
-
-func (s *FlowStoreTestSuite) TestGetFlowInternalIDMissingField() {
-	s.mockDBClient.EXPECT().Query(queryGetFlowInternalID, "flow-123", s.store.deploymentID).Return(
-		[]map[string]interface{}{
-			{"wrong_field": int64(1)},
-		}, nil)
-
-	internalID, err := s.store.getFlowInternalID(s.mockDBClient, "flow-123")
-
-	s.Error(err)
-	s.Equal(int64(0), internalID)
-	s.Contains(err.Error(), "internal ID field not found")
-}
-
-func (s *FlowStoreTestSuite) TestGetFlowInternalIDInvalidType() {
-	s.mockDBClient.EXPECT().Query(queryGetFlowInternalID, "flow-123", s.store.deploymentID).Return(
-		[]map[string]interface{}{
-			{"id": "not-an-int"}, // Wrong type
-		}, nil)
-
-	internalID, err := s.store.getFlowInternalID(s.mockDBClient, "flow-123")
-
-	s.Error(err)
-	s.Equal(int64(0), internalID)
-	s.Contains(err.Error(), "unexpected internal ID type")
-}
-
-func (s *FlowStoreTestSuite) TestGetFlowInternalIDQueryError() {
-	expectedError := errors.New("query failed")
-	s.mockDBClient.EXPECT().Query(queryGetFlowInternalID, "flow-123", s.store.deploymentID).Return(
-		nil, expectedError)
-
-	internalID, err := s.store.getFlowInternalID(s.mockDBClient, "flow-123")
-
-	s.Error(err)
-	s.Equal(int64(0), internalID)
-	s.Contains(err.Error(), "failed to get flow internal ID")
 }
 
 func (s *FlowStoreTestSuite) TestBuildBasicFlowDefinitionFromRowInvalidActiveVersion() {
@@ -936,6 +1025,225 @@ func (s *FlowStoreTestSuite) TestGetConfigDBClientError() {
 
 	s.Error(err)
 	s.Contains(err.Error(), "failed to get database client")
+}
+
+func (s *FlowStoreTestSuite) TestCreateFlow_InsertFlowVersionError() {
+	flowDef := &FlowDefinition{
+		Handle:   "login-handle",
+		Name:     "Login Flow",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{{Type: "start", ID: "node1"}},
+	}
+
+	nodesJSON := `[{"id":"node1","type":"start"}]`
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().BeginTx().Return(mockTx, nil)
+	mockTx.EXPECT().Exec(queryCreateFlow, "flow-1", "login-handle", "Login Flow", common.FlowTypeAuthentication,
+		int64(1), s.store.deploymentID).Return(nil, nil)
+	mockTx.EXPECT().Exec(queryInsertFlowVersion, "flow-1", 1, nodesJSON, s.store.deploymentID).
+		Return(nil, errors.New("version insert error"))
+	mockTx.EXPECT().Rollback().Return(nil)
+
+	result, err := s.store.CreateFlow("flow-1", flowDef)
+
+	s.Error(err)
+	s.Nil(result)
+	s.Contains(err.Error(), "failed to create flow version")
+}
+
+// UpdateFlow - Flow Not Found (store.go line 222-223): scanFlowMetadata returns err on empty rows
+func (s *FlowStoreTestSuite) TestUpdateFlow_FlowNotFound() {
+	flowDef := &FlowDefinition{
+		Handle:   "updated-handle",
+		Name:     "Updated Flow",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{},
+	}
+
+	db, mock, err := sqlmock.New()
+	s.Require().NoError(err)
+	flowCols := []string{
+		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+	emptyRows := mock.NewRows(flowCols)
+	mock.ExpectQuery("SELECT").WillReturnRows(emptyRows)
+	flowSQLRows, _ := db.Query("SELECT")
+
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().BeginTx().Return(mockTx, nil)
+	mockTx.EXPECT().Query(queryGetFlow, "flow-1", s.store.deploymentID).Return(flowSQLRows, nil)
+	mockTx.EXPECT().Rollback().Return(nil)
+
+	result, err := s.store.UpdateFlow("flow-1", flowDef)
+
+	s.Error(err)
+	s.Nil(result)
+	s.ErrorIs(err, errFlowNotFound)
+}
+
+func (s *FlowStoreTestSuite) TestUpdateFlow_PushToVersionStackError() {
+	flowDef := &FlowDefinition{
+		Handle:   "updated-handle",
+		Name:     "Updated Flow",
+		FlowType: common.FlowTypeAuthentication,
+		Nodes:    []NodeDefinition{},
+	}
+
+	db, mock, err := sqlmock.New()
+	s.Require().NoError(err)
+	flowCols := []string{
+		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+	flowRows := mock.NewRows(flowCols).
+		AddRow("flow-1", "updated-handle", "Updated Flow", "authentication",
+			int64(3), "[]", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z")
+	mock.ExpectQuery("SELECT").WillReturnRows(flowRows)
+	flowSQLRows, _ := db.Query("SELECT")
+
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().BeginTx().Return(mockTx, nil)
+
+	mockTx.EXPECT().Query(queryGetFlow, "flow-1", s.store.deploymentID).Return(flowSQLRows, nil)
+
+	mockTx.EXPECT().Exec(queryInsertFlowVersion, "flow-1", 4, "[]", s.store.deploymentID).
+		Return(nil, errors.New("insert version error"))
+	mockTx.EXPECT().Rollback().Return(nil)
+
+	result, err := s.store.UpdateFlow("flow-1", flowDef)
+
+	s.Error(err)
+	s.Nil(result)
+	s.Contains(err.Error(), "failed to insert flow version")
+}
+
+func (s *FlowStoreTestSuite) TestRestoreFlowVersion_FlowNotFound() {
+	db, mock, err := sqlmock.New()
+	s.Require().NoError(err)
+	flowCols := []string{
+		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+	emptyRows := mock.NewRows(flowCols)
+	mock.ExpectQuery("SELECT").WillReturnRows(emptyRows)
+	flowSQLRows, _ := db.Query("SELECT")
+
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().BeginTx().Return(mockTx, nil)
+	mockTx.EXPECT().Query(queryGetFlow, "flow-1", s.store.deploymentID).Return(flowSQLRows, nil)
+	mockTx.EXPECT().Rollback().Return(nil)
+
+	result, err := s.store.RestoreFlowVersion("flow-1", 1)
+
+	s.Error(err)
+	s.Nil(result)
+	s.ErrorIs(err, errFlowNotFound)
+}
+
+func (s *FlowStoreTestSuite) TestRestoreFlowVersion_GetVersionQueryError() {
+	db, mock, err := sqlmock.New()
+	s.Require().NoError(err)
+	flowCols := []string{
+		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+	flowRows := mock.NewRows(flowCols).
+		AddRow("flow-2", "some-handle", "Some Flow", "authentication",
+			int64(2), "[]", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z")
+	mock.ExpectQuery("SELECT").WillReturnRows(flowRows)
+	flowSQLRows, _ := db.Query("SELECT")
+
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().BeginTx().Return(mockTx, nil)
+
+	mockTx.EXPECT().Query(queryGetFlow, "flow-2", s.store.deploymentID).Return(flowSQLRows, nil)
+	mockTx.EXPECT().Query(queryGetFlowVersion, "flow-2", 2, s.store.deploymentID).
+		Return(nil, errors.New("version query error"))
+	mockTx.EXPECT().Rollback().Return(nil)
+
+	result, err := s.store.RestoreFlowVersion("flow-2", 2)
+
+	s.Error(err)
+	s.Nil(result)
+	s.Contains(err.Error(), "failed to get version to restore")
+}
+
+func (s *FlowStoreTestSuite) TestRestoreFlowVersion_PushToVersionStackError() {
+	db, mock, err := sqlmock.New()
+	s.Require().NoError(err)
+	flowCols := []string{
+		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+	flowRows := mock.NewRows(flowCols).
+		AddRow("flow-3", "some-handle", "Some Flow", "authentication",
+			int64(1), "[]", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z")
+	mock.ExpectQuery("SELECT flow").WillReturnRows(flowRows)
+	flowSQLRows, _ := db.Query("SELECT flow")
+
+	db2, mock2, err2 := sqlmock.New()
+	s.Require().NoError(err2)
+	versionRows := mock2.NewRows([]string{"version", "nodes", "created_at"}).
+		AddRow(int64(1), `[]`, "2025-01-01T00:00:00Z")
+	mock2.ExpectQuery("SELECT").WillReturnRows(versionRows)
+	versionSQLRows, _ := db2.Query("SELECT")
+
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
+	s.mockDBClient.EXPECT().BeginTx().Return(mockTx, nil)
+	mockTx.EXPECT().Query(queryGetFlow, "flow-3", s.store.deploymentID).Return(flowSQLRows, nil)
+	mockTx.EXPECT().Query(queryGetFlowVersion, "flow-3", 1, s.store.deploymentID).Return(versionSQLRows, nil)
+	mockTx.EXPECT().Exec(queryInsertFlowVersion, "flow-3", 2, "[]", s.store.deploymentID).
+		Return(nil, errors.New("insert error"))
+	mockTx.EXPECT().Rollback().Return(nil)
+
+	result, err := s.store.RestoreFlowVersion("flow-3", 1)
+
+	s.Error(err)
+	s.Nil(result)
+	s.Contains(err.Error(), "failed to insert flow version")
+}
+
+func (s *FlowStoreTestSuite) TestPushToVersionStack_CountVersionsQueryError() {
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+
+	mockTx.EXPECT().Exec(queryInsertFlowVersion, "flow-1", 2, `[]`, s.store.deploymentID).
+		Return(nil, nil)
+	mockTx.EXPECT().Query(queryCountFlowVersions, "flow-1", s.store.deploymentID).
+		Return(nil, errors.New("count query error"))
+
+	err := s.store.pushToVersionStack(mockTx, "flow-1", 2, `[]`)
+
+	s.Error(err)
+	s.Contains(err.Error(), "failed to count versions")
+}
+
+func (s *FlowStoreTestSuite) TestPushToVersionStack_DeleteOldestVersionError() {
+	db, mock, err := sqlmock.New()
+	s.Require().NoError(err)
+	countRows := mock.NewRows([]string{"count"}).AddRow(int64(6))
+	mock.ExpectQuery("SELECT").WillReturnRows(countRows)
+	countSQLRows, _ := db.Query("SELECT")
+
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	mockTx.EXPECT().Exec(queryInsertFlowVersion, "flow-1", 2, `[]`, s.store.deploymentID).
+		Return(nil, nil)
+	mockTx.EXPECT().Query(queryCountFlowVersions, "flow-1", s.store.deploymentID).Return(countSQLRows, nil)
+	mockTx.EXPECT().Exec(queryDeleteOldestVersion, "flow-1", s.store.deploymentID).
+		Return(nil, errors.New("delete error"))
+
+	err = s.store.pushToVersionStack(mockTx, "flow-1", 2, `[]`)
+
+	s.Error(err)
+	s.Contains(err.Error(), "failed to delete oldest version")
+}
+
+func (s *FlowStoreTestSuite) TestPushToVersionStack_InsertVersionError() {
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+
+	mockTx.EXPECT().Exec(queryInsertFlowVersion, "flow-1", 2, `[]`, s.store.deploymentID).
+		Return(nil, errors.New("insert error"))
+
+	err := s.store.pushToVersionStack(mockTx, "flow-1", 2, `[]`)
+
+	s.Error(err)
+	s.Contains(err.Error(), "failed to insert flow version")
 }
 
 func (s *FlowStoreTestSuite) TestGetMaxVersionHistory() {
