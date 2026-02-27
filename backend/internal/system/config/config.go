@@ -297,6 +297,26 @@ type RoleConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// ThemeConfig holds the theme service configuration.
+type ThemeConfig struct {
+	// Store defines the storage mode for themes.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
+// LayoutConfig holds the layout service configuration.
+type LayoutConfig struct {
+	// Store defines the storage mode for layouts.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // PasskeyConfig holds the passkey configuration details.
 type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
@@ -343,6 +363,8 @@ type Config struct {
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
 	Role                 RoleConfig             `yaml:"role" json:"role"`
+	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
+	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

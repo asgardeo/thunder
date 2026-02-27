@@ -18,7 +18,11 @@
 
 package thememgt
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"errors"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
 
 var (
 	// ErrorInvalidThemeData is returned when invalid theme data is provided.
@@ -108,4 +112,45 @@ var (
 		Error:            "Invalid offset",
 		ErrorDescription: "Offset must be a valid integer",
 	}
+
+	// ErrorCannotUpdateDeclarativeTheme is returned when attempting to update a declarative theme.
+	ErrorCannotUpdateDeclarativeTheme = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "THM-1012",
+		Error:            "Cannot update declarative theme",
+		ErrorDescription: "Theme is defined in declarative resources and cannot be modified",
+	}
+
+	// ErrorCannotDeleteDeclarativeTheme is returned when attempting to delete a declarative theme.
+	ErrorCannotDeleteDeclarativeTheme = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "THM-1013",
+		Error:            "Cannot delete declarative theme",
+		ErrorDescription: "Theme is defined in declarative resources and cannot be deleted",
+	}
+
+	// ErrorResultLimitExceededInCompositeMode is returned when composite store result count exceeds max limit.
+	ErrorResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "THM-5001",
+		Error:            "Result limit exceeded",
+		ErrorDescription: "Total count of themes exceeds maximum allowed limit in composite mode",
+	}
+
+	// ErrorCannotModifyDeclarativeResource is returned when attempting to modify a declarative theme.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "THM-1014",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The theme is declarative and cannot be modified or deleted",
+	}
 )
+
+// errCannotUpdateDeclarativeTheme is an internal error for composite store operations.
+var errCannotUpdateDeclarativeTheme = errors.New("cannot update declarative theme")
+
+// errCannotDeleteDeclarativeTheme is an internal error for composite store operations.
+var errCannotDeleteDeclarativeTheme = errors.New("cannot delete declarative theme")
+
+// errResultLimitExceededInCompositeMode is returned when composite store result count exceeds max limit.
+var errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
