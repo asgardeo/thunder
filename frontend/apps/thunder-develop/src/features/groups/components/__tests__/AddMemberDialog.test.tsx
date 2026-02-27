@@ -82,7 +82,7 @@ describe('AddMemberDialog', () => {
           {id: 'u2', organizationUnit: 'ou2', type: 'Person'},
         ],
       },
-      loading: false,
+      isLoading: false,
     });
   });
 
@@ -112,7 +112,7 @@ describe('AddMemberDialog', () => {
   it('should show loading state', () => {
     mockUseGetUsers.mockReturnValue({
       data: null,
-      loading: true,
+      isLoading: true,
     });
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
@@ -122,7 +122,7 @@ describe('AddMemberDialog', () => {
   it('should show no results alert when no users', () => {
     mockUseGetUsers.mockReturnValue({
       data: {totalResults: 0, startIndex: 0, count: 0, users: []},
-      loading: false,
+      isLoading: false,
     });
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
@@ -174,8 +174,8 @@ describe('AddMemberDialog', () => {
   it('should show error alert when users fetch fails', () => {
     mockUseGetUsers.mockReturnValue({
       data: null,
-      loading: false,
-      error: {code: 'FETCH_ERROR', message: 'Network error', description: 'Failed to fetch users'},
+      isLoading: false,
+      error: new Error('Network error'),
     });
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 

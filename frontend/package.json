@@ -53,11 +53,6 @@
       "vite": "catalog:",
       "nx>axios": ">=1.13.5",
       "rollup": ">=4.59.0"
-    },
-    "auditConfig": {
-      "ignoreCves": [
-        "CVE-2026-26996"
-      ]
     }
   }
 }

@@ -23,6 +23,19 @@ import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react'
 import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react';
 import InviteUserDialog from '../InviteUserDialog';
 
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: mockLoggerError,
+    debug: vi.fn(),
+  }),
+}));
+
 // Mock InviteUser component
 const mockHandleInputChange = vi.fn();
 const mockHandleInputBlur = vi.fn();
@@ -1571,8 +1584,6 @@ describe('InviteUserDialog', () => {
   });
 
   it('logs error when onError callback is triggered', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
     // Enable error simulation
     simulateInviteUserError = true;
 
@@ -1580,9 +1591,7 @@ describe('InviteUserDialog', () => {
 
     // Wait for the onError callback to be triggered
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('User onboarding error:', mockInviteUserError);
+      expect(mockLoggerError).toHaveBeenCalledWith('User onboarding error', {error: mockInviteUserError});
     });
-
-    consoleSpy.mockRestore();
   });
 });

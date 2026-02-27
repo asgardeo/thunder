@@ -55,6 +55,7 @@ import {
 } from '@asgardeo/react';
 import {mapEmbeddedFlowTextVariant} from '@thunder/shared-design';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useLogger} from '@thunder/logger/react';
 
 /** Typed shape for flow sub-components */
 type FlowSubComponent = EmbeddedFlowComponent & {
@@ -549,6 +550,7 @@ function InviteUserContent({
 
 export default function InviteUserDialog({open, onClose, onSuccess = undefined}: InviteUserDialogProps): JSX.Element {
   const {t} = useTranslation();
+  const logger = useLogger('InviteUserDialog');
   const [copied, setCopied] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
@@ -612,8 +614,7 @@ export default function InviteUserDialog({open, onClose, onSuccess = undefined}:
             onSuccess?.(link);
           }}
           onError={(error: Error) => {
-            // eslint-disable-next-line no-console
-            console.error('User onboarding error:', error);
+            logger.error('User onboarding error', {error});
           }}
         >
           {(props: InviteUserRenderProps) => (

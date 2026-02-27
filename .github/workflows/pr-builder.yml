@@ -36,16 +36,17 @@ jobs:
         working-directory: frontend
         run: |
           echo "🔍 Running pnpm audit for frontend dependencies..."
-          pnpm audit --audit-level=high
+          IGNORE_ARGS=()
+          while IFS= read -r id; do
+            IGNORE_ARGS+=(--ignore "$id")
+          done < <(jq -r '.frontend[].id' "$GITHUB_WORKSPACE/.audit-ignore.json")
+          pnpm audit --audit-level=high "${IGNORE_ARGS[@]}"
 
       - name: 🔍 Run npm audit (E2E Tests)
         working-directory: tests/e2e
         run: |
           echo "🔍 Running npm audit for E2E test dependencies..."
-          # Ignored advisories (dev-only transitive dependencies with no direct exposure in E2E tests):
-          #   GHSA-3ppc-4f35-3m26 (CVE-2026-26996): minimatch ReDoS (transitive via eslint/typescript-eslint)
-          #   GHSA-w7fw-mjwx-w883 (CVE-2026-2391): qs arrayLimit bypass (transitive via express)
-          IGNORED_GHSAS='["GHSA-3ppc-4f35-3m26","GHSA-w7fw-mjwx-w883"]'
+          IGNORED_GHSAS=$(jq '[(.common + .e2e)[].id]' "$GITHUB_WORKSPACE/.audit-ignore.json")
           AUDIT_RESULT=$(npm audit --json --audit-level=high 2>&1) || true
           REMAINING=$(echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
             [.vulnerabilities[].via[] | select(type == "object")
@@ -68,10 +69,7 @@ jobs:
       - name: 🔍 Run npm audit (Sample Apps)
         run: |
           echo "🔍 Running npm audit for sample app dependencies..."
-          # Ignored advisories (dev-only transitive dependencies with no direct exposure in sample apps):
-          #   GHSA-3ppc-4f35-3m26 (CVE-2026-26996): minimatch ReDoS (transitive via eslint/typescript-eslint)
-          #   GHSA-848j-6mx2-7j84 (CVE-2025-14505): elliptic risky crypto implementation (transitive via @asgardeo/react)
-          IGNORED_GHSAS='["GHSA-3ppc-4f35-3m26","GHSA-848j-6mx2-7j84"]'
+          IGNORED_GHSAS=$(jq '[(.common + ."sample-apps")[].id]' "$GITHUB_WORKSPACE/.audit-ignore.json")
           for app in samples/apps/*/; do
             if [ -f "${app}package-lock.json" ]; then
               echo "Auditing $app..."

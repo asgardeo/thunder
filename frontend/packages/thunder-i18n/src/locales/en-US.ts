@@ -370,6 +370,18 @@ const translations = {
     // Create page
     'createUser.title': 'Create User',
     'createUser.subtitle': 'Add a new user to your organization',
+
+    // Create wizard steps
+    'createWizard.steps.userType': 'User Type',
+    'createWizard.steps.userDetails': 'User Details',
+    'createWizard.selectUserType.title': 'Select a user type',
+    'createWizard.selectUserType.subtitle': 'Choose a user type (schema) for the new user.',
+    'createWizard.selectUserType.fieldLabel': 'User Type',
+    'createWizard.selectUserType.placeholder': 'Select a user type',
+    'createWizard.userDetails.title': 'Enter user details',
+    'createWizard.userDetails.subtitle': 'Fill in the required information for the new user.',
+    'createWizard.validationErrors.userTypeRequired': 'Please select a user type before proceeding.',
+    'createWizard.validationErrors.ouIdMissing': 'Organization unit ID is missing for the selected user type.',
   },
 
   // ============================================================================

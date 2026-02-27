@@ -22,15 +22,14 @@ import React from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
 import UsersList from '../UsersList';
-import type {UserListResponse, ApiUserSchema, ApiError} from '../../types/users';
+import type {UserListResponse, ApiUserSchema} from '../../types/users';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
 }));
 
 const mockNavigate = vi.fn();
-const mockRefetch = vi.fn();
-const mockDeleteUser = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
 
 // Mock DataGrid to avoid CSS import issues
 interface MockRow {
@@ -161,26 +160,29 @@ vi.mock('@thunder/logger/react', () => ({
   }),
 }));
 
-// Mock hooks
+// Mock hooks - TanStack Query interfaces
 interface UseGetUsersReturn {
-  data: UserListResponse | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch: (params?: unknown) => void;
+  data: UserListResponse | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch?: (newId?: string) => void;
+  data: ApiUserSchema | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseDeleteUserReturn {
-  deleteUser: (userId: string) => Promise<boolean | undefined>;
-  loading: boolean;
-  error: ApiError | null;
-  reset?: () => void;
+  mutate: ReturnType<typeof vi.fn>;
+  mutateAsync: ReturnType<typeof vi.fn>;
+  isPending: boolean;
+  error: Error | null;
+  data: unknown;
+  isError: boolean;
+  isSuccess: boolean;
+  isIdle: boolean;
+  reset: () => void;
 }
 
 const mockUseGetUsers = vi.fn<() => UseGetUsersReturn>();
@@ -244,24 +246,32 @@ describe('UsersList', () => {
     },
   };
 
+  const defaultDeleteReturn: UseDeleteUserReturn = {
+    mutate: vi.fn(),
+    mutateAsync: mockDeleteMutateAsync,
+    isPending: false,
+    error: null,
+    data: undefined,
+    isError: false,
+    isSuccess: false,
+    isIdle: true,
+    reset: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
     mockUseGetUsers.mockReturnValue({
       data: mockUsersData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
     mockUseGetUserSchema.mockReturnValue({
       data: mockSchema,
-      loading: false,
+      isLoading: false,
       error: null,
     });
-    mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: false,
-      error: null,
-    });
+    mockUseDeleteUser.mockReturnValue({...defaultDeleteReturn});
   });
 
   it('renders DataGrid with users', async () => {
@@ -284,10 +294,9 @@ describe('UsersList', () => {
 
   it('displays loading state', () => {
     mockUseGetUsers.mockReturnValue({
-      data: null,
-      loading: true,
+      data: undefined,
+      isLoading: true,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -297,17 +306,10 @@ describe('UsersList', () => {
   });
 
   it('displays error from users request', async () => {
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load users',
-      description: 'Error description',
-    };
-
     mockUseGetUsers.mockReturnValue({
-      data: null,
-      loading: false,
-      error,
-      refetch: mockRefetch,
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load users'),
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -318,16 +320,10 @@ describe('UsersList', () => {
   });
 
   it('displays error from schema request', async () => {
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load schema',
-      description: 'Error description',
-    };
-
     mockUseGetUserSchema.mockReturnValue({
-      data: null,
-      loading: false,
-      error,
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load schema'),
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -384,7 +380,6 @@ describe('UsersList', () => {
 
   it('deletes user when confirmed', async () => {
     const user = userEvent.setup();
-    mockDeleteUser.mockResolvedValue(undefined);
 
     render(<UsersList selectedSchema="schema1" />);
 
@@ -403,8 +398,7 @@ describe('UsersList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUser).toHaveBeenCalledWith('user1');
-      expect(mockRefetch).toHaveBeenCalled();
+      expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user1');
     });
   });
 
@@ -441,9 +435,8 @@ describe('UsersList', () => {
         count: 0,
         users: [],
       },
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -456,8 +449,8 @@ describe('UsersList', () => {
 
   it('renders empty columns when schema is not loaded', () => {
     mockUseGetUserSchema.mockReturnValue({
-      data: null,
-      loading: true,
+      data: undefined,
+      isLoading: true,
       error: null,
     });
 
@@ -502,15 +495,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithTypes,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithTypes,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -545,16 +537,12 @@ describe('UsersList', () => {
 
   it('displays delete error in dialog', async () => {
     const user = userEvent.setup();
-    const deleteError: ApiError = {
-      code: 'DELETE_ERROR',
-      message: 'Failed to delete',
-      description: 'Cannot delete user',
-    };
 
     mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: false,
-      error: deleteError,
+      ...defaultDeleteReturn,
+      error: new Error('Failed to delete'),
+      isError: true,
+      isIdle: false,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -568,23 +556,16 @@ describe('UsersList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Failed to delete')).toBeInTheDocument();
-      expect(screen.getByText('Cannot delete user')).toBeInTheDocument();
     });
   });
 
   it('closes snackbar when close button is clicked', async () => {
     const user = userEvent.setup();
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load users',
-      description: 'Error description',
-    };
 
     mockUseGetUsers.mockReturnValue({
-      data: null,
-      loading: false,
-      error,
-      refetch: mockRefetch,
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load users'),
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -604,7 +585,11 @@ describe('UsersList', () => {
   it('handles error when delete user fails', async () => {
     const user = userEvent.setup();
     const deleteError = new Error('Delete failed');
-    mockDeleteUser.mockRejectedValue(deleteError);
+    const failingDeleteMutateAsync = vi.fn().mockRejectedValue(deleteError);
+    mockUseDeleteUser.mockReturnValue({
+      ...defaultDeleteReturn,
+      mutateAsync: failingDeleteMutateAsync,
+    });
 
     render(<UsersList selectedSchema="schema1" />);
 
@@ -623,8 +608,7 @@ describe('UsersList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUser).toHaveBeenCalledWith('user1');
-      // Note: Logger errors are tested separately, not via console.error spy
+      expect(failingDeleteMutateAsync).toHaveBeenCalledWith('user1');
     });
   });
 
@@ -720,15 +704,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithoutNameFields,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: mockUsersData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -758,9 +741,8 @@ describe('UsersList', () => {
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithMissingAttrs,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -799,15 +781,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithArray,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithEmptyArray,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -846,15 +827,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithArray,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullArray,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -893,15 +873,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithObject,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullObject,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -940,15 +919,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -987,15 +965,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithStatus,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithStatus,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1034,15 +1011,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithStatus,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithInactiveStatus,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1081,15 +1057,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithActive,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullActive,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1141,15 +1116,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithNumber,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullNumber,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1180,9 +1154,8 @@ describe('UsersList', () => {
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithOnlyUsername,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1201,7 +1174,7 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: emptySchema,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
@@ -1242,15 +1215,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithFalseBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1263,9 +1235,9 @@ describe('UsersList', () => {
   it('displays loading state when deleting user', async () => {
     const user = userEvent.setup();
     mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: true,
-      error: null,
+      ...defaultDeleteReturn,
+      isPending: true,
+      isIdle: false,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1300,7 +1272,7 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: comprehensiveSchema,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
