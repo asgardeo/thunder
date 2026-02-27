@@ -121,6 +121,26 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		AccessToken: *accessToken,
 	}
 
+	// Generate ID token if 'openid' scope is present
+	if slices.Contains(newTokenScopes, constants.ScopeOpenID) {
+		idToken, idErr := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
+			Subject:        refreshTokenClaims.Sub,
+			Audience:       tokenRequest.ClientID,
+			Scopes:         newTokenScopes,
+			UserAttributes: refreshTokenClaims.UserAttributes,
+			OAuthApp:       oauthApp,
+			ClaimsRequest:  refreshTokenClaims.ClaimsRequest,
+		})
+		if idErr != nil {
+			logger.Error("Failed to generate ID token", log.Error(idErr))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to generate ID token",
+			}
+		}
+		tokenResponse.IDToken = *idToken
+	}
+
 	// Check configuration for refresh token renewal
 	conf := config.GetThunderRuntime().Config
 	renewRefreshToken := conf.OAuth.RefreshToken.RenewOnGrant

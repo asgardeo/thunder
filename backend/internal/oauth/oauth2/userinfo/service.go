@@ -210,7 +210,7 @@ func (s *userInfoService) extractScopes(claims map[string]interface{}) []string 
 
 // validateOpenIDScope validates that the access token contains the required 'openid' scope.
 func (s *userInfoService) validateOpenIDScope(scopes []string) *serviceerror.ServiceError {
-	if !slices.Contains(scopes, "openid") {
+	if !slices.Contains(scopes, constants.ScopeOpenID) {
 		s.logger.Debug("UserInfo request missing required 'openid' scope",
 			log.String("scopes", tokenservice.JoinScopes(scopes)))
 		return &errorInsufficientScope

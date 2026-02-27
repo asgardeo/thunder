@@ -482,3 +482,191 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestApplyScopeDownscoping_NoMatc
 
 	assert.Empty(suite.T(), result)
 }
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenGenerated_WhenOpenIDScopePresent() {
+	// Mock successful refresh token validation with openid scope
+	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, testRefreshTokenClientID).
+		Return(&tokenservice.RefreshTokenClaims{
+			Sub:            testRefreshTokenUserID,
+			Aud:            testRefreshTokenAudience,
+			Scopes:         []string{"openid", "read"},
+			GrantType:      "authorization_code",
+			UserAttributes: map[string]interface{}{"email": "test@example.com"},
+			Iat:            int64(suite.validClaims["iat"].(float64)),
+		}, nil)
+
+	// Mock successful access token generation
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+		Token:          "new.access.token",
+		IssuedAt:       time.Now().Unix(),
+		ExpiresIn:      3600,
+		Scopes:         []string{"openid", "read"},
+		UserAttributes: map[string]interface{}{"email": "test@example.com"},
+	}, nil)
+
+	// Mock successful ID token generation
+	suite.mockTokenBuilder.On("BuildIDToken", mock.MatchedBy(
+		func(ctx *tokenservice.IDTokenBuildContext) bool {
+			return ctx.Subject == testRefreshTokenUserID &&
+				ctx.Audience == testRefreshTokenClientID &&
+				len(ctx.Scopes) == 2 &&
+				ctx.AuthTime == 0 // auth_time is not set during refresh (per OIDC spec)
+		})).Return(&model.TokenDTO{
+		Token:     "new.id.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"openid", "read"},
+		ClientID:  testRefreshTokenClientID,
+		Subject:   testRefreshTokenUserID,
+	}, nil)
+
+	tokenReq := &model.TokenRequest{
+		GrantType:    string(constants.GrantTypeRefreshToken),
+		ClientID:     testRefreshTokenClientID,
+		RefreshToken: suite.validRefreshToken,
+		Scope:        "openid read",
+	}
+
+	response, err := suite.handler.HandleGrant(tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.Equal(suite.T(), "new.access.token", response.AccessToken.Token)
+	assert.Equal(suite.T(), "new.id.token", response.IDToken.Token)
+	assert.Equal(suite.T(), testRefreshTokenUserID, response.IDToken.Subject)
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoIDToken_WhenOpenIDScopeAbsent() {
+	// Mock successful refresh token validation without openid scope
+	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, testRefreshTokenClientID).
+		Return(&tokenservice.RefreshTokenClaims{
+			Sub:            testRefreshTokenUserID,
+			Aud:            testRefreshTokenAudience,
+			Scopes:         []string{"read", "write"},
+			GrantType:      "authorization_code",
+			UserAttributes: map[string]interface{}{"email": "test@example.com"},
+			Iat:            int64(suite.validClaims["iat"].(float64)),
+		}, nil)
+
+	// Mock successful access token generation
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(
+		func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testRefreshTokenUserID &&
+				ctx.ClientID == testRefreshTokenClientID &&
+				len(ctx.Scopes) == 1 && ctx.Scopes[0] == "read"
+		})).Return(&model.TokenDTO{
+		Token:     "new.access.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read"},
+	}, nil)
+
+	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.Equal(suite.T(), "new.access.token", response.AccessToken.Token)
+	// ID token should be empty when openid scope is not present
+	assert.Empty(suite.T(), response.IDToken.Token)
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenGenerationError() {
+	// Mock successful refresh token validation with openid scope
+	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, testRefreshTokenClientID).
+		Return(&tokenservice.RefreshTokenClaims{
+			Sub:            testRefreshTokenUserID,
+			Aud:            testRefreshTokenAudience,
+			Scopes:         []string{"openid", "read"},
+			GrantType:      "authorization_code",
+			UserAttributes: map[string]interface{}{},
+			Iat:            int64(suite.validClaims["iat"].(float64)),
+		}, nil)
+
+	// Mock successful access token generation
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+		Token:     "new.access.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"openid", "read"},
+	}, nil)
+
+	// Mock failed ID token generation
+	suite.mockTokenBuilder.On("BuildIDToken", mock.Anything).
+		Return(nil, errors.New("failed to generate ID token"))
+
+	tokenReq := &model.TokenRequest{
+		GrantType:    string(constants.GrantTypeRefreshToken),
+		ClientID:     testRefreshTokenClientID,
+		RefreshToken: suite.validRefreshToken,
+		Scope:        "openid read",
+	}
+
+	response, err := suite.handler.HandleGrant(tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), response)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
+	assert.Equal(suite.T(), "Failed to generate ID token", err.ErrorDescription)
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenWithRenewOnGrant() {
+	// Enable RenewOnGrant in config
+	config.GetThunderRuntime().Config.OAuth.RefreshToken.RenewOnGrant = true
+
+	// Mock successful refresh token validation with openid scope
+	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, testRefreshTokenClientID).
+		Return(&tokenservice.RefreshTokenClaims{
+			Sub:            testRefreshTokenUserID,
+			Aud:            testRefreshTokenAudience,
+			Scopes:         []string{"openid", "read"},
+			GrantType:      "authorization_code",
+			UserAttributes: map[string]interface{}{"email": "test@example.com"},
+			Iat:            int64(suite.validClaims["iat"].(float64)),
+		}, nil)
+
+	// Mock successful access token generation
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+		Token:          "new.access.token",
+		IssuedAt:       time.Now().Unix(),
+		ExpiresIn:      3600,
+		Scopes:         []string{"openid", "read"},
+		UserAttributes: map[string]interface{}{"email": "test@example.com"},
+	}, nil)
+
+	// Mock successful ID token generation
+	suite.mockTokenBuilder.On("BuildIDToken", mock.MatchedBy(
+		func(ctx *tokenservice.IDTokenBuildContext) bool {
+			return ctx.Subject == testRefreshTokenUserID &&
+				ctx.Audience == testRefreshTokenClientID
+		})).Return(&model.TokenDTO{
+		Token:     "new.id.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"openid", "read"},
+		ClientID:  testRefreshTokenClientID,
+		Subject:   testRefreshTokenUserID,
+	}, nil)
+
+	// Mock successful refresh token generation
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything).Return(&model.TokenDTO{
+		Token:     "new.refresh.token",
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 86400,
+		Scopes:    []string{"openid", "read"},
+	}, nil)
+
+	tokenReq := &model.TokenRequest{
+		GrantType:    string(constants.GrantTypeRefreshToken),
+		ClientID:     testRefreshTokenClientID,
+		RefreshToken: suite.validRefreshToken,
+		Scope:        "openid read",
+	}
+
+	response, err := suite.handler.HandleGrant(tokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.Equal(suite.T(), "new.access.token", response.AccessToken.Token)
+	assert.Equal(suite.T(), "new.id.token", response.IDToken.Token)
+	assert.Equal(suite.T(), "new.refresh.token", response.RefreshToken.Token)
+}
