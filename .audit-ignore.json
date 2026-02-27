@@ -1,0 +1,19 @@
+{
+  "$comment": "Audit advisory IDs to ignore. Frontend uses CVE IDs (pnpm), E2E/sample-apps use GHSA IDs (npm).",
+  "frontend": [
+    { "id": "CVE-2026-26996", "package": "minimatch", "reason": "ReDoS (transitive via eslint, dev-only)" },
+    { "id": "CVE-2026-27903", "package": "minimatch", "reason": "ReDoS (transitive via eslint, dev-only)" },
+    { "id": "CVE-2026-27904", "package": "minimatch", "reason": "ReDoS (transitive via eslint, dev-only)" }
+  ],
+  "common": [
+    { "id": "GHSA-3ppc-4f35-3m26", "package": "minimatch", "reason": "ReDoS (transitive via eslint, dev-only)" },
+    { "id": "GHSA-23c5-xmqv-rm74", "package": "minimatch", "reason": "ReDoS (transitive via eslint, dev-only)" },
+    { "id": "GHSA-7r86-cg39-jmmj", "package": "minimatch", "reason": "ReDoS (transitive via eslint, dev-only)" }
+  ],
+  "e2e": [
+    { "id": "GHSA-w7fw-mjwx-w883", "package": "qs", "reason": "arrayLimit bypass (transitive via express, dev-only)" }
+  ],
+  "sample-apps": [
+    { "id": "GHSA-848j-6mx2-7j84", "package": "elliptic", "reason": "Risky crypto implementation (transitive via @asgardeo/react)" }
+  ]
+}
