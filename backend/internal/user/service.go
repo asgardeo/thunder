@@ -68,6 +68,7 @@ type UserServiceInterface interface {
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUserCredentialsByType(ctx context.Context, userID string,
 		credentialType string) ([]Credential, *serviceerror.ServiceError)
+	IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError)
 }
 
 // userService is the default implementation of the UserServiceInterface.
@@ -1269,6 +1270,26 @@ func (us *userService) GetUserCredentialsByType(
 		log.Int("count", len(credentials)))
 
 	return credentials, nil
+}
+
+// IsUserDeclarative checks if a user is immutable (declarative) or mutable.
+func (us *userService) IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if strings.TrimSpace(userID) == "" {
+		return false, &ErrorMissingUserID
+	}
+
+	isDeclarative, err := us.userStore.IsUserDeclarative(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return false, &ErrorUserNotFound
+		}
+		return false, logErrorAndReturnServerError(logger, "Failed to check if user is declarative", err)
+	}
+
+	return isDeclarative, nil
 }
 
 // validateOrganizationUnitForUserType ensures that the organization unit ID is valid and belongs to the user type.

@@ -234,6 +234,12 @@ type ObservabilityOTelConfig struct {
 // UserConfig holds the user management configuration details.
 type UserConfig struct {
 	IndexedAttributes []string `yaml:"indexed_attributes" json:"indexed_attributes"`
+	// Store defines the storage mode for users.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
 }
 
 // ResourceConfig holds the resource management configuration details.
