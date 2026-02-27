@@ -37,6 +37,68 @@ func (_m *TokenValidatorInterfaceMock) EXPECT() *TokenValidatorInterfaceMock_Exp
 	return &TokenValidatorInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// ValidateAccessToken provides a mock function for the type TokenValidatorInterfaceMock
+func (_mock *TokenValidatorInterfaceMock) ValidateAccessToken(token string) (*tokenservice.AccessTokenClaims, error) {
+	ret := _mock.Called(token)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateAccessToken")
+	}
+
+	var r0 *tokenservice.AccessTokenClaims
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (*tokenservice.AccessTokenClaims, error)); ok {
+		return returnFunc(token)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) *tokenservice.AccessTokenClaims); ok {
+		r0 = returnFunc(token)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tokenservice.AccessTokenClaims)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(token)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TokenValidatorInterfaceMock_ValidateAccessToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateAccessToken'
+type TokenValidatorInterfaceMock_ValidateAccessToken_Call struct {
+	*mock.Call
+}
+
+// ValidateAccessToken is a helper method to define mock.On call
+//   - token string
+func (_e *TokenValidatorInterfaceMock_Expecter) ValidateAccessToken(token interface{}) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	return &TokenValidatorInterfaceMock_ValidateAccessToken_Call{Call: _e.mock.On("ValidateAccessToken", token)}
+}
+
+func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) Run(run func(token string)) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) Return(accessTokenClaims *tokenservice.AccessTokenClaims, err error) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	_c.Call.Return(accessTokenClaims, err)
+	return _c
+}
+
+func (_c *TokenValidatorInterfaceMock_ValidateAccessToken_Call) RunAndReturn(run func(token string) (*tokenservice.AccessTokenClaims, error)) *TokenValidatorInterfaceMock_ValidateAccessToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ValidateRefreshToken provides a mock function for the type TokenValidatorInterfaceMock
 func (_mock *TokenValidatorInterfaceMock) ValidateRefreshToken(token string, clientID string) (*tokenservice.RefreshTokenClaims, error) {
 	ret := _mock.Called(token, clientID)
