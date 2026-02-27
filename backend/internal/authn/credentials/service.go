@@ -34,8 +34,11 @@ const (
 type CredentialsAuthnServiceInterface interface {
 	Authenticate(identifiers, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (
 		*authnprovider.AuthnResult, *serviceerror.ServiceError)
-	GetAttributes(token string, requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (
-		*authnprovider.GetAttributesResult, *serviceerror.ServiceError)
+	GetAttributes(
+		token string,
+		requestedAttributes *authnprovider.RequestedAttributes,
+		metadata *authnprovider.GetAttributesMetadata,
+	) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError)
 }
 
 // credentialsAuthnService is the default implementation of CredentialsAuthnServiceInterface.
@@ -77,7 +80,7 @@ func (c *credentialsAuthnService) Authenticate(identifiers, credentials map[stri
 	return authnResult, nil
 }
 
-func (c *credentialsAuthnService) GetAttributes(token string, requestedAttributes []string,
+func (c *credentialsAuthnService) GetAttributes(token string, requestedAttributes *authnprovider.RequestedAttributes,
 	metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError) {
 	result, err := c.authnProvider.GetAttributes(token, requestedAttributes, metadata)
 	if err != nil {

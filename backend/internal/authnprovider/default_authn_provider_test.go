@@ -75,8 +75,9 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	suite.Equal("user123", result.Token)
 	suite.Equal("customer", result.UserType)
 	suite.Equal("ou1", result.OrganizationUnitID)
-	suite.Len(result.AvailableAttributes, 1)
-	suite.Equal("email", result.AvailableAttributes[0].Name)
+	suite.NotNil(result.AvailableAttributes)
+	suite.Len(result.AvailableAttributes.Attributes, 1)
+	suite.Contains(result.AvailableAttributes.Attributes, "email")
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_UserNotFound() {
@@ -140,7 +141,9 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
-	suite.JSONEq(`{"email":"test@example.com", "age": 30}`, string(result.Attributes))
+	suite.NotNil(result.AttributesResponse)
+	suite.Equal("test@example.com", result.AttributesResponse.Attributes["email"].Value)
+	suite.Equal(float64(30), result.AttributesResponse.Attributes["age"].Value)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered() {
@@ -154,11 +157,18 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered()
 
 	suite.mockService.On("GetUser", mock.Anything, token).Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
 
-	result, err := suite.provider.GetAttributes(token, []string{"email"}, nil)
+	reqAttrs := &RequestedAttributes{
+		Attributes: map[string]*AttributeMetadataRequest{
+			"email": nil,
+		},
+	}
+	result, err := suite.provider.GetAttributes(token, reqAttrs, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
-	suite.JSONEq(`{"email":"test@example.com"}`, string(result.Attributes))
+	suite.NotNil(result.AttributesResponse)
+	suite.Equal("test@example.com", result.AttributesResponse.Attributes["email"].Value)
+	suite.NotContains(result.AttributesResponse.Attributes, "age")
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {

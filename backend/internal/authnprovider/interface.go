@@ -22,6 +22,6 @@ package authnprovider
 type AuthnProviderInterface interface {
 	Authenticate(identifiers, credentials map[string]interface{}, metadata *AuthnMetadata) (
 		*AuthnResult, *AuthnProviderError)
-	GetAttributes(token string, requestedAttributes []string, metadata *GetAttributesMetadata) (
+	GetAttributes(token string, requestedAttributes *RequestedAttributes, metadata *GetAttributesMetadata) (
 		*GetAttributesResult, *AuthnProviderError)
 }

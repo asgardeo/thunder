@@ -71,13 +71,17 @@ func (p *defaultAuthnProvider) Authenticate(
 		}
 	}
 
-	availableAttributes := make([]AvailableAttribute, 0)
+	availableAttributes := &AvailableAttributes{
+		Attributes:    make(map[string]*AttributeMetadataResponse),
+		Verifications: make(map[string]*VerificationResponse),
+	}
 	for k := range attributes {
-		availableAttributes = append(availableAttributes, AvailableAttribute{
-			Name:        k,
-			DisplayName: k,
-			Verified:    false,
-		})
+		availableAttributes.Attributes[k] = &AttributeMetadataResponse{
+			AssuranceMetadataResponse: &AssuranceMetadataResponse{
+				IsVerified:     false,
+				VerificationID: "",
+			},
+		}
 	}
 
 	return &AuthnResult{
@@ -92,7 +96,7 @@ func (p *defaultAuthnProvider) Authenticate(
 // GetAttributes retrieves the user attributes using the internal user service.
 func (p *defaultAuthnProvider) GetAttributes(
 	token string,
-	requestedAttributes []string,
+	requestedAttributes *RequestedAttributes,
 	metadata *GetAttributesMetadata,
 ) (*GetAttributesResult, *AuthnProviderError) {
 	userID := token
@@ -105,35 +109,46 @@ func (p *defaultAuthnProvider) GetAttributes(
 		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
 	}
 
-	var attributes json.RawMessage
-	if len(requestedAttributes) > 0 {
-		var allAttributes map[string]interface{}
-		if len(userResult.Attributes) > 0 {
-			if err := json.Unmarshal(userResult.Attributes, &allAttributes); err != nil {
-				return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal user attributes")
-			}
+	var allAttributes map[string]interface{}
+	if len(userResult.Attributes) > 0 {
+		if err := json.Unmarshal(userResult.Attributes, &allAttributes); err != nil {
+			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal user attributes")
 		}
+	}
 
-		filteredAttributes := make(map[string]interface{})
-		for _, attr := range requestedAttributes {
-			if val, ok := allAttributes[attr]; ok {
-				filteredAttributes[attr] = val
+	attributesResponse := &AttributesResponse{
+		Attributes:    make(map[string]*AttributeResponse),
+		Verifications: make(map[string]*VerificationResponse),
+	}
+
+	if requestedAttributes != nil && len(requestedAttributes.Attributes) > 0 {
+		for attrName := range requestedAttributes.Attributes {
+			if val, ok := allAttributes[attrName]; ok {
+				attributesResponse.Attributes[attrName] = &AttributeResponse{
+					Value: val,
+					AssuranceMetadataResponse: &AssuranceMetadataResponse{
+						IsVerified:     false,
+						VerificationID: "",
+					},
+				}
 			}
-		}
-
-		var err error
-		attributes, err = json.Marshal(filteredAttributes)
-		if err != nil {
-			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to marshal filtered user attributes")
 		}
 	} else {
-		attributes = userResult.Attributes
+		for attrName, val := range allAttributes {
+			attributesResponse.Attributes[attrName] = &AttributeResponse{
+				Value: val,
+				AssuranceMetadataResponse: &AssuranceMetadataResponse{
+					IsVerified:     false,
+					VerificationID: "",
+				},
+			}
+		}
 	}
 
 	return &GetAttributesResult{
 		UserID:             userResult.ID,
 		UserType:           userResult.Type,
 		OrganizationUnitID: userResult.OrganizationUnit,
-		Attributes:         attributes,
+		AttributesResponse: attributesResponse,
 	}, nil
 }

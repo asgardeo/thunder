@@ -44,7 +44,7 @@ type AuthenticateRequest struct {
 // GetAttributesRequest is the request body for the attributes endpoint.
 type GetAttributesRequest struct {
 	Token               string                 `json:"token"`
-	RequestedAttributes []string               `json:"requestedAttributes"`
+	RequestedAttributes *RequestedAttributes   `json:"requestedAttributes"`
 	Metadata            *GetAttributesMetadata `json:"metadata"`
 }
 
@@ -91,7 +91,7 @@ func (p *restAuthnProvider) Authenticate(identifiers, credentials map[string]int
 }
 
 // GetAttributes retrieves the attributes of a user.
-func (p *restAuthnProvider) GetAttributes(token string, requestedAttributes []string,
+func (p *restAuthnProvider) GetAttributes(token string, requestedAttributes *RequestedAttributes,
 	metadata *GetAttributesMetadata) (*GetAttributesResult, *AuthnProviderError) {
 	reqBody := GetAttributesRequest{
 		Token:               token,

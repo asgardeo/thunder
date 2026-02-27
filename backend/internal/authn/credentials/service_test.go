@@ -19,7 +19,6 @@
 package credentials
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -64,12 +63,15 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateSuccess() {
 	userType := "person"
 	userToken := "test-token"
 
-	availableAttributes := []authnprovider.AvailableAttribute{
-		{
-			Name:        "username",
-			DisplayName: "Username",
-			Verified:    false,
+	availableAttributes := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"username": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
 		},
+		Verifications: nil,
 	}
 
 	metadata := &authnprovider.AuthnMetadata{
@@ -110,12 +112,15 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithNilMetadata()
 	userType := "person"
 	userToken := "test-token"
 
-	availableAttributes := []authnprovider.AvailableAttribute{
-		{
-			Name:        "username",
-			DisplayName: "Username",
-			Verified:    false,
+	availableAttributes := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"username": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
 		},
+		Verifications: nil,
 	}
 
 	providerResponse := &authnprovider.AuthnResult{
@@ -248,7 +253,13 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 
 func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesSuccess() {
 	token := testToken
-	requestedAttributes := []string{"attr1", "attr2"}
+	requestedAttributes := &authnprovider.RequestedAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+			"attr1": nil,
+			"attr2": nil,
+		},
+		Verifications: nil,
+	}
 	metadata := &authnprovider.GetAttributesMetadata{
 		AppMetadata: map[string]interface{}{"key": "value"},
 		Locale:      "en",
@@ -258,7 +269,11 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesSuccess() {
 		UserID:             "user123",
 		UserType:           "person",
 		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"attr1":"val1"}`),
+		AttributesResponse: &authnprovider.AttributesResponse{
+			Attributes: map[string]*authnprovider.AttributeResponse{
+				"attr1": {Value: "val1"},
+			},
+		},
 	}
 
 	suite.mockAuthnProvider.On("GetAttributes", token, requestedAttributes, &authnprovider.GetAttributesMetadata{
@@ -273,19 +288,28 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesSuccess() {
 	suite.Equal(expectedResult.UserID, result.UserID)
 	suite.Equal(expectedResult.UserType, result.UserType)
 	suite.Equal(expectedResult.OrganizationUnitID, result.OrganizationUnitID)
-	suite.Equal(expectedResult.Attributes, result.Attributes)
+	suite.Equal(expectedResult.AttributesResponse, result.AttributesResponse)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesWithNilMetadata() {
 	token := testToken
-	requestedAttributes := []string{"attr1"}
+	requestedAttributes := &authnprovider.RequestedAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+			"attr1": nil,
+		},
+		Verifications: nil,
+	}
 
 	expectedResult := &authnprovider.GetAttributesResult{
 		UserID:             "user123",
 		UserType:           "person",
 		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"attr1":"val1"}`),
+		AttributesResponse: &authnprovider.AttributesResponse{
+			Attributes: map[string]*authnprovider.AttributeResponse{
+				"attr1": {Value: "val1"},
+			},
+		},
 	}
 
 	suite.mockAuthnProvider.On("GetAttributes", token, requestedAttributes,
@@ -302,7 +326,12 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesWithNilMetadata(
 
 func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesFailures() {
 	token := testToken
-	requestedAttributes := []string{"attr1"}
+	requestedAttributes := &authnprovider.RequestedAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+			"attr1": nil,
+		},
+		Verifications: nil,
+	}
 	metadata := &authnprovider.GetAttributesMetadata{}
 
 	cases := []struct {

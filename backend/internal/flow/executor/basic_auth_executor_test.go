@@ -168,8 +168,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "username", DisplayName: "username", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"username": {},
+			},
 		},
 	}
 
@@ -216,8 +218,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+			},
 		},
 	}
 
@@ -291,9 +295,11 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "phone", DisplayName: "phone", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+				"phone": {},
+			},
 		},
 	}
 
@@ -494,9 +500,11 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "phone", DisplayName: "phone", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+				"phone": {},
+			},
 		},
 	}
 
@@ -517,8 +525,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	assert.Equal(suite.T(), testUserID, result.UserID)
 	assert.Equal(suite.T(), "ou-123", result.OrganizationUnitID)
 	assert.Equal(suite.T(), "person", result.UserType)
-	assert.Equal(suite.T(), "email", result.AvailableAttributes[0].Name)
-	assert.Equal(suite.T(), "phone", result.AvailableAttributes[1].Name)
+	assert.Contains(suite.T(), result.AvailableAttributes.Attributes, "email")
+	assert.Contains(suite.T(), result.AvailableAttributes.Attributes, "phone")
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -541,10 +549,12 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "username", DisplayName: "username", Verified: true},
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "role", DisplayName: "role", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"username": {},
+				"email":    {},
+				"role":     {},
+			},
 		},
 	}
 
@@ -595,9 +605,11 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 		UserType:           "person",
 		OrganizationUnitID: "ou-123",
 		Token:              "test-token",
-		AvailableAttributes: []authnprovider.AvailableAttribute{
-			{Name: "email", DisplayName: "email", Verified: true},
-			{Name: "phone", DisplayName: "phone", Verified: true},
+		AvailableAttributes: &authnprovider.AvailableAttributes{
+			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+				"email": {},
+				"phone": {},
+			},
 		},
 	}
 

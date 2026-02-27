@@ -442,14 +442,24 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Success() {
-	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
-	attrsJSON, _ := json.Marshal(attrs)
-
-	res := authnprovider.GetAttributesResult{
-		Attributes: attrsJSON,
+	reqAttrs := &authnprovider.RequestedAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+			"email": nil,
+			"name":  nil,
+		},
+		Verifications: nil,
 	}
 
-	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", []string{"email", "name"},
+	res := authnprovider.GetAttributesResult{
+		AttributesResponse: &authnprovider.AttributesResponse{
+			Attributes: map[string]*authnprovider.AttributeResponse{
+				"email": {Value: "test@example.com"},
+				"name":  {Value: "Test User"},
+			},
+		},
+	}
+
+	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", reqAttrs,
 		(*authnprovider.GetAttributesMetadata)(nil)).Return(&res, nil)
 
 	resultAttrs, err := suite.executor.getUserAttributes("user-123", "token-123", []string{"email", "name"}, nil)
@@ -462,7 +472,15 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_ServiceError() {
-	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", []string{"email", "name"},
+	reqAttrs := &authnprovider.RequestedAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
+			"email": nil,
+			"name":  nil,
+		},
+		Verifications: nil,
+	}
+
+	suite.mockCredsAuthSvc.On("GetAttributes", "token-123", reqAttrs,
 		(*authnprovider.GetAttributesMetadata)(nil)).Return(nil, &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "ATTRIBUTES_FETCH_FAILED",
