@@ -385,6 +385,57 @@ func (_c *layoutMgtStoreInterfaceMock_GetLayoutListCount_Call) RunAndReturn(run 
 	return _c
 }
 
+// IsLayoutDeclarative provides a mock function for the type layoutMgtStoreInterfaceMock
+func (_mock *layoutMgtStoreInterfaceMock) IsLayoutDeclarative(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsLayoutDeclarative")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsLayoutDeclarative'
+type layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsLayoutDeclarative is a helper method to define mock.On call
+//   - id string
+func (_e *layoutMgtStoreInterfaceMock_Expecter) IsLayoutDeclarative(id interface{}) *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call {
+	return &layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call{Call: _e.mock.On("IsLayoutDeclarative", id)}
+}
+
+func (_c *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call) Run(run func(id string)) *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call) Return(b bool) *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call) RunAndReturn(run func(id string) bool) *layoutMgtStoreInterfaceMock_IsLayoutDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsLayoutExist provides a mock function for the type layoutMgtStoreInterfaceMock
 func (_mock *layoutMgtStoreInterfaceMock) IsLayoutExist(id string) (bool, error) {
 	ret := _mock.Called(id)

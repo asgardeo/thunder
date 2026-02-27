@@ -385,6 +385,57 @@ func (_c *themeMgtStoreInterfaceMock_GetThemeListCount_Call) RunAndReturn(run fu
 	return _c
 }
 
+// IsThemeDeclarative provides a mock function for the type themeMgtStoreInterfaceMock
+func (_mock *themeMgtStoreInterfaceMock) IsThemeDeclarative(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsThemeDeclarative")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// themeMgtStoreInterfaceMock_IsThemeDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsThemeDeclarative'
+type themeMgtStoreInterfaceMock_IsThemeDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsThemeDeclarative is a helper method to define mock.On call
+//   - id string
+func (_e *themeMgtStoreInterfaceMock_Expecter) IsThemeDeclarative(id interface{}) *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call {
+	return &themeMgtStoreInterfaceMock_IsThemeDeclarative_Call{Call: _e.mock.On("IsThemeDeclarative", id)}
+}
+
+func (_c *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call) Run(run func(id string)) *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call) Return(b bool) *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call) RunAndReturn(run func(id string) bool) *themeMgtStoreInterfaceMock_IsThemeDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsThemeExist provides a mock function for the type themeMgtStoreInterfaceMock
 func (_mock *themeMgtStoreInterfaceMock) IsThemeExist(id string) (bool, error) {
 	ret := _mock.Called(id)

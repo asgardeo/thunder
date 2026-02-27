@@ -94,6 +94,11 @@ func (ls *layoutMgtService) CreateLayout(layout CreateLayoutRequest) (*Layout, *
 		return nil, &ErrorMissingDisplayName
 	}
 
+	// Check if store is in pure declarative mode
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
 	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
 		return nil, err
 	}
@@ -154,6 +159,11 @@ func (ls *layoutMgtService) UpdateLayout(id string, layout UpdateLayoutRequest) 
 		return nil, &ErrorMissingDisplayName
 	}
 
+	// Check if the layout is declarative (read-only)
+	if ls.layoutMgtStore.IsLayoutDeclarative(id) {
+		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
 	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
 		return nil, err
 	}
@@ -191,6 +201,11 @@ func (ls *layoutMgtService) DeleteLayout(id string) *serviceerror.ServiceError {
 
 	if id == "" {
 		return &ErrorInvalidLayoutID
+	}
+
+	// Check if the layout is declarative (read-only)
+	if ls.layoutMgtStore.IsLayoutDeclarative(id) {
+		return &ErrorCannotModifyDeclarativeResource
 	}
 
 	// Check if layout exists. Return success for non-existing layouts (idempotent delete).

@@ -21,6 +21,9 @@ package layoutmgt
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -305,12 +308,32 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_Integration(
 		GenericFileBasedStore: genericStore,
 	}
 
-	// This should not panic even with empty directory
-	err := loadDeclarativeResources(store)
+	// This should not panic even with empty directory (pass nil for dbStore in test)
+	err := loadDeclarativeResources(store, nil)
 
 	// Error is expected if directory doesn't exist, which is acceptable for this test
 	// We're verifying that the function can be called without panicking
 	_ = err
+}
+
+func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_WithDBStore() {
+	thunderHome := config.GetThunderRuntime().ThunderHome
+	resourceDir := filepath.Join(thunderHome, "repository", "resources", "layouts")
+	err := os.MkdirAll(resourceDir, 0o750)
+	s.Require().NoError(err)
+
+	yamlData := []byte("id: layout-dup\ndisplayName: Layout Dup\nlayout:\n  type: centered\n")
+	err = os.WriteFile(filepath.Join(resourceDir, "layout-dup.yaml"), yamlData, 0o600)
+	s.Require().NoError(err)
+
+	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeLayout)
+	store := &layoutFileBasedStore{GenericFileBasedStore: genericStore}
+
+	dbStore := newLayoutMgtStoreInterfaceMock(s.T())
+	dbStore.On("IsLayoutExist", "layout-dup").Return(false, nil)
+
+	err = loadDeclarativeResources(store, dbStore)
+	s.NoError(err)
 }
 
 func (s *DeclarativeResourceTestSuite) TestLayoutExporter_ValidateResource_EmptyLayoutWarning() {
@@ -361,12 +384,42 @@ func (s *DeclarativeResourceTestSuite) TestValidateLayoutWrapper() {
 		Layout:      json.RawMessage(`{"type": "centered"}`),
 	}
 
-	err := validateLayoutWrapper(layout)
+	err := validateLayoutWrapper(layout, nil)
 	s.NoError(err)
 }
 
+func (s *DeclarativeResourceTestSuite) TestValidateLayoutWrapper_DBStoreDuplicate() {
+	layout := &Layout{
+		ID:          "layout1",
+		DisplayName: "Test",
+		Layout:      json.RawMessage(`{"type": "centered"}`),
+	}
+
+	dbStore := newLayoutMgtStoreInterfaceMock(s.T())
+	dbStore.On("IsLayoutExist", "layout1").Return(true, nil)
+
+	err := validateLayoutWrapper(layout, dbStore)
+	s.Error(err)
+	s.Contains(err.Error(), "already exists in database")
+}
+
+func (s *DeclarativeResourceTestSuite) TestValidateLayoutWrapper_DBStoreError() {
+	layout := &Layout{
+		ID:          "layout1",
+		DisplayName: "Test",
+		Layout:      json.RawMessage(`{"type": "centered"}`),
+	}
+
+	dbStore := newLayoutMgtStoreInterfaceMock(s.T())
+	dbStore.On("IsLayoutExist", "layout1").Return(false, errors.New("db error"))
+
+	err := validateLayoutWrapper(layout, dbStore)
+	s.Error(err)
+	s.Contains(err.Error(), "failed to check for duplicate layout ID")
+}
+
 func (s *DeclarativeResourceTestSuite) TestValidateLayoutWrapper_InvalidType() {
-	err := validateLayoutWrapper("not a layout")
+	err := validateLayoutWrapper("not a layout", nil)
 	s.Error(err)
 	s.Contains(err.Error(), "invalid type")
 }

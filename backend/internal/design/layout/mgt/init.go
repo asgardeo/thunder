@@ -21,32 +21,81 @@ package layoutmgt
 import (
 	"net/http"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the layout management service and registers its routes.
 func Initialize(mux *http.ServeMux) (LayoutMgtServiceInterface, declarativeresource.ResourceExporter, error) {
-	var layoutMgtStore layoutMgtStoreInterface
-	if declarativeresource.IsDeclarativeModeEnabled() {
-		layoutMgtStore = newLayoutFileBasedStore()
-	} else {
-		layoutMgtStore = newLayoutMgtStore()
+	// Step 1: Initialize store based on configuration
+	layoutMgtStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, err
 	}
 
+	// Step 2: Create service with store
 	layoutMgtService := newLayoutMgtService(layoutMgtStore)
-
-	if declarativeresource.IsDeclarativeModeEnabled() {
-		if err := loadDeclarativeResources(layoutMgtStore); err != nil {
-			return nil, nil, err
-		}
-	}
-
 	layoutMgtHandler := newLayoutMgtHandler(layoutMgtService)
 	registerRoutes(mux, layoutMgtHandler)
 
 	exporter := newLayoutExporter(layoutMgtService)
 	return layoutMgtService, exporter, nil
+}
+
+// Store Selection (based on layout.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All layouts are mutable
+//   - Export functionality exports DB-backed layouts
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All layouts are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime layouts (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative layouts cannot be updated or deleted
+//   - Export only exports DB-backed layouts (not YAML)
+//
+// Configuration Fallback:
+// - If layout.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore() (layoutMgtStoreInterface, error) {
+	var layoutMgtStore layoutMgtStoreInterface
+
+	storeMode := getLayoutStoreMode()
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newLayoutFileBasedStore()
+		dbStore := newLayoutMgtStore()
+		layoutMgtStore = newCompositeLayoutStore(fileStore, dbStore)
+		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
+			return nil, err
+		}
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newLayoutFileBasedStore()
+		layoutMgtStore = fileStore
+		if err := loadDeclarativeResources(fileStore, nil); err != nil {
+			return nil, err
+		}
+
+	default:
+		layoutMgtStore = newLayoutMgtStore()
+	}
+
+	return layoutMgtStore, nil
 }
 
 // registerRoutes registers the routes for layout management operations.
