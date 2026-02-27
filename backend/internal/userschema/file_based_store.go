@@ -116,6 +116,11 @@ func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(ctx context.Context, sch
 	return errors.New("UpdateUserSchemaByID is not supported in file-based store")
 }
 
+// IsUserSchemaDeclarative returns true as file-based schemas are always immutable.
+func (f *userSchemaFileBasedStore) IsUserSchemaDeclarative(schemaID string) bool {
+	return true
+}
+
 // newUserSchemaFileBasedStore creates a new instance of a file-based store.
 func newUserSchemaFileBasedStore() userSchemaStoreInterface {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeUserSchema)

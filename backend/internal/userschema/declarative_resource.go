@@ -65,6 +65,7 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all user schema IDs.
+// In composite mode, this excludes declarative (YAML-based) user schemas.
 func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
@@ -72,7 +73,10 @@ func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *
 	}
 	ids := make([]string, 0, len(response.Schemas))
 	for _, schema := range response.Schemas {
-		ids = append(ids, schema.ID)
+		// Only include mutable (database-backed) user schemas
+		if !schema.IsReadOnly {
+			ids = append(ids, schema.ID)
+		}
 	}
 	return ids, nil
 }
@@ -118,10 +122,27 @@ func (e *UserSchemaExporter) GetResourceRules() *declarativeresource.ResourceRul
 }
 
 // loadDeclarativeResources loads declarative user schema resources from files.
+// Works in both declarative-only and composite modes:
+// - In declarative mode: userSchemaStore is a fileBasedStore
+// - In composite mode: userSchemaStore is a compositeUserSchemaStore (contains both file and DB stores)
 func loadDeclarativeResources(
 	userSchemaStore userSchemaStoreInterface, ouService oupkg.OrganizationUnitServiceInterface) error {
+	var fileStore userSchemaStoreInterface
+
+	// Determine store type and extract file store
+	switch store := userSchemaStore.(type) {
+	case *compositeUserSchemaStore:
+		// Composite mode: extract file store from composite
+		fileStore = store.fileStore
+	case *userSchemaFileBasedStore:
+		// Declarative-only mode: only file store available
+		fileStore = store
+	default:
+		return fmt.Errorf("invalid store type for loading declarative resources")
+	}
+
 	// Type assert to access Storer interface for resource loading
-	fileBasedStore, ok := userSchemaStore.(*userSchemaFileBasedStore)
+	fileBasedStore, ok := fileStore.(*userSchemaFileBasedStore)
 	if !ok {
 		return fmt.Errorf("failed to assert userSchemaStore to *userSchemaFileBasedStore")
 	}

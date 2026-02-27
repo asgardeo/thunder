@@ -204,6 +204,10 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 			statusCode = http.StatusNotFound
 		} else if svcErr.Code == ErrorUserSchemaNameConflict.Code {
 			statusCode = http.StatusConflict
+		} else if svcErr.Code == ErrorCannotModifyDeclarativeResource.Code {
+			statusCode = http.StatusForbidden
+		} else if svcErr.Code == ErrorResultLimitExceededInCompositeMode.Code {
+			statusCode = http.StatusBadRequest
 		}
 	} else {
 		statusCode = http.StatusInternalServerError

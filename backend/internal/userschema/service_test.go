@@ -136,6 +136,7 @@ func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	ouID := testOUID3
+	storeMock.On("IsUserSchemaDeclarative", "schema-id").Return(false).Once()
 	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, ouID).
 		Return(false, (*serviceerror.ServiceError)(nil)).
 		Once()

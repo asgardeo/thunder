@@ -230,6 +230,11 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		return nil, invalidSchemaRequestError("schema id must not be empty")
 	}
 
+	// Check if schema is declarative (immutable) in composite mode
+	if us.userSchemaStore.IsUserSchemaDeclarative(schemaID) {
+		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
 	// Validate the schema definition
 	schemaToValidate := UserSchema{
 		Name:               request.Name,
@@ -294,6 +299,11 @@ func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID stri
 
 	if schemaID == "" {
 		return invalidSchemaRequestError("schema id must not be empty")
+	}
+
+	// Check if schema is declarative (immutable) in composite mode
+	if us.userSchemaStore.IsUserSchemaDeclarative(schemaID) {
+		return &ErrorCannotModifyDeclarativeResource
 	}
 
 	if err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {

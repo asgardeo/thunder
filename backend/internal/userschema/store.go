@@ -38,6 +38,7 @@ type userSchemaStoreInterface interface {
 	GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error)
 	UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error
 	DeleteUserSchemaByID(ctx context.Context, schemaID string) error
+	IsUserSchemaDeclarative(schemaID string) bool
 }
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
@@ -210,6 +211,11 @@ func (s *userSchemaStore) DeleteUserSchemaByID(ctx context.Context, schemaID str
 	}
 
 	return nil
+}
+
+// IsUserSchemaDeclarative returns false as database-backed schemas are always mutable.
+func (s *userSchemaStore) IsUserSchemaDeclarative(schemaID string) bool {
+	return false
 }
 
 // parseUserSchemaFromRow parses a user schema from a database row.

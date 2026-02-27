@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -34,14 +34,14 @@ func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
 ) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
-	var userSchemaStore userSchemaStoreInterface
+	// Step 1: Determine store mode and initialize store structure
+	storeMode := getUserSchemaStoreMode()
+	userSchemaStore := initializeStore(storeMode)
+
+	// Step 2: Get database transactioner (only needed for mutable modes)
 	var transactioner transaction.Transactioner
 	var err error
-
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		userSchemaStore = newUserSchemaFileBasedStore()
-	} else {
-		userSchemaStore = newUserSchemaStore()
+	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeMutable {
 		dbProvider := provider.GetDBProvider()
 		transactioner, err = dbProvider.GetConfigDBTransactioner()
 		if err != nil {
@@ -49,9 +49,11 @@ func Initialize(
 		}
 	}
 
+	// Step 3: Create service with store
 	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner)
 
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+	// Step 4: Load declarative resources into store (if applicable)
+	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeResources(userSchemaStore, ouService); err != nil {
 			return nil, nil, err
 		}
@@ -63,6 +65,54 @@ func Initialize(
 	// Create and return exporter
 	exporter := newUserSchemaExporter(userSchemaService)
 	return userSchemaService, exporter, nil
+}
+
+// Store Selection (based on user_schema.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All user schemas are mutable
+//   - Export functionality exports DB-backed user schemas
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All user schemas are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime user schemas (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative user schemas cannot be updated or deleted
+//   - Export only exports DB-backed user schemas (not YAML)
+//
+// Configuration Fallback:
+// - If user_schema.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore(storeMode serverconst.StoreMode) userSchemaStoreInterface {
+	var userSchemaStore userSchemaStoreInterface
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newUserSchemaFileBasedStore()
+		dbStore := newUserSchemaStore()
+		userSchemaStore = newCompositeUserSchemaStore(fileStore, dbStore)
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newUserSchemaFileBasedStore()
+		userSchemaStore = fileStore
+
+	default:
+		dbStore := newUserSchemaStore()
+		userSchemaStore = dbStore
+	}
+
+	return userSchemaStore
 }
 
 // registerRoutes registers the routes for user schema management operations.
