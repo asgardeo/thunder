@@ -37,10 +37,18 @@ crypto:
     key: {{ .Values.configuration.crypto.encryption.key | quote }}
   password_hashing:
     algorithm: {{ .Values.configuration.crypto.passwordHashing.algorithm | quote }}
-    parameters:
-      iterations: {{ .Values.configuration.crypto.passwordHashing.parameters.iterations }}
-      key_size: {{ .Values.configuration.crypto.passwordHashing.parameters.keySize }}
-      salt_size: {{ .Values.configuration.crypto.passwordHashing.parameters.saltSize }}
+    pbkdf2:
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.pbkdf2.salt_size }}
+      iterations: {{ .Values.configuration.crypto.passwordHashing.pbkdf2.iterations }}
+      key_size: {{ .Values.configuration.crypto.passwordHashing.pbkdf2.key_size }}
+    argon2id:
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.argon2id.salt_size }}
+      iterations: {{ .Values.configuration.crypto.passwordHashing.argon2id.iterations }}
+      key_size: {{ .Values.configuration.crypto.passwordHashing.argon2id.key_size }}
+      memory: {{ .Values.configuration.crypto.passwordHashing.argon2id.memory }}
+      parallelism: {{ .Values.configuration.crypto.passwordHashing.argon2id.parallelism }}
+    sha256:
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.sha256.salt_size }}
   keys:
   {{- range .Values.configuration.crypto.keys }}
     - id: {{ .id | quote }}

@@ -40,14 +40,18 @@ func (suite *InitTestSuite) TestInitialize() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(SHA256),
+				SHA256: config.SHA256Config{
+					SaltSize: 32,
+				},
 			},
 		},
 	}
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	service := Initialize()
+	service, err := Initialize()
 
+	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*HashServiceInterface)(nil), service)
 }

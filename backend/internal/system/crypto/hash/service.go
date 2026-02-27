@@ -28,12 +28,13 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+
+	"golang.org/x/crypto/argon2"
 )
 
 const (
-	defaultSaltSize         = 16
-	defaultPBKDF2Iterations = 600000
-	defaultPBKDF2KeySize    = 32
+	maxUint8  = int(^uint8(0))
+	maxUint32 = int(^uint32(0))
 )
 
 var (
@@ -56,29 +57,51 @@ type pbkdf2HashProvider struct {
 	KeySize    int
 }
 
+type argon2idHashProvider struct {
+	SaltSize    int
+	Memory      int
+	Iterations  int
+	Parallelism int
+	KeySize     int
+}
+
 // newHashService initializes and returns the appropriate hash provider based on configuration
-func newHashService() HashServiceInterface {
+func newHashService() (HashServiceInterface, error) {
 	cfg := config.GetThunderRuntime().Config.Crypto.PasswordHashing
 	algorithm := CredAlgorithm(cfg.Algorithm)
-	params := cfg.Parameters
 
 	switch algorithm {
 	case SHA256:
 		logger.Debug("Using SHA256 hash algorithm for password hashing")
-		return newSHA256Provider(params.SaltSize)
+		if err := validateSHA256Config(cfg.SHA256); err != nil {
+			return nil, err
+		}
+		return newSHA256Provider(cfg.SHA256.SaltSize), nil
 	case PBKDF2:
 		logger.Debug("Using PBKDF2 hash algorithm for password hashing")
-		return newPBKDF2Provider(params.SaltSize, params.Iterations, params.KeySize)
+		if err := validatePBKDF2Config(cfg.PBKDF2); err != nil {
+			return nil, err
+		}
+		return newPBKDF2Provider(cfg.PBKDF2.SaltSize, cfg.PBKDF2.Iterations, cfg.PBKDF2.KeySize), nil
+	case ARGON2ID:
+		logger.Debug("Using Argon2id hash algorithm for password hashing")
+		if err := validateArgon2idConfig(cfg.Argon2ID); err != nil {
+			return nil, err
+		}
+		return newArgon2idProvider(
+			cfg.Argon2ID.SaltSize,
+			cfg.Argon2ID.Memory,
+			cfg.Argon2ID.Iterations,
+			cfg.Argon2ID.Parallelism,
+			cfg.Argon2ID.KeySize,
+		), nil
 	default:
-		panic(fmt.Sprintf("unsupported hash algorithm configured: %s", algorithm))
+		return nil, fmt.Errorf("unsupported hash algorithm configured: %s", algorithm)
 	}
 }
 
 // newSHA256Provider creates a new SHA256HashProvider instance
 func newSHA256Provider(saltSize int) *sha256HashProvider {
-	if saltSize <= 0 {
-		saltSize = defaultSaltSize
-	}
 	return &sha256HashProvider{
 		SaltSize: saltSize,
 	}
@@ -105,7 +128,10 @@ func (a *sha256HashProvider) Generate(credentialValue []byte) (Credential, error
 
 // Verify SHA256Credential checks if the SHA256 hash of the input data and salt matches the expected hash.
 func (a *sha256HashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error) {
-	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
+	if err := validateCredentialAlgorithm(referenceCredential, SHA256); err != nil {
+		return false, err
+	}
+	saltBytes, err := decodeSalt(referenceCredential.Parameters.Salt)
 	if err != nil {
 		return false, err
 	}
@@ -117,15 +143,6 @@ func (a *sha256HashProvider) Verify(credentialValueToVerify []byte, referenceCre
 
 // newPBKDF2Provider creates a new PBKDF2HashProvider instance
 func newPBKDF2Provider(saltSize, iterations, keySize int) *pbkdf2HashProvider {
-	if saltSize <= 0 {
-		saltSize = defaultSaltSize
-	}
-	if iterations <= 0 {
-		iterations = defaultPBKDF2Iterations
-	}
-	if keySize <= 0 {
-		keySize = defaultPBKDF2KeySize
-	}
 	return &pbkdf2HashProvider{
 		SaltSize:   saltSize,
 		Iterations: iterations,
@@ -157,15 +174,20 @@ func (a *pbkdf2HashProvider) Generate(credentialValue []byte) (Credential, error
 
 // Verify PBKDF2Credential checks if the PBKDF2 hash of the input data and salt matches the expected hash.
 func (a *pbkdf2HashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error) {
-	iterations := referenceCredential.Parameters.Iterations
-	if iterations <= 0 {
-		iterations = defaultPBKDF2Iterations
+	if err := validateCredentialAlgorithm(referenceCredential, PBKDF2); err != nil {
+		return false, err
 	}
-	keySize := referenceCredential.Parameters.KeySize
-	if keySize <= 0 {
-		keySize = defaultPBKDF2KeySize
+	iterations, err := requirePositiveInt(referenceCredential.Parameters.Iterations, "iterations")
+	if err != nil {
+		logger.Error("Invalid PBKDF2 iterations: %v", log.Error(err))
+		return false, err
 	}
-	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
+	keySize, err := requirePositiveInt(referenceCredential.Parameters.KeySize, "key size")
+	if err != nil {
+		logger.Error("Invalid PBKDF2 key size: %v", log.Error(err))
+		return false, err
+	}
+	saltBytes, err := decodeSalt(referenceCredential.Parameters.Salt)
 	if err != nil {
 		logger.Error("Error decoding salt: %v", log.Error(err))
 		return false, err
@@ -179,6 +201,88 @@ func (a *pbkdf2HashProvider) Verify(credentialValueToVerify []byte, referenceCre
 	return hex.EncodeToString(hash) == referenceCredential.Hash, nil
 }
 
+func newArgon2idProvider(saltSize, memory, iterations, parallelism, keySize int) *argon2idHashProvider {
+	return &argon2idHashProvider{
+		SaltSize:    saltSize,
+		Memory:      memory,
+		Iterations:  iterations,
+		Parallelism: parallelism,
+		KeySize:     keySize,
+	}
+}
+
+// Generate Argon2idCredential generates an Argon2id hash.
+func (a *argon2idHashProvider) Generate(credentialValue []byte) (Credential, error) {
+	credSalt, err := generateSalt(a.SaltSize)
+	if err != nil {
+		return Credential{}, err
+	}
+
+	//nolint:gosec // G115 - Conversion is safe
+	hash := argon2.IDKey(
+		credentialValue,
+		credSalt,
+		uint32(a.Iterations),
+		uint32(a.Memory),
+		uint8(a.Parallelism),
+		uint32(a.KeySize),
+	)
+
+	return Credential{
+		Algorithm: ARGON2ID,
+		Hash:      hex.EncodeToString(hash),
+		Parameters: CredParameters{
+			Memory:      a.Memory,
+			Iterations:  a.Iterations,
+			Parallelism: a.Parallelism,
+			KeySize:     a.KeySize,
+			Salt:        hex.EncodeToString(credSalt),
+		},
+	}, nil
+}
+
+// Verify Argon2idCredential checks if the Argon2id hash of the input data and salt matches the expected hash.
+func (a *argon2idHashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error) {
+	if err := validateCredentialAlgorithm(referenceCredential, ARGON2ID); err != nil {
+		return false, err
+	}
+	memory, err := requirePositiveIntWithMax(referenceCredential.Parameters.Memory, maxUint32, "memory")
+	if err != nil {
+		logger.Error("Invalid Argon2id memory: %v", log.Error(err))
+		return false, err
+	}
+	iterations, err := requirePositiveIntWithMax(referenceCredential.Parameters.Iterations, maxUint32, "iterations")
+	if err != nil {
+		logger.Error("Invalid Argon2id iterations: %v", log.Error(err))
+		return false, err
+	}
+	parallelism, err := requirePositiveIntWithMax(referenceCredential.Parameters.Parallelism, maxUint8, "parallelism")
+	if err != nil {
+		logger.Error("Invalid Argon2id parallelism: %v", log.Error(err))
+		return false, err
+	}
+	keySize, err := requirePositiveIntWithMax(referenceCredential.Parameters.KeySize, maxUint32, "key size")
+	if err != nil {
+		logger.Error("Invalid Argon2id key size: %v", log.Error(err))
+		return false, err
+	}
+	saltBytes, err := decodeSalt(referenceCredential.Parameters.Salt)
+	if err != nil {
+		logger.Error("Error decoding salt: %v", log.Error(err))
+		return false, err
+	}
+	//nolint:gosec // G115 - Conversion is safe
+	hash := argon2.IDKey(
+		credentialValueToVerify,
+		saltBytes,
+		uint32(iterations),
+		uint32(memory),
+		uint8(parallelism),
+		uint32(keySize),
+	)
+	return hex.EncodeToString(hash) == referenceCredential.Hash, nil
+}
+
 // generateSalt generates a random salt string.
 func generateSalt(saltSize int) ([]byte, error) {
 	salt := make([]byte, saltSize)
@@ -188,4 +292,79 @@ func generateSalt(saltSize int) ([]byte, error) {
 		return nil, err
 	}
 	return salt, nil
+}
+
+func decodeSalt(salt string) ([]byte, error) {
+	if salt == "" {
+		return nil, fmt.Errorf("salt must be provided")
+	}
+	saltBytes, err := hex.DecodeString(salt)
+	if err != nil {
+		return nil, err
+	}
+	return saltBytes, nil
+}
+
+func validateCredentialAlgorithm(referenceCredential Credential, expected CredAlgorithm) error {
+	if referenceCredential.Algorithm != expected {
+		return fmt.Errorf("credential algorithm mismatch: expected %s", expected)
+	}
+	return nil
+}
+
+func requirePositiveInt(value int, name string) (int, error) {
+	if value <= 0 {
+		return 0, fmt.Errorf("%s must be positive", name)
+	}
+	return value, nil
+}
+
+func requirePositiveIntWithMax(value, maxValue int, name string) (int, error) {
+	normalized, err := requirePositiveInt(value, name)
+	if err != nil {
+		return 0, err
+	}
+	if normalized > maxValue {
+		return 0, fmt.Errorf("%s exceeds maximum supported value", name)
+	}
+	return normalized, nil
+}
+
+func validateSHA256Config(cfg config.SHA256Config) error {
+	if _, err := requirePositiveInt(cfg.SaltSize, "salt size"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validatePBKDF2Config(cfg config.PBKDF2Config) error {
+	if _, err := requirePositiveInt(cfg.SaltSize, "salt size"); err != nil {
+		return err
+	}
+	if _, err := requirePositiveInt(cfg.Iterations, "iterations"); err != nil {
+		return err
+	}
+	if _, err := requirePositiveInt(cfg.KeySize, "key size"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateArgon2idConfig(cfg config.Argon2IDConfig) error {
+	if _, err := requirePositiveInt(cfg.SaltSize, "salt size"); err != nil {
+		return err
+	}
+	if _, err := requirePositiveIntWithMax(cfg.Memory, maxUint32, "memory"); err != nil {
+		return err
+	}
+	if _, err := requirePositiveIntWithMax(cfg.Iterations, maxUint32, "iterations"); err != nil {
+		return err
+	}
+	if _, err := requirePositiveIntWithMax(cfg.Parallelism, maxUint8, "parallelism"); err != nil {
+		return err
+	}
+	if _, err := requirePositiveIntWithMax(cfg.KeySize, maxUint32, "key size"); err != nil {
+		return err
+	}
+	return nil
 }
