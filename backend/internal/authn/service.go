@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -53,7 +54,7 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
-	AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
+	AuthenticateWithCredentials(ctx context.Context, identifiers, credentials map[string]interface{},
 		skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
@@ -123,13 +124,13 @@ func newAuthenticationService(
 }
 
 // AuthenticateWithCredentials authenticates a user using credentials.
-func (as *authenticationService) AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
-	skipAssertion bool, existingAssertion string) (
+func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context, identifiers,
+	credentials map[string]interface{}, skipAssertion bool, existingAssertion string) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Authenticating with credentials")
 
-	authenticateResp, svcErr := as.credentialsService.Authenticate(identifiers, credentials, nil)
+	authenticateResp, svcErr := as.credentialsService.Authenticate(ctx, identifiers, credentials, nil)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -139,34 +140,52 @@ func (as *authenticationService) AuthenticateWithCredentials(identifiers, creden
 		return nil, &serviceerror.InternalServerError
 	}
 
-	requestedAttributes := []string{}
-	for _, attr := range authenticateResp.AvailableAttributes {
-		requestedAttributes = append(requestedAttributes, attr.Name)
+	var requestedAttributes *authnprovider.RequestedAttributes
+	if authenticateResp.AvailableAttributes != nil {
+		requestedAttributes = &authnprovider.RequestedAttributes{
+			Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
+			Verifications: nil,
+		}
+		for attrName := range authenticateResp.AvailableAttributes.Attributes {
+			requestedAttributes.Attributes[attrName] = nil
+		}
 	}
 
-	userAttributes, svcErr := as.credentialsService.GetAttributes(authenticateResp.Token, requestedAttributes, nil)
+	authUser, svcErr := as.credentialsService.GetAttributes(ctx, authenticateResp.Token, requestedAttributes, nil)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	if userAttributes == nil {
+	if authUser == nil {
 		logger.Error("Credentials get attributes response is nil")
 		return nil, &serviceerror.InternalServerError
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:               userAttributes.UserID,
-		Type:             userAttributes.UserType,
-		OrganizationUnit: userAttributes.OrganizationUnitID,
+		ID:               authUser.UserID,
+		Type:             authUser.UserType,
+		OrganizationUnit: authUser.OrganizationUnitID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
+		authUserAttributes := make(map[string]interface{})
+		if authUser.AttributesResponse != nil && authUser.AttributesResponse.Attributes != nil {
+			for attrName, attrValue := range authUser.AttributesResponse.Attributes {
+				authUserAttributes[attrName] = attrValue.Value
+			}
+		}
+		authUserAttributesJSON, err := json.Marshal(authUserAttributes)
+		if err != nil {
+			logger.Error("Failed to marshal user attributes")
+			return nil, &serviceerror.InternalServerError
+		}
+
 		authenticatedUser := &userprovider.User{
-			UserID:             userAttributes.UserID,
-			UserType:           userAttributes.UserType,
-			OrganizationUnitID: userAttributes.OrganizationUnitID,
-			Attributes:         userAttributes.Attributes,
+			UserID:             authUser.UserID,
+			UserType:           authUser.UserType,
+			OrganizationUnitID: authUser.OrganizationUnitID,
+			Attributes:         authUserAttributesJSON,
 		}
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, authenticatedUser, common.AuthenticatorCredentials,
 			existingAssertion, logger)

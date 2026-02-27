@@ -45,6 +45,7 @@ func newAuthenticationHandler(authnService AuthenticationServiceInterface) *auth
 
 // HandleCredentialsAuthRequest handles the credentials authentication request.
 func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	authRequestPtr, err := sysutils.DecodeJSONBody[AuthenticateWithCredentialsRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
@@ -63,7 +64,7 @@ func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 	}
 
 	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(
-		authRequest.Identifiers, authRequest.Credentials, skipAssertion, assertion)
+		ctx, authRequest.Identifiers, authRequest.Credentials, skipAssertion, assertion)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return

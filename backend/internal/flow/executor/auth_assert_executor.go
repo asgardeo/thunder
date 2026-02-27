@@ -293,8 +293,8 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
 			var err error
 			metadata := a.buildGetAttributesMetadata(ctx)
-			attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID, ctx.AuthenticatedUser.Token, userAttributes,
-				metadata)
+			attrs, err = a.getUserAttributes(ctx.Context, ctx.AuthenticatedUser.UserID,
+				ctx.AuthenticatedUser.Token, userAttributes, metadata)
 			if err != nil {
 				return err
 			}
@@ -313,30 +313,51 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string, token string, requestedAttributes []string,
-	metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributes(ctx context.Context, userID string, token string,
+	requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
 	var jsonAttrs json.RawMessage
 
+	// if token is present, fetch attributes from authentication provider
 	if token != "" {
-		res, svcErr := a.credsAuthSvc.GetAttributes(token, requestedAttributes, metadata)
+		// Convert requested attributes from []string to *RequestedAttributes
+		reqAttrs := &authnprovider.RequestedAttributes{
+			Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
+			Verifications: nil,
+		}
+		for _, attrName := range requestedAttributes {
+			reqAttrs.Attributes[attrName] = nil
+		}
+
+		res, svcErr := a.credsAuthSvc.GetAttributes(ctx, token, reqAttrs, metadata)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				return nil, errors.New("something went wrong while fetching user attributes")
 			}
 			return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
 		}
-		jsonAttrs = res.Attributes
-	} else {
-		res, err := a.userProvider.GetUser(userID)
-		if err != nil {
-			logger.Error("Failed to fetch user attributes",
-				log.String("userID", userID), log.Any("error", err))
-			return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+
+		// Extract attribute values from AttributesResponse
+		attrs := make(map[string]interface{})
+		if res.AttributesResponse != nil && res.AttributesResponse.Attributes != nil {
+			for attrName, attrResp := range res.AttributesResponse.Attributes {
+				if attrResp != nil {
+					attrs[attrName] = attrResp.Value
+				}
+			}
 		}
-		jsonAttrs = res.Attributes
+		return attrs, nil
 	}
+
+	// if token is not present, fetch attributes from user provider
+	res, err := a.userProvider.GetUser(userID)
+	if err != nil {
+		logger.Error("Failed to fetch user attributes",
+			log.String("userID", userID), log.Any("error", err))
+		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+	}
+	jsonAttrs = res.Attributes
 
 	if len(jsonAttrs) == 0 {
 		logger.Error("No user attributes returned")

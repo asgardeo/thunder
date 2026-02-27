@@ -20,6 +20,7 @@ package authnprovider
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -44,7 +45,7 @@ type AuthenticateRequest struct {
 // GetAttributesRequest is the request body for the attributes endpoint.
 type GetAttributesRequest struct {
 	Token               string                 `json:"token"`
-	RequestedAttributes []string               `json:"requestedAttributes"`
+	RequestedAttributes *RequestedAttributes   `json:"requestedAttributes"`
 	Metadata            *GetAttributesMetadata `json:"metadata"`
 }
 
@@ -58,7 +59,7 @@ func newRestAuthnProvider(baseURL, apiKey string, httpClient systemhttp.HTTPClie
 }
 
 // Authenticate authenticates a user.
-func (p *restAuthnProvider) Authenticate(identifiers, credentials map[string]interface{},
+func (p *restAuthnProvider) Authenticate(ctx context.Context, identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata) (*AuthnResult, *AuthnProviderError) {
 	reqBody := AuthenticateRequest{
 		Identifiers: identifiers,
@@ -71,7 +72,7 @@ func (p *restAuthnProvider) Authenticate(identifiers, credentials map[string]int
 		return nil, NewError(ErrorCodeSystemError, "Failed to marshal request", err.Error())
 	}
 
-	resp, err := p.doRequest(p.baseURL+"/authenticate", bytes.NewBuffer(jsonBody))
+	resp, err := p.doRequest(ctx, p.baseURL+"/authenticate", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, NewError(ErrorCodeSystemError, "Failed to send request", err.Error())
 	}
@@ -91,7 +92,7 @@ func (p *restAuthnProvider) Authenticate(identifiers, credentials map[string]int
 }
 
 // GetAttributes retrieves the attributes of a user.
-func (p *restAuthnProvider) GetAttributes(token string, requestedAttributes []string,
+func (p *restAuthnProvider) GetAttributes(ctx context.Context, token string, requestedAttributes *RequestedAttributes,
 	metadata *GetAttributesMetadata) (*GetAttributesResult, *AuthnProviderError) {
 	reqBody := GetAttributesRequest{
 		Token:               token,
@@ -104,7 +105,7 @@ func (p *restAuthnProvider) GetAttributes(token string, requestedAttributes []st
 		return nil, NewError(ErrorCodeSystemError, "Failed to marshal request", err.Error())
 	}
 
-	resp, err := p.doRequest(p.baseURL+"/attributes", bytes.NewBuffer(jsonBody))
+	resp, err := p.doRequest(ctx, p.baseURL+"/attributes", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, NewError(ErrorCodeSystemError, "Failed to send request", err.Error())
 	}
@@ -131,8 +132,8 @@ func (p *restAuthnProvider) decodeError(body io.Reader) *AuthnProviderError {
 	return &authnError
 }
 
-func (p *restAuthnProvider) doRequest(url string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, body)
+func (p *restAuthnProvider) doRequest(ctx context.Context, url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
