@@ -45,7 +45,9 @@ jobs:
           # Ignored advisories (dev-only transitive dependencies with no direct exposure in E2E tests):
           #   GHSA-3ppc-4f35-3m26 (CVE-2026-26996): minimatch ReDoS (transitive via eslint/typescript-eslint)
           #   GHSA-w7fw-mjwx-w883 (CVE-2026-2391): qs arrayLimit bypass (transitive via express)
-          IGNORED_GHSAS='["GHSA-3ppc-4f35-3m26","GHSA-w7fw-mjwx-w883"]'
+          #   GHSA-23c5-xmqv-rm74: minimatch ReDoS (transitive via eslint/typescript-eslint)
+          #   GHSA-7r86-cg39-jmmj: minimatch ReDoS (transitive via eslint/typescript-eslint)
+          IGNORED_GHSAS='["GHSA-3ppc-4f35-3m26","GHSA-w7fw-mjwx-w883","GHSA-23c5-xmqv-rm74","GHSA-7r86-cg39-jmmj"]'
           AUDIT_RESULT=$(npm audit --json --audit-level=high 2>&1) || true
           REMAINING=$(echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
             [.vulnerabilities[].via[] | select(type == "object")
@@ -71,7 +73,9 @@ jobs:
           # Ignored advisories (dev-only transitive dependencies with no direct exposure in sample apps):
           #   GHSA-3ppc-4f35-3m26 (CVE-2026-26996): minimatch ReDoS (transitive via eslint/typescript-eslint)
           #   GHSA-848j-6mx2-7j84 (CVE-2025-14505): elliptic risky crypto implementation (transitive via @asgardeo/react)
-          IGNORED_GHSAS='["GHSA-3ppc-4f35-3m26","GHSA-848j-6mx2-7j84"]'
+          #   GHSA-23c5-xmqv-rm74: minimatch ReDoS (transitive via eslint/typescript-eslint)
+          #   GHSA-7r86-cg39-jmmj: minimatch ReDoS (transitive via eslint/typescript-eslint)
+          IGNORED_GHSAS='["GHSA-3ppc-4f35-3m26","GHSA-848j-6mx2-7j84","GHSA-23c5-xmqv-rm74","GHSA-7r86-cg39-jmmj"]'
           for app in samples/apps/*/; do
             if [ -f "${app}package-lock.json" ]; then
               echo "Auditing $app..."
