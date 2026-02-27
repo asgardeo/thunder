@@ -19,6 +19,7 @@
 package authnprovider
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -72,7 +73,7 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {
 	identifiers := map[string]interface{}{"username": "user"}
 	credentials := map[string]interface{}{"password": "pass"}
 
-	result, err := provider.Authenticate(identifiers, credentials, nil)
+	result, err := provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
@@ -90,7 +91,7 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Failure() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
-	result, err := provider.Authenticate(nil, nil, nil)
+	result, err := provider.Authenticate(context.Background(), nil, nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -105,12 +106,17 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
 		var req GetAttributesRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		suite.Equal("token123", req.Token)
-		suite.Len(req.RequestedAttributes, 1)
-		suite.Equal("email", req.RequestedAttributes[0])
+		suite.NotNil(req.RequestedAttributes)
+		suite.Len(req.RequestedAttributes.Attributes, 1)
+		suite.Contains(req.RequestedAttributes.Attributes, "email")
 
 		resp := GetAttributesResult{
-			UserID:     "user123",
-			Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+			UserID: "user123",
+			AttributesResponse: &AttributesResponse{
+				Attributes: map[string]*AttributeResponse{
+					"email": {Value: "test@example.com"},
+				},
+			},
 		}
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resp)
@@ -118,11 +124,17 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "apikey123", suite.setupMockClient())
-	result, err := provider.GetAttributes("token123", []string{"email"}, nil)
+	reqAttrs := &RequestedAttributes{
+		Attributes: map[string]*AttributeMetadataRequest{
+			"email": nil,
+		},
+	}
+	result, err := provider.GetAttributes(context.Background(), "token123", reqAttrs, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.UserID)
-	suite.JSONEq(`{"email":"test@example.com"}`, string(result.Attributes))
+	suite.NotNil(result.AttributesResponse)
+	suite.Equal("test@example.com", result.AttributesResponse.Attributes["email"].Value)
 }
 
 func (suite *RestAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
@@ -135,7 +147,7 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
-	result, err := provider.GetAttributes("invalid", nil, nil)
+	result, err := provider.GetAttributes(context.Background(), "invalid", nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -151,7 +163,7 @@ func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 	defer ts.Close()
 
 	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
-	result, err := provider.Authenticate(nil, nil, nil)
+	result, err := provider.Authenticate(context.Background(), nil, nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)

@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
@@ -41,11 +40,11 @@ func newDefaultAuthnProvider(userSvc user.UserServiceInterface) AuthnProviderInt
 
 // Authenticate authenticates the user using the internal user service.
 func (p *defaultAuthnProvider) Authenticate(
+	ctx context.Context,
 	identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata,
 ) (*AuthnResult, *AuthnProviderError) {
-	authResponse, authErr := p.userSvc.AuthenticateUser(
-		security.WithRuntimeContext(context.Background()), identifiers, credentials)
+	authResponse, authErr := p.userSvc.AuthenticateUser(ctx, identifiers, credentials)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			if authErr.Code == user.ErrorUserNotFound.Code {
@@ -56,7 +55,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
 	}
 
-	userResult, getUserErr := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), authResponse.ID)
+	userResult, getUserErr := p.userSvc.GetUser(ctx, authResponse.ID)
 	if getUserErr != nil {
 		if getUserErr.Code == user.ErrorUserNotFound.Code {
 			return nil, NewError(ErrorCodeUserNotFound, getUserErr.Error, getUserErr.ErrorDescription)
@@ -71,13 +70,17 @@ func (p *defaultAuthnProvider) Authenticate(
 		}
 	}
 
-	availableAttributes := make([]AvailableAttribute, 0)
+	availableAttributes := &AvailableAttributes{
+		Attributes:    make(map[string]*AttributeMetadataResponse),
+		Verifications: make(map[string]*VerificationResponse),
+	}
 	for k := range attributes {
-		availableAttributes = append(availableAttributes, AvailableAttribute{
-			Name:        k,
-			DisplayName: k,
-			Verified:    false,
-		})
+		availableAttributes.Attributes[k] = &AttributeMetadataResponse{
+			AssuranceMetadataResponse: &AssuranceMetadataResponse{
+				IsVerified:     false,
+				VerificationID: "",
+			},
+		}
 	}
 
 	return &AuthnResult{
@@ -91,13 +94,14 @@ func (p *defaultAuthnProvider) Authenticate(
 
 // GetAttributes retrieves the user attributes using the internal user service.
 func (p *defaultAuthnProvider) GetAttributes(
+	ctx context.Context,
 	token string,
-	requestedAttributes []string,
+	requestedAttributes *RequestedAttributes,
 	metadata *GetAttributesMetadata,
 ) (*GetAttributesResult, *AuthnProviderError) {
 	userID := token
 
-	userResult, authErr := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), userID)
+	userResult, authErr := p.userSvc.GetUser(ctx, userID)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			return nil, NewError(ErrorCodeInvalidToken, authErr.Error, authErr.ErrorDescription)
@@ -105,35 +109,46 @@ func (p *defaultAuthnProvider) GetAttributes(
 		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
 	}
 
-	var attributes json.RawMessage
-	if len(requestedAttributes) > 0 {
-		var allAttributes map[string]interface{}
-		if len(userResult.Attributes) > 0 {
-			if err := json.Unmarshal(userResult.Attributes, &allAttributes); err != nil {
-				return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal user attributes")
-			}
+	var allAttributes map[string]interface{}
+	if len(userResult.Attributes) > 0 {
+		if err := json.Unmarshal(userResult.Attributes, &allAttributes); err != nil {
+			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal user attributes")
 		}
+	}
 
-		filteredAttributes := make(map[string]interface{})
-		for _, attr := range requestedAttributes {
-			if val, ok := allAttributes[attr]; ok {
-				filteredAttributes[attr] = val
+	attributesResponse := &AttributesResponse{
+		Attributes:    make(map[string]*AttributeResponse),
+		Verifications: make(map[string]*VerificationResponse),
+	}
+
+	if requestedAttributes != nil && len(requestedAttributes.Attributes) > 0 {
+		for attrName := range requestedAttributes.Attributes {
+			if val, ok := allAttributes[attrName]; ok {
+				attributesResponse.Attributes[attrName] = &AttributeResponse{
+					Value: val,
+					AssuranceMetadataResponse: &AssuranceMetadataResponse{
+						IsVerified:     false,
+						VerificationID: "",
+					},
+				}
 			}
-		}
-
-		var err error
-		attributes, err = json.Marshal(filteredAttributes)
-		if err != nil {
-			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to marshal filtered user attributes")
 		}
 	} else {
-		attributes = userResult.Attributes
+		for attrName, val := range allAttributes {
+			attributesResponse.Attributes[attrName] = &AttributeResponse{
+				Value: val,
+				AssuranceMetadataResponse: &AssuranceMetadataResponse{
+					IsVerified:     false,
+					VerificationID: "",
+				},
+			}
+		}
 	}
 
 	return &GetAttributesResult{
 		UserID:             userResult.ID,
 		UserType:           userResult.Type,
 		OrganizationUnitID: userResult.OrganizationUnit,
-		Attributes:         attributes,
+		AttributesResponse: attributesResponse,
 	}, nil
 }

@@ -18,20 +18,9 @@
 
 package authnprovider
 
-import "encoding/json"
-
 // AuthnMetadata contains metadata for authentication.
 type AuthnMetadata struct {
-	// TODO: Application should have a extension metadata field
-	// Those values should be fetched from there and passed to the authn provider
 	AppMetadata map[string]interface{} `json:"appMetadata,omitempty"`
-}
-
-// AvailableAttribute represents an attribute available from the identity provider.
-type AvailableAttribute struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
-	Verified    bool   `json:"verified"`
 }
 
 // AuthnResult represents the result of an authentication attempt.
@@ -40,7 +29,7 @@ type AuthnResult struct {
 	UserType            string               `json:"userType"`
 	OrganizationUnitID  string               `json:"ouId"`
 	Token               string               `json:"token"`
-	AvailableAttributes []AvailableAttribute `json:"availableAttributes"`
+	AvailableAttributes *AvailableAttributes `json:"availableAttributes"`
 }
 
 // GetAttributesMetadata contains metadata for fetching attributes.
@@ -51,8 +40,84 @@ type GetAttributesMetadata struct {
 
 // GetAttributesResult represents the result of fetching attributes.
 type GetAttributesResult struct {
-	UserID             string          `json:"userId"`
-	UserType           string          `json:"userType"`
-	OrganizationUnitID string          `json:"ouId"`
-	Attributes         json.RawMessage `json:"attributes,omitempty"`
+	UserID             string              `json:"userId"`
+	UserType           string              `json:"userType"`
+	OrganizationUnitID string              `json:"ouId"`
+	AttributesResponse *AttributesResponse `json:"attributeResponse,omitempty"`
+}
+
+// AvailableAttributes contains the available attributes and verifications for a user.
+type AvailableAttributes struct {
+	Attributes    map[string]*AttributeMetadataResponse `json:"attributes,omitempty"`
+	Verifications map[string]*VerificationResponse      `json:"verifications,omitempty"`
+}
+
+// AttributeMetadataResponse contains metadata for an attribute.
+type AttributeMetadataResponse struct {
+	AssuranceMetadataResponse *AssuranceMetadataResponse `json:"assuranceMetadataResponse,omitempty"`
+}
+
+// AssuranceMetadataResponse contains assurance metadata for an attribute.
+type AssuranceMetadataResponse struct {
+	IsVerified bool `json:"isVerified"`
+	// this should be the key of the corresponding verification response in the verifications map
+	VerificationID string `json:"verificationId,omitempty"`
+}
+
+// VerificationResponse contains verification details for an attribute.
+type VerificationResponse struct {
+	TrustFramework      string `json:"trustFramework,omitempty"`
+	Time                string `json:"time,omitempty"`
+	VerificationProcess string `json:"verificationProcess,omitempty"`
+}
+
+// RequestedAttributes contains the requested attributes and verifications.
+type RequestedAttributes struct {
+	Attributes    map[string]*AttributeMetadataRequest `json:"attributes,omitempty"`
+	Verifications map[string]*VerificationRequest      `json:"verifications,omitempty"`
+}
+
+// AttributeMetadataRequest contains metadata request details for an attribute.
+type AttributeMetadataRequest struct {
+	GenericMetadataRequest   *GenericMetadataRequest   `json:"genericMetadataRequest,omitempty"`
+	AssuranceMetadataRequest *AssuranceMetadataRequest `json:"assuranceMetadataRequest,omitempty"`
+}
+
+// GenericMetadataRequest contains generic metadata request details.
+type GenericMetadataRequest struct {
+	Essential bool     `json:"essential,omitempty"`
+	Value     string   `json:"value,omitempty"`
+	Values    []string `json:"values,omitempty"`
+}
+
+// GenericTimeMetadataRequest extends GenericMetadataRequest with time-related metadata.
+type GenericTimeMetadataRequest struct {
+	GenericMetadataRequest
+	MaxAge *int `json:"maxAge,omitempty"`
+}
+
+// AssuranceMetadataRequest contains assurance metadata request details.
+type AssuranceMetadataRequest struct {
+	ShouldVerify bool `json:"shouldVerify,omitempty"`
+	// this should be the key of the corresponding verification request in the verifications map
+	VerificationID string `json:"verificationId,omitempty"`
+}
+
+// VerificationRequest contains verification request details.
+type VerificationRequest struct {
+	TrustFramework      *GenericMetadataRequest     `json:"trustFramework,omitempty"`
+	VerificationProcess *GenericMetadataRequest     `json:"verificationProcess,omitempty"`
+	Time                *GenericTimeMetadataRequest `json:"time,omitempty"`
+}
+
+// AttributesResponse contains the response with attributes and verifications.
+type AttributesResponse struct {
+	Attributes    map[string]*AttributeResponse    `json:"attributes,omitempty"`
+	Verifications map[string]*VerificationResponse `json:"verifications,omitempty"`
+}
+
+// AttributeResponse contains the response for an attribute with its value and assurance metadata.
+type AttributeResponse struct {
+	Value                     interface{}                `json:"value,omitempty"`
+	AssuranceMetadataResponse *AssuranceMetadataResponse `json:"assuranceMetadataResponse,omitempty"`
 }

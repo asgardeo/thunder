@@ -34,7 +34,7 @@ type AuthenticatedUser struct {
 	OrganizationUnitID  string
 	UserType            string
 	Attributes          map[string]interface{}
-	AvailableAttributes []authnprovider.AvailableAttribute
+	AvailableAttributes *authnprovider.AvailableAttributes
 	Token               string
 }
 
