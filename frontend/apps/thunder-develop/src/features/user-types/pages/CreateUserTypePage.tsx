@@ -49,7 +49,7 @@ export default function CreateUserTypePage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
   const logger = useLogger('CreateUserTypePage');
-  const {createUserType, loading, error: createError} = useCreateUserType();
+  const createUserTypeMutation = useCreateUserType();
 
   const {
     currentStep,
@@ -204,7 +204,7 @@ export default function CreateUserTypePage(): JSX.Element {
     }
 
     try {
-      await createUserType(requestBody);
+      await createUserTypeMutation.mutateAsync(requestBody);
       await navigate('/user-types');
     } catch (submitError) {
       logger.error('Failed to create user type or navigate', {error: submitError, userTypeName: name});
@@ -375,12 +375,11 @@ export default function CreateUserTypePage(): JSX.Element {
                 </Alert>
               )}
 
-              {createError && (
+              {createUserTypeMutation.error && (
                 <Alert severity="error" sx={{mb: 3}}>
                   <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                    {createError.message}
+                    {createUserTypeMutation.error.message}
                   </Typography>
-                  {createError.description && <Typography variant="body2">{createError.description}</Typography>}
                 </Alert>
               )}
 
@@ -395,20 +394,20 @@ export default function CreateUserTypePage(): JSX.Element {
                 sx={{mt: 4}}
               >
                 {currentStep !== UserTypeCreateFlowStep.NAME && (
-                  <Button variant="text" onClick={handlePrevStep} disabled={loading}>
+                  <Button variant="text" onClick={handlePrevStep} disabled={createUserTypeMutation.isPending}>
                     {t('common:actions.back')}
                   </Button>
                 )}
 
                 <Button
                   variant="contained"
-                  disabled={!stepReady[currentStep] || loading}
+                  disabled={!stepReady[currentStep] || createUserTypeMutation.isPending}
                   sx={{minWidth: 140}}
                   onClick={handleNextStep}
                 >
                   {(() => {
                     if (!isLastStep) return t('common:actions.continue');
-                    if (loading) return t('common:status.saving');
+                    if (createUserTypeMutation.isPending) return t('common:status.saving');
                     return t('userTypes:createUserType');
                   })()}
                 </Button>

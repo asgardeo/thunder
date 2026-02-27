@@ -16,18 +16,18 @@
  * under the License.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any */
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
-import type {OrganizationUnitListParams} from '@/features/organization-units/models/requests';
 import ViewUserTypePage from '../ViewUserTypePage';
-import type {ApiUserSchema, ApiError, UpdateUserSchemaRequest} from '../../types/user-types';
+import type {ApiUserSchema, ApiError} from '../../types/user-types';
 
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
-const mockUpdateUserType = vi.fn();
+const mockUpdateMutateAsync = vi.fn();
 const mockResetUpdateError = vi.fn();
-const mockDeleteUserType = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -52,47 +52,10 @@ vi.mock('react-router', async () => {
 });
 
 // Mock hooks
-interface UseGetUserTypeReturn {
-  data: ApiUserSchema | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch: (id: string) => void;
-}
-
-interface UseUpdateUserTypeReturn {
-  updateUserType: (id: string, data: UpdateUserSchemaRequest) => Promise<void>;
-  error: ApiError | null;
-  reset: () => void;
-}
-
-interface UseDeleteUserTypeReturn {
-  deleteUserType: (id: string) => Promise<void>;
-  loading: boolean;
-  error: ApiError | null;
-}
-
-interface UseGetOrganizationUnitsReturn {
-  data: {
-    totalResults: number;
-    startIndex: number;
-    count: number;
-    organizationUnits: {
-      id: string;
-      name: string;
-      handle: string;
-      description?: string | null;
-      parent?: string | null;
-    }[];
-  } | null;
-  isLoading: boolean;
-  error: ApiError | null;
-  refetch: (newParams?: OrganizationUnitListParams) => Promise<void>;
-}
-
-const mockUseGetUserType = vi.fn<(id?: string) => UseGetUserTypeReturn>();
-const mockUseUpdateUserType = vi.fn<() => UseUpdateUserTypeReturn>();
-const mockUseDeleteUserType = vi.fn<() => UseDeleteUserTypeReturn>();
-const mockUseGetOrganizationUnits = vi.fn<() => UseGetOrganizationUnitsReturn>();
+const mockUseGetUserType = vi.fn<(id?: string) => any>();
+const mockUseUpdateUserType = vi.fn<() => any>();
+const mockUseDeleteUserType = vi.fn<() => any>();
+const mockUseGetOrganizationUnits = vi.fn<() => any>();
 const mockRefetchOrganizationUnits = vi.fn();
 
 vi.mock('../../api/useGetUserType', () => ({
@@ -152,19 +115,21 @@ describe('ViewUserTypePage', () => {
     vi.clearAllMocks();
     mockUseGetUserType.mockReturnValue({
       data: mockUserType,
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetch,
     });
     mockUseUpdateUserType.mockReturnValue({
-      updateUserType: mockUpdateUserType,
+      mutateAsync: mockUpdateMutateAsync,
       error: null,
       reset: mockResetUpdateError,
+      isPending: false,
     });
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: false,
+      mutateAsync: mockDeleteMutateAsync,
+      isPending: false,
       error: null,
+      reset: vi.fn(),
     });
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
@@ -178,7 +143,7 @@ describe('ViewUserTypePage', () => {
     it('displays loading state', () => {
       mockUseGetUserType.mockReturnValue({
         data: null,
-        loading: true,
+        isLoading: true,
         error: null,
         refetch: mockRefetch,
       });
@@ -197,7 +162,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: null,
-        loading: false,
+        isLoading: false,
         error,
         refetch: mockRefetch,
       });
@@ -211,7 +176,7 @@ describe('ViewUserTypePage', () => {
     it('displays warning when user type not found', () => {
       mockUseGetUserType.mockReturnValue({
         data: null,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -226,7 +191,7 @@ describe('ViewUserTypePage', () => {
       const user = userEvent.setup();
       mockUseGetUserType.mockReturnValue({
         data: null,
-        loading: false,
+        isLoading: false,
         error: {code: 'ERROR', message: 'Error', description: ''},
         refetch: mockRefetch,
       });
@@ -315,7 +280,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithEnum,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -342,7 +307,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithRegex,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -455,12 +420,12 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             ouId: 'child-ou',
           }),
-        );
+        });
       });
     });
 
@@ -485,7 +450,7 @@ describe('ViewUserTypePage', () => {
 
     it('saves changes successfully', async () => {
       const user = userEvent.setup();
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -498,20 +463,23 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith('schema-123', {
-          name: 'Updated Schema',
-          ouId: 'root-ou',
-          allowSelfRegistration: false,
-          schema: expect.any(Object) as Record<string, unknown>,
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: {
+            name: 'Updated Schema',
+            ouId: 'root-ou',
+            allowSelfRegistration: false,
+            schema: expect.any(Object) as Record<string, unknown>,
+          },
         });
-        expect(mockRefetch).toHaveBeenCalledWith('schema-123');
+        // Query invalidation in useUpdateUserType handles refetch automatically
       });
     });
 
     it('displays saving state', async () => {
       const user = userEvent.setup();
       // Use a promise that never resolves so the saving state persists
-      mockUpdateUserType.mockImplementation(() => new Promise(() => {}));
+      mockUpdateMutateAsync.mockImplementation(() => new Promise(() => {}));
 
       render(<ViewUserTypePage />);
 
@@ -533,9 +501,10 @@ describe('ViewUserTypePage', () => {
       };
 
       mockUseUpdateUserType.mockReturnValue({
-        updateUserType: mockUpdateUserType,
+        mutateAsync: mockUpdateMutateAsync,
         error,
         reset: mockResetUpdateError,
+        isPending: false,
       });
 
       render(<ViewUserTypePage />);
@@ -543,7 +512,6 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
       expect(screen.getByText('Failed to update')).toBeInTheDocument();
-      expect(screen.getByText('Validation failed')).toBeInTheDocument();
     });
 
     it('allows adding enum values in edit mode', async () => {
@@ -564,7 +532,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithString,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -602,7 +570,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithEnum,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -639,7 +607,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithString,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -702,7 +670,7 @@ describe('ViewUserTypePage', () => {
 
     it('deletes user type and navigates back', async () => {
       const user = userEvent.setup();
-      mockDeleteUserType.mockResolvedValue(undefined);
+      mockDeleteMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -716,7 +684,7 @@ describe('ViewUserTypePage', () => {
       await user.click(dialogDeleteButton);
 
       await waitFor(() => {
-        expect(mockDeleteUserType).toHaveBeenCalledWith('schema-123');
+        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('schema-123');
         expect(mockNavigate).toHaveBeenCalledWith('/user-types');
       });
     });
@@ -724,9 +692,10 @@ describe('ViewUserTypePage', () => {
     it('displays deleting state', async () => {
       const user = userEvent.setup();
       mockUseDeleteUserType.mockReturnValue({
-        deleteUserType: mockDeleteUserType,
-        loading: true,
+        mutateAsync: mockDeleteMutateAsync,
+        isPending: true,
         error: null,
+        reset: vi.fn(),
       });
 
       render(<ViewUserTypePage />);
@@ -748,9 +717,10 @@ describe('ViewUserTypePage', () => {
       };
 
       mockUseDeleteUserType.mockReturnValue({
-        deleteUserType: mockDeleteUserType,
-        loading: false,
+        mutateAsync: mockDeleteMutateAsync,
+        isPending: false,
         error,
+        reset: vi.fn(),
       });
 
       render(<ViewUserTypePage />);
@@ -759,13 +729,12 @@ describe('ViewUserTypePage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Cannot delete user type')).toBeInTheDocument();
-        expect(screen.getByText('User type is in use')).toBeInTheDocument();
       });
     });
 
-    it('closes dialog on delete error', async () => {
+    it('keeps dialog open on delete error', async () => {
       const user = userEvent.setup();
-      mockDeleteUserType.mockRejectedValue(new Error('Delete failed'));
+      mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
       render(<ViewUserTypePage />);
 
@@ -779,8 +748,9 @@ describe('ViewUserTypePage', () => {
       await user.click(dialogDeleteButton);
 
       await waitFor(() => {
-        expect(mockDeleteUserType).toHaveBeenCalled();
-        expect(screen.queryByText('Delete User Type')).not.toBeInTheDocument();
+        expect(mockDeleteMutateAsync).toHaveBeenCalled();
+        // Dialog stays open so user can see error and retry
+        expect(screen.getByText('Delete User Type')).toBeInTheDocument();
       });
     });
   });
@@ -804,7 +774,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithString,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -839,7 +809,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithNumber,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -874,12 +844,12 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithArray,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
 
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -887,9 +857,9 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             schema: expect.objectContaining({
               tags: expect.objectContaining({
                 type: 'array',
@@ -897,7 +867,7 @@ describe('ViewUserTypePage', () => {
               }) as Record<string, unknown>,
             }) as Record<string, unknown>,
           }),
-        );
+        });
       });
     });
 
@@ -919,12 +889,12 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithObject,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
 
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -932,9 +902,9 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             schema: expect.objectContaining({
               address: expect.objectContaining({
                 type: 'object',
@@ -942,13 +912,13 @@ describe('ViewUserTypePage', () => {
               }) as Record<string, unknown>,
             }) as Record<string, unknown>,
           }),
-        );
+        });
       });
     });
 
     it('handles save error and keeps form in edit mode', async () => {
       const user = userEvent.setup();
-      mockUpdateUserType.mockRejectedValue(new Error('Save failed'));
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Save failed'));
 
       render(<ViewUserTypePage />);
 
@@ -961,7 +931,7 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalled();
+        expect(mockUpdateMutateAsync).toHaveBeenCalled();
       });
 
       // Form should still be in edit mode
@@ -988,12 +958,12 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithString,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
 
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -1001,9 +971,9 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             schema: expect.objectContaining({
               status: expect.objectContaining({
                 type: 'string',
@@ -1011,7 +981,7 @@ describe('ViewUserTypePage', () => {
               }) as Record<string, unknown>,
             }) as Record<string, unknown>,
           }),
-        );
+        });
       });
     });
 
@@ -1033,12 +1003,12 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithRegex,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
 
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -1046,9 +1016,9 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             schema: expect.objectContaining({
               username: expect.objectContaining({
                 type: 'string',
@@ -1056,7 +1026,7 @@ describe('ViewUserTypePage', () => {
               }) as Record<string, unknown>,
             }) as Record<string, unknown>,
           }),
-        );
+        });
       });
     });
 
@@ -1080,7 +1050,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithString,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1120,7 +1090,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithString,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1146,7 +1116,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: null,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1181,12 +1151,12 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithUniqueNumber,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
 
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -1194,9 +1164,9 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             schema: expect.objectContaining({
               employeeId: expect.objectContaining({
                 type: 'number',
@@ -1204,7 +1174,7 @@ describe('ViewUserTypePage', () => {
               }) as Record<string, unknown>,
             }) as Record<string, unknown>,
           }),
-        );
+        });
       });
     });
   });
@@ -1227,7 +1197,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithEmptyOu,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1241,7 +1211,7 @@ describe('ViewUserTypePage', () => {
         expect(screen.getByText('Please provide an organization unit ID')).toBeInTheDocument();
       });
 
-      expect(mockUpdateUserType).not.toHaveBeenCalled();
+      expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
     });
 
     it('closes validation error snackbar when close button is clicked', async () => {
@@ -1261,7 +1231,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithEmptyOu,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1316,7 +1286,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithEmptyOu,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1346,7 +1316,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithUnknownOu,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
@@ -1450,12 +1420,12 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetUserType.mockReturnValue({
         data: userTypeWithEnum,
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetch,
       });
 
-      mockUpdateUserType.mockResolvedValue(undefined);
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
 
       render(<ViewUserTypePage />);
 
@@ -1475,9 +1445,9 @@ describe('ViewUserTypePage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUserType).toHaveBeenCalledWith(
-          'schema-123',
-          expect.objectContaining({
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
             schema: expect.objectContaining({
               status: expect.objectContaining({
                 type: 'string',
@@ -1485,7 +1455,7 @@ describe('ViewUserTypePage', () => {
               }) as Record<string, unknown>,
             }) as Record<string, unknown>,
           }),
-        );
+        });
       });
     });
   });

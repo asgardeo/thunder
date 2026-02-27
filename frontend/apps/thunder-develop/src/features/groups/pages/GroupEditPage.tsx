@@ -18,7 +18,7 @@
 
 import {useState, useCallback, useMemo, useRef, useEffect} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {useNavigate, useParams} from 'react-router';
+import {Link, useNavigate, useParams} from 'react-router';
 import {
   Avatar,
   Box,
@@ -34,6 +34,8 @@ import {
   Tab,
   Snackbar,
   Tooltip,
+  PageContent,
+  PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Copy, Check, Edit, Users} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
@@ -169,7 +171,7 @@ export default function GroupEditPage(): JSX.Element {
 
   if (fetchError) {
     return (
-      <Box sx={{maxWidth: 1200, mx: 'auto', px: 2, pt: 6}}>
+      <PageContent>
         <Alert severity="error" sx={{mb: 2}}>
           {fetchError.message ?? t('groups:edit.page.error')}
         </Alert>
@@ -183,13 +185,13 @@ export default function GroupEditPage(): JSX.Element {
         >
           {t('groups:edit.page.back')}
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   if (!group) {
     return (
-      <Box sx={{maxWidth: 1200, mx: 'auto', px: 2, pt: 6}}>
+      <PageContent>
         <Alert severity="warning" sx={{mb: 2}}>
           {t('groups:edit.page.notFound')}
         </Alert>
@@ -203,195 +205,186 @@ export default function GroupEditPage(): JSX.Element {
         >
           {t('groups:edit.page.back')}
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   return (
-    <Box>
+    <PageContent>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Button
-          onClick={() => {
-            handleBack().catch((error: unknown) => {
-              logger.error('Failed to navigate back', {error});
-            });
-          }}
-          variant="text"
-          startIcon={<ArrowLeft size={16} />}
-        >
+      <PageTitle>
+        <PageTitle.BackButton component={<Link to={listUrl} />}>
           {t('groups:edit.page.back')}
-        </Button>
-      </Stack>
-
-      {/* Group Header */}
-      <Box sx={{p: 3, mb: 3}}>
-        <Stack direction="row" spacing={3} alignItems="flex-start">
-          <Avatar
-            sx={{
-              width: 80,
-              height: 80,
-            }}
-          >
+        </PageTitle.BackButton>
+        <PageTitle.Avatar>
+          <Avatar>
             <Users size={32} />
           </Avatar>
-          <Box flex={1}>
-            <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-              {isEditingName ? (
-                <TextField
-                  autoFocus
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  onBlur={() => {
-                    if (tempName.trim()) {
-                      handleFieldChange('name', tempName.trim());
+        </PageTitle.Avatar>
+        <PageTitle.Header>
+          <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+            {isEditingName ? (
+              <TextField
+                autoFocus
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={() => {
+                  const trimmedName = tempName.trim();
+                  const currentName = (editedGroup.name ?? group.name).trim();
+                  if (trimmedName && trimmedName !== currentName) {
+                    handleFieldChange('name', trimmedName);
+                  }
+                  setIsEditingName(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const trimmedName = tempName.trim();
+                    const currentName = (editedGroup.name ?? group.name).trim();
+                    if (trimmedName && trimmedName !== currentName) {
+                      handleFieldChange('name', trimmedName);
                     }
                     setIsEditingName(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      if (tempName.trim()) {
-                        handleFieldChange('name', tempName.trim());
-                      }
-                      setIsEditingName(false);
-                    } else if (e.key === 'Escape') {
-                      setTempName(editedGroup.name ?? group.name);
-                      setIsEditingName(false);
-                    }
-                  }}
+                  } else if (e.key === 'Escape') {
+                    setTempName(editedGroup.name ?? group.name);
+                    setIsEditingName(false);
+                  }
+                }}
+                size="small"
+              />
+            ) : (
+              <>
+                <Typography variant="h3">{editedGroup.name ?? group.name}</Typography>
+                <IconButton
                   size="small"
-                />
-              ) : (
-                <>
-                  <Typography variant="h3">{editedGroup.name ?? group.name}</Typography>
-                  <Tooltip title={t('groups:edit.page.header.editName')} placement="right">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setTempName(editedGroup.name ?? group.name);
-                        setIsEditingName(true);
-                      }}
-                      sx={{
-                        opacity: 0.6,
-                        '&:hover': {opacity: 1},
-                      }}
-                    >
-                      <Edit size={16} />
-                    </IconButton>
-                  </Tooltip>
-                </>
-              )}
-            </Stack>
-            <Stack direction="row" alignItems="flex-start" spacing={1}>
-              {isEditingDescription ? (
-                <TextField
-                  autoFocus
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={tempDescription}
-                  onChange={(e) => setTempDescription(e.target.value)}
-                  onBlur={() => {
+                  aria-label="Edit group name"
+                  onClick={() => {
+                    setTempName(editedGroup.name ?? group.name);
+                    setIsEditingName(true);
+                  }}
+                  sx={{
+                    opacity: 0.6,
+                    '&:hover': {opacity: 1},
+                  }}
+                >
+                  <Edit size={16} />
+                </IconButton>
+              </>
+            )}
+          </Stack>
+        </PageTitle.Header>
+        <PageTitle.SubHeader>
+          <Stack direction="row" alignItems="flex-start" spacing={1}>
+            {isEditingDescription ? (
+              <TextField
+                autoFocus
+                fullWidth
+                multiline
+                rows={2}
+                value={tempDescription}
+                onChange={(e) => setTempDescription(e.target.value)}
+                onBlur={() => {
+                  const trimmedDescription = tempDescription.trim();
+                  if (trimmedDescription !== effectiveDescription) {
+                    handleFieldChange('description', trimmedDescription || undefined);
+                  }
+                  setIsEditingDescription(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
                     const trimmedDescription = tempDescription.trim();
                     if (trimmedDescription !== effectiveDescription) {
                       handleFieldChange('description', trimmedDescription || undefined);
                     }
                     setIsEditingDescription(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      const trimmedDescription = tempDescription.trim();
-                      if (trimmedDescription !== effectiveDescription) {
-                        handleFieldChange('description', trimmedDescription || undefined);
-                      }
-                      setIsEditingDescription(false);
-                    } else if (e.key === 'Escape') {
-                      setTempDescription(effectiveDescription);
-                      setIsEditingDescription(false);
-                    }
-                  }}
-                  size="small"
-                  placeholder={t('groups:edit.page.description.placeholder')}
-                  sx={{
-                    maxWidth: '600px',
-                    '& .MuiInputBase-root': {
-                      fontSize: '0.875rem',
-                    },
-                  }}
-                />
-              ) : (
-                <>
-                  <Typography variant="body2" color="text.secondary">
-                    {effectiveDescription || t('groups:edit.page.description.empty')}
-                  </Typography>
-                  <Tooltip title={t('groups:edit.page.header.editDescription')} placement="right">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setTempDescription(effectiveDescription);
-                        setIsEditingDescription(true);
-                      }}
-                      sx={{
-                        opacity: 0.6,
-                        '&:hover': {opacity: 1},
-                        mt: -0.5,
-                      }}
-                    >
-                      <Edit size={14} />
-                    </IconButton>
-                  </Tooltip>
-                </>
-              )}
-            </Stack>
-
-            {/* Group ID */}
-            <Tooltip
-              title={
-                copiedField === 'groupId'
-                  ? t('common:actions.copied')
-                  : t('groups:edit.general.sections.quickCopy.copyGroupId')
-              }
-              placement="right"
-            >
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={0.5}
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  handleCopyToClipboard(group.id, 'groupId').catch(() => {});
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleCopyToClipboard(group.id, 'groupId').catch(() => {});
+                  } else if (e.key === 'Escape') {
+                    setTempDescription(effectiveDescription);
+                    setIsEditingDescription(false);
                   }
                 }}
+                size="small"
+                placeholder={t('groups:edit.page.description.placeholder')}
                 sx={{
-                  cursor: 'pointer',
-                  width: 'fit-content',
-                  mt: 0.5,
-                  '&:hover .copy-icon': {opacity: 1},
-                  '&:focus-visible .copy-icon': {opacity: 1},
+                  maxWidth: '600px',
+                  '& .MuiInputBase-root': {
+                    fontSize: '0.875rem',
+                  },
                 }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{fontFamily: 'monospace', color: 'text.disabled', fontSize: '0.75rem'}}
-                >
-                  {group.id}
+              />
+            ) : (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  {effectiveDescription || t('groups:edit.page.description.empty')}
                 </Typography>
-                {copiedField === 'groupId' ? (
-                  <Check size={12} color="var(--mui-palette-success-main)" />
-                ) : (
-                  <Copy size={12} className="copy-icon" style={{opacity: 0.4}} />
-                )}
-              </Stack>
-            </Tooltip>
-          </Box>
-        </Stack>
-      </Box>
+                <IconButton
+                  size="small"
+                  aria-label="Edit group description"
+                  onClick={() => {
+                    setTempDescription(effectiveDescription);
+                    setIsEditingDescription(true);
+                  }}
+                  sx={{
+                    opacity: 0.6,
+                    '&:hover': {opacity: 1},
+                    mt: -0.5,
+                  }}
+                >
+                  <Edit size={14} />
+                </IconButton>
+              </>
+            )}
+          </Stack>
+
+          {/* Group ID */}
+          <Tooltip
+            title={
+              copiedField === 'groupId'
+                ? t('common:actions.copied')
+                : t('groups:edit.general.sections.quickCopy.copyGroupId')
+            }
+            placement="right"
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.5}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                handleCopyToClipboard(group.id, 'groupId').catch((error: unknown) => {
+                  logger.error('Failed to copy group ID', error instanceof Error ? error : {error});
+                });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleCopyToClipboard(group.id, 'groupId').catch((error: unknown) => {
+                    logger.error('Failed to copy group ID', error instanceof Error ? error : {error});
+                  });
+                }
+              }}
+              sx={{
+                cursor: 'pointer',
+                width: 'fit-content',
+                mt: 0.5,
+                '&:hover .copy-icon': {opacity: 1},
+                '&:focus-visible .copy-icon': {opacity: 1},
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{fontFamily: 'monospace', color: 'text.disabled', fontSize: '0.75rem'}}
+              >
+                {group.id}
+              </Typography>
+              {copiedField === 'groupId' ? (
+                <Check size={12} color="var(--mui-palette-success-main)" />
+              ) : (
+                <Copy size={12} className="copy-icon" style={{opacity: 0.4}} />
+              )}
+            </Stack>
+          </Tooltip>
+        </PageTitle.SubHeader>
+      </PageTitle>
 
       {/* Tabs */}
       <Tabs value={activeTab} onChange={handleTabChange} aria-label="group settings tabs">
@@ -497,6 +490,6 @@ export default function GroupEditPage(): JSX.Element {
           </Stack>
         </Paper>
       )}
-    </Box>
+    </PageContent>
   );
 }
