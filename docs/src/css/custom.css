@@ -363,6 +363,126 @@ html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
  * to prevent Docusaurus from tree-shaking them during production builds.
  */
 
+/* =============================== Sidebar Section Styles =============================== */
+
+/* Spacing for HTML section header items */
+.theme-doc-sidebar-menu > .menu__list > .sidebar-html-section-header {
+  margin-top: 0;
+  padding-top: 1.25rem;
+}
+
+.theme-doc-sidebar-menu > .menu__list > .sidebar-html-section-header:first-child {
+  padding-top: 0.5rem;
+}
+
+/* Divider line between sections */
+.sidebar-section + .sidebar-html-section-header {
+  border-top: 1px solid var(--ifm-toc-border-color);
+}
+
+/* Hide the Docusaurus category header — replaced by the HTML item above */
+.sidebar-section > .menu__list-item-collapsible {
+  display: none;
+}
+
+/* Section header content */
+.sidebar-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ifm-color-emphasis-900);
+  padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+  user-select: none;
+}
+
+/* Section header icon */
+.sidebar-section-label svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* ---- Items list — left border track ---- */
+.sidebar-section > .menu__list {
+  border-left: 1px solid var(--ifm-toc-border-color);
+  margin-left: 1rem;
+  padding-left: 0;
+}
+
+/* Item links */
+.sidebar-section > .menu__list .menu__link {
+  border-radius: 0;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  padding-left: 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ifm-color-emphasis-700);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Item hover */
+.sidebar-section > .menu__list .menu__link:hover {
+  color: var(--ifm-color-emphasis-900);
+  background: none;
+  border-left-color: var(--ifm-color-emphasis-400);
+}
+
+/* Active item */
+.sidebar-section > .menu__list .menu__link--active {
+  color: var(--ifm-color-primary);
+  font-weight: 500;
+  border-left-color: var(--ifm-color-primary);
+  background: none;
+}
+
+/* Nested sub-category (e.g. "Connect Your Application") caret alignment */
+.sidebar-section > .menu__list .menu__list-item-collapsible > .menu__link {
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+}
+
+.sidebar-section > .menu__list .menu__list-item-collapsible > .menu__link:hover {
+  border-left-color: var(--ifm-color-emphasis-400);
+  background: none;
+}
+
+.sidebar-section > .menu__list .menu__list-item-collapsible > .menu__link--active {
+  color: var(--ifm-color-primary);
+  border-left-color: var(--ifm-color-primary);
+}
+
+/* Nested sub-list indentation */
+.sidebar-section > .menu__list .menu__list {
+  padding-left: 0.75rem;
+}
+
+/* ---- Working with AI section — gradient + sparkle ---- */
+.sidebar-section-label--ai span {
+  background: linear-gradient(90deg, #7B5CF6 0%, #EC4899 50%, #FF6B00 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.sidebar-section-label--ai svg {
+  color: #7B5CF6;
+  animation: ai-sparkle 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes ai-sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  30%       { transform: scale(1.25) rotate(20deg); opacity: 0.75; }
+  60%       { transform: scale(1.1) rotate(-12deg); opacity: 0.9; }
+}
+
 /* Reduced-motion: disable animations for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   *,
