@@ -912,9 +912,7 @@ function ensure_crypto_file() {
         
         # Generate 32-byte key (64 hex characters) using openssl
         local NEW_KEY
-        NEW_KEY=$(openssl rand -hex 32)
-
-        if [[ -z "$NEW_KEY" ]]; then
+        if ! NEW_KEY=$(openssl rand -hex 32); then
             echo "ERROR: Failed to generate crypto key using openssl."
             exit 1
         fi
