@@ -1,0 +1,100 @@
+---
+title: Create your first Application
+sidebar_position: 3
+---
+
+# Create Your First Application
+
+Now that you have Thunder `up and running`, let's create your first application.
+
+## Prerequisites
+
+*   A running instance of Thunder (usually at `https://localhost:8090`).
+*   Administrator credentials. Default credentials are:
+    *   **Username**: `admin`
+    *   **Password**: `admin`
+
+## 1. Access the Console
+
+1.  Open your browser and navigate to the developer console:  
+    [https://localhost:8090/develop](https://localhost:8090/develop)
+
+2.  Enter your credentials (`admin` / `admin`) and click **Sign In**.
+
+    :::note
+    If you see a security warning about a self-signed certificate, you can safely proceed by clicking **Advanced** -> **Proceed**.
+    :::
+
+## 2. Navigate to Applications
+
+Once you are logged in, you will land on the developer dashboard.
+
+1.  In the left sidebar menu, find and click on **Applications**.
+2.  This page lists all applications currently configured in your Thunder instance.
+
+    ![Applications List](/assets/images/guides/create-first-app/01-applications-list.png)
+
+## 3. Start the Application Wizard
+
+Click the **New Application** (or **Add Application**) button in the top-right corner of the Applications page.
+
+This will launch the application creation flow which consists of the following steps:
+
+### Step 1: Application Details
+
+You will be asked to provide the basic details for your application.
+
+*   **Name**: Enter a friendly name for your application (e.g., `My Awesome App`).
+*   **Description** (Optional): A brief description of what your app does.
+
+Click **Continue** to proceed.
+
+![Application Details](/assets/images/guides/create-first-app/02-app-details.png)
+
+### Step 2: Design (Optional)
+
+You can customize the login and consent pages for your application here.
+
+*   Adjust branding, logos, and colors if desired.
+*   For this guide, you can stick with the defaults.
+
+Click **Continue**.
+
+![Design Step](/assets/images/guides/create-first-app/03-design.png)
+
+### Step 3: Sign-In Options
+
+Configure how your users will authenticate.
+
+*   **Login Flow**: You might see options for different authentication steps (e.g., Username & Password, Social Login).
+*   **Attributes**: Select which user attributes (claims) your application needs (e.g., Email, First Name).
+
+Review the defaults and click **Continue**.
+
+![Sign-In Options](/assets/images/guides/create-first-app/04-signin-options.png)
+
+### Step 4: Select Technology
+
+Choose the technology stack for your application to get tailored integration instructions.
+
+*   **Single Page Application (SPA)**: If you are building a React, Vue, or Angular app.
+*   **Web Application**: For traditional server-side apps (Node.js, Java, etc.).
+*   **Mobile Application**: For iOS or Android apps.
+*   **Backend Service**: For M2M communication.
+
+**Example**: Select **React** if you are building a React application.
+
+Click **Create** or **Finish**.
+
+![Select Technology](/assets/images/guides/create-first-app/05-select-technology.png)
+
+## 4. Get Your Credentials
+
+After the application is created, you will be redirected to the **Quick Start** or **Overview** tab of your new application.
+
+Note down the following important details:
+*   **Client ID**: A unique identifier for your application.
+*   **Client Secret** (if applicable): A secret key for secure authentication (usually for Web Apps and Backend Services).
+*   **Allowed Redirect URLs**: Ensure you configure the authorized redirect URLs for your app (e.g., `http://localhost:3000/callback`).
+
+You have successfully created your first application in Thunder!
