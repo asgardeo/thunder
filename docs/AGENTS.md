@@ -23,6 +23,8 @@ Follow these instructions when creating new documentation content for Thunder. A
 - Create content that is clear, concise, and actionable for the intended audience.
 - Ensure all technical details are accurate and up-to-date.
 - Use the provided templates and formatting rules consistently.
+- Do not broken links, missing images, or placeholders in the final output.
+- If there is no existing documentation for a next step, do not include it in the next steps section. Only link to existing documentation.
 
 ## Authoring Standards
 
@@ -35,6 +37,7 @@ You must follow these standards when creating documentation content for Thunder.
 - Address the reader as “you.”
 - Keep a professional, friendly, neutral tone.
 - Avoid slang, jokes, sarcasm, and marketing language.
+- Avoid Latin abbreviations such as e.g., i.e., and etc. Use plain English (for example, that is, and so on).
 
 ## Terminology and Consistency
 
@@ -206,6 +209,8 @@ These are allowed only inside code blocks, file paths, commands, or environment 
 - Use descriptive link text. Do not paste raw URLs as link text.
   - Example: `[Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/)`
 
+- When writing configuration descriptions in tables, explain the purpose of the setting, not just the field name.
+
 ### Code Blocks
 
 - Use fenced code blocks with a language tag when known.
@@ -294,6 +299,7 @@ Before finalizing output, ensure:
 - Use consistent section ordering and headings.
 - If assumptions are made, include an **Assumptions** section near the top.
 - End with a **Next steps** section when appropriate.
+- Do not include non-existent documentation to the next steps section. Only link to existing documentation.
 
 ### Vale Verification Requirement
 
