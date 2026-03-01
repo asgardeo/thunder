@@ -910,12 +910,10 @@ function ensure_crypto_file() {
     else
         echo "Default crypto key file not found. Generating new key at $KEY_FILE..."
         
-        # Generate 32-byte key (64 hex characters) using /dev/urandom
+        # Generate 32-byte key (64 hex characters) using openssl
         local NEW_KEY
-        NEW_KEY=$(head -c 32 /dev/urandom | xxd -p -c 32)
-
-        if [[ -z "$NEW_KEY" ]]; then
-            echo "ERROR: Failed to generate crypto key from /dev/urandom."
+        if ! NEW_KEY=$(openssl rand -hex 32); then
+            echo "ERROR: Failed to generate crypto key using openssl."
             exit 1
         fi
 
