@@ -52,10 +52,30 @@ const config: Config = {
 
   onBrokenLinks: 'log',
 
-  // Useful metadata like html lang for internationalization.
+  // Internationalization (i18n) configuration.
+  // See: https://docusaurus.io/docs/i18n/introduction
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: 'en-US',
+    locales: ['en-US'],
+    localeConfigs: {
+      'en-US': {
+        label: 'English (US)',
+        direction: 'ltr',
+        htmlLang: 'en-US',
+        calendar: 'gregory',
+      },
+      // Future locales can be added here. Example:
+      // 'es-ES': {
+      //   label: 'Español',
+      //   direction: 'ltr',
+      //   htmlLang: 'es-ES',
+      // },
+      // 'ja-JP': {
+      //   label: '日本語',
+      //   direction: 'ltr',
+      //   htmlLang: 'ja-JP',
+      // },
+    },
   },
 
   plugins: [webpackPlugin],
@@ -154,6 +174,22 @@ const config: Config = {
           position: 'right',
           className: 'navbar__github--link',
           'aria-label': 'GitHub repository',
+        },
+        // Locale dropdown for i18n support.
+        // Will be visible when multiple locales are configured.
+        {
+          type: 'localeDropdown',
+          position: 'right',
+          dropdownItemsAfter: [
+            {
+              type: 'html',
+              value: '<hr style="margin: 0.3rem 0;">',
+            },
+            {
+              href: 'https://github.com/asgardeo/thunder/issues/1251',
+              label: '🌍 Help translate',
+            },
+          ],
         },
       ],
     },
