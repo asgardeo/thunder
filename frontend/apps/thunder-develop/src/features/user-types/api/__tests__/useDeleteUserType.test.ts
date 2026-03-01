@@ -17,206 +17,189 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {waitFor, act, renderHook} from '@thunder/test-utils';
 import useDeleteUserType from '../useDeleteUserType';
+import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
 
-const mockHttpRequest = vi.fn();
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
-}));
-
-// Mock useConfig
-const mockGetServerUrl = vi.fn<() => string | undefined>(() => 'https://localhost:8090');
+vi.mock('@asgardeo/react', () => ({useAsgardeo: vi.fn()}));
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
-  return {
-    ...actual,
-    useConfig: () => ({
-      getServerUrl: mockGetServerUrl,
-    }),
-  };
+  return {...actual, useConfig: vi.fn()};
 });
+
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useDeleteUserType', () => {
   const mockUserTypeId = '123';
 
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
-    mockHttpRequest.mockReset();
-    mockGetServerUrl.mockReturnValue('https://localhost:8090');
+    mockHttpRequest = vi.fn();
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: () => 'https://api.test.com',
+    } as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with default state', () => {
+  it('should initialize with idle state', () => {
     const {result} = renderHook(() => useDeleteUserType());
 
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
-    expect(result.current.loading).toBe(false);
-    expect(typeof result.current.deleteUserType).toBe('function');
-    expect(typeof result.current.reset).toBe('function');
+    expect(result.current.isPending).toBe(false);
+    expect(result.current.isIdle).toBe(true);
+    expect(result.current.isSuccess).toBe(false);
+    expect(result.current.isError).toBe(false);
+    expect(typeof result.current.mutate).toBe('function');
+    expect(typeof result.current.mutateAsync).toBe('function');
   });
 
   it('should successfully delete a user type', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: null});
+    mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const {result} = renderHook(() => useDeleteUserType());
 
-    const deleteResult = await result.current.deleteUserType(mockUserTypeId);
-
-    expect(deleteResult).toBe(true);
+    result.current.mutate(mockUserTypeId);
 
     await waitFor(() => {
-      expect(result.current.error).toBeNull();
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
+
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.error).toBeNull();
+    expect(result.current.isPending).toBe(false);
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://localhost:8090/user-schemas/${mockUserTypeId}`,
+        url: `https://api.test.com/user-schemas/${mockUserTypeId}`,
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
     );
   });
 
-  it('should set loading state during deletion', async () => {
-    // Create a promise we can control
-    let resolveRequest: (value: {data: null}) => void;
-    const requestPromise = new Promise<{data: null}>((resolve) => {
-      resolveRequest = resolve;
-    });
-
-    mockHttpRequest.mockReturnValueOnce(requestPromise);
+  it('should set pending state during deletion', async () => {
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve(undefined), 100);
+      }),
+    );
 
     const {result} = renderHook(() => useDeleteUserType());
 
-    const promise = result.current.deleteUserType(mockUserTypeId);
+    result.current.mutate(mockUserTypeId);
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(true);
+      expect(result.current.isPending).toBe(true);
     });
-
-    // Now resolve the request
-    resolveRequest!({data: null});
-
-    await promise;
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isPending).toBe(false);
     });
+
+    expect(result.current.isSuccess).toBe(true);
   });
 
   it('should handle API error', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('User type not found'));
+    const apiError = new Error('Failed to delete user type');
+
+    mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const {result} = renderHook(() => useDeleteUserType());
 
-    await expect(result.current.deleteUserType(mockUserTypeId)).rejects.toThrow('User type not found');
+    result.current.mutate(mockUserTypeId);
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_TYPE_ERROR',
-        message: 'User type not found',
-        description: 'Failed to delete user type',
-      });
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isPending).toBe(false);
+  });
+
+  it('should remove user type from cache and invalidate list on success', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
+
+    const {result, queryClient} = renderHook(() => useDeleteUserType());
+    const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    result.current.mutate(mockUserTypeId);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(removeQueriesSpy).toHaveBeenCalledWith({
+      queryKey: [UserTypeQueryKeys.USER_TYPE, mockUserTypeId],
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: [UserTypeQueryKeys.USER_TYPES],
     });
   });
 
-  it('should handle network error', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
+  it('should handle invalidateQueries rejection gracefully', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
 
-    const {result} = renderHook(() => useDeleteUserType());
+    const {result, queryClient} = renderHook(() => useDeleteUserType());
+    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
 
-    await expect(result.current.deleteUserType(mockUserTypeId)).rejects.toThrow('Network error');
+    result.current.mutate(mockUserTypeId);
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_TYPE_ERROR',
-        message: 'Network error',
-        description: 'Failed to delete user type',
-      });
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
   });
 
-  it('should reset error state when reset is called', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('User type not found'));
+  it('should support mutateAsync for promise-based workflows', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const {result} = renderHook(() => useDeleteUserType());
 
-    await expect(result.current.deleteUserType(mockUserTypeId)).rejects.toThrow('User type not found');
+    const promise = result.current.mutateAsync(mockUserTypeId);
+
+    await expect(promise).resolves.toBeUndefined();
 
     await waitFor(() => {
-      expect(result.current.error).not.toBeNull();
-    });
-
-    result.current.reset();
-
-    await waitFor(() => {
-      expect(result.current.error).toBeNull();
+      expect(result.current.isSuccess).toBe(true);
     });
   });
 
-  it('should clear previous error when starting new request', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('Previous error')).mockResolvedValueOnce({data: null});
+  it('should reset mutation state', async () => {
+    mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const {result} = renderHook(() => useDeleteUserType());
 
-    await expect(result.current.deleteUserType(mockUserTypeId)).rejects.toThrow('Previous error');
+    result.current.mutate(mockUserTypeId);
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_TYPE_ERROR',
-        message: 'Previous error',
-        description: 'Failed to delete user type',
-      });
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    await result.current.deleteUserType(mockUserTypeId);
+    act(() => {
+      result.current.reset();
+    });
 
     await waitFor(() => {
-      expect(result.current.error).toBeNull();
+      expect(result.current.data).toBeUndefined();
     });
-  });
-
-  it('should handle non-Error rejection', async () => {
-    mockHttpRequest.mockRejectedValueOnce('String error');
-
-    const {result} = renderHook(() => useDeleteUserType());
-
-    await expect(result.current.deleteUserType(mockUserTypeId)).rejects.toBe('String error');
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'DELETE_USER_TYPE_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to delete user type',
-      });
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should fallback to env variable when getServerUrl returns undefined', async () => {
-    mockGetServerUrl.mockReturnValue(undefined);
-    mockHttpRequest.mockResolvedValueOnce({data: null});
-
-    const {result} = renderHook(() => useDeleteUserType());
-
-    const deleteResult = await result.current.deleteUserType(mockUserTypeId);
-
-    expect(deleteResult).toBe(true);
-
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: expect.stringContaining('/user-schemas/') as string,
-        method: 'DELETE',
-      }),
-    );
+    expect(result.current.error).toBeNull();
+    expect(result.current.isIdle).toBe(true);
+    expect(result.current.isSuccess).toBe(false);
   });
 });
