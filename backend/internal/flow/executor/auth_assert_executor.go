@@ -355,7 +355,7 @@ func (a *authAssertExecutor) getUserAttributes(ctx context.Context, userID strin
 	if err != nil {
 		logger.Error("Failed to fetch user attributes",
 			log.String("userID", userID), log.Any("error", err))
-		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+		return nil, errors.New("something went wrong while fetching user attributes: " + err.ErrorDescription)
 	}
 	jsonAttrs = res.Attributes
 
@@ -414,7 +414,7 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	if err != nil {
 		logger.Error("Failed to fetch user groups",
 			log.String("userID", userID), log.Any("error", err))
-		return errors.New("something went wrong while fetching user groups: " + err.Description)
+		return errors.New("something went wrong while fetching user groups: " + err.ErrorDescription)
 	}
 
 	userGroups := make([]string, 0, len(groups.Groups))

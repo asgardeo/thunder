@@ -535,7 +535,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithError_EmptySub()
 }
 
 func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithError_UserNotFound() {
-	upErr := &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound}
+	upErr := &userprovider.ErrorUserNotFound
 	suite.mockUserProvider.On("IdentifyUser", mock.Anything).Return(nil, upErr)
 
 	result, err := suite.service.GetInternalUser(testSub)
@@ -553,10 +553,8 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 		{
 			name: "IdentifyServerError",
 			mockSetup: func(m *userprovidermock.UserProviderInterfaceMock) {
-				serverErr := &userprovider.UserProviderError{
-					Code:    userprovider.ErrorCodeSystemError,
-					Message: "Database unavailable",
-				}
+				serverErr := serviceerror.CustomServiceError(
+					userprovider.ErrorSystemError, "Database unavailable")
 				m.On("IdentifyUser", mock.Anything).Return(nil, serverErr)
 			},
 			expectedErrCode: serviceerror.InternalServerError.Code,
@@ -565,10 +563,8 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 			name: "GetUserServerError",
 			mockSetup: func(m *userprovidermock.UserProviderInterfaceMock) {
 				userID := "user123"
-				serverErr := &userprovider.UserProviderError{
-					Code:    userprovider.ErrorCodeSystemError,
-					Message: "Database unavailable",
-				}
+				serverErr := serviceerror.CustomServiceError(
+					userprovider.ErrorSystemError, "Database unavailable")
 				m.On("IdentifyUser", mock.Anything).Return(&userID, nil)
 				m.On("GetUser", userID).Return(nil, serverErr)
 			},
@@ -577,7 +573,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 		{
 			name: "IdentifyNilUserID",
 			mockSetup: func(m *userprovidermock.UserProviderInterfaceMock) {
-				m.On("IdentifyUser", mock.Anything).Return(nil, (*userprovider.UserProviderError)(nil))
+				m.On("IdentifyUser", mock.Anything).Return(nil, (*serviceerror.ServiceError)(nil))
 			},
 			expectedErrCode: common.ErrorUserNotFound.Code,
 		},

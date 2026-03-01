@@ -277,7 +277,7 @@ func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
 	}
 
 	if _, err := a.userProvider.UpdateUser(userID, updatedUser); err != nil {
-		return fmt.Errorf("failed to update user attributes: %s", err.Message)
+		return fmt.Errorf("failed to update user attributes: %s", err.Error)
 	}
 	logger.Debug("User attributes updated successfully", log.String("userID", userID))
 
@@ -293,7 +293,7 @@ func (a *attributeCollector) getUserFromStore(ctx *core.NodeContext) (*userprovi
 
 	user, err := a.userProvider.GetUser(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user by ID: %s", err.Message)
+		return nil, fmt.Errorf("failed to get user by ID: %s", err.Error)
 	}
 
 	return user, nil

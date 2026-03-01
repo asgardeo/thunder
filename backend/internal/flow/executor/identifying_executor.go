@@ -85,13 +85,13 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 	userID, err := i.userProvider.IdentifyUser(searchableFilter)
 	if err != nil {
-		if err.Code == userprovider.ErrorCodeUserNotFound {
+		if err.Code == userprovider.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonUserNotFound
 			return nil, nil
 		} else {
-			logger.Debug("Failed to identify user due to error: " + err.Error())
+			logger.Debug("Failed to identify user due to error: " + err.Error)
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonFailedToIdentifyUser
 			return nil, nil

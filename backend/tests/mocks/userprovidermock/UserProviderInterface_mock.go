@@ -7,6 +7,7 @@ package userprovidermock
 import (
 	"encoding/json"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -39,7 +40,7 @@ func (_m *UserProviderInterfaceMock) EXPECT() *UserProviderInterfaceMock_Expecte
 }
 
 // CreateUser provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) CreateUser(user *userprovider.User) (*userprovider.User, *userprovider.UserProviderError) {
+func (_mock *UserProviderInterfaceMock) CreateUser(user *userprovider.User) (*userprovider.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(user)
 
 	if len(ret) == 0 {
@@ -47,8 +48,8 @@ func (_mock *UserProviderInterfaceMock) CreateUser(user *userprovider.User) (*us
 	}
 
 	var r0 *userprovider.User
-	var r1 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(*userprovider.User) (*userprovider.User, *userprovider.UserProviderError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(*userprovider.User) (*userprovider.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(user)
 	}
 	if returnFunc, ok := ret.Get(0).(func(*userprovider.User) *userprovider.User); ok {
@@ -58,11 +59,11 @@ func (_mock *UserProviderInterfaceMock) CreateUser(user *userprovider.User) (*us
 			r0 = ret.Get(0).(*userprovider.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*userprovider.User) *userprovider.UserProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(*userprovider.User) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(user)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*userprovider.UserProviderError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -92,30 +93,30 @@ func (_c *UserProviderInterfaceMock_CreateUser_Call) Run(run func(user *userprov
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_CreateUser_Call) Return(user1 *userprovider.User, userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_CreateUser_Call {
-	_c.Call.Return(user1, userProviderError)
+func (_c *UserProviderInterfaceMock_CreateUser_Call) Return(user1 *userprovider.User, serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_CreateUser_Call {
+	_c.Call.Return(user1, serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_CreateUser_Call) RunAndReturn(run func(user *userprovider.User) (*userprovider.User, *userprovider.UserProviderError)) *UserProviderInterfaceMock_CreateUser_Call {
+func (_c *UserProviderInterfaceMock_CreateUser_Call) RunAndReturn(run func(user *userprovider.User) (*userprovider.User, *serviceerror.ServiceError)) *UserProviderInterfaceMock_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteUser provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) DeleteUser(userID string) *userprovider.UserProviderError {
+func (_mock *UserProviderInterfaceMock) DeleteUser(userID string) *serviceerror.ServiceError {
 	ret := _mock.Called(userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteUser")
 	}
 
-	var r0 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(string) *userprovider.UserProviderError); ok {
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) *serviceerror.ServiceError); ok {
 		r0 = returnFunc(userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*userprovider.UserProviderError)
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
 		}
 	}
 	return r0
@@ -145,18 +146,18 @@ func (_c *UserProviderInterfaceMock_DeleteUser_Call) Run(run func(userID string)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_DeleteUser_Call) Return(userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_DeleteUser_Call {
-	_c.Call.Return(userProviderError)
+func (_c *UserProviderInterfaceMock_DeleteUser_Call) Return(serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_DeleteUser_Call {
+	_c.Call.Return(serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_DeleteUser_Call) RunAndReturn(run func(userID string) *userprovider.UserProviderError) *UserProviderInterfaceMock_DeleteUser_Call {
+func (_c *UserProviderInterfaceMock_DeleteUser_Call) RunAndReturn(run func(userID string) *serviceerror.ServiceError) *UserProviderInterfaceMock_DeleteUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUser provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) GetUser(userID string) (*userprovider.User, *userprovider.UserProviderError) {
+func (_mock *UserProviderInterfaceMock) GetUser(userID string) (*userprovider.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(userID)
 
 	if len(ret) == 0 {
@@ -164,8 +165,8 @@ func (_mock *UserProviderInterfaceMock) GetUser(userID string) (*userprovider.Us
 	}
 
 	var r0 *userprovider.User
-	var r1 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(string) (*userprovider.User, *userprovider.UserProviderError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) (*userprovider.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(userID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string) *userprovider.User); ok {
@@ -175,11 +176,11 @@ func (_mock *UserProviderInterfaceMock) GetUser(userID string) (*userprovider.Us
 			r0 = ret.Get(0).(*userprovider.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *userprovider.UserProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(userID)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*userprovider.UserProviderError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -209,18 +210,18 @@ func (_c *UserProviderInterfaceMock_GetUser_Call) Run(run func(userID string)) *
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_GetUser_Call) Return(user *userprovider.User, userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_GetUser_Call {
-	_c.Call.Return(user, userProviderError)
+func (_c *UserProviderInterfaceMock_GetUser_Call) Return(user *userprovider.User, serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_GetUser_Call {
+	_c.Call.Return(user, serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_GetUser_Call) RunAndReturn(run func(userID string) (*userprovider.User, *userprovider.UserProviderError)) *UserProviderInterfaceMock_GetUser_Call {
+func (_c *UserProviderInterfaceMock_GetUser_Call) RunAndReturn(run func(userID string) (*userprovider.User, *serviceerror.ServiceError)) *UserProviderInterfaceMock_GetUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUserGroups provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) GetUserGroups(userID string, limit int, offset int) (*userprovider.UserGroupListResponse, *userprovider.UserProviderError) {
+func (_mock *UserProviderInterfaceMock) GetUserGroups(userID string, limit int, offset int) (*userprovider.UserGroupListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(userID, limit, offset)
 
 	if len(ret) == 0 {
@@ -228,8 +229,8 @@ func (_mock *UserProviderInterfaceMock) GetUserGroups(userID string, limit int, 
 	}
 
 	var r0 *userprovider.UserGroupListResponse
-	var r1 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(string, int, int) (*userprovider.UserGroupListResponse, *userprovider.UserProviderError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, int, int) (*userprovider.UserGroupListResponse, *serviceerror.ServiceError)); ok {
 		return returnFunc(userID, limit, offset)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string, int, int) *userprovider.UserGroupListResponse); ok {
@@ -239,11 +240,11 @@ func (_mock *UserProviderInterfaceMock) GetUserGroups(userID string, limit int, 
 			r0 = ret.Get(0).(*userprovider.UserGroupListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, int, int) *userprovider.UserProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(string, int, int) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(userID, limit, offset)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*userprovider.UserProviderError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -285,18 +286,18 @@ func (_c *UserProviderInterfaceMock_GetUserGroups_Call) Run(run func(userID stri
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_GetUserGroups_Call) Return(userGroupListResponse *userprovider.UserGroupListResponse, userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_GetUserGroups_Call {
-	_c.Call.Return(userGroupListResponse, userProviderError)
+func (_c *UserProviderInterfaceMock_GetUserGroups_Call) Return(userGroupListResponse *userprovider.UserGroupListResponse, serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_GetUserGroups_Call {
+	_c.Call.Return(userGroupListResponse, serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_GetUserGroups_Call) RunAndReturn(run func(userID string, limit int, offset int) (*userprovider.UserGroupListResponse, *userprovider.UserProviderError)) *UserProviderInterfaceMock_GetUserGroups_Call {
+func (_c *UserProviderInterfaceMock_GetUserGroups_Call) RunAndReturn(run func(userID string, limit int, offset int) (*userprovider.UserGroupListResponse, *serviceerror.ServiceError)) *UserProviderInterfaceMock_GetUserGroups_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // IdentifyUser provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) IdentifyUser(filters map[string]interface{}) (*string, *userprovider.UserProviderError) {
+func (_mock *UserProviderInterfaceMock) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
 	ret := _mock.Called(filters)
 
 	if len(ret) == 0 {
@@ -304,8 +305,8 @@ func (_mock *UserProviderInterfaceMock) IdentifyUser(filters map[string]interfac
 	}
 
 	var r0 *string
-	var r1 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) (*string, *userprovider.UserProviderError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) (*string, *serviceerror.ServiceError)); ok {
 		return returnFunc(filters)
 	}
 	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) *string); ok {
@@ -315,11 +316,11 @@ func (_mock *UserProviderInterfaceMock) IdentifyUser(filters map[string]interfac
 			r0 = ret.Get(0).(*string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}) *userprovider.UserProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(filters)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*userprovider.UserProviderError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -349,18 +350,18 @@ func (_c *UserProviderInterfaceMock_IdentifyUser_Call) Run(run func(filters map[
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_IdentifyUser_Call) Return(s *string, userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_IdentifyUser_Call {
-	_c.Call.Return(s, userProviderError)
+func (_c *UserProviderInterfaceMock_IdentifyUser_Call) Return(s *string, serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_IdentifyUser_Call {
+	_c.Call.Return(s, serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filters map[string]interface{}) (*string, *userprovider.UserProviderError)) *UserProviderInterfaceMock_IdentifyUser_Call {
+func (_c *UserProviderInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filters map[string]interface{}) (*string, *serviceerror.ServiceError)) *UserProviderInterfaceMock_IdentifyUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateUser provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) UpdateUser(userID string, user *userprovider.User) (*userprovider.User, *userprovider.UserProviderError) {
+func (_mock *UserProviderInterfaceMock) UpdateUser(userID string, user *userprovider.User) (*userprovider.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(userID, user)
 
 	if len(ret) == 0 {
@@ -368,8 +369,8 @@ func (_mock *UserProviderInterfaceMock) UpdateUser(userID string, user *userprov
 	}
 
 	var r0 *userprovider.User
-	var r1 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(string, *userprovider.User) (*userprovider.User, *userprovider.UserProviderError)); ok {
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, *userprovider.User) (*userprovider.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(userID, user)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string, *userprovider.User) *userprovider.User); ok {
@@ -379,11 +380,11 @@ func (_mock *UserProviderInterfaceMock) UpdateUser(userID string, user *userprov
 			r0 = ret.Get(0).(*userprovider.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *userprovider.User) *userprovider.UserProviderError); ok {
+	if returnFunc, ok := ret.Get(1).(func(string, *userprovider.User) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(userID, user)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*userprovider.UserProviderError)
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
 		}
 	}
 	return r0, r1
@@ -419,30 +420,30 @@ func (_c *UserProviderInterfaceMock_UpdateUser_Call) Run(run func(userID string,
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_UpdateUser_Call) Return(user1 *userprovider.User, userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_UpdateUser_Call {
-	_c.Call.Return(user1, userProviderError)
+func (_c *UserProviderInterfaceMock_UpdateUser_Call) Return(user1 *userprovider.User, serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_UpdateUser_Call {
+	_c.Call.Return(user1, serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_UpdateUser_Call) RunAndReturn(run func(userID string, user *userprovider.User) (*userprovider.User, *userprovider.UserProviderError)) *UserProviderInterfaceMock_UpdateUser_Call {
+func (_c *UserProviderInterfaceMock_UpdateUser_Call) RunAndReturn(run func(userID string, user *userprovider.User) (*userprovider.User, *serviceerror.ServiceError)) *UserProviderInterfaceMock_UpdateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateUserCredentials provides a mock function for the type UserProviderInterfaceMock
-func (_mock *UserProviderInterfaceMock) UpdateUserCredentials(userID string, credentials json.RawMessage) *userprovider.UserProviderError {
+func (_mock *UserProviderInterfaceMock) UpdateUserCredentials(userID string, credentials json.RawMessage) *serviceerror.ServiceError {
 	ret := _mock.Called(userID, credentials)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateUserCredentials")
 	}
 
-	var r0 *userprovider.UserProviderError
-	if returnFunc, ok := ret.Get(0).(func(string, json.RawMessage) *userprovider.UserProviderError); ok {
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, json.RawMessage) *serviceerror.ServiceError); ok {
 		r0 = returnFunc(userID, credentials)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*userprovider.UserProviderError)
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
 		}
 	}
 	return r0
@@ -478,12 +479,12 @@ func (_c *UserProviderInterfaceMock_UpdateUserCredentials_Call) Run(run func(use
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_UpdateUserCredentials_Call) Return(userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_UpdateUserCredentials_Call {
-	_c.Call.Return(userProviderError)
+func (_c *UserProviderInterfaceMock_UpdateUserCredentials_Call) Return(serviceError *serviceerror.ServiceError) *UserProviderInterfaceMock_UpdateUserCredentials_Call {
+	_c.Call.Return(serviceError)
 	return _c
 }
 
-func (_c *UserProviderInterfaceMock_UpdateUserCredentials_Call) RunAndReturn(run func(userID string, credentials json.RawMessage) *userprovider.UserProviderError) *UserProviderInterfaceMock_UpdateUserCredentials_Call {
+func (_c *UserProviderInterfaceMock_UpdateUserCredentials_Call) RunAndReturn(run func(userID string, credentials json.RawMessage) *serviceerror.ServiceError) *UserProviderInterfaceMock_UpdateUserCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }

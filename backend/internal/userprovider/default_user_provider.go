@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -39,26 +40,26 @@ func newDefaultUserProvider(userSvc user.UserServiceInterface) UserProviderInter
 }
 
 // IdentifyUser identifies a user based on the given filters.
-func (p *defaultUserProvider) IdentifyUser(filters map[string]interface{}) (*string, *UserProviderError) {
+func (p *defaultUserProvider) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
 	userID, err := p.userSvc.IdentifyUser(security.WithRuntimeContext(context.Background()), filters)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code {
-			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeUserNotFound, err.ErrorDescription)
 		}
-		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+		return nil, NewError(CodeSystemError, err.ErrorDescription)
 	}
 
 	return userID, nil
 }
 
 // GetUser retrieves a user based on the given user ID.
-func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError) {
+func (p *defaultUserProvider) GetUser(userID string) (*User, *serviceerror.ServiceError) {
 	userResult, err := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), userID)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code {
-			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeUserNotFound, err.ErrorDescription)
 		}
-		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+		return nil, NewError(CodeSystemError, err.ErrorDescription)
 	}
 
 	return &User{
@@ -71,14 +72,14 @@ func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError)
 
 // GetUserGroups retrieves the groups associated with a user based on the given user ID.
 func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse,
-	*UserProviderError) {
+	*serviceerror.ServiceError) {
 	userGroupListResponse, err := p.userSvc.GetUserGroups(
 		security.WithRuntimeContext(context.Background()), userID, limit, offset)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code || err.Code == user.ErrorMissingUserID.Code {
-			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeUserNotFound, err.ErrorDescription)
 		}
-		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+		return nil, NewError(CodeSystemError, err.ErrorDescription)
 	}
 
 	groups := make([]UserGroup, len(userGroupListResponse.Groups))
@@ -108,10 +109,9 @@ func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*
 }
 
 // UpdateUser updates a user based on the given user ID and user update configuration.
-func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) (*User, *UserProviderError) {
+func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) (*User, *serviceerror.ServiceError) {
 	if userUpdateConfig == nil {
-		return nil, NewUserProviderError(ErrorCodeInvalidRequestFormat, "Invalid request",
-			"User update configuration cannot be nil")
+		return nil, NewError(CodeInvalidRequestFormat, "User update configuration cannot be nil")
 	}
 	updatedUser := &user.User{
 		ID:               userID,
@@ -125,15 +125,15 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 	if err != nil {
 		switch err.Code {
 		case user.ErrorUserNotFound.Code, user.ErrorMissingUserID.Code:
-			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeUserNotFound, err.ErrorDescription)
 		case user.ErrorInvalidRequestFormat.Code:
-			return nil, NewUserProviderError(ErrorCodeInvalidRequestFormat, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeInvalidRequestFormat, err.ErrorDescription)
 		case user.ErrorOrganizationUnitMismatch.Code:
-			return nil, NewUserProviderError(ErrorCodeOrganizationUnitMismatch, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeOrganizationUnitMismatch, err.ErrorDescription)
 		case user.ErrorAttributeConflict.Code, user.ErrorEmailConflict.Code:
-			return nil, NewUserProviderError(ErrorCodeAttributeConflict, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeAttributeConflict, err.ErrorDescription)
 		default:
-			return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeSystemError, err.ErrorDescription)
 		}
 	}
 	return &User{
@@ -145,10 +145,9 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 }
 
 // CreateUser creates a new user based on the given user create configuration.
-func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserProviderError) {
+func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *serviceerror.ServiceError) {
 	if userCreateConfig == nil {
-		return nil, NewUserProviderError(ErrorCodeInvalidRequestFormat, "Invalid request",
-			"User create configuration cannot be nil")
+		return nil, NewError(CodeInvalidRequestFormat, "User create configuration cannot be nil")
 	}
 	newUser := &user.User{
 		OrganizationUnit: userCreateConfig.OrganizationUnitID,
@@ -160,17 +159,17 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 	if err != nil {
 		switch err.Code {
 		case user.ErrorInvalidRequestFormat.Code:
-			return nil, NewUserProviderError(ErrorCodeInvalidRequestFormat, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeInvalidRequestFormat, err.ErrorDescription)
 		case user.ErrorOrganizationUnitMismatch.Code:
-			return nil, NewUserProviderError(ErrorCodeOrganizationUnitMismatch, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeOrganizationUnitMismatch, err.ErrorDescription)
 		case user.ErrorAttributeConflict.Code, user.ErrorEmailConflict.Code:
-			return nil, NewUserProviderError(ErrorCodeAttributeConflict, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeAttributeConflict, err.ErrorDescription)
 		case user.ErrorMissingRequiredFields.Code:
-			return nil, NewUserProviderError(ErrorCodeMissingRequiredFields, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeMissingRequiredFields, err.ErrorDescription)
 		case user.ErrorOrganizationUnitNotFound.Code:
-			return nil, NewUserProviderError(ErrorCodeOrganizationUnitMismatch, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeOrganizationUnitMismatch, err.ErrorDescription)
 		default:
-			return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+			return nil, NewError(CodeSystemError, err.ErrorDescription)
 		}
 	}
 
@@ -183,35 +182,36 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 }
 
 // UpdateUserCredentials updates the credentials of a user based on the given user ID and credentials.
-func (p *defaultUserProvider) UpdateUserCredentials(userID string, credentials json.RawMessage) *UserProviderError {
+func (p *defaultUserProvider) UpdateUserCredentials(userID string, credentials json.RawMessage,
+) *serviceerror.ServiceError {
 	err := p.userSvc.UpdateUserCredentials(security.WithRuntimeContext(context.Background()), userID, credentials)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorInvalidRequestFormat.Code:
-			return NewUserProviderError(ErrorCodeInvalidRequestFormat, err.Error, err.ErrorDescription)
+			return NewError(CodeInvalidRequestFormat, err.ErrorDescription)
 		case user.ErrorMissingCredentials.Code:
-			return NewUserProviderError(ErrorCodeMissingCredentials, err.Error, err.ErrorDescription)
+			return NewError(CodeMissingCredentials, err.ErrorDescription)
 		case user.ErrorUserNotFound.Code, user.ErrorMissingUserID.Code:
-			return NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+			return NewError(CodeUserNotFound, err.ErrorDescription)
 		case user.ErrorAuthenticationFailed.Code:
 			// Map auth failed (e.g. empty user ID) to invalid request or not found depending on semantics
-			return NewUserProviderError(ErrorCodeInvalidRequestFormat, err.Error, err.ErrorDescription)
+			return NewError(CodeInvalidRequestFormat, err.ErrorDescription)
 		default:
-			return NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+			return NewError(CodeSystemError, err.ErrorDescription)
 		}
 	}
 	return nil
 }
 
 // DeleteUser deletes a user based on the given user ID.
-func (p *defaultUserProvider) DeleteUser(userID string) *UserProviderError {
+func (p *defaultUserProvider) DeleteUser(userID string) *serviceerror.ServiceError {
 	err := p.userSvc.DeleteUser(security.WithRuntimeContext(context.Background()), userID)
 	if err != nil {
 		switch err.Code {
 		case user.ErrorUserNotFound.Code, user.ErrorMissingUserID.Code:
 			return nil
 		default:
-			return NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+			return NewError(CodeSystemError, err.ErrorDescription)
 		}
 	}
 	return nil

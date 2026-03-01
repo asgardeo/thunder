@@ -27,6 +27,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
@@ -175,7 +176,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_ServiceError() {
 	})
 
 	suite.mockUserProvider.On("UpdateUserCredentials", userID, mock.Anything).
-		Return(userprovider.NewUserProviderError(userprovider.ErrorCodeSystemError, "db error", ""))
+		Return(serviceerror.CustomServiceError(userprovider.ErrorSystemError, "db error"))
 
 	resp, err := suite.executor.Execute(ctx)
 

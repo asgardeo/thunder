@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/httpmock"
 )
 
@@ -83,9 +84,11 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {
 func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Failure() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(AuthnProviderError{
-			Code:    ErrorCodeAuthenticationFailed,
-			Message: "Auth Failed",
+		_ = json.NewEncoder(w).Encode(serviceerror.ServiceError{
+			Type:             serviceerror.ClientErrorType,
+			Code:             ErrorAuthenticationFailed.Code,
+			Error:            "Auth Failed",
+			ErrorDescription: "Authentication failed",
 		})
 	}))
 	defer ts.Close()
@@ -95,7 +98,7 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Failure() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeAuthenticationFailed, err.Code)
+	suite.Equal(ErrorAuthenticationFailed.Code, err.Code)
 }
 
 func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
@@ -140,8 +143,9 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_Success() {
 func (suite *RestAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(AuthnProviderError{
-			Code: ErrorCodeInvalidToken,
+		_ = json.NewEncoder(w).Encode(serviceerror.ServiceError{
+			Type: serviceerror.ClientErrorType,
+			Code: ErrorInvalidToken.Code,
 		})
 	}))
 	defer ts.Close()
@@ -151,7 +155,7 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeInvalidToken, err.Code)
+	suite.Equal(ErrorInvalidToken.Code, err.Code)
 }
 
 func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
@@ -167,5 +171,5 @@ func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Contains(err.Message, "Failed to decode response")
+	suite.Contains(err.ErrorDescription, "Failed to decode response")
 }

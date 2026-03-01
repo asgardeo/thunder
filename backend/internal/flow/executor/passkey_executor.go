@@ -345,7 +345,7 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	// Get user details from user provider
 	user, providerErr := p.userProvider.GetUser(userID)
 	if providerErr != nil {
-		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
+		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error)
 	}
 
 	// Extract user attributes

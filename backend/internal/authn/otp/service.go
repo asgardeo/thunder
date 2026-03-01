@@ -214,17 +214,17 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 }
 
 // handleUserProviderError handles errors from the user provider.
-func (s *otpAuthnService) handleUserProviderError(upErr *userprovider.UserProviderError,
+func (s *otpAuthnService) handleUserProviderError(upErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
-	if upErr.Code == userprovider.ErrorCodeUserNotFound {
+	if upErr.Code == userprovider.ErrorUserNotFound.Code {
 		return &common.ErrorUserNotFound
 	}
-	if upErr.Code == userprovider.ErrorCodeSystemError {
+	if upErr.Code == userprovider.ErrorSystemError.Code {
 		logger.Error("Error occurred while retrieving user", log.Any("error", upErr))
 		return &serviceerror.InternalServerError
 	}
 	return serviceerror.CustomServiceError(ErrorClientErrorWhileResolvingUser,
-		fmt.Sprintf("An error occurred while retrieving user: %s", upErr.Description))
+		fmt.Sprintf("An error occurred while retrieving user: %s", upErr.ErrorDescription))
 }
 
 // getMetadata returns the authenticator metadata for OTP authenticator.

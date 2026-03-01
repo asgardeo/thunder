@@ -171,8 +171,8 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateFailures() {
 			credentials: map[string]interface{}{"password": "testpass"},
 			setupMock: func(m *authnprovidermock.AuthnProviderInterfaceMock) {
 				m.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, authnprovider.NewError(
-						authnprovider.ErrorCodeUserNotFound, "User not found", "user not found description"))
+					Return(nil, serviceerror.CustomServiceError(
+						authnprovider.ErrorUserNotFound, "user not found description"))
 			},
 			expectedErrorCode: common.ErrorUserNotFound.Code,
 		},
@@ -182,9 +182,8 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateFailures() {
 			credentials: map[string]interface{}{"password": "wrongpass"},
 			setupMock: func(m *authnprovidermock.AuthnProviderInterfaceMock) {
 				m.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, authnprovider.NewError(
-						authnprovider.ErrorCodeAuthenticationFailed, "Invalid credentials",
-						"invalid credentials description"))
+					Return(nil, serviceerror.CustomServiceError(
+						authnprovider.ErrorAuthenticationFailed, "invalid credentials description"))
 			},
 			expectedErrorCode: ErrorInvalidCredentials.Code,
 		},
@@ -222,8 +221,8 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 			credentials: map[string]interface{}{"password": "testpass"},
 			setupMock: func(m *authnprovidermock.AuthnProviderInterfaceMock) {
 				m.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, authnprovider.NewError(
-						authnprovider.ErrorCodeSystemError, "System error", "Database failure"))
+					Return(nil, serviceerror.CustomServiceError(
+						authnprovider.ErrorSystemError, "Database failure"))
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
@@ -233,8 +232,11 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 			credentials: map[string]interface{}{"password": "testpass"},
 			setupMock: func(m *authnprovidermock.AuthnProviderInterfaceMock) {
 				m.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, authnprovider.NewError(
-						"UNKNOWN_CODE", "Unknown error", "Something went wrong"))
+					Return(nil, &serviceerror.ServiceError{
+						Type:             serviceerror.ServerErrorType,
+						Code:             "UNKNOWN_CODE",
+						Error:            "Unknown error",
+						ErrorDescription: "Something went wrong"})
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
@@ -350,7 +352,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesFailures() {
 			name: "InvalidToken",
 			setupMock: func() {
 				suite.mockAuthnProvider.On("GetAttributes", mock.Anything, token, requestedAttributes, mock.Anything).
-					Return(nil, authnprovider.NewError(authnprovider.ErrorCodeInvalidToken, "Invalid token",
+					Return(nil, serviceerror.CustomServiceError(authnprovider.ErrorInvalidToken,
 						"Token is expired or invalid"))
 			},
 			expectedErrorCode: ErrorInvalidToken.Code,
@@ -359,7 +361,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesFailures() {
 			name: "SystemError",
 			setupMock: func() {
 				suite.mockAuthnProvider.On("GetAttributes", mock.Anything, token, requestedAttributes, mock.Anything).
-					Return(nil, authnprovider.NewError(authnprovider.ErrorCodeSystemError, "System error",
+					Return(nil, serviceerror.CustomServiceError(authnprovider.ErrorSystemError,
 						"DB connection failed"))
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,

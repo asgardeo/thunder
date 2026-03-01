@@ -70,13 +70,13 @@ func (c *credentialsAuthnService) Authenticate(ctx context.Context, identifiers,
 	authnResult, err := c.authnProvider.Authenticate(ctx, identifiers, credentials, metadata)
 	if err != nil {
 		switch err.Code {
-		case authnprovider.ErrorCodeAuthenticationFailed:
+		case authnprovider.ErrorAuthenticationFailed.Code:
 			return nil, &ErrorInvalidCredentials
-		case authnprovider.ErrorCodeUserNotFound:
+		case authnprovider.ErrorUserNotFound.Code:
 			return nil, &common.ErrorUserNotFound
 		default:
-			c.logger.Error("Error occurred while authenticating the user", log.String("errorCode", string(err.Code)),
-				log.String("errorDescription", err.Description))
+			c.logger.Error("Error occurred while authenticating the user", log.String("errorCode", err.Code),
+				log.String("errorDescription", err.ErrorDescription))
 			return nil, &serviceerror.InternalServerError
 		}
 	}
@@ -89,11 +89,11 @@ func (c *credentialsAuthnService) GetAttributes(ctx context.Context, token strin
 	result, err := c.authnProvider.GetAttributes(ctx, token, requestedAttributes, metadata)
 	if err != nil {
 		switch err.Code {
-		case authnprovider.ErrorCodeInvalidToken:
+		case authnprovider.ErrorInvalidToken.Code:
 			return nil, &ErrorInvalidToken
 		default:
-			c.logger.Error("Error occurred while getting attributes", log.String("errorCode", string(err.Code)),
-				log.String("errorDescription", err.Description))
+			c.logger.Error("Error occurred while getting attributes", log.String("errorCode", err.Code),
+				log.String("errorDescription", err.ErrorDescription))
 			return nil, &serviceerror.InternalServerError
 		}
 	}

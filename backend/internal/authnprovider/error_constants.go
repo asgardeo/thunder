@@ -18,34 +18,100 @@
 
 package authnprovider
 
-// ErrorCode represents an error code.
-type ErrorCode string
-
-// AuthnProviderError represents an error returned by the authentication provider.
-type AuthnProviderError struct {
-	Code        ErrorCode `json:"code"`
-	Message     string    `json:"message"`
-	Description string    `json:"description"`
-}
-
-func (e *AuthnProviderError) Error() string {
-	return e.Message + ": " + e.Description
-}
-
-// Error codes.
-const (
-	ErrorCodeSystemError          ErrorCode = "AUP-0001"
-	ErrorCodeAuthenticationFailed ErrorCode = "AUP-0002"
-	ErrorCodeUserNotFound         ErrorCode = "AUP-0003"
-	ErrorCodeInvalidToken         ErrorCode = "AUP-0004"
-	ErrorCodeNotImplemented       ErrorCode = "AUP-0005"
+import (
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
-// NewError creates a new authentication provider error.
-func NewError(code ErrorCode, message string, description string) *AuthnProviderError {
-	return &AuthnProviderError{
-		Code:        code,
-		Message:     message,
-		Description: description,
+// ErrorCode represents an authn provider error code.
+type ErrorCode string
+
+// Predefined error codes for authn provider.
+// Implementors should use these constants with NewError().
+const (
+	CodeSystemError          ErrorCode = "AUP-0001"
+	CodeAuthenticationFailed ErrorCode = "AUP-0002"
+	CodeUserNotFound         ErrorCode = "AUP-0003"
+	CodeInvalidToken         ErrorCode = "AUP-0004"
+	CodeNotImplemented       ErrorCode = "AUP-0005"
+)
+
+// errorDefinition holds the fixed Type and Error message for each error code.
+type errorDefinition struct {
+	Type  serviceerror.ServiceErrorType
+	Error string
+}
+
+// validErrorCodes maps error codes to their fixed Type and Error message.
+var validErrorCodes = map[ErrorCode]errorDefinition{
+	CodeSystemError:          {serviceerror.ServerErrorType, "System error"},
+	CodeAuthenticationFailed: {serviceerror.ClientErrorType, "Authentication failed"},
+	CodeUserNotFound:         {serviceerror.ClientErrorType, "User not found"},
+	CodeInvalidToken:         {serviceerror.ClientErrorType, "Invalid token"},
+	CodeNotImplemented:       {serviceerror.ServerErrorType, "Not implemented"},
+}
+
+// IsValid checks if the error code is a valid predefined code.
+func (ec ErrorCode) IsValid() bool {
+	_, ok := validErrorCodes[ec]
+	return ok
+}
+
+// NewError creates a ServiceError with the given code and description.
+// If the code is not valid (not defined in validErrorCodes), it defaults to CodeSystemError.
+// The Type and Error fields are set based on the predefined values for the code.
+func NewError(code ErrorCode, description string) *serviceerror.ServiceError {
+	if !code.IsValid() {
+		code = CodeSystemError
+	}
+
+	def := validErrorCodes[code]
+	return &serviceerror.ServiceError{
+		Type:             def.Type,
+		Code:             string(code),
+		Error:            def.Error,
+		ErrorDescription: description,
 	}
 }
+
+// Authentication provider errors.
+var (
+	// ErrorSystemError is the error returned when a system error occurs.
+	ErrorSystemError = serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "AUP-0001",
+		Error:            "System error",
+		ErrorDescription: "An unexpected system error occurred",
+	}
+
+	// ErrorAuthenticationFailed is the error returned when authentication fails.
+	ErrorAuthenticationFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUP-0002",
+		Error:            "Authentication failed",
+		ErrorDescription: "The provided credentials are invalid",
+	}
+
+	// ErrorUserNotFound is the error returned when the user is not found.
+	ErrorUserNotFound = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUP-0003",
+		Error:            "User not found",
+		ErrorDescription: "The requested user could not be found",
+	}
+
+	// ErrorInvalidToken is the error returned when the token is invalid.
+	ErrorInvalidToken = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUP-0004",
+		Error:            "Invalid token",
+		ErrorDescription: "The provided token is invalid or expired",
+	}
+
+	// ErrorNotImplemented is the error returned when a feature is not implemented.
+	ErrorNotImplemented = serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "AUP-0005",
+		Error:            "Not implemented",
+		ErrorDescription: "This feature is not implemented",
+	}
+)

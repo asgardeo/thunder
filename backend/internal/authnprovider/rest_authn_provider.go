@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	systemhttp "github.com/asgardeo/thunder/internal/system/http"
 )
 
@@ -60,7 +61,7 @@ func newRestAuthnProvider(baseURL, apiKey string, httpClient systemhttp.HTTPClie
 
 // Authenticate authenticates a user.
 func (p *restAuthnProvider) Authenticate(ctx context.Context, identifiers, credentials map[string]interface{},
-	metadata *AuthnMetadata) (*AuthnResult, *AuthnProviderError) {
+	metadata *AuthnMetadata) (*AuthnResult, *serviceerror.ServiceError) {
 	reqBody := AuthenticateRequest{
 		Identifiers: identifiers,
 		Credentials: credentials,
@@ -69,12 +70,12 @@ func (p *restAuthnProvider) Authenticate(ctx context.Context, identifiers, crede
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, NewError(ErrorCodeSystemError, "Failed to marshal request", err.Error())
+		return nil, NewError(CodeSystemError, err.Error())
 	}
 
 	resp, err := p.doRequest(ctx, p.baseURL+"/authenticate", bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return nil, NewError(ErrorCodeSystemError, "Failed to send request", err.Error())
+		return nil, NewError(CodeSystemError, err.Error())
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -83,7 +84,7 @@ func (p *restAuthnProvider) Authenticate(ctx context.Context, identifiers, crede
 	if resp.StatusCode == http.StatusOK {
 		var result AuthnResult
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, NewError(ErrorCodeSystemError, "Failed to decode response", err.Error())
+			return nil, NewError(CodeSystemError, "Failed to decode response: "+err.Error())
 		}
 		return &result, nil
 	}
@@ -93,7 +94,7 @@ func (p *restAuthnProvider) Authenticate(ctx context.Context, identifiers, crede
 
 // GetAttributes retrieves the attributes of a user.
 func (p *restAuthnProvider) GetAttributes(ctx context.Context, token string, requestedAttributes *RequestedAttributes,
-	metadata *GetAttributesMetadata) (*GetAttributesResult, *AuthnProviderError) {
+	metadata *GetAttributesMetadata) (*GetAttributesResult, *serviceerror.ServiceError) {
 	reqBody := GetAttributesRequest{
 		Token:               token,
 		RequestedAttributes: requestedAttributes,
@@ -102,12 +103,12 @@ func (p *restAuthnProvider) GetAttributes(ctx context.Context, token string, req
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, NewError(ErrorCodeSystemError, "Failed to marshal request", err.Error())
+		return nil, NewError(CodeSystemError, err.Error())
 	}
 
 	resp, err := p.doRequest(ctx, p.baseURL+"/attributes", bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return nil, NewError(ErrorCodeSystemError, "Failed to send request", err.Error())
+		return nil, NewError(CodeSystemError, err.Error())
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -116,7 +117,7 @@ func (p *restAuthnProvider) GetAttributes(ctx context.Context, token string, req
 	if resp.StatusCode == http.StatusOK {
 		var result GetAttributesResult
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, NewError(ErrorCodeSystemError, "Failed to decode response", err.Error())
+			return nil, NewError(CodeSystemError, "Failed to decode response: "+err.Error())
 		}
 		return &result, nil
 	}
@@ -124,10 +125,10 @@ func (p *restAuthnProvider) GetAttributes(ctx context.Context, token string, req
 	return nil, p.decodeError(resp.Body)
 }
 
-func (p *restAuthnProvider) decodeError(body io.Reader) *AuthnProviderError {
-	var authnError AuthnProviderError
+func (p *restAuthnProvider) decodeError(body io.Reader) *serviceerror.ServiceError {
+	var authnError serviceerror.ServiceError
 	if err := json.NewDecoder(body).Decode(&authnError); err != nil {
-		return NewError(ErrorCodeSystemError, "Failed to decode error response", err.Error())
+		return NewError(CodeSystemError, "Failed to decode response: "+err.Error())
 	}
 	return &authnError
 }

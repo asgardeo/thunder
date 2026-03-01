@@ -329,7 +329,7 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 
 	retUser, svcErr := p.userProvider.CreateUser(&newUser)
 	if svcErr != nil {
-		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Message)
+		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Error)
 	}
 	if retUser != nil && retUser.UserID != "" {
 		logger.Debug("User account created successfully", log.String("userID", retUser.UserID))
