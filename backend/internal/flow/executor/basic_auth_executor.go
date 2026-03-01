@@ -208,8 +208,8 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	user, err := b.userProvider.GetUser(authnResult.UserID)
 
 	if err != nil {
-		if err.Code != userprovider.ErrorCodeNotImplemented {
-			logger.Error("Failed to get user attributes", log.Error(err))
+		if err.Code != userprovider.ErrorNotImplemented.Code {
+			logger.Error("Failed to get user attributes", log.Any("error", err))
 			return nil, errors.New("failed to get user attributes")
 		}
 		logger.Debug("User provider is not implemented. User attributes will be empty.")

@@ -287,10 +287,8 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 		Status:    notifcommon.OTPVerifyStatusVerified,
 		Recipient: "+1234567890",
 	}
-	serverErr := &userprovider.UserProviderError{
-		Code:        userprovider.ErrorCodeSystemError,
-		Description: "Database unavailable",
-	}
+	serverErr := serviceerror.CustomServiceError(
+		userprovider.ErrorSystemError, "Database unavailable")
 
 	// Prepare a userID for cases that require a valid identify result
 	userID := "user123"
@@ -298,15 +296,15 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 	tests := []struct {
 		name         string
 		identifyRet  *string
-		identifyErr  *userprovider.UserProviderError
+		identifyErr  *serviceerror.ServiceError
 		getUserRet   *userprovider.User
-		getUserErr   *userprovider.UserProviderError
+		getUserErr   *serviceerror.ServiceError
 		expectedCode string
 	}{
 		{
 			"NonExistentUser",
 			nil,
-			&userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound},
+			&userprovider.ErrorUserNotFound,
 			nil,
 			nil,
 			common.ErrorUserNotFound.Code,
@@ -330,7 +328,7 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 		{
 			"UserIDNil",
 			nil,
-			(*userprovider.UserProviderError)(nil),
+			(*serviceerror.ServiceError)(nil),
 			nil,
 			nil,
 			common.ErrorUserNotFound.Code,

@@ -270,12 +270,12 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *se
 	}
 	userID, upErr := s.userProvider.IdentifyUser(filters)
 	if upErr != nil {
-		if upErr.Code == userprovider.ErrorCodeUserNotFound {
+		if upErr.Code == userprovider.ErrorUserNotFound.Code {
 			logger.Debug("No user found for the provided sub claim")
 			return nil, &common.ErrorUserNotFound
 		}
-		logger.Error("Error while identifying user", log.String("errorCode", string(upErr.Code)),
-			log.String("description", upErr.Description))
+		logger.Error("Error while identifying user", log.String("errorCode", upErr.Code),
+			log.String("description", upErr.ErrorDescription))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -286,11 +286,11 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *se
 
 	user, upErr := s.userProvider.GetUser(*userID)
 	if upErr != nil {
-		if upErr.Code == userprovider.ErrorCodeUserNotFound {
+		if upErr.Code == userprovider.ErrorUserNotFound.Code {
 			return nil, &common.ErrorUserNotFound
 		}
-		logger.Error("Error while retrieving user", log.String("errorCode", string(upErr.Code)),
-			log.String("description", upErr.Description))
+		logger.Error("Error while retrieving user", log.String("errorCode", upErr.Code),
+			log.String("description", upErr.ErrorDescription))
 		return nil, &serviceerror.InternalServerError
 	}
 

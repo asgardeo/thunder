@@ -29,6 +29,7 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
@@ -232,7 +233,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
 	suite.mockUserProvider.On("UpdateUser", testUserID, mock.Anything).
-		Return(nil, &userprovider.UserProviderError{Message: "update failed"})
+		Return(nil, serviceerror.CustomServiceError(userprovider.ErrorSystemError, "update failed"))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -329,7 +330,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_UserNotFound() {
 	}
 
 	suite.mockUserProvider.On("GetUser", testUserID).
-		Return(nil, &userprovider.UserProviderError{Message: "user not found"})
+		Return(nil, &userprovider.ErrorUserNotFound)
 
 	result, err := suite.executor.getUserAttributes(ctx)
 

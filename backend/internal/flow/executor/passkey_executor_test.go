@@ -758,7 +758,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserNotFound
 	}
 
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
-		nil, &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound, Message: "User not found"})
+		nil, &userprovider.ErrorUserNotFound)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -925,7 +925,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_GetAuthenticatedUse
 
 	// Simulate user not found when getting authenticated user details
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
-		nil, &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound, Message: "User not found"})
+		nil, &userprovider.ErrorUserNotFound)
 
 	_, err := suite.executor.Execute(ctx)
 
@@ -952,7 +952,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_GetAuthenti
 
 	// Simulate user not found when getting authenticated user details
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
-		nil, &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound, Message: "User not found"})
+		nil, &userprovider.ErrorUserNotFound)
 
 	_, err := suite.executor.Execute(ctx)
 

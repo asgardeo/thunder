@@ -18,12 +18,16 @@
 
 package authnprovider
 
-import "context"
+import (
+	"context"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
 
 // AuthnProviderInterface defines the interface for authentication providers.
 type AuthnProviderInterface interface {
 	Authenticate(ctx context.Context, identifiers, credentials map[string]interface{}, metadata *AuthnMetadata) (
-		*AuthnResult, *AuthnProviderError)
+		*AuthnResult, *serviceerror.ServiceError)
 	GetAttributes(ctx context.Context, token string, requestedAttributes *RequestedAttributes,
-		metadata *GetAttributesMetadata) (*GetAttributesResult, *AuthnProviderError)
+		metadata *GetAttributesMetadata) (*GetAttributesResult, *serviceerror.ServiceError)
 }

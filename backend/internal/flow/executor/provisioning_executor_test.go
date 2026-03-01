@@ -151,7 +151,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "newuser",
 		"email":    "new@example.com",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, &userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             testNewUserID,
@@ -247,9 +247,9 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFails() {
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", mock.Anything).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 	suite.mockUserProvider.On("CreateUser", mock.Anything).
-		Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeSystemError, "creation failed", ""))
+		Return(nil, serviceerror.CustomServiceError(userprovider.ErrorSystemError, "creation failed"))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -526,7 +526,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_Proceed
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
 		return u.OrganizationUnitID == testOUID && u.UserType == testUserType
 	})).Return(createdUser, nil)
@@ -583,7 +583,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserEligibleForProvision
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
 		return u.OrganizationUnitID == testOUID && u.UserType == testUserType
 	})).Return(createdUser, nil)
@@ -629,7 +629,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAutoProvisionedFlag_
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 	suite.mockUserProvider.On("CreateUser", mock.Anything).Return(createdUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -774,7 +774,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_MissingInputs() {
 				"username": "newuser",
 			}
 			suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-				userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+				&userprovider.ErrorUserNotFound)
 
 			resp, err := suite.executor.Execute(ctx)
 
@@ -792,14 +792,13 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFailures() {
 	tests := []struct {
 		name               string
 		createdUser        *userprovider.User
-		createUserError    *userprovider.UserProviderError
+		createUserError    *serviceerror.ServiceError
 		expectedFailReason string
 	}{
 		{
-			name:        "ServiceReturnsError",
-			createdUser: nil,
-			createUserError: userprovider.NewUserProviderError(
-				userprovider.ErrorCodeSystemError, "Database error", ""),
+			name:               "ServiceReturnsError",
+			createdUser:        nil,
+			createUserError:    serviceerror.CustomServiceError(userprovider.ErrorSystemError, "Database error"),
 			expectedFailReason: "Failed to create user",
 		},
 		{
@@ -845,7 +844,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFailures() {
 				"username": "newuser",
 			}
 			suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-				userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+				&userprovider.ErrorUserNotFound)
 			suite.mockUserProvider.On("CreateUser", mock.Anything).
 				Return(tt.createdUser, tt.createUserError)
 
@@ -987,7 +986,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             testNewUserID,
@@ -1042,7 +1041,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             testNewUserID,
@@ -1098,7 +1097,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             testNewUserID,
@@ -1155,7 +1154,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             testNewUserID,
@@ -1209,7 +1208,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             "user-provisioned",
@@ -1265,7 +1264,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "newuser",
 		"email":    "new@example.com",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, &userprovider.ErrorUserNotFound)
 
 	createdUser := &userprovider.User{
 		UserID:             testNewUserID,

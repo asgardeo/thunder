@@ -413,7 +413,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 		filters := map[string]interface{}{attributeName: attributeValue}
 		userID, providerErr := s.userProvider.IdentifyUser(filters)
 		if providerErr != nil {
-			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, providerErr.Error())
+			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, providerErr.Error)
 		}
 		if userID != nil && *userID != "" {
 			logger.Debug("User ID resolved from attribute", log.String("attributeName", attributeName),
@@ -446,7 +446,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 	logger.Debug("Mobile number not in context, fetching from user store")
 	user, providerErr := s.userProvider.GetUser(userID)
 	if providerErr != nil {
-		return "", fmt.Errorf("failed to retrieve user details: %s", providerErr.Error())
+		return "", fmt.Errorf("failed to retrieve user details: %s", providerErr.Error)
 	}
 
 	// Extract mobile number from user attributes
@@ -640,7 +640,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	logger.Debug("Fetching user details from user store", log.String("userID", userID))
 	user, providerErr := s.userProvider.GetUser(userID)
 	if providerErr != nil {
-		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
+		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error)
 	}
 
 	// Extract user attributes

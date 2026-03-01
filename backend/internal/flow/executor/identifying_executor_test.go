@@ -93,7 +93,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_UserNotFound() {
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", filters).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+		&userprovider.ErrorUserNotFound)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -111,7 +111,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_ServiceError() {
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", filters).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeSystemError, "", ""))
+		&userprovider.ErrorSystemError)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -278,7 +278,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_IdentifyUserError
 
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "testuser",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, &userprovider.ErrorUserNotFound)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -415,7 +415,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFoundByAtt
 
 			suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 				tc.attribute: tc.value,
-			}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+			}).Return(nil, &userprovider.ErrorUserNotFound)
 
 			resp, err := suite.executor.Execute(ctx)
 

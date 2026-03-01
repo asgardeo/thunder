@@ -18,14 +18,14 @@
 
 package userprovider
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
 
 // errNotImplemented is the error returned when a method is not implemented.
-var errNotImplemented = NewUserProviderError(
-	ErrorCodeNotImplemented,
-	"Method Not Implemented",
-	"The method is not implemented by the user provider.",
-)
+var errNotImplemented = NewError(CodeNotImplemented, "This feature is not implemented")
 
 // disabledUserProvider is a user provider that returns an error for all methods.
 type disabledUserProvider struct{}
@@ -36,37 +36,38 @@ func newDisabledUserProvider() UserProviderInterface {
 }
 
 // IdentifyUser returns a not implemented error.
-func (p *disabledUserProvider) IdentifyUser(filters map[string]interface{}) (*string, *UserProviderError) {
+func (p *disabledUserProvider) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
 	return nil, errNotImplemented
 }
 
 // GetUser returns a not implemented error.
-func (p *disabledUserProvider) GetUser(userID string) (*User, *UserProviderError) {
+func (p *disabledUserProvider) GetUser(userID string) (*User, *serviceerror.ServiceError) {
 	return nil, errNotImplemented
 }
 
 // GetUserGroups returns a not implemented error.
 func (p *disabledUserProvider) GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse,
-	*UserProviderError) {
+	*serviceerror.ServiceError) {
 	return nil, errNotImplemented
 }
 
 // UpdateUser returns a not implemented error.
-func (p *disabledUserProvider) UpdateUser(userID string, user *User) (*User, *UserProviderError) {
+func (p *disabledUserProvider) UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError) {
 	return nil, errNotImplemented
 }
 
 // CreateUser returns a not implemented error.
-func (p *disabledUserProvider) CreateUser(user *User) (*User, *UserProviderError) {
+func (p *disabledUserProvider) CreateUser(user *User) (*User, *serviceerror.ServiceError) {
 	return nil, errNotImplemented
 }
 
 // UpdateUserCredentials returns a not implemented error.
-func (p *disabledUserProvider) UpdateUserCredentials(userID string, credentials json.RawMessage) *UserProviderError {
+func (p *disabledUserProvider) UpdateUserCredentials(userID string, credentials json.RawMessage,
+) *serviceerror.ServiceError {
 	return errNotImplemented
 }
 
 // DeleteUser returns a not implemented error.
-func (p *disabledUserProvider) DeleteUser(userID string) *UserProviderError {
+func (p *disabledUserProvider) DeleteUser(userID string) *serviceerror.ServiceError {
 	return errNotImplemented
 }

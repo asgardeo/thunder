@@ -18,15 +18,19 @@
 
 package userprovider
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
 
 // UserProviderInterface defines the interface for user providers.
 type UserProviderInterface interface {
-	IdentifyUser(filters map[string]interface{}) (*string, *UserProviderError)
-	GetUser(userID string) (*User, *UserProviderError)
-	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *UserProviderError)
-	UpdateUser(userID string, user *User) (*User, *UserProviderError)
-	CreateUser(user *User) (*User, *UserProviderError)
-	UpdateUserCredentials(userID string, credentials json.RawMessage) *UserProviderError
-	DeleteUser(userID string) *UserProviderError
+	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
+	GetUser(userID string) (*User, *serviceerror.ServiceError)
+	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
+	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
+	CreateUser(user *User) (*User, *serviceerror.ServiceError)
+	UpdateUserCredentials(userID string, credentials json.RawMessage) *serviceerror.ServiceError
+	DeleteUser(userID string) *serviceerror.ServiceError
 }

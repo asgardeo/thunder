@@ -65,7 +65,7 @@ func (suite *DefaultUserProviderTestSuite) TestIdentifyUser() {
 	userID, err = suite.provider.IdentifyUser(filters)
 	suite.Nil(userID)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
 
 	// Test System Error
 	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "System Error"}
@@ -74,7 +74,7 @@ func (suite *DefaultUserProviderTestSuite) TestIdentifyUser() {
 	userID, err = suite.provider.IdentifyUser(filters)
 	suite.Nil(userID)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeSystemError, err.Code)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 }
 
 func (suite *DefaultUserProviderTestSuite) TestGetUser() {
@@ -103,7 +103,16 @@ func (suite *DefaultUserProviderTestSuite) TestGetUser() {
 	u, err = suite.provider.GetUser(userID)
 	suite.Nil(u)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "Database error"}
+	suite.mockService.On("GetUser", mock.Anything, userID).Return(nil, sysErr).Once()
+
+	u, err = suite.provider.GetUser(userID)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 }
 
 func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
@@ -139,7 +148,25 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 	resp, err = suite.provider.GetUserGroups(userID, limit, offset)
 	suite.Nil(resp)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test Missing User ID
+	suite.mockService.On("GetUserGroups", mock.Anything, userID, limit, offset).
+		Return(nil, &user.ErrorMissingUserID).Once()
+
+	resp, err = suite.provider.GetUserGroups(userID, limit, offset)
+	suite.Nil(resp)
+	suite.NotNil(err)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "Database error"}
+	suite.mockService.On("GetUserGroups", mock.Anything, userID, limit, offset).Return(nil, sysErr).Once()
+
+	resp, err = suite.provider.GetUserGroups(userID, limit, offset)
+	suite.Nil(resp)
+	suite.NotNil(err)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 }
 
 func (suite *DefaultUserProviderTestSuite) TestUpdateUser() {
@@ -173,7 +200,7 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUser() {
 	u, err = suite.provider.UpdateUser(userID, updateUser)
 	suite.Nil(u)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
 
 	// Test Attribute Conflict
 	suite.mockService.On("UpdateUser", mock.Anything, userID, mock.Anything).
@@ -181,13 +208,54 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUser() {
 	u, err = suite.provider.UpdateUser(userID, updateUser)
 	suite.Nil(u)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeAttributeConflict, err.Code)
+	suite.Equal(ErrorAttributeConflict.Code, err.Code)
+
+	// Test Email Conflict
+	suite.mockService.On("UpdateUser", mock.Anything, userID, mock.Anything).
+		Return(nil, &user.ErrorEmailConflict).Once()
+	u, err = suite.provider.UpdateUser(userID, updateUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorAttributeConflict.Code, err.Code)
+
+	// Test User Not Found
+	suite.mockService.On("UpdateUser", mock.Anything, userID, mock.Anything).
+		Return(nil, &user.ErrorUserNotFound).Once()
+	u, err = suite.provider.UpdateUser(userID, updateUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test Missing User ID
+	suite.mockService.On("UpdateUser", mock.Anything, userID, mock.Anything).
+		Return(nil, &user.ErrorMissingUserID).Once()
+	u, err = suite.provider.UpdateUser(userID, updateUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test Organization Unit Mismatch
+	suite.mockService.On("UpdateUser", mock.Anything, userID, mock.Anything).
+		Return(nil, &user.ErrorOrganizationUnitMismatch).Once()
+	u, err = suite.provider.UpdateUser(userID, updateUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorOrganizationUnitMismatch.Code, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "Database error"}
+	suite.mockService.On("UpdateUser", mock.Anything, userID, mock.Anything).
+		Return(nil, sysErr).Once()
+	u, err = suite.provider.UpdateUser(userID, updateUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 
 	// Test Nil Configuration
 	u, err = suite.provider.UpdateUser(userID, nil)
 	suite.Nil(u)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
 }
 
 func (suite *DefaultUserProviderTestSuite) TestCreateUser() {
@@ -219,13 +287,62 @@ func (suite *DefaultUserProviderTestSuite) TestCreateUser() {
 	u, err = suite.provider.CreateUser(newUser)
 	suite.Nil(u)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeOrganizationUnitMismatch, err.Code)
+	suite.Equal(ErrorOrganizationUnitMismatch.Code, err.Code)
+
+	// Test Invalid Request Format
+	suite.mockService.On("CreateUser", mock.Anything, mock.Anything).
+		Return(nil, &user.ErrorInvalidRequestFormat).Once()
+	u, err = suite.provider.CreateUser(newUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
+
+	// Test Attribute Conflict
+	suite.mockService.On("CreateUser", mock.Anything, mock.Anything).
+		Return(nil, &user.ErrorAttributeConflict).Once()
+	u, err = suite.provider.CreateUser(newUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorAttributeConflict.Code, err.Code)
+
+	// Test Email Conflict
+	suite.mockService.On("CreateUser", mock.Anything, mock.Anything).
+		Return(nil, &user.ErrorEmailConflict).Once()
+	u, err = suite.provider.CreateUser(newUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorAttributeConflict.Code, err.Code)
+
+	// Test Missing Required Fields
+	suite.mockService.On("CreateUser", mock.Anything, mock.Anything).
+		Return(nil, &user.ErrorMissingRequiredFields).Once()
+	u, err = suite.provider.CreateUser(newUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorMissingRequiredFields.Code, err.Code)
+
+	// Test Organization Unit Not Found
+	suite.mockService.On("CreateUser", mock.Anything, mock.Anything).
+		Return(nil, &user.ErrorOrganizationUnitNotFound).Once()
+	u, err = suite.provider.CreateUser(newUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorOrganizationUnitMismatch.Code, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "Database error"}
+	suite.mockService.On("CreateUser", mock.Anything, mock.Anything).
+		Return(nil, sysErr).Once()
+	u, err = suite.provider.CreateUser(newUser)
+	suite.Nil(u)
+	suite.NotNil(err)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 
 	// Test Nil Configuration
 	u, err = suite.provider.CreateUser(nil)
 	suite.Nil(u)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
 }
 
 func (suite *DefaultUserProviderTestSuite) TestUpdateUserCredentials() {
@@ -245,5 +362,80 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUserCredentials() {
 
 	err = suite.provider.UpdateUserCredentials(userID, creds)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeMissingCredentials, err.Code)
+	suite.Equal(ErrorMissingCredentials.Code, err.Code)
+
+	// Test Invalid Request Format
+	suite.mockService.On("UpdateUserCredentials", mock.Anything, userID, creds).
+		Return(&user.ErrorInvalidRequestFormat).Once()
+
+	err = suite.provider.UpdateUserCredentials(userID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
+
+	// Test User Not Found
+	suite.mockService.On("UpdateUserCredentials", mock.Anything, userID, creds).
+		Return(&user.ErrorUserNotFound).Once()
+
+	err = suite.provider.UpdateUserCredentials(userID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test Missing User ID
+	suite.mockService.On("UpdateUserCredentials", mock.Anything, userID, creds).
+		Return(&user.ErrorMissingUserID).Once()
+
+	err = suite.provider.UpdateUserCredentials(userID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
+
+	// Test Authentication Failed
+	suite.mockService.On("UpdateUserCredentials", mock.Anything, userID, creds).
+		Return(&user.ErrorAuthenticationFailed).Once()
+
+	err = suite.provider.UpdateUserCredentials(userID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidRequestFormat.Code, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "Database error"}
+	suite.mockService.On("UpdateUserCredentials", mock.Anything, userID, creds).
+		Return(sysErr).Once()
+
+	err = suite.provider.UpdateUserCredentials(userID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorSystemError.Code, err.Code)
+}
+
+func (suite *DefaultUserProviderTestSuite) TestDeleteUser() {
+	userID := testUserID
+
+	// Test Success
+	suite.mockService.On("DeleteUser", mock.Anything, userID).
+		Return((*serviceerror.ServiceError)(nil)).Once()
+
+	err := suite.provider.DeleteUser(userID)
+	suite.Nil(err)
+
+	// Test User Not Found (should return nil as per implementation)
+	suite.mockService.On("DeleteUser", mock.Anything, userID).
+		Return(&user.ErrorUserNotFound).Once()
+
+	err = suite.provider.DeleteUser(userID)
+	suite.Nil(err)
+
+	// Test Missing User ID (should return nil as per implementation)
+	suite.mockService.On("DeleteUser", mock.Anything, userID).
+		Return(&user.ErrorMissingUserID).Once()
+
+	err = suite.provider.DeleteUser(userID)
+	suite.Nil(err)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "Database error"}
+	suite.mockService.On("DeleteUser", mock.Anything, userID).
+		Return(sysErr).Once()
+
+	err = suite.provider.DeleteUser(userID)
+	suite.NotNil(err)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 }

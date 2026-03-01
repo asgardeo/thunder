@@ -94,7 +94,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_UserNotFound() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFailed() {
@@ -109,7 +109,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeAuthenticationFailed, err.Code)
+	suite.Equal(ErrorAuthenticationFailed.Code, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_SystemError_Prepare() {
@@ -124,7 +124,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_SystemError_Prepare
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeSystemError, err.Code)
+	suite.Equal(ErrorSystemError.Code, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
@@ -182,7 +182,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeInvalidToken, err.Code)
+	suite.Equal(ErrorInvalidToken.Code, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
@@ -207,5 +207,5 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
+	suite.Equal(ErrorUserNotFound.Code, err.Code)
 }

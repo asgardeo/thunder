@@ -182,7 +182,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	}, mock.Anything).Return(authenticateResult, nil)
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+		&userprovider.ErrorNotImplemented)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -232,7 +232,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 	}, mock.Anything).Return(authenticatedUser, nil)
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+		&userprovider.ErrorNotImplemented)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -257,7 +257,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		userAttributeUsername: "newuser",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, &userprovider.ErrorUserNotFound)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -311,7 +311,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 	}, mock.Anything).Return(authenticatedUser, nil)
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+		&userprovider.ErrorNotImplemented)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -515,7 +515,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	}, mock.Anything).Return(authenticatedUser, nil)
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+		&userprovider.ErrorNotImplemented)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -620,7 +620,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 	}, mock.Anything).Return(authenticatedUser, nil)
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+		&userprovider.ErrorNotImplemented)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -650,7 +650,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFl
 	// For registration flows, IdentifyUser should be called to check if user exists
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		userAttributeUsername: "newuser",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, &userprovider.ErrorUserNotFound)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 

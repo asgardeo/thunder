@@ -418,7 +418,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_ServiceError() {
 	suite.mockUserProvider.On("GetUser", "user-123").
-		Return(nil, &userprovider.UserProviderError{Message: "user not found"})
+		Return(nil, &userprovider.ErrorUserNotFound)
 
 	resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123", "", nil, nil)
 
@@ -626,10 +626,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 	// Test case 1: GetUser returns service error
 	suite.mockUserProvider.On("GetUser", "user-123").
-		Return(nil, &userprovider.UserProviderError{
-			Message:     "user_not_found",
-			Description: "user not found",
-		})
+		Return(nil, &userprovider.ErrorUserNotFound)
 
 	_, err := suite.executor.Execute(ctx)
 
@@ -721,10 +718,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 	}
 
 	suite.mockUserProvider.On("GetUser", "user-123").
-		Return(nil, &userprovider.UserProviderError{
-			Message:     "database_error",
-			Description: "failed to fetch user",
-		})
+		Return(nil, serviceerror.CustomServiceError(userprovider.ErrorSystemError, "failed to fetch user"))
 
 	_, err := suite.executor.Execute(ctx)
 
@@ -913,7 +907,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 	}
 
 	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
-		Return(nil, &userprovider.UserProviderError{Message: "failed to fetch groups", Description: "database error"})
+		Return(nil, serviceerror.CustomServiceError(userprovider.ErrorSystemError, "database error"))
 
 	resp, err := suite.executor.Execute(ctx)
 

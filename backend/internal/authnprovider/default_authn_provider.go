@@ -43,30 +43,30 @@ func (p *defaultAuthnProvider) Authenticate(
 	ctx context.Context,
 	identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata,
-) (*AuthnResult, *AuthnProviderError) {
+) (*AuthnResult, *serviceerror.ServiceError) {
 	authResponse, authErr := p.userSvc.AuthenticateUser(ctx, identifiers, credentials)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			if authErr.Code == user.ErrorUserNotFound.Code {
-				return nil, NewError(ErrorCodeUserNotFound, authErr.Error, authErr.ErrorDescription)
+				return nil, NewError(CodeUserNotFound, authErr.ErrorDescription)
 			}
-			return nil, NewError(ErrorCodeAuthenticationFailed, authErr.Error, authErr.ErrorDescription)
+			return nil, NewError(CodeAuthenticationFailed, authErr.ErrorDescription)
 		}
-		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
+		return nil, NewError(CodeSystemError, authErr.ErrorDescription)
 	}
 
 	userResult, getUserErr := p.userSvc.GetUser(ctx, authResponse.ID)
 	if getUserErr != nil {
 		if getUserErr.Code == user.ErrorUserNotFound.Code {
-			return nil, NewError(ErrorCodeUserNotFound, getUserErr.Error, getUserErr.ErrorDescription)
+			return nil, NewError(CodeUserNotFound, getUserErr.ErrorDescription)
 		}
-		return nil, NewError(ErrorCodeSystemError, getUserErr.Error, getUserErr.ErrorDescription)
+		return nil, NewError(CodeSystemError, getUserErr.ErrorDescription)
 	}
 
 	var attributes map[string]interface{}
 	if len(userResult.Attributes) > 0 {
 		if err := json.Unmarshal(userResult.Attributes, &attributes); err != nil {
-			return nil, NewError(ErrorCodeSystemError, "Failed to get allowed attributes", err.Error())
+			return nil, NewError(CodeSystemError, err.Error())
 		}
 	}
 
@@ -98,21 +98,21 @@ func (p *defaultAuthnProvider) GetAttributes(
 	token string,
 	requestedAttributes *RequestedAttributes,
 	metadata *GetAttributesMetadata,
-) (*GetAttributesResult, *AuthnProviderError) {
+) (*GetAttributesResult, *serviceerror.ServiceError) {
 	userID := token
 
 	userResult, authErr := p.userSvc.GetUser(ctx, userID)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
-			return nil, NewError(ErrorCodeInvalidToken, authErr.Error, authErr.ErrorDescription)
+			return nil, NewError(CodeInvalidToken, authErr.ErrorDescription)
 		}
-		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
+		return nil, NewError(CodeSystemError, authErr.ErrorDescription)
 	}
 
 	var allAttributes map[string]interface{}
 	if len(userResult.Attributes) > 0 {
 		if err := json.Unmarshal(userResult.Attributes, &allAttributes); err != nil {
-			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal user attributes")
+			return nil, NewError(CodeSystemError, "Failed to unmarshal user attributes")
 		}
 	}
 
