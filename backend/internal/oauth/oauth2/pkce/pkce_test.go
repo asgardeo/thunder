@@ -51,25 +51,17 @@ func (suite *PKCETestSuite) TestValidatePKCE() {
 			expectedError:       nil,
 		},
 		{
-			name:                "Valid plain challenge",
+			name:                "Plain method is rejected",
 			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-			codeChallengeMethod: CodeChallengeMethodPlain,
+			codeChallengeMethod: "plain",
 			codeVerifier:        "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-			expectError:         false,
-			expectedError:       nil,
+			expectError:         true,
+			expectedError:       ErrInvalidChallengeMethod,
 		},
 		{
 			name:                "Invalid S256 challenge",
 			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
 			codeChallengeMethod: CodeChallengeMethodS256,
-			codeVerifier:        "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk_different_verifier_long_enough",
-			expectError:         true,
-			expectedError:       ErrPKCEValidationFailed,
-		},
-		{
-			name:                "Invalid plain challenge",
-			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-			codeChallengeMethod: CodeChallengeMethodPlain,
 			codeVerifier:        "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk_different_verifier_long_enough",
 			expectError:         true,
 			expectedError:       ErrPKCEValidationFailed,
@@ -107,8 +99,8 @@ func (suite *PKCETestSuite) TestValidatePKCE() {
 			expectedError:       ErrInvalidCodeVerifier,
 		},
 		{
-			name:                "Default method when empty",
-			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+			name:                "Default method when empty uses S256",
+			codeChallenge:       "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
 			codeChallengeMethod: "",
 			codeVerifier:        "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
 			expectError:         false,
@@ -116,8 +108,8 @@ func (suite *PKCETestSuite) TestValidatePKCE() {
 		},
 		{
 			name:                "Unicode characters rejected",
-			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-			codeChallengeMethod: CodeChallengeMethodPlain,
+			codeChallenge:       "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+			codeChallengeMethod: CodeChallengeMethodS256,
 			codeVerifier:        "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk中文",
 			expectError:         true,
 			expectedError:       ErrInvalidCodeVerifier,
@@ -157,11 +149,11 @@ func (suite *PKCETestSuite) TestGenerateCodeChallenge() {
 			expectedError: nil,
 		},
 		{
-			name:          "Generate plain challenge",
+			name:          "Plain method is rejected",
 			codeVerifier:  "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-			method:        CodeChallengeMethodPlain,
-			expectError:   false,
-			expectedError: nil,
+			method:        "plain",
+			expectError:   true,
+			expectedError: ErrInvalidChallengeMethod,
 		},
 		{
 			name:          "Invalid method",
@@ -217,11 +209,11 @@ func (suite *PKCETestSuite) TestValidateCodeChallenge() {
 		expectedError       error
 	}{
 		{
-			name:                "Valid plain challenge",
+			name:                "Plain method is rejected",
 			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-			codeChallengeMethod: CodeChallengeMethodPlain,
-			expectError:         false,
-			expectedError:       nil,
+			codeChallengeMethod: "plain",
+			expectError:         true,
+			expectedError:       ErrInvalidChallengeMethod,
 		},
 		{
 			name:                "Valid S256 challenge",
@@ -231,9 +223,9 @@ func (suite *PKCETestSuite) TestValidateCodeChallenge() {
 			expectedError:       nil,
 		},
 		{
-			name:                "Empty code challenge",
+			name:                "Empty code challenge with S256",
 			codeChallenge:       "",
-			codeChallengeMethod: CodeChallengeMethodPlain,
+			codeChallengeMethod: CodeChallengeMethodS256,
 			expectError:         true,
 			expectedError:       ErrInvalidCodeChallenge,
 		},
@@ -242,21 +234,14 @@ func (suite *PKCETestSuite) TestValidateCodeChallenge() {
 			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
 			codeChallengeMethod: "invalid",
 			expectError:         true,
-			expectedError:       ErrInvalidCodeChallenge,
+			expectedError:       ErrInvalidChallengeMethod,
 		},
 		{
-			name:                "Default method when empty",
-			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+			name:                "Default method when empty uses S256",
+			codeChallenge:       "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
 			codeChallengeMethod: "",
 			expectError:         false,
 			expectedError:       nil,
-		},
-		{
-			name:                "Plain challenge with invalid characters",
-			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk!",
-			codeChallengeMethod: CodeChallengeMethodPlain,
-			expectError:         true,
-			expectedError:       ErrInvalidCodeChallenge,
 		},
 		{
 			name:                "S256 challenge with invalid characters",
@@ -269,20 +254,6 @@ func (suite *PKCETestSuite) TestValidateCodeChallenge() {
 			name:                "S256 challenge wrong length",
 			codeChallenge:       "short",
 			codeChallengeMethod: CodeChallengeMethodS256,
-			expectError:         true,
-			expectedError:       ErrInvalidCodeChallenge,
-		},
-		{
-			name:                "Plain challenge too short",
-			codeChallenge:       "short",
-			codeChallengeMethod: CodeChallengeMethodPlain,
-			expectError:         true,
-			expectedError:       ErrInvalidCodeChallenge,
-		},
-		{
-			name:                "Unicode characters rejected",
-			codeChallenge:       "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk中文",
-			codeChallengeMethod: CodeChallengeMethodPlain,
 			expectError:         true,
 			expectedError:       ErrInvalidCodeChallenge,
 		},
@@ -306,10 +277,10 @@ func (suite *PKCETestSuite) TestValidateCodeChallenge() {
 }
 
 func (suite *PKCETestSuite) TestValidateCodeChallenge_InvalidMethod() {
-	// Test the default case in validateCodeChallenge
+	// Test that unsupported methods are rejected
 	err := ValidateCodeChallenge("valid-challenge", "unsupported_method")
 	assert.Error(suite.T(), err)
-	assert.Equal(suite.T(), ErrInvalidCodeChallenge, err)
+	assert.Equal(suite.T(), ErrInvalidChallengeMethod, err)
 }
 
 func (suite *PKCETestSuite) TestGenerateCodeChallenge_InvalidMethod() {
@@ -344,7 +315,7 @@ func (suite *PKCETestSuite) TestGetSupportedCodeChallengeMethods() {
 	methods := GetSupportedCodeChallengeMethods()
 
 	assert.NotNil(suite.T(), methods)
-	assert.Equal(suite.T(), 2, len(methods))
+	assert.Equal(suite.T(), 1, len(methods))
 	assert.Contains(suite.T(), methods, CodeChallengeMethodS256)
-	assert.Contains(suite.T(), methods, CodeChallengeMethodPlain)
+	assert.NotContains(suite.T(), methods, "plain")
 }

@@ -406,8 +406,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 			constants.RequestParamClientID:            "test-client-id",
 			constants.RequestParamRedirectURI:         "https://client.example.com/callback",
 			constants.RequestParamResponseType:        string(constants.ResponseTypeCode),
-			constants.RequestParamCodeChallenge:       "invalid-challenge", // Invalid format
-			constants.RequestParamCodeChallengeMethod: "plain",             // Plain is not allowed
+			constants.RequestParamCodeChallenge:       "invalid-challenge",
+			constants.RequestParamCodeChallengeMethod: "plain", // Not supported per OAuth 2.0 Security BCP
 		},
 	}
 
