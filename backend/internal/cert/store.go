@@ -92,9 +92,9 @@ func (s *certificateStore) getCertificate(ctx context.Context, query dbmodel.DBQ
 
 // buildCertificateFromResultRow builds a Certificate object from a database result row.
 func (s *certificateStore) buildCertificateFromResultRow(row map[string]interface{}) (*Certificate, error) {
-	certID, ok := row["cert_id"].(string)
+	certID, ok := row["id"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse cert_id as string")
+		return nil, errors.New("failed to parse id as string")
 	}
 
 	refTypeStr, ok := row["ref_type"].(string)

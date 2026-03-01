@@ -390,7 +390,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_EmptyScopes(
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_Success() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -413,7 +413,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_S
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithNullDescription() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  nil,
 		"auth_flow_id":                 "auth_flow_1",
@@ -431,7 +431,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithByteRegistrationFlag() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -448,7 +448,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithZeroRegistrationFlag() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -470,7 +470,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -496,7 +496,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -520,7 +520,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -539,19 +539,19 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_InvalidAppID() {
 	row := map[string]interface{}{
-		"app_id": 123, // Invalid type
+		"id": 123, // Invalid type
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to parse app_id as string")
+	suite.Contains(err.Error(), "failed to parse id as string")
 	suite.Equal(model.BasicApplicationDTO{}, result)
 }
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_InvalidAppName() {
 	row := map[string]interface{}{
-		"app_id":   "app1",
+		"id":       "app1",
 		"app_name": 123, // Invalid type
 	}
 
@@ -564,7 +564,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_I
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_InvalidDescription() {
 	row := map[string]interface{}{
-		"app_id":      "app1",
+		"id":          "app1",
 		"app_name":    "Test App",
 		"description": 123, // Invalid type
 	}
@@ -578,7 +578,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_I
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_InvalidRegistrationFlag() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -595,7 +595,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_I
 
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_InvalidConsumerKey() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -640,7 +640,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 	oauthJSONBytes, _ := json.Marshal(oauthJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -679,7 +679,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTe
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -708,7 +708,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Withou
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -727,7 +727,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Withou
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithNullAppJSON() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -753,7 +753,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithBy
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -771,7 +771,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithBy
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithInvalidAppJSONType() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -789,7 +789,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithInvalidAppJSON() {
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -812,7 +812,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -836,7 +836,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -861,7 +861,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1090,7 +1090,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1115,7 +1115,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1140,7 +1140,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1169,7 +1169,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1198,7 +1198,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1227,7 +1227,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1255,7 +1255,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithCo
 	appJSONBytes, _ := json.Marshal(appJSON)
 
 	row := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1354,9 +1354,9 @@ func getOAuthApplicationFromResults(
 
 	row := results[0]
 
-	appID, ok := row["app_id"].(string)
+	appID, ok := row["id"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse app_id as string")
+		return nil, errors.New("failed to parse id as string")
 	}
 
 	hashedClientSecret, ok := row["client_secret"].(string)
@@ -1464,7 +1464,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 	}`
 
 	mockRow := map[string]interface{}{
-		"app_id":            "app-123",
+		"id":                "app-123",
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": tokenConfigJSON,
 	}
@@ -1520,7 +1520,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilTokenConf
 	}`
 
 	mockRow := map[string]interface{}{
-		"app_id":            "app-no-token",
+		"id":                "app-no-token",
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": tokenConfigJSON,
 	}
@@ -1552,7 +1552,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithJSONAsBytes(
 	}`)
 
 	mockRow := map[string]interface{}{
-		"app_id":            "app-bytes",
+		"id":                "app-bytes",
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": tokenConfigJSON, // As []byte instead of string
 	}
@@ -1577,7 +1577,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilJSON() {
 	clientID := "test-client-nil-json"
 
 	mockRow := map[string]interface{}{
-		"app_id":            "app-nil-json",
+		"id":                "app-nil-json",
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": nil, // Nil JSON
 	}
@@ -1637,7 +1637,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidAppIDType
 	clientID := "test-client-invalid-id"
 
 	mockRow := map[string]interface{}{
-		"app_id":            123, // Invalid type
+		"id":                123, // Invalid type
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": "{}",
 	}
@@ -1654,7 +1654,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidAppIDType
 
 	// Assert
 	suite.Assert().Error(err)
-	suite.Assert().Contains(err.Error(), "failed to parse app_id as string")
+	suite.Assert().Contains(err.Error(), "failed to parse id as string")
 	suite.Assert().Nil(result)
 }
 
@@ -1662,7 +1662,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidJSONType(
 	clientID := "test-client-invalid-json-type"
 
 	mockRow := map[string]interface{}{
-		"app_id":            "app-123",
+		"id":                "app-123",
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": 12345, // Invalid type (not string or []byte)
 	}
@@ -1687,7 +1687,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_MalformedJSON() 
 	clientID := "test-client-bad-json"
 
 	mockRow := map[string]interface{}{
-		"app_id":            "app-123",
+		"id":                "app-123",
 		"client_secret":     "hashed-secret",
 		"oauth_config_json": "{invalid json", // Malformed JSON
 	}
@@ -1763,7 +1763,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 
 	// Create multiple result rows to trigger the error
 	mockRow1 := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1776,7 +1776,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 	}
 
 	mockRow2 := map[string]interface{}{
-		"app_id":                       "app2",
+		"id":                           "app2",
 		"app_name":                     "Test App 2",
 		"description":                  "Test description 2",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1819,7 +1819,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 	// Create a row with invalid data that will cause buildApplicationFromResultRow to fail
 	// Using invalid app_id type to trigger error in buildBasicApplicationFromResultRow
 	mockRow := map[string]interface{}{
-		"app_id":                       123, // Invalid type - should be string
+		"id":                           123, // Invalid type - should be string
 		"app_name":                     "Test App",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1848,7 +1848,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 
 	// This is the error path we're testing
 	suite.Error(buildErr)
-	suite.Contains(buildErr.Error(), "failed to parse app_id as string")
+	suite.Contains(buildErr.Error(), "failed to parse id as string")
 }
 
 // TestGetApplicationByQuery_BuildApplicationError_InvalidAppJSON tests the error path when app_json parsing fails
@@ -1857,7 +1857,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 
 	// Create a row with invalid app_json type that will cause buildApplicationFromResultRow to fail
 	mockRow := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",
@@ -1895,7 +1895,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 
 	// Create a row with malformed JSON that will cause buildApplicationFromResultRow to fail
 	mockRow := map[string]interface{}{
-		"app_id":                       "app1",
+		"id":                           "app1",
 		"app_name":                     "Test App",
 		"description":                  "Test description",
 		"auth_flow_id":                 "auth_flow_1",

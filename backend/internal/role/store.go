@@ -357,7 +357,7 @@ func (s *roleStore) getRolePermissions(
 
 // buildRoleSummaryFromResultRow constructs a Role from a database result row.
 func buildRoleBasicInfoFromResultRow(row map[string]interface{}) (Role, error) {
-	fields, err := parseStringFields(row, "role_id", "name", "description", "ou_id")
+	fields, err := parseStringFields(row, "id", "name", "description", "ou_id")
 	if err != nil {
 		return Role{}, err
 	}

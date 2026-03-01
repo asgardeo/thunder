@@ -443,9 +443,9 @@ func (us *userStore) IdentifyUser(ctx context.Context, filters map[string]interf
 	}
 
 	row := results[0]
-	userID, ok := row["user_id"].(string)
+	userID, ok := row["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse user_id as string")
+		return nil, fmt.Errorf("failed to parse id as string")
 	}
 
 	return &userID, nil
@@ -520,7 +520,7 @@ func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]s
 
 	existingUserIDs := make(map[string]bool)
 	for _, row := range results {
-		if userID, ok := row["user_id"].(string); ok {
+		if userID, ok := row["id"].(string); ok {
 			existingUserIDs[userID] = true
 		}
 	}
@@ -583,9 +583,9 @@ func (us *userStore) GetUserGroups(ctx context.Context, userID string, limit, of
 }
 
 func buildUserFromResultRow(row map[string]interface{}) (User, error) {
-	userID, ok := row["user_id"].(string)
+	userID, ok := row["id"].(string)
 	if !ok {
-		return User{}, fmt.Errorf("failed to parse user_id as string")
+		return User{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	orgID, ok := row["ou_id"].(string)
@@ -624,9 +624,9 @@ func buildUserFromResultRow(row map[string]interface{}) (User, error) {
 
 // buildGroupFromResultRow constructs a UserGroup from a database result row.
 func buildGroupFromResultRow(row map[string]interface{}) (UserGroup, error) {
-	groupID, ok := row["group_id"].(string)
+	groupID, ok := row["id"].(string)
 	if !ok {
-		return UserGroup{}, fmt.Errorf("failed to parse group_id as string")
+		return UserGroup{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)

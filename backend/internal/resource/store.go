@@ -867,10 +867,10 @@ func buildPropertiesJSON(rs ResourceServer) interface{} {
 func buildResourceServerFromResultRow(row map[string]interface{}) (ResourceServer, error) {
 	rs := ResourceServer{}
 
-	if id, ok := row["resource_server_id"].(string); ok {
+	if id, ok := row["id"].(string); ok {
 		rs.ID = id
 	} else {
-		return rs, fmt.Errorf("resource_server_id field is missing or invalid")
+		return rs, fmt.Errorf("id field is missing or invalid")
 	}
 
 	if ouID, ok := row["ou_id"].(string); ok {
@@ -902,10 +902,10 @@ func buildResourceServerFromResultRow(row map[string]interface{}) (ResourceServe
 func buildResourceFromResultRow(row map[string]interface{}) (Resource, error) {
 	res := Resource{}
 
-	if id, ok := row["resource_id"].(string); ok {
+	if id, ok := row["id"].(string); ok {
 		res.ID = id
 	} else {
-		return res, fmt.Errorf("resource_id field is missing or invalid")
+		return res, fmt.Errorf("id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {
@@ -941,10 +941,10 @@ func buildResourceFromResultRow(row map[string]interface{}) (Resource, error) {
 func buildActionFromResultRow(row map[string]interface{}) (Action, error) {
 	action := Action{}
 
-	if id, ok := row["action_id"].(string); ok {
+	if id, ok := row["id"].(string); ok {
 		action.ID = id
 	} else {
-		return action, fmt.Errorf("action_id field is missing or invalid")
+		return action, fmt.Errorf("id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {

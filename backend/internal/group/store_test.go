@@ -236,13 +236,13 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 
 				rows := []map[string]interface{}{
 					{
-						"group_id":    "g1",
+						"id":          "g1",
 						"name":        "Group 1",
 						"description": "Desc 1",
 						"ou_id":       "ou-1",
 					},
 					{
-						"group_id":    "g2",
+						"id":          "g2",
 						"name":        "Group 2",
 						"description": "Desc 2",
 						"ou_id":       "ou-2",
@@ -311,8 +311,8 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 					On("QueryContext", mock.Anything, QueryGetGroupList, 1, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{
-							"group_id": "g1",
-							"name":     "Group 1",
+							"id":   "g1",
+							"name": "Group 1",
 							// Missing description to trigger validation error
 							"ou_id": "ou-1",
 						},
@@ -385,7 +385,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{
-							"group_id":    "grp-001",
+							"id":          "grp-001",
 							"name":        "Engineering",
 							"description": "Core team",
 							"ou_id":       "ou-1",
@@ -429,7 +429,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Return([]map[string]interface{}{{"name": "group"}}, nil).
 					Once()
 			},
-			expectErr: "failed to parse group_id",
+			expectErr: "failed to parse id",
 		},
 		{
 			name:    "query error",
@@ -465,8 +465,8 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 				dbClientMock.
 					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
-						{"group_id": "grp-001"},
-						{"group_id": "grp-002"},
+						{"id": "grp-001"},
+						{"id": "grp-002"},
 					}, nil).
 					Once()
 			},
@@ -1074,7 +1074,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 
 				dbClientMock.
 					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-1", "grp-2").
-					Return([]map[string]interface{}{{"group_id": "grp-1"}}, nil).
+					Return([]map[string]interface{}{{"id": "grp-1"}}, nil).
 					Once()
 			},
 			wantInvalid: []string{"grp-2"},
@@ -1093,7 +1093,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 
 				dbClientMock.
 					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-miss", "", "grp-hit").
-					Return([]map[string]interface{}{{"group_id": "grp-hit"}}, nil).
+					Return([]map[string]interface{}{{"id": "grp-hit"}}, nil).
 					Once()
 			},
 			wantInvalid: []string{"grp-miss", ""},
@@ -1386,7 +1386,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 						testDeploymentID,
 					).
 					Return([]map[string]interface{}{
-						{"group_id": "grp-1", "ou_id": "ou-1", "name": "g1", "description": "desc"},
+						{"id": "grp-1", "ou_id": "ou-1", "name": "g1", "description": "desc"},
 					}, nil).
 					Once()
 			},
@@ -1650,27 +1650,27 @@ func (suite *GroupStoreTestSuite) TestGroupStore_BuildGroupFromResultRowValidati
 		{
 			name:    "missing group ID",
 			row:     map[string]interface{}{},
-			wantErr: "group_id",
+			wantErr: "id",
 		},
 		{
 			name: "missing name",
 			row: map[string]interface{}{
-				"group_id": "grp-1",
+				"id": "grp-1",
 			},
 			wantErr: "name",
 		},
 		{
 			name: "missing description",
 			row: map[string]interface{}{
-				"group_id": "grp-1",
-				"name":     "group",
+				"id":   "grp-1",
+				"name": "group",
 			},
 			wantErr: "description",
 		},
 		{
 			name: "missing organization unit ID",
 			row: map[string]interface{}{
-				"group_id":    "grp-1",
+				"id":          "grp-1",
 				"name":        "group",
 				"description": "desc",
 			},

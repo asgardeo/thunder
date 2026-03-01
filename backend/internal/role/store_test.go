@@ -166,8 +166,8 @@ func (suite *RoleStoreTestSuite) TestGetRoleList() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleList, 10, 0, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
-						{"role_id": "role2", "name": "User", "description": "User role", "ou_id": "ou1"},
+						{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+						{"id": "role2", "name": "User", "description": "User role", "ou_id": "ou1"},
 					}, nil)
 			},
 			expectedRoles: []Role{
@@ -197,7 +197,7 @@ func (suite *RoleStoreTestSuite) TestGetRoleList() {
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleList, 10, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{
-							"role_id": 123, "name": "Admin",
+							"id": 123, "name": "Admin",
 							"description": "Admin role", "ou_id": "ou1",
 						},
 					}, nil)
@@ -443,7 +443,7 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1", testDeploymentID).
 					Return([]map[string]interface{}{
-						{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+						{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
 					}, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRolePermissions, "role1",
 					testDeploymentID).
@@ -468,7 +468,7 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1", testDeploymentID).
 					Return([]map[string]interface{}{
-						{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+						{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
 					}, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRolePermissions, "role1",
 					testDeploymentID).
@@ -491,7 +491,7 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1",
 					testDeploymentID).Return([]map[string]interface{}{
-					{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+					{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
 				}, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRolePermissions, "role1",
 					testDeploymentID).
@@ -523,8 +523,8 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1",
 					testDeploymentID).Return([]map[string]interface{}{
-					{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
-					{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+					{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+					{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
 				}, nil)
 			},
 			shouldErr: true,
@@ -540,7 +540,7 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1",
 					testDeploymentID).Return([]map[string]interface{}{
-					{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+					{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
 				}, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRolePermissions, "role1",
 					testDeploymentID).Return([]map[string]interface{}{
@@ -561,7 +561,7 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1",
 					testDeploymentID).Return([]map[string]interface{}{
-					{"role_id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
+					{"id": "role1", "name": "Admin", "description": "Admin role", "ou_id": "ou1"},
 				}, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRolePermissions, "role1",
 					testDeploymentID).
@@ -600,7 +600,7 @@ func (suite *RoleStoreTestSuite) TestGetRole() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On("QueryContext", mock.Anything, queryGetRoleByID, "role1",
 					testDeploymentID).Return([]map[string]interface{}{
-					{"role_id": 123, "name": "Admin", "description": "Admin role", "ou_id": "ou1"}, // Invalid type
+					{"id": 123, "name": "Admin", "description": "Admin role", "ou_id": "ou1"}, // Invalid type
 				}, nil)
 			},
 			shouldErr: true,
@@ -1398,7 +1398,7 @@ func (suite *RoleStoreTestSuite) TestGetAuthorizedPermissions_DBClientError() {
 
 func (suite *RoleStoreTestSuite) TestBuildRoleBasicInfoFromResultRow_Success() {
 	row := map[string]interface{}{
-		"role_id":     "role1",
+		"id":          "role1",
 		"name":        "Admin",
 		"description": "Admin role",
 		"ou_id":       "ou1",
@@ -1415,7 +1415,7 @@ func (suite *RoleStoreTestSuite) TestBuildRoleBasicInfoFromResultRow_Success() {
 
 func (suite *RoleStoreTestSuite) TestBuildRoleBasicInfoFromResultRow_InvalidData() {
 	row := map[string]interface{}{
-		"role_id":     123, // Invalid type
+		"id":          123, // Invalid type
 		"name":        "Admin",
 		"description": "Admin role",
 		"ou_id":       "ou1",
@@ -1549,13 +1549,13 @@ func (suite *RoleStoreTestSuite) TestParseStringField_TypeError() {
 
 func (suite *RoleStoreTestSuite) TestParseStringFields_Success() {
 	row := map[string]interface{}{
-		"role_id":     "role1",
+		"id":          "role1",
 		"name":        "Admin",
 		"description": "Admin role",
 		"ou_id":       "ou1",
 	}
 
-	values, err := parseStringFields(row, "role_id", "name", "description", "ou_id")
+	values, err := parseStringFields(row, "id", "name", "description", "ou_id")
 
 	suite.NoError(err)
 	suite.Len(values, 4)
@@ -1567,11 +1567,11 @@ func (suite *RoleStoreTestSuite) TestParseStringFields_Success() {
 
 func (suite *RoleStoreTestSuite) TestParseStringFields_PartialError() {
 	row := map[string]interface{}{
-		"role_id": "role1",
-		"name":    123, // Invalid type
+		"id":   "role1",
+		"name": 123, // Invalid type
 	}
 
-	values, err := parseStringFields(row, "role_id", "name")
+	values, err := parseStringFields(row, "id", "name")
 
 	suite.Error(err)
 	suite.Nil(values)

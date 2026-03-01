@@ -114,7 +114,7 @@ var (
 	// queryGetOrganizationUnitUsersList is the query to get users in an organization unit with pagination.
 	queryGetOrganizationUnitUsersList = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-13",
-		Query: `SELECT USER_ID FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY USER_ID LIMIT $2 OFFSET $3`,
+		Query: `SELECT ID FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY ID LIMIT $2 OFFSET $3`,
 	}
 
 	// queryGetOrganizationUnitGroupsCount is the query to get total count of groups in an organization unit.
@@ -126,7 +126,7 @@ var (
 	// queryGetOrganizationUnitGroupsList is the query to get groups in an organization unit with pagination.
 	queryGetOrganizationUnitGroupsList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-15",
-		Query: `SELECT GROUP_ID, NAME FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ` +
+		Query: `SELECT ID, NAME FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ` +
 			`ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 

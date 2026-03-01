@@ -58,7 +58,7 @@ func (suite *StoreConstantsTestSuite) TestBuildIdentifyQueryFromIndexedAttribute
 
 	suite.NoError(err)
 	suite.Equal("ASQ-USER_MGT-16", query.ID)
-	suite.Contains(query.Query, "SELECT DISTINCT ia1.USER_ID FROM USER_INDEXED_ATTRIBUTES ia1")
+	suite.Contains(query.Query, "SELECT DISTINCT ia1.USER_ID AS ID FROM USER_INDEXED_ATTRIBUTES ia1")
 	suite.Contains(query.Query, "WHERE ia1.ATTRIBUTE_NAME = $1 AND ia1.ATTRIBUTE_VALUE = $2")
 	suite.Contains(query.Query, "AND ia1.DEPLOYMENT_ID = $3")
 	suite.Len(args, 3)
@@ -77,7 +77,7 @@ func (suite *StoreConstantsTestSuite) TestBuildIdentifyQueryFromIndexedAttribute
 
 	suite.NoError(err)
 	suite.Equal("ASQ-USER_MGT-16", query.ID)
-	suite.Contains(query.Query, "SELECT DISTINCT ia1.USER_ID FROM USER_INDEXED_ATTRIBUTES ia1")
+	suite.Contains(query.Query, "SELECT DISTINCT ia1.USER_ID AS ID FROM USER_INDEXED_ATTRIBUTES ia1")
 	suite.Contains(query.Query, "INNER JOIN USER_INDEXED_ATTRIBUTES ia2 ON ia1.USER_ID = ia2.USER_ID")
 	suite.Contains(query.Query, "ia1.DEPLOYMENT_ID = ia2.DEPLOYMENT_ID")
 	suite.Contains(query.Query, "WHERE")
@@ -158,7 +158,7 @@ func (suite *StoreConstantsTestSuite) TestBuildIdentifyQueryHybrid_OnlyIndexedFi
 
 	suite.NoError(err)
 	suite.Equal("ASQ-USER_MGT-17", query.ID)
-	suite.Contains(query.Query, "SELECT DISTINCT u.USER_ID FROM \"USER\" u")
+	suite.Contains(query.Query, "SELECT DISTINCT u.ID FROM \"USER\" u")
 	suite.Contains(query.Query, "INNER JOIN USER_INDEXED_ATTRIBUTES ia1")
 	suite.Contains(query.Query, "WHERE ia1.ATTRIBUTE_NAME = $1 AND ia1.ATTRIBUTE_VALUE = $2")
 	suite.Len(args, 3) // username (name + value) + deployment ID
@@ -181,13 +181,13 @@ func (suite *StoreConstantsTestSuite) TestBuildIdentifyQueryHybrid_IndexedAndNon
 	suite.Equal("ASQ-USER_MGT-17", query.ID)
 
 	// Check PostgreSQL query
-	suite.Contains(query.PostgresQuery, "SELECT DISTINCT u.USER_ID FROM \"USER\" u")
+	suite.Contains(query.PostgresQuery, "SELECT DISTINCT u.ID FROM \"USER\" u")
 	suite.Contains(query.PostgresQuery, "INNER JOIN USER_INDEXED_ATTRIBUTES ia1")
 	suite.Contains(query.PostgresQuery, "u.ATTRIBUTES->>'age' = $3")
 	suite.Contains(query.PostgresQuery, "u.DEPLOYMENT_ID = $4")
 
 	// Check SQLite query
-	suite.Contains(query.SQLiteQuery, "SELECT DISTINCT u.USER_ID FROM \"USER\" u")
+	suite.Contains(query.SQLiteQuery, "SELECT DISTINCT u.ID FROM \"USER\" u")
 	suite.Contains(query.SQLiteQuery, "json_extract(u.ATTRIBUTES, '$.age') = ?")
 	suite.Contains(query.SQLiteQuery, "u.DEPLOYMENT_ID = ?")
 
@@ -443,7 +443,7 @@ func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_NoFilters() 
 
 	suite.NoError(err)
 	suite.Equal("ASQ-USER_MGT-20", query.ID)
-	suite.Contains(query.PostgresQuery, `SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE 1=1`)
+	suite.Contains(query.PostgresQuery, `SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE 1=1`)
 	// Should contain OU filter and pagination (LIMIT / OFFSET)
 	suite.Contains(query.PostgresQuery, "AND OU_ID IN (")
 	suite.Contains(query.PostgresQuery, "LIMIT")

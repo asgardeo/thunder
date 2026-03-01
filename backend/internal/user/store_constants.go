@@ -44,40 +44,40 @@ var (
 	// QueryGetUserList is the query to get a list of users.
 	QueryGetUserList = model.DBQuery{
 		ID: "ASQ-USER_MGT-02",
-		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" " +
-			"WHERE DEPLOYMENT_ID = $3 ORDER BY USER_ID LIMIT $1 OFFSET $2",
+		Query: "SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" " +
+			"WHERE DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2",
 	}
 	// QueryCreateUser is the query to create a new user.
 	QueryCreateUser = model.DBQuery{
 		ID: "ASQ-USER_MGT-03",
-		Query: "INSERT INTO \"USER\" (USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS, DEPLOYMENT_ID) " +
+		Query: "INSERT INTO \"USER\" (ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS, DEPLOYMENT_ID) " +
 			"VALUES ($1, $2, $3, $4, $5, $6)",
 	}
 	// QueryGetUserByUserID is the query to get a user by user ID.
 	QueryGetUserByUserID = model.DBQuery{
 		ID:    "ASQ-USER_MGT-04",
-		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" WHERE USER_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 	// QueryUpdateUserByUserID is the query to update a user by user ID.
 	QueryUpdateUserByUserID = model.DBQuery{
 		ID:    "ASQ-USER_MGT-05",
-		Query: "UPDATE \"USER\" SET OU_ID = $2, TYPE = $3, ATTRIBUTES = $4 WHERE USER_ID = $1 AND DEPLOYMENT_ID = $5;",
+		Query: "UPDATE \"USER\" SET OU_ID = $2, TYPE = $3, ATTRIBUTES = $4 WHERE ID = $1 AND DEPLOYMENT_ID = $5;",
 	}
 	// QueryUpdateUserCredentialsByUserID is the query to update user credentials by user ID.
 	QueryUpdateUserCredentialsByUserID = model.DBQuery{
 		ID:    "ASQ-USER_MGT-14",
-		Query: "UPDATE \"USER\" SET CREDENTIALS = $2 WHERE USER_ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: "UPDATE \"USER\" SET CREDENTIALS = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3",
 	}
 	// QueryDeleteUserByUserID is the query to delete a user by user ID.
 	QueryDeleteUserByUserID = model.DBQuery{
 		ID:    "ASQ-USER_MGT-06",
-		Query: "DELETE FROM \"USER\" WHERE USER_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "DELETE FROM \"USER\" WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 	// QueryValidateUserWithCredentials is the query to validate the user with the give credentials.
 	QueryValidateUserWithCredentials = model.DBQuery{
 		ID: "ASQ-USER_MGT-07",
-		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS FROM \"USER\" " +
-			"WHERE USER_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS FROM \"USER\" " +
+			"WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 	// QueryGetGroupCountForUser is the query to get the count of groups for a given user.
 	QueryGetGroupCountForUser = model.DBQuery{
@@ -88,8 +88,8 @@ var (
 	// QueryGetGroupsForUser is the query to get groups for a given user with pagination.
 	QueryGetGroupsForUser = model.DBQuery{
 		ID: "ASQ-USER_MGT-13",
-		Query: `SELECT G.GROUP_ID, G.OU_ID, G.NAME FROM GROUP_MEMBER_REFERENCE GMR ` +
-			`INNER JOIN "GROUP" G ON GMR.GROUP_ID = G.GROUP_ID AND GMR.DEPLOYMENT_ID = $4 AND G.DEPLOYMENT_ID = $4 ` +
+		Query: `SELECT G.ID, G.OU_ID, G.NAME FROM GROUP_MEMBER_REFERENCE GMR ` +
+			`INNER JOIN "GROUP" G ON GMR.GROUP_ID = G.ID AND GMR.DEPLOYMENT_ID = $4 AND G.DEPLOYMENT_ID = $4 ` +
 			`WHERE GMR.MEMBER_ID = $1 AND GMR.MEMBER_TYPE = 'user' AND GMR.DEPLOYMENT_ID = $4 ` +
 			`ORDER BY G.NAME LIMIT $2 OFFSET $3`,
 	}
@@ -185,7 +185,7 @@ func buildUserListQueryByOUIDs(
 	ouIDs []string, filters map[string]interface{}, limit, offset int, deploymentID string,
 ) (model.DBQuery, []interface{}, error) {
 	queryID := "ASQ-USER_MGT-20"
-	baseQuery := `SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE 1=1`
+	baseQuery := `SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE 1=1`
 	columnName := AttributesColumn
 
 	var query model.DBQuery
@@ -231,7 +231,7 @@ func buildUserListQueryByOUIDs(
 
 // buildIdentifyQuery constructs a query to identify a user based on the provided filters.
 func buildIdentifyQuery(filters map[string]interface{}, deploymentID string) (model.DBQuery, []interface{}, error) {
-	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE 1=1"
+	baseQuery := "SELECT ID FROM \"USER\" WHERE 1=1"
 	queryID := "ASQ-USER_MGT-08"
 	columnName := AttributesColumn
 	filterQuery, args, err := utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
@@ -260,7 +260,7 @@ func buildBulkUserExistsQuery(userIDs []string, deploymentID string) (model.DBQu
 		args[i+1] = userID
 	}
 
-	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE DEPLOYMENT_ID = %s AND USER_ID IN (%s)"
+	baseQuery := "SELECT ID FROM \"USER\" WHERE DEPLOYMENT_ID = %s AND ID IN (%s)"
 	postgresQuery := fmt.Sprintf(baseQuery, "$1", strings.Join(postgresPlaceholders, ","))
 	sqliteQuery := fmt.Sprintf(baseQuery, "?", strings.Join(sqlitePlaceholders, ","))
 
@@ -278,7 +278,7 @@ func buildBulkUserExistsQuery(userIDs []string, deploymentID string) (model.DBQu
 func buildUserListQuery(
 	filters map[string]interface{}, limit, offset int, deploymentID string,
 ) (model.DBQuery, []interface{}, error) {
-	baseQuery := "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\""
+	baseQuery := "SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\""
 	queryID := "ASQ-USER_MGT-10"
 	columnName := AttributesColumn
 
@@ -319,12 +319,12 @@ func buildUserListQuery(
 func buildPaginatedQuery(baseQuery string, paramCount int, placeholder string) (string, error) {
 	switch placeholder {
 	case "?":
-		return fmt.Sprintf("%s ORDER BY USER_ID LIMIT %s OFFSET %s",
+		return fmt.Sprintf("%s ORDER BY ID LIMIT %s OFFSET %s",
 			baseQuery, placeholder, placeholder), nil
 	case "$":
 		limitPlaceholder := fmt.Sprintf("%s%d", placeholder, paramCount+1)
 		offsetPlaceholder := fmt.Sprintf("%s%d", placeholder, paramCount+2)
-		return fmt.Sprintf("%s ORDER BY USER_ID LIMIT %s OFFSET %s",
+		return fmt.Sprintf("%s ORDER BY ID LIMIT %s OFFSET %s",
 			baseQuery, limitPlaceholder, offsetPlaceholder), nil
 	}
 	return "", fmt.Errorf("unsupported placeholder: %s", placeholder)
@@ -364,7 +364,7 @@ func buildIdentifyQueryFromIndexedAttributes(
 	sort.Strings(keys)
 
 	// Build query using self-joins for multiple attributes
-	baseQuery := `SELECT DISTINCT ia1.USER_ID FROM USER_INDEXED_ATTRIBUTES ia1`
+	baseQuery := `SELECT DISTINCT ia1.USER_ID AS ID FROM USER_INDEXED_ATTRIBUTES ia1`
 	whereConditions := []string{}
 	args := []interface{}{}
 	paramIndex := 1
@@ -412,12 +412,12 @@ func buildIdentifyQueryHybrid(
 	}
 
 	// Build query with JOINs on USER table (eliminates IN clause and potential limits)
-	postgresQuery := `SELECT DISTINCT u.USER_ID FROM "USER" u`
-	postgresQuery += ` INNER JOIN USER_INDEXED_ATTRIBUTES ia1 ON u.USER_ID = ia1.USER_ID ` +
+	postgresQuery := `SELECT DISTINCT u.ID FROM "USER" u`
+	postgresQuery += ` INNER JOIN USER_INDEXED_ATTRIBUTES ia1 ON u.ID = ia1.USER_ID ` +
 		`AND u.DEPLOYMENT_ID = ia1.DEPLOYMENT_ID`
 
-	sqliteQuery := `SELECT DISTINCT u.USER_ID FROM "USER" u`
-	sqliteQuery += ` INNER JOIN USER_INDEXED_ATTRIBUTES ia1 ON u.USER_ID = ia1.USER_ID ` +
+	sqliteQuery := `SELECT DISTINCT u.ID FROM "USER" u`
+	sqliteQuery += ` INNER JOIN USER_INDEXED_ATTRIBUTES ia1 ON u.ID = ia1.USER_ID ` +
 		`AND u.DEPLOYMENT_ID = ia1.DEPLOYMENT_ID`
 
 	// Sort indexed keys for deterministic query generation
@@ -442,11 +442,11 @@ func buildIdentifyQueryHybrid(
 	for i := 1; i < len(indexedKeys); i++ {
 		alias := fmt.Sprintf("ia%d", i+1)
 		postgresQuery += fmt.Sprintf(
-			" INNER JOIN USER_INDEXED_ATTRIBUTES %s ON u.USER_ID = %s.USER_ID "+
+			" INNER JOIN USER_INDEXED_ATTRIBUTES %s ON u.ID = %s.USER_ID "+
 				"AND u.DEPLOYMENT_ID = %s.DEPLOYMENT_ID",
 			alias, alias, alias)
 		sqliteQuery += fmt.Sprintf(
-			" INNER JOIN USER_INDEXED_ATTRIBUTES %s ON u.USER_ID = %s.USER_ID "+
+			" INNER JOIN USER_INDEXED_ATTRIBUTES %s ON u.ID = %s.USER_ID "+
 				"AND u.DEPLOYMENT_ID = %s.DEPLOYMENT_ID",
 			alias, alias, alias)
 		whereConditions = append(whereConditions, fmt.Sprintf("%s.ATTRIBUTE_NAME = $%d AND %s.ATTRIBUTE_VALUE = $%d",

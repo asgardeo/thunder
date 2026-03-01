@@ -213,9 +213,9 @@ func (s *idpStore) DeleteIdentityProvider(ctx context.Context, id string) error 
 }
 
 func buildIDPFromResultRow(row map[string]interface{}) (*BasicIDPDTO, error) {
-	idpID, ok := row["idp_id"].(string)
+	idpID, ok := row["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse idp_id as string")
+		return nil, fmt.Errorf("failed to parse id as string")
 	}
 
 	idpName, ok := row["name"].(string)

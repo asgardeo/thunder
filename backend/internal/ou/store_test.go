@@ -641,8 +641,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 				suite.dbClientMock.
 					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"group_id": "grp1", "name": "Group 1"},
-						{"group_id": "grp2", "name": "Group 2"},
+						{"id": "grp1", "name": "Group 1"},
+						{"id": "grp2", "name": "Group 2"},
 					}, nil).
 					Once()
 			},
@@ -661,11 +661,11 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 				suite.dbClientMock.
 					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"group_id": 123},
+						{"id": 123},
 					}, nil).
 					Once()
 			},
-			wantErr: "expected group_id to be a string",
+			wantErr: "expected id to be a string",
 		},
 		{
 			name:   "invalid name",
@@ -676,7 +676,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 				suite.dbClientMock.
 					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"group_id": "grp1", "name": 5},
+						{"id": "grp1", "name": 5},
 					}, nil).
 					Once()
 			},
@@ -761,8 +761,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 				suite.dbClientMock.
 					On("Query", queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"user_id": "user1"},
-						{"user_id": "user2"},
+						{"id": "user1"},
+						{"id": "user2"},
 					}, nil).
 					Once()
 			},
@@ -780,11 +780,11 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 				suite.dbClientMock.
 					On("Query", queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"user_id": 123},
+						{"id": 123},
 					}, nil).
 					Once()
 			},
-			wantErr: "expected user_id to be a string",
+			wantErr: "expected id to be a string",
 		},
 		{
 			name:   "query error",

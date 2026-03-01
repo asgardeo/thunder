@@ -31,19 +31,19 @@ var (
 	// queryCreateRole creates a new role.
 	queryCreateRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-01",
-		Query: `INSERT INTO "ROLE" (ROLE_ID, OU_ID, NAME, DESCRIPTION, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)`,
+		Query: `INSERT INTO "ROLE" (ID, OU_ID, NAME, DESCRIPTION, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)`,
 	}
 
 	// queryGetRoleByID retrieves a role by ID.
 	queryGetRoleByID = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-02",
-		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetRoleList retrieves a list of roles with pagination.
 	queryGetRoleList = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-03",
-		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" ` +
+		Query: `SELECT ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" ` +
 			`WHERE DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2`,
 	}
 
@@ -56,13 +56,13 @@ var (
 	// queryUpdateRole updates a role.
 	queryUpdateRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-05",
-		Query: `UPDATE "ROLE" SET OU_ID = $1, NAME = $2, DESCRIPTION = $3 WHERE ROLE_ID = $4 AND DEPLOYMENT_ID = $5`,
+		Query: `UPDATE "ROLE" SET OU_ID = $1, NAME = $2, DESCRIPTION = $3 WHERE ID = $4 AND DEPLOYMENT_ID = $5`,
 	}
 
 	// queryDeleteRole deletes a role.
 	queryDeleteRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-06",
-		Query: `DELETE FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "ROLE" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCreateRolePermission creates a new role permission.
@@ -122,13 +122,13 @@ var (
 	queryCheckRoleNameExistsExcludingID = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-15",
 		Query: `SELECT COUNT(*) as count FROM "ROLE" 
-			WHERE OU_ID = $1 AND NAME = $2 AND ROLE_ID != $3 AND DEPLOYMENT_ID = $4`,
+			WHERE OU_ID = $1 AND NAME = $2 AND ID != $3 AND DEPLOYMENT_ID = $4`,
 	}
 
 	// queryCheckRoleExists checks if a role exists by its ID.
 	queryCheckRoleExists = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-16",
-		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )
 

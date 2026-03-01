@@ -152,13 +152,13 @@ func (s *IDPStoreTestSuite) TestCreateIdentityProvider_ExecuteError() {
 func (s *IDPStoreTestSuite) TestGetIdentityProviderList_Success() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      "idp-1",
+			"id":          "idp-1",
 			"name":        "IDP 1",
 			"description": "Desc 1",
 			"type":        "OIDC",
 		},
 		{
-			"idp_id":      "idp-2",
+			"id":          "idp-2",
 			"name":        "IDP 2",
 			"description": "Desc 2",
 			"type":        "GOOGLE",
@@ -224,7 +224,7 @@ func (s *IDPStoreTestSuite) TestGetIdentityProviderList_QueryError() {
 func (s *IDPStoreTestSuite) TestGetIdentityProviderList_BuildError() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      123, // Invalid type - should be string
+			"id":          123, // Invalid type - should be string
 			"name":        "IDP 1",
 			"description": "Desc 1",
 			"type":        "OIDC",
@@ -248,7 +248,7 @@ func (s *IDPStoreTestSuite) TestGetIdentityProviderList_BuildError() {
 func (s *IDPStoreTestSuite) TestGetIdentityProvider_Success() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      "idp-123",
+			"id":          "idp-123",
 			"name":        "Test IDP",
 			"description": "Test Description",
 			"type":        "OIDC",
@@ -290,8 +290,8 @@ func (s *IDPStoreTestSuite) TestGetIdentityProvider_NotFound() {
 // TestGetIdentityProvider_MultipleResults tests multiple results error
 func (s *IDPStoreTestSuite) TestGetIdentityProvider_MultipleResults() {
 	results := []map[string]interface{}{
-		{"idp_id": "idp-1", "name": "IDP 1", "description": "", "type": "OIDC"},
-		{"idp_id": "idp-2", "name": "IDP 2", "description": "", "type": "OIDC"},
+		{"id": "idp-1", "name": "IDP 1", "description": "", "type": "OIDC"},
+		{"id": "idp-2", "name": "IDP 2", "description": "", "type": "OIDC"},
 	}
 
 	s.mockDBProvider.On("GetConfigDBClient").Return(s.mockDBClient, nil)
@@ -311,7 +311,7 @@ func (s *IDPStoreTestSuite) TestGetIdentityProvider_MultipleResults() {
 func (s *IDPStoreTestSuite) TestGetIdentityProviderByName_Success() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      "idp-123",
+			"id":          "idp-123",
 			"name":        "Test IDP",
 			"description": "Test Description",
 			"type":        "OIDC",
@@ -513,7 +513,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 		{
 			name: "Valid row",
 			row: map[string]interface{}{
-				"idp_id":      "idp-123",
+				"id":          "idp-123",
 				"name":        "Test IDP",
 				"description": "Test Description",
 				"type":        "OIDC",
@@ -533,7 +533,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 		{
 			name: "Invalid idp_id type",
 			row: map[string]interface{}{
-				"idp_id":      123,
+				"id":          123,
 				"name":        "Test IDP",
 				"description": "Test Description",
 				"type":        "OIDC",
@@ -543,7 +543,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 		{
 			name: "Missing name",
 			row: map[string]interface{}{
-				"idp_id":      "idp-123",
+				"id":          "idp-123",
 				"description": "Test Description",
 				"type":        "OIDC",
 			},
@@ -552,7 +552,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 		{
 			name: "Invalid name type",
 			row: map[string]interface{}{
-				"idp_id":      "idp-123",
+				"id":          "idp-123",
 				"name":        123,
 				"description": "Test Description",
 				"type":        "OIDC",
@@ -562,7 +562,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 		{
 			name: "Invalid description type",
 			row: map[string]interface{}{
-				"idp_id":      "idp-123",
+				"id":          "idp-123",
 				"name":        "Test IDP",
 				"description": 123,
 				"type":        "OIDC",
@@ -572,7 +572,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 		{
 			name: "Invalid type field type",
 			row: map[string]interface{}{
-				"idp_id":      "idp-123",
+				"id":          "idp-123",
 				"name":        "Test IDP",
 				"description": "Test Description",
 				"type":        123,
@@ -600,7 +600,7 @@ func (s *IDPStoreTestSuite) TestBuildIDPFromResultRow() {
 func (s *IDPStoreTestSuite) TestGetIdentityProvider_WithByteProperties() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      "idp-123",
+			"id":          "idp-123",
 			"name":        "Test IDP",
 			"description": "Test Description",
 			"type":        "OIDC",
@@ -652,7 +652,7 @@ func (s *IDPStoreTestSuite) TestGetIdentityProvider_QueryError() {
 func (s *IDPStoreTestSuite) TestGetIdentityProvider_InvalidPropertyJSON() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      "idp-123",
+			"id":          "idp-123",
 			"name":        "Test IDP",
 			"description": "Test Description",
 			"type":        "OIDC",
@@ -677,7 +677,7 @@ func (s *IDPStoreTestSuite) TestGetIdentityProvider_InvalidPropertyJSON() {
 func (s *IDPStoreTestSuite) TestGetIdentityProvider_BuildRowError() {
 	results := []map[string]interface{}{
 		{
-			"idp_id":      123, // Invalid type
+			"id":          123, // Invalid type
 			"name":        "Test IDP",
 			"description": "Test Description",
 			"type":        "OIDC",
