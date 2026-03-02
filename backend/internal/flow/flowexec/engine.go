@@ -350,9 +350,10 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 			}
 		}
 
-		// If current node has not set an authenticated user token, retain the previous one
+		// If current node has not set an authenticated user token, retain the previous info
 		if engineCtx.AuthenticatedUser.Token == "" {
 			engineCtx.AuthenticatedUser.Token = prevAuthnUser.Token
+			engineCtx.AuthenticatedUser.AvailableAttributes = prevAuthnUser.AvailableAttributes
 		}
 
 		// Append user ID as a runtime data if not already set
