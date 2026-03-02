@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
@@ -1129,4 +1130,262 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_UserOnboardingFlowRetainsPass
 	fe.clearSensitiveInputs(ctx, mockNode)
 
 	s.Equal("secret123", ctx.UserInputs["password"])
+}
+
+func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_RetainsTokenAndAvailableAttributesWhenNotSet() {
+	// Test that when node response doesn't set Token, both Token and AvailableAttributes
+	// from previous state are retained
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeAuthentication)
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	previousToken := "previous-auth-token"
+	previousAvailableAttrs := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"email": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+			"phone": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-123",
+			Token:               previousToken,
+			AvailableAttributes: previousAvailableAttrs,
+			Attributes: map[string]interface{}{
+				"existingAttr": "existingValue",
+			},
+		},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			Token:           "", // Empty token - should trigger retention
+			Attributes: map[string]interface{}{
+				"newAttr": "newValue",
+			},
+			// AvailableAttributes not set
+		},
+	}
+
+	fe.updateContextWithNodeResponse(ctx, nodeResp)
+
+	// Token and AvailableAttributes should be retained from previous state
+	s.Equal(previousToken, ctx.AuthenticatedUser.Token)
+	s.Equal(previousAvailableAttrs, ctx.AuthenticatedUser.AvailableAttributes)
+	s.NotNil(ctx.AuthenticatedUser.AvailableAttributes)
+	s.Len(ctx.AuthenticatedUser.AvailableAttributes.Attributes, 2)
+	s.Contains(ctx.AuthenticatedUser.AvailableAttributes.Attributes, "email")
+	s.Contains(ctx.AuthenticatedUser.AvailableAttributes.Attributes, "phone")
+
+	// Attributes should still be merged
+	s.Equal("existingValue", ctx.AuthenticatedUser.Attributes["existingAttr"])
+	s.Equal("newValue", ctx.AuthenticatedUser.Attributes["newAttr"])
+}
+
+func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_UpdatesTokenAndAvailableAttributesWhenSet() {
+	// Test that when node response sets Token, both Token and AvailableAttributes
+	// are updated to the new values
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeAuthentication)
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	previousToken := "previous-auth-token"
+	previousAvailableAttrs := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"email": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+
+	newToken := "new-auth-token" //nolint:gosec // G101: This is test data, not a real credential
+	newAvailableAttrs := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"phone": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+			"address": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-123",
+			Token:               previousToken,
+			AvailableAttributes: previousAvailableAttrs,
+		},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-123",
+			Token:               newToken, // New token is set
+			AvailableAttributes: newAvailableAttrs,
+		},
+	}
+
+	fe.updateContextWithNodeResponse(ctx, nodeResp)
+
+	// Token and AvailableAttributes should be updated to new values
+	s.Equal(newToken, ctx.AuthenticatedUser.Token)
+	s.Equal(newAvailableAttrs, ctx.AuthenticatedUser.AvailableAttributes)
+	s.NotNil(ctx.AuthenticatedUser.AvailableAttributes)
+	s.Len(ctx.AuthenticatedUser.AvailableAttributes.Attributes, 2)
+	s.Contains(ctx.AuthenticatedUser.AvailableAttributes.Attributes, "phone")
+	s.Contains(ctx.AuthenticatedUser.AvailableAttributes.Attributes, "address")
+}
+
+func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_EmptyPreviousTokenAndAvailableAttributes() {
+	// Test that when previous state has no Token/AvailableAttributes,
+	// empty values from node response don't cause issues
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeAuthentication)
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     false,
+			Token:               "", // No previous token
+			AvailableAttributes: nil,
+		},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-456",
+			Token:               "", // Still no token
+			AvailableAttributes: nil,
+		},
+	}
+
+	fe.updateContextWithNodeResponse(ctx, nodeResp)
+
+	// Should have empty values without errors
+	s.Equal("", ctx.AuthenticatedUser.Token)
+	s.Nil(ctx.AuthenticatedUser.AvailableAttributes)
+	s.Equal("user-456", ctx.AuthenticatedUser.UserID)
+}
+
+func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_TokenSetButAvailableAttributesEmpty() {
+	// Test that when Token is set but AvailableAttributes is empty,
+	// empty AvailableAttributes are used (not retained from previous)
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeAuthentication)
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	previousAvailableAttrs := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"email": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			Token:               "old-token",
+			AvailableAttributes: previousAvailableAttrs,
+		},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			Token:               "new-token", // Token is set
+			AvailableAttributes: nil,         // But AvailableAttributes is nil
+		},
+	}
+
+	fe.updateContextWithNodeResponse(ctx, nodeResp)
+
+	// Since Token is set, AvailableAttributes from node response should be used (nil)
+	// not retained from previous
+	s.Equal("new-token", ctx.AuthenticatedUser.Token)
+	s.Nil(ctx.AuthenticatedUser.AvailableAttributes)
 }
