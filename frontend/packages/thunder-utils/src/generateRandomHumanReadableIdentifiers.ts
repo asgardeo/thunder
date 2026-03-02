@@ -24,7 +24,7 @@ import humanId from 'human-id';
  * @param length - The number of theme name suggestions to generate.
  * @returns An array of generated theme name suggestions.
  */
-export default function generateThemeNameSuggestions(length: number = 5): string[] {
+export default function generateThemeNameSuggestions(length = 5): string[] {
   return Array.from({length}, () => {
     const id: string = humanId({
       separator: ' ',

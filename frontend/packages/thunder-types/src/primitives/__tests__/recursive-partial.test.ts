@@ -37,39 +37,55 @@ describe('RecursivePartial', () => {
   });
 
   it('should make all object properties optional', () => {
-    type Input = {a: string; b: number};
-    type Expected = {a?: string; b?: number};
+    interface Input {
+      a: string;
+      b: number;
+    }
+    interface Expected {
+      a?: string;
+      b?: number;
+    }
     expectTypeOf<RecursivePartial<Input>>().toEqualTypeOf<Expected>();
   });
 
   it('should recursively make nested object properties optional', () => {
-    type Input = {a: {b: {c: string}}};
-    type Expected = {a?: {b?: {c?: string}}};
+    interface Input {
+      a: {b: {c: string}};
+    }
+    interface Expected {
+      a?: {b?: {c?: string}};
+    }
     expectTypeOf<RecursivePartial<Input>>().toEqualTypeOf<Expected>();
   });
 
   it('should keep function-valued properties as-is while making the key optional', () => {
     type Fn = () => void;
-    type Input = {fn: Fn; name: string};
-    type Expected = {fn?: Fn; name?: string};
+    interface Input {
+      fn: Fn;
+      name: string;
+    }
+    interface Expected {
+      fn?: Fn;
+      name?: string;
+    }
     expectTypeOf<RecursivePartial<Input>>().toEqualTypeOf<Expected>();
   });
 
   it('should handle objects with mixed primitive and nested object properties', () => {
-    type Input = {
+    interface Input {
       id: number;
       meta: {
         label: string;
         active: boolean;
       };
-    };
-    type Expected = {
+    }
+    interface Expected {
       id?: number;
       meta?: {
         label?: string;
         active?: boolean;
       };
-    };
+    }
     expectTypeOf<RecursivePartial<Input>>().toEqualTypeOf<Expected>();
   });
 });

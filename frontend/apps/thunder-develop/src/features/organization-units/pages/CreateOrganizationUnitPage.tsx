@@ -38,10 +38,10 @@ import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {useLogger} from '@thunder/logger/react';
+import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 import useCreateOrganizationUnit from '../api/useCreateOrganizationUnit';
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
 import type {CreateOrganizationUnitRequest} from '../models/requests';
-import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 
 /**
  * Creates a Zod schema for the create organization unit form with i18n support.

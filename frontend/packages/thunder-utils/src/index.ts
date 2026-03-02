@@ -16,4 +16,7 @@
  * under the License.
  */
 
+// TODO: Remove this once we have more than one export in this file.
+/* eslint-disable import/prefer-default-export */
+
 export {default as generateRandomHumanReadableIdentifiers} from './generateRandomHumanReadableIdentifiers';
