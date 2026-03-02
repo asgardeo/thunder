@@ -54,6 +54,7 @@
     "@thunder/i18n": "workspace:^",
     "@thunder/shared-design": "workspace:^",
     "@thunder/shared-hooks": "workspace:^",
+    "@thunder/utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
     "@xyflow/react": "12.9.2",
