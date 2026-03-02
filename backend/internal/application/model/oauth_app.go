@@ -70,6 +70,7 @@ type OAuthAppConfig struct {
 	Scopes                  []string                            `json:"scopes,omitempty"`
 	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty"`
 	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty"`
+	Certificate             *ApplicationCertificate             `json:"certificate,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
@@ -88,6 +89,7 @@ type OAuthAppConfigComplete struct {
 	Scopes                  []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
 	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty" yaml:"user_info,omitempty"`
 	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty" yaml:"scope_claims,omitempty"`
+	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
@@ -105,6 +107,7 @@ type OAuthAppConfigDTO struct {
 	Scopes                  []string                            `json:"scopes,omitempty" jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
 	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
 	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
+	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -142,6 +145,7 @@ type OAuthAppConfigProcessedDTO struct {
 	Scopes                  []string                            `yaml:"scopes,omitempty"`
 	UserInfo                *UserInfoConfig                     `yaml:"user_info,omitempty"`
 	ScopeClaims             map[string][]string                 `yaml:"scope_claims,omitempty"`
+	Certificate             *ApplicationCertificate             `yaml:"certificate,omitempty"`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
