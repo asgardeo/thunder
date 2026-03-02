@@ -21,10 +21,12 @@ package flowexec
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
@@ -106,23 +108,24 @@ type FlowInitContext struct {
 
 // FlowContextWithUserDataDB represents the combined flow context and user data.
 type FlowContextWithUserDataDB struct {
-	FlowID             string
-	AppID              string
-	Verbose            bool
-	CurrentNodeID      *string
-	CurrentAction      *string
-	GraphID            string
-	RuntimeData        *string
-	IsAuthenticated    bool
-	UserID             *string
-	OrganizationUnitID *string
-	UserType           *string
-	UserInputs         *string
-	UserAttributes     *string
-	Token              *string
-	ExecutionHistory   *string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	FlowID              string
+	AppID               string
+	Verbose             bool
+	CurrentNodeID       *string
+	CurrentAction       *string
+	GraphID             string
+	RuntimeData         *string
+	IsAuthenticated     bool
+	UserID              *string
+	OrganizationUnitID  *string
+	UserType            *string
+	UserInputs          *string
+	UserAttributes      *string
+	Token               *string
+	AvailableAttributes *string
+	ExecutionHistory    *string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // ToEngineContext converts the database model to the flow engine context.
@@ -159,7 +162,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 
 	// Decrypt token if present
 	var token string
-	if f.Token != nil {
+	if f.Token != nil && *f.Token != "" {
 		encryptionService := encrypt.GetEncryptionService()
 		decrypted, err := encryptionService.DecryptString(*f.Token)
 		if err != nil {
@@ -168,12 +171,23 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 		token = decrypted
 	}
 
+	// Parse available attributes
+	var availableAttributes *authnprovider.AvailableAttributes
+	if f.AvailableAttributes != nil && strings.TrimSpace(*f.AvailableAttributes) != "" {
+		var attrs authnprovider.AvailableAttributes
+		if err := json.Unmarshal([]byte(*f.AvailableAttributes), &attrs); err != nil {
+			return EngineContext{}, err
+		}
+		availableAttributes = &attrs
+	}
+
 	// Build authenticated user
 	authenticatedUser := authncm.AuthenticatedUser{
-		IsAuthenticated: f.IsAuthenticated,
-		UserID:          "",
-		Attributes:      userAttributes,
-		Token:           token,
+		IsAuthenticated:     f.IsAuthenticated,
+		UserID:              "",
+		Attributes:          userAttributes,
+		Token:               token,
+		AvailableAttributes: availableAttributes,
 	}
 	if f.UserID != nil {
 		authenticatedUser.UserID = *f.UserID
@@ -297,6 +311,17 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 		encryptedToken = &encrypted
 	}
 
+	// Serialize available attributes
+	var availableAttributes *string
+	if ctx.AuthenticatedUser.AvailableAttributes != nil {
+		availableAttrsJSON, err := json.Marshal(ctx.AuthenticatedUser.AvailableAttributes)
+		if err != nil {
+			return nil, err
+		}
+		availableAttrsStr := string(availableAttrsJSON)
+		availableAttributes = &availableAttrsStr
+	}
+
 	// Get graph ID
 	graphID := ""
 	if ctx.Graph != nil {
@@ -304,20 +329,21 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 	}
 
 	return &FlowContextWithUserDataDB{
-		FlowID:             ctx.FlowID,
-		AppID:              ctx.AppID,
-		Verbose:            ctx.Verbose,
-		CurrentNodeID:      currentNodeID,
-		CurrentAction:      currentAction,
-		GraphID:            graphID,
-		RuntimeData:        &runtimeData,
-		IsAuthenticated:    ctx.AuthenticatedUser.IsAuthenticated,
-		UserID:             authenticatedUserID,
-		OrganizationUnitID: organizationUnitID,
-		UserType:           userType,
-		UserInputs:         &userInputs,
-		UserAttributes:     &userAttributes,
-		Token:              encryptedToken,
-		ExecutionHistory:   &executionHistory,
+		FlowID:              ctx.FlowID,
+		AppID:               ctx.AppID,
+		Verbose:             ctx.Verbose,
+		CurrentNodeID:       currentNodeID,
+		CurrentAction:       currentAction,
+		GraphID:             graphID,
+		RuntimeData:         &runtimeData,
+		IsAuthenticated:     ctx.AuthenticatedUser.IsAuthenticated,
+		UserID:              authenticatedUserID,
+		OrganizationUnitID:  organizationUnitID,
+		UserType:            userType,
+		UserInputs:          &userInputs,
+		UserAttributes:      &userAttributes,
+		Token:               encryptedToken,
+		AvailableAttributes: availableAttributes,
+		ExecutionHistory:    &executionHistory,
 	}, nil
 }

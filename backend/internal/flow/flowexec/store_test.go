@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
@@ -49,7 +50,10 @@ func TestStoreTestSuite(t *testing.T) {
 		},
 	}
 	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+	err := config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+	if err != nil {
+		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
+	}
 
 	suite.Run(t, new(StoreTestSuite))
 }
@@ -74,7 +78,8 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 
 	// Token encryption/decryption is tested in model_test.go, so we just use mock.Anything here
 	mockTx.On("Exec", QueryCreateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
+		Return(nil, nil)
 
 	mockTx.On("Commit").Return(nil)
 
@@ -127,7 +132,8 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 
 	// Token should be nil when not provided
 	mockTx.On("Exec", QueryCreateFlowUserData, "test-flow-id", false, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
+		Return(nil, nil)
 
 	mockTx.On("Commit").Return(nil)
 
@@ -180,7 +186,8 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithToken() {
 
 	// Token encryption/decryption is tested in model_test.go, so we just use mock.Anything here
 	mockTx.On("Exec", QueryUpdateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
+		Return(nil, nil)
 
 	mockTx.On("Commit").Return(nil)
 
@@ -519,4 +526,242 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 	s.NotNil(result)
 	s.NotNil(result.Token)
 	s.Equal(*dbModel.Token, *result.Token)
+}
+
+func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
+	// Setup
+	testAvailableAttributes := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"email": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+			"phone": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
+	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
+	mockDBClient.On("BeginTx").Return(mockTx, nil)
+
+	// Expect two Exec calls: one for FLOW_CONTEXT, one for FLOW_USER_DATA
+	mockTx.On("Exec", QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
+		mock.Anything, mock.Anything, "test-graph-id", mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+
+	// Available attributes serialization is tested in model_test.go, so we just use mock.Anything here
+	mockTx.On("Exec", QueryCreateFlowUserData, "test-flow-id", true, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
+		Return(nil, nil)
+
+	mockTx.On("Commit").Return(nil)
+
+	store := &flowStore{
+		dbProvider:   mockDBProvider,
+		deploymentID: "test-deployment",
+	}
+
+	ctx := EngineContext{
+		FlowID:   "test-flow-id",
+		AppID:    "test-app-id",
+		Verbose:  false,
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-123",
+			AvailableAttributes: testAvailableAttributes,
+			Attributes:          map[string]interface{}{},
+		},
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	// Execute
+	err := store.StoreFlowContext(ctx)
+
+	// Verify
+	s.NoError(err)
+	mockDBProvider.AssertExpectations(s.T())
+	mockDBClient.AssertExpectations(s.T())
+	mockTx.AssertExpectations(s.T())
+}
+
+func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
+	// Setup
+	testAvailableAttributes := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"email": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+			"address": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
+	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
+	mockTx := modelmock.NewTxInterfaceMock(s.T())
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+
+	mockGraph.On("GetID").Return("test-graph-id")
+
+	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
+	mockDBClient.On("BeginTx").Return(mockTx, nil)
+
+	mockTx.On("Exec", QueryUpdateFlowContext, "test-flow-id", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+
+	// Available attributes serialization is tested in model_test.go, so we just use mock.Anything here
+	mockTx.On("Exec", QueryUpdateFlowUserData, "test-flow-id", true, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
+		Return(nil, nil)
+
+	mockTx.On("Commit").Return(nil)
+
+	store := &flowStore{
+		dbProvider:   mockDBProvider,
+		deploymentID: "test-deployment",
+	}
+
+	ctx := EngineContext{
+		FlowID:   "test-flow-id",
+		AppID:    "test-app-id",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-456",
+			AvailableAttributes: testAvailableAttributes,
+			Attributes:          map[string]interface{}{},
+		},
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	// Execute
+	err := store.UpdateFlowContext(ctx)
+
+	// Verify
+	s.NoError(err)
+	mockDBProvider.AssertExpectations(s.T())
+	mockDBClient.AssertExpectations(s.T())
+	mockTx.AssertExpectations(s.T())
+}
+
+func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
+	// Setup
+	testAvailableAttributes := &authnprovider.AvailableAttributes{
+		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
+			"email": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: true,
+				},
+			},
+			"phone": {
+				AssuranceMetadataResponse: &authnprovider.AssuranceMetadataResponse{
+					IsVerified: false,
+				},
+			},
+		},
+		Verifications: map[string]*authnprovider.VerificationResponse{},
+	}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	mockGraph.On("GetID").Return("test-graph-id")
+	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
+
+	// Create serialized available attributes
+	ctx := EngineContext{
+		FlowID:   "test-flow-id",
+		AppID:    "test-app-id",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:     true,
+			UserID:              "user-789",
+			AvailableAttributes: testAvailableAttributes,
+			Attributes:          map[string]interface{}{},
+		},
+		UserInputs:       map[string]string{},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Graph:            mockGraph,
+	}
+
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	s.NotNil(dbModel.AvailableAttributes)
+
+	// Setup mocks
+	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
+	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
+
+	userID := "user-789"
+	results := []map[string]interface{}{
+		{
+			"flow_id":              "test-flow-id",
+			"app_id":               "test-app-id",
+			"verbose":              false,
+			"current_node_id":      nil,
+			"current_action":       nil,
+			"graph_id":             "test-graph-id",
+			"runtime_data":         "{}",
+			"execution_history":    "{}",
+			"is_authenticated":     true,
+			"user_id":              userID,
+			"ou_id":                nil,
+			"user_type":            nil,
+			"user_inputs":          "{}",
+			"user_attributes":      "{}",
+			"available_attributes": *dbModel.AvailableAttributes,
+		},
+	}
+
+	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
+	mockDBClient.On("Query", QueryGetFlowContextWithUserData, "test-flow-id", "test-deployment").Return(results, nil)
+
+	store := &flowStore{
+		dbProvider:   mockDBProvider,
+		deploymentID: "test-deployment",
+	}
+
+	// Execute
+	result, err := store.GetFlowContext("test-flow-id")
+
+	// Verify
+	s.NoError(err)
+	s.NotNil(result)
+	s.Equal("test-flow-id", result.FlowID)
+	s.True(result.IsAuthenticated)
+	s.NotNil(result.AvailableAttributes)
+	s.Equal(*dbModel.AvailableAttributes, *result.AvailableAttributes) // Serialized attributes should match
+
+	// Verify we can deserialize it back to original
+	restoredCtx, err := result.ToEngineContext(mockGraph)
+	s.NoError(err)
+	s.NotNil(restoredCtx.AuthenticatedUser.AvailableAttributes)
+	s.Len(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes, 2)
+	s.Contains(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes, "email")
+	s.Contains(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes, "phone")
+	s.True(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes["email"].AssuranceMetadataResponse.IsVerified)
+	s.False(restoredCtx.AuthenticatedUser.AvailableAttributes.Attributes["phone"].AssuranceMetadataResponse.IsVerified)
+
+	mockDBProvider.AssertExpectations(s.T())
+	mockDBClient.AssertExpectations(s.T())
 }
