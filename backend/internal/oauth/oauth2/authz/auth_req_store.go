@@ -21,8 +21,10 @@ package authz
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
@@ -236,8 +238,11 @@ func (authzRS *authorizationRequestStore) buildAuthRequestContextFromResultRow(
 	if claimsLocales, ok := requestDataMap[jsonKeyClaimsLocales].(string); ok {
 		oauthParams.ClaimsLocales = claimsLocales
 	}
-	if nonce, ok := requestDataMap[jsonKeyNonce].(string); ok {
-		oauthParams.Nonce = nonce
+	// Nonce is OIDC-specific and should only be set when openid scope is present
+	if slices.Contains(oauthParams.StandardScopes, constants.ScopeOpenID) {
+		if nonce, ok := requestDataMap[jsonKeyNonce].(string); ok {
+			oauthParams.Nonce = nonce
+		}
 	}
 
 	// Parse claims_request if present
