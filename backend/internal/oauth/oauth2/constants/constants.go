@@ -54,6 +54,7 @@ const (
 	RequestParamAudience            string = "audience"
 	RequestParamClaims              string = "claims"
 	RequestParamClaimsLocales       string = "claims_locales"
+	RequestParamNonce               string = "nonce"
 )
 
 // Server OAuth constants.
