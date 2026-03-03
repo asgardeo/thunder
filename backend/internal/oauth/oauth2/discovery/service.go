@@ -49,6 +49,7 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata() *OAuth2Author
 		Issuer:                            ds.getIssuer(),
 		AuthorizationEndpoint:             ds.getAuthorizationEndpoint(),
 		TokenEndpoint:                     ds.getTokenEndpoint(),
+		UserInfoEndpoint:                  ds.getUserInfoEndpoint(),
 		JWKSUri:                           ds.getJWKSUri(),
 		RegistrationEndpoint:              ds.getRegistrationEndpoint(),
 		IntrospectionEndpoint:             ds.getIntrospectionEndpoint(),
@@ -91,6 +92,10 @@ func (ds *discoveryService) getJWKSUri() string {
 
 func (ds *discoveryService) getIntrospectionEndpoint() string {
 	return ds.baseURL + constants.OAuth2IntrospectionEndpoint
+}
+
+func (ds *discoveryService) getUserInfoEndpoint() string {
+	return ds.baseURL + constants.OAuth2UserInfoEndpoint
 }
 
 func (ds *discoveryService) getRegistrationEndpoint() string {

@@ -82,9 +82,9 @@ func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
 	assert.NotEmpty(suite.T(), metadata.JWKSUri)
 	assert.NotEmpty(suite.T(), metadata.RegistrationEndpoint)
 	assert.NotEmpty(suite.T(), metadata.IntrospectionEndpoint)
+	assert.NotEmpty(suite.T(), metadata.UserInfoEndpoint)
 
 	// Verify only implemented endpoints are present
-	assert.Empty(suite.T(), metadata.UserInfoEndpoint)   // Not implemented
 	assert.Empty(suite.T(), metadata.RevocationEndpoint) // Not implemented
 
 	// Verify only implemented grant types are present
