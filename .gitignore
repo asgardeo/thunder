@@ -113,3 +113,6 @@ backend/coverage_unit.html
 # IDE settings
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+
+# Dev configuration override (local developer settings)
+deployment.dev.yaml

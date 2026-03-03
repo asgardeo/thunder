@@ -553,6 +553,13 @@ function Prepare-Backend-For-Packaging {
     Write-Host "=== Ensuring crypto file exists in the distribution ==="
     Ensure-Crypto-File -conf_dir (Join-Path $package_folder "repository/conf")
     Write-Host "================================================================"
+
+    Write-Host "=== Ensuring dev configuration override is excluded from the distribution ==="
+    $devConfigPath = Join-Path $package_folder "repository/conf/deployment.dev.yaml"
+    if (Test-Path $devConfigPath) {
+        Remove-Item -Path $devConfigPath -Force
+    }
+    Write-Host "================================================================"
 }
 
 function Prepare-Frontend-For-Packaging {

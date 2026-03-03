@@ -737,6 +737,262 @@ gate_client:
 	assert.Equal(suite.T(), "/newapp/error", config5.GateClient.ErrorPath)
 }
 
+func (suite *ConfigTestSuite) TestDeriveDevConfigPath() {
+	// Test deriving dev config path from various config paths
+	tests := []struct {
+		name       string
+		configPath string
+		expected   string
+	}{
+		{
+			name:       "Standard path",
+			configPath: "/path/to/conf/deployment.yaml",
+			expected:   "/path/to/conf/deployment.dev.yaml",
+		},
+		{
+			name:       "Relative path",
+			configPath: "conf/deployment.yaml",
+			expected:   "conf/deployment.dev.yaml",
+		},
+		{
+			name:       "Current directory",
+			configPath: "deployment.yaml",
+			expected:   "deployment.dev.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := deriveDevConfigPath(tt.configPath)
+			assert.Equal(suite.T(), tt.expected, result)
+		})
+	}
+}
+
+const baseTestConfig = `
+server:
+  hostname: "base-host"
+  port: 8090
+`
+
+func (suite *ConfigTestSuite) TestLoadConfig_WithDevOverride() {
+	tempDir := suite.T().TempDir()
+	confDir := tempDir + "/conf"
+	err := os.MkdirAll(confDir, 0750)
+	suite.Require().NoError(err)
+
+	suite.setEnvVar("THUNDER_PROFILE", "dev")
+
+	// Create a base deployment.yaml
+	baseContent := `
+server:
+  hostname: "base-host"
+  port: 8090
+
+gate_client:
+  hostname: "base-gate"
+  port: 9080
+  scheme: "https"
+  path: "/gate"
+`
+	basePath := confDir + "/deployment.yaml"
+	err = os.WriteFile(basePath, []byte(baseContent), 0600)
+	suite.Require().NoError(err)
+
+	// Create a deployment.dev.yaml that overrides some values
+	devContent := `
+server:
+  hostname: "dev-host"
+  http_only: true
+
+gate_client:
+  port: 5190
+`
+	devPath := confDir + "/deployment.dev.yaml"
+	err = os.WriteFile(devPath, []byte(devContent), 0600)
+	suite.Require().NoError(err)
+
+	config, err := LoadConfig(basePath, "", tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+
+	// Values overridden by dev config
+	assert.Equal(suite.T(), "dev-host", config.Server.Hostname)
+	assert.Equal(suite.T(), true, config.Server.HTTPOnly)
+	assert.Equal(suite.T(), 5190, config.GateClient.Port)
+
+	// Values preserved from base config
+	assert.Equal(suite.T(), 8090, config.Server.Port)
+	assert.Equal(suite.T(), "base-gate", config.GateClient.Hostname)
+	assert.Equal(suite.T(), "https", config.GateClient.Scheme)
+	assert.Equal(suite.T(), "/gate", config.GateClient.Path)
+}
+
+func (suite *ConfigTestSuite) TestLoadConfig_WithDevOverrideButProfileNotSet() {
+	tempDir := suite.T().TempDir()
+	confDir := tempDir + "/conf"
+	err := os.MkdirAll(confDir, 0750)
+	suite.Require().NoError(err)
+
+	// Explicitly unset the profile
+	suite.setEnvVar("THUNDER_PROFILE", "")
+
+	// Create a base deployment.yaml
+	basePath := confDir + "/deployment.yaml"
+	err = os.WriteFile(basePath, []byte(baseTestConfig), 0600)
+	suite.Require().NoError(err)
+
+	// Create a deployment.dev.yaml that overrides some values
+	devContent := `
+server:
+  hostname: "dev-host"
+`
+	devPath := confDir + "/deployment.dev.yaml"
+	err = os.WriteFile(devPath, []byte(devContent), 0600)
+	suite.Require().NoError(err)
+
+	config, err := LoadConfig(basePath, "", tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+
+	// Values should NOT be overridden as THUNDER_PROFILE is not 'dev'
+	assert.Equal(suite.T(), "base-host", config.Server.Hostname)
+}
+
+func (suite *ConfigTestSuite) TestLoadConfig_WithoutDevOverride() {
+	tempDir := suite.T().TempDir()
+	confDir := tempDir + "/conf"
+	err := os.MkdirAll(confDir, 0750)
+	suite.Require().NoError(err)
+
+	suite.setEnvVar("THUNDER_PROFILE", "dev")
+
+	// Create only a base deployment.yaml (no dev override)
+	basePath := confDir + "/deployment.yaml"
+	err = os.WriteFile(basePath, []byte(baseTestConfig), 0600)
+	suite.Require().NoError(err)
+
+	config, err := LoadConfig(basePath, "", tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+
+	// Values from base config should be unchanged
+	assert.Equal(suite.T(), "base-host", config.Server.Hostname)
+	assert.Equal(suite.T(), 8090, config.Server.Port)
+}
+
+func (suite *ConfigTestSuite) TestLoadConfig_WithInvalidDevOverride() {
+	tempDir := suite.T().TempDir()
+	confDir := tempDir + "/conf"
+	err := os.MkdirAll(confDir, 0750)
+	suite.Require().NoError(err)
+
+	suite.setEnvVar("THUNDER_PROFILE", "dev")
+
+	// Create a valid base deployment.yaml
+	basePath := confDir + "/deployment.yaml"
+	err = os.WriteFile(basePath, []byte(baseTestConfig), 0600)
+	suite.Require().NoError(err)
+
+	// Create an invalid deployment.dev.yaml
+	invalidDevContent := `invalid: yaml: content: [broken`
+	devPath := confDir + "/deployment.dev.yaml"
+	err = os.WriteFile(devPath, []byte(invalidDevContent), 0600)
+	suite.Require().NoError(err)
+
+	_, err = LoadConfig(basePath, "", tempDir)
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "failed to load dev configuration override")
+}
+
+func (suite *ConfigTestSuite) TestLoadConfig_DevOverrideWithEnvVars() {
+	tempDir := suite.T().TempDir()
+	confDir := tempDir + "/conf"
+	err := os.MkdirAll(confDir, 0750)
+	suite.Require().NoError(err)
+
+	suite.setEnvVar("THUNDER_PROFILE", "dev")
+
+	// Create a base deployment.yaml
+	basePath := confDir + "/deployment.yaml"
+	err = os.WriteFile(basePath, []byte(baseTestConfig), 0600)
+	suite.Require().NoError(err)
+
+	// Create a deployment.dev.yaml with environment variable references
+	devContent := `
+server:
+  hostname: "{{.DEV_HOSTNAME}}"
+`
+	devPath := confDir + "/deployment.dev.yaml"
+	err = os.WriteFile(devPath, []byte(devContent), 0600)
+	suite.Require().NoError(err)
+
+	suite.setEnvVar("DEV_HOSTNAME", "env-dev-host")
+
+	config, err := LoadConfig(basePath, "", tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+
+	// Dev override with env var substitution
+	assert.Equal(suite.T(), "env-dev-host", config.Server.Hostname)
+	assert.Equal(suite.T(), 8090, config.Server.Port)
+}
+
+func (suite *ConfigTestSuite) TestLoadConfig_DevOverrideWithDefaults() {
+	tempDir := suite.T().TempDir()
+	confDir := tempDir + "/conf"
+	err := os.MkdirAll(confDir, 0750)
+	suite.Require().NoError(err)
+
+	suite.setEnvVar("THUNDER_PROFILE", "dev")
+
+	// Create a defaults JSON config
+	defaultContent := `{
+  "server": {
+    "hostname": "default-host",
+    "port": 8080,
+    "http_only": false
+  },
+  "jwt": {
+    "validity_period": 7200
+  }
+}`
+	defaultPath := suite.createTempFile(tempDir, "default*.json", defaultContent)
+
+	// Create a base deployment.yaml
+	baseContent := `
+server:
+  hostname: "user-host"
+  port: 8090
+`
+	basePath := confDir + "/deployment.yaml"
+	err = os.WriteFile(basePath, []byte(baseContent), 0600)
+	suite.Require().NoError(err)
+
+	// Create a deployment.dev.yaml
+	devContent := `
+server:
+  http_only: true
+`
+	devPath := confDir + "/deployment.dev.yaml"
+	err = os.WriteFile(devPath, []byte(devContent), 0600)
+	suite.Require().NoError(err)
+
+	config, err := LoadConfig(basePath, defaultPath, tempDir)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), config)
+
+	// Three-layer merge: defaults -> user -> dev
+	assert.Equal(suite.T(), "user-host", config.Server.Hostname)    // From user config
+	assert.Equal(suite.T(), 8090, config.Server.Port)               // From user config
+	assert.Equal(suite.T(), true, config.Server.HTTPOnly)           // From dev override
+	assert.Equal(suite.T(), int64(7200), config.JWT.ValidityPeriod) // From defaults
+}
+
+func (suite *ConfigTestSuite) TestDevConfigFileName() {
+	assert.Equal(suite.T(), "deployment.dev.yaml", devConfigFileName)
+}
+
 func (suite *ConfigTestSuite) createTempFile(dir, pattern, content string) string {
 	tempFile, err := os.CreateTemp(dir, pattern)
 	suite.Require().NoError(err, "failed to create temp file")

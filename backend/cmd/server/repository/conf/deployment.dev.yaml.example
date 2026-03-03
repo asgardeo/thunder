@@ -1,0 +1,36 @@
+# Development Configuration Overrides (Development Only)
+#
+# This file allows developers to override values from `deployment.yaml`
+# for local development without modifying the main configuration file.
+# It is NOT active in production or release builds.
+#
+# Usage:
+#   1. Copy this file and remove the `.example` extension:
+#        cp deployment.dev.yaml.example deployment.dev.yaml
+#   2. Uncomment and modify the settings you want to override.
+#   3. Run the server normally (e.g., `make run` or `make run_backend`).
+#
+# Notes:
+#   - This file is loaded only when the dev profile is active
+#     (i.e., when THUNDER_PROFILE=dev is set in the environment).
+#   - `make run` and `make run_backend` set this automatically.
+#   - Values defined here take precedence over `deployment.yaml`.
+#   - You only need to include the values you want to override.
+#   - This file is excluded from version control and will NOT be included
+#     in the Thunder distribution package.
+
+
+# Example: Override gate client for a separate frontend dev server.
+# gate_client:
+#   hostname: "localhost"
+#   port: 5190
+#   scheme: "https"
+#   path: "/gate"
+
+# Example: Add additional CORS origins for local frontend development.
+# cors:
+#   allowed_origins:
+#     - "https://localhost:3000"
+#     - "https://localhost:5190"
+#     - "https://localhost:5191"
+#     - "http://localhost:3000"

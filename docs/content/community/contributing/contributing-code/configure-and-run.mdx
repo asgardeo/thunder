@@ -9,30 +9,32 @@ hide_table_of_contents: false
 
 ## Configure the Server
 
-Open `backend/cmd/server/repository/conf/deployment.yaml` in your favorite text editor and make the following changes:
+Thunder supports a development configuration override file that lets you customize settings for local development without changing the main `deployment.yaml` file.
 
-**Add CORS allowed origins:**
+:::warning Development Only
+This feature is limited to development mode (`make run` / `make run_backend`) and is not active in production or release builds.
+:::
+
+**Create your development configuration:**
+
+```bash
+cp backend/cmd/server/repository/conf/deployment.dev.yaml.example backend/cmd/server/repository/conf/deployment.dev.yaml
+```
+
+**Add CORS allowed origins and configure the Gate Client:**
 
 ```yaml
 cors:
   allowed_origins:
     - "https://localhost:5190"
     - "https://localhost:5191"
-```
 
-:::tip
-This configuration allows the Thunder Gate and Thunder Develop applications to communicate with the backend server during development.
-:::
-
-**Configure the Gate client:**
-
-```yaml
 gate_client:
   port: 5190
 ```
 
 :::tip
-This configuration points the backend server to the local Thunder Gate application for authentication.
+This file is added to `.gitignore` and is excluded from the distribution package. Include only the values you want to override — remaining values are inherited from `deployment.yaml`.
 :::
 
 ## Run the Server

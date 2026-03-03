@@ -92,10 +92,10 @@ build_with_coverage_only:
 	@echo "================================================================"
 
 run:
-	./build.sh run $(OS) $(ARCH)
+	THUNDER_PROFILE=dev ./build.sh run $(OS) $(ARCH)
 
 run_backend:
-	./build.sh run_backend $(OS) $(ARCH)
+	THUNDER_PROFILE=dev ./build.sh run_backend $(OS) $(ARCH)
 
 run_frontend:
 	./build.sh run_frontend $(OS) $(ARCH)

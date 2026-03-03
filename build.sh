@@ -407,6 +407,10 @@ function prepare_backend_for_packaging() {
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "signing"
     echo "================================================================"
 
+    echo "=== Ensuring dev configuration override is excluded from the distribution ==="
+    rm -f "$DIST_DIR/$PRODUCT_FOLDER/repository/conf/deployment.dev.yaml"
+    echo "================================================================"
+
     echo "=== Ensuring crypto file exists in the distribution ==="
     ensure_crypto_file "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
     echo "================================================================"

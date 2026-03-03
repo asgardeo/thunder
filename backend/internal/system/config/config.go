@@ -373,7 +373,12 @@ type Config struct {
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
 }
 
+// devConfigFileName is the name of the optional development configuration override file.
+const devConfigFileName = "deployment.dev.yaml"
+
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
+// If a deployment.dev.yaml file exists alongside the main config, it will be loaded and
+// merged on top, allowing developers to override configuration values for local development.
 func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Config, error) {
 	var cfg Config
 
@@ -395,6 +400,19 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 
 	// Merge user configuration with defaults
 	mergeConfigs(&cfg, &userCfg)
+
+	// Load dev configuration override if it exists and the dev profile is active.
+	if os.Getenv("THUNDER_PROFILE") == "dev" {
+		devConfigPath := deriveDevConfigPath(configPath)
+		if _, err := os.Stat(devConfigPath); err == nil {
+			devCfg, loadErr := loadUserConfig(devConfigPath, thunderHome)
+			if loadErr != nil {
+				return nil, fmt.Errorf("failed to load dev configuration override (%s): %w", devConfigPath, loadErr)
+			}
+			mergeConfigs(&cfg, &devCfg)
+		}
+	}
+
 	// Derive login_path and error_path from path if not explicitly set
 	if cfg.GateClient.Path != "" {
 		if cfg.GateClient.LoginPath == "" {
@@ -411,6 +429,13 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 	}
 
 	return &cfg, nil
+}
+
+// deriveDevConfigPath returns the path for the development configuration override file
+// based on the main configuration file path.
+func deriveDevConfigPath(configPath string) string {
+	dir := filepath.Dir(configPath)
+	return filepath.Join(dir, devConfigFileName)
 }
 
 // loadDefaultConfig loads the default configuration from a JSON file.

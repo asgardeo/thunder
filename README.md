@@ -400,6 +400,52 @@ The product will now use the PostgreSQL database for its operations.
 
 </details>
 
+<details>
+<summary><h3>Development Configuration Override</h3></summary>
+
+Thunder supports a `deployment.dev.yaml` file that lets you override values from `deployment.yaml` for local development without changing the main configuration.
+
+#### Setup
+
+1. Navigate to the configuration directory:
+
+    ```bash
+    cd backend/cmd/server/repository/conf/
+    ```
+
+2. Copy the example file:
+
+    ```bash
+    cp deployment.dev.yaml.example deployment.dev.yaml
+    ```
+
+3. Edit `deployment.dev.yaml` with only the values you want to override:
+
+    ```yaml
+    # Example: Override the server port for local development
+    server:
+      port: 8443
+
+    # Example: Point the Gate Client to a separate frontend development server
+    gate_client:
+      hostname: "localhost"
+      port: 5190
+      scheme: "https"
+      path: "/gate"
+    ```
+
+4. Start the server using `make run` or `make run_backend`. These commands automatically activate the development profile.
+
+#### How It Works
+
+- **Development only** — this feature is not active in production or release builds; available only when running via `make run` or `make run_backend`.
+- The development profile is activated by the `THUNDER_PROFILE=dev` environment variable, which is set automatically by `make run` and `make run_backend`.
+- When active, the `deployment.dev.yaml` file is merged on top of `deployment.yaml`. Values in the development file take precedence.
+- The file is added to `.gitignore` and is excluded from the distribution package.
+- Include only the settings you want to override; remaining values are inherited from `deployment.yaml`.
+
+</details>
+
 </details>
 
 ---
