@@ -189,7 +189,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingAu
 
 	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Authorization code is required", err.ErrorDescription)
 }
 
@@ -386,8 +386,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 
 	err := validateAuthorizationCode(invalidTokenReq, suite.testAuthzCode)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, err.Error)
-	assert.Equal(suite.T(), "Invalid client Id", err.ErrorDescription)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Equal(suite.T(), "Invalid authorization code", err.ErrorDescription)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_WrongRedirectURI() {

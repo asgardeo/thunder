@@ -149,7 +149,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientID() {
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
 	assert.Equal(suite.T(), errMissingClientID, authErr)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, authErr.ErrorCode)
 	assert.Equal(suite.T(), "Missing client_id parameter", authErr.ErrorDescription)
 }
 

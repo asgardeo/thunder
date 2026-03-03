@@ -70,9 +70,9 @@ var (
 		http.StatusBadRequest,
 	)
 	errMissingClientID = newAuthError(
-		constants.ErrorInvalidClient,
+		constants.ErrorInvalidRequest,
 		"Missing client_id parameter",
-		http.StatusUnauthorized,
+		http.StatusBadRequest,
 	)
 	errMissingClientSecret = newAuthError(
 		constants.ErrorInvalidClient,
@@ -82,6 +82,6 @@ var (
 	errUnauthorizedAuthMethod = newAuthError(
 		constants.ErrorUnauthorizedClient,
 		"Client is not allowed to use the specified token endpoint authentication method",
-		http.StatusUnauthorized,
+		http.StatusBadRequest,
 	)
 )

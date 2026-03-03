@@ -131,7 +131,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzRequest_CodeGrant
 		msg, restrictedApp)
 
 	assert.True(suite.T(), sendErrorToApp)
-	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, errorCode)
+	assert.Equal(suite.T(), constants.ErrorUnauthorizedClient, errorCode)
 	assert.Equal(suite.T(), "Authorization code grant type is not allowed for the client", errorMessage)
 }
 

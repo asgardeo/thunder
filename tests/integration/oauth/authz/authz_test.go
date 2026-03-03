@@ -456,7 +456,7 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			RedirectURI:    redirectURI,
 			GrantType:      "authorization_code",
 			ExpectedStatus: http.StatusBadRequest,
-			ExpectedError:  "invalid_grant",
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "No Client ID",
@@ -465,8 +465,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			Code:           validAuthzCode,
 			RedirectURI:    redirectURI,
 			GrantType:      "authorization_code",
-			ExpectedStatus: http.StatusUnauthorized,
-			ExpectedError:  "invalid_client",
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "No Client ID and Secret",
@@ -475,8 +475,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			Code:           validAuthzCode,
 			RedirectURI:    redirectURI,
 			GrantType:      "authorization_code",
-			ExpectedStatus: http.StatusUnauthorized,
-			ExpectedError:  "invalid_client",
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "No Client Secret",

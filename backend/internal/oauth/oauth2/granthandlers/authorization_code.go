@@ -71,7 +71,7 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 	}
 	if tokenRequest.Code == "" {
 		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
+			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Authorization code is required",
 		}
 	}
@@ -230,8 +230,8 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 	code authz.AuthorizationCode) *model.ErrorResponse {
 	if tokenRequest.ClientID != code.ClientID {
 		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Invalid client Id",
+			Error:            constants.ErrorInvalidGrant,
+			ErrorDescription: "Invalid authorization code",
 		}
 	}
 
