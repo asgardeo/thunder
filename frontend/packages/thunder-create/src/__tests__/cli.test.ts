@@ -43,7 +43,7 @@ describe('CLI Integration', () => {
       name: 'test-workspace',
       workspaces: ['packages/*'],
       devDependencies: {
-        '@thunder/create': 'workspace:*',
+        '@thunder/create': 'workspace:^',
       },
     };
 

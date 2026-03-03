@@ -17,34 +17,16 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
+import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
-import I18nQueryKeys from '../constants/I18nQueryKeys';
-
-/**
- * Response from the translation API.
- */
-export interface TranslationResponse {
-  language: string;
-  namespace: string;
-  key: string;
-  value: string;
-}
-
-/**
- * Variables for the update translation mutation.
- */
-export interface UpdateTranslationVariables {
-  language: string;
-  namespace: string;
-  key: string;
-  value: string;
-}
+import type {TranslationResponse} from '../models/responses';
+import type {UpdateTranslationVariables} from '../models/requests';
+import I18nQueryKeys from '../constants/i18n-query-keys';
 
 /**
  * Options for the useUpdateTranslation hook.
  */
 export interface UseUpdateTranslationOptions {
-  serverUrl: string;
   /**
    * Optional callback to be called after a successful mutation.
    * This is useful for app-specific cache invalidation (e.g., invalidating i18next cache).
@@ -62,7 +44,6 @@ export interface UseUpdateTranslationOptions {
  * ```tsx
  * function CreateTranslationForm() {
  *   const updateTranslation = useUpdateTranslation({
- *     serverUrl: 'https://api.example.com',
  *     onMutationSuccess: () => {
  *       // Invalidate app-specific caches
  *       invalidateI18nCache();
@@ -84,15 +65,17 @@ export interface UseUpdateTranslationOptions {
  * }
  * ```
  */
-export default function useUpdateTranslation({
-  serverUrl,
-  onMutationSuccess,
-}: UseUpdateTranslationOptions): UseMutationResult<TranslationResponse, Error, UpdateTranslationVariables> {
+export default function useUpdateTranslation(
+  options?: UseUpdateTranslationOptions,
+): UseMutationResult<TranslationResponse, Error, UpdateTranslationVariables> {
   const {http} = useAsgardeo();
+  const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {onMutationSuccess} = options ?? {};
 
   return useMutation<TranslationResponse, Error, UpdateTranslationVariables>({
     mutationFn: async ({language, namespace, key, value}: UpdateTranslationVariables): Promise<TranslationResponse> => {
+      const serverUrl: string = getServerUrl();
       const response: {
         data: TranslationResponse;
       } = await http.request({

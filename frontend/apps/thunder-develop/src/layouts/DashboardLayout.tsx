@@ -28,7 +28,16 @@ import {
   Sidebar,
   UserMenu,
 } from '@wso2/oxygen-ui';
-import {Building, Group, Layers, LayoutGrid, UserRoundCog, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
+import {
+  Building,
+  Group,
+  Languages,
+  Layers,
+  LayoutGrid,
+  UserRoundCog,
+  UsersRound,
+  Workflow,
+} from '@wso2/oxygen-ui-icons-react';
 import {SignOutButton, User, useAsgardeo} from '@asgardeo/react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -102,6 +111,17 @@ export default function DashboardLayout(): ReactNode {
             text: t('navigation:pages.integrations'),
             icon: <Layers />,
             path: '/integrations',
+          },
+        ],
+      },
+      {
+        category: t('navigation:categories.customize'),
+        routes: [
+          {
+            id: 'translations',
+            text: t('navigation:pages.translations'),
+            icon: <Languages size={16} />,
+            path: '/translations',
           },
         ],
       },

@@ -83,8 +83,8 @@ vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () 
   ),
 }));
 
-vi.mock('../../../applications/utils/generateAppNameSuggestions', () => ({
-  default: () => ['Alpha Users', 'Beta Users', 'Gamma Users'],
+vi.mock('@thunder/utils', () => ({
+  generateRandomHumanReadableIdentifiers: () => ['Alpha Users', 'Beta Users', 'Gamma Users'],
 }));
 
 /**
@@ -395,33 +395,29 @@ describe('CreateUserTypePage', () => {
     expect(regexInput).toHaveValue('^[a-z]+$');
   });
 
-  it(
-    'allows adding enum values for enum type',
-    async () => {
-      const user = userEvent.setup();
-      renderPage();
+  it('allows adding enum values for enum type', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
-      await goToPropertiesStep(user);
+    await goToPropertiesStep(user);
 
-      const typeSelect = getPropertyTypeSelect();
-      await user.click(typeSelect);
-      const enumOption = await screen.findByText('Enum');
-      await user.click(enumOption);
+    const typeSelect = getPropertyTypeSelect();
+    await user.click(typeSelect);
+    const enumOption = await screen.findByText('Enum');
+    await user.click(enumOption);
 
-      const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
-      await user.type(enumInput, 'admin');
+    const enumInput = screen.getByPlaceholderText(/Add value and press Enter/i);
+    await user.type(enumInput, 'admin');
 
-      const addEnumButton = screen.getByRole('button', {name: /^Add$/i});
-      await user.click(addEnumButton);
+    const addEnumButton = screen.getByRole('button', {name: /^Add$/i});
+    await user.click(addEnumButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('admin')).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText('admin')).toBeInTheDocument();
+    });
 
-      expect(enumInput).toHaveValue('');
-    },
-    15_000,
-  );
+    expect(enumInput).toHaveValue('');
+  }, 15_000);
 
   it('allows adding enum value by pressing Enter', async () => {
     const user = userEvent.setup();

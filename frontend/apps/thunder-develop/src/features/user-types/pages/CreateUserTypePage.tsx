@@ -39,11 +39,7 @@ import {UserTypeCreateFlowStep} from '../models/user-type-create-flow';
 import ConfigureName from '../components/create-user-type/ConfigureName';
 import ConfigureGeneral from '../components/create-user-type/ConfigureGeneral';
 import ConfigureProperties from '../components/create-user-type/ConfigureProperties';
-import type {
-  PropertyDefinition,
-  UserSchemaDefinition,
-  CreateUserSchemaRequest,
-} from '../types/user-types';
+import type {PropertyDefinition, UserSchemaDefinition, CreateUserSchemaRequest} from '../types/user-types';
 
 export default function CreateUserTypePage(): JSX.Element {
   const {t} = useTranslation();
@@ -245,9 +241,7 @@ export default function CreateUserTypePage(): JSX.Element {
   const renderStepContent = (): JSX.Element | null => {
     switch (currentStep) {
       case UserTypeCreateFlowStep.NAME:
-        return (
-          <ConfigureName name={name} onNameChange={setName} onReadyChange={handleNameStepReadyChange} />
-        );
+        return <ConfigureName name={name} onNameChange={setName} onReadyChange={handleNameStepReadyChange} />;
       case UserTypeCreateFlowStep.GENERAL:
         return (
           <ConfigureGeneral
@@ -386,13 +380,7 @@ export default function CreateUserTypePage(): JSX.Element {
               {renderStepContent()}
 
               {/* Navigation buttons */}
-              <Stack
-                direction="row"
-                justifyContent="flex-end"
-                alignItems="center"
-                spacing={2}
-                sx={{mt: 4}}
-              >
+              <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2} sx={{mt: 4}}>
                 {currentStep !== UserTypeCreateFlowStep.NAME && (
                   <Button variant="text" onClick={handlePrevStep} disabled={createUserTypeMutation.isPending}>
                     {t('common:actions.back')}

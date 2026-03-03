@@ -25,6 +25,9 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@thunder/shared-contexts": "workspace:^"
+  },
   "peerDependencies": {
     "@asgardeo/react": "catalog:",
     "@tanstack/react-query": "catalog:",

@@ -21,7 +21,7 @@ import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
 import type {ChangeEvent, JSX} from 'react';
 import {useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import generateAppNameSuggestions from '../../../applications/utils/generateAppNameSuggestions';
+import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 
 /**
  * Props for the {@link ConfigureName} component.
@@ -47,7 +47,7 @@ export default function ConfigureName({
   const {t} = useTranslation();
   const theme = useTheme();
 
-  const nameSuggestions: string[] = useMemo((): string[] => generateAppNameSuggestions(), []);
+  const nameSuggestions: string[] = useMemo((): string[] => generateRandomHumanReadableIdentifiers(), []);
 
   useEffect((): void => {
     if (onReadyChange) {

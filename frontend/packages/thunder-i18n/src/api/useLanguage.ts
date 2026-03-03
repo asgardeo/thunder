@@ -20,17 +20,36 @@ import {useTranslation} from 'react-i18next';
 import type {SupportedLanguage, LanguageConfig} from '../models';
 import {LANGUAGE_CONFIGS} from '../models';
 
+/**
+ * Return type for the useLanguage hook, providing language management utilities.
+ *
+ * @property currentLanguage - The currently selected language code.
+ * @property availableLanguages - List of available language configurations.
+ * @property setLanguage - Function to set the current language.
+ *
+ * @public
+ */
 export interface UseLanguageReturn {
+  /**
+   * The currently selected language code.
+   */
   currentLanguage: SupportedLanguage;
+  /**
+   * List of available language configurations.
+   */
   availableLanguages: LanguageConfig[];
+  /**
+   * Function to set the current language.
+   */
   setLanguage: (language: SupportedLanguage) => Promise<void>;
 }
 
 /**
  * Hook to manage language switching in the application.
+ *
  * Uses react-i18next internally for language management.
  *
- * @returns {UseLanguageReturn} Language management utilities
+ * @returns Language management utilities including the current language, available languages, and a setter function.
  *
  * @example
  * ```tsx
@@ -51,6 +70,8 @@ export interface UseLanguageReturn {
  *   );
  * }
  * ```
+ *
+ * @public
  */
 export default function useLanguage(): UseLanguageReturn {
   const {i18n} = useTranslation();
