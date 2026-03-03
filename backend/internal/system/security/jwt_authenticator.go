@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // jwtAuthenticator handles authentication and authorization using JWT Bearer tokens.
@@ -39,9 +40,10 @@ func newJWTAuthenticator(jwtService jwt.JWTServiceInterface) *jwtAuthenticator {
 }
 
 // CanHandle checks if the request contains a Bearer token in the Authorization header.
+// RFC 7235 §2.1: The authentication scheme token is case-insensitive.
 func (h *jwtAuthenticator) CanHandle(r *http.Request) bool {
-	authHeader := r.Header.Get("Authorization")
-	return strings.HasPrefix(authHeader, "Bearer ")
+	authHeader := r.Header.Get(constants.AuthorizationHeaderName)
+	return utils.HasPrefixFold(authHeader, constants.AuthSchemeBearer)
 }
 
 // Authenticate validates the JWT token and builds a SecurityContext.
@@ -85,11 +87,10 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 
 // extractToken extracts the Bearer token from the Authorization header.
 func extractToken(authHeader string) (string, error) {
-	if !strings.HasPrefix(authHeader, "Bearer ") {
+	if !utils.HasPrefixFold(authHeader, constants.AuthSchemeBearer) {
 		return "", errMissingAuthHeader
 	}
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	token = strings.TrimSpace(token)
+	token := strings.TrimSpace(utils.TrimPrefixFold(authHeader, constants.AuthSchemeBearer))
 	return token, nil
 }
 

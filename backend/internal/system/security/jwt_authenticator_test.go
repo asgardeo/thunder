@@ -81,7 +81,7 @@ func (suite *JWTAuthenticatorTestSuite) TestCanHandle() {
 		{
 			name:           "Lowercase bearer",
 			authHeader:     "bearer token123",
-			expectedResult: false,
+			expectedResult: true,
 		},
 	}
 
@@ -413,13 +413,13 @@ func (suite *JWTAuthenticatorTestSuite) TestCanHandle_EdgeCases() {
 			expectedResult: false, // Get() returns first header
 		},
 		{
-			name: "Case sensitive Bearer",
+			name: "Case insensitive BEARER",
 			setupRequest: func() *http.Request {
 				req := httptest.NewRequest(http.MethodGet, "/users", nil)
 				req.Header.Set("Authorization", "BEARER token123")
 				return req
 			},
-			expectedResult: false,
+			expectedResult: true,
 		},
 	}
 

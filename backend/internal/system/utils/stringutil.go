@@ -143,6 +143,20 @@ func NumStringToBool(s string) bool {
 	return s == "1"
 }
 
+// HasPrefixFold checks whether s begins with prefix using case-insensitive comparison.
+func HasPrefixFold(s, prefix string) bool {
+	return len(s) >= len(prefix) && strings.EqualFold(s[:len(prefix)], prefix)
+}
+
+// TrimPrefixFold returns s with the given prefix removed (case-insensitive match).
+// If s does not start with prefix (case-insensitive), s is returned unchanged.
+func TrimPrefixFold(s, prefix string) string {
+	if HasPrefixFold(s, prefix) {
+		return s[len(prefix):]
+	}
+	return s
+}
+
 // ConvertToStringSlice converts a slice of custom string types to a slice of strings.
 func ConvertToStringSlice[T ~string](items []T) []string {
 	result := make([]string, len(items))

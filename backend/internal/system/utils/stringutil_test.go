@@ -509,3 +509,54 @@ func (suite *StringUtilTestSuite) TestMergeStringMaps_OverlapNilValue() {
 	result := MergeStringMaps(dst, src)
 	assert.Equal(suite.T(), expected, result)
 }
+
+func (suite *StringUtilTestSuite) TestHasPrefixFold() {
+	tests := []struct {
+		name     string
+		s        string
+		prefix   string
+		expected bool
+	}{
+		{name: "Exact match", s: "Bearer token", prefix: "Bearer ", expected: true},
+		{name: "Lowercase", s: "bearer token", prefix: "Bearer ", expected: true},
+		{name: "Uppercase", s: "BEARER token", prefix: "Bearer ", expected: true},
+		{name: "Mixed case", s: "bEaReR token", prefix: "Bearer ", expected: true},
+		{name: "No match", s: "Basic token", prefix: "Bearer ", expected: false},
+		{name: "Empty string", s: "", prefix: "Bearer ", expected: false},
+		{name: "Empty prefix", s: "anything", prefix: "", expected: true},
+		{name: "String shorter than prefix", s: "Be", prefix: "Bearer ", expected: false},
+		{name: "Exact prefix only", s: "Bearer ", prefix: "Bearer ", expected: true},
+		{name: "Basic exact", s: "Basic dXNlcjpwYXNz", prefix: "Basic ", expected: true},
+		{name: "Basic lowercase", s: "basic dXNlcjpwYXNz", prefix: "Basic ", expected: true},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			assert.Equal(suite.T(), tt.expected, HasPrefixFold(tt.s, tt.prefix))
+		})
+	}
+}
+
+func (suite *StringUtilTestSuite) TestTrimPrefixFold() {
+	tests := []struct {
+		name     string
+		s        string
+		prefix   string
+		expected string
+	}{
+		{name: "Exact match", s: "Bearer token", prefix: "Bearer ", expected: "token"},
+		{name: "Lowercase", s: "bearer token", prefix: "Bearer ", expected: "token"},
+		{name: "Uppercase", s: "BEARER token", prefix: "Bearer ", expected: "token"},
+		{name: "No match", s: "Basic token", prefix: "Bearer ", expected: "Basic token"},
+		{name: "Empty string", s: "", prefix: "Bearer ", expected: ""},
+		{name: "Empty prefix", s: "anything", prefix: "", expected: "anything"},
+		{name: "Basic exact", s: "Basic dXNlcjpwYXNz", prefix: "Basic ", expected: "dXNlcjpwYXNz"},
+		{name: "Basic uppercase", s: "BASIC dXNlcjpwYXNz", prefix: "Basic ", expected: "dXNlcjpwYXNz"},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			assert.Equal(suite.T(), tt.expected, TrimPrefixFold(tt.s, tt.prefix))
+		})
+	}
+}
