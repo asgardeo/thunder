@@ -438,49 +438,50 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtractIatClaimE
 	assert.Equal(suite.T(), "Invalid refresh token", err.ErrorDescription)
 }
 
-func (suite *RefreshTokenGrantHandlerTestSuite) TestApplyScopeDownscoping_NoScopesRequested() {
+func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_NoScopesRequested() {
 	refreshTokenScopes := []string{"read", "write", "delete"}
 	logger := log.GetLogger()
 
-	result := suite.handler.applyScopeDownscoping("", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes("", refreshTokenScopes, logger)
 
+	assert.Nil(suite.T(), errResp)
 	assert.Equal(suite.T(), refreshTokenScopes, result)
 	assert.Len(suite.T(), result, 3)
 }
 
-func (suite *RefreshTokenGrantHandlerTestSuite) TestApplyScopeDownscoping_RequestedScopesSubset() {
+func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_RequestedScopesSubset() {
 	refreshTokenScopes := []string{"read", "write", "delete"}
 	logger := log.GetLogger()
 
-	result := suite.handler.applyScopeDownscoping("read write", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes("read write", refreshTokenScopes, logger)
 
+	assert.Nil(suite.T(), errResp)
 	assert.Len(suite.T(), result, 2)
 	assert.Contains(suite.T(), result, "read")
 	assert.Contains(suite.T(), result, "write")
 	assert.NotContains(suite.T(), result, "delete")
 }
 
-func (suite *RefreshTokenGrantHandlerTestSuite) TestApplyScopeDownscoping_SomeRequestedScopesNotInRefreshToken() {
+func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_SomeRequestedScopesNotInRefreshToken() {
 	refreshTokenScopes := []string{"read", "write"}
 	logger := log.GetLogger()
 
-	// Request "read", "write", and "delete" - but "delete" is not in refresh token
-	result := suite.handler.applyScopeDownscoping("read write delete admin", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes("read write delete admin", refreshTokenScopes, logger)
 
-	assert.Len(suite.T(), result, 2)
-	assert.Contains(suite.T(), result, "read")
-	assert.Contains(suite.T(), result, "write")
-	assert.NotContains(suite.T(), result, "delete")
-	assert.NotContains(suite.T(), result, "admin")
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorInvalidScope, errResp.Error)
+	assert.Nil(suite.T(), result)
 }
 
-func (suite *RefreshTokenGrantHandlerTestSuite) TestApplyScopeDownscoping_NoMatchingScopes() {
+func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateAndApplyScopes_NoMatchingScopes() {
 	refreshTokenScopes := []string{"read", "write"}
 	logger := log.GetLogger()
 
-	result := suite.handler.applyScopeDownscoping("admin delete", refreshTokenScopes, logger)
+	result, errResp := suite.handler.validateAndApplyScopes("admin delete", refreshTokenScopes, logger)
 
-	assert.Empty(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorInvalidScope, errResp.Error)
+	assert.Nil(suite.T(), result)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenGenerated_WhenOpenIDScopePresent() {
