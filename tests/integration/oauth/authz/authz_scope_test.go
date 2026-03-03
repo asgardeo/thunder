@@ -62,6 +62,23 @@ var (
 			"lastName": map[string]interface{}{
 				"type": "string",
 			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"phone": map[string]interface{}{
+				"type": "string",
+			},
+			"groups": map[string]interface{}{
+				"type":  "array",
+				"items": map[string]interface{}{"type": "string"},
+			},
+			"roles": map[string]interface{}{
+				"type":  "array",
+				"items": map[string]interface{}{"type": "string"},
+			},
+			"customAttr": map[string]interface{}{
+				"type": "string",
+			},
 		},
 	}
 )

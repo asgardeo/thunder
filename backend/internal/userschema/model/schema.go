@@ -98,6 +98,13 @@ func (cs *Schema) Validate(attributes json.RawMessage, logger *log.Logger) (bool
 		}
 	}
 
+	// Reject any user attributes not declared in the schema.
+	for key := range userAttrs {
+		if _, declared := cs.properties[key]; !declared {
+			return false, nil
+		}
+	}
+
 	return true, nil
 }
 

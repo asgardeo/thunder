@@ -90,7 +90,8 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	"authorized_permissions", "requested_permissions", "required_attributes", "required_locales",
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
-	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken}
+	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken,
+	"applicationId", "idpId", "senderId"}
 
 const runtimeKeyStoredInviteToken = "storedInviteToken"
 

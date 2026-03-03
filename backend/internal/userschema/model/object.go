@@ -70,6 +70,15 @@ func (p *object) validateValue(value interface{}, path string, logger *log.Logge
 		}
 	}
 
+	// Reject any nested keys not declared in the object schema.
+	for key := range valueMap {
+		if _, declared := p.properties[key]; !declared {
+			logger.Debug("Attribute not defined in schema",
+				log.String("attribute", path+"."+key))
+			return false, nil
+		}
+	}
+
 	return true, nil
 }
 
