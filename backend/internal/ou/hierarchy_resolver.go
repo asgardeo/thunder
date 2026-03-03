@@ -42,13 +42,13 @@ func newOUHierarchyAdapter(store organizationUnitStoreInterface) sysauthz.OUHier
 	return &ouHierarchyAdapter{store: store}
 }
 
-// IsAncestorOrSelf returns true when ancestorOUID equals descendantOUID, or when
-// ancestorOUID appears anywhere in the parent chain above descendantOUID.
+// IsAncestor returns true when ancestorOUID appears anywhere in the parent
+// chain above descendantOUID.
 //
 // The walk is upward from descendantOUID; reaching the root without finding ancestorOUID
 // returns false. A broken chain (OU not found) is treated as deny-safe: false is returned
 // with no error so the authz layer can decide accordingly.
-func (r *ouHierarchyAdapter) IsAncestorOrSelf(
+func (r *ouHierarchyAdapter) IsAncestor(
 	ctx context.Context, ancestorOUID, descendantOUID string,
 ) (bool, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameHierarchyResolver))
@@ -60,10 +60,6 @@ func (r *ouHierarchyAdapter) IsAncestorOrSelf(
 	current := descendantOUID
 	visited := make(map[string]struct{})
 	for {
-		if current == ancestorOUID {
-			return true, nil
-		}
-
 		if _, ok := visited[current]; ok {
 			logger.Error("Cyclic organization unit parent chain detected during ancestry check",
 				log.String("ouID", current))
@@ -88,13 +84,16 @@ func (r *ouHierarchyAdapter) IsAncestorOrSelf(
 			break
 		}
 		current = *ou.Parent
+		if current == ancestorOUID {
+			return true, nil
+		}
 	}
 
 	return false, nil
 }
 
-// GetAncestorOUIDs returns ouID itself followed by every ancestor OU ID, walking up to
-// the root of the tree. The returned slice always contains at least ouID itself.
+// GetAncestorOUIDs returns every ancestor OU ID, walking up to
+// the root of the tree.
 //
 // If the chain is broken (an OU in the hierarchy is not found), the walk stops and a
 // ServiceError is returned so callers can handle incomplete results explicitly.
@@ -119,8 +118,6 @@ func (r *ouHierarchyAdapter) GetAncestorOUIDs(
 		}
 		visited[current] = struct{}{}
 
-		result = append(result, current)
-
 		ou, err := r.store.GetOrganizationUnit(current)
 		if err != nil {
 			if errors.Is(err, ErrOrganizationUnitNotFound) {
@@ -137,6 +134,11 @@ func (r *ouHierarchyAdapter) GetAncestorOUIDs(
 			break
 		}
 		current = *ou.Parent
+		result = append(result, current)
+	}
+
+	if result == nil {
+		result = []string{}
 	}
 
 	return result, nil

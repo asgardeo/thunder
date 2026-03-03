@@ -53,7 +53,7 @@ func (p *stubPolicy) getAccessibleResources(_ context.Context, _ security.Action
 
 // stubOUHierarchyResolver is a configurable OUHierarchyResolver for testing.
 type stubOUHierarchyResolver struct {
-	// IsAncestorOrSelf response fields.
+	// IsAncestor response fields.
 	isAncestorResult bool
 	isAncestorErr    *serviceerror.ServiceError
 
@@ -62,7 +62,7 @@ type stubOUHierarchyResolver struct {
 	ancestorIDsErr *serviceerror.ServiceError
 }
 
-func (r *stubOUHierarchyResolver) IsAncestorOrSelf(
+func (r *stubOUHierarchyResolver) IsAncestor(
 	_ context.Context, _, _ string,
 ) (bool, *serviceerror.ServiceError) {
 	return r.isAncestorResult, r.isAncestorErr
@@ -434,7 +434,7 @@ func TestOuInheritancePolicy_GetAccessibleResources(t *testing.T) {
 			ctx:            buildCtxWithOU("", "child-ou"),
 			resourceType:   security.ResourceTypeUserSchema,
 			action:         security.ActionListUserSchemas,
-			resolver:       &stubOUHierarchyResolver{ancestorIDs: []string{"child-ou", "parent-ou", "root-ou"}},
+			resolver:       &stubOUHierarchyResolver{ancestorIDs: []string{"parent-ou", "root-ou"}},
 			wantApplicable: true,
 			wantAllAllowed: false,
 			wantIDs:        []string{"child-ou", "parent-ou", "root-ou"},

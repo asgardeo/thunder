@@ -476,7 +476,7 @@ func (s *SystemAuthzTestSuite) TestInheritancePolicy_DeniesWriteFromChildOU() {
 
 func (s *SystemAuthzTestSuite) TestGetAccessibleResources_InheritancePolicy_ReturnsAncestors() {
 	resolver := &stubOUHierarchyResolver{
-		ancestorIDs: []string{"child-ou", "parent-ou", "root-ou"},
+		ancestorIDs: []string{"parent-ou", "root-ou"},
 	}
 	s.service.SetOUHierarchyResolver(resolver)
 	defer s.service.SetOUHierarchyResolver(nil)

@@ -120,9 +120,12 @@ func (p *ouInheritancePolicy) isActionAllowed(ctx context.Context,
 	if callerOUID == "" {
 		return policyDecisionDenied, nil
 	}
-	// Allow if the resource's OU is an ancestor of (or the same as) the caller's OU.
-	// i.e. the caller belongs to the resource's OU or to one of its descendants.
-	isAncestor, svcErr := p.resolver.IsAncestorOrSelf(ctx, actionCtx.OuID, callerOUID)
+	if callerOUID == actionCtx.OuID {
+		return policyDecisionAllowed, nil
+	}
+	// Allow if the resource's OU is an ancestor of the caller's OU.
+	// i.e. the caller belongs to one of its descendants.
+	isAncestor, svcErr := p.resolver.IsAncestor(ctx, actionCtx.OuID, callerOUID)
 	if svcErr != nil {
 		return policyDecisionDenied, svcErr
 	}
@@ -147,7 +150,11 @@ func (p *ouInheritancePolicy) getAccessibleResources(ctx context.Context, action
 	if svcErr != nil {
 		return true, nil, svcErr
 	}
-	return true, &AccessibleResources{AllAllowed: false, IDs: ancestorIDs}, nil
+
+	resultIDs := []string{callerOUID}
+	resultIDs = append(resultIDs, ancestorIDs...)
+
+	return true, &AccessibleResources{AllAllowed: false, IDs: resultIDs}, nil
 }
 
 // inheritanceReadActions is the set of read-only actions that use OU-inheritance semantics.

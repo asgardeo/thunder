@@ -32,15 +32,14 @@ import (
 // The ou package implements this interface and injects a concrete instance via
 // SystemAuthorizationServiceInterface.SetOUHierarchyResolver at application startup.
 type OUHierarchyResolver interface {
-	// IsAncestorOrSelf returns true when ancestorOUID is the same as descendantOUID, or
-	// when ancestorOUID appears anywhere in the parent chain above descendantOUID.
+	// IsAncestor returns true when ancestorOUID appears anywhere in the parent
+	// chain above descendantOUID.
 	// A non-nil ServiceError indicates a traversal failure; the caller should treat the
 	// result as false (deny-safe).
-	IsAncestorOrSelf(ctx context.Context, ancestorOUID, descendantOUID string) (bool, *serviceerror.ServiceError)
+	IsAncestor(ctx context.Context, ancestorOUID, descendantOUID string) (bool, *serviceerror.ServiceError)
 
-	// GetAncestorOUIDs returns the ouID itself followed by every ancestor OU ID walking up
-	// to the root of the tree. The list always contains at least ouID itself (when the OU
-	// has no parent). A non-nil ServiceError indicates a traversal failure.
+	// GetAncestorOUIDs returns every ancestor OU ID walking up
+	// to the root of the tree. A non-nil ServiceError indicates a traversal failure.
 	GetAncestorOUIDs(ctx context.Context, ouID string) ([]string, *serviceerror.ServiceError)
 }
 
