@@ -515,9 +515,9 @@ func createAuthorizationCode(
 		return AuthorizationCode{}, errors.New("failed to generate UUID")
 	}
 
-	code, err := utils.GenerateUUIDv7()
+	code, err := oauth2utils.GenerateAuthorizationCode()
 	if err != nil {
-		return AuthorizationCode{}, errors.New("failed to generate UUID")
+		return AuthorizationCode{}, errors.New("failed to generate authorization code")
 	}
 
 	return AuthorizationCode{
