@@ -104,7 +104,7 @@ func (_c *OTPServiceInterfaceMock_SendOTP_Call) Return(sendOTPResultDTO *common.
 	return _c
 }
 
-func (_c *OTPServiceInterfaceMock_SendOTP_Call) RunAndReturn(run func(context.Context, common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)) *OTPServiceInterfaceMock_SendOTP_Call {
+func (_c *OTPServiceInterfaceMock_SendOTP_Call) RunAndReturn(run func(ctx context.Context, request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)) *OTPServiceInterfaceMock_SendOTP_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -174,7 +174,7 @@ func (_c *OTPServiceInterfaceMock_VerifyOTP_Call) Return(verifyOTPResultDTO *com
 	return _c
 }
 
-func (_c *OTPServiceInterfaceMock_VerifyOTP_Call) RunAndReturn(run func(context.Context, common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)) *OTPServiceInterfaceMock_VerifyOTP_Call {
+func (_c *OTPServiceInterfaceMock_VerifyOTP_Call) RunAndReturn(run func(ctx context.Context, request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)) *OTPServiceInterfaceMock_VerifyOTP_Call {
 	_c.Call.Return(run)
 	return _c
 }

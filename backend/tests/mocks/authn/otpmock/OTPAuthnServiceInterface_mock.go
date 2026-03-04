@@ -115,7 +115,7 @@ func (_c *OTPAuthnServiceInterfaceMock_SendOTP_Call) Return(s string, serviceErr
 	return _c
 }
 
-func (_c *OTPAuthnServiceInterfaceMock_SendOTP_Call) RunAndReturn(run func(context.Context, string, common.ChannelType, string) (string, *serviceerror.ServiceError)) *OTPAuthnServiceInterfaceMock_SendOTP_Call {
+func (_c *OTPAuthnServiceInterfaceMock_SendOTP_Call) RunAndReturn(run func(ctx context.Context, senderID string, channel common.ChannelType, recipient string) (string, *serviceerror.ServiceError)) *OTPAuthnServiceInterfaceMock_SendOTP_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -191,7 +191,7 @@ func (_c *OTPAuthnServiceInterfaceMock_VerifyOTP_Call) Return(user *userprovider
 	return _c
 }
 
-func (_c *OTPAuthnServiceInterfaceMock_VerifyOTP_Call) RunAndReturn(run func(context.Context, string, string) (*userprovider.User, *serviceerror.ServiceError)) *OTPAuthnServiceInterfaceMock_VerifyOTP_Call {
+func (_c *OTPAuthnServiceInterfaceMock_VerifyOTP_Call) RunAndReturn(run func(ctx context.Context, sessionToken string, otp string) (*userprovider.User, *serviceerror.ServiceError)) *OTPAuthnServiceInterfaceMock_VerifyOTP_Call {
 	_c.Call.Return(run)
 	return _c
 }

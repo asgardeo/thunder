@@ -163,8 +163,8 @@ func (_c *sessionStoreInterfaceMock_retrieveSession_Call) RunAndReturn(run func(
 }
 
 // storeSession provides a mock function for the type sessionStoreInterfaceMock
-func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, userID string, relyingPartyID string, sd *sessionData, expiryTime time.Time) error {
-	ret := _mock.Called(sessionKey, userID, relyingPartyID, sd, expiryTime)
+func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, userID string, relyingPartyID string, session *sessionData, expiryTime time.Time) error {
+	ret := _mock.Called(sessionKey, userID, relyingPartyID, session, expiryTime)
 
 	if len(ret) == 0 {
 		panic("no return value specified for storeSession")
@@ -172,7 +172,7 @@ func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, userID s
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(string, string, string, *sessionData, time.Time) error); ok {
-		r0 = returnFunc(sessionKey, userID, relyingPartyID, sd, expiryTime)
+		r0 = returnFunc(sessionKey, userID, relyingPartyID, session, expiryTime)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -188,13 +188,13 @@ type sessionStoreInterfaceMock_storeSession_Call struct {
 //   - sessionKey string
 //   - userID string
 //   - relyingPartyID string
-//   - sessionData *sessionData
+//   - session *sessionData
 //   - expiryTime time.Time
-func (_e *sessionStoreInterfaceMock_Expecter) storeSession(sessionKey interface{}, userID interface{}, relyingPartyID interface{}, sessionData interface{}, expiryTime interface{}) *sessionStoreInterfaceMock_storeSession_Call {
-	return &sessionStoreInterfaceMock_storeSession_Call{Call: _e.mock.On("storeSession", sessionKey, userID, relyingPartyID, sessionData, expiryTime)}
+func (_e *sessionStoreInterfaceMock_Expecter) storeSession(sessionKey interface{}, userID interface{}, relyingPartyID interface{}, session interface{}, expiryTime interface{}) *sessionStoreInterfaceMock_storeSession_Call {
+	return &sessionStoreInterfaceMock_storeSession_Call{Call: _e.mock.On("storeSession", sessionKey, userID, relyingPartyID, session, expiryTime)}
 }
 
-func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey string, userID string, relyingPartyID string, sessionData *sessionData, expiryTime time.Time)) *sessionStoreInterfaceMock_storeSession_Call {
+func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey string, userID string, relyingPartyID string, session *sessionData, expiryTime time.Time)) *sessionStoreInterfaceMock_storeSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -232,7 +232,7 @@ func (_c *sessionStoreInterfaceMock_storeSession_Call) Return(err error) *sessio
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_storeSession_Call) RunAndReturn(run func(sessionKey string, userID string, relyingPartyID string, sessionData *sessionData, expiryTime time.Time) error) *sessionStoreInterfaceMock_storeSession_Call {
+func (_c *sessionStoreInterfaceMock_storeSession_Call) RunAndReturn(run func(sessionKey string, userID string, relyingPartyID string, session *sessionData, expiryTime time.Time) error) *sessionStoreInterfaceMock_storeSession_Call {
 	_c.Call.Return(run)
 	return _c
 }
