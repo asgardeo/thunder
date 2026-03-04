@@ -8,6 +8,7 @@ on:
     paths:
       - '**/*.md'
       - '**/*.mdx'
+  merge_group:
 
 jobs:
   vale:
@@ -27,8 +28,16 @@ jobs:
       - name: 🔍 Get changed markdown files
         id: changed-files
         run: |
+          # Determine base ref depending on event type
+          if [ "${{ github.event_name }}" = "merge_group" ]; then
+            # merge_group.base_ref is a full ref like refs/heads/main — strip the prefix
+            BASE_REF="${{ github.event.merge_group.base_ref }}"
+            BASE_REF="${BASE_REF#refs/heads/}"
+          else
+            BASE_REF="${{ github.base_ref }}"
+          fi
           # Get list of changed md/mdx files in this PR
-          FILES=$(git diff --name-only --diff-filter=ACMR origin/${{ github.base_ref }}...HEAD -- '*.md' '*.mdx')
+          FILES=$(git diff --name-only --diff-filter=ACMR origin/${BASE_REF}...HEAD -- '*.md' '*.mdx')
           if [ -z "$FILES" ]; then
             echo "No markdown files changed."
             echo "has_files=false" >> "$GITHUB_OUTPUT"

@@ -7,6 +7,7 @@ name: 👷🛠️ PR Builder
 
 on:
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 env:
@@ -15,7 +16,7 @@ env:
 jobs:
   security-audit:
     name: 🔒 Security Audit
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -98,7 +99,7 @@ jobs:
 
   dependency-review:
     name: 🔎 Dependency Review
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -113,10 +114,12 @@ jobs:
           fail-on-severity: high
           deny-licenses: GPL-3.0-only,GPL-3.0-or-later,AGPL-3.0-only,AGPL-3.0-or-later
           comment-summary-in-pr: always
+          base-ref: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          head-ref: ${{ github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
 
   lint:
     name: 🧹 Lint Code
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -129,6 +132,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+
+      - name: 🔄 Fetch main branch for Nx affected base
+        run: git fetch origin main:main --update-head-ok || true
 
       - name: 🐳 Set SHAs for Nx
         id: set-shas
@@ -162,11 +168,11 @@ jobs:
       - name: 🔍 Run Frontend Linter
         run: |
           cd frontend
-          pnpm nx affected --target=lint --parallel=3 --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+          pnpm nx affected --target=lint --parallel=3 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
 
   build:
     name: 🛠️ Build Product
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -256,7 +262,7 @@ jobs:
 
   test-frontend:
     name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -374,7 +380,7 @@ jobs:
 
   build_samples:
     name: 🛠️ Build Sample Apps
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -706,7 +712,7 @@ jobs:
 
   detect-powershell-changes:
     name: 🔍 Detect PowerShell Changes
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
       should-run: ${{ steps.filter.outputs.powershell }}
@@ -715,6 +721,8 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
           filters: |
             powershell:
               - '**.ps1'

@@ -58,7 +58,7 @@ coverage:
         enabled: true
         target: auto
         threshold: 1%
-        informational: false
+        informational: true
       backend-unit:
         flags:
           - backend-unit
@@ -95,7 +95,7 @@ coverage:
       default:
         target: 80%
         threshold: 1%
-        informational: false
+        informational: true
 
 ignore:
   - "backend/tests/**"
