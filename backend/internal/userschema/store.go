@@ -189,6 +189,11 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	sysAttrsParam, err := marshalSystemAttributes(userSchema.SystemAttributes)
+	if err != nil {
+		return fmt.Errorf("failed to marshal system attributes: %w", err)
+	}
+
 	_, err = dbClient.QueryContext(
 		ctx,
 		queryCreateUserSchema,
@@ -196,6 +201,7 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
+		sysAttrsParam,
 		string(userSchema.Schema),
 		s.deploymentID,
 	)
@@ -251,12 +257,18 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	sysAttrsParam, err := marshalSystemAttributes(userSchema.SystemAttributes)
+	if err != nil {
+		return fmt.Errorf("failed to marshal system attributes: %w", err)
+	}
+
 	_, err = dbClient.QueryContext(
 		ctx,
 		queryUpdateUserSchemaByID,
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
+		sysAttrsParam,
 		string(userSchema.Schema),
 		schemaID,
 		s.deploymentID,
@@ -331,6 +343,7 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		SystemAttributes:      parseSystemAttributesFromRow(row),
 		Schema:                json.RawMessage(schemaDef),
 	}
 
@@ -364,9 +377,42 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		SystemAttributes:      parseSystemAttributesFromRow(row),
 	}
 
 	return userSchemaListItem, nil
+}
+
+func marshalSystemAttributes(attrs SystemAttributes) (interface{}, error) {
+	if attrs == (SystemAttributes{}) {
+		return nil, nil
+	}
+	data, err := json.Marshal(attrs)
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
+}
+
+func parseSystemAttributesFromRow(row map[string]interface{}) SystemAttributes {
+	raw := row["system_attributes"]
+	if raw == nil {
+		return SystemAttributes{}
+	}
+	var jsonStr string
+	switch v := raw.(type) {
+	case string:
+		jsonStr = v
+	case []byte:
+		jsonStr = string(v)
+	default:
+		return SystemAttributes{}
+	}
+	var attrs SystemAttributes
+	if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
+		return SystemAttributes{}
+	}
+	return attrs
 }
 
 func parseBool(value interface{}, fieldName string) (bool, error) {
