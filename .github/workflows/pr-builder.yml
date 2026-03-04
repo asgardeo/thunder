@@ -117,6 +117,41 @@ jobs:
           base-ref: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
           head-ref: ${{ github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
 
+  verify-mocks:
+    name: 🔍 Verify Mock Files
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Go Environment
+        uses: ./.github/actions/setup-go
+
+      - name: 🔧 Install Mockery
+        run: make install-mockery
+
+      - name: 🏭 Generate Mocks
+        run: make mockery
+
+      - name: 🔎 Check for Outdated Mocks
+        run: |
+          if [ -n "$(git status --porcelain --untracked-files=all -- backend/tests/mocks backend/internal)" ]; then
+            echo "❌ Mock files are out of sync with interface definitions!"
+            echo ""
+            echo "The following mock files need to be regenerated:"
+            git status --porcelain --untracked-files=all -- backend/tests/mocks backend/internal | awk '{print $2}'
+            echo ""
+            echo "To fix this:"
+            echo "  1. Run: make mockery"
+            echo "  2. Commit the updated mock files"
+            echo "  3. Push your changes"
+            echo ""
+            echo "This ensures mock implementations stay synchronized with their interfaces."
+            exit 1
+          fi
+          echo "✅ All mock files are up to date"
+
   lint:
     name: 🧹 Lint Code
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
