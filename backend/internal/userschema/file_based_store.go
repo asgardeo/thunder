@@ -89,6 +89,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(
 				Name:                  schema.Name,
 				OrganizationUnitID:    schema.OrganizationUnitID,
 				AllowSelfRegistration: schema.AllowSelfRegistration,
+				SystemAttributes:      schema.SystemAttributes,
 			}
 			schemaList = append(schemaList, listItem)
 		}
@@ -135,6 +136,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaListByOUIDs(
 					Name:                  schema.Name,
 					OrganizationUnitID:    schema.OrganizationUnitID,
 					AllowSelfRegistration: schema.AllowSelfRegistration,
+					SystemAttributes:      schema.SystemAttributes,
 				})
 			}
 		}

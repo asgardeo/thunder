@@ -250,7 +250,6 @@ func validateUpdateUserSchemaRequest(
 			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body",
 		}
-
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return UpdateUserSchemaRequest{}, true
 	}
@@ -270,6 +269,7 @@ func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
 		Name:                  sanitizedName,
 		OrganizationUnitID:    sanitizedOrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		SystemAttributes:      sanitizeSystemAttributes(request.SystemAttributes),
 		Schema:                request.Schema,
 	}
 }
@@ -294,6 +294,17 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 		Name:                  sanitizedName,
 		OrganizationUnitID:    sanitizedOrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		SystemAttributes:      sanitizeSystemAttributes(request.SystemAttributes),
 		Schema:                request.Schema,
+	}
+}
+
+// sanitizeSystemAttributes sanitizes the SystemAttributes fields.
+func sanitizeSystemAttributes(sa *SystemAttributes) *SystemAttributes {
+	if sa == nil {
+		return nil
+	}
+	return &SystemAttributes{
+		Display: sysutils.SanitizeString(sa.Display),
 	}
 }

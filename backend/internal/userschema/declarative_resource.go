@@ -188,6 +188,7 @@ func parseToUserSchemaDTO(data []byte) (*UserSchema, error) {
 		Name:                  schemaRequest.Name,
 		OrganizationUnitID:    schemaRequest.OrganizationUnitID,
 		AllowSelfRegistration: schemaRequest.AllowSelfRegistration,
+		SystemAttributes:      schemaRequest.SystemAttributes,
 		Schema:                []byte(schemaRequest.Schema),
 	}
 

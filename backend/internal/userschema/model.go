@@ -26,22 +26,30 @@ import (
 // are kept in the model/ subdirectory to maintain clean separation and better organization.
 // This file contains only the simple DTOs and API request/response structures.
 
+// SystemAttributes holds system-level metadata for a user schema.
+// Stored as a JSON column for extensibility — new fields can be added without DB migrations.
+type SystemAttributes struct {
+	Display string `json:"display,omitempty" yaml:"display,omitempty"`
+}
+
 // UserSchema represents a user type schema definition.
 type UserSchema struct {
-	ID                    string          `json:"id,omitempty" yaml:"id,omitempty"`
-	Name                  string          `json:"name,omitempty" yaml:"name"`
-	OrganizationUnitID    string          `json:"ouId" yaml:"organization_unit_id"`
-	AllowSelfRegistration bool            `json:"allowSelfRegistration" yaml:"allow_self_registration,omitempty"`
-	Schema                json.RawMessage `json:"schema,omitempty" yaml:"schema"`
+	ID                    string            `json:"id,omitempty" yaml:"id,omitempty"`
+	Name                  string            `json:"name,omitempty" yaml:"name"`
+	OrganizationUnitID    string            `json:"ouId" yaml:"organization_unit_id"`
+	AllowSelfRegistration bool              `json:"allowSelfRegistration" yaml:"allow_self_registration,omitempty"`
+	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty" yaml:"system_attributes,omitempty"`
+	Schema                json.RawMessage   `json:"schema,omitempty" yaml:"schema"`
 }
 
 // UserSchemaListItem represents a simplified user schema for listing operations.
 type UserSchemaListItem struct {
-	ID                    string `json:"id,omitempty"`
-	Name                  string `json:"name,omitempty"`
-	OrganizationUnitID    string `json:"ouId"`
-	AllowSelfRegistration bool   `json:"allowSelfRegistration"`
-	IsReadOnly            bool   `json:"isReadOnly,omitempty"`
+	ID                    string            `json:"id,omitempty"`
+	Name                  string            `json:"name,omitempty"`
+	OrganizationUnitID    string            `json:"ouId"`
+	AllowSelfRegistration bool              `json:"allowSelfRegistration"`
+	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
+	IsReadOnly            bool              `json:"isReadOnly,omitempty"`
 }
 
 // Link represents a hypermedia link in the API response.
@@ -61,25 +69,28 @@ type UserSchemaListResponse struct {
 
 // CreateUserSchemaRequest represents the request body for creating a user schema.
 type CreateUserSchemaRequest struct {
-	Name                  string          `json:"name"`
-	OrganizationUnitID    string          `json:"ouId"`
-	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
-	Schema                json.RawMessage `json:"schema"`
+	Name                  string            `json:"name"`
+	OrganizationUnitID    string            `json:"ouId"`
+	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
+	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
+	Schema                json.RawMessage   `json:"schema"`
 }
 
 // UpdateUserSchemaRequest represents the request body for updating a user schema.
 type UpdateUserSchemaRequest struct {
-	Name                  string          `json:"name"`
-	OrganizationUnitID    string          `json:"ouId"`
-	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
-	Schema                json.RawMessage `json:"schema"`
+	Name                  string            `json:"name"`
+	OrganizationUnitID    string            `json:"ouId"`
+	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
+	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
+	Schema                json.RawMessage   `json:"schema"`
 }
 
 // UserSchemaRequestWithID represents the request structure for creating a user schema from file-based config.
 type UserSchemaRequestWithID struct {
-	ID                    string `yaml:"id"`
-	Name                  string `yaml:"name"`
-	OrganizationUnitID    string `yaml:"organization_unit_id"`
-	AllowSelfRegistration bool   `yaml:"allow_self_registration,omitempty"`
-	Schema                string `yaml:"schema"`
+	ID                    string            `yaml:"id"`
+	Name                  string            `yaml:"name"`
+	OrganizationUnitID    string            `yaml:"organization_unit_id"`
+	AllowSelfRegistration bool              `yaml:"allow_self_registration,omitempty"`
+	SystemAttributes      *SystemAttributes `yaml:"system_attributes,omitempty"`
+	Schema                string            `yaml:"schema"`
 }

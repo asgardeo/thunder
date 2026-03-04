@@ -29,6 +29,47 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+// marshalSystemAttributes marshals SystemAttributes to a JSON string for DB storage.
+// Returns nil if the input is nil, so the DB column stores NULL.
+func marshalSystemAttributes(sa *SystemAttributes) (interface{}, error) {
+	if sa == nil {
+		return nil, nil
+	}
+	data, err := json.Marshal(sa)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal system attributes: %w", err)
+	}
+	return string(data), nil
+}
+
+// parseSystemAttributes parses the SYSTEM_ATTRIBUTES column value into a *SystemAttributes.
+// Returns nil if the column is NULL or empty.
+func parseSystemAttributes(value interface{}) (*SystemAttributes, error) {
+	if value == nil {
+		return nil, nil
+	}
+
+	var raw string
+	switch v := value.(type) {
+	case string:
+		raw = v
+	case []byte:
+		raw = string(v)
+	default:
+		return nil, fmt.Errorf("unexpected type for system_attributes: %T", value)
+	}
+
+	if raw == "" {
+		return nil, nil
+	}
+
+	var sa SystemAttributes
+	if err := json.Unmarshal([]byte(raw), &sa); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal system_attributes: %w", err)
+	}
+	return &sa, nil
+}
+
 // userSchemaStoreInterface defines the interface for user schema store operations.
 type userSchemaStoreInterface interface {
 	GetUserSchemaListCount(ctx context.Context) (int, error)
@@ -189,6 +230,11 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	sysAttrs, err := marshalSystemAttributes(userSchema.SystemAttributes)
+	if err != nil {
+		return err
+	}
+
 	_, err = dbClient.QueryContext(
 		ctx,
 		queryCreateUserSchema,
@@ -197,6 +243,7 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
+		sysAttrs,
 		s.deploymentID,
 	)
 	if err != nil {
@@ -251,6 +298,11 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	sysAttrs, err := marshalSystemAttributes(userSchema.SystemAttributes)
+	if err != nil {
+		return err
+	}
+
 	_, err = dbClient.QueryContext(
 		ctx,
 		queryUpdateUserSchemaByID,
@@ -258,6 +310,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
+		sysAttrs,
 		schemaID,
 		s.deploymentID,
 	)
@@ -326,11 +379,17 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to parse schema_def as string")
 	}
 
+	systemAttributes, err := parseSystemAttributes(row["system_attributes"])
+	if err != nil {
+		return UserSchema{}, err
+	}
+
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		SystemAttributes:      systemAttributes,
 		Schema:                json.RawMessage(schemaDef),
 	}
 
@@ -359,11 +418,17 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		return UserSchemaListItem{}, err
 	}
 
+	systemAttributes, err := parseSystemAttributes(row["system_attributes"])
+	if err != nil {
+		return UserSchemaListItem{}, err
+	}
+
 	userSchemaListItem := UserSchemaListItem{
 		ID:                    schemaID,
 		Name:                  name,
 		OrganizationUnitID:    organizationUnitID,
 		AllowSelfRegistration: allowSelfRegistration,
+		SystemAttributes:      systemAttributes,
 	}
 
 	return userSchemaListItem, nil
