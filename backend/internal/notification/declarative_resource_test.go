@@ -35,11 +35,11 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
 )
 
-// NotificationSenderExporterTestSuite tests the NotificationSenderExporter.
+// NotificationSenderExporterTestSuite tests the notificationSenderExporter.
 type NotificationSenderExporterTestSuite struct {
 	suite.Suite
 	mockService *notificationmock.NotificationSenderMgtSvcInterfaceMock
-	exporter    *notification.NotificationSenderExporter
+	exporter    declarativeresource.ResourceExporter
 	logger      *log.Logger
 }
 
@@ -190,8 +190,4 @@ func (s *NotificationSenderExporterTestSuite) TestValidateResource_NoProperties(
 	// Should still succeed but log a warning
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Sender", name)
-}
-
-func (s *NotificationSenderExporterTestSuite) TestNotificationSenderExporterImplementsInterface() {
-	var _ declarativeresource.ResourceExporter = (*notification.NotificationSenderExporter)(nil)
 }

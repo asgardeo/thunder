@@ -36,18 +36,18 @@ const (
 	paramTypeOU    = "OrganizationUnit"
 )
 
-// OUExporter implements declarativeresource.ResourceExporter for organization units.
-type OUExporter struct {
+// ouExporter implements declarativeresource.ResourceExporter for organization units.
+type ouExporter struct {
 	service OrganizationUnitServiceInterface
 }
 
 // newOUExporter creates a new OU exporter.
-func newOUExporter(service OrganizationUnitServiceInterface) *OUExporter {
-	return &OUExporter{service: service}
+func newOUExporter(service OrganizationUnitServiceInterface) *ouExporter {
+	return &ouExporter{service: service}
 }
 
 // NewOUExporterForTest creates a new OU exporter for testing purposes.
-func NewOUExporterForTest(service OrganizationUnitServiceInterface) *OUExporter {
+func NewOUExporterForTest(service OrganizationUnitServiceInterface) *ouExporter {
 	if !testing.Testing() {
 		panic("only for tests!")
 	}
@@ -55,19 +55,19 @@ func NewOUExporterForTest(service OrganizationUnitServiceInterface) *OUExporter 
 }
 
 // GetResourceType returns the resource type for organization units.
-func (e *OUExporter) GetResourceType() string {
+func (e *ouExporter) GetResourceType() string {
 	return resourceTypeOU
 }
 
 // GetParameterizerType returns the parameterizer type for organization units.
-func (e *OUExporter) GetParameterizerType() string {
+func (e *ouExporter) GetParameterizerType() string {
 	return paramTypeOU
 }
 
 // GetAllResourceIDs retrieves all organization unit IDs from the database store.
 // Note: This only exports DB-backed OUs (runtime OUs). YAML-based declarative resources
 // are not included in the export as they are already defined in YAML files.
-func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *ouExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all OUs by requesting a large limit from the service
 	// In composite mode, this returns OUs from both file-based and database stores
 	ous, err := e.service.GetOrganizationUnitList(ctx, serverconst.MaxPageSize, 0)
@@ -107,7 +107,7 @@ func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servicee
 }
 
 // getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
-func (e *OUExporter) getAllChildIDs(ctx context.Context, parentID string) ([]string, *serviceerror.ServiceError) {
+func (e *ouExporter) getAllChildIDs(ctx context.Context, parentID string) ([]string, *serviceerror.ServiceError) {
 	children, err := e.service.GetOrganizationUnitChildren(ctx, parentID, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func (e *OUExporter) getAllChildIDs(ctx context.Context, parentID string) ([]str
 }
 
 // GetResourceByID retrieves an organization unit by its ID.
-func (e *OUExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *ouExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
 	ou, err := e.service.GetOrganizationUnit(ctx, id)
 	if err != nil {
 		return nil, "", err
@@ -139,7 +139,7 @@ func (e *OUExporter) GetResourceByID(ctx context.Context, id string) (interface{
 }
 
 // ValidateResource validates an organization unit resource.
-func (e *OUExporter) ValidateResource(
+func (e *ouExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	ou, ok := resource.(*OrganizationUnit)
@@ -156,7 +156,7 @@ func (e *OUExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for organization units.
-func (e *OUExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *ouExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	// OUs typically don't have parameterizable fields
 	return &declarativeresource.ResourceRules{
 		Variables:      []string{},

@@ -36,7 +36,7 @@ import (
 type DeclarativeResourceTestSuite struct {
 	suite.Suite
 	mockStore *i18nStoreInterfaceMock
-	exporter  *TranslationExporter
+	exporter  declarativeresource.ResourceExporter
 }
 
 func TestDeclarativeResourceTestSuite(t *testing.T) {

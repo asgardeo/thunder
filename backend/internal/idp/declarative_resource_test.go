@@ -34,11 +34,11 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 )
 
-// IDPExporterTestSuite tests the IDPExporter.
+// IDPExporterTestSuite tests the idpExporter.
 type IDPExporterTestSuite struct {
 	suite.Suite
 	mockService *idpmock.IDPServiceInterfaceMock
-	exporter    *idp.IDPExporter
+	exporter    declarativeresource.ResourceExporter
 	logger      *log.Logger
 }
 
@@ -189,8 +189,4 @@ func (s *IDPExporterTestSuite) TestValidateResource_NoProperties() {
 	// Should still succeed but log a warning
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test IDP", name)
-}
-
-func (s *IDPExporterTestSuite) TestIDPExporterImplementsInterface() {
-	var _ declarativeresource.ResourceExporter = (*idp.IDPExporter)(nil)
 }

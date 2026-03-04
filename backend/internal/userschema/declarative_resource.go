@@ -39,34 +39,34 @@ const (
 	paramTypUserSchema     = "UserSchema"
 )
 
-// UserSchemaExporter implements declarative_resource.ResourceExporter for user schemas.
-type UserSchemaExporter struct {
+// userSchemaExporter implements declarative_resource.ResourceExporter for user schemas.
+type userSchemaExporter struct {
 	service UserSchemaServiceInterface
 }
 
 // newUserSchemaExporter creates a new user schema exporter.
-func newUserSchemaExporter(service UserSchemaServiceInterface) *UserSchemaExporter {
-	return &UserSchemaExporter{service: service}
+func newUserSchemaExporter(service UserSchemaServiceInterface) *userSchemaExporter {
+	return &userSchemaExporter{service: service}
 }
 
 // NewUserSchemaExporterForTest creates a new user schema exporter for testing purposes.
-func NewUserSchemaExporterForTest(service UserSchemaServiceInterface) *UserSchemaExporter {
+func NewUserSchemaExporterForTest(service UserSchemaServiceInterface) *userSchemaExporter {
 	return newUserSchemaExporter(service)
 }
 
 // GetResourceType returns the resource type for user schemas.
-func (e *UserSchemaExporter) GetResourceType() string {
+func (e *userSchemaExporter) GetResourceType() string {
 	return resourceTypeUserSchema
 }
 
 // GetParameterizerType returns the parameterizer type for user schemas.
-func (e *UserSchemaExporter) GetParameterizerType() string {
+func (e *userSchemaExporter) GetParameterizerType() string {
 	return paramTypUserSchema
 }
 
 // GetAllResourceIDs retrieves all user schema IDs.
 // In composite mode, this excludes declarative (YAML-based) user schemas.
-func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *userSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (e *UserSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *
 }
 
 // GetResourceByID retrieves a user schema by its ID.
-func (e *UserSchemaExporter) GetResourceByID(ctx context.Context, id string) (
+func (e *userSchemaExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
 	schema, err := e.service.GetUserSchema(ctx, id)
@@ -93,7 +93,7 @@ func (e *UserSchemaExporter) GetResourceByID(ctx context.Context, id string) (
 }
 
 // ValidateResource validates a user schema resource.
-func (e *UserSchemaExporter) ValidateResource(
+func (e *userSchemaExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	schema, ok := resource.(*UserSchema)
@@ -117,7 +117,7 @@ func (e *UserSchemaExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for user schemas.
-func (e *UserSchemaExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *userSchemaExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{}
 }
 

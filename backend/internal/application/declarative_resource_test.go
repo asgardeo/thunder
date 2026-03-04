@@ -33,11 +33,11 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 )
 
-// ApplicationExporterTestSuite tests the ApplicationExporter.
+// ApplicationExporterTestSuite tests the applicationExporter.
 type ApplicationExporterTestSuite struct {
 	suite.Suite
 	mockService *applicationmock.ApplicationServiceInterfaceMock
-	exporter    *application.ApplicationExporter
+	exporter    declarativeresource.ResourceExporter
 	logger      *log.Logger
 }
 
@@ -176,8 +176,4 @@ func (s *ApplicationExporterTestSuite) TestValidateResource_EmptyName() {
 	assert.Equal(s.T(), "app1", err.ResourceID)
 	assert.Equal(s.T(), "APP_VALIDATION_ERROR", err.Code)
 	assert.Contains(s.T(), err.Error, "name is empty")
-}
-
-func (s *ApplicationExporterTestSuite) TestApplicationExporterImplementsInterface() {
-	var _ declarativeresource.ResourceExporter = (*application.ApplicationExporter)(nil)
 }

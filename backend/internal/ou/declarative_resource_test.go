@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"testing"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ import (
 type DeclarativeResourceTestSuite struct {
 	suite.Suite
 	mockService *OrganizationUnitServiceInterfaceMock
-	exporter    *OUExporter
+	exporter    declarativeresource.ResourceExporter
 }
 
 func TestDeclarativeResourceTestSuite(t *testing.T) {

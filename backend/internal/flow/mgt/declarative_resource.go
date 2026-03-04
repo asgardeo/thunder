@@ -35,33 +35,33 @@ const (
 	paramTypeFlow    = "Flow"
 )
 
-// FlowGraphExporter implements declarativeresource.ResourceExporter for flow graphs.
-type FlowGraphExporter struct {
+// flowGraphExporter implements declarativeresource.ResourceExporter for flow graphs.
+type flowGraphExporter struct {
 	service FlowMgtServiceInterface
 }
 
 // newFlowGraphExporter creates a new flow graph exporter.
-func newFlowGraphExporter(service FlowMgtServiceInterface) *FlowGraphExporter {
-	return &FlowGraphExporter{service: service}
+func newFlowGraphExporter(service FlowMgtServiceInterface) *flowGraphExporter {
+	return &flowGraphExporter{service: service}
 }
 
 // NewFlowGraphExporterForTest creates a new flow graph exporter for testing purposes.
-func NewFlowGraphExporterForTest(service FlowMgtServiceInterface) *FlowGraphExporter {
+func NewFlowGraphExporterForTest(service FlowMgtServiceInterface) *flowGraphExporter {
 	return newFlowGraphExporter(service)
 }
 
 // GetResourceType returns the resource type for flow graphs.
-func (e *FlowGraphExporter) GetResourceType() string {
+func (e *flowGraphExporter) GetResourceType() string {
 	return resourceTypeFlow
 }
 
 // GetParameterizerType returns the parameterizer type for flow graphs.
-func (e *FlowGraphExporter) GetParameterizerType() string {
+func (e *flowGraphExporter) GetParameterizerType() string {
 	return paramTypeFlow
 }
 
 // GetAllResourceIDs retrieves all flow graph IDs.
-func (e *FlowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *flowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	flows, err := e.service.ListFlows(10000, 0, common.FlowType(""))
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (e *FlowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *s
 }
 
 // GetResourceByID retrieves a flow graph by its ID.
-func (e *FlowGraphExporter) GetResourceByID(ctx context.Context, id string) (
+func (e *flowGraphExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
 	flow, err := e.service.GetFlow(id)
@@ -85,7 +85,7 @@ func (e *FlowGraphExporter) GetResourceByID(ctx context.Context, id string) (
 }
 
 // ValidateResource validates a flow graph resource.
-func (e *FlowGraphExporter) ValidateResource(
+func (e *flowGraphExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	flow, ok := resource.(*CompleteFlowDefinition)
@@ -103,7 +103,7 @@ func (e *FlowGraphExporter) ValidateResource(
 
 // GetResourceRules returns the parameterization rules for flow graphs.
 // Currently returns empty rules as no parameterization is needed for graphs at this stage.
-func (e *FlowGraphExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *flowGraphExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{}
 }
 

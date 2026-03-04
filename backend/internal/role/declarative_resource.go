@@ -35,29 +35,29 @@ const (
 	paramTypeRole    = "Role"
 )
 
-// RoleExporter implements declarativeresource.ResourceExporter for roles.
-type RoleExporter struct {
+// roleExporter implements declarativeresource.ResourceExporter for roles.
+type roleExporter struct {
 	service RoleServiceInterface
 }
 
 // newRoleExporter creates a new role exporter.
-func newRoleExporter(service RoleServiceInterface) *RoleExporter {
-	return &RoleExporter{service: service}
+func newRoleExporter(service RoleServiceInterface) *roleExporter {
+	return &roleExporter{service: service}
 }
 
 // GetResourceType returns the resource type for roles.
-func (e *RoleExporter) GetResourceType() string {
+func (e *roleExporter) GetResourceType() string {
 	return resourceTypeRole
 }
 
 // GetParameterizerType returns the parameterizer type for roles.
-func (e *RoleExporter) GetParameterizerType() string {
+func (e *roleExporter) GetParameterizerType() string {
 	return paramTypeRole
 }
 
 // GetAllResourceIDs retrieves all role IDs from the database store.
 // In composite mode, this excludes declarative (YAML-based) roles.
-func (e *RoleExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *roleExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	offset := 0
 	limit := serverconst.MaxPageSize
 	ids := []string{}
@@ -90,7 +90,7 @@ func (e *RoleExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servic
 }
 
 // GetResourceByID retrieves a role by its ID.
-func (e *RoleExporter) GetResourceByID(
+func (e *roleExporter) GetResourceByID(
 	ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
 	roleWithPermissions, err := e.service.GetRoleWithPermissions(ctx, id)
 	if err != nil {
@@ -115,7 +115,7 @@ func (e *RoleExporter) GetResourceByID(
 }
 
 // ValidateResource validates a role resource.
-func (e *RoleExporter) ValidateResource(
+func (e *roleExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	role, ok := resource.(*RoleWithPermissionsAndAssignments)
@@ -132,7 +132,7 @@ func (e *RoleExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for roles.
-func (e *RoleExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *roleExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		Variables:      []string{},
 		ArrayVariables: []string{},
@@ -265,7 +265,7 @@ func validateRoleWrapper(data interface{}, fileStore *fileBasedStore, dbStore ro
 	return nil
 }
 
-func (e *RoleExporter) getAllRoleAssignments(
+func (e *roleExporter) getAllRoleAssignments(
 	ctx context.Context,
 	roleID string,
 ) ([]RoleAssignment, *serviceerror.ServiceError) {

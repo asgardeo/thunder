@@ -34,11 +34,11 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
-// UserSchemaExporterTestSuite tests the UserSchemaExporter.
+// UserSchemaExporterTestSuite tests the userSchemaExporter.
 type UserSchemaExporterTestSuite struct {
 	suite.Suite
 	mockService *userschemamock.UserSchemaServiceInterfaceMock
-	exporter    *userschema.UserSchemaExporter
+	exporter    declarativeresource.ResourceExporter
 	logger      *log.Logger
 }
 
@@ -200,8 +200,4 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceRules() {
 	assert.NotNil(s.T(), rules)
 	// ResourceRules is currently an empty struct, but the function should return a valid pointer
 	assert.IsType(s.T(), &declarativeresource.ResourceRules{}, rules)
-}
-
-func (s *UserSchemaExporterTestSuite) TestUserSchemaExporterImplementsInterface() {
-	var _ declarativeresource.ResourceExporter = (*userschema.UserSchemaExporter)(nil)
 }

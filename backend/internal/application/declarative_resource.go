@@ -36,18 +36,18 @@ const (
 	paramTypApplication     = "Application"
 )
 
-// ApplicationExporter implements declarativeresource.ResourceExporter for applications.
-type ApplicationExporter struct {
+// applicationExporter implements declarativeresource.ResourceExporter for applications.
+type applicationExporter struct {
 	service ApplicationServiceInterface
 }
 
 // newApplicationExporter creates a new application exporter.
-func newApplicationExporter(service ApplicationServiceInterface) *ApplicationExporter {
-	return &ApplicationExporter{service: service}
+func newApplicationExporter(service ApplicationServiceInterface) *applicationExporter {
+	return &applicationExporter{service: service}
 }
 
 // NewApplicationExporterForTest creates a new application exporter for testing purposes.
-func NewApplicationExporterForTest(service ApplicationServiceInterface) *ApplicationExporter {
+func NewApplicationExporterForTest(service ApplicationServiceInterface) *applicationExporter {
 	if !testing.Testing() {
 		panic("only for tests!")
 	}
@@ -55,18 +55,18 @@ func NewApplicationExporterForTest(service ApplicationServiceInterface) *Applica
 }
 
 // GetResourceType returns the resource type for applications.
-func (e *ApplicationExporter) GetResourceType() string {
+func (e *applicationExporter) GetResourceType() string {
 	return resourceTypeApplication
 }
 
 // GetParameterizerType returns the parameterizer type for applications.
-func (e *ApplicationExporter) GetParameterizerType() string {
+func (e *applicationExporter) GetParameterizerType() string {
 	return paramTypApplication
 }
 
 // GetAllResourceIDs retrieves all application IDs.
 // In composite mode, this excludes declarative (YAML-based) applications.
-func (e *ApplicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	apps, err := e.service.GetApplicationList()
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (e *ApplicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, 
 }
 
 // GetResourceByID retrieves an application by its ID.
-func (e *ApplicationExporter) GetResourceByID(ctx context.Context, id string) (
+func (e *applicationExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
 	app, err := e.service.GetApplication(id)
@@ -93,7 +93,7 @@ func (e *ApplicationExporter) GetResourceByID(ctx context.Context, id string) (
 }
 
 // ValidateResource validates an application resource.
-func (e *ApplicationExporter) ValidateResource(
+func (e *applicationExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	app, ok := resource.(*model.Application)
@@ -277,7 +277,7 @@ func validateApplicationWrapper(
 }
 
 // GetResourceRules returns the parameterization rules for applications.
-func (e *ApplicationExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *applicationExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		Variables: []string{
 			"InboundAuthConfig[].OAuthAppConfig.ClientID",

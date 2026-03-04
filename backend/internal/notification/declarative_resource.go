@@ -38,18 +38,18 @@ const (
 	paramTypNotificationSender     = "NotificationSender"
 )
 
-// NotificationSenderExporter implements declarativeresource.ResourceExporter for notification senders.
-type NotificationSenderExporter struct {
+// notificationSenderExporter implements declarativeresource.ResourceExporter for notification senders.
+type notificationSenderExporter struct {
 	service NotificationSenderMgtSvcInterface
 }
 
 // newNotificationSenderExporter creates a new notification sender exporter.
-func newNotificationSenderExporter(service NotificationSenderMgtSvcInterface) *NotificationSenderExporter {
-	return &NotificationSenderExporter{service: service}
+func newNotificationSenderExporter(service NotificationSenderMgtSvcInterface) *notificationSenderExporter {
+	return &notificationSenderExporter{service: service}
 }
 
 // NewNotificationSenderExporterForTest creates a new notification sender exporter for testing purposes.
-func NewNotificationSenderExporterForTest(service NotificationSenderMgtSvcInterface) *NotificationSenderExporter {
+func NewNotificationSenderExporterForTest(service NotificationSenderMgtSvcInterface) *notificationSenderExporter {
 	if !testing.Testing() {
 		panic("only for tests!")
 	}
@@ -57,17 +57,17 @@ func NewNotificationSenderExporterForTest(service NotificationSenderMgtSvcInterf
 }
 
 // GetResourceType returns the resource type for notification senders.
-func (e *NotificationSenderExporter) GetResourceType() string {
+func (e *notificationSenderExporter) GetResourceType() string {
 	return resourceTypeNotificationSender
 }
 
 // GetParameterizerType returns the parameterizer type for notification senders.
-func (e *NotificationSenderExporter) GetParameterizerType() string {
+func (e *notificationSenderExporter) GetParameterizerType() string {
 	return paramTypNotificationSender
 }
 
 // GetAllResourceIDs retrieves all notification sender IDs.
-func (e *NotificationSenderExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+func (e *notificationSenderExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	senders, err := e.service.ListSenders(ctx)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (e *NotificationSenderExporter) GetAllResourceIDs(ctx context.Context) ([]s
 }
 
 // GetResourceByID retrieves a notification sender by its ID.
-func (e *NotificationSenderExporter) GetResourceByID(ctx context.Context, id string) (
+func (e *notificationSenderExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
 	sender, err := e.service.GetSender(ctx, id)
@@ -91,7 +91,7 @@ func (e *NotificationSenderExporter) GetResourceByID(ctx context.Context, id str
 }
 
 // ValidateResource validates a notification sender resource.
-func (e *NotificationSenderExporter) ValidateResource(
+func (e *notificationSenderExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	sender, ok := resource.(*common.NotificationSenderDTO)
@@ -115,7 +115,7 @@ func (e *NotificationSenderExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for notification senders.
-func (e *NotificationSenderExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *notificationSenderExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		DynamicPropertyFields: []string{"Properties"},
 	}
