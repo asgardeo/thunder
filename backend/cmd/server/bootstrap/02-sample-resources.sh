@@ -115,6 +115,18 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
     "family_name": {
       "type": "string",
       "required": false
+    },
+    "firstName": {
+      "type": "string",
+      "required": false
+    },
+    "lastName": {
+      "type": "string",
+      "required": false
+    },
+    "mobileNumber": {
+      "type": "string",
+      "required": false
     }
   }
 }
