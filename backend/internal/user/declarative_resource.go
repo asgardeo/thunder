@@ -258,7 +258,10 @@ func parseCredentials(credentialsMap map[string]interface{}) (Credentials, error
 	}
 
 	credentials := make(Credentials)
-	hashService := hash.Initialize()
+	hashService, err := hash.Initialize()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize hash service: %w", err)
+	}
 
 	for credType, credValue := range credentialsMap {
 		credentialType := CredentialType(credType)

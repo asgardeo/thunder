@@ -107,7 +107,10 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// would arise if sysauthz were to directly import the ou package.
 	ouAuthzService.SetOUHierarchyResolver(ouHierarchyResolver)
 
-	hashService := hash.Initialize()
+	hashService, err := hash.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize HashService", log.Error(err))
+	}
 
 	// Initialize consent service
 	consentService := consent.Initialize()

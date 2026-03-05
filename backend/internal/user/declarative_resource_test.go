@@ -54,7 +54,7 @@ func (suite *DeclarativeResourceTestSuite) SetupTest() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(hash.SHA256),
-				Parameters: config.PasswordHashingParamsConfig{
+				SHA256: config.SHA256Config{
 					SaltSize: 16,
 				},
 			},
@@ -117,7 +117,8 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_InvalidFormat() 
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_HashesWhenNoStorageType() {
-	hashService := hash.Initialize()
+	hashService, err := hash.Initialize()
+	suite.Require().NoError(err)
 	cred, err := parseCredentialObject(map[string]interface{}{
 		"value": "secret",
 	}, hashService, CredentialType("password"))
@@ -128,7 +129,8 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_HashesWhenN
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_SystemManagedMarker() {
-	hashService := hash.Initialize()
+	hashService, err := hash.Initialize()
+	suite.Require().NoError(err)
 	cred, err := parseCredentialObject(map[string]interface{}{
 		"value":             "raw",
 		"systemManaged":     true,
@@ -241,7 +243,7 @@ func (suite *DeclarativeResourceTestSuite) TestLoadDeclarativeResources() {
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(hash.SHA256),
-				Parameters: config.PasswordHashingParamsConfig{
+				SHA256: config.SHA256Config{
 					SaltSize: 16,
 				},
 			},
@@ -361,7 +363,8 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_YAMLMapInterface
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_YAMLMapInterfaceParams() {
-	hashService := hash.Initialize()
+	hashService, err := hash.Initialize()
+	suite.Require().NoError(err)
 	credMap := map[string]interface{}{
 		"value":       "hashed-value",
 		"storageType": "hash",
