@@ -20,6 +20,8 @@
 package clientauth
 
 import (
+	"context"
+
 	"encoding/base64"
 	"net/http"
 	"net/url"
@@ -86,7 +88,7 @@ func authenticate(
 	}
 
 	// Retrieve the OAuth application
-	oauthApp, err := appService.GetOAuthApplication(clientID)
+	oauthApp, err := appService.GetOAuthApplication(context.TODO(), clientID)
 	if err != nil || oauthApp == nil {
 		return nil, errInvalidClientCredentials
 	}

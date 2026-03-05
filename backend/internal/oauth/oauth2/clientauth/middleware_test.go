@@ -60,7 +60,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -106,7 +106,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -161,7 +161,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_MissingClie
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClient() {
 	// Mock app service to return nil (client not found)
-	suite.mockAppService.On("GetOAuthApplication", "invalid-client").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "invalid-client").
 		Return(nil, nil).Once()
 
 	// Create middleware
@@ -201,7 +201,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -234,7 +234,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_HandlerNotCalledOnAuthFailure() {
 	// Mock app service to return nil (client not found)
-	suite.mockAppService.On("GetOAuthApplication", mock.Anything).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, mock.Anything).
 		Return(nil, nil).Once()
 
 	// Create middleware
@@ -275,7 +275,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware

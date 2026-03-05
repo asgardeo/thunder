@@ -19,6 +19,8 @@
 package dcr
 
 import (
+	"context"
+
 	"encoding/json"
 	"strings"
 
@@ -67,7 +69,7 @@ func (ds *dcrService) RegisterClient(request *DCRRegistrationRequest) (
 		return nil, &ErrorServerError
 	}
 
-	createdApp, err := ds.appService.CreateApplication(appDTO)
+	createdApp, err := ds.appService.CreateApplication(context.TODO(), appDTO)
 	if err != nil {
 		logger.Error("Failed to create application via Application service", log.String("error", err.Error))
 		return nil, ds.mapApplicationErrorToDCRError(err)

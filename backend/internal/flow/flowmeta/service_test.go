@@ -127,7 +127,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 		},
 	}
 
-	suite.mockAppService.On("GetApplication", appID).Return(mockApp, nil)
+	suite.mockAppService.On("GetApplication", mock.Anything, appID).Return(mockApp, nil)
 	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).Return(mockDesign, nil)
@@ -213,7 +213,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_ApplicationNotFound()
 	metaType := MetaTypeAPP
 	appID := "non-existent"
 
-	suite.mockAppService.On("GetApplication", appID).
+	suite.mockAppService.On("GetApplication", mock.Anything, appID).
 		Return(nil, &application.ErrorApplicationNotFound)
 
 	// Act
@@ -266,7 +266,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 		Name:   "Default OU",
 	}
 
-	suite.mockAppService.On("GetApplication", appID).Return(mockApp, nil)
+	suite.mockAppService.On("GetApplication", mock.Anything, appID).Return(mockApp, nil)
 	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).

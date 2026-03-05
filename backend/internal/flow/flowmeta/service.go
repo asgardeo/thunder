@@ -113,7 +113,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 
 	// Get application or OU details based on type
 	if metaType == MetaTypeAPP {
-		app, svcErr := fms.applicationService.GetApplication(id)
+		app, svcErr := fms.applicationService.GetApplication(ctx, id)
 		if svcErr != nil {
 			if svcErr.Code == application.ErrorApplicationNotFound.Code {
 				return nil, &ErrorApplicationNotFound

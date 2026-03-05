@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"errors"
 	"testing"
 
@@ -207,9 +209,9 @@ func (suite *CacheBackedStoreTestSuite) TestNewCachedBackedApplicationStore() {
 func (suite *CacheBackedStoreTestSuite) TestCreateApplication_Success() {
 	app := suite.createTestApp()
 
-	suite.mockStore.On("CreateApplication", *app).Return(nil).Once()
+	suite.mockStore.On("CreateApplication", mock.Anything, *app).Return(nil).Once()
 
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(context.TODO(), *app)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -227,9 +229,9 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_Success() {
 func (suite *CacheBackedStoreTestSuite) TestCreateApplication_WithOAuth() {
 	app := suite.createTestAppWithOAuth()
 
-	suite.mockStore.On("CreateApplication", *app).Return(nil).Once()
+	suite.mockStore.On("CreateApplication", mock.Anything, *app).Return(nil).Once()
 
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(context.TODO(), *app)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -243,9 +245,9 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_StoreError() {
 	app := suite.createTestApp()
 	storeErr := errors.New("store error")
 
-	suite.mockStore.On("CreateApplication", *app).Return(storeErr).Once()
+	suite.mockStore.On("CreateApplication", mock.Anything, *app).Return(storeErr).Once()
 
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(context.TODO(), *app)
 	suite.Equal(storeErr, err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -262,19 +264,19 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_CacheSetError() {
 	suite.appByIDCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 	suite.appByNameCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 
-	suite.mockStore.On("CreateApplication", *app).Return(nil).Once()
+	suite.mockStore.On("CreateApplication", mock.Anything, *app).Return(nil).Once()
 
 	// Should not fail even if cache set fails
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(context.TODO(), *app)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
 // GetTotalApplicationCount tests
 func (suite *CacheBackedStoreTestSuite) TestGetTotalApplicationCount_Success() {
-	suite.mockStore.On("GetTotalApplicationCount").Return(10, nil).Once()
+	suite.mockStore.On("GetTotalApplicationCount", mock.Anything).Return(10, nil).Once()
 
-	count, err := suite.cachedStore.GetTotalApplicationCount()
+	count, err := suite.cachedStore.GetTotalApplicationCount(context.TODO())
 	suite.Nil(err)
 	suite.Equal(10, count)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -282,9 +284,9 @@ func (suite *CacheBackedStoreTestSuite) TestGetTotalApplicationCount_Success() {
 
 func (suite *CacheBackedStoreTestSuite) TestGetTotalApplicationCount_StoreError() {
 	storeErr := errors.New("store error")
-	suite.mockStore.On("GetTotalApplicationCount").Return(0, storeErr).Once()
+	suite.mockStore.On("GetTotalApplicationCount", mock.Anything).Return(0, storeErr).Once()
 
-	count, err := suite.cachedStore.GetTotalApplicationCount()
+	count, err := suite.cachedStore.GetTotalApplicationCount(context.TODO())
 	suite.Equal(storeErr, err)
 	suite.Equal(0, count)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -305,9 +307,9 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationList_Success() {
 		},
 	}
 
-	suite.mockStore.On("GetApplicationList").Return(expectedList, nil).Once()
+	suite.mockStore.On("GetApplicationList", mock.Anything).Return(expectedList, nil).Once()
 
-	list, err := suite.cachedStore.GetApplicationList()
+	list, err := suite.cachedStore.GetApplicationList(context.TODO())
 	suite.Nil(err)
 	suite.Equal(expectedList, list)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -315,9 +317,9 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationList_Success() {
 
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationList_StoreError() {
 	storeErr := errors.New("store error")
-	suite.mockStore.On("GetApplicationList").Return(([]model.BasicApplicationDTO)(nil), storeErr).Once()
+	suite.mockStore.On("GetApplicationList", mock.Anything).Return(([]model.BasicApplicationDTO)(nil), storeErr).Once()
 
-	list, err := suite.cachedStore.GetApplicationList()
+	list, err := suite.cachedStore.GetApplicationList(context.TODO())
 	suite.Equal(storeErr, err)
 	suite.Nil(list)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -328,7 +330,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_CacheHit() {
 	oauthApp := suite.createTestOAuthApp()
 	_ = suite.oauthAppCache.Set(cache.CacheKey{Key: "test-client-id"}, oauthApp)
 
-	result, err := suite.cachedStore.GetOAuthApplication("test-client-id")
+	result, err := suite.cachedStore.GetOAuthApplication(context.TODO(), "test-client-id")
 	suite.Nil(err)
 	suite.Equal(oauthApp, result)
 
@@ -339,9 +341,9 @@ func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_CacheHit() {
 func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_CacheMiss() {
 	oauthApp := suite.createTestOAuthApp()
 
-	suite.mockStore.On("GetOAuthApplication", "test-client-id").Return(oauthApp, nil).Once()
+	suite.mockStore.On("GetOAuthApplication", mock.Anything, "test-client-id").Return(oauthApp, nil).Once()
 
-	result, err := suite.cachedStore.GetOAuthApplication("test-client-id")
+	result, err := suite.cachedStore.GetOAuthApplication(context.TODO(), "test-client-id")
 	suite.Nil(err)
 	suite.Equal(oauthApp, result)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -354,20 +356,20 @@ func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_CacheMiss() {
 
 func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_StoreError() {
 	storeErr := errors.New("store error")
-	suite.mockStore.On("GetOAuthApplication", "test-client-id").
+	suite.mockStore.On("GetOAuthApplication", mock.Anything, "test-client-id").
 		Return((*model.OAuthAppConfigProcessedDTO)(nil), storeErr).Once()
 
-	result, err := suite.cachedStore.GetOAuthApplication("test-client-id")
+	result, err := suite.cachedStore.GetOAuthApplication(context.TODO(), "test-client-id")
 	suite.Equal(storeErr, err)
 	suite.Nil(result)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *CacheBackedStoreTestSuite) TestGetOAuthApplication_NilResult() {
-	suite.mockStore.On("GetOAuthApplication", "test-client-id").
+	suite.mockStore.On("GetOAuthApplication", mock.Anything, "test-client-id").
 		Return((*model.OAuthAppConfigProcessedDTO)(nil), nil).Once()
 
-	result, err := suite.cachedStore.GetOAuthApplication("test-client-id")
+	result, err := suite.cachedStore.GetOAuthApplication(context.TODO(), "test-client-id")
 	suite.Nil(err)
 	suite.Nil(result)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -382,7 +384,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_CacheHit() {
 	app := suite.createTestApp()
 	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
 
-	result, err := suite.cachedStore.GetApplicationByID(app.ID)
+	result, err := suite.cachedStore.GetApplicationByID(context.TODO(), app.ID)
 	suite.Nil(err)
 	suite.Equal(app, result)
 
@@ -393,9 +395,9 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_CacheHit() {
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_CacheMiss() {
 	app := suite.createTestApp()
 
-	suite.mockStore.On("GetApplicationByID", app.ID).Return(app, nil).Once()
+	suite.mockStore.On("GetApplicationByID", mock.Anything, app.ID).Return(app, nil).Once()
 
-	result, err := suite.cachedStore.GetApplicationByID(app.ID)
+	result, err := suite.cachedStore.GetApplicationByID(context.TODO(), app.ID)
 	suite.Nil(err)
 	suite.Equal(app, result)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -408,18 +410,20 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_CacheMiss() {
 
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_StoreError() {
 	storeErr := errors.New("store error")
-	suite.mockStore.On("GetApplicationByID", "test-id").Return((*model.ApplicationProcessedDTO)(nil), storeErr).Once()
+	suite.mockStore.On("GetApplicationByID", mock.Anything, "test-id").
+		Return((*model.ApplicationProcessedDTO)(nil), storeErr).Once()
 
-	result, err := suite.cachedStore.GetApplicationByID("test-id")
+	result, err := suite.cachedStore.GetApplicationByID(context.TODO(), "test-id")
 	suite.Equal(storeErr, err)
 	suite.Nil(result)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByID_NilResult() {
-	suite.mockStore.On("GetApplicationByID", "test-id").Return((*model.ApplicationProcessedDTO)(nil), nil).Once()
+	suite.mockStore.On("GetApplicationByID", mock.Anything, "test-id").
+		Return((*model.ApplicationProcessedDTO)(nil), nil).Once()
 
-	result, err := suite.cachedStore.GetApplicationByID("test-id")
+	result, err := suite.cachedStore.GetApplicationByID(context.TODO(), "test-id")
 	suite.Nil(err)
 	suite.Nil(result)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -434,7 +438,7 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_CacheHit() {
 	app := suite.createTestApp()
 	_ = suite.appByNameCache.Set(cache.CacheKey{Key: app.Name}, app)
 
-	result, err := suite.cachedStore.GetApplicationByName(app.Name)
+	result, err := suite.cachedStore.GetApplicationByName(context.TODO(), app.Name)
 	suite.Nil(err)
 	suite.Equal(app, result)
 
@@ -445,9 +449,9 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_CacheHit() {
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_CacheMiss() {
 	app := suite.createTestApp()
 
-	suite.mockStore.On("GetApplicationByName", app.Name).Return(app, nil).Once()
+	suite.mockStore.On("GetApplicationByName", mock.Anything, app.Name).Return(app, nil).Once()
 
-	result, err := suite.cachedStore.GetApplicationByName(app.Name)
+	result, err := suite.cachedStore.GetApplicationByName(context.TODO(), app.Name)
 	suite.Nil(err)
 	suite.Equal(app, result)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -460,19 +464,20 @@ func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_CacheMiss() {
 
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_StoreError() {
 	storeErr := errors.New("store error")
-	suite.mockStore.On("GetApplicationByName", "test-name").
+	suite.mockStore.On("GetApplicationByName", mock.Anything, "test-name").
 		Return((*model.ApplicationProcessedDTO)(nil), storeErr).Once()
 
-	result, err := suite.cachedStore.GetApplicationByName("test-name")
+	result, err := suite.cachedStore.GetApplicationByName(context.TODO(), "test-name")
 	suite.Equal(storeErr, err)
 	suite.Nil(result)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *CacheBackedStoreTestSuite) TestGetApplicationByName_NilResult() {
-	suite.mockStore.On("GetApplicationByName", "test-name").Return((*model.ApplicationProcessedDTO)(nil), nil).Once()
+	suite.mockStore.On("GetApplicationByName", mock.Anything, "test-name").
+		Return((*model.ApplicationProcessedDTO)(nil), nil).Once()
 
-	result, err := suite.cachedStore.GetApplicationByName("test-name")
+	result, err := suite.cachedStore.GetApplicationByName(context.TODO(), "test-name")
 	suite.Nil(err)
 	suite.Nil(result)
 	suite.mockStore.AssertExpectations(suite.T())
@@ -489,9 +494,9 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_Success() {
 	updatedApp.Name = "Updated App"
 	updatedApp.Description = "Updated Description"
 
-	suite.mockStore.On("UpdateApplication", existingApp, updatedApp).Return(nil).Once()
+	suite.mockStore.On("UpdateApplication", mock.Anything, existingApp, updatedApp).Return(nil).Once()
 
-	err := suite.cachedStore.UpdateApplication(existingApp, updatedApp)
+	err := suite.cachedStore.UpdateApplication(context.TODO(), existingApp, updatedApp)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -514,9 +519,9 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_WithOAuth() {
 		existingApp.InboundAuthConfig[0].OAuthAppConfig,
 	)
 
-	suite.mockStore.On("UpdateApplication", existingApp, updatedApp).Return(nil).Once()
+	suite.mockStore.On("UpdateApplication", mock.Anything, existingApp, updatedApp).Return(nil).Once()
 
-	err := suite.cachedStore.UpdateApplication(existingApp, updatedApp)
+	err := suite.cachedStore.UpdateApplication(context.TODO(), existingApp, updatedApp)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -532,9 +537,9 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_StoreError() {
 	updatedApp := suite.createTestApp()
 	storeErr := errors.New("store error")
 
-	suite.mockStore.On("UpdateApplication", existingApp, updatedApp).Return(storeErr).Once()
+	suite.mockStore.On("UpdateApplication", mock.Anything, existingApp, updatedApp).Return(storeErr).Once()
 
-	err := suite.cachedStore.UpdateApplication(existingApp, updatedApp)
+	err := suite.cachedStore.UpdateApplication(context.TODO(), existingApp, updatedApp)
 	suite.Equal(storeErr, err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
@@ -548,10 +553,10 @@ func (suite *CacheBackedStoreTestSuite) TestUpdateApplication_CacheInvalidationE
 	suite.appByIDCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
 	suite.appByNameCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
 
-	suite.mockStore.On("UpdateApplication", existingApp, updatedApp).Return(nil).Once()
+	suite.mockStore.On("UpdateApplication", mock.Anything, existingApp, updatedApp).Return(nil).Once()
 
 	// Should not fail even if cache invalidation fails
-	err := suite.cachedStore.UpdateApplication(existingApp, updatedApp)
+	err := suite.cachedStore.UpdateApplication(context.TODO(), existingApp, updatedApp)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
@@ -561,9 +566,9 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_FoundInCache() {
 	app := suite.createTestAppWithOAuth()
 	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
 
-	suite.mockStore.On("DeleteApplication", app.ID).Return(nil).Once()
+	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(nil).Once()
 
-	err := suite.cachedStore.DeleteApplication(app.ID)
+	err := suite.cachedStore.DeleteApplication(context.TODO(), app.ID)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -579,10 +584,10 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_FoundInCache() {
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_NotFoundInCache() {
 	app := suite.createTestApp()
 
-	suite.mockStore.On("GetApplicationByID", app.ID).Return(app, nil).Once()
-	suite.mockStore.On("DeleteApplication", app.ID).Return(nil).Once()
+	suite.mockStore.On("GetApplicationByID", mock.Anything, app.ID).Return(app, nil).Once()
+	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(nil).Once()
 
-	err := suite.cachedStore.DeleteApplication(app.ID)
+	err := suite.cachedStore.DeleteApplication(context.TODO(), app.ID)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
@@ -590,27 +595,28 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_NotFoundInCache() 
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_GetApplicationError() {
 	storeErr := errors.New("store error")
 
-	suite.mockStore.On("GetApplicationByID", "test-id").
+	suite.mockStore.On("GetApplicationByID", mock.Anything, "test-id").
 		Return((*model.ApplicationProcessedDTO)(nil), storeErr).Once()
 
-	err := suite.cachedStore.DeleteApplication("test-id")
+	err := suite.cachedStore.DeleteApplication(context.TODO(), "test-id")
 	suite.Equal(storeErr, err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_ApplicationNotFoundError() {
-	suite.mockStore.On("GetApplicationByID", "test-id").
+	suite.mockStore.On("GetApplicationByID", mock.Anything, "test-id").
 		Return((*model.ApplicationProcessedDTO)(nil), model.ApplicationNotFoundError).Once()
 
-	err := suite.cachedStore.DeleteApplication("test-id")
+	err := suite.cachedStore.DeleteApplication(context.TODO(), "test-id")
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_NilApplication() {
-	suite.mockStore.On("GetApplicationByID", "test-id").Return((*model.ApplicationProcessedDTO)(nil), nil).Once()
+	suite.mockStore.On("GetApplicationByID", mock.Anything, "test-id").
+		Return((*model.ApplicationProcessedDTO)(nil), nil).Once()
 
-	err := suite.cachedStore.DeleteApplication("test-id")
+	err := suite.cachedStore.DeleteApplication(context.TODO(), "test-id")
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
@@ -620,9 +626,9 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_StoreError() {
 	_ = suite.appByIDCache.Set(cache.CacheKey{Key: app.ID}, app)
 	storeErr := errors.New("store error")
 
-	suite.mockStore.On("DeleteApplication", app.ID).Return(storeErr).Once()
+	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(storeErr).Once()
 
-	err := suite.cachedStore.DeleteApplication(app.ID)
+	err := suite.cachedStore.DeleteApplication(context.TODO(), app.ID)
 	suite.Equal(storeErr, err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
@@ -636,10 +642,10 @@ func (suite *CacheBackedStoreTestSuite) TestDeleteApplication_CacheInvalidationE
 	suite.appByIDCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
 	suite.appByNameCache.EXPECT().Delete(mock.Anything).Return(cacheDelErr).Maybe()
 
-	suite.mockStore.On("DeleteApplication", app.ID).Return(nil).Once()
+	suite.mockStore.On("DeleteApplication", mock.Anything, app.ID).Return(nil).Once()
 
 	// Should not fail even if cache invalidation fails
-	err := suite.cachedStore.DeleteApplication(app.ID)
+	err := suite.cachedStore.DeleteApplication(context.TODO(), app.ID)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }
@@ -862,9 +868,9 @@ func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_OAuthCach
 func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Success() {
 	appID := "test-app-123"
 
-	suite.mockStore.EXPECT().IsApplicationExists(appID).Return(true, nil).Once()
+	suite.mockStore.EXPECT().IsApplicationExists(mock.Anything, appID).Return(true, nil).Once()
 
-	exists, err := suite.cachedStore.IsApplicationExists(appID)
+	exists, err := suite.cachedStore.IsApplicationExists(context.TODO(), appID)
 
 	suite.NoError(err)
 	suite.True(exists)
@@ -873,9 +879,9 @@ func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Success() {
 func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_NotFound() {
 	appID := "non-existent-app"
 
-	suite.mockStore.EXPECT().IsApplicationExists(appID).Return(false, nil).Once()
+	suite.mockStore.EXPECT().IsApplicationExists(mock.Anything, appID).Return(false, nil).Once()
 
-	exists, err := suite.cachedStore.IsApplicationExists(appID)
+	exists, err := suite.cachedStore.IsApplicationExists(context.TODO(), appID)
 
 	suite.NoError(err)
 	suite.False(exists)
@@ -885,9 +891,9 @@ func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Error() {
 	appID := "error-app"
 	expectedErr := errors.New("database error")
 
-	suite.mockStore.EXPECT().IsApplicationExists(appID).Return(false, expectedErr).Once()
+	suite.mockStore.EXPECT().IsApplicationExists(mock.Anything, appID).Return(false, expectedErr).Once()
 
-	exists, err := suite.cachedStore.IsApplicationExists(appID)
+	exists, err := suite.cachedStore.IsApplicationExists(context.TODO(), appID)
 
 	suite.Error(err)
 	suite.False(exists)
@@ -897,9 +903,9 @@ func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Error() {
 func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_Success() {
 	appName := "Test Application"
 
-	suite.mockStore.EXPECT().IsApplicationExistsByName(appName).Return(true, nil).Once()
+	suite.mockStore.EXPECT().IsApplicationExistsByName(mock.Anything, appName).Return(true, nil).Once()
 
-	exists, err := suite.cachedStore.IsApplicationExistsByName(appName)
+	exists, err := suite.cachedStore.IsApplicationExistsByName(context.TODO(), appName)
 
 	suite.NoError(err)
 	suite.True(exists)
@@ -908,9 +914,9 @@ func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_Success() 
 func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_NotFound() {
 	appName := "Non-Existent App"
 
-	suite.mockStore.EXPECT().IsApplicationExistsByName(appName).Return(false, nil).Once()
+	suite.mockStore.EXPECT().IsApplicationExistsByName(mock.Anything, appName).Return(false, nil).Once()
 
-	exists, err := suite.cachedStore.IsApplicationExistsByName(appName)
+	exists, err := suite.cachedStore.IsApplicationExistsByName(context.TODO(), appName)
 
 	suite.NoError(err)
 	suite.False(exists)
@@ -920,9 +926,9 @@ func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_Error() {
 	appName := "Error App"
 	expectedErr := errors.New("database connection error")
 
-	suite.mockStore.EXPECT().IsApplicationExistsByName(appName).Return(false, expectedErr).Once()
+	suite.mockStore.EXPECT().IsApplicationExistsByName(mock.Anything, appName).Return(false, expectedErr).Once()
 
-	exists, err := suite.cachedStore.IsApplicationExistsByName(appName)
+	exists, err := suite.cachedStore.IsApplicationExistsByName(context.TODO(), appName)
 
 	suite.Error(err)
 	suite.False(exists)

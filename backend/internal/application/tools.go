@@ -128,7 +128,7 @@ func (t *applicationTools) listApplications(
 	req *mcp.CallToolRequest,
 	_ any,
 ) (*mcp.CallToolResult, model.ApplicationListOutput, error) {
-	listResponse, svcErr := t.appService.GetApplicationList()
+	listResponse, svcErr := t.appService.GetApplicationList(ctx)
 	if svcErr != nil {
 		return nil, model.ApplicationListOutput{},
 			fmt.Errorf("failed to list applications: %s", svcErr.ErrorDescription)
@@ -146,7 +146,7 @@ func (t *applicationTools) getApplicationByID(
 	req *mcp.CallToolRequest,
 	input tool.IDInput,
 ) (*mcp.CallToolResult, *model.Application, error) {
-	app, svcErr := t.appService.GetApplication(input.ID)
+	app, svcErr := t.appService.GetApplication(ctx, input.ID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get application: %s", svcErr.ErrorDescription)
 	}
@@ -161,13 +161,13 @@ func (t *applicationTools) getApplicationByClientID(
 	input model.ClientIDInput,
 ) (*mcp.CallToolResult, *model.Application, error) {
 	// Get OAuth application to find app ID
-	oauthApp, svcErr := t.appService.GetOAuthApplication(input.ClientID)
+	oauthApp, svcErr := t.appService.GetOAuthApplication(ctx, input.ClientID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get OAuth application: %s", svcErr.ErrorDescription)
 	}
 
 	// Get full application details
-	app, svcErr := t.appService.GetApplication(oauthApp.AppID)
+	app, svcErr := t.appService.GetApplication(ctx, oauthApp.AppID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get application: %s", svcErr.ErrorDescription)
 	}
@@ -181,7 +181,7 @@ func (t *applicationTools) createApplication(
 	req *mcp.CallToolRequest,
 	input model.ApplicationDTO,
 ) (*mcp.CallToolResult, *model.ApplicationDTO, error) {
-	createdApp, svcErr := t.appService.CreateApplication(&input)
+	createdApp, svcErr := t.appService.CreateApplication(ctx, &input)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to create application: %s", svcErr.ErrorDescription)
 	}
@@ -195,7 +195,7 @@ func (t *applicationTools) updateApplication(
 	req *mcp.CallToolRequest,
 	input model.ApplicationDTO,
 ) (*mcp.CallToolResult, *model.ApplicationDTO, error) {
-	updatedApp, svcErr := t.appService.UpdateApplication(input.ID, &input)
+	updatedApp, svcErr := t.appService.UpdateApplication(ctx, input.ID, &input)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to update application: %s", svcErr.ErrorDescription)
 	}

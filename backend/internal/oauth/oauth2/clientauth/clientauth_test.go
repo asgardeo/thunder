@@ -20,6 +20,9 @@ package clientauth
 
 import (
 	"encoding/base64"
+
+	"github.com/stretchr/testify/mock"
+
 	"net/http"
 	"net/url"
 	"strings"
@@ -63,7 +66,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretPost() {
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	formData := url.Values{}
@@ -96,7 +99,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic() {
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	req, _ := http.NewRequest("POST", "/test", nil)
@@ -125,7 +128,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic_URL
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", rawClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, rawClientID).
 		Return(mockApp, nil).Once()
 
 	// Manually construct the Basic Auth header with URL-encoded credentials.
@@ -178,7 +181,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PublicClient() {
 		PublicClient:            true,
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", "public-client-id").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "public-client-id").
 		Return(mockApp, nil).Once()
 
 	formData := url.Values{}
@@ -221,7 +224,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientSecret() {
 
 	// This should succeed for public clients, but fail for confidential clients
 	// Since we don't have an app yet, it will fail at app retrieval
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(nil, nil).Once()
 
 	clientInfo, authErr := authenticate(req, suite.mockAppService)
@@ -298,7 +301,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ClientNotFound() {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_ = req.ParseForm()
 
-	suite.mockAppService.On("GetOAuthApplication", "non-existent-client").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "non-existent-client").
 		Return(nil, nil).Once()
 
 	clientInfo, authErr := authenticate(req, suite.mockAppService)
@@ -319,7 +322,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	formData := url.Values{}
@@ -347,7 +350,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_WrongAuthMethod() {
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Try to use client_secret_basic when app only allows client_secret_post
@@ -371,7 +374,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientWithSecret() {
 		PublicClient:            true,
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", "public-client-id").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "public-client-id").
 		Return(mockApp, nil).Once()
 
 	formData := url.Values{}
@@ -399,7 +402,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientMissingSecret() {
 		PublicClient:            true,
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", "public-client-id").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "public-client-id").
 		Return(mockApp, nil).Once()
 
 	formData := url.Values{}
@@ -426,7 +429,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ClientIDMismatch() {
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	formData := url.Values{}
@@ -452,7 +455,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ServiceError() {
 		ErrorDescription: "Internal server error",
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(nil, serviceErr).Once()
 
 	formData := url.Values{}

@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,17 +74,17 @@ type userInfoConfig struct {
 
 // ApplicationStoreInterface defines the interface for application data persistence operations.
 type applicationStoreInterface interface {
-	CreateApplication(app model.ApplicationProcessedDTO) error
-	GetTotalApplicationCount() (int, error)
-	GetApplicationList() ([]model.BasicApplicationDTO, error)
-	GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error)
-	GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error)
-	GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error)
-	UpdateApplication(existingApp, updatedApp *model.ApplicationProcessedDTO) error
-	DeleteApplication(id string) error
-	IsApplicationExists(id string) (bool, error)
-	IsApplicationExistsByName(name string) (bool, error)
-	IsApplicationDeclarative(id string) bool
+	CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error
+	GetTotalApplicationCount(ctx context.Context) (int, error)
+	GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error)
+	GetOAuthApplication(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error)
+	GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error)
+	GetApplicationByName(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error)
+	UpdateApplication(ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO) error
+	DeleteApplication(ctx context.Context, id string) error
+	IsApplicationExists(ctx context.Context, id string) (bool, error)
+	IsApplicationExistsByName(ctx context.Context, name string) (bool, error)
+	IsApplicationDeclarative(ctx context.Context, id string) bool
 }
 
 // applicationStore implements the applicationStoreInterface for handling application data persistence.
@@ -100,7 +102,7 @@ func newApplicationStore() applicationStoreInterface {
 }
 
 // CreateApplication creates a new application in the database.
-func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO) error {
+func (st *applicationStore) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
 	jsonDataBytes, err := getAppJSONDataBytes(&app)
 	if err != nil {
 		return err
@@ -136,13 +138,13 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 }
 
 // GetTotalApplicationCount retrieves the total count of applications from the database.
-func (st *applicationStore) GetTotalApplicationCount() (int, error) {
+func (st *applicationStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetApplicationCount, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetApplicationCount, st.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -160,7 +162,7 @@ func (st *applicationStore) GetTotalApplicationCount() (int, error) {
 }
 
 // GetApplicationList retrieves a list of applications from the database.
-func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, error) {
+func (st *applicationStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationPersistence"))
 
 	dbClient, err := st.dbProvider.GetConfigDBClient()
@@ -169,7 +171,7 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetApplicationList, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetApplicationList, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -190,7 +192,8 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 }
 
 // GetOAuthApplication retrieves an OAuth application by its client ID.
-func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
+func (st *applicationStore) GetOAuthApplication(
+	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
 	dbClient, err := st.dbProvider.GetConfigDBClient()
@@ -199,7 +202,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetOAuthApplicationByClientID, clientID, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetOAuthApplicationByClientID, clientID, st.deploymentID)
 	if err != nil {
 		return nil, err
 	}
@@ -312,17 +315,18 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 }
 
 // GetApplicationByID retrieves a specific application by its ID from the database.
-func (st *applicationStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(queryGetApplicationByAppID, id, st.deploymentID)
+func (st *applicationStore) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
+	return st.getApplicationByQuery(ctx, queryGetApplicationByAppID, id, st.deploymentID)
 }
 
 // GetApplicationByName retrieves a specific application by its name from the database.
-func (st *applicationStore) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(queryGetApplicationByName, name, st.deploymentID)
+func (st *applicationStore) GetApplicationByName(
+	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
+	return st.getApplicationByQuery(ctx, queryGetApplicationByName, name, st.deploymentID)
 }
 
 // getApplicationByQuery retrieves a specific application from the database using the provided query and parameter.
-func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params ...interface{}) (
+func (st *applicationStore) getApplicationByQuery(ctx context.Context, query dbmodel.DBQuery, params ...interface{}) (
 	*model.ApplicationProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
@@ -332,7 +336,7 @@ func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params 
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, params...)
+	results, err := dbClient.QueryContext(ctx, query, params...)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -357,7 +361,8 @@ func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params 
 }
 
 // UpdateApplication updates an existing application in the database.
-func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.ApplicationProcessedDTO) error {
+func (st *applicationStore) UpdateApplication(
+	ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO) error {
 	jsonDataBytes, err := getAppJSONDataBytes(updatedApp)
 	if err != nil {
 		return err
@@ -401,7 +406,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 }
 
 // DeleteApplication deletes an application from the database by its ID.
-func (st *applicationStore) DeleteApplication(id string) error {
+func (st *applicationStore) DeleteApplication(ctx context.Context, id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
 	dbClient, err := st.dbProvider.GetConfigDBClient()
@@ -410,7 +415,7 @@ func (st *applicationStore) DeleteApplication(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryDeleteApplicationByAppID, id, st.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteApplicationByAppID, id, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -420,7 +425,7 @@ func (st *applicationStore) DeleteApplication(id string) error {
 }
 
 // IsApplicationExists checks if an application exists in the database by ID.
-func (st *applicationStore) IsApplicationExists(id string) (bool, error) {
+func (st *applicationStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
 	dbClient, err := st.dbProvider.GetConfigDBClient()
@@ -429,7 +434,7 @@ func (st *applicationStore) IsApplicationExists(id string) (bool, error) {
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryCheckApplicationExistsByID, id, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryCheckApplicationExistsByID, id, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute existence check query", log.Error(err))
 		return false, fmt.Errorf("failed to execute existence check query: %w", err)
@@ -439,7 +444,7 @@ func (st *applicationStore) IsApplicationExists(id string) (bool, error) {
 }
 
 // IsApplicationExistsByName checks if an application exists in the database by name.
-func (st *applicationStore) IsApplicationExistsByName(name string) (bool, error) {
+func (st *applicationStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
 	dbClient, err := st.dbProvider.GetConfigDBClient()
@@ -448,7 +453,7 @@ func (st *applicationStore) IsApplicationExistsByName(name string) (bool, error)
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryCheckApplicationExistsByName, name, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryCheckApplicationExistsByName, name, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute existence check query", log.Error(err))
 		return false, fmt.Errorf("failed to execute existence check query: %w", err)
@@ -459,7 +464,7 @@ func (st *applicationStore) IsApplicationExistsByName(name string) (bool, error)
 
 // IsApplicationDeclarative checks if an application is immutable.
 // For database store, all applications are mutable (not declarative).
-func (st *applicationStore) IsApplicationDeclarative(id string) bool {
+func (st *applicationStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
 	return false
 }
 

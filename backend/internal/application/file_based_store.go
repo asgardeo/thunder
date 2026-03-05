@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/application/model"
@@ -33,21 +35,21 @@ type fileBasedStore struct {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	app := data.(*model.ApplicationProcessedDTO)
-	return f.CreateApplication(*app)
+	return f.CreateApplication(context.TODO(), *app)
 }
 
 // CreateApplication implements applicationStoreInterface.
-func (f *fileBasedStore) CreateApplication(app model.ApplicationProcessedDTO) error {
+func (f *fileBasedStore) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
 	return f.GenericFileBasedStore.Create(app.ID, &app)
 }
 
 // DeleteApplication implements applicationStoreInterface.
-func (f *fileBasedStore) DeleteApplication(id string) error {
+func (f *fileBasedStore) DeleteApplication(ctx context.Context, id string) error {
 	return errors.New("DeleteApplication is not supported in file-based store")
 }
 
 // GetApplicationByID implements applicationStoreInterface.
-func (f *fileBasedStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
+func (f *fileBasedStore) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return nil, model.ApplicationNotFoundError
@@ -61,7 +63,8 @@ func (f *fileBasedStore) GetApplicationByID(id string) (*model.ApplicationProces
 }
 
 // GetApplicationByName implements applicationStoreInterface.
-func (f *fileBasedStore) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
+func (f *fileBasedStore) GetApplicationByName(
+	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
 	data, err := f.GenericFileBasedStore.GetByField(name, func(d interface{}) string {
 		return d.(*model.ApplicationProcessedDTO).Name
 	})
@@ -72,7 +75,7 @@ func (f *fileBasedStore) GetApplicationByName(name string) (*model.ApplicationPr
 }
 
 // GetApplicationList implements applicationStoreInterface.
-func (f *fileBasedStore) GetApplicationList() ([]model.BasicApplicationDTO, error) {
+func (f *fileBasedStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -96,7 +99,8 @@ func (f *fileBasedStore) GetApplicationList() ([]model.BasicApplicationDTO, erro
 }
 
 // GetOAuthApplication implements applicationStoreInterface.
-func (f *fileBasedStore) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
+func (f *fileBasedStore) GetOAuthApplication(
+	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -120,19 +124,19 @@ func (f *fileBasedStore) GetOAuthApplication(clientID string) (*model.OAuthAppCo
 }
 
 // GetTotalApplicationCount implements applicationStoreInterface.
-func (f *fileBasedStore) GetTotalApplicationCount() (int, error) {
+func (f *fileBasedStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
 	return f.GenericFileBasedStore.Count()
 }
 
 // UpdateApplication implements applicationStoreInterface.
-func (f *fileBasedStore) UpdateApplication(existingApp *model.ApplicationProcessedDTO,
+func (f *fileBasedStore) UpdateApplication(ctx context.Context, existingApp *model.ApplicationProcessedDTO,
 	updatedApp *model.ApplicationProcessedDTO) error {
 	return errors.New("UpdateApplication is not supported in file-based store")
 }
 
 // IsApplicationExists implements applicationStoreInterface.
-func (f *fileBasedStore) IsApplicationExists(id string) (bool, error) {
-	_, err := f.GetApplicationByID(id)
+func (f *fileBasedStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
+	_, err := f.GetApplicationByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, model.ApplicationNotFoundError) {
 			return false, nil
@@ -143,8 +147,8 @@ func (f *fileBasedStore) IsApplicationExists(id string) (bool, error) {
 }
 
 // IsApplicationExistsByName implements applicationStoreInterface.
-func (f *fileBasedStore) IsApplicationExistsByName(name string) (bool, error) {
-	_, err := f.GetApplicationByName(name)
+func (f *fileBasedStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
+	_, err := f.GetApplicationByName(ctx, name)
 	if err != nil {
 		if errors.Is(err, model.ApplicationNotFoundError) {
 			return false, nil
@@ -156,8 +160,8 @@ func (f *fileBasedStore) IsApplicationExistsByName(name string) (bool, error) {
 
 // IsApplicationDeclarative checks if an application is immutable.
 // For file-based store, all applications are declarative/immutable.
-func (f *fileBasedStore) IsApplicationDeclarative(id string) bool {
-	exists, err := f.IsApplicationExists(id)
+func (f *fileBasedStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
+	exists, err := f.IsApplicationExists(ctx, id)
 	return err == nil && exists
 }
 

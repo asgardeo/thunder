@@ -19,6 +19,8 @@
 package application_test
 
 import (
+	"github.com/stretchr/testify/mock"
+
 	"context"
 	"testing"
 
@@ -71,7 +73,7 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_Success() {
 		},
 	}
 
-	s.mockService.EXPECT().GetApplicationList().Return(expectedApps, nil)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(expectedApps, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -87,7 +89,7 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetApplicationList().Return(nil, expectedError)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -100,7 +102,7 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 		Applications: []model.BasicApplicationResponse{},
 	}
 
-	s.mockService.EXPECT().GetApplicationList().Return(expectedApps, nil)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(expectedApps, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -114,7 +116,7 @@ func (s *ApplicationExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test App",
 	}
 
-	s.mockService.EXPECT().GetApplication("app1").Return(expectedApp, nil)
+	s.mockService.EXPECT().GetApplication(mock.Anything, "app1").Return(expectedApp, nil)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "app1")
 
@@ -129,7 +131,7 @@ func (s *ApplicationExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetApplication("app1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetApplication(mock.Anything, "app1").Return(nil, expectedError)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "app1")
 

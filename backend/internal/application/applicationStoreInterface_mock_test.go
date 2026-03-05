@@ -5,6 +5,8 @@
 package application
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/application/model"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,16 +39,16 @@ func (_m *applicationStoreInterfaceMock) EXPECT() *applicationStoreInterfaceMock
 }
 
 // CreateApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) CreateApplication(app model.ApplicationProcessedDTO) error {
-	ret := _mock.Called(app)
+func (_mock *applicationStoreInterfaceMock) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
+	ret := _mock.Called(ctx, app)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateApplication")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(model.ApplicationProcessedDTO) error); ok {
-		r0 = returnFunc(app)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.ApplicationProcessedDTO) error); ok {
+		r0 = returnFunc(ctx, app)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -59,19 +61,25 @@ type applicationStoreInterfaceMock_CreateApplication_Call struct {
 }
 
 // CreateApplication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - app model.ApplicationProcessedDTO
-func (_e *applicationStoreInterfaceMock_Expecter) CreateApplication(app interface{}) *applicationStoreInterfaceMock_CreateApplication_Call {
-	return &applicationStoreInterfaceMock_CreateApplication_Call{Call: _e.mock.On("CreateApplication", app)}
+func (_e *applicationStoreInterfaceMock_Expecter) CreateApplication(ctx interface{}, app interface{}) *applicationStoreInterfaceMock_CreateApplication_Call {
+	return &applicationStoreInterfaceMock_CreateApplication_Call{Call: _e.mock.On("CreateApplication", ctx, app)}
 }
 
-func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Run(run func(app model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_CreateApplication_Call {
+func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Run(run func(ctx context.Context, app model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_CreateApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 model.ApplicationProcessedDTO
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(model.ApplicationProcessedDTO)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 model.ApplicationProcessedDTO
+		if args[1] != nil {
+			arg1 = args[1].(model.ApplicationProcessedDTO)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -82,22 +90,22 @@ func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Return(err error
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_CreateApplication_Call) RunAndReturn(run func(app model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_CreateApplication_Call {
+func (_c *applicationStoreInterfaceMock_CreateApplication_Call) RunAndReturn(run func(ctx context.Context, app model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_CreateApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) DeleteApplication(id string) error {
-	ret := _mock.Called(id)
+func (_mock *applicationStoreInterfaceMock) DeleteApplication(ctx context.Context, id string) error {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteApplication")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -110,19 +118,25 @@ type applicationStoreInterfaceMock_DeleteApplication_Call struct {
 }
 
 // DeleteApplication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *applicationStoreInterfaceMock_Expecter) DeleteApplication(id interface{}) *applicationStoreInterfaceMock_DeleteApplication_Call {
-	return &applicationStoreInterfaceMock_DeleteApplication_Call{Call: _e.mock.On("DeleteApplication", id)}
+func (_e *applicationStoreInterfaceMock_Expecter) DeleteApplication(ctx interface{}, id interface{}) *applicationStoreInterfaceMock_DeleteApplication_Call {
+	return &applicationStoreInterfaceMock_DeleteApplication_Call{Call: _e.mock.On("DeleteApplication", ctx, id)}
 }
 
-func (_c *applicationStoreInterfaceMock_DeleteApplication_Call) Run(run func(id string)) *applicationStoreInterfaceMock_DeleteApplication_Call {
+func (_c *applicationStoreInterfaceMock_DeleteApplication_Call) Run(run func(ctx context.Context, id string)) *applicationStoreInterfaceMock_DeleteApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -133,14 +147,14 @@ func (_c *applicationStoreInterfaceMock_DeleteApplication_Call) Return(err error
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_DeleteApplication_Call) RunAndReturn(run func(id string) error) *applicationStoreInterfaceMock_DeleteApplication_Call {
+func (_c *applicationStoreInterfaceMock_DeleteApplication_Call) RunAndReturn(run func(ctx context.Context, id string) error) *applicationStoreInterfaceMock_DeleteApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetApplicationByID provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
-	ret := _mock.Called(id)
+func (_mock *applicationStoreInterfaceMock) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetApplicationByID")
@@ -148,18 +162,18 @@ func (_mock *applicationStoreInterfaceMock) GetApplicationByID(id string) (*mode
 
 	var r0 *model.ApplicationProcessedDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*model.ApplicationProcessedDTO, error)); ok {
-		return returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.ApplicationProcessedDTO, error)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *model.ApplicationProcessedDTO); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.ApplicationProcessedDTO); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.ApplicationProcessedDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -172,19 +186,25 @@ type applicationStoreInterfaceMock_GetApplicationByID_Call struct {
 }
 
 // GetApplicationByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationByID(id interface{}) *applicationStoreInterfaceMock_GetApplicationByID_Call {
-	return &applicationStoreInterfaceMock_GetApplicationByID_Call{Call: _e.mock.On("GetApplicationByID", id)}
+func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationByID(ctx interface{}, id interface{}) *applicationStoreInterfaceMock_GetApplicationByID_Call {
+	return &applicationStoreInterfaceMock_GetApplicationByID_Call{Call: _e.mock.On("GetApplicationByID", ctx, id)}
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) Run(run func(id string)) *applicationStoreInterfaceMock_GetApplicationByID_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) Run(run func(ctx context.Context, id string)) *applicationStoreInterfaceMock_GetApplicationByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -195,14 +215,14 @@ func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) Return(applicat
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) RunAndReturn(run func(id string) (*model.ApplicationProcessedDTO, error)) *applicationStoreInterfaceMock_GetApplicationByID_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error)) *applicationStoreInterfaceMock_GetApplicationByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetApplicationByName provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
-	ret := _mock.Called(name)
+func (_mock *applicationStoreInterfaceMock) GetApplicationByName(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetApplicationByName")
@@ -210,18 +230,18 @@ func (_mock *applicationStoreInterfaceMock) GetApplicationByName(name string) (*
 
 	var r0 *model.ApplicationProcessedDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*model.ApplicationProcessedDTO, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.ApplicationProcessedDTO, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *model.ApplicationProcessedDTO); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.ApplicationProcessedDTO); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.ApplicationProcessedDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -234,19 +254,25 @@ type applicationStoreInterfaceMock_GetApplicationByName_Call struct {
 }
 
 // GetApplicationByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationByName(name interface{}) *applicationStoreInterfaceMock_GetApplicationByName_Call {
-	return &applicationStoreInterfaceMock_GetApplicationByName_Call{Call: _e.mock.On("GetApplicationByName", name)}
+func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationByName(ctx interface{}, name interface{}) *applicationStoreInterfaceMock_GetApplicationByName_Call {
+	return &applicationStoreInterfaceMock_GetApplicationByName_Call{Call: _e.mock.On("GetApplicationByName", ctx, name)}
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) Run(run func(name string)) *applicationStoreInterfaceMock_GetApplicationByName_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) Run(run func(ctx context.Context, name string)) *applicationStoreInterfaceMock_GetApplicationByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -257,14 +283,14 @@ func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) Return(applic
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) RunAndReturn(run func(name string) (*model.ApplicationProcessedDTO, error)) *applicationStoreInterfaceMock_GetApplicationByName_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) RunAndReturn(run func(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error)) *applicationStoreInterfaceMock_GetApplicationByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetApplicationList provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetApplicationList() ([]model.BasicApplicationDTO, error) {
-	ret := _mock.Called()
+func (_mock *applicationStoreInterfaceMock) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetApplicationList")
@@ -272,18 +298,18 @@ func (_mock *applicationStoreInterfaceMock) GetApplicationList() ([]model.BasicA
 
 	var r0 []model.BasicApplicationDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() ([]model.BasicApplicationDTO, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]model.BasicApplicationDTO, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() []model.BasicApplicationDTO); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []model.BasicApplicationDTO); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.BasicApplicationDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -296,13 +322,20 @@ type applicationStoreInterfaceMock_GetApplicationList_Call struct {
 }
 
 // GetApplicationList is a helper method to define mock.On call
-func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationList() *applicationStoreInterfaceMock_GetApplicationList_Call {
-	return &applicationStoreInterfaceMock_GetApplicationList_Call{Call: _e.mock.On("GetApplicationList")}
+//   - ctx context.Context
+func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationList(ctx interface{}) *applicationStoreInterfaceMock_GetApplicationList_Call {
+	return &applicationStoreInterfaceMock_GetApplicationList_Call{Call: _e.mock.On("GetApplicationList", ctx)}
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) Run(run func()) *applicationStoreInterfaceMock_GetApplicationList_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) Run(run func(ctx context.Context)) *applicationStoreInterfaceMock_GetApplicationList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -312,14 +345,14 @@ func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) Return(basicApp
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) RunAndReturn(run func() ([]model.BasicApplicationDTO, error)) *applicationStoreInterfaceMock_GetApplicationList_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) RunAndReturn(run func(ctx context.Context) ([]model.BasicApplicationDTO, error)) *applicationStoreInterfaceMock_GetApplicationList_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOAuthApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
-	ret := _mock.Called(clientID)
+func (_mock *applicationStoreInterfaceMock) GetOAuthApplication(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
+	ret := _mock.Called(ctx, clientID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOAuthApplication")
@@ -327,18 +360,18 @@ func (_mock *applicationStoreInterfaceMock) GetOAuthApplication(clientID string)
 
 	var r0 *model.OAuthAppConfigProcessedDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*model.OAuthAppConfigProcessedDTO, error)); ok {
-		return returnFunc(clientID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.OAuthAppConfigProcessedDTO, error)); ok {
+		return returnFunc(ctx, clientID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *model.OAuthAppConfigProcessedDTO); ok {
-		r0 = returnFunc(clientID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.OAuthAppConfigProcessedDTO); ok {
+		r0 = returnFunc(ctx, clientID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.OAuthAppConfigProcessedDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(clientID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, clientID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -351,19 +384,25 @@ type applicationStoreInterfaceMock_GetOAuthApplication_Call struct {
 }
 
 // GetOAuthApplication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - clientID string
-func (_e *applicationStoreInterfaceMock_Expecter) GetOAuthApplication(clientID interface{}) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
-	return &applicationStoreInterfaceMock_GetOAuthApplication_Call{Call: _e.mock.On("GetOAuthApplication", clientID)}
+func (_e *applicationStoreInterfaceMock_Expecter) GetOAuthApplication(ctx interface{}, clientID interface{}) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
+	return &applicationStoreInterfaceMock_GetOAuthApplication_Call{Call: _e.mock.On("GetOAuthApplication", ctx, clientID)}
 }
 
-func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) Run(run func(clientID string)) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
+func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) Run(run func(ctx context.Context, clientID string)) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -374,14 +413,14 @@ func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) Return(oAuthAp
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) RunAndReturn(run func(clientID string) (*model.OAuthAppConfigProcessedDTO, error)) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
+func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) RunAndReturn(run func(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error)) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetTotalApplicationCount provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetTotalApplicationCount() (int, error) {
-	ret := _mock.Called()
+func (_mock *applicationStoreInterfaceMock) GetTotalApplicationCount(ctx context.Context) (int, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTotalApplicationCount")
@@ -389,16 +428,16 @@ func (_mock *applicationStoreInterfaceMock) GetTotalApplicationCount() (int, err
 
 	var r0 int
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() (int, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() int); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -411,13 +450,20 @@ type applicationStoreInterfaceMock_GetTotalApplicationCount_Call struct {
 }
 
 // GetTotalApplicationCount is a helper method to define mock.On call
-func (_e *applicationStoreInterfaceMock_Expecter) GetTotalApplicationCount() *applicationStoreInterfaceMock_GetTotalApplicationCount_Call {
-	return &applicationStoreInterfaceMock_GetTotalApplicationCount_Call{Call: _e.mock.On("GetTotalApplicationCount")}
+//   - ctx context.Context
+func (_e *applicationStoreInterfaceMock_Expecter) GetTotalApplicationCount(ctx interface{}) *applicationStoreInterfaceMock_GetTotalApplicationCount_Call {
+	return &applicationStoreInterfaceMock_GetTotalApplicationCount_Call{Call: _e.mock.On("GetTotalApplicationCount", ctx)}
 }
 
-func (_c *applicationStoreInterfaceMock_GetTotalApplicationCount_Call) Run(run func()) *applicationStoreInterfaceMock_GetTotalApplicationCount_Call {
+func (_c *applicationStoreInterfaceMock_GetTotalApplicationCount_Call) Run(run func(ctx context.Context)) *applicationStoreInterfaceMock_GetTotalApplicationCount_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -427,22 +473,22 @@ func (_c *applicationStoreInterfaceMock_GetTotalApplicationCount_Call) Return(n 
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetTotalApplicationCount_Call) RunAndReturn(run func() (int, error)) *applicationStoreInterfaceMock_GetTotalApplicationCount_Call {
+func (_c *applicationStoreInterfaceMock_GetTotalApplicationCount_Call) RunAndReturn(run func(ctx context.Context) (int, error)) *applicationStoreInterfaceMock_GetTotalApplicationCount_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // IsApplicationDeclarative provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) IsApplicationDeclarative(id string) bool {
-	ret := _mock.Called(id)
+func (_mock *applicationStoreInterfaceMock) IsApplicationDeclarative(ctx context.Context, id string) bool {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsApplicationDeclarative")
 	}
 
 	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -455,19 +501,25 @@ type applicationStoreInterfaceMock_IsApplicationDeclarative_Call struct {
 }
 
 // IsApplicationDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationDeclarative(id interface{}) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
-	return &applicationStoreInterfaceMock_IsApplicationDeclarative_Call{Call: _e.mock.On("IsApplicationDeclarative", id)}
+func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationDeclarative(ctx interface{}, id interface{}) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+	return &applicationStoreInterfaceMock_IsApplicationDeclarative_Call{Call: _e.mock.On("IsApplicationDeclarative", ctx, id)}
 }
 
-func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) Run(run func(id string)) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) Run(run func(ctx context.Context, id string)) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -478,14 +530,14 @@ func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) Return(b 
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) RunAndReturn(run func(id string) bool) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) bool) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // IsApplicationExists provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) IsApplicationExists(id string) (bool, error) {
-	ret := _mock.Called(id)
+func (_mock *applicationStoreInterfaceMock) IsApplicationExists(ctx context.Context, id string) (bool, error) {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsApplicationExists")
@@ -493,16 +545,16 @@ func (_mock *applicationStoreInterfaceMock) IsApplicationExists(id string) (bool
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -515,19 +567,25 @@ type applicationStoreInterfaceMock_IsApplicationExists_Call struct {
 }
 
 // IsApplicationExists is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExists(id interface{}) *applicationStoreInterfaceMock_IsApplicationExists_Call {
-	return &applicationStoreInterfaceMock_IsApplicationExists_Call{Call: _e.mock.On("IsApplicationExists", id)}
+func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExists(ctx interface{}, id interface{}) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+	return &applicationStoreInterfaceMock_IsApplicationExists_Call{Call: _e.mock.On("IsApplicationExists", ctx, id)}
 }
 
-func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) Run(run func(id string)) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) Run(run func(ctx context.Context, id string)) *applicationStoreInterfaceMock_IsApplicationExists_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -538,14 +596,14 @@ func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) Return(b bool,
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) RunAndReturn(run func(id string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) RunAndReturn(run func(ctx context.Context, id string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExists_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // IsApplicationExistsByName provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) IsApplicationExistsByName(name string) (bool, error) {
-	ret := _mock.Called(name)
+func (_mock *applicationStoreInterfaceMock) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsApplicationExistsByName")
@@ -553,16 +611,16 @@ func (_mock *applicationStoreInterfaceMock) IsApplicationExistsByName(name strin
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -575,19 +633,25 @@ type applicationStoreInterfaceMock_IsApplicationExistsByName_Call struct {
 }
 
 // IsApplicationExistsByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExistsByName(name interface{}) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
-	return &applicationStoreInterfaceMock_IsApplicationExistsByName_Call{Call: _e.mock.On("IsApplicationExistsByName", name)}
+func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExistsByName(ctx interface{}, name interface{}) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+	return &applicationStoreInterfaceMock_IsApplicationExistsByName_Call{Call: _e.mock.On("IsApplicationExistsByName", ctx, name)}
 }
 
-func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Run(run func(name string)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Run(run func(ctx context.Context, name string)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -598,22 +662,22 @@ func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Return(b
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) RunAndReturn(run func(name string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) UpdateApplication(existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error {
-	ret := _mock.Called(existingApp, updatedApp)
+func (_mock *applicationStoreInterfaceMock) UpdateApplication(ctx context.Context, existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error {
+	ret := _mock.Called(ctx, existingApp, updatedApp)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateApplication")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*model.ApplicationProcessedDTO, *model.ApplicationProcessedDTO) error); ok {
-		r0 = returnFunc(existingApp, updatedApp)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.ApplicationProcessedDTO, *model.ApplicationProcessedDTO) error); ok {
+		r0 = returnFunc(ctx, existingApp, updatedApp)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -626,25 +690,31 @@ type applicationStoreInterfaceMock_UpdateApplication_Call struct {
 }
 
 // UpdateApplication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - existingApp *model.ApplicationProcessedDTO
 //   - updatedApp *model.ApplicationProcessedDTO
-func (_e *applicationStoreInterfaceMock_Expecter) UpdateApplication(existingApp interface{}, updatedApp interface{}) *applicationStoreInterfaceMock_UpdateApplication_Call {
-	return &applicationStoreInterfaceMock_UpdateApplication_Call{Call: _e.mock.On("UpdateApplication", existingApp, updatedApp)}
+func (_e *applicationStoreInterfaceMock_Expecter) UpdateApplication(ctx interface{}, existingApp interface{}, updatedApp interface{}) *applicationStoreInterfaceMock_UpdateApplication_Call {
+	return &applicationStoreInterfaceMock_UpdateApplication_Call{Call: _e.mock.On("UpdateApplication", ctx, existingApp, updatedApp)}
 }
 
-func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) Run(run func(existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_UpdateApplication_Call {
+func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) Run(run func(ctx context.Context, existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_UpdateApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *model.ApplicationProcessedDTO
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*model.ApplicationProcessedDTO)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 *model.ApplicationProcessedDTO
 		if args[1] != nil {
 			arg1 = args[1].(*model.ApplicationProcessedDTO)
 		}
+		var arg2 *model.ApplicationProcessedDTO
+		if args[2] != nil {
+			arg2 = args[2].(*model.ApplicationProcessedDTO)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -655,7 +725,7 @@ func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) Return(err error
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) RunAndReturn(run func(existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_UpdateApplication_Call {
+func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) RunAndReturn(run func(ctx context.Context, existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_UpdateApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }
