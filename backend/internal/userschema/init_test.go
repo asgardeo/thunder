@@ -905,7 +905,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateUserSchemaDefinition(tc.schema)
+			_, err := validateUserSchemaDefinition(tc.schema)
 
 			if tc.shouldBeValid {
 				assert.Nil(t, err, "Expected schema to be valid but got error: %v", err)
@@ -1074,7 +1074,7 @@ this is not valid yaml:
 				assert.NotNil(t, schemaDTO)
 
 				// Step 2: Validate schema (as done in Initialize before OU check)
-				validationErr := validateUserSchemaDefinition(*schemaDTO)
+				_, validationErr := validateUserSchemaDefinition(*schemaDTO)
 
 				if tc.expectValidOK {
 					assert.Nil(t, validationErr, "Expected validation to succeed")

@@ -182,3 +182,67 @@ func (s *SchemaValidateTestSuite) TestValidNestedObjectAttributes_Pass() {
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
+
+type HasAttributeTestSuite struct {
+	suite.Suite
+}
+
+func TestHasAttributeTestSuite(t *testing.T) {
+	suite.Run(t, new(HasAttributeTestSuite))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_StringAttribute() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"email": {"type": "string"}
+	}`))
+	s.Require().NoError(err)
+	s.Require().True(schema.HasAttribute("email"))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_NumberAttribute() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"age": {"type": "number"}
+	}`))
+	s.Require().NoError(err)
+	s.Require().True(schema.HasAttribute("age"))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_BooleanAttribute() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"active": {"type": "boolean"}
+	}`))
+	s.Require().NoError(err)
+	s.Require().True(schema.HasAttribute("active"))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_ObjectAttribute() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"address": {"type": "object", "properties": {"city": {"type": "string"}}}
+	}`))
+	s.Require().NoError(err)
+	s.Require().True(schema.HasAttribute("address"))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_ArrayAttribute() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"tags": {"type": "array", "items": {"type": "string"}}
+	}`))
+	s.Require().NoError(err)
+	s.Require().True(schema.HasAttribute("tags"))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_NonExistent() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"email": {"type": "string"}
+	}`))
+	s.Require().NoError(err)
+	s.Require().False(schema.HasAttribute("username"))
+}
+
+func (s *HasAttributeTestSuite) TestHasAttribute_EmptyName() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"email": {"type": "string"}
+	}`))
+	s.Require().NoError(err)
+	s.Require().False(schema.HasAttribute(""))
+}

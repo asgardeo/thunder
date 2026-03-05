@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/userschema/model"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 )
@@ -406,7 +407,7 @@ func TestValidateUserSchemaDefinitionSuccess(t *testing.T) {
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.Nil(t, err)
 }
@@ -421,7 +422,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenNameIsEmpty(t *testing.T) {
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -437,7 +438,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOrganizationUnitIDIsEmpty(t
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -453,7 +454,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOrganizationUnitIDIsNotUUID
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -469,7 +470,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T)
 		Schema:             json.RawMessage{},
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -485,7 +486,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsNil(t *testing.T) {
 		Schema:             nil,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -502,7 +503,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaCompilationFails(t *t
 		Schema:             invalidSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -519,7 +520,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForInvalidJSON(t *testing.T) {
 		Schema:             invalidSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -535,7 +536,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForEmptySchemaObject(t *testing
 		Schema:             emptySchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -578,7 +579,7 @@ func TestValidateUserSchemaDefinitionWithComplexSchema(t *testing.T) {
 		Schema:             complexSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.Nil(t, err)
 }
@@ -593,7 +594,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForMissingTypeField(t *testing.
 		Schema:             schemaWithoutType,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -610,7 +611,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForInvalidType(t *testing.T) {
 		Schema:             schemaWithInvalidType,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	_, err := validateUserSchemaDefinition(schema)
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -653,7 +654,7 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateUserSchemaDefinition(tc.schema)
+			_, err := validateUserSchemaDefinition(tc.schema)
 
 			require.NotNil(t, err)
 			require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
@@ -778,4 +779,116 @@ func (s *GetCredentialAttributesTestSuite) TestStoreError_ReturnsInternalError()
 	s.Require().Nil(fields)
 	s.Require().NotNil(svcErr)
 	s.Require().Equal(ErrorInternalServerError, *svcErr)
+}
+
+func TestValidateDisplayAttribute_NilSystemAttributes(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{"email":{"type":"string"}}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, nil)
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_EmptyDisplay(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{"email":{"type":"string"}}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: ""})
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidStringAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"password":{"type":"string","credential":true}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: "email"})
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidNumberAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"age":{"type":"number"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: "age"})
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidBooleanAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"active":{"type":"boolean"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: "active"})
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidObjectAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: "address"})
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidCredentialAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"password":{"type":"string","credential":true}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: "password"})
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_NonExistentAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, &SystemAttributes{Display: "username"})
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestCreateUserSchemaReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	storeMock := newUserSchemaStoreInterfaceMock(t)
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := CreateUserSchemaRequest{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		SystemAttributes:   &SystemAttributes{Display: "nonexistent"},
+	}
+
+	createdSchema, svcErr := service.CreateUserSchema(context.Background(), request)
+
+	require.Nil(t, createdSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
 }

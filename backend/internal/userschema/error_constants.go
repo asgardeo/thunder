@@ -92,6 +92,14 @@ var (
 			"stores exceeds the maximum limit. Please refine your query to return " +
 			"fewer results.",
 	}
+	// ErrorInvalidDisplayAttribute is the error returned when the display attribute
+	// does not reference a valid top-level attribute in the schema.
+	ErrorInvalidDisplayAttribute = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1010",
+		Error:            "Invalid display attribute",
+		ErrorDescription: "Display attribute must reference a top-level attribute defined in the schema",
+	}
 )
 
 // Server errors for user schema management operations.

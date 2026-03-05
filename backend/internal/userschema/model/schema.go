@@ -52,6 +52,12 @@ type Schema struct {
 	properties map[string]property
 }
 
+// HasAttribute checks if a top-level attribute with the given name exists in the schema.
+func (cs *Schema) HasAttribute(name string) bool {
+	_, exists := cs.properties[name]
+	return exists
+}
+
 // GetCredentialAttributes returns the names of top-level properties marked as credentials.
 func (cs *Schema) GetCredentialAttributes() []string {
 	var fields []string

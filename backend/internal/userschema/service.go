@@ -186,9 +186,15 @@ func (us *userSchemaService) CreateUserSchema(
 		OrganizationUnitID: request.OrganizationUnitID,
 		Schema:             request.Schema,
 	}
-	if validationErr := validateUserSchemaDefinition(schemaToValidate); validationErr != nil {
+	compiledSchema, validationErr := validateUserSchemaDefinition(schemaToValidate)
+	if validationErr != nil {
 		logger.Debug("User schema validation failed", log.String("name", request.Name))
 		return nil, validationErr
+	}
+
+	// Validate display attribute references a valid schema attribute
+	if svcErr := validateDisplayAttribute(compiledSchema, request.SystemAttributes); svcErr != nil {
+		return nil, svcErr
 	}
 
 	// Ensure organization unit exists
@@ -316,9 +322,15 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		OrganizationUnitID: request.OrganizationUnitID,
 		Schema:             request.Schema,
 	}
-	if validationErr := validateUserSchemaDefinition(schemaToValidate); validationErr != nil {
+	compiledSchema, validationErr := validateUserSchemaDefinition(schemaToValidate)
+	if validationErr != nil {
 		logger.Debug("User schema validation failed", log.String("id", schemaID))
 		return nil, validationErr
+	}
+
+	// Validate display attribute references a valid schema attribute
+	if svcErr := validateDisplayAttribute(compiledSchema, request.SystemAttributes); svcErr != nil {
+		return nil, svcErr
 	}
 
 	// Ensure organization unit exists
@@ -655,35 +667,51 @@ func logAndReturnServerError(
 
 // validateUserSchemaDefinition validates the user schema definition without checking OU existence.
 // This is used during initialization to validate file-based configurations.
-func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError {
+func validateUserSchemaDefinition(schema UserSchema) (*model.Schema, *serviceerror.ServiceError) {
 	logger := log.GetLogger()
 
 	if schema.Name == "" {
 		logger.Debug("User schema validation failed: name is empty")
-		return invalidSchemaRequestError("user schema name must not be empty")
+		return nil, invalidSchemaRequestError("user schema name must not be empty")
 	}
 
 	if schema.OrganizationUnitID == "" {
 		logger.Debug("User schema validation failed: organization unit ID is empty")
-		return invalidSchemaRequestError("organization unit id must not be empty")
+		return nil, invalidSchemaRequestError("organization unit id must not be empty")
 	}
 
 	if !utils.IsValidUUID(schema.OrganizationUnitID) {
 		logger.Debug("User schema validation failed: invalid organization unit ID format",
 			log.String("ouId", schema.OrganizationUnitID))
-		return invalidSchemaRequestError("organization unit id is not a valid UUID")
+		return nil, invalidSchemaRequestError("organization unit id is not a valid UUID")
 	}
 
 	if len(schema.Schema) == 0 {
 		logger.Debug("User schema validation failed: schema definition is empty")
-		return invalidSchemaRequestError("schema definition must not be empty")
+		return nil, invalidSchemaRequestError("schema definition must not be empty")
 	}
 
-	_, err := model.CompileUserSchema(schema.Schema)
+	compiled, err := model.CompileUserSchema(schema.Schema)
 	if err != nil {
 		logger.Debug("User schema validation failed: schema compilation error",
 			log.Error(err))
-		return invalidSchemaRequestError(err.Error())
+		return nil, invalidSchemaRequestError(err.Error())
+	}
+
+	return compiled, nil
+}
+
+// validateDisplayAttribute validates that the display attribute, if provided,
+// references an existing top-level attribute in the schema.
+func validateDisplayAttribute(
+	compiledSchema *model.Schema, systemAttrs *SystemAttributes,
+) *serviceerror.ServiceError {
+	if systemAttrs == nil || systemAttrs.Display == "" {
+		return nil
+	}
+
+	if !compiledSchema.HasAttribute(systemAttrs.Display) {
+		return &ErrorInvalidDisplayAttribute
 	}
 
 	return nil
