@@ -17,10 +17,13 @@
  */
 
 import {Avatar, Box, Card, CardContent, IconButton, Stack, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import * as Icons from '@wso2/oxygen-ui-icons-react';
 import {PlusIcon} from '@wso2/oxygen-ui-icons-react';
-import React, {type HTMLAttributes, type ReactElement} from 'react';
+import React, {type ComponentType, type HTMLAttributes, type ReactElement} from 'react';
 import type {Resource} from '../../models/resources';
 import resolveStaticResourcePath from '../../utils/resolveStaticResourcePath';
+
+const isImagePath = (value: string): boolean => value.includes('/') || value.includes(':');
 
 /**
  * Props interface of {@link ResourcePanelItem}
@@ -88,19 +91,38 @@ function ResourcePanelItem({
         >
           <Box display="flex" justifyContent="space-between" alignItems="center" gap={1}>
             <Stack direction="row" spacing={1.5} alignItems="center" flex={1}>
-              <Avatar
-                src={resource?.display?.image ? resolveStaticResourcePath(resource.display.image) : undefined}
-                variant="square"
-                sx={{
-                  height: 20,
-                  width: 20,
-                  backgroundColor: 'transparent !important',
-                  color: 'text.primary',
-                  '& .MuiAvatar-img': {
-                    filter: effectiveMode === 'dark' ? 'brightness(0.9) invert(1)' : 'none',
-                  },
-                }}
-              />
+              {resource?.display?.image && isImagePath(resource.display.image) ? (
+                <Avatar
+                  src={resolveStaticResourcePath(resource.display.image)}
+                  variant="square"
+                  sx={{
+                    height: 20,
+                    width: 20,
+                    backgroundColor: 'transparent !important',
+                    color: 'text.primary',
+                    '& .MuiAvatar-img': {
+                      filter: effectiveMode === 'dark' ? 'brightness(0.9) invert(1)' : 'none',
+                    },
+                  }}
+                />
+              ) : resource?.display?.image ? (
+                (() => {
+                  const IconComponent = Icons[resource.display.image as keyof typeof Icons] as ComponentType<{
+                    size?: number;
+                    color?: string;
+                  }>;
+                  return IconComponent ? (
+                    <Box
+                      display="inline-flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      sx={{color: 'text.primary', flexShrink: 0}}
+                    >
+                      <IconComponent size={20} />
+                    </Box>
+                  ) : null;
+                })()
+              ) : null}
               <Stack direction="column" spacing={0.25} flex={1}>
                 <Typography variant="body2" fontWeight={500} color="text.primary">
                   {resource?.display?.label}

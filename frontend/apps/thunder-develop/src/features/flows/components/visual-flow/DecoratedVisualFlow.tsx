@@ -47,7 +47,7 @@ import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
 import Droppable from '../dnd/Droppable';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
 import generateResourceId from '../../utils/generateResourceId';
-import {BlockTypes, type Element} from '../../models/elements';
+import {BlockTypes, ElementTypes, type Element} from '../../models/elements';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
 import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
 import FormRequiresViewDialog from './FormRequiresViewDialog';
@@ -431,22 +431,29 @@ function DecoratedVisualFlow({
         return;
       }
 
+      // Handle dropping on Stack
+      if (typeof target?.id === 'string' && target.id.startsWith(VisualFlowConstants.FLOW_BUILDER_STACK_ID)) {
+        addToForm(event, sourceData, targetData);
+        return;
+      }
+
       // Handle dropping on an existing element (at specific position)
       if (targetData.isReordering && targetData.stepId && typeof target?.id === 'string') {
         // Dropping on an existing sortable element - insert at that position
         const targetElementId = target.id;
 
-        // Check if the target element is inside a form by searching through all forms
+        // Check if the target element is inside a form or stack
         const targetNode = getNodes().find((n) => n.id === targetData.stepId);
         const nodeData = targetNode?.data as StepData | undefined;
-        const parentForm = nodeData?.components?.find(
+        const parentContainer = nodeData?.components?.find(
           (c: Element) =>
-            c.type === BlockTypes.Form && c.components?.some((child: Element) => child.id === targetElementId),
+            (c.type === BlockTypes.Form || c.type === ElementTypes.Stack) &&
+            c.components?.some((child: Element) => child.id === targetElementId),
         );
 
-        if (parentForm) {
-          // Phase 1.6: Target element is inside a form, insert at that position within the form
-          addToFormAtIndex(sourceData, targetData.stepId, parentForm.id, targetElementId);
+        if (parentContainer) {
+          // Target element is inside a form or stack, insert at that position within it
+          addToFormAtIndex(sourceData, targetData.stepId, parentContainer.id, targetElementId);
         } else {
           // Phase 1.5: Target is a top-level element in the view, add to view at index
           addToViewAtIndex(sourceData, targetData.stepId, targetElementId);

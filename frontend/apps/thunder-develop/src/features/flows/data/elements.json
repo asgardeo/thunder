@@ -378,5 +378,33 @@
     },
     "src": "",
     "alt": ""
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "BLOCK",
+    "type": "STACK",
+    "display": {
+      "label": "Stack",
+      "image": "StretchHorizontal",
+      "showOnResourcePanel": true
+    },
+    "items": 1,
+    "direction": "row",
+    "gap": 2,
+    "align": "center",
+    "justify": "center"
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "ICON",
+    "display": {
+      "label": "Icon",
+      "image": "Star",
+      "showOnResourcePanel": true
+    },
+    "name": "User",
+    "size": 24,
+    "color": "currentColor"
   }
 ]

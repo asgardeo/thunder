@@ -57,6 +57,18 @@ export interface ReorderableComponentPropsInterface
    * @defaultValue undefined
    */
   onAddElementToForm?: (element: Resource, formId: string) => void;
+  /**
+   * Additional props to be passed to the Box component.
+   */
+  slotProps?: {
+    ContentContainer?: {
+      sx?: BoxProps['sx'];
+    };
+  };
+  /**
+   * Additional props to be passed to the Box component.
+   */
+  [key: string]: unknown;
 }
 
 /**
@@ -72,6 +84,7 @@ function ReorderableElement({
   className,
   availableElements = undefined,
   onAddElementToForm = undefined,
+  slotProps = {},
   ...rest
 }: ReorderableComponentPropsInterface): ReactElement {
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -226,7 +239,11 @@ function ReorderableElement({
             </Handle>
           </Box>
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-          <div className="flow-builder-step-content-form-field-content" onClick={handlePropertyPanelOpen}>
+          <Box
+            className="flow-builder-step-content-form-field-content"
+            onClick={handlePropertyPanelOpen}
+            sx={{...slotProps?.ContentContainer?.sx}}
+          >
             <ElementFactory
               stepId={stepId ?? ''}
               resource={element}
@@ -234,7 +251,7 @@ function ReorderableElement({
               availableElements={availableElements}
               onAddElementToForm={onAddElementToForm}
             />
-          </div>
+          </Box>
         </Box>
       </ValidationErrorBoundary>
 
