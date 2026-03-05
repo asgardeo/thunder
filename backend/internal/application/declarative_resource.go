@@ -67,7 +67,7 @@ func (e *applicationExporter) GetParameterizerType() string {
 // GetAllResourceIDs retrieves all application IDs.
 // In composite mode, this excludes declarative (YAML-based) applications.
 func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
-	apps, err := e.service.GetApplicationList()
+	apps, err := e.service.GetApplicationList(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (e *applicationExporter) GetAllResourceIDs(ctx context.Context) ([]string, 
 func (e *applicationExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
-	app, err := e.service.GetApplication(id)
+	app, err := e.service.GetApplication(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -168,7 +168,7 @@ func parseAndValidateApplicationWrapper(appService ApplicationServiceInterface) 
 		}
 
 		// Validate and transform the application
-		validatedApp, _, svcErr := appService.ValidateApplication(appDTO)
+		validatedApp, _, svcErr := appService.ValidateApplication(context.Background(), appDTO)
 		if svcErr != nil {
 			return nil, fmt.Errorf("error validating application '%s': %v", appDTO.Name, svcErr)
 		}
@@ -251,7 +251,7 @@ func validateApplicationWrapper(
 	}
 
 	// Check for duplicate ID in the file store
-	exists, err := fileStore.IsApplicationExists(app.ID)
+	exists, err := fileStore.IsApplicationExists(context.TODO(), app.ID)
 	if err != nil {
 		return fmt.Errorf("failed to check application existence: %w", err)
 	}
@@ -262,7 +262,7 @@ func validateApplicationWrapper(
 
 	// COMPOSITE MODE: Check for duplicate ID in the database store
 	if dbStore != nil {
-		exists, err := dbStore.IsApplicationExists(app.ID)
+		exists, err := dbStore.IsApplicationExists(context.TODO(), app.ID)
 		if err != nil {
 			return fmt.Errorf("failed to check application existence: %w", err)
 		}

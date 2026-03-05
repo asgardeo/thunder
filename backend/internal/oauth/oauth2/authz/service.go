@@ -20,6 +20,7 @@
 package authz
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strings"
@@ -139,7 +140,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage)
 	}
 
 	// Retrieve the OAuth application based on the client ID.
-	app, svcErr := as.appService.GetOAuthApplication(clientID)
+	app, svcErr := as.appService.GetOAuthApplication(context.TODO(), clientID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
 			as.logger.Error("Failed to retrieve OAuth application", log.String("error", svcErr.Error))

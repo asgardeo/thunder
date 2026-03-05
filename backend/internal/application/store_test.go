@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1930,7 +1932,7 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 // TestApplicationStore_IsApplicationDeclarative tests checking if an application is declarative.
 func (suite *ApplicationStoreTestSuite) TestApplicationStore_IsApplicationDeclarative() {
 	suite.Run("returns false for database application", func() {
-		result := suite.store.IsApplicationDeclarative("any-app-id")
+		result := suite.store.IsApplicationDeclarative(context.Background(), "any-app-id")
 		suite.False(result)
 	})
 }
@@ -1953,7 +1955,8 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			queryConstant: queryCheckApplicationExistsByID,
 			setupMock: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.On("Query", queryCheckApplicationExistsByID, "existing-app", testServerID).
+				suite.mockDBClient.On("QueryContext", mock.Anything, queryCheckApplicationExistsByID,
+					"existing-app", testServerID).
 					Return([]map[string]interface{}{
 						{
 							"count": int64(1),
@@ -1969,7 +1972,8 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			queryConstant: queryCheckApplicationExistsByID,
 			setupMock: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.On("Query", queryCheckApplicationExistsByID, "non-existent-app", testServerID).
+				suite.mockDBClient.On("QueryContext", mock.Anything, queryCheckApplicationExistsByID,
+					"non-existent-app", testServerID).
 					Return([]map[string]interface{}{
 						{
 							"count": int64(0),
@@ -1985,7 +1989,8 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			queryConstant: queryCheckApplicationExistsByID,
 			setupMock: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.On("Query", queryCheckApplicationExistsByID, "test-app", testServerID).
+				suite.mockDBClient.On("QueryContext", mock.Anything, queryCheckApplicationExistsByID,
+					"test-app", testServerID).
 					Return(nil, errors.New("database connection error")).Once()
 			},
 			expectedExists: false,
@@ -2009,7 +2014,8 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			queryConstant: queryCheckApplicationExistsByName,
 			setupMock: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.On("Query", queryCheckApplicationExistsByName, "Existing App", testServerID).
+				suite.mockDBClient.On("QueryContext", mock.Anything, queryCheckApplicationExistsByName,
+					"Existing App", testServerID).
 					Return([]map[string]interface{}{
 						{
 							"count": int64(1),
@@ -2025,7 +2031,8 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			queryConstant: queryCheckApplicationExistsByName,
 			setupMock: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.On("Query", queryCheckApplicationExistsByName, "Non-Existent App", testServerID).
+				suite.mockDBClient.On("QueryContext", mock.Anything, queryCheckApplicationExistsByName,
+					"Non-Existent App", testServerID).
 					Return([]map[string]interface{}{
 						{
 							"count": int64(0),
@@ -2041,7 +2048,8 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			queryConstant: queryCheckApplicationExistsByName,
 			setupMock: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-				suite.mockDBClient.On("Query", queryCheckApplicationExistsByName, "Test App", testServerID).
+				suite.mockDBClient.On("QueryContext", mock.Anything, queryCheckApplicationExistsByName,
+					"Test App", testServerID).
 					Return(nil, errors.New("database timeout error")).Once()
 			},
 			expectedExists: false,
@@ -2067,9 +2075,9 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 			var exists bool
 			var err error
 			if tc.checkByID {
-				exists, err = suite.store.IsApplicationExists(tc.identifier)
+				exists, err = suite.store.IsApplicationExists(context.Background(), tc.identifier)
 			} else {
-				exists, err = suite.store.IsApplicationExistsByName(tc.identifier)
+				exists, err = suite.store.IsApplicationExistsByName(context.Background(), tc.identifier)
 			}
 
 			suite.Equal(tc.expectedExists, exists)
@@ -2087,10 +2095,11 @@ func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
 func (suite *ApplicationStoreTestSuite) TestDeleteApplication() {
 	suite.Run("successfully deletes application", func() {
 		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-		suite.mockDBClient.On("Execute", queryDeleteApplicationByAppID, "app-to-delete", testServerID).
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteApplicationByAppID,
+			"app-to-delete", testServerID).
 			Return(int64(1), nil).Once()
 
-		err := suite.store.DeleteApplication("app-to-delete")
+		err := suite.store.DeleteApplication(context.Background(), "app-to-delete")
 
 		suite.NoError(err)
 	})
@@ -2099,7 +2108,7 @@ func (suite *ApplicationStoreTestSuite) TestDeleteApplication() {
 		suite.mockDBProvider.On("GetConfigDBClient").
 			Return(nil, errors.New("db provider unavailable")).Once()
 
-		err := suite.store.DeleteApplication("app-to-delete")
+		err := suite.store.DeleteApplication(context.Background(), "app-to-delete")
 
 		suite.Error(err)
 		suite.Contains(err.Error(), "failed to get database client")
@@ -2107,10 +2116,11 @@ func (suite *ApplicationStoreTestSuite) TestDeleteApplication() {
 
 	suite.Run("returns error when execute query fails", func() {
 		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
-		suite.mockDBClient.On("Execute", queryDeleteApplicationByAppID, "app-to-delete", testServerID).
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteApplicationByAppID,
+			"app-to-delete", testServerID).
 			Return(int64(0), errors.New("database delete error")).Once()
 
-		err := suite.store.DeleteApplication("app-to-delete")
+		err := suite.store.DeleteApplication(context.Background(), "app-to-delete")
 
 		suite.Error(err)
 		suite.Contains(err.Error(), "failed to execute query")

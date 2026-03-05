@@ -148,7 +148,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Mi
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InvalidClient() {
 	notFound := &serviceerror.ServiceError{Type: serviceerror.ClientErrorType, Error: "Application not found"}
-	suite.mockAppService.EXPECT().GetOAuthApplication("invalid-client").Return(nil, notFound)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "invalid-client").Return(nil, notFound)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -169,7 +169,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InvalidClaimsParameter() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -190,7 +190,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_ValidationError_NoClientRedirect() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 
 	// Validator rejects; sendErrorToApp=false → error goes to error page, not client.
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
@@ -209,7 +209,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Va
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_ValidationError_SendToClient() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 
 	// sendErrorToApp=true + redirect_uri present → error forwarded to client.
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
@@ -229,7 +229,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Va
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_FlowInitError() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("", &serviceerror.InternalServerError)
@@ -244,7 +244,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Fl
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Success() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
@@ -263,7 +263,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Su
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InsecureRedirectURI() {
 	app := suite.testApp()
 	app.RedirectURIs = []string{"http://client.example.com/callback"}
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
@@ -289,7 +289,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_EmptyRedirectURIUsesAppDefault() {
 	app := suite.testApp() // RedirectURIs: ["https://client.example.com/callback"]
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
@@ -314,7 +314,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Em
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_WithClaimsLocales() {
 	app := suite.testApp()
-	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)

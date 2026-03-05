@@ -74,8 +74,22 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	mux := http.NewServeMux()
@@ -106,8 +120,22 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	mux := http.NewServeMux()
@@ -500,11 +528,17 @@ func TestInitialize_Standalone(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 	}
 
 	// Reset and initialize with test config
 	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
 	defer config.ResetThunderRuntime() // Clean up after test

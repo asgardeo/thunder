@@ -274,7 +274,7 @@ func (s *flowExecService) setApplicationToContext(ctx *EngineContext,
 		return nil
 	}
 
-	app, err := s.appService.GetApplication(ctx.AppID)
+	app, err := s.appService.GetApplication(context.TODO(), ctx.AppID)
 	if err != nil {
 		if err.Code == application.ErrorApplicationNotFound.Code {
 			return &ErrorInvalidAppID
@@ -361,7 +361,7 @@ func (s *flowExecService) getFlowGraph(appID string, flowType common.FlowType,
 		return "", &ErrorInvalidAppID
 	}
 
-	app, err := s.appService.GetApplication(appID)
+	app, err := s.appService.GetApplication(context.TODO(), appID)
 	if err != nil {
 		if err.Code == application.ErrorApplicationNotFound.Code {
 			return "", &ErrorInvalidAppID

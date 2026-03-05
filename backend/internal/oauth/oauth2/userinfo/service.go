@@ -225,7 +225,7 @@ func (s *userInfoService) getOAuthApp(claims map[string]interface{}) *appmodel.O
 		return nil
 	}
 
-	app, err := s.applicationService.GetOAuthApplication(clientID)
+	app, err := s.applicationService.GetOAuthApplication(context.TODO(), clientID)
 	if err != nil || app == nil {
 		return nil
 	}

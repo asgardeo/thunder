@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -91,12 +93,12 @@ func (suite *FileBasedStoreTestSuite) createTestApplication(id, name string) *mo
 func (suite *FileBasedStoreTestSuite) TestCreateApplication_Success() {
 	app := suite.createTestApplication("app1", "Test App 1")
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 
 	suite.NoError(err)
 
 	// Verify the application was stored by retrieving it
-	storedApp, err := suite.store.GetApplicationByID(app.ID)
+	storedApp, err := suite.store.GetApplicationByID(context.Background(), app.ID)
 	suite.NoError(err)
 	suite.NotNil(storedApp)
 	suite.Equal(app.ID, storedApp.ID)
@@ -109,10 +111,10 @@ func (suite *FileBasedStoreTestSuite) TestCreateApplication_Success() {
 
 func (suite *FileBasedStoreTestSuite) TestGetApplicationByID_Success() {
 	app := suite.createTestApplication("app1", "Test App 1")
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetApplicationByID("app1")
+	result, err := suite.store.GetApplicationByID(context.Background(), "app1")
 
 	suite.NoError(err)
 	suite.NotNil(result)
@@ -121,7 +123,7 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationByID_Success() {
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetApplicationByID_NotFound() {
-	result, err := suite.store.GetApplicationByID("nonexistent")
+	result, err := suite.store.GetApplicationByID(context.Background(), "nonexistent")
 
 	suite.Error(err)
 	suite.Nil(result)
@@ -138,12 +140,12 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationByName_Success() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(context.Background(), *app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(context.Background(), *app2)
 	suite.NoError(err)
 
-	result, err := suite.store.GetApplicationByName("Test App 1")
+	result, err := suite.store.GetApplicationByName(context.Background(), "Test App 1")
 
 	suite.NoError(err)
 	suite.NotNil(result)
@@ -153,10 +155,10 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationByName_Success() {
 
 func (suite *FileBasedStoreTestSuite) TestGetApplicationByName_NotFound() {
 	app := suite.createTestApplication("app1", "Test App 1")
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetApplicationByName("Nonexistent App")
+	result, err := suite.store.GetApplicationByName(context.Background(), "Nonexistent App")
 
 	suite.Error(err)
 	suite.Nil(result)
@@ -174,12 +176,12 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationList_Success() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(context.Background(), *app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(context.Background(), *app2)
 	suite.NoError(err)
 
-	result, err := suite.store.GetApplicationList()
+	result, err := suite.store.GetApplicationList(context.Background())
 
 	suite.NoError(err)
 	suite.Len(result, 2)
@@ -199,7 +201,7 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationList_Success() {
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetApplicationList_EmptyList() {
-	result, err := suite.store.GetApplicationList()
+	result, err := suite.store.GetApplicationList(context.Background())
 
 	suite.NoError(err)
 	suite.Len(result, 0)
@@ -214,19 +216,19 @@ func (suite *FileBasedStoreTestSuite) TestGetTotalApplicationCount_Success() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(context.Background(), *app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(context.Background(), *app2)
 	suite.NoError(err)
 
-	count, err := suite.store.GetTotalApplicationCount()
+	count, err := suite.store.GetTotalApplicationCount(context.Background())
 
 	suite.NoError(err)
 	suite.Equal(2, count)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetTotalApplicationCount_Empty() {
-	count, err := suite.store.GetTotalApplicationCount()
+	count, err := suite.store.GetTotalApplicationCount(context.Background())
 
 	suite.NoError(err)
 	suite.Equal(0, count)
@@ -241,10 +243,10 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_Success() {
 	clientID := "client_app1"
 
 	// Store app
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetOAuthApplication(clientID)
+	result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
 
 	suite.NoError(err)
 	suite.NotNil(result)
@@ -256,10 +258,10 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NotFound() {
 	app := suite.createTestApplication("app1", "Test App 1")
 
 	// Store app with different client ID
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetOAuthApplication("nonexistent_client")
+	result, err := suite.store.GetOAuthApplication(context.Background(), "nonexistent_client")
 
 	suite.Error(err)
 	suite.Nil(result)
@@ -274,10 +276,10 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NoOAuthConfig() {
 		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{},
 	}
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetOAuthApplication("any_client")
+	result, err := suite.store.GetOAuthApplication(context.Background(), "any_client")
 
 	suite.Error(err)
 	suite.Nil(result)
@@ -289,13 +291,13 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_MultipleApps() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store both apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(context.Background(), *app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(context.Background(), *app2)
 	suite.NoError(err)
 
 	// Search for app2's client ID
-	result, err := suite.store.GetOAuthApplication("client_app2")
+	result, err := suite.store.GetOAuthApplication(context.Background(), "client_app2")
 
 	suite.NoError(err)
 	suite.NotNil(result)
@@ -317,10 +319,10 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NonOAuthInboundAut
 		},
 	}
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetOAuthApplication("any_client")
+	result, err := suite.store.GetOAuthApplication(context.Background(), "any_client")
 
 	suite.Error(err)
 	suite.Nil(result)
@@ -333,14 +335,14 @@ func (suite *FileBasedStoreTestSuite) TestUpdateApplication_NotSupported() {
 	app1 := suite.createTestApplication("app1", "Test App 1")
 	app2 := suite.createTestApplication("app1", "Updated App 1")
 
-	err := suite.store.UpdateApplication(app1, app2)
+	err := suite.store.UpdateApplication(context.Background(), app1, app2)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "UpdateApplication is not supported in file-based store")
 }
 
 func (suite *FileBasedStoreTestSuite) TestDeleteApplication_NotSupported() {
-	err := suite.store.DeleteApplication("app1")
+	err := suite.store.DeleteApplication(context.Background(), "app1")
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "DeleteApplication is not supported in file-based store")
@@ -363,10 +365,10 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NilOAuthConfig() {
 		},
 	}
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(context.Background(), *app)
 	suite.NoError(err)
 
-	result, err := suite.store.GetOAuthApplication("any_client")
+	result, err := suite.store.GetOAuthApplication(context.Background(), "any_client")
 
 	suite.Error(err)
 	suite.Nil(result)
@@ -388,23 +390,23 @@ func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationExists() {
 			ID:   "test-app-1",
 			Name: "Test Application",
 		}
-		err := suite.store.CreateApplication(app)
+		err := suite.store.CreateApplication(context.Background(), app)
 		suite.NoError(err)
 
 		// Check existence
-		exists, err := suite.store.IsApplicationExists("test-app-1")
+		exists, err := suite.store.IsApplicationExists(context.Background(), "test-app-1")
 		suite.NoError(err)
 		suite.True(exists)
 	})
 
 	suite.Run("returns false for non-existent application", func() {
-		exists, err := suite.store.IsApplicationExists("nonexistent")
+		exists, err := suite.store.IsApplicationExists(context.Background(), "nonexistent")
 		suite.NoError(err)
 		suite.False(exists)
 	})
 
 	suite.Run("handles application not found error", func() {
-		exists, err := suite.store.IsApplicationExists("nonexistent-app-xyz")
+		exists, err := suite.store.IsApplicationExists(context.Background(), "nonexistent-app-xyz")
 		suite.NoError(err)
 		suite.False(exists)
 	})
@@ -418,17 +420,17 @@ func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationExistsByNa
 			ID:   "test-app-1",
 			Name: "Unique App Name",
 		}
-		err := suite.store.CreateApplication(app)
+		err := suite.store.CreateApplication(context.Background(), app)
 		suite.NoError(err)
 
 		// Check existence by name
-		exists, err := suite.store.IsApplicationExistsByName("Unique App Name")
+		exists, err := suite.store.IsApplicationExistsByName(context.Background(), "Unique App Name")
 		suite.NoError(err)
 		suite.True(exists)
 	})
 
 	suite.Run("returns false for non-existent application name", func() {
-		exists, err := suite.store.IsApplicationExistsByName("Nonexistent Name")
+		exists, err := suite.store.IsApplicationExistsByName(context.Background(), "Nonexistent Name")
 		suite.NoError(err)
 		suite.False(exists)
 	})
@@ -439,16 +441,16 @@ func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationExistsByNa
 			ID:   "test-app-1",
 			Name: "TestApp",
 		}
-		err := suite.store.CreateApplication(app)
+		err := suite.store.CreateApplication(context.Background(), app)
 		suite.NoError(err)
 
 		// Check with different case
-		exists, err := suite.store.IsApplicationExistsByName("testapp")
+		exists, err := suite.store.IsApplicationExistsByName(context.Background(), "testapp")
 		suite.NoError(err)
 		suite.False(exists) // Should not match due to case sensitivity
 
 		// Check with correct case
-		exists, err = suite.store.IsApplicationExistsByName("TestApp")
+		exists, err = suite.store.IsApplicationExistsByName(context.Background(), "TestApp")
 		suite.NoError(err)
 		suite.True(exists)
 	})
@@ -462,16 +464,16 @@ func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationDeclarativ
 			ID:   "declarative-app-1",
 			Name: "Declarative App",
 		}
-		err := suite.store.CreateApplication(app)
+		err := suite.store.CreateApplication(context.Background(), app)
 		suite.NoError(err)
 
 		// Check if declarative
-		isDeclarative := suite.store.IsApplicationDeclarative("declarative-app-1")
+		isDeclarative := suite.store.IsApplicationDeclarative(context.Background(), "declarative-app-1")
 		suite.True(isDeclarative)
 	})
 
 	suite.Run("returns false for non-existent application", func() {
-		isDeclarative := suite.store.IsApplicationDeclarative("nonexistent")
+		isDeclarative := suite.store.IsApplicationDeclarative(context.Background(), "nonexistent")
 		suite.False(isDeclarative)
 	})
 
@@ -485,12 +487,12 @@ func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationDeclarativ
 		}
 
 		for _, app := range apps {
-			err := suite.store.CreateApplication(app)
+			err := suite.store.CreateApplication(context.Background(), app)
 			suite.NoError(err)
 		}
 
 		for _, app := range apps {
-			isDeclarative := suite.store.IsApplicationDeclarative(app.ID)
+			isDeclarative := suite.store.IsApplicationDeclarative(context.Background(), app.ID)
 			suite.True(isDeclarative, "Application %s should be marked as declarative", app.ID)
 		}
 	})
@@ -501,11 +503,11 @@ func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationDeclarativ
 			ID:   "existing-app",
 			Name: "Existing App",
 		}
-		err := suite.store.CreateApplication(app)
+		err := suite.store.CreateApplication(context.Background(), app)
 		suite.NoError(err)
 
 		// Non-existent app should return false
-		isDeclarative := suite.store.IsApplicationDeclarative("non-existent-app")
+		isDeclarative := suite.store.IsApplicationDeclarative(context.Background(), "non-existent-app")
 		suite.False(isDeclarative)
 	})
 }

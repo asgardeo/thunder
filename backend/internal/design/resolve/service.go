@@ -20,6 +20,8 @@
 package resolve
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/design/common"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
@@ -85,7 +87,7 @@ func (drs *designResolveService) ResolveDesign(
 		return nil, &serviceerror.InternalServerError
 	}
 
-	app, svcErr := drs.applicationService.GetApplication(id)
+	app, svcErr := drs.applicationService.GetApplication(context.TODO(), id)
 	if svcErr != nil {
 		// Convert application service errors to design resolve errors
 		if svcErr.Code == application.ErrorInvalidApplicationID.Code {

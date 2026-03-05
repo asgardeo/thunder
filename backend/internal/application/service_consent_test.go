@@ -20,17 +20,14 @@ package application
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 )
 
@@ -46,6 +43,7 @@ func TestApplicationServiceConsentTestSuite(t *testing.T) {
 func newTestApplicationServiceWithConsent(consentSvc consent.ConsentServiceInterface) *applicationService {
 	return &applicationService{
 		consentService: consentSvc,
+		transactioner:  &fakeTransactioner{},
 	}
 }
 
@@ -382,7 +380,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_NoAt
 	// No UserAttributes configured on the app
 	appDTO := &model.ApplicationProcessedDTO{ID: "app-1", Name: "Test App"}
 
-	result := svc.syncConsentPurposeOnCreate(appDTO)
+	result := svc.syncConsentPurposeOnCreate(context.Background(), appDTO)
 
 	s.Nil(result)
 }
@@ -407,7 +405,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_With
 	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
 		Return(&consent.ConsentPurpose{ID: "p1", Name: "Test App"}, nil)
 
-	result := svc.syncConsentPurposeOnCreate(appDTO)
+	result := svc.syncConsentPurposeOnCreate(context.Background(), appDTO)
 
 	s.Nil(result)
 }
@@ -425,7 +423,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_Crea
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.syncConsentPurposeOnCreate(appDTO)
+	result := svc.syncConsentPurposeOnCreate(context.Background(), appDTO)
 
 	s.NotNil(result)
 }
@@ -445,7 +443,7 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_Crea
 	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.syncConsentPurposeOnCreate(appDTO)
+	result := svc.syncConsentPurposeOnCreate(context.Background(), appDTO)
 
 	s.NotNil(result)
 }
@@ -462,7 +460,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_NoPurposes
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{}, nil)
 
-	result := svc.updateConsentPurpose(existingApp, updatedApp)
+	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
@@ -485,7 +483,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_NoPurposes
 	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
 		Return(&consent.ConsentPurpose{ID: "p1"}, nil)
 
-	result := svc.updateConsentPurpose(existingApp, updatedApp)
+	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
@@ -506,7 +504,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ExistingPu
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
 		Return((*serviceerror.I18nServiceError)(nil))
 
-	result := svc.updateConsentPurpose(existingApp, updatedApp)
+	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
@@ -533,7 +531,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ExistingPu
 	cMock.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "p1", mock.Anything).
 		Return(&consent.ConsentPurpose{ID: "p1", Name: "App Updated"}, nil)
 
-	result := svc.updateConsentPurpose(existingApp, updatedApp)
+	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
@@ -548,7 +546,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ListPurpos
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.updateConsentPurpose(existingApp, updatedApp)
+	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
 
 	s.NotNil(result)
 }
@@ -574,7 +572,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_UpdatePurp
 	cMock.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "p1", mock.Anything).
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.updateConsentPurpose(existingApp, updatedApp)
+	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
 
 	s.NotNil(result)
 }
@@ -588,7 +586,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_NoPurpose
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{}, nil)
 
-	result := svc.deleteConsentPurposes("app-1")
+	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
 	s.Nil(result)
 }
@@ -602,7 +600,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_Success()
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
 		Return((*serviceerror.I18nServiceError)(nil))
 
-	result := svc.deleteConsentPurposes("app-1")
+	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
 	s.Nil(result)
 }
@@ -616,7 +614,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_Associate
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
 		Return(&consent.ErrorDeletingConsentPurposeWithAssociatedRecords)
 
-	result := svc.deleteConsentPurposes("app-1")
+	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
 	// Should return nil — associated records error is treated as a warning, not a fatal error
 	s.Nil(result)
@@ -631,7 +629,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_OtherDele
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
 		Return(&serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.deleteConsentPurposes("app-1")
+	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
 	s.NotNil(result)
 }
@@ -643,95 +641,7 @@ func (s *ApplicationServiceConsentTestSuite) TestDeleteConsentPurposes_ListError
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.deleteConsentPurposes("app-1")
+	result := svc.deleteConsentPurposes(context.Background(), "app-1")
 
 	s.NotNil(result)
-}
-
-// newTestApplicationServiceWithConsentStoreAndCert creates a minimal applicationService
-// with consentService, appStore and certService set for testing syncConsentPurposeOnUpdate.
-func newTestApplicationServiceWithConsentStoreAndCert(
-	consentSvc consent.ConsentServiceInterface,
-	store applicationStoreInterface,
-	certSvc cert.CertificateServiceInterface,
-) *applicationService {
-	return &applicationService{
-		consentService: consentSvc,
-		appStore:       store,
-		certService:    certSvc,
-	}
-}
-
-// ----- syncConsentPurposeOnUpdate compensation paths -----
-
-// TestSyncConsentPurposeOnUpdate_ConsentFails_RevertStoreFails verifies that when the consent
-// sync fails and the compensating app-revert also fails, the original consent error is returned.
-func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_ConsentFails_RevertStoreFails() {
-	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
-	storeMock := newApplicationStoreInterfaceMock(s.T())
-	svc := newTestApplicationServiceWithConsentStoreAndCert(cMock, storeMock, nil)
-
-	existingApp := &model.ApplicationProcessedDTO{
-		ID:           "app-1",
-		Name:         "App",
-		LoginConsent: &model.LoginConsentConfig{Enabled: false},
-	}
-	updatedApp := &model.ApplicationProcessedDTO{
-		ID:           "app-1",
-		Name:         "App",
-		LoginConsent: &model.LoginConsentConfig{Enabled: false},
-	}
-
-	// deleteConsentPurposes fails → triggers compensation
-	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
-	// Compensation: app revert also fails (logged, not propagated)
-	storeMock.On("UpdateApplication", mock.Anything, mock.Anything).
-		Return(errors.New("revert store error"))
-
-	svcErr := svc.syncConsentPurposeOnUpdate("app-1", existingApp, updatedApp, nil, nil)
-
-	// Returns the original consent error even though the revert also failed
-	s.NotNil(svcErr)
-}
-
-// TestSyncConsentPurposeOnUpdate_ConsentFails_WithCert_CertRollbackFails verifies that when
-// the consent sync fails with an updatedCert present and cert rollback fails, the original
-// consent error is still returned (rollback failure is only logged).
-func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_ConsentFails_WithCert_CertRollbackFail() {
-	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
-	storeMock := newApplicationStoreInterfaceMock(s.T())
-	certMock := certmock.NewCertificateServiceInterfaceMock(s.T())
-	svc := newTestApplicationServiceWithConsentStoreAndCert(cMock, storeMock, certMock)
-
-	existingApp := &model.ApplicationProcessedDTO{
-		ID:           "app-1",
-		Name:         "App",
-		LoginConsent: &model.LoginConsentConfig{Enabled: false},
-	}
-	updatedApp := &model.ApplicationProcessedDTO{
-		ID:           "app-1",
-		Name:         "App",
-		LoginConsent: &model.LoginConsentConfig{Enabled: false},
-	}
-	// updatedCert != nil (existingCert == nil) → rollback calls DeleteCertificateByReference
-	updatedCert := &cert.Certificate{
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-
-	// deleteConsentPurposes fails → triggers compensation
-	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
-		Return(nil, &serviceerror.InternalServerErrorWithI18n)
-	// Compensation: revert app succeeds
-	storeMock.On("UpdateApplication", mock.Anything, mock.Anything).Return(nil)
-	// Cert rollback fails (existingCert=nil, updatedCert!=nil → DeleteCertificateByReference)
-	certMock.EXPECT().
-		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app-1").
-		Return(&serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
-
-	svcErr := svc.syncConsentPurposeOnUpdate("app-1", existingApp, updatedApp, nil, updatedCert)
-
-	// Returns the original consent error even though cert rollback also failed
-	s.NotNil(svcErr)
 }

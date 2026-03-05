@@ -239,7 +239,7 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 					return true
 				})).Return(nil)
 			} else {
-				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
 				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx EngineContext) bool {
 					// Verify flowID is generated
@@ -305,7 +305,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 					Error:            "Application not found",
 					ErrorDescription: "The requested application could not be found",
 				}
-				mockAppService.EXPECT().GetApplication(appID).Return(nil, appNotFoundErr)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appNotFoundErr)
 				// No other mocks needed as it fails early
 			},
 			expectedErrorCode: "FES-1003", // ErrorInvalidAppID (converted from application not found)
@@ -318,7 +318,8 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 				mockFlowMgtSvc *flowmgtmock.FlowMgtServiceInterfaceMock,
 			) {
 				// Mock application service to return a different client error
-				mockAppService.EXPECT().GetApplication(appID).Return(nil, &ErrorApplicationRetrievalClientError)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).
+					Return(nil, &ErrorApplicationRetrievalClientError)
 				// No other mocks needed as it fails early
 			},
 			expectedErrorCode: "FES-1007", // ErrorApplicationRetrievalClientError
@@ -335,7 +336,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 					ID:         "app-id-123",
 					AuthFlowID: "auth-graph-1",
 				}
-				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 				// Mock flow management service to return error (graph not found)
 				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(nil, &serviceerror.InternalServerError)
@@ -355,7 +356,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 					ID:         "app-id-123",
 					AuthFlowID: "auth-graph-1",
 				}
-				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 				// Mock flow management service to return valid graph
 				testGraph := flowFactory.CreateGraph("auth-graph-1", common.FlowTypeAuthentication)
