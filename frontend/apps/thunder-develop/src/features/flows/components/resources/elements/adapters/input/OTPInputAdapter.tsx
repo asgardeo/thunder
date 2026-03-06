@@ -23,7 +23,7 @@ import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFie
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import useResolveI18n from '@/features/flows/hooks/useResolveI18n';
 import {Box, FormHelperText, InputLabel, OutlinedInput} from '@wso2/oxygen-ui';
-import PlaceholderComponent from '../PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../../hint';
 
 /**
@@ -57,6 +57,7 @@ export interface OTPInputAdapterPropsInterface {
  */
 function OTPInputAdapter({resource}: OTPInputAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -85,7 +86,7 @@ function OTPInputAdapter({resource}: OTPInputAdapterPropsInterface): ReactElemen
   return (
     <div className={otpElement?.className}>
       <InputLabel htmlFor="otp-input-adapter" required={otpElement?.required} disableAnimation>
-        <PlaceholderComponent value={otpElement?.label ?? ''} />
+        {resolve(otpElement?.label, {t}) ?? otpElement?.label ?? ''}
       </InputLabel>
       <Box display="flex" flexDirection="row" gap={1}>
         {Array.from({length: 6}, (_, index) => (

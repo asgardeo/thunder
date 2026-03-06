@@ -16,27 +16,13 @@
  * under the License.
  */
 
-import {
-  Box,
-  Button,
-  Chip,
-  DataGrid,
-  IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  PageContent,
-  PageTitle,
-  Typography,
-} from '@wso2/oxygen-ui';
-import {EllipsisVertical, Pencil, Plus} from '@wso2/oxygen-ui-icons-react';
-import {getDisplayNameForCode, toFlagEmoji, useGetLanguages} from '@thunder/i18n';
-import {useCallback, useMemo, useState, type JSX} from 'react';
+import {Button, PageContent, PageTitle} from '@wso2/oxygen-ui';
+import {Plus} from '@wso2/oxygen-ui-icons-react';
+import {useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
-import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
+import TranslationsList from '../components/TranslationsList';
 
 /**
  * Page that lists all configured translation languages in a data grid.
@@ -64,23 +50,6 @@ export default function TranslationsListPage(): JSX.Element {
   const {t} = useTranslation('translations');
   const navigate = useNavigate();
   const logger = useLogger('TranslationsListPage');
-  const dataGridLocaleText = useDataGridLocaleText();
-
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
-
-  const {data, isLoading} = useGetLanguages();
-
-  const handleNavigate = useCallback(
-    (language: string) => {
-      (async (): Promise<void> => {
-        await navigate(`/translations/${language}`);
-      })().catch((_error: unknown) => {
-        logger.error('Failed to navigate to translation editor', {error: _error, language});
-      });
-    },
-    [navigate, logger],
-  );
 
   const handleAddLanguage = useCallback(() => {
     (async (): Promise<void> => {
@@ -89,72 +58,6 @@ export default function TranslationsListPage(): JSX.Element {
       logger.error('Failed to navigate to translation create page', {error: _error});
     });
   }, [navigate, logger]);
-
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, language: string) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-    setSelectedLanguage(language);
-  }, []);
-
-  const handleMenuClose = (): void => {
-    setAnchorEl(null);
-  };
-
-  const handleViewClick = (): void => {
-    handleMenuClose();
-    if (selectedLanguage) {
-      handleNavigate(selectedLanguage);
-    }
-  };
-
-  const rows = useMemo(() => (data?.languages ?? []).map((code) => ({id: code, code})), [data?.languages]);
-
-  const columns: DataGrid.GridColDef<{id: string; code: string}>[] = useMemo(
-    () => [
-      {
-        field: 'code',
-        headerName: t('listing.columns.language'),
-        flex: 1,
-        minWidth: 240,
-        renderCell: (params: DataGrid.GridRenderCellParams<{id: string; code: string}>): JSX.Element => (
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, height: '100%'}}>
-            <Typography sx={{fontSize: '1.4rem', lineHeight: 1, userSelect: 'none'}}>
-              {toFlagEmoji(params.row.code)}
-            </Typography>
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-start'}}>
-              <Typography variant="body2">{getDisplayNameForCode(params.row.code)}</Typography>
-              <Chip
-                label={params.row.code}
-                size="small"
-                variant="outlined"
-                sx={{fontSize: '0.7rem', fontFamily: 'monospace', height: 18}}
-              />
-            </Box>
-          </Box>
-        ),
-      },
-      {
-        field: 'actions',
-        headerName: t('listing.columns.actions'),
-        width: 80,
-        sortable: false,
-        filterable: false,
-        hideable: false,
-        renderCell: (params: DataGrid.GridRenderCellParams<{id: string; code: string}>): JSX.Element => (
-          <IconButton
-            size="small"
-            aria-label={t('common:actions.openActionsMenu', {ns: 'common'})}
-            onClick={(e) => {
-              handleMenuOpen(e, params.row.code);
-            }}
-          >
-            <EllipsisVertical size={16} />
-          </IconButton>
-        ),
-      },
-    ],
-    [handleMenuOpen, t],
-  );
 
   return (
     <PageContent>
@@ -168,40 +71,7 @@ export default function TranslationsListPage(): JSX.Element {
         </PageTitle.Actions>
       </PageTitle>
 
-      <Box sx={{height: 600, width: '100%'}}>
-        <DataGrid.DataGrid
-          rows={rows}
-          columns={columns}
-          loading={isLoading}
-          getRowId={(row): string => row.id}
-          onRowClick={(params) => {
-            handleNavigate((params.row as {id: string; code: string}).code);
-          }}
-          initialState={{
-            pagination: {
-              paginationModel: {pageSize: 10},
-            },
-          }}
-          pageSizeOptions={[5, 10, 25]}
-          rowHeight={56}
-          disableRowSelectionOnClick
-          localeText={dataGridLocaleText}
-          sx={{
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-            },
-          }}
-        />
-      </Box>
-
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleViewClick}>
-          <ListItemIcon>
-            <Pencil size={16} />
-          </ListItemIcon>
-          <ListItemText>{t('common:actions.edit', {ns: 'common'})}</ListItemText>
-        </MenuItem>
-      </Menu>
+      <TranslationsList />
     </PageContent>
   );
 }

@@ -16,23 +16,15 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {AsgardeoProvider} from '@asgardeo/react';
-import {useConfig} from '@thunder/shared-contexts';
-import {DesignProvider} from '@thunder/shared-design';
-import AppWithTheme from './AppWithTheme';
+import type {JSX, ComponentType} from 'react';
+import {AcrylicOrangeTheme, OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 
-export default function AppWithConfig(): JSX.Element {
-  const {getServerUrl} = useConfig();
-
-  return (
-    <AsgardeoProvider
-      baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
-      platform="AsgardeoV2"
-    >
-      <DesignProvider>
-        <AppWithTheme />
-      </DesignProvider>
-    </AsgardeoProvider>
-  );
+export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
+  return function WithTheme(props: P): JSX.Element {
+    return (
+      <OxygenUIThemeProvider theme={AcrylicOrangeTheme}>
+        <WrappedComponent {...props} />
+      </OxygenUIThemeProvider>
+    );
+  };
 }

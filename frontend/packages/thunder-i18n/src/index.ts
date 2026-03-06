@@ -82,11 +82,14 @@ export type {UseGetLanguagesOptions} from './api/useGetLanguages';
 export {default as useUpdateTranslation} from './api/useUpdateTranslation';
 export type {UseUpdateTranslationOptions} from './api/useUpdateTranslation';
 
+export {default as useDeleteTranslations} from './api/useDeleteTranslations';
+
 export {default as useLanguage} from './api/useLanguage';
 export type {UseLanguageReturn} from './api/useLanguage';
 
 // Export constants
 export {default as I18nQueryKeys} from './constants/i18n-query-keys';
+export {default as NamespaceConstants} from './constants/NamespaceConstants';
 
 // Export models
 export * from './models/requests';

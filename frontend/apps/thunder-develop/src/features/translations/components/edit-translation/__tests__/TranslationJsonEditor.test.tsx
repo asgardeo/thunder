@@ -37,6 +37,7 @@ vi.mock('@monaco-editor/react', () => ({
 }));
 
 const sampleValues = {'actions.save': 'Save', 'actions.cancel': 'Cancel'};
+const sampleServerKeys = Object.keys(sampleValues);
 
 // Helper: fire a change event on the editor and advance the 400ms debounce.
 // userEvent.type() deadlocks under vi.useFakeTimers() because its internal
@@ -61,7 +62,7 @@ describe('TranslationJsonEditor', () => {
 
   describe('Rendering', () => {
     it('renders the Monaco editor with the initial JSON value', () => {
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={vi.fn()} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
 
       const editor = screen.getByTestId('monaco-editor');
       const parsed = JSON.parse((editor as HTMLTextAreaElement).value) as Record<string, string>;
@@ -70,7 +71,7 @@ describe('TranslationJsonEditor', () => {
     });
 
     it('does not show the invalid-JSON warning on initial render', () => {
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={vi.fn()} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
 
       expect(screen.queryByText('editor.jsonInvalid')).not.toBeInTheDocument();
     });
@@ -80,7 +81,7 @@ describe('TranslationJsonEditor', () => {
     it('calls onChange with the parsed record after the debounce fires', () => {
       const onChange = vi.fn();
 
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={onChange} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={onChange} />);
 
       changeEditor(screen.getByTestId('monaco-editor'), JSON.stringify({'actions.save': 'Enregistrer'}));
 
@@ -88,7 +89,7 @@ describe('TranslationJsonEditor', () => {
     });
 
     it('does not show the invalid-JSON warning for valid JSON', () => {
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={vi.fn()} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
 
       changeEditor(screen.getByTestId('monaco-editor'), '{"key": "value"}');
 
@@ -98,7 +99,7 @@ describe('TranslationJsonEditor', () => {
 
   describe('Invalid JSON handling', () => {
     it('shows a warning alert when the editor contains invalid JSON', () => {
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={vi.fn()} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
 
       changeEditor(screen.getByTestId('monaco-editor'), '{not valid json');
 
@@ -108,7 +109,7 @@ describe('TranslationJsonEditor', () => {
     it('does not call onChange while JSON is invalid', () => {
       const onChange = vi.fn();
 
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={onChange} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={onChange} />);
 
       changeEditor(screen.getByTestId('monaco-editor'), '{invalid');
 
@@ -116,7 +117,7 @@ describe('TranslationJsonEditor', () => {
     });
 
     it('does not show the warning alert when the editor is empty', () => {
-      render(<TranslationJsonEditor values={sampleValues} colorMode="light" onChange={vi.fn()} />);
+      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
 
       changeEditor(screen.getByTestId('monaco-editor'), '');
 
@@ -127,11 +128,11 @@ describe('TranslationJsonEditor', () => {
   describe('External value updates', () => {
     it('syncs the editor when values prop changes to a new object reference', () => {
       const {rerender} = render(
-        <TranslationJsonEditor values={sampleValues} colorMode="light" onChange={vi.fn()} />,
+        <TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />,
       );
 
       const newValues = {'page.title': 'My Page'};
-      rerender(<TranslationJsonEditor values={newValues} colorMode="light" onChange={vi.fn()} />);
+      rerender(<TranslationJsonEditor values={newValues} serverKeys={Object.keys(newValues)} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
 
       const editor = screen.getByTestId('monaco-editor');
       const parsed = JSON.parse((editor as HTMLTextAreaElement).value) as Record<string, string>;

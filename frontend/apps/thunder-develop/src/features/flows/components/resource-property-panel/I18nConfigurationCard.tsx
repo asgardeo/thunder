@@ -41,6 +41,7 @@ import {PlusIcon, XIcon} from '@wso2/oxygen-ui-icons-react';
 import {useGetLanguages, useGetTranslations, useUpdateTranslation} from '@thunder/i18n';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import FlowI18nConstants from '../../constants/FlowI18nConstants';
 
 /**
  * Props interface for the language text field component.
@@ -64,16 +65,6 @@ export interface I18nConfigurationCardPropsInterface {
 }
 
 /**
- * Default namespace for new translations.
- */
-const DEFAULT_NAMESPACE = 'flowI18n';
-
-/**
- * Default language for new translations.
- */
-const DEFAULT_LANGUAGE = 'en-US';
-
-/**
  * I18n configuration floating card component.
  * Provides a dropdown to select i18n keys and displays the resolved translation value.
  * Also allows creating new translations via the i18n API.
@@ -95,8 +86,8 @@ function I18nConfigurationCard({
   });
   const {data: languagesData} = useGetLanguages();
   const {data: translationsData, isLoading: translationsLoading} = useGetTranslations({
-    language: DEFAULT_LANGUAGE,
-    namespace: DEFAULT_NAMESPACE,
+    language: FlowI18nConstants.DEFAULT_LANGUAGE,
+    namespace: FlowI18nConstants.FLOW_TRANSLATIONS_NAMESPACES.join(','),
     enabled: open,
   });
 
@@ -104,7 +95,7 @@ function I18nConfigurationCard({
   const [isCreateMode, setIsCreateMode] = useState<boolean>(false);
   const [newKey, setNewKey] = useState<string>('');
   const [newTranslationValue, setNewTranslationValue] = useState<string>('');
-  const [selectedLanguage, setSelectedLanguage] = useState<string>(DEFAULT_LANGUAGE);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(FlowI18nConstants.DEFAULT_LANGUAGE);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -117,9 +108,11 @@ function I18nConfigurationCard({
 
     const keys: string[] = [];
 
-    Object.values(translationsData.translations).forEach((namespaceTexts: Record<string, string>) => {
-      keys.push(...Object.keys(namespaceTexts).map((key: string) => `${DEFAULT_NAMESPACE}:${key}`));
-    });
+    Object.entries(translationsData.translations).forEach(
+      ([namespace, translations]: [string, Record<string, string>]) => {
+        keys.push(...Object.keys(translations).map((key: string) => `${namespace}:${key}`));
+      },
+    );
 
     return keys;
   }, [translationsData]);
@@ -153,7 +146,7 @@ function I18nConfigurationCard({
     if (languagesData?.languages && languagesData.languages.length > 0) {
       return languagesData.languages;
     }
-    return [DEFAULT_LANGUAGE];
+    return [FlowI18nConstants.DEFAULT_LANGUAGE];
   }, [languagesData]);
 
   /**
@@ -162,7 +155,7 @@ function I18nConfigurationCard({
   const resetCreateForm = useCallback(() => {
     setNewKey('');
     setNewTranslationValue('');
-    setSelectedLanguage(DEFAULT_LANGUAGE);
+    setSelectedLanguage(FlowI18nConstants.DEFAULT_LANGUAGE);
     setError(null);
   }, []);
 
@@ -208,14 +201,14 @@ function I18nConfigurationCard({
     updateTranslation.mutate(
       {
         language: selectedLanguage,
-        namespace: DEFAULT_NAMESPACE,
+        namespace: FlowI18nConstants.CUSTOM_TRANSLATIONS_NAMESPACE,
         key: newKey,
         value: newTranslationValue,
       },
       {
         onSuccess: () => {
           // On success, use the new key with namespace prefix and close create mode
-          onChange(`${DEFAULT_NAMESPACE}:${newKey}`);
+          onChange(`${FlowI18nConstants.CUSTOM_TRANSLATIONS_NAMESPACE}:${newKey}`);
           handleExitCreateMode();
         },
         onError: (err: Error) => {
@@ -261,7 +254,7 @@ function I18nConfigurationCard({
           options={availableLanguages}
           value={selectedLanguage}
           onChange={(_event: SyntheticEvent, newLang: string | null) => {
-            setSelectedLanguage(newLang ?? DEFAULT_LANGUAGE);
+            setSelectedLanguage(newLang ?? FlowI18nConstants.DEFAULT_LANGUAGE);
           }}
           renderInput={(params: AutocompleteRenderInputParams) => <TextField {...params} size="small" />}
           disableClearable
@@ -342,9 +335,7 @@ function I18nConfigurationCard({
           )}
           renderOption={({key, ...props}: React.HTMLAttributes<HTMLLIElement> & {key: string}, option: string) => (
             <li key={key} {...props}>
-              <Tooltip title={option} placement="bottom">
-                <span>{option}</span>
-              </Tooltip>
+              <span>{option}</span>
             </li>
           )}
         />

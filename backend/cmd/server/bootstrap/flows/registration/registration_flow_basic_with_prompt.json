@@ -25,7 +25,7 @@
                     {
                         "type": "TEXT",
                         "id": "heading_usertype",
-                        "label": "Sign Up",
+                        "label": "{{ t(signup:forms.user_type.title) }}",
                         "variant": "HEADING_2"
                     },
                     {
@@ -36,15 +36,15 @@
                                 "type": "SELECT",
                                 "id": "usertype_input",
                                 "ref": "userType",
-                                "label": "User Type",
-                                "placeholder": "Select your user type",
+                                "label": "{{ t(signup:forms.user_type.fields.user_type.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_type.fields.user_type.placeholder) }}",
                                 "required": true,
                                 "options": []
                             },
                             {
                                 "type": "ACTION",
                                 "id": "action_usertype",
-                                "label": "Continue",
+                                "label": "{{ t(signup:forms.user_type.actions.continue.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -77,7 +77,7 @@
                     {
                         "type": "TEXT",
                         "id": "text_001",
-                        "label": "Sign Up",
+                        "label": "{{ t(signup:forms.registration.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
@@ -88,46 +88,46 @@
                                 "id": "input_001",
                                 "ref": "username",
                                 "type": "TEXT_INPUT",
-                                "label": "Username",
+                                "label": "{{ t(signup:forms.registration.fields.username.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your username"
+                                "placeholder": "{{ t(signup:forms.registration.fields.username.placeholder) }}"
                             },
                             {
                                 "id": "input_002",
                                 "ref": "password",
                                 "type": "PASSWORD_INPUT",
-                                "label": "Password",
+                                "label": "{{ t(signup:forms.registration.fields.password.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your password"
+                                "placeholder": "{{ t(signup:forms.registration.fields.password.placeholder) }}"
                             },
                             {
                                 "id": "input_003",
                                 "ref": "firstName",
                                 "type": "TEXT_INPUT",
-                                "label": "First Name",
+                                "label": "{{ t(signup:forms.registration.fields.first_name.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your first name"
+                                "placeholder": "{{ t(signup:forms.registration.fields.first_name.placeholder) }}"
                             },
                             {
                                 "id": "input_004",
                                 "ref": "lastName",
                                 "type": "TEXT_INPUT",
-                                "label": "Last Name",
+                                "label": "{{ t(signup:forms.registration.fields.last_name.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your last name"
+                                "placeholder": "{{ t(signup:forms.registration.fields.last_name.placeholder) }}"
                             },
                             {
                                 "id": "input_005",
                                 "ref": "email",
                                 "type": "EMAIL_INPUT",
-                                "label": "Email Address",
+                                "label": "{{ t(signup:forms.registration.fields.email_address.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your email address"
+                                "placeholder": "{{ t(signup:forms.registration.fields.email_address.placeholder) }}"
                             },
                             {
                                 "type": "ACTION",
                                 "id": "action_001",
-                                "label": "Sign Up",
+                                "label": "{{ t(signup:forms.registration.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }

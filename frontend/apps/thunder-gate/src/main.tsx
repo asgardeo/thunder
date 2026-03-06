@@ -20,27 +20,10 @@ import * as ReactDOM from 'react-dom/client';
 import {StrictMode} from 'react';
 import {ConfigProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger/react';
-import i18n from 'i18next';
-import {initReactI18next} from 'react-i18next';
-import enUS from '@thunder/i18n/locales/en-US';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
-import AppWithConfig from './AppWithConfig';
+import AppWithDecorators from './AppWithDecorators';
 import './index.css';
-
-// Initialize i18n before rendering the app
-await i18n.use(initReactI18next).init({
-  resources: {
-    'en-US': enUS,
-  },
-  lng: 'en-US',
-  fallbackLng: 'en-US',
-  defaultNS: 'common',
-  interpolation: {
-    escapeValue: false,
-  },
-  debug: import.meta.env.DEV,
-});
 
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
@@ -64,7 +47,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         }}
       >
         <QueryClientProvider client={queryClient}>
-          <AppWithConfig />
+          <AppWithDecorators />
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </LoggerProvider>

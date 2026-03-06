@@ -54,8 +54,9 @@ export default function NamespaceSelector({namespaces, value, loading, onChange}
   return (
     <Box sx={{display: 'flex', gap: 2, alignItems: 'center', mb: 2}}>
       <FormControl sx={{maxWidth: 600}}>
-        <FormLabel>{t('editor.namespace')}</FormLabel>
+        <FormLabel htmlFor="namespace-selector">{t('editor.namespace')}</FormLabel>
         <Autocomplete
+          id="namespace-selector"
           options={namespaces}
           value={value ?? ''}
           onChange={(_, v) => v && onChange(v)}

@@ -51,19 +51,16 @@ describe('Hint', () => {
     expect(screen.getByTestId('info-icon')).toBeInTheDocument();
   });
 
-  it('should render the PlaceholderComponent with the hint value', () => {
+  it('should render the hint value as text', () => {
     render(<Hint hint="Placeholder hint" />);
 
-    const placeholder = screen.getByTestId('placeholder-component');
-    expect(placeholder).toBeInTheDocument();
-    expect(placeholder).toHaveAttribute('data-value', 'Placeholder hint');
+    expect(screen.getByText('Placeholder hint')).toBeInTheDocument();
   });
 
-  it('should render empty hint when hint prop is empty string', () => {
+  it('should render with empty hint', () => {
     render(<Hint hint="" />);
 
-    const placeholder = screen.getByTestId('placeholder-component');
-    expect(placeholder).toHaveAttribute('data-value', '');
+    expect(screen.getByTestId('info-icon')).toBeInTheDocument();
   });
 
   it('should render hint with special characters', () => {

@@ -18,7 +18,13 @@
 
 /* eslint-disable react-refresh/only-export-components */
 import {useMemo, type ReactElement, type ReactNode} from 'react';
-import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions, type RenderResult} from '@testing-library/react';
+import {
+  render,
+  renderHook as rtlRenderHook,
+  type RenderOptions,
+  type RenderHookOptions,
+  type RenderResult,
+} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {ConfigProvider} from '@thunder/shared-contexts';
@@ -92,6 +98,9 @@ function Providers({children, queryClient = undefined, config = undefined}: Prov
   if (typeof window !== 'undefined' && !window.__THUNDER_RUNTIME_CONFIG__) {
     // eslint-disable-next-line no-underscore-dangle
     window.__THUNDER_RUNTIME_CONFIG__ = {
+      brand: {
+        product_name: 'Thunder',
+      },
       client: {
         base: testConfig.base,
         client_id: testConfig.clientId,

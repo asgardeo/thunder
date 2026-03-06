@@ -20,7 +20,7 @@ import {Alert, Box, Breadcrumbs, Button, IconButton, LinearProgress, Typography}
 import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
-import {I18nQueryKeys, enUS} from '@thunder/i18n';
+import {I18nQueryKeys, useGetTranslations} from '@thunder/i18n';
 import {useConfig} from '@thunder/shared-contexts';
 import {useLogger} from '@thunder/logger/react';
 import {useCallback, useEffect, useState, type JSX} from 'react';
@@ -69,6 +69,7 @@ export default function TranslationCreatePage(): JSX.Element {
   const navigate = useNavigate();
   const logger = useLogger('TranslationCreatePage');
   const queryClient = useQueryClient();
+  const {refetch: fetchEnTranslations} = useGetTranslations({language: 'en-US', enabled: false});
 
   const {
     currentStep,
@@ -151,12 +152,19 @@ export default function TranslationCreatePage(): JSX.Element {
     setIsCreating(true);
     setProgress(0);
 
+    const {data: enData, error: enError} = await fetchEnTranslations();
+    if (enError || !enData) {
+      logger.error('Failed to fetch en-US translations', {error: enError});
+      setError(t('language.add.error'));
+      setIsCreating(false);
+      return;
+    }
+    const enTranslations = enData.translations;
+
     const entries: {namespace: string; key: string; value: string}[] = [];
-    Object.entries(enUS).forEach(([ns, nsValues]) => {
-      Object.entries(nsValues as Record<string, unknown>).forEach(([key, val]) => {
-        if (typeof val === 'string') {
-          entries.push({namespace: ns, key, value: populateFromEnglish ? val : ''});
-        }
+    Object.entries(enTranslations).forEach(([ns, nsValues]) => {
+      Object.entries(nsValues).forEach(([key, val]) => {
+        entries.push({namespace: ns, key, value: populateFromEnglish ? val : ''});
       });
     });
 

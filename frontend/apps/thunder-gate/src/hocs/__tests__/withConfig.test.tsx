@@ -18,15 +18,15 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@testing-library/react';
-import AppWithConfig from '../AppWithConfig';
+import withConfig from '../withConfig';
 
 // Track the baseUrl passed to AsgardeoProvider
 let capturedBaseUrl: string | undefined;
 
-// Mock the AppWithTheme component
-vi.mock('../AppWithTheme', () => ({
-  default: () => <div data-testid="app-with-theme">App With Theme</div>,
-}));
+function MockChild() {
+  return <div data-testid="app-with-theme">App With Theme</div>;
+}
+const AppWithConfig = withConfig(MockChild);
 
 // Mock the DesignProvider
 vi.mock('@thunder/shared-design', () => ({

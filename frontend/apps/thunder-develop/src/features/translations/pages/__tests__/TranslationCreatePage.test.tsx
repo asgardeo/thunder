@@ -40,10 +40,11 @@ vi.mock('react-router', async () => {
   };
 });
 
+const mockHttpRequest = vi.fn().mockResolvedValue({data: {}});
 vi.mock('@asgardeo/react', () => ({
   useAsgardeo: () => ({
     http: {
-      request: vi.fn().mockResolvedValue({data: {}}),
+      request: mockHttpRequest,
     },
   }),
 }));
@@ -58,9 +59,16 @@ vi.mock('@tanstack/react-query', async () => {
   };
 });
 
+const mockRefetch = vi.hoisted(() => vi.fn());
+
 vi.mock('@thunder/i18n', () => ({
   I18nQueryKeys: {TRANSLATIONS: 'translations', LANGUAGES: 'languages'},
+  useGetTranslations: vi.fn().mockReturnValue({data: undefined, isLoading: false, refetch: mockRefetch}),
   enUS: {},
+}));
+
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn()}),
 }));
 
 // Stub step components so we can control onReadyChange
@@ -72,14 +80,26 @@ const mockInitializeLanguage = vi.fn();
 vi.mock('../../components/create-translation/SelectCountry', () => ({
   default: (props: {onReadyChange?: (v: boolean) => void}) => {
     mockSelectCountry(props);
-    return <div data-testid="select-country"><button type="button" onClick={() => props.onReadyChange?.(true)}>ready</button></div>;
+    return (
+      <div data-testid="select-country">
+        <button type="button" onClick={() => props.onReadyChange?.(true)}>
+          ready
+        </button>
+      </div>
+    );
   },
 }));
 
 vi.mock('../../components/create-translation/SelectLanguage', () => ({
   default: (props: {onReadyChange?: (v: boolean) => void}) => {
     mockSelectLanguage(props);
-    return <div data-testid="select-language"><button type="button" onClick={() => props.onReadyChange?.(true)}>ready</button></div>;
+    return (
+      <div data-testid="select-language">
+        <button type="button" onClick={() => props.onReadyChange?.(true)}>
+          ready
+        </button>
+      </div>
+    );
   },
 }));
 
@@ -304,6 +324,132 @@ describe('TranslationCreatePage', () => {
 
       const closeButton = screen.getAllByRole('button')[0];
       expect(closeButton).toBeDisabled();
+    });
+  });
+
+  describe('Create flow', () => {
+    it('calls setLocaleCodeOverride when advancing from LANGUAGE step', async () => {
+      const setCurrentStep = vi.fn();
+      const setLocaleCodeOverride = vi.fn();
+      mockUseTranslationCreate.mockReturnValue({
+        ...baseContext,
+        currentStep: TranslationCreateFlowStep.LANGUAGE,
+        selectedCountry: {name: 'France', regionCode: 'FR', flag: '🇫🇷'},
+        selectedLocale: {code: 'fr-FR', displayName: 'French (France)', flag: '🇫🇷'},
+        setCurrentStep,
+        setLocaleCodeOverride,
+      });
+      const user = userEvent.setup();
+      render(<TranslationCreatePage />);
+
+      // Mark step ready then advance
+      await user.click(screen.getByText('ready'));
+      await user.click(screen.getByText('common:actions.continue'));
+
+      expect(setLocaleCodeOverride).toHaveBeenCalledWith('fr-FR');
+      expect(setCurrentStep).toHaveBeenCalledWith(TranslationCreateFlowStep.LOCALE_CODE);
+    });
+
+    it('creates translations when Create is clicked on the final step', async () => {
+      const setIsCreating = vi.fn();
+      const setProgress = vi.fn();
+      const setError = vi.fn();
+
+      mockRefetch.mockResolvedValue({
+        data: {
+          translations: {
+            common: {'actions.save': 'Save'},
+          },
+        },
+        error: null,
+      });
+
+      mockUseTranslationCreate.mockReturnValue({
+        ...baseContext,
+        currentStep: TranslationCreateFlowStep.INITIALIZE,
+        localeCode: 'fr-FR',
+        populateFromEnglish: true,
+        setIsCreating,
+        setProgress,
+        setError,
+      });
+
+      const user = userEvent.setup();
+      render(<TranslationCreatePage />);
+
+      await user.click(screen.getByText('language.create.createButton'));
+
+      expect(setIsCreating).toHaveBeenCalledWith(true);
+      expect(mockRefetch).toHaveBeenCalled();
+
+      // Wait for async create to complete
+      await vi.waitFor(() => {
+        expect(mockHttpRequest).toHaveBeenCalled();
+      });
+    });
+
+    it('sets error when fetching en-US translations fails during create', async () => {
+      const setError = vi.fn();
+      const setIsCreating = vi.fn();
+
+      mockRefetch.mockResolvedValue({
+        data: null,
+        error: new Error('Fetch failed'),
+      });
+
+      mockUseTranslationCreate.mockReturnValue({
+        ...baseContext,
+        currentStep: TranslationCreateFlowStep.INITIALIZE,
+        localeCode: 'fr-FR',
+        setError,
+        setIsCreating,
+        setProgress: vi.fn(),
+      });
+
+      const user = userEvent.setup();
+      render(<TranslationCreatePage />);
+
+      await user.click(screen.getByText('language.create.createButton'));
+
+      await vi.waitFor(() => {
+        expect(setError).toHaveBeenCalledWith('language.add.error');
+        expect(setIsCreating).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('does not start creation when localeCode is empty', async () => {
+      mockUseTranslationCreate.mockReturnValue({
+        ...baseContext,
+        currentStep: TranslationCreateFlowStep.INITIALIZE,
+        localeCode: '',
+      });
+
+      const user = userEvent.setup();
+      render(<TranslationCreatePage />);
+
+      await user.click(screen.getByText('language.create.createButton'));
+
+      expect(mockRefetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Breadcrumb navigation', () => {
+    it('navigates to a previous step when a breadcrumb is clicked', async () => {
+      const setCurrentStep = vi.fn();
+      mockUseTranslationCreate.mockReturnValue({
+        ...baseContext,
+        currentStep: TranslationCreateFlowStep.LOCALE_CODE,
+        selectedCountry: {name: 'France', regionCode: 'FR', flag: '🇫🇷'},
+        selectedLocale: {code: 'fr-FR', displayName: 'French (France)', flag: '🇫🇷'},
+        setCurrentStep,
+      });
+      const user = userEvent.setup();
+      render(<TranslationCreatePage />);
+
+      // Click on the first breadcrumb (COUNTRY)
+      await user.click(screen.getByText('language.create.steps.country'));
+
+      expect(setCurrentStep).toHaveBeenCalledWith(TranslationCreateFlowStep.COUNTRY);
     });
   });
 });

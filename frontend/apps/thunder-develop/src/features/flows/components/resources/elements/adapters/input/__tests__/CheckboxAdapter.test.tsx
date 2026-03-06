@@ -74,12 +74,12 @@ describe('CheckboxAdapter', () => {
       expect(screen.getByRole('checkbox')).toBeInTheDocument();
     });
 
-    it('should render label via PlaceholderComponent', () => {
+    it('should render label text', () => {
       const resource = createMockElement({label: 'I agree'});
 
       render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('I agree');
+      expect(screen.getByText('I agree')).toBeInTheDocument();
     });
 
     it('should render checkbox as checked by default', () => {
@@ -158,17 +158,17 @@ describe('CheckboxAdapter', () => {
     it('should handle empty label', () => {
       const resource = createMockElement({label: ''});
 
-      render(<CheckboxAdapter resource={resource} />);
+      const {container} = render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(container.querySelector('.MuiFormControlLabel-label')).toHaveTextContent('');
     });
 
     it('should handle undefined label', () => {
       const resource = createMockElement({label: undefined});
 
-      render(<CheckboxAdapter resource={resource} />);
+      const {container} = render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(container.querySelector('.MuiFormControlLabel-label')).toHaveTextContent('');
     });
   });
 

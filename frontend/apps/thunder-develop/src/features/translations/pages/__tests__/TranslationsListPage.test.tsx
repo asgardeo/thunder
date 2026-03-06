@@ -45,28 +45,37 @@ vi.mock('../../../../hooks/useDataGridLocaleText', () => ({
 
 vi.mock('@thunder/i18n', () => ({
   useGetLanguages: vi.fn(),
+  useDeleteTranslations: vi.fn().mockReturnValue({mutate: vi.fn(), isPending: false}),
   getDisplayNameForCode: (code: string) => `Language(${code})`,
   toFlagEmoji: (code: string) => `Flag(${code})`,
 }));
 
-// Stub the MUI DataGrid with a lightweight table that exposes rows
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn()}),
+}));
+
+// Stub the MUI ListingTable with lightweight components that expose rows
 vi.mock('@wso2/oxygen-ui', async () => {
   const actual = await vi.importActual<typeof import('@wso2/oxygen-ui')>('@wso2/oxygen-ui');
   return {
     ...actual,
-    DataGrid: {
+    ListingTable: {
+      Provider: ({children, loading}: {children: React.ReactNode; loading: boolean}) => (
+        <div data-testid="data-grid" data-loading={String(loading)}>
+          {children}
+        </div>
+      ),
+      Container: ({children}: {children: React.ReactNode}) => children,
       DataGrid: ({
         rows,
         columns,
-        loading,
         onRowClick = undefined,
       }: {
         rows: {id: string; code: string}[];
         columns: {renderCell?: (params: {row: {id: string; code: string}}) => React.ReactNode}[];
-        loading: boolean;
         onRowClick?: (params: {row: {id: string; code: string}}) => void;
       }) => (
-        <div data-testid="data-grid" data-loading={String(loading)}>
+        <>
           {rows.map((row) => (
             <div
               key={row.id}
@@ -83,8 +92,9 @@ vi.mock('@wso2/oxygen-ui', async () => {
               ))}
             </div>
           ))}
-        </div>
+        </>
       ),
+      RowActions: ({children}: {children: React.ReactNode}) => children,
     },
   };
 });
@@ -182,22 +192,18 @@ describe('TranslationsListPage', () => {
 
   describe('Actions menu', () => {
     it('opens the actions menu when the menu button for a row is clicked', async () => {
-      const user = userEvent.setup();
       render(<TranslationsListPage />);
 
-      const menuButtons = screen.getAllByRole('button', {name: /common:actions.openActionsMenu/i});
-      await user.click(menuButtons[0]);
-
-      expect(screen.getByText('common:actions.edit')).toBeInTheDocument();
+      const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
+      expect(editButtons.length).toBeGreaterThan(0);
     });
 
     it('navigates to the language edit page when Edit is clicked in the actions menu', async () => {
       const user = userEvent.setup();
       render(<TranslationsListPage />);
 
-      const menuButtons = screen.getAllByRole('button', {name: /common:actions.openActionsMenu/i});
-      await user.click(menuButtons[0]);
-      await user.click(screen.getByText('common:actions.edit'));
+      const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
+      await user.click(editButtons[0]);
 
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));
     });

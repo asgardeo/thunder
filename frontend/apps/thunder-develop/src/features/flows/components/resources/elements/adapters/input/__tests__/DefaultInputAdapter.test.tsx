@@ -75,14 +75,12 @@ describe('DefaultInputAdapter', () => {
       expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should render label via PlaceholderComponent', () => {
+    it('should render label text', () => {
       const resource = createMockElement({label: 'Email Address'});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      const {container} = render(<DefaultInputAdapter resource={resource} />);
 
-      // MUI TextField renders label in two places (label and legend), so we use getAllByTestId
-      const placeholders = screen.getAllByTestId('placeholder');
-      expect(placeholders[0]).toHaveTextContent('Email Address');
+      expect(container.querySelector('.MuiInputLabel-root')).toHaveTextContent('Email Address');
     });
 
     it('should render with full width', () => {
@@ -245,21 +243,17 @@ describe('DefaultInputAdapter', () => {
     it('should handle empty label', () => {
       const resource = createMockElement({label: ''});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      const {container} = render(<DefaultInputAdapter resource={resource} />);
 
-      // MUI TextField renders label in two places (label and legend), so we use getAllByTestId
-      const placeholders = screen.getAllByTestId('placeholder');
-      expect(placeholders[0]).toHaveTextContent('');
+      expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
     });
 
     it('should handle undefined label', () => {
       const resource = createMockElement({label: undefined});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      const {container} = render(<DefaultInputAdapter resource={resource} />);
 
-      // MUI TextField renders label in two places (label and legend), so we use getAllByTestId
-      const placeholders = screen.getAllByTestId('placeholder');
-      expect(placeholders[0]).toHaveTextContent('');
+      expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
     });
   });
 

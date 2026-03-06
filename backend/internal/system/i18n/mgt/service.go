@@ -225,11 +225,12 @@ func (s *i18nService) ResolveTranslations(
 		systemDefaults := sysi18n.GetAllDefaults()
 
 		for key, value := range systemDefaults {
-			if allTranslations[key] == nil {
-				allTranslations[key] = make(map[string]Translation)
+			compositeKey := SystemNamespace + "|" + key
+			if allTranslations[compositeKey] == nil {
+				allTranslations[compositeKey] = make(map[string]Translation)
 			}
-			if _, exists := allTranslations[key][SystemLanguage]; !exists {
-				allTranslations[key][SystemLanguage] = Translation{
+			if _, exists := allTranslations[compositeKey][SystemLanguage]; !exists {
+				allTranslations[compositeKey][SystemLanguage] = Translation{
 					Key:       key,
 					Language:  SystemLanguage,
 					Namespace: SystemNamespace,

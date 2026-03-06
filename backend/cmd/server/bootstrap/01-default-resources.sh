@@ -1209,6 +1209,63 @@ fi
 echo ""
 
 # ============================================================================
+# Seed i18n Translations
+# ============================================================================
+
+log_info "Seeding i18n translations..."
+
+I18N_DIR="${SCRIPT_DIR}/i18n"
+
+if [[ ! -d "$I18N_DIR" ]]; then
+    log_warning "i18n directory not found at ${I18N_DIR}, skipping translation seeding"
+else
+    shopt -s nullglob
+    I18N_FILES=("$I18N_DIR"/*.json)
+    shopt -u nullglob
+
+    if [[ ${#I18N_FILES[@]} -gt 0 ]]; then
+        log_info "Processing i18n translations from ${I18N_DIR}..."
+
+        I18N_COUNT=0
+        I18N_SUCCESS=0
+
+        for I18N_FILE in "${I18N_FILES[@]}"; do
+            [[ ! -f "$I18N_FILE" ]] && continue
+
+            I18N_COUNT=$((I18N_COUNT + 1))
+
+            # Extract language from filename (e.g., en-US.json -> en-US)
+            LANGUAGE=$(basename "$I18N_FILE" .json)
+
+            log_info "Seeding translations for language: ${LANGUAGE} (from $(basename "$I18N_FILE"))"
+
+            PAYLOAD=$(cat "$I18N_FILE")
+
+            RESPONSE=$(thunder_api_call POST "/i18n/languages/${LANGUAGE}/translations" "$PAYLOAD")
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+
+            if [[ "$HTTP_CODE" == "200" ]]; then
+                TOTAL=$(echo "$BODY" | grep -o '"totalResults":[0-9]*' | cut -d':' -f2)
+                log_success "Translations for '${LANGUAGE}' seeded successfully (${TOTAL:-?} translations)"
+                I18N_SUCCESS=$((I18N_SUCCESS + 1))
+            else
+                log_error "Failed to seed translations for '${LANGUAGE}' (HTTP $HTTP_CODE)"
+                log_error "Response: $BODY"
+                exit 1
+            fi
+        done
+
+        echo ""
+        log_info "Translation seeding summary: ${I18N_SUCCESS} seeded (Total: ${I18N_COUNT})"
+    else
+        log_warning "No i18n translation files found in ${I18N_DIR}"
+    fi
+fi
+
+echo ""
+
+# ============================================================================
 # Summary
 # ============================================================================
 

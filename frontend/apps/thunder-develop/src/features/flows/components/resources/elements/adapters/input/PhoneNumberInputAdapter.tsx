@@ -23,7 +23,7 @@ import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFie
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import useResolveI18n from '@/features/flows/hooks/useResolveI18n';
 import {FormHelperText, TextField} from '@wso2/oxygen-ui';
-import PlaceholderComponent from '../PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../../hint';
 
 /**
@@ -55,6 +55,7 @@ export interface PhoneNumberInputAdapterPropsInterface {
  */
 function PhoneNumberInputAdapter({resource}: PhoneNumberInputAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -88,7 +89,7 @@ function PhoneNumberInputAdapter({resource}: PhoneNumberInputAdapterPropsInterfa
     <>
       <TextField
         className={phoneElement?.className}
-        label={<PlaceholderComponent value={phoneElement?.label ?? ''} />}
+        label={resolve(phoneElement?.label, {t}) ?? phoneElement?.label ?? ''}
         placeholder={resolvedPlaceholder}
         InputLabelProps={{
           required: phoneElement?.required,

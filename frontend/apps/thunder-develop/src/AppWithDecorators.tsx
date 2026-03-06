@@ -16,14 +16,11 @@
  * under the License.
  */
 
-@use "../../../../styles/variables";
+import withConfig from './hocs/withConfig';
+import withTheme from './hocs/withTheme';
+import withI18n from './hocs/withI18n';
+import App from './App';
 
-.flow-builder-display-field-i18n-placeholder {
+const AppWithDecorators = withConfig(withTheme(withI18n(App)));
 
-    .flow-builder-display-field-i18n-placeholder-key {
-        font-family: monospace;
-        font-size: 13px;
-        padding: 2px 4px;
-        border-radius: var(--flow-builder-border-radius);
-    }
-}
+export default AppWithDecorators;

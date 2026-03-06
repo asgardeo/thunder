@@ -19,6 +19,9 @@
 /* eslint-disable no-underscore-dangle */
 
 window.__THUNDER_RUNTIME_CONFIG__ = {
+  brand: {
+    product_name: 'Thunder'
+  },
   client: {
     base: '/gate',
   },

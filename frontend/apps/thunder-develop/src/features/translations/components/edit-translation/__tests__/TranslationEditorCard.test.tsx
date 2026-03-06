@@ -44,6 +44,7 @@ const defaultProps = {
   search: '',
   currentValues: {'actions.save': 'Enregistrer'},
   serverValues: {'actions.save': 'Enregistrer'},
+  isCustomNamespace: false,
   colorMode: 'light' as const,
   onTabChange: vi.fn(),
   onSearchChange: vi.fn(),

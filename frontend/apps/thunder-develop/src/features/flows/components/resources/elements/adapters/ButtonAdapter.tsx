@@ -25,7 +25,7 @@ import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {ButtonVariants, type Element as FlowElement} from '@/features/flows/models/elements';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
-import PlaceholderComponent from './PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import NodeHandle from './NodeHandle';
 
 const BUTTON_VALIDATION_FIELD_NAMES = {
@@ -76,6 +76,7 @@ export interface ButtonAdapterPropsInterface {
  */
 function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -173,7 +174,7 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
         endIcon={endIcon}
         {...config}
       >
-        <PlaceholderComponent value={buttonElement?.label ?? ''} />
+        {resolve(buttonElement?.label, {t}) ?? buttonElement?.label ?? ''}
       </Button>
       <NodeHandle
         id={`${resource?.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`}

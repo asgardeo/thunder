@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import RichTextAdapter from '../RichTextAdapter';
@@ -34,14 +34,6 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
-}));
-
-vi.mock('../PlaceholderComponent', () => ({
-  default: ({value, children}: {value: string; children?: ReactNode}) => (
-    <span data-testid="placeholder" data-value={value}>
-      {children ?? value}
-    </span>
-  ),
 }));
 
 describe('RichTextAdapter', () => {
@@ -68,20 +60,20 @@ describe('RichTextAdapter', () => {
       expect(container.querySelector('.rich-text-content')).toBeInTheDocument();
     });
 
-    it('should render PlaceholderComponent', () => {
+    it('should render label content', () => {
       const resource = createMockElement();
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toBeInTheDocument();
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('World');
     });
 
-    it('should pass label to PlaceholderComponent', () => {
+    it('should render label text', () => {
       const resource = createMockElement({label: 'Test Label'});
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveAttribute('data-value', 'Test Label');
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Test Label');
     });
   });
 
@@ -89,17 +81,17 @@ describe('RichTextAdapter', () => {
     it('should render sanitized HTML content', () => {
       const resource = createMockElement({label: '<p>Paragraph content</p>'});
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toBeInTheDocument();
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Paragraph content');
     });
 
     it('should handle plain text content', () => {
       const resource = createMockElement({label: 'Plain text without HTML'});
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveAttribute('data-value', 'Plain text without HTML');
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Plain text without HTML');
     });
   });
 
@@ -107,17 +99,17 @@ describe('RichTextAdapter', () => {
     it('should handle empty label', () => {
       const resource = createMockElement({label: ''});
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveAttribute('data-value', '');
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('');
     });
 
     it('should handle undefined label', () => {
       const resource = createMockElement({label: undefined});
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveAttribute('data-value', '');
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('');
     });
   });
 
@@ -153,10 +145,9 @@ describe('RichTextAdapter', () => {
         label: '<a href="https://example.com" target="_blank">External Link</a>',
       });
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      // The content should be sanitized and rendered
-      expect(screen.getByTestId('placeholder')).toBeInTheDocument();
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('External Link');
     });
 
     it('should handle anchor tags without target attribute', () => {
@@ -164,9 +155,9 @@ describe('RichTextAdapter', () => {
         label: '<a href="https://example.com">Regular Link</a>',
       });
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toBeInTheDocument();
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Regular Link');
     });
 
     it('should handle anchor tags with target="_self"', () => {
@@ -174,20 +165,19 @@ describe('RichTextAdapter', () => {
         label: '<a href="https://example.com" target="_self">Same Window Link</a>',
       });
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toBeInTheDocument();
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Same Window Link');
     });
 
     it('should handle multiple anchor tags', () => {
       const resource = createMockElement({
-        label:
-          '<a href="https://link1.com" target="_blank">Link 1</a> and <a href="https://link2.com">Link 2</a>',
+        label: '<a href="https://link1.com" target="_blank">Link 1</a> and <a href="https://link2.com">Link 2</a>',
       });
 
-      render(<RichTextAdapter resource={resource} />);
+      const {container} = render(<RichTextAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toBeInTheDocument();
+      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Link 1 and Link 2');
     });
   });
 });

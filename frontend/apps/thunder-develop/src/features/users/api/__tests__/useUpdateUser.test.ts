@@ -97,7 +97,9 @@ describe('useUpdateUser', () => {
 
     const {result} = renderHook(() => useUpdateUser());
 
-    result.current.mutate(mockVariables);
+    act(() => {
+      result.current.mutate(mockVariables);
+    });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

@@ -101,6 +101,19 @@ export interface ClientConfig {
 }
 
 /**
+ * Branding configuration interface that defines product name and other branding-related settings.
+ *
+ * @public
+ */
+export interface BrandConfig {
+  /**
+   * Product name for branding purposes.
+   * @example "Thunder", "Awesome Product"
+   */
+  product_name: string;
+}
+
+/**
  * Thunder runtime configuration interface that contains all configuration
  * settings for Thunder applications.
  *
@@ -111,6 +124,9 @@ export interface ClientConfig {
  * @public
  */
 export interface ThunderConfig {
+  /** Branding configuration such as product name and logo */
+  brand: BrandConfig;
+
   /** Client-specific configuration including authentication settings */
   client: ClientConfig;
 

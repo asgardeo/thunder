@@ -41,6 +41,7 @@ vi.mock('@thunder/shared-contexts', () => ({
 
 // Mock the API hooks used by I18nConfigurationCard from @thunder/i18n
 vi.mock('@thunder/i18n', () => ({
+  NamespaceConstants: {CUSTOM_NAMESPACE: 'custom'},
   useUpdateTranslation: () => ({
     mutate: vi.fn(),
     isPending: false,
@@ -52,7 +53,7 @@ vi.mock('@thunder/i18n', () => ({
     data: {
       language: 'en-US',
       translations: {
-        flowI18n: {
+        custom: {
           'common.submit': 'Submit',
           'common.button': 'Button',
           'common.label': 'Label',
@@ -270,12 +271,7 @@ describe('TextPropertyField', () => {
   describe('Accessibility', () => {
     it('should have accessible text input', () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="username"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="username" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -285,12 +281,7 @@ describe('TextPropertyField', () => {
 
     it('should render label element with htmlFor attribute', () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="email"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="email" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -321,12 +312,7 @@ describe('TextPropertyField', () => {
 
     it('should render placeholder when not i18n pattern', () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="title"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -573,12 +559,7 @@ describe('TextPropertyField', () => {
 
     it('should open i18n card when language button is clicked', () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="label"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -592,12 +573,7 @@ describe('TextPropertyField', () => {
 
     it('should close i18n card when close button is clicked', () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="label"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -618,12 +594,7 @@ describe('TextPropertyField', () => {
 
     it('should toggle i18n card open and closed', () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="label"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -643,12 +614,7 @@ describe('TextPropertyField', () => {
 
     it('should call onChange with formatted i18n value when i18n key is selected', async () => {
       render(
-        <TextPropertyField
-          resource={mockResource}
-          propertyKey="label"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
+        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -662,12 +628,12 @@ describe('TextPropertyField', () => {
 
       // Wait for options and select one
       await waitFor(() => {
-        expect(screen.getByText('flowI18n:common.submit')).toBeInTheDocument();
+        expect(screen.getByText('custom:common.submit')).toBeInTheDocument();
       });
-      fireEvent.click(screen.getByText('flowI18n:common.submit'));
+      fireEvent.click(screen.getByText('custom:common.submit'));
 
       // Verify onChange was called with the formatted i18n pattern
-      expect(mockOnChange).toHaveBeenCalledWith('label', '{{t(flowI18n:common.submit)}}', mockResource);
+      expect(mockOnChange).toHaveBeenCalledWith('label', '{{t(custom:common.submit)}}', mockResource);
     });
 
     it('should call onChange with empty string when i18n key is cleared', async () => {

@@ -178,7 +178,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_OU_Success() {
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeOU, ouID).Return(mockDesign, nil)
-	suite.mockI18nService.On("ResolveTranslations", "en", "").Return(mockTranslations, nil)
+	suite.mockI18nService.On("ResolveTranslations", "en-US", "").Return(mockTranslations, nil)
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 
 	// Act
@@ -271,9 +271,9 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).
 		Return(nil, &serviceerror.InternalServerError)
-	suite.mockI18nService.On("ResolveTranslations", "en", "").
+	suite.mockI18nService.On("ResolveTranslations", "en-US", "").
 		Return(&i18nmgt.LanguageTranslationsResponse{
-			Language:     "en",
+			Language:     "en-US",
 			TotalResults: 0,
 			Translations: map[string]map[string]string{},
 		}, nil)
@@ -306,7 +306,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_I18nError_ContinuesWi
 			Theme:  json.RawMessage(`{}`),
 			Layout: json.RawMessage(`{}`),
 		}, nil)
-	suite.mockI18nService.On("ResolveTranslations", "en", "").
+	suite.mockI18nService.On("ResolveTranslations", "en-US", "").
 		Return(nil, &serviceerror.I18nServiceError{Code: "I18N-5000", Type: serviceerror.ServerErrorType})
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 

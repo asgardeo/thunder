@@ -416,7 +416,7 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_UsesSystemDefaults
 		Value:     "Erreur interne du serveur",
 	}
 	dbTranslations := map[string]map[string]Translation{
-		key: {"fr-FR": frTranslation},
+		SystemNamespace + "|" + key: {"fr-FR": frTranslation},
 	}
 
 	suite.mockStore.On("GetTranslationsByNamespace", "system").Return(dbTranslations, nil)
@@ -441,7 +441,7 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_UsesDBValue_WhenDB
 		Value:     overrideValue,
 	}
 	dbTranslations := map[string]map[string]Translation{
-		key: {SystemLanguage: translationDB},
+		SystemNamespace + "|" + key: {SystemLanguage: translationDB},
 	}
 
 	suite.mockStore.On("GetTranslationsByNamespace", "system").Return(dbTranslations, nil)

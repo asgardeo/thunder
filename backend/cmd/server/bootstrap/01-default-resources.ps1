@@ -1247,6 +1247,59 @@ else {
 Write-Host ""
 
 # ============================================================================
+# Seed i18n Translations
+# ============================================================================
+
+Log-Info "Seeding i18n translations..."
+
+$i18nDir = Join-Path $PSScriptRoot "i18n"
+
+if (-not (Test-Path $i18nDir)) {
+    Log-Warning "i18n directory not found at $i18nDir, skipping translation seeding"
+}
+else {
+    $i18nFiles = Get-ChildItem -Path $i18nDir -Filter "*.json" -File -ErrorAction SilentlyContinue
+
+    if ($i18nFiles.Count -gt 0) {
+        Log-Info "Processing i18n translations from $i18nDir..."
+
+        $i18nCount = 0
+        $i18nSuccess = 0
+
+        foreach ($i18nFile in $i18nFiles) {
+            $i18nCount++
+            $language = $i18nFile.BaseName
+
+            Log-Info "Seeding translations for language: $language (from $($i18nFile.Name))"
+
+            $payload = Get-Content $i18nFile.FullName -Raw
+
+            $response = Invoke-ThunderApi -Method POST -Endpoint "/i18n/languages/$language/translations" -Data $payload
+
+            if ($response.StatusCode -eq 200) {
+                $body = $response.Body | ConvertFrom-Json
+                $total = $body.totalResults
+                Log-Success "Translations for '$language' seeded successfully ($total translations)"
+                $i18nSuccess++
+            }
+            else {
+                Log-Error "Failed to seed translations for '$language' (HTTP $($response.StatusCode))"
+                Write-Host "Response: $($response.Body)"
+                exit 1
+            }
+        }
+
+        Write-Host ""
+        Log-Info "Translation seeding summary: $i18nSuccess seeded (Total: $i18nCount)"
+    }
+    else {
+        Log-Warning "No i18n translation files found in $i18nDir"
+    }
+}
+
+Write-Host ""
+
+# ============================================================================
 # Summary
 # ============================================================================
 

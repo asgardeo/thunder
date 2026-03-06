@@ -25,9 +25,6 @@ const translations = {
   // Common namespace - Shared translations across all Thunder applications
   // ============================================================================
   common: {
-    // Product
-    'product.displayName': 'Thunder',
-
     // Actions
     'actions.add': 'Add',
     'actions.edit': 'Edit',
@@ -1755,11 +1752,25 @@ const translations = {
       'A namespace typically represents a page or a section within a page. It helps group and organize related translation keys for better structure and maintainability.',
     'editor.textFields': 'Fields',
     'editor.rawJson': 'Raw JSON',
+    'editor.addKey': 'Add Key',
+    'editor.addKey.keyLabel': 'Key',
+    'editor.addKey.valueLabel': 'Value',
+    'editor.addKey.keyPlaceholder': 'e.g. my.translation.key',
+    'editor.addKey.valuePlaceholder': 'Translation value',
+    'editor.addKey.submit': 'Add',
+    'editor.addKey.cancel': 'Cancel',
+    'editor.addKey.duplicateKey': 'This key already exists.',
+    'editor.readOnlyKeys': 'Keys are fixed in this namespace. Only values can be edited.',
 
     'actions.saveChanges': 'Save Changes',
     'actions.discardChanges': 'Discard Changes',
     'actions.resetToDefault': 'Reset to Default',
     'preview.noTheme': 'No themes configured. Preview unavailable.',
+
+    'delete.title': 'Delete Language',
+    'delete.message': 'Are you sure you want to delete all custom translations for "{{language}}"? This action cannot be undone.',
+    'delete.disclaimer': 'All custom translations for this language will be permanently removed and reset to defaults.',
+    'delete.error': 'Failed to delete translations. Please try again.',
   },
 
   design: {

@@ -39,6 +39,7 @@ const defaultProps = {
   localValues: sampleValues,
   serverValues: sampleValues,
   search: '',
+  isCustomNamespace: false,
   onChange: vi.fn(),
   onResetField: vi.fn(),
 };
@@ -164,6 +165,104 @@ describe('TranslationFieldsView', () => {
       await user.click(screen.getByRole('button'));
 
       expect(onResetField).toHaveBeenCalledWith('actions.save');
+    });
+  });
+
+  describe('Add Key (custom namespace)', () => {
+    it('shows the Add Key button when isCustomNamespace is true', () => {
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+
+      expect(screen.getByText('editor.addKey')).toBeInTheDocument();
+    });
+
+    it('does not show the Add Key button when isCustomNamespace is false', () => {
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace={false} />);
+
+      expect(screen.queryByText('editor.addKey')).not.toBeInTheDocument();
+    });
+
+    it('shows the add key form when the Add Key button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+
+      await user.click(screen.getByText('editor.addKey'));
+
+      expect(screen.getByLabelText('editor.addKey.keyLabel')).toBeInTheDocument();
+      expect(screen.getByLabelText('editor.addKey.valueLabel')).toBeInTheDocument();
+    });
+
+    it('calls onChange and closes the form when a new key is submitted', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace onChange={onChange} />);
+
+      await user.click(screen.getByText('editor.addKey'));
+
+      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
+        target: {value: 'new.key'},
+      });
+      fireEvent.change(screen.getByPlaceholderText('editor.addKey.valuePlaceholder'), {
+        target: {value: 'New Value'},
+      });
+
+      await user.click(screen.getByText('editor.addKey.submit'));
+
+      expect(onChange).toHaveBeenCalledWith('new.key', 'New Value');
+      // Form should be closed, Add Key button visible again
+      expect(screen.getByText('editor.addKey')).toBeInTheDocument();
+    });
+
+    it('closes the form and clears inputs when Cancel is clicked', async () => {
+      const user = userEvent.setup();
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+
+      await user.click(screen.getByText('editor.addKey'));
+
+      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
+        target: {value: 'some.key'},
+      });
+
+      await user.click(screen.getByText('editor.addKey.cancel'));
+
+      // Form should be closed, Add Key button visible again
+      expect(screen.getByText('editor.addKey')).toBeInTheDocument();
+    });
+
+    it('shows a duplicate key error when the entered key already exists', async () => {
+      const user = userEvent.setup();
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+
+      await user.click(screen.getByText('editor.addKey'));
+
+      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
+        target: {value: 'actions.save'},
+      });
+
+      expect(screen.getByText('editor.addKey.duplicateKey')).toBeInTheDocument();
+    });
+
+    it('disables the submit button when the key is empty', async () => {
+      const user = userEvent.setup();
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+
+      await user.click(screen.getByText('editor.addKey'));
+
+      const submitButton = screen.getByText('editor.addKey.submit').closest('button');
+      expect(submitButton).toBeDisabled();
+    });
+
+    it('disables the submit button when the key is a duplicate', async () => {
+      const user = userEvent.setup();
+      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+
+      await user.click(screen.getByText('editor.addKey'));
+
+      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
+        target: {value: 'actions.save'},
+      });
+
+      const submitButton = screen.getByText('editor.addKey.submit').closest('button');
+      expect(submitButton).toBeDisabled();
     });
   });
 });

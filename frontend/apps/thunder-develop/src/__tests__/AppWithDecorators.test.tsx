@@ -19,7 +19,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import AppWithConfig from '../AppWithConfig';
+import AppWithDecorators from '../AppWithDecorators';
 
 const mockGetClientId = vi.fn();
 const mockGetServerUrl = vi.fn();
@@ -63,11 +63,33 @@ vi.mock('@asgardeo/react', () => ({
       {children}
     </div>
   ),
-  useAsgardeo: () => ({
-    http: {
-      request: vi.fn().mockResolvedValue({data: {language: 'en-US', translations: {}}}),
-    },
-  }),
+}));
+
+// Mock OxygenUI (used by withTheme)
+vi.mock('@wso2/oxygen-ui', () => ({
+  AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
+  OxygenUIThemeProvider: ({children}: {children: ReactNode}) => <div data-testid="theme-provider">{children}</div>,
+}));
+
+// Mock i18next top-level await in withI18n
+vi.mock('i18next', () => ({
+  default: {
+    use: vi.fn().mockReturnThis(),
+    init: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('react-i18next', () => ({
+  initReactI18next: {},
+}));
+
+vi.mock('@thunder/i18n/locales/en-US', () => ({
+  default: {common: {}, navigation: {}},
+}));
+
+// Mock I18nProvider (used by withI18n)
+vi.mock('../i18n/I18nProvider', () => ({
+  default: ({children}: {children: ReactNode}) => <div data-testid="i18n-provider">{children}</div>,
 }));
 
 // Mock App component
@@ -75,19 +97,7 @@ vi.mock('../App', () => ({
   default: () => <div data-testid="app">App Component</div>,
 }));
 
-// Mock theme
-vi.mock('@thunder/ui', () => ({
-  theme: {
-    palette: {
-      mode: 'light',
-    },
-    typography: {
-      fontWeightBold: 700,
-    },
-  },
-}));
-
-describe('AppWithConfig', () => {
+describe('AppWithDecorators', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up default environment variables
@@ -103,7 +113,7 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://test-server.example.com');
@@ -116,7 +126,7 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
@@ -129,7 +139,7 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     expect(screen.getByTestId('app')).toBeInTheDocument();
   });
@@ -139,7 +149,7 @@ describe('AppWithConfig', () => {
     mockGetClientId.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
@@ -150,7 +160,7 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-client-id', 'config-client-id');
@@ -161,7 +171,7 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientId.mockReturnValue(null);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
@@ -172,7 +182,7 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue(undefined);
     mockGetClientUrl.mockReturnValue(undefined);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
@@ -185,7 +195,7 @@ describe('AppWithConfig', () => {
     mockGetClientId.mockReturnValue(undefined);
     mockGetClientUrl.mockReturnValue('https://config-client.example.com');
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
@@ -198,7 +208,7 @@ describe('AppWithConfig', () => {
     mockGetClientId.mockReturnValue('config-client-id');
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
@@ -212,7 +222,7 @@ describe('AppWithConfig', () => {
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
     mockGetScopes.mockReturnValue(['openid', 'profile', 'email', 'system']);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-scopes', '["openid","profile","email","system"]');
@@ -224,7 +234,7 @@ describe('AppWithConfig', () => {
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
     mockGetScopes.mockReturnValue([]);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).not.toHaveAttribute('data-scopes');
@@ -236,7 +246,7 @@ describe('AppWithConfig', () => {
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
     mockGetScopes.mockReturnValue(['openid', 'profile']);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-scopes', '["openid","profile"]');
@@ -248,7 +258,7 @@ describe('AppWithConfig', () => {
     mockGetClientUrl.mockReturnValue(null);
     mockGetScopes.mockReturnValue(['openid', 'profile', 'email']);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
@@ -265,7 +275,7 @@ describe('AppWithConfig', () => {
     mockGetClientUrl.mockReturnValue('');
     mockGetScopes.mockReturnValue([]);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     // Empty strings are truthy, so they will be passed through (not fallback to env vars)
@@ -281,7 +291,7 @@ describe('AppWithConfig', () => {
     mockGetClientUrl.mockReturnValue('https://client.test');
     mockGetScopes.mockReturnValue(['scope1', 'scope2', 'scope3']);
 
-    render(<AppWithConfig />);
+    render(<AppWithDecorators />);
 
     const provider = screen.getByTestId('asgardeo-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://server.test');

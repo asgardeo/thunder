@@ -432,9 +432,9 @@ func (suite *FlowMetaAPITestSuite) TestGetFlowMetadataI18nDefaults() {
 	err = json.Unmarshal(body, &metadata)
 	suite.Require().NoError(err)
 
-	// i18n should have at least "en" in the languages list
+	// i18n should have at least "en-US" in the languages list
 	suite.NotNil(metadata.I18n.Languages)
-	suite.Contains(metadata.I18n.Languages, "en")
+	suite.Contains(metadata.I18n.Languages, "en-US")
 
 	// Translations map should not be nil
 	suite.NotNil(metadata.I18n.Translations)

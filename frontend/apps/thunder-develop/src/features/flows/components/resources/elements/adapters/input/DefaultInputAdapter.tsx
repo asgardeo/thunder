@@ -23,8 +23,8 @@ import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFie
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import useResolveI18n from '@/features/flows/hooks/useResolveI18n';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../../hint';
-import PlaceholderComponent from '../PlaceholderComponent';
 
 const INPUT_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -66,6 +66,7 @@ export interface DefaultInputAdapterPropsInterface {
  */
 function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -105,7 +106,7 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
         maxLength: inputElement?.maxLength,
         minLength: inputElement?.minLength,
       }}
-      label={<PlaceholderComponent value={inputElement?.label ?? ''} />}
+      label={resolve(inputElement?.label, {t}) ?? inputElement?.label ?? ''}
       multiline={inputElement?.multiline}
       placeholder={resolvedPlaceholder}
       required={inputElement?.required}
