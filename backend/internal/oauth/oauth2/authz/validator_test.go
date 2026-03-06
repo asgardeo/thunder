@@ -479,3 +479,149 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 	assert.Empty(suite.T(), errorCode)
 	assert.Empty(suite.T(), errorMessage)
 }
+
+// Prompt Parameter Validation Tests (OIDC Core §3.1.2.1)
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptNone_LoginRequired() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "none",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorLoginRequired, errorCode)
+	assert.Equal(suite.T(), "User authentication is required", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PromptLogin_Success() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "login",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptConsent_ConsentRequired() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "consent",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorConsentRequired, errorCode)
+	assert.Equal(suite.T(), "Consent is not supported", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptNoneCombined_InvalidRequest() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "none login",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Contains(suite.T(), errorMessage, "must not be combined")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptInvalidValue_InvalidRequest() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "invalid_value",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Contains(suite.T(), errorMessage, "Invalid prompt parameter value")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptSelectAccount() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "select_account",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorAccountSelectionRequired, errorCode)
+	assert.Equal(suite.T(), "Account selection is not supported", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptLoginConsent_ConsentRequired() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "login consent",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorConsentRequired, errorCode)
+	assert.Equal(suite.T(), "Consent is not supported", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptEmpty_InvalidRequest() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Contains(suite.T(), errorMessage, "Invalid prompt parameter value")
+}
