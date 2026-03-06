@@ -12,9 +12,7 @@
             "id": "permission_validator",
             "type": "TASK_EXECUTION",
             "properties": {
-                "requiredScopes": [
-                    "system"
-                ]
+                "requiredScopes": ["system"]
             },
             "executor": {
                 "name": "PermissionValidator"
@@ -27,7 +25,60 @@
             "executor": {
                 "name": "UserTypeResolver"
             },
-            "onSuccess": "prompt_email"
+            "onSuccess": "prompt_email",
+            "onIncomplete": "prompt_usertype"
+        },
+        {
+            "id": "prompt_usertype",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "heading_usertype",
+                        "label": "Sign Up",
+                        "variant": "HEADING_2"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_usertype",
+                        "components": [
+                            {
+                                "type": "SELECT",
+                                "id": "usertype_input",
+                                "ref": "userType",
+                                "label": "User Type",
+                                "placeholder": "Select your user type",
+                                "required": true,
+                                "options": []
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_usertype",
+                                "label": "Continue",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "usertype_input",
+                            "identifier": "userType",
+                            "type": "SELECT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_usertype",
+                        "nextNode": "user_type_resolver"
+                    }
+                }
+            ]
         },
         {
             "id": "prompt_email",

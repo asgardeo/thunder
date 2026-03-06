@@ -148,8 +148,8 @@ Thunder's configuration is managed through the `deployment.yaml` file located at
 
 2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
    ```yaml
-   database:
-     identity:
+    database:
+       config:
        password: "{{.DB_PASSWORD}}"
    ```
 

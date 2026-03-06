@@ -72,6 +72,12 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 		RuntimeData: make(map[string]string),
 	}
 
+	if !ctx.AuthenticatedUser.IsAuthenticated && ctx.FlowType == common.FlowTypeRegistration {
+		logger.Debug("Sending executor complete response for unauthenticated user in registration flow")
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
 	if !ctx.AuthenticatedUser.IsAuthenticated {
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotAuthenticated

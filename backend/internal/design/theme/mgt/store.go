@@ -40,6 +40,7 @@ type themeMgtStoreInterface interface {
 	UpdateTheme(id string, theme UpdateThemeRequest) error
 	DeleteTheme(id string) error
 	GetApplicationsCountByThemeID(id string) (int, error)
+	IsThemeDeclarative(id string) bool
 }
 
 // themeMgtStore is the default implementation of themeMgtStoreInterface.
@@ -58,7 +59,7 @@ func newThemeMgtStore() themeMgtStoreInterface {
 
 // GetThemeListCount retrieves the total count of theme configurations.
 func (s *themeMgtStore) GetThemeListCount() (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +74,7 @@ func (s *themeMgtStore) GetThemeListCount() (int, error) {
 
 // GetThemeList retrieves theme configurations with pagination.
 func (s *themeMgtStore) GetThemeList(limit, offset int) ([]Theme, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func (s *themeMgtStore) GetThemeList(limit, offset int) ([]Theme, error) {
 
 // CreateTheme creates a new theme configuration in the database.
 func (s *themeMgtStore) CreateTheme(id string, theme CreateThemeRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func (s *themeMgtStore) CreateTheme(id string, theme CreateThemeRequest) error {
 
 // GetTheme retrieves a theme configuration by its id.
 func (s *themeMgtStore) GetTheme(id string) (Theme, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return Theme{}, err
 	}
@@ -140,7 +141,7 @@ func (s *themeMgtStore) GetTheme(id string) (Theme, error) {
 
 // IsThemeExist checks if a theme configuration exists by its ID.
 func (s *themeMgtStore) IsThemeExist(id string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -164,7 +165,7 @@ func (s *themeMgtStore) IsThemeExist(id string) (bool, error) {
 
 // UpdateTheme updates a theme configuration.
 func (s *themeMgtStore) UpdateTheme(id string, theme UpdateThemeRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -184,7 +185,7 @@ func (s *themeMgtStore) UpdateTheme(id string, theme UpdateThemeRequest) error {
 
 // DeleteTheme deletes a theme configuration.
 func (s *themeMgtStore) DeleteTheme(id string) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ func (s *themeMgtStore) DeleteTheme(id string) error {
 
 // GetApplicationsCountByThemeID returns the count of applications using a specific theme.
 func (s *themeMgtStore) GetApplicationsCountByThemeID(id string) (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -212,11 +213,16 @@ func (s *themeMgtStore) GetApplicationsCountByThemeID(id string) (int, error) {
 	return parseCountResult(results)
 }
 
-// getIdentityDBClient retrieves the identity database client.
-func (s *themeMgtStore) getIdentityDBClient() (provider.DBClientInterface, error) {
+// IsThemeDeclarative checks if a theme is immutable (in database store, all themes are mutable).
+func (s *themeMgtStore) IsThemeDeclarative(id string) bool {
+	return false
+}
+
+// getConfigDBClient retrieves the config database client.
+func (s *themeMgtStore) getConfigDBClient() (provider.DBClientInterface, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get identity database client: %w", err)
+		return nil, fmt.Errorf("failed to get config database client: %w", err)
 	}
 	return dbClient, nil
 }
@@ -267,9 +273,9 @@ func (s *themeMgtStore) getTimestamp(row map[string]interface{}, key string) (st
 
 // buildThemeListItemFromResultRow builds a Theme from a database result row (list view).
 func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface{}) (Theme, error) {
-	id, ok := row["theme_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Theme{}, fmt.Errorf("theme_id not found or invalid type")
+		return Theme{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)
@@ -303,9 +309,9 @@ func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface
 
 // buildThemeFromResultRow builds a Theme from a database result row (detail view).
 func (s *themeMgtStore) buildThemeFromResultRow(row map[string]interface{}) (Theme, error) {
-	id, ok := row["theme_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Theme{}, fmt.Errorf("theme_id not found or invalid type")
+		return Theme{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)

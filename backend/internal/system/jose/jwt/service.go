@@ -44,7 +44,7 @@ import (
 
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
+	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string) (
 		string, int64, *serviceerror.ServiceError)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
@@ -131,8 +131,10 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 }
 
 // GenerateJWT generates a standard JWT signed with the server's private key.
-func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
-	string, int64, *serviceerror.ServiceError) {
+// The typ parameter sets the JWT header "typ" field. If empty, defaults to "JWT".
+func (js *jwtService) GenerateJWT(
+	sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string,
+) (string, int64, *serviceerror.ServiceError) {
 	if js.privateKey == nil {
 		js.logger.Error("Private key not found for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
@@ -140,9 +142,12 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 	thunderRuntime := config.GetThunderRuntime()
 
 	// Create the JWT header.
+	if typ == "" {
+		typ = TokenTypeJWT
+	}
 	header := map[string]string{
 		"alg": string(js.jwsAlg),
-		"typ": "JWT",
+		"typ": typ,
 		"kid": js.kid,
 	}
 

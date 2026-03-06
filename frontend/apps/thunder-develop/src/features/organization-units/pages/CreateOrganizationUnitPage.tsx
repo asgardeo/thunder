@@ -38,10 +38,10 @@ import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {useLogger} from '@thunder/logger/react';
+import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 import useCreateOrganizationUnit from '../api/useCreateOrganizationUnit';
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
 import type {CreateOrganizationUnitRequest} from '../models/requests';
-import generateOrganizationUnitNameSuggestions from '../utils/generateOrganizationUnitNameSuggestions';
 
 /**
  * Creates a Zod schema for the create organization unit form with i18n support.
@@ -99,7 +99,7 @@ export default function CreateOrganizationUnitPage(): JSX.Element {
     },
   });
 
-  const nameSuggestions: string[] = useMemo((): string[] => generateOrganizationUnitNameSuggestions(), []);
+  const nameSuggestions: string[] = useMemo((): string[] => generateRandomHumanReadableIdentifiers(), []);
 
   /**
    * Generates a handle from the name by lowercasing and replacing spaces with hyphens.

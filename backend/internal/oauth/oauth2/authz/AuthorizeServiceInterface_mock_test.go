@@ -102,3 +102,135 @@ func (_c *AuthorizeServiceInterfaceMock_GetAuthorizationCodeDetails_Call) RunAnd
 	_c.Call.Return(run)
 	return _c
 }
+
+// HandleAuthorizationCallback provides a mock function for the type AuthorizeServiceInterfaceMock
+func (_mock *AuthorizeServiceInterfaceMock) HandleAuthorizationCallback(authID string, assertion string) (string, *AuthorizationError) {
+	ret := _mock.Called(authID, assertion)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HandleAuthorizationCallback")
+	}
+
+	var r0 string
+	var r1 *AuthorizationError
+	if returnFunc, ok := ret.Get(0).(func(string, string) (string, *AuthorizationError)); ok {
+		return returnFunc(authID, assertion)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = returnFunc(authID, assertion)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string) *AuthorizationError); ok {
+		r1 = returnFunc(authID, assertion)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*AuthorizationError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandleAuthorizationCallback'
+type AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call struct {
+	*mock.Call
+}
+
+// HandleAuthorizationCallback is a helper method to define mock.On call
+//   - authID string
+//   - assertion string
+func (_e *AuthorizeServiceInterfaceMock_Expecter) HandleAuthorizationCallback(authID interface{}, assertion interface{}) *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call {
+	return &AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call{Call: _e.mock.On("HandleAuthorizationCallback", authID, assertion)}
+}
+
+func (_c *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call) Run(run func(authID string, assertion string)) *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call) Return(s string, authorizationError *AuthorizationError) *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call {
+	_c.Call.Return(s, authorizationError)
+	return _c
+}
+
+func (_c *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call) RunAndReturn(run func(authID string, assertion string) (string, *AuthorizationError)) *AuthorizeServiceInterfaceMock_HandleAuthorizationCallback_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HandleInitialAuthorizationRequest provides a mock function for the type AuthorizeServiceInterfaceMock
+func (_mock *AuthorizeServiceInterfaceMock) HandleInitialAuthorizationRequest(msg *OAuthMessage) (*AuthorizationInitResult, *AuthorizationError) {
+	ret := _mock.Called(msg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HandleInitialAuthorizationRequest")
+	}
+
+	var r0 *AuthorizationInitResult
+	var r1 *AuthorizationError
+	if returnFunc, ok := ret.Get(0).(func(*OAuthMessage) (*AuthorizationInitResult, *AuthorizationError)); ok {
+		return returnFunc(msg)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*OAuthMessage) *AuthorizationInitResult); ok {
+		r0 = returnFunc(msg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AuthorizationInitResult)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*OAuthMessage) *AuthorizationError); ok {
+		r1 = returnFunc(msg)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*AuthorizationError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandleInitialAuthorizationRequest'
+type AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call struct {
+	*mock.Call
+}
+
+// HandleInitialAuthorizationRequest is a helper method to define mock.On call
+//   - msg *OAuthMessage
+func (_e *AuthorizeServiceInterfaceMock_Expecter) HandleInitialAuthorizationRequest(msg interface{}) *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call {
+	return &AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call{Call: _e.mock.On("HandleInitialAuthorizationRequest", msg)}
+}
+
+func (_c *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call) Run(run func(msg *OAuthMessage)) *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *OAuthMessage
+		if args[0] != nil {
+			arg0 = args[0].(*OAuthMessage)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call) Return(authorizationInitResult *AuthorizationInitResult, authorizationError *AuthorizationError) *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call {
+	_c.Call.Return(authorizationInitResult, authorizationError)
+	return _c
+}
+
+func (_c *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call) RunAndReturn(run func(msg *OAuthMessage) (*AuthorizationInitResult, *AuthorizationError)) *AuthorizeServiceInterfaceMock_HandleInitialAuthorizationRequest_Call {
+	_c.Call.Return(run)
+	return _c
+}

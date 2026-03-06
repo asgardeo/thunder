@@ -64,10 +64,9 @@ type CreateGroupRequest struct {
 
 // UpdateGroupRequest represents the request body for updating a group.
 type UpdateGroupRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitId string   `json:"organizationUnitId"`
-	Members            []Member `json:"members,omitempty"`
+	Name               string `json:"name"`
+	Description        string `json:"description,omitempty"`
+	OrganizationUnitId string `json:"organizationUnitId"`
 }
 
 // GroupListResponse represents the response for listing groups with pagination.
@@ -93,6 +92,11 @@ type CreateGroupByPathRequest struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
 	Members     []Member `json:"members,omitempty"`
+}
+
+// MembersRequest represents the request body for adding or removing members from a group.
+type MembersRequest struct {
+	Members []Member `json:"members"`
 }
 
 // ErrorResponse represents an error response.

@@ -147,6 +147,41 @@ func (s *ExecutorTestSuite) TestHasRequiredInputs() {
 			false,
 			0,
 		},
+		{
+			"Data in forwarded data (string)",
+			[]common.Input{{Identifier: testInputName, Required: true}},
+			map[string]string{},
+			map[string]string{},
+			true,
+			0,
+		},
+		{
+			"Data in forwarded data (non-string)",
+			[]common.Input{{Identifier: testInputName, Required: true}},
+			map[string]string{},
+			map[string]string{},
+			false,
+			1,
+		},
+		{
+			"Partial data with forwarded data",
+			[]common.Input{
+				{Identifier: testInputName, Required: true},
+				{Identifier: "password", Required: true},
+			},
+			map[string]string{testInputName: testInputValue},
+			map[string]string{},
+			true, // Both inputs satisfied (username from UserInputs, password from ForwardedData)
+			0,    // No missing inputs
+		},
+		{
+			"All sources empty",
+			[]common.Input{{Identifier: testInputName, Required: true}},
+			map[string]string{},
+			map[string]string{},
+			false,
+			1,
+		},
 	}
 
 	for _, tt := range tests {
@@ -157,6 +192,24 @@ func (s *ExecutorTestSuite) TestHasRequiredInputs() {
 				UserInputs:  tt.userInputs,
 				RuntimeData: tt.runtimeData,
 			}
+
+			// Add ForwardedData for specific test cases
+			if tt.name == "Data in forwarded data (string)" {
+				ctx.ForwardedData = map[string]interface{}{
+					testInputName: testInputValue,
+				}
+			} else if tt.name == "Data in forwarded data (non-string)" {
+				ctx.ForwardedData = map[string]interface{}{
+					testInputName: 123, // Non-string value
+				}
+			} else if tt.name == "Partial data with forwarded data" {
+				ctx.ForwardedData = map[string]interface{}{
+					"password": "pass123",
+				}
+			} else if tt.name == "All sources empty" {
+				ctx.ForwardedData = map[string]interface{}{}
+			}
+
 			execResp := &common.ExecutorResponse{}
 
 			result := exec.HasRequiredInputs(ctx, execResp)
@@ -248,6 +301,26 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 			"",
 			"",
 		},
+		{
+			"Prerequisite met via forwarded data (string)",
+			[]common.Input{{Identifier: "email", Required: true}},
+			authncm.AuthenticatedUser{},
+			map[string]string{},
+			map[string]string{},
+			true,
+			"",
+			"",
+		},
+		{
+			"Prerequisite not met via forwarded data (non-string)",
+			[]common.Input{{Identifier: "email", Required: true}},
+			authncm.AuthenticatedUser{},
+			map[string]string{},
+			map[string]string{},
+			false,
+			common.ExecFailure,
+			"Prerequisite not met: email",
+		},
 	}
 
 	for _, tt := range tests {
@@ -259,6 +332,18 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 				UserInputs:        tt.userInputs,
 				RuntimeData:       tt.runtimeData,
 			}
+
+			// Add ForwardedData for specific test cases
+			if tt.name == "Prerequisite met via forwarded data (string)" {
+				ctx.ForwardedData = map[string]interface{}{
+					"email": "test@example.com",
+				}
+			} else if tt.name == "Prerequisite not met via forwarded data (non-string)" {
+				ctx.ForwardedData = map[string]interface{}{
+					"email": 12345, // Non-string value
+				}
+			}
+
 			execResp := &common.ExecutorResponse{}
 
 			result := exec.ValidatePrerequisites(ctx, execResp)

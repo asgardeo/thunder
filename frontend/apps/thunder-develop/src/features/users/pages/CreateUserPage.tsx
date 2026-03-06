@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -17,265 +17,432 @@
  */
 
 import {useNavigate} from 'react-router';
-import {useForm, Controller} from 'react-hook-form';
-import {useMemo, useState, useEffect} from 'react';
-import {Box, Stack, Typography, Button, Paper, FormLabel, FormControl, Select, MenuItem} from '@wso2/oxygen-ui';
-import {ArrowLeft, Plus, Save} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo} from 'react';
+import {
+  Box,
+  Stack,
+  Button,
+  IconButton,
+  LinearProgress,
+  Breadcrumbs,
+  Typography,
+  Alert,
+  Snackbar,
+} from '@wso2/oxygen-ui';
+import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import useGetUserSchemas from '../api/useGetUserSchemas';
-import type {SchemaInterface} from '../types/users';
 import useGetUserSchema from '../api/useGetUserSchema';
 import useCreateUser from '../api/useCreateUser';
-import renderSchemaField from '../utils/renderSchemaField';
+import useGetChildOrganizationUnits from '../../organization-units/api/useGetChildOrganizationUnits';
+import useUserCreate from '../contexts/UserCreate/useUserCreate';
+import {UserCreateFlowStep} from '../models/user-create-flow';
+import ConfigureUserType from '../components/create-user/ConfigureUserType';
+import ConfigureOrganizationUnit from '../components/create-user/ConfigureOrganizationUnit';
+import ConfigureUserDetails from '../components/create-user/ConfigureUserDetails';
 
-interface CreateUserFormData {
-  schema: string;
-  [key: string]: string | number | boolean;
-}
-
-export default function CreateUserPage() {
+export default function CreateUserPage(): JSX.Element {
+  const {t} = useTranslation();
   const navigate = useNavigate();
-  const [selectedSchema, setSelectedSchema] = useState<SchemaInterface>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const {data: originalUserSchemas} = useGetUserSchemas();
-  const {createUser, error: createUserError} = useCreateUser();
+  const logger = useLogger('CreateUserPage');
+  const createUserMutation = useCreateUser();
 
   const {
-    data: defaultUserSchema,
-    loading: isDefaultUserSchemaRequestLoading,
-    error: defaultUserSchemaRequestError,
-  } = useGetUserSchema(selectedSchema?.id);
+    currentStep,
+    setCurrentStep,
+    selectedSchema,
+    setSelectedSchema,
+    selectedOuId,
+    setSelectedOuId,
+    formValues,
+    setFormValues,
+    error,
+    setError,
+  } = useUserCreate();
 
-  const userSchemas: SchemaInterface[] = useMemo(() => {
-    if (!originalUserSchemas?.schemas) {
-      return [];
-    }
-
-    if (originalUserSchemas.schemas.length > 0 && !selectedSchema) {
-      setSelectedSchema(originalUserSchemas.schemas[0]);
-    }
-
-    return originalUserSchemas?.schemas;
-  }, [originalUserSchemas, selectedSchema]);
-
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    formState: {errors},
-  } = useForm<CreateUserFormData>({
-    defaultValues: {
-      schema: '',
-    },
+  const {data: userSchemasData} = useGetUserSchemas();
+  const {data: userSchemaDetails, isLoading: isSchemaLoading} = useGetUserSchema(selectedSchema?.id);
+  const {data: childOuData, isLoading: isChildOuLoading} = useGetChildOrganizationUnits(selectedSchema?.ouId, {
+    limit: 1,
+    offset: 0,
   });
 
-  // Set default schema when schemas are loaded
-  useEffect(() => {
-    if (selectedSchema) {
-      setValue('schema', selectedSchema.name);
+  const userSchemas = useMemo(() => userSchemasData?.schemas ?? [], [userSchemasData]);
+  const hasChildOUs = !isChildOuLoading && (childOuData?.totalResults ?? 0) > 0;
+
+  const activeSteps = useMemo((): UserCreateFlowStep[] => {
+    const base: UserCreateFlowStep[] = [UserCreateFlowStep.USER_TYPE];
+    if (hasChildOUs) {
+      base.push(UserCreateFlowStep.ORGANIZATION_UNIT);
     }
-  }, [selectedSchema, setValue]);
+    base.push(UserCreateFlowStep.USER_DETAILS);
+    return base;
+  }, [hasChildOUs]);
 
-  const onSubmit = async (data: CreateUserFormData) => {
-    try {
-      setIsSubmitting(true);
+  const steps: Partial<Record<UserCreateFlowStep, {label: string}>> = useMemo(() => {
+    const map: Partial<Record<UserCreateFlowStep, {label: string}>> = {
+      USER_TYPE: {label: t('users:createWizard.steps.userType')},
+    };
+    if (hasChildOUs) {
+      map.ORGANIZATION_UNIT = {label: t('users:createWizard.steps.organizationUnit')};
+    }
+    map.USER_DETAILS = {label: t('users:createWizard.steps.userDetails')};
+    return map;
+  }, [t, hasChildOUs]);
 
-      // Extract schema from form data (schema already contains the schema name)
-      const {schema, ...attributes} = data;
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-      const trimmedOuId = selectedSchema?.ouId?.trim();
-      const organizationUnitId = trimmedOuId === '' ? undefined : trimmedOuId;
+  const [stepReady, setStepReady] = useState<Record<UserCreateFlowStep, boolean>>({
+    USER_TYPE: false,
+    ORGANIZATION_UNIT: false,
+    USER_DETAILS: false,
+  });
 
-      if (!organizationUnitId) {
-        throw new Error('Organization unit ID is missing for the selected user type');
+  const handleClose = (): void => {
+    if (createUserMutation.isPending) return;
+    Promise.resolve(navigate('/users')).catch((_error: unknown) => {
+      logger.error('Failed to navigate to users page', {error: _error});
+    });
+  };
+
+  const handleStepReadyChange = useCallback((step: UserCreateFlowStep, isReady: boolean): void => {
+    setStepReady((prev) => ({
+      ...prev,
+      [step]: isReady,
+    }));
+  }, []);
+
+  const handleUserTypeStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserCreateFlowStep.USER_TYPE, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
+  const handleOrganizationUnitStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserCreateFlowStep.ORGANIZATION_UNIT, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
+  const handleUserDetailsStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserCreateFlowStep.USER_DETAILS, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
+  const handleSchemaChange = useCallback(
+    (schema: typeof selectedSchema): void => {
+      if (schema?.id !== selectedSchema?.id) {
+        setFormValues({});
+        setSelectedOuId(null);
+        setStepReady((prev) => ({...prev, ORGANIZATION_UNIT: false, USER_DETAILS: false}));
       }
+      setSelectedSchema(schema);
+    },
+    [selectedSchema, setSelectedSchema, setSelectedOuId, setFormValues],
+  );
 
-      // Prepare the request body according to the API spec
-      const requestBody = {
-        organizationUnit: organizationUnitId,
-        type: schema,
-        attributes,
-      };
+  const handleSubmit = async (): Promise<void> => {
+    setValidationError(null);
+    setError(null);
 
-      // Call the API to create the user
-      await createUser(requestBody);
+    if (!selectedSchema) {
+      setValidationError(t('users:createWizard.validationErrors.userTypeRequired'));
+      setSnackbarOpen(true);
+      return;
+    }
 
-      // Navigate to users list on success
+    // Use the explicitly selected OU if available, otherwise fall back to the schema's OU
+    const ouId = selectedOuId ?? selectedSchema.ouId;
+    const trimmedOuId = ouId?.trim();
+    if (!trimmedOuId) {
+      setValidationError(t('users:createWizard.validationErrors.ouIdMissing'));
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Filter out empty/undefined attribute values to avoid sending
+    // blank fields that would fail backend schema validation.
+    const filteredAttributes = Object.fromEntries(
+      Object.entries(formValues).filter(
+        ([, v]) => v !== '' && v !== undefined && v !== null,
+      ),
+    );
+
+    const requestBody = {
+      organizationUnit: trimmedOuId,
+      type: selectedSchema.name,
+      attributes: filteredAttributes,
+    };
+
+    try {
+      await createUserMutation.mutateAsync(requestBody);
       await navigate('/users');
-    } catch (error) {
-      // Error is already handled in the hook
-      // eslint-disable-next-line no-console
-      console.error('Failed to create user:', error);
-    } finally {
-      setIsSubmitting(false);
+    } catch (submitError) {
+      logger.error('Failed to create user or navigate', {error: submitError});
     }
   };
 
-  const handleCancel = async () => {
-    await navigate('/users');
+  const handleNextStep = (): void => {
+    switch (currentStep) {
+      case UserCreateFlowStep.USER_TYPE:
+        if (selectedSchema?.ouId && isChildOuLoading) {
+          // Wait for child OU probe to resolve before deciding
+          return;
+        }
+        if (hasChildOUs) {
+          setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          // No child OUs - skip OU step and use the schema's OU directly
+          setSelectedOuId(selectedSchema?.ouId ?? null);
+          setCurrentStep(UserCreateFlowStep.USER_DETAILS);
+        }
+        break;
+      case UserCreateFlowStep.ORGANIZATION_UNIT:
+        setCurrentStep(UserCreateFlowStep.USER_DETAILS);
+        break;
+      case UserCreateFlowStep.USER_DETAILS:
+        handleSubmit().catch(() => {
+          // Error handled in handleSubmit
+        });
+        break;
+      default:
+        break;
+    }
   };
 
-  const handleBack = async () => {
-    await navigate('/users');
+  const handlePrevStep = (): void => {
+    switch (currentStep) {
+      case UserCreateFlowStep.ORGANIZATION_UNIT:
+        setCurrentStep(UserCreateFlowStep.USER_TYPE);
+        break;
+      case UserCreateFlowStep.USER_DETAILS:
+        if (hasChildOUs) {
+          setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          setCurrentStep(UserCreateFlowStep.USER_TYPE);
+        }
+        break;
+      default:
+        break;
+    }
   };
 
-  const handleCreateUserType = () => {
-    // TODO: Implement navigation to create user schema page
-    // eslint-disable-next-line no-console
-    console.log('Navigate to create user type page');
-  };
-
-  return (
-    <Box>
-      <Button
-        onClick={() => {
-          handleBack().catch(() => {
-            // Handle navigation error
-          });
-        }}
-        variant="text"
-        sx={{mb: 2}}
-        aria-label="Go back"
-        startIcon={<ArrowLeft size={16} />}
-      >
-        Back
-      </Button>
-
-      <Stack direction="row" alignItems="flex-start" mb={4} gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            Create User
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Add a new user to your organization
-          </Typography>
-        </Box>
-      </Stack>
-
-      <Paper sx={{p: 4}}>
-        <Box
-          component="form"
-          onSubmit={(event) => {
-            handleSubmit(onSubmit)(event).catch(() => {
-              // Handle form submission error
-            });
-          }}
-          noValidate
-          sx={{display: 'flex', flexDirection: 'column', gap: 2}}
-        >
-          {/* Schema Select Field with Create Button */}
-          <Box>
-            <FormLabel htmlFor="schema" sx={{mb: 1, display: 'block'}}>
-              User Type
-            </FormLabel>
-            <Stack direction="row" spacing={2} alignItems="flex-start">
-              <FormControl sx={{flexGrow: 1}} error={!!errors.schema}>
-                <Controller
-                  name="schema"
-                  control={control}
-                  rules={{
-                    required: 'User type is required',
-                  }}
-                  render={({field}) => (
-                    <Select
-                      {...field}
-                      id="schema"
-                      value={field.value ?? selectedSchema?.name}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        const schema = userSchemas.find((s) => s.name === e.target.value);
-                        setSelectedSchema(schema);
-                      }}
-                      required
-                      error={!!errors.schema}
-                      displayEmpty
-                    >
-                      {userSchemas.length === 0 ? (
-                        <MenuItem value="" disabled>
-                          Loading schemas...
-                        </MenuItem>
-                      ) : (
-                        userSchemas.map((schema) => (
-                          <MenuItem key={schema.name} value={schema.name}>
-                            {schema.name}
-                          </MenuItem>
-                        ))
-                      )}
-                    </Select>
-                  )}
-                />
-                {errors.schema && (
-                  <Typography variant="caption" color="error" sx={{mt: 0.5, ml: 1.75}}>
-                    {errors.schema.message}
-                  </Typography>
-                )}
-              </FormControl>
-              <Button variant="outlined" startIcon={<Plus size={16} />} onClick={handleCreateUserType}>
-                Create
-              </Button>
-            </Stack>
-          </Box>
-
-          {/* Dynamic Schema Fields */}
-          {isDefaultUserSchemaRequestLoading && (
+  const renderStepContent = (): JSX.Element | null => {
+    switch (currentStep) {
+      case UserCreateFlowStep.USER_TYPE:
+        return (
+          <ConfigureUserType
+            schemas={userSchemas}
+            selectedSchema={selectedSchema}
+            onSchemaChange={handleSchemaChange}
+            onReadyChange={handleUserTypeStepReadyChange}
+          />
+        );
+      case UserCreateFlowStep.ORGANIZATION_UNIT:
+        if (!selectedSchema?.ouId) {
+          // Safety fallback — should not happen since the OU step is only shown
+          // when a schema with an ouId that has child OUs is selected.
+          setCurrentStep(UserCreateFlowStep.USER_TYPE);
+          return null;
+        }
+        return (
+          <ConfigureOrganizationUnit
+            key={selectedSchema.ouId}
+            rootOuId={selectedSchema.ouId}
+            selectedOuId={selectedOuId ?? ''}
+            onOuIdChange={setSelectedOuId}
+            onReadyChange={handleOrganizationUnitStepReadyChange}
+          />
+        );
+      case UserCreateFlowStep.USER_DETAILS:
+        if (isSchemaLoading) {
+          return (
             <Box sx={{textAlign: 'center', py: 4}}>
               <Typography variant="body2" color="text.secondary">
-                Loading schema fields...
+                {t('common:status.loading')}
               </Typography>
             </Box>
-          )}
+          );
+        }
+        if (!userSchemaDetails) {
+          return null;
+        }
+        return (
+          <ConfigureUserDetails
+            key={selectedSchema?.id}
+            schema={userSchemaDetails}
+            defaultValues={formValues}
+            onFormValuesChange={setFormValues}
+            onReadyChange={handleUserDetailsStepReadyChange}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
-          {defaultUserSchemaRequestError && (
-            <Box sx={{textAlign: 'center', py: 4}}>
-              <Typography variant="body2" color="error">
-                Error loading schema: {defaultUserSchemaRequestError.message}
-              </Typography>
-            </Box>
-          )}
+  const getStepProgress = (): number => {
+    const currentIndex = activeSteps.indexOf(currentStep);
+    return ((currentIndex + 1) / activeSteps.length) * 100;
+  };
 
-          {defaultUserSchema?.schema &&
-            Object.entries(defaultUserSchema.schema).map(([fieldName, fieldDef]) =>
-              renderSchemaField(fieldName, fieldDef, control, errors),
-            )}
+  const getBreadcrumbSteps = (): UserCreateFlowStep[] => {
+    const currentIndex = activeSteps.indexOf(currentStep);
+    return activeSteps.slice(0, currentIndex + 1);
+  };
 
-          {/* Create User Error Display */}
-          {createUserError && (
-            <Box sx={{p: 2, bgcolor: 'error.light', borderRadius: 1}}>
-              <Typography variant="body2" color="error.dark" sx={{fontWeight: 'bold'}}>
-                {createUserError.message}
-              </Typography>
-              {createUserError.description && (
-                <Typography variant="caption" color="error.dark">
-                  {createUserError.description}
-                </Typography>
-              )}
-            </Box>
-          )}
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
 
-          {/* Form Actions */}
-          <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{mt: 2}}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                handleCancel().catch(() => {
-                  // Handle navigation error
-                });
+  const isLastStep = currentStep === activeSteps[activeSteps.length - 1];
+
+  return (
+    <Box sx={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
+      {/* Progress bar at the very top */}
+      <LinearProgress variant="determinate" value={getStepProgress()} sx={{height: 6}} />
+
+      <Box sx={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+        {/* Header with close button and breadcrumb */}
+        <Box sx={{p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <IconButton
+              aria-label={t('common:actions.close')}
+              onClick={handleClose}
+              sx={{
+                bgcolor: 'background.paper',
+                '&:hover': {bgcolor: 'action.hover'},
+                boxShadow: 1,
               }}
-              disabled={isSubmitting}
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={isSubmitting ? null : <Save size={16} />}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Create User'}
-            </Button>
+              <X size={24} />
+            </IconButton>
+            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
+              {getBreadcrumbSteps().map((step, index, array) => {
+                const isLast = index === array.length - 1;
+
+                return isLast ? (
+                  <Typography key={step} variant="h5" color="text.primary">
+                    {steps[step]?.label}
+                  </Typography>
+                ) : (
+                  <Typography
+                    key={step}
+                    variant="h5"
+                    color="inherit"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setCurrentStep(step)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setCurrentStep(step);
+                      }
+                    }}
+                    sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
+                  >
+                    {steps[step]?.label}
+                  </Typography>
+                );
+              })}
+            </Breadcrumbs>
           </Stack>
         </Box>
-      </Paper>
+
+        {/* Main content */}
+        <Box sx={{flex: 1, display: 'flex', minHeight: 0}}>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              py: 8,
+              px: 20,
+              mx: currentStep !== UserCreateFlowStep.USER_DETAILS ? 'auto' : 0,
+              alignItems: 'flex-start',
+            }}
+          >
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 800,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Error Alerts */}
+              {error && (
+                <Alert severity="error" sx={{my: 3}} onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              )}
+
+              {createUserMutation.error && (
+                <Alert severity="error" sx={{mb: 3}}>
+                  <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
+                    {createUserMutation.error.message}
+                  </Typography>
+                </Alert>
+              )}
+
+              {renderStepContent()}
+
+              {/* Navigation buttons */}
+              <Stack
+                direction="row"
+                justifyContent="flex-end"
+                alignItems="center"
+                spacing={2}
+                sx={{mt: 4}}
+              >
+                {currentStep !== UserCreateFlowStep.USER_TYPE && (
+                  <Button variant="text" onClick={handlePrevStep} disabled={createUserMutation.isPending}>
+                    {t('common:actions.back')}
+                  </Button>
+                )}
+
+                <Button
+                  variant="contained"
+                  disabled={
+                    !stepReady[currentStep] ||
+                    createUserMutation.isPending ||
+                    (currentStep === UserCreateFlowStep.USER_TYPE &&
+                      Boolean(selectedSchema?.ouId) &&
+                      isChildOuLoading)
+                  }
+                  sx={{minWidth: 140}}
+                  onClick={handleNextStep}
+                >
+                  {(() => {
+                    if (!isLastStep) return t('common:actions.continue');
+                    if (createUserMutation.isPending) return t('common:status.saving');
+                    return t('users:createUser.title');
+                  })()}
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Validation Error Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{width: '100%'}}>
+          {validationError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

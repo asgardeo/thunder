@@ -386,13 +386,13 @@ func (suite *ConfigUtilsTestSuite) TestSubstituteEnvironmentVariables_SimpleVari
 func (suite *ConfigUtilsTestSuite) TestSubstituteEnvironmentVariables_MultipleVariables() {
 	suite.setEnvVar("Host", "db.example.com")
 	suite.setEnvVar("Port", "5432")
-	suite.setEnvVar("Database", "thunder")
+	suite.setEnvVar("Database", "configdb")
 
 	content := []byte("connection: {{.Host}}:{{.Port}}/{{.Database}}")
 	result, err := SubstituteEnvironmentVariables(content)
 
 	suite.NoError(err)
-	suite.Equal("connection: db.example.com:5432/thunder", string(result))
+	suite.Equal("connection: db.example.com:5432/configdb", string(result))
 }
 
 func (suite *ConfigUtilsTestSuite) TestSubstituteEnvironmentVariables_EmptyContent() {

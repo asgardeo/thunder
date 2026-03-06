@@ -253,6 +253,7 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - Ensure unit tests are written to achieve at least 80% coverage.
 - Use `stretchr/testify` for tests and follow the test suite pattern.
 - `mockery` is used to generate mocks; configurations for private and public interfaces are in `.mockery.private.yml` and `.mockery.public.yml` respectively. Mocks can be generated using `make mockery` command from the project root directory.
+- **IMPORTANT**: After modifying any interface, you must regenerate mocks by running `make mockery` and commit the updated mock files. The CI pipeline includes a `verify-mocks` job that will fail the build if mock files are out of sync with their interface definitions.
 - Place generated mocks in the `/backend/tests/mocks/` directory.
 - Unit tests can be run using `make test_unit` command from the project root directory. Alternatively `go test` command can also be used from the `/backend` directory with applicable flags.
 

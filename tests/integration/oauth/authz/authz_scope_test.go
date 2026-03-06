@@ -51,6 +51,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -59,6 +60,23 @@ var (
 				"type": "string",
 			},
 			"lastName": map[string]interface{}{
+				"type": "string",
+			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"phone": map[string]interface{}{
+				"type": "string",
+			},
+			"groups": map[string]interface{}{
+				"type":  "array",
+				"items": map[string]interface{}{"type": "string"},
+			},
+			"roles": map[string]interface{}{
+				"type":  "array",
+				"items": map[string]interface{}{"type": "string"},
+			},
+			"customAttr": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -502,13 +520,13 @@ func (ts *OAuthAuthzScopeTestSuite) createTestAuthenticationFlow() string {
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},

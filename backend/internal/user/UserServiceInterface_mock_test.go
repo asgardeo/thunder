@@ -40,8 +40,8 @@ func (_m *UserServiceInterfaceMock) EXPECT() *UserServiceInterfaceMock_Expecter 
 }
 
 // AuthenticateUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, request)
+func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, identifiers, credentials)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateUser")
@@ -49,18 +49,18 @@ func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, req
 
 	var r0 *AuthenticateUserResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, identifiers, credentials)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, AuthenticateUserRequest) *AuthenticateUserResponse); ok {
-		r0 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}) *AuthenticateUserResponse); ok {
+		r0 = returnFunc(ctx, identifiers, credentials)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*AuthenticateUserResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, AuthenticateUserRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, identifiers, credentials)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -76,24 +76,30 @@ type UserServiceInterfaceMock_AuthenticateUser_Call struct {
 
 // AuthenticateUser is a helper method to define mock.On call
 //   - ctx context.Context
-//   - request AuthenticateUserRequest
-func (_e *UserServiceInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, request interface{}) *UserServiceInterfaceMock_AuthenticateUser_Call {
-	return &UserServiceInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, request)}
+//   - identifiers map[string]interface{}
+//   - credentials map[string]interface{}
+func (_e *UserServiceInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, identifiers interface{}, credentials interface{}) *UserServiceInterfaceMock_AuthenticateUser_Call {
+	return &UserServiceInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, identifiers, credentials)}
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, request AuthenticateUserRequest)) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{})) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 AuthenticateUserRequest
+		var arg1 map[string]interface{}
 		if args[1] != nil {
-			arg1 = args[1].(AuthenticateUserRequest)
+			arg1 = args[1].(map[string]interface{})
+		}
+		var arg2 map[string]interface{}
+		if args[2] != nil {
+			arg2 = args[2].(map[string]interface{})
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -104,7 +110,7 @@ func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Return(authenticateUse
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -778,6 +784,74 @@ func (_c *UserServiceInterfaceMock_IdentifyUser_Call) Return(s *string, serviceE
 }
 
 func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IdentifyUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsUserDeclarative provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsUserDeclarative")
+	}
+
+	var r0 bool
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_IsUserDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsUserDeclarative'
+type UserServiceInterfaceMock_IsUserDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsUserDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+func (_e *UserServiceInterfaceMock_Expecter) IsUserDeclarative(ctx interface{}, userID interface{}) *UserServiceInterfaceMock_IsUserDeclarative_Call {
+	return &UserServiceInterfaceMock_IsUserDeclarative_Call{Call: _e.mock.On("IsUserDeclarative", ctx, userID)}
+}
+
+func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) Run(run func(ctx context.Context, userID string)) *UserServiceInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) Return(b bool, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Return(b, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) RunAndReturn(run func(ctx context.Context, userID string) (bool, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IsUserDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }

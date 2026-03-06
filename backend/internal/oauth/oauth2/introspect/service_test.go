@@ -190,6 +190,15 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 			},
 		},
 		{
+			name:        "ValidTokenWithArrayAud",
+			tokenFn:     func(s *TokenIntrospectionServiceTestSuite) string { return s.createArrayAudToken() },
+			expectError: false,
+			active:      true,
+			expectedFields: map[string]interface{}{
+				"Aud": []string{"api.example.com", "api2.example.com"},
+			},
+		},
+		{
 			name: "TokenWithMissingExpClaim",
 			tokenFn: func(s *TokenIntrospectionServiceTestSuite) string {
 				claims := map[string]interface{}{
@@ -224,7 +233,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 				"ClientID":  "",
 				"Username":  "",
 				"Sub":       "",
-				"Aud":       "",
+				"Aud":       nil,
 				"Iss":       "",
 				"Jti":       "",
 			},
@@ -409,6 +418,17 @@ func (s *TokenIntrospectionServiceTestSuite) createMissingClaimsToken() string {
 	claims := map[string]interface{}{
 		"exp": float64(time.Now().Add(time.Hour).Unix()),
 		"nbf": float64(time.Now().Add(-time.Minute).Unix()),
+	}
+
+	return s.createToken(claims)
+}
+
+func (s *TokenIntrospectionServiceTestSuite) createArrayAudToken() string {
+	claims := map[string]interface{}{
+		"exp": float64(time.Now().Add(time.Hour).Unix()),
+		"nbf": float64(time.Now().Add(-time.Minute).Unix()),
+		"iat": float64(time.Now().Unix()),
+		"aud": []string{"api.example.com", "api2.example.com"},
 	}
 
 	return s.createToken(claims)

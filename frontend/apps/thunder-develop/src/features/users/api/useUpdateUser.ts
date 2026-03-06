@@ -16,79 +16,56 @@
  * under the License.
  */
 
-import {useState, useMemo} from 'react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiError, ApiUser} from '../types/users';
+import type {ApiUser, UpdateUserRequest} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Request body for updating a user
- * All fields are required as per PUT semantics
+ * Variables for the update user mutation.
  */
-export interface UpdateUserRequest {
-  organizationUnit: string;
-  type: string;
-  groups?: string[];
-  attributes: Record<string, unknown>;
+export interface UpdateUserVariables {
+  userId: string;
+  data: UpdateUserRequest;
 }
 
 /**
- * Custom hook to update an existing user
- * @returns Object containing updateUser function, data, loading state, error, and reset function
+ * Custom hook to update an existing user.
+ *
+ * @returns TanStack Query mutation object for updating users
  */
-export default function useUpdateUser() {
+export default function useUpdateUser(): UseMutationResult<ApiUser, Error, UpdateUserVariables> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<ApiUser | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
+  return useMutation<ApiUser, Error, UpdateUserVariables>({
+    mutationFn: async ({userId, data}: UpdateUserVariables): Promise<ApiUser> => {
+      const serverUrl: string = getServerUrl();
 
-  const updateUser = async (userId: string, userData: UpdateUserRequest): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      setData(null);
-
-      const response = await http.request({
-        url: `${API_BASE_URL}/users/${userId}`,
+      const response: {
+        data: ApiUser;
+      } = await http.request({
+        url: `${serverUrl}/users/${userId}`,
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        data: userData,
+        data: JSON.stringify(data),
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUser;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'UPDATE_USER_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to update user',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reset = () => {
-    setData(null);
-    setError(null);
-  };
-
-  return {
-    updateUser,
-    data,
-    loading,
-    error,
-    reset,
-  };
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient
+        .invalidateQueries({queryKey: [UserQueryKeys.USER, variables.userId]})
+        .catch(() => {
+          // Ignore invalidation errors
+        });
+      queryClient.invalidateQueries({queryKey: [UserQueryKeys.USERS]}).catch(() => {
+        // Ignore invalidation errors
+      });
+    },
+  });
 }

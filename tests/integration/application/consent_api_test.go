@@ -1,0 +1,481 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package application
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"testing"
+
+	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/stretchr/testify/suite"
+)
+
+const (
+	// mockConsentServerPort is the port the mock OpenFGC consent server will bind to.
+	mockConsentServerPort = 8096
+	// mockConsentServerBaseURL is the inspection/test base URL of the mock server.
+	mockConsentServerBaseURL = "http://localhost:8096"
+	// mockConsentServerAPIBaseURL is the API base URL passed to Thunder's consent config.
+	mockConsentServerAPIBaseURL = "http://localhost:8096/api/v1"
+)
+
+// consentEnabledPatch is the deployment.yaml patch applied in SetupSuite to enable the
+// consent service and point it at the local mock server.
+var consentEnabledPatch = map[string]interface{}{
+	"consent": map[string]interface{}{
+		"enabled":     true,
+		"base_url":    mockConsentServerAPIBaseURL,
+		"timeout":     10,
+		"max_retries": 3,
+	},
+}
+
+// consentDisabledPatch is the deployment.yaml patch applied in TearDownSuite to restore
+// consent to disabled so subsequent test suites are unaffected.
+var consentDisabledPatch = map[string]interface{}{
+	"consent": map[string]interface{}{
+		"enabled": false,
+	},
+}
+
+// mockConsentPurposeResponse mirrors the purposeResponseDTO exposed by the mock server's
+// test inspection endpoint (/test/purposes).
+type mockConsentPurposeResponse struct {
+	ID       string                      `json:"id"`
+	Name     string                      `json:"name"`
+	ClientID string                      `json:"clientId"`
+	Elements []mockConsentPurposeElement `json:"elements"`
+}
+
+// mockConsentPurposeElement mirrors the purposeElementDTO used in the mock server's
+// internal state and responses.
+type mockConsentPurposeElement struct {
+	Name        string `json:"name"`
+	IsMandatory bool   `json:"isMandatory"`
+}
+
+type ConsentAPITestSuite struct {
+	suite.Suite
+	mockConsentServer         *testutils.MockConsentServer
+	consentAuthFlowID         string
+	consentRegistrationFlowID string
+}
+
+func TestConsentAPITestSuite(t *testing.T) {
+	suite.Run(t, new(ConsentAPITestSuite))
+}
+
+func (ts *ConsentAPITestSuite) SetupSuite() {
+	// 1. Start the mock consent server
+	ts.mockConsentServer = testutils.NewMockConsentServer(mockConsentServerPort)
+	ts.Require().NoError(ts.mockConsentServer.Start(), "failed to start mock consent server")
+
+	// 2. Patch deployment config to enable consent
+	ts.Require().NoError(
+		testutils.PatchDeploymentConfig(consentEnabledPatch),
+		"failed to patch deployment config to enable consent",
+	)
+
+	// 3. Restart Thunder and wait for it to be ready
+	ts.Require().NoError(
+		testutils.RestartServer(),
+		"failed to restart Thunder with consent-enabled config",
+	)
+
+	// 4. Re-obtain admin token after restart
+	ts.Require().NoError(
+		testutils.ObtainAdminAccessToken(),
+		"failed to obtain admin access token after restart",
+	)
+
+	// 5. Fetch flow IDs
+	var err error
+	ts.consentAuthFlowID, err = testutils.GetFlowIDByHandle("default-basic-flow", "AUTHENTICATION")
+	ts.Require().NoError(err, "failed to get default authentication flow ID")
+
+	ts.consentRegistrationFlowID, err = testutils.GetFlowIDByHandle("default-basic-flow", "REGISTRATION")
+	ts.Require().NoError(err, "failed to get default registration flow ID")
+}
+
+func (ts *ConsentAPITestSuite) TearDownSuite() {
+	// Restore consent config to disabled
+	if err := testutils.PatchDeploymentConfig(consentDisabledPatch); err != nil {
+		ts.T().Logf("teardown: failed to restore consent config: %v", err)
+	}
+
+	// Restart Thunder with the restored config
+	if err := testutils.RestartServer(); err != nil {
+		ts.T().Logf("teardown: Thunder did not come back after config restore: %v", err)
+	}
+
+	// Re-obtain admin token
+	if err := testutils.ObtainAdminAccessToken(); err != nil {
+		ts.T().Logf("teardown: failed to re-obtain admin token after config restore: %v", err)
+	}
+
+	// Stop the mock consent server
+	if err := ts.mockConsentServer.Stop(); err != nil {
+		ts.T().Logf("teardown: failed to stop mock consent server: %v", err)
+	}
+}
+
+func (ts *ConsentAPITestSuite) TestConsentPurposeCreatedOnApplicationCreate() {
+	app := Application{
+		Name:               "Consent Create Test App",
+		Description:        "App to test consent purpose creation",
+		AuthFlowID:         ts.consentAuthFlowID,
+		RegistrationFlowID: ts.consentRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			Enabled:        true,
+			ValidityPeriod: 3600,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "consent_create_test_client",
+					ClientSecret:            "consent_create_test_secret",
+					RedirectURIs:            []string{"http://localhost/consent-create-test/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email", "username"},
+					},
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application with login_consent enabled")
+	defer func() {
+		if err := deleteApplication(appID); err != nil {
+			ts.T().Logf("teardown: failed to delete application %s: %v", appID, err)
+		}
+	}()
+
+	purposes, err := getMockPurposesForApp(appID)
+	ts.Require().NoError(err, "failed to retrieve purposes from mock consent server")
+
+	ts.Assert().Len(purposes, 1, "expected exactly one consent purpose to be created")
+	ts.Assert().Equal(2, len(purposes[0].Elements),
+		"expected consent purpose to contain 2 elements (email, username)")
+}
+
+func (ts *ConsentAPITestSuite) TestConsentPurposeNotCreatedWhenNoUserAttributes() {
+	app := Application{
+		Name:               "Consent No Attrs Test App",
+		Description:        "App to test consent with no user attributes",
+		AuthFlowID:         ts.consentAuthFlowID,
+		RegistrationFlowID: ts.consentRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			Enabled: true,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "consent_no_attrs_test_client",
+					ClientSecret:            "consent_no_attrs_test_secret",
+					RedirectURIs:            []string{"http://localhost/consent-no-attrs/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					// No UserInfo/UserAttributes configured.
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application with login_consent enabled but no user attributes")
+	defer func() {
+		if err := deleteApplication(appID); err != nil {
+			ts.T().Logf("teardown: failed to delete application %s: %v", appID, err)
+		}
+	}()
+
+	purposes, err := getMockPurposesForApp(appID)
+	ts.Require().NoError(err, "failed to retrieve purposes from mock consent server")
+
+	ts.Assert().Empty(purposes,
+		"expected no consent purpose when application has no user attributes")
+}
+
+func (ts *ConsentAPITestSuite) TestConsentPurposeUpdatedOnApplicationUpdate() {
+	// Step 1: Create app with 1 attribute.
+	app := Application{
+		Name:               "Consent Update Test App",
+		Description:        "App to test consent purpose update",
+		AuthFlowID:         ts.consentAuthFlowID,
+		RegistrationFlowID: ts.consentRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			Enabled: true,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "consent_update_test_client",
+					ClientSecret:            "consent_update_test_secret",
+					RedirectURIs:            []string{"http://localhost/consent-update/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email"},
+					},
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application")
+	defer func() {
+		if err := deleteApplication(appID); err != nil {
+			ts.T().Logf("teardown: failed to delete application %s: %v", appID, err)
+		}
+	}()
+
+	// Verify initial state: 1 purpose with 1 element.
+	purposes, err := getMockPurposesForApp(appID)
+	ts.Require().NoError(err)
+	ts.Require().Len(purposes, 1, "expected 1 purpose after create")
+	ts.Require().Len(purposes[0].Elements, 1, "expected 1 element after create")
+
+	// Step 2: Update app to add another attribute.
+	updatedApp := app
+	updatedApp.InboundAuthConfig[0].OAuthAppConfig.UserInfo = &UserInfoConfig{
+		UserAttributes: []string{"email", "username"},
+	}
+
+	err = updateApplication(appID, updatedApp)
+	ts.Require().NoError(err, "failed to update application")
+
+	// Verify updated state: still 1 purpose, now with 2 elements.
+	purposes, err = getMockPurposesForApp(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Len(purposes, 1, "expected 1 purpose after update")
+	ts.Assert().Len(purposes[0].Elements, 2, "expected 2 elements after attribute was added")
+}
+
+func (ts *ConsentAPITestSuite) TestConsentPurposeDeletedOnLoginConsentDisable() {
+	// Step 1: Create app with login_consent enabled.
+	app := Application{
+		Name:               "Consent Disable Test App",
+		Description:        "App to test consent purpose deletion on disable",
+		AuthFlowID:         ts.consentAuthFlowID,
+		RegistrationFlowID: ts.consentRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			Enabled: true,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "consent_disable_test_client",
+					ClientSecret:            "consent_disable_test_secret",
+					RedirectURIs:            []string{"http://localhost/consent-disable/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email"},
+					},
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application")
+	defer func() {
+		if err := deleteApplication(appID); err != nil {
+			ts.T().Logf("teardown: failed to delete application %s: %v", appID, err)
+		}
+	}()
+
+	// Verify initial state: 1 purpose.
+	purposes, err := getMockPurposesForApp(appID)
+	ts.Require().NoError(err)
+	ts.Require().Len(purposes, 1, "expected 1 purpose after create")
+
+	// Step 2: Disable login_consent.
+	updatedApp := app
+	updatedApp.LoginConsent = &LoginConsentConfig{Enabled: false}
+
+	err = updateApplication(appID, updatedApp)
+	ts.Require().NoError(err, "failed to update application to disable login_consent")
+
+	// Verify that the purpose was deleted.
+	purposes, err = getMockPurposesForApp(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Empty(purposes,
+		"expected consent purpose to be deleted when login_consent is disabled")
+}
+
+func (ts *ConsentAPITestSuite) TestConsentPurposeDeletedOnApplicationDelete() {
+	app := Application{
+		Name:               "Consent Delete Test App",
+		Description:        "App to test consent purpose deletion on app delete",
+		AuthFlowID:         ts.consentAuthFlowID,
+		RegistrationFlowID: ts.consentRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			Enabled: true,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "consent_delete_test_client",
+					ClientSecret:            "consent_delete_test_secret",
+					RedirectURIs:            []string{"http://localhost/consent-delete/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email"},
+					},
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application")
+
+	// Verify a purpose was created.
+	purposes, err := getMockPurposesForApp(appID)
+	ts.Require().NoError(err)
+	ts.Require().Len(purposes, 1, "expected 1 purpose before delete")
+
+	// Delete the application.
+	err = deleteApplication(appID)
+	ts.Require().NoError(err, "failed to delete application")
+
+	// Verify the purpose was cleaned up.
+	purposes, err = getMockPurposesForApp(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Empty(purposes,
+		"expected consent purpose to be deleted when application is deleted")
+}
+
+func (ts *ConsentAPITestSuite) TestLoginConsentEnabledFieldPersistedCorrectly() {
+	app := Application{
+		Name:               "Consent Persist Test App",
+		Description:        "App to test login_consent field persistence",
+		AuthFlowID:         ts.consentAuthFlowID,
+		RegistrationFlowID: ts.consentRegistrationFlowID,
+		LoginConsent: &LoginConsentConfig{
+			Enabled:        true,
+			ValidityPeriod: 7200,
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "consent_persist_test_client",
+					ClientSecret:            "consent_persist_test_secret",
+					RedirectURIs:            []string{"http://localhost/consent-persist/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email"},
+					},
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "failed to create application")
+	defer func() {
+		if err := deleteApplication(appID); err != nil {
+			ts.T().Logf("teardown: failed to delete application %s: %v", appID, err)
+		}
+	}()
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err, "failed to retrieve application")
+	ts.Require().NotNil(retrieved.LoginConsent, "login_consent should be present in response")
+
+	ts.Assert().True(retrieved.LoginConsent.Enabled, "login_consent.enabled should be true")
+	ts.Assert().Equal(int64(7200), retrieved.LoginConsent.ValidityPeriod,
+		"login_consent.validity_period should be 7200")
+}
+
+// updateApplication sends a PUT /applications/{id} request and returns any error.
+func updateApplication(appID string, app Application) error {
+	appJSON, err := json.Marshal(app)
+	if err != nil {
+		return fmt.Errorf("failed to marshal application for update: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, testServerURL+"/applications/"+appID, bytes.NewReader(appJSON))
+	if err != nil {
+		return fmt.Errorf("failed to create PUT request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send PUT request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// getMockPurposesForApp queries the mock consent server's test inspection endpoint
+// and returns the consent purposes currently stored for the given application ID.
+func getMockPurposesForApp(appID string) ([]mockConsentPurposeResponse, error) {
+	url := fmt.Sprintf("%s/test/purposes?clientIds=%s", mockConsentServerBaseURL, appID)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query mock consent server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("mock consent server returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var purposes []mockConsentPurposeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&purposes); err != nil {
+		return nil, fmt.Errorf("failed to decode purposes response: %w", err)
+	}
+
+	return purposes, nil
+}

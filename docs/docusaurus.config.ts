@@ -69,6 +69,14 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           // Edit URL for the "edit this page" feature.
           editUrl: thunderConfig.project.source.github.editUrls.content,
+          // Versioning.
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'Next',
+              path: 'next',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -114,23 +122,24 @@ const config: Config = {
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
-          position: 'left',
+          position: 'right',
           label: 'Docs',
           className: 'navbar__link--docs',
         },
         {
           to: '/apis',
-          position: 'left',
+          position: 'right',
           label: 'APIs',
         },
         {
           to: '/docs/sdks/overview',
-          position: 'left',
+          position: 'right',
           label: 'SDKs',
         },
         {
           label: 'Resources',
           type: 'dropdown',
+          position: 'right',
           className: 'navbar__link--dropdown',
           items: [
             {
@@ -145,7 +154,7 @@ const config: Config = {
         {
           type: 'docSidebar',
           sidebarId: 'communitySidebar',
-          position: 'left',
+          position: 'right',
           label: 'Community',
         },
         {
@@ -153,6 +162,10 @@ const config: Config = {
           position: 'right',
           className: 'navbar__github--link',
           'aria-label': 'GitHub repository',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
         },
       ],
     },

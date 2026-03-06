@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,440 +16,370 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetUserSchema from '../useGetUserSchema';
 import type {ApiUserSchema} from '../../types/users';
+import UserQueryKeys from '../../constants/user-query-keys';
 
-// Mock useAsgardeo
-const mockHttpRequest = vi.fn();
+// Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+  useAsgardeo: vi.fn(),
 }));
 
-// Mock useConfig
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
-    useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
-    }),
+    useConfig: vi.fn(),
   };
 });
 
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
+
 describe('useGetUserSchema', () => {
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+
+  const mockSchema: ApiUserSchema = {
+    id: 'schema-1',
+    name: 'Employee',
+    schema: {
+      username: {type: 'string', required: true, unique: true},
+      email: {type: 'string', required: true},
+      isActive: {type: 'boolean'},
+    },
+  };
+
   beforeEach(() => {
-    mockHttpRequest.mockReset();
+    mockHttpRequest = vi.fn();
+    mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: mockGetServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with correct default values', () => {
-    const {result} = renderHook(() => useGetUserSchema());
+  it('should initialize with loading state when id is provided', () => {
+    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(false);
+    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
-    expect(typeof result.current.refetch).toBe('function');
   });
 
-  it('should fetch user schema successfully when id is provided', async () => {
-    const mockSchema: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-        email: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
+  it('should successfully fetch a single user schema', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchema,
+    });
 
-    mockHttpRequest.mockResolvedValueOnce({data: mockSchema});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const schemaId = 'schema-1';
+    const {result} = renderHook(() => useGetUserSchema(schemaId));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
     expect(result.current.data).toEqual(mockSchema);
-    expect(result.current.error).toBeNull();
+    expect(result.current.data?.id).toBe(schemaId);
+    expect(result.current.data?.name).toBe('Employee');
+  });
+
+  it('should make correct API call with schema ID', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchema,
+    });
+
+    const schemaId = 'schema-1';
+    renderHook(() => useGetUserSchema(schemaId));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas/schema-123',
+        url: `https://api.test.com/user-schemas/${schemaId}`,
         method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
     );
   });
 
-  it('should not fetch when id is not provided', () => {
-    const {result} = renderHook(() => useGetUserSchema());
+  it('should use correct query key', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchema,
+    });
 
-    expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(mockHttpRequest).not.toHaveBeenCalled();
-  });
-
-  it('should handle API error with JSON response', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Schema not found'));
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const schemaId = 'schema-1';
+    const {result, queryClient} = renderHook(() => useGetUserSchema(schemaId));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Schema not found',
-      description: 'Failed to fetch user schema',
-    });
-    expect(result.current.data).toBeNull();
+    const queryKey = [UserQueryKeys.USER_SCHEMA, schemaId];
+    const cachedData = queryClient.getQueryData(queryKey);
+    expect(cachedData).toEqual(mockSchema);
   });
 
-  it('should handle API error without JSON response', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Internal Server Error'));
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to fetch user schema');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserSchema('schema-1'));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Internal Server Error',
-      description: 'Failed to fetch user schema',
-    });
-    expect(result.current.data).toBeNull();
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
   });
 
   it('should handle network error', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Network error'));
+    const networkError = new Error('Network request failed');
+    mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserSchema('schema-1'));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Network error',
-      description: 'Failed to fetch user schema',
-    });
-    expect(result.current.data).toBeNull();
+    expect(result.current.error).toEqual(networkError);
   });
 
-  it('should refetch user schema with the same id', async () => {
-    const mockSchema: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
+  it('should not make API call when id is undefined', () => {
+    const {result} = renderHook(() => useGetUserSchema(undefined));
 
-    mockHttpRequest.mockResolvedValue({data: mockSchema});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema);
-    });
-
-    await result.current.refetch();
-
-    await waitFor(() => {
-      expect(mockHttpRequest).toHaveBeenCalledTimes(2);
-    });
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should refetch user schema with a new id', async () => {
-    const mockSchema1: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
+  it('should not make API call when id is empty string', () => {
+    const {result} = renderHook(() => useGetUserSchema(''));
 
-    const mockSchema2: ApiUserSchema = {
-      id: 'schema-456',
-      name: 'Employee',
-      schema: {
-        employeeId: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockSchema1}).mockResolvedValueOnce({data: mockSchema2});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema1);
-    });
-
-    await result.current.refetch('schema-456');
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema2);
-    });
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should set error when refetch is called without id', async () => {
-    const {result} = renderHook(() => useGetUserSchema());
+  it('should use correct server URL from config', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchema,
+    });
 
-    await result.current.refetch();
+    renderHook(() => useGetUserSchema('schema-1'));
 
     await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'INVALID_ID',
-        message: 'Invalid schema ID',
-        description: 'Schema ID is required',
-      });
+      expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toContain('https://api.test.com/user-schemas/schema-1');
   });
 
-  it('should prevent double fetch in strict mode', async () => {
-    const mockSchema: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockSchema});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema);
+  it('should include correct headers', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchema,
     });
 
-    // Should only fetch once despite strict mode
+    renderHook(() => useGetUserSchema('schema-1'));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.method).toBe('GET');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('should refetch when id changes', async () => {
+    const schema1 = {...mockSchema, id: 'schema-1', name: 'Employee'};
+    const schema2 = {...mockSchema, id: 'schema-2', name: 'Contractor'};
+
+    mockHttpRequest.mockResolvedValueOnce({data: schema1}).mockResolvedValueOnce({data: schema2});
+
+    const {result, rerender} = renderHook(({id}: {id: string}) => useGetUserSchema(id), {
+      initialProps: {id: 'schema-1'},
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.id).toBe('schema-1');
     expect(mockHttpRequest).toHaveBeenCalledTimes(1);
-  });
 
-  it('should fetch when id changes', async () => {
-    const mockSchema1: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
-
-    const mockSchema2: ApiUserSchema = {
-      id: 'schema-456',
-      name: 'Employee',
-      schema: {
-        employeeId: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockSchema1}).mockResolvedValueOnce({data: mockSchema2});
-
-    const {result, rerender} = renderHook(({id}: {id?: string}) => useGetUserSchema(id), {
-      initialProps: {id: 'schema-123'},
-    });
+    // Change the schema ID
+    rerender({id: 'schema-2'});
 
     await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema1);
-    });
-
-    rerender({id: 'schema-456'});
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema2);
+      expect(result.current.data?.id).toBe('schema-2');
     });
 
     expect(mockHttpRequest).toHaveBeenCalledTimes(2);
   });
 
+  it('should cache schema data', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockSchema,
+    });
+
+    const schemaId = 'schema-1';
+
+    // First call - get the queryClient from the render result
+    const {result: result1, queryClient} = renderHook(() => useGetUserSchema(schemaId));
+
+    await waitFor(() => {
+      expect(result1.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Set the data as fresh to prevent refetch
+    queryClient.setQueryDefaults([UserQueryKeys.USER_SCHEMA, schemaId], {
+      staleTime: Infinity,
+    });
+
+    // Second call with same queryClient should use cache
+    const {result: result2} = renderHook(() => useGetUserSchema(schemaId), {
+      queryClient,
+    });
+
+    await waitFor(() => {
+      expect(result2.current.isSuccess).toBe(true);
+    });
+
+    // Should still be called only once due to caching
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    expect(result2.current.data).toEqual(mockSchema);
+  });
+
+  it('should support refetching data', async () => {
+    mockHttpRequest.mockResolvedValue({
+      data: mockSchema,
+    });
+
+    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Refetch the data
+    await result.current.refetch();
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+  });
+
   it('should handle schema with complex properties', async () => {
-    const mockSchema: ApiUserSchema = {
-      id: 'schema-789',
+    const complexSchema: ApiUserSchema = {
+      id: 'schema-complex',
       name: 'ComplexUser',
       schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-        age: {
-          type: 'number',
-          required: false,
-        },
-        isActive: {
-          type: 'boolean',
-          required: true,
-        },
+        name: {type: 'string', required: true},
+        age: {type: 'number', required: false},
+        isActive: {type: 'boolean', required: true},
         roles: {
           type: 'array',
-          items: {
-            type: 'string',
-          },
+          items: {type: 'string'},
           required: false,
         },
         address: {
           type: 'object',
           properties: {
-            street: {
-              type: 'string',
-              required: true,
-            },
-            city: {
-              type: 'string',
-              required: true,
-            },
+            street: {type: 'string', required: true},
+            city: {type: 'string', required: true},
           },
           required: false,
         },
       },
     };
 
-    mockHttpRequest.mockResolvedValueOnce({data: mockSchema});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-789'));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    mockHttpRequest.mockResolvedValueOnce({
+      data: complexSchema,
     });
 
+    const {result} = renderHook(() => useGetUserSchema('schema-complex'));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(complexSchema);
+  });
+
+  it('should handle different schema IDs', async () => {
+    const schema1 = {...mockSchema, id: 'schema-1', name: 'Employee'};
+    const schema2 = {...mockSchema, id: 'schema-2', name: 'Contractor'};
+
+    mockHttpRequest.mockResolvedValueOnce({data: schema1});
+
+    const {result: result1} = renderHook(() => useGetUserSchema('schema-1'));
+
+    await waitFor(() => {
+      expect(result1.current.isSuccess).toBe(true);
+    });
+
+    expect(result1.current.data?.id).toBe('schema-1');
+
+    mockHttpRequest.mockResolvedValueOnce({data: schema2});
+
+    const {result: result2} = renderHook(() => useGetUserSchema('schema-2'));
+
+    await waitFor(() => {
+      expect(result2.current.isSuccess).toBe(true);
+    });
+
+    expect(result2.current.data?.id).toBe('schema-2');
+  });
+
+  it('should maintain correct loading state during fetch', async () => {
+    let resolveRequest: (value: {data: ApiUserSchema}) => void;
+    const requestPromise = new Promise<{data: ApiUserSchema}>((resolve) => {
+      resolveRequest = resolve;
+    });
+
+    mockHttpRequest.mockReturnValueOnce(requestPromise);
+
+    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isFetching).toBe(true);
+    expect(result.current.data).toBeUndefined();
+
+    resolveRequest!({data: mockSchema});
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isFetching).toBe(false);
     expect(result.current.data).toEqual(mockSchema);
-    expect(result.current.error).toBeNull();
-  });
-
-  it('should handle refetch error and throw', async () => {
-    const mockSchema: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockSchema});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema);
-    });
-
-    // Mock error for refetch
-    mockHttpRequest.mockRejectedValue(new Error('Refetch failed'));
-
-    // Call refetch and expect it to throw
-    await expect(result.current.refetch()).rejects.toThrow('Refetch failed');
-
-    // Wait for error state to be set
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_ERROR',
-        message: 'Refetch failed',
-        description: 'Failed to fetch user schema',
-      });
-    });
-
-    expect(result.current.loading).toBe(false);
-  });
-
-  it('should handle non-Error object in refetch catch block', async () => {
-    const mockSchema: ApiUserSchema = {
-      id: 'schema-123',
-      name: 'Customer',
-      schema: {
-        name: {
-          type: 'string',
-          required: true,
-        },
-      },
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockSchema});
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockSchema);
-    });
-
-    // Mock non-Error rejection for refetch
-    mockHttpRequest.mockRejectedValue('String error');
-
-    // Call refetch and expect it to throw
-    let refetchError;
-    try {
-      await result.current.refetch();
-    } catch (err) {
-      refetchError = err;
-    }
-
-    // Verify the error was thrown
-    expect(refetchError).toEqual('String error');
-
-    // Wait for error state to be set
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to fetch user schema',
-      });
-    });
-
-    expect(result.current.loading).toBe(false);
-  });
-
-  it('should handle non-Error object during initial fetch', async () => {
-    mockHttpRequest.mockRejectedValue('String error during initial fetch');
-
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'An unknown error occurred',
-      description: 'Failed to fetch user schema',
-    });
-    expect(result.current.data).toBeNull();
   });
 });

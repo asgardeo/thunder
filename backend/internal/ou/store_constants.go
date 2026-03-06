@@ -18,7 +18,12 @@
 
 package ou
 
-import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+import (
+	"fmt"
+	"strings"
+
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+)
 
 var (
 	// queryGetRootOrganizationUnitListCount is the query to get total count of organization units.
@@ -109,7 +114,7 @@ var (
 	// queryGetOrganizationUnitUsersList is the query to get users in an organization unit with pagination.
 	queryGetOrganizationUnitUsersList = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-13",
-		Query: `SELECT USER_ID FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY USER_ID LIMIT $2 OFFSET $3`,
+		Query: `SELECT ID FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY ID LIMIT $2 OFFSET $3`,
 	}
 
 	// queryGetOrganizationUnitGroupsCount is the query to get total count of groups in an organization unit.
@@ -121,7 +126,7 @@ var (
 	// queryGetOrganizationUnitGroupsList is the query to get groups in an organization unit with pagination.
 	queryGetOrganizationUnitGroupsList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-15",
-		Query: `SELECT GROUP_ID, NAME FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ` +
+		Query: `SELECT ID, NAME FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ` +
 			`ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
@@ -166,3 +171,33 @@ var (
 					(SELECT COUNT(*) FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2) as count`,
 	}
 )
+
+// buildGetOrganizationUnitsByIDsQuery dynamically builds a query to retrieve organization units by a list of IDs.
+// For PostgreSQL: WHERE OU_ID IN ($1, $2, ...) AND DEPLOYMENT_ID = $N
+// For SQLite: WHERE OU_ID IN (?, ?, ...) AND DEPLOYMENT_ID = ?
+func buildGetOrganizationUnitsByIDsQuery(ids []string) dbmodel.DBQuery {
+	n := len(ids)
+
+	// Build PostgreSQL placeholders: $1, $2, ..., $N
+	pgPlaceholders := make([]string, n)
+	for i := range ids {
+		pgPlaceholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	pgInClause := strings.Join(pgPlaceholders, ", ")
+	deploymentIDParam := fmt.Sprintf("$%d", n+1)
+
+	// Build SQLite placeholders: ?, ?, ...
+	sqlitePlaceholders := make([]string, n)
+	for i := range ids {
+		sqlitePlaceholders[i] = "?"
+	}
+	sqliteInClause := strings.Join(sqlitePlaceholders, ", ")
+
+	return dbmodel.DBQuery{
+		ID: "OUQ-OU_MGT-21",
+		PostgresQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+			`WHERE OU_ID IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + deploymentIDParam + ` ORDER BY NAME`,
+		SQLiteQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ? ORDER BY NAME`,
+	}
+}

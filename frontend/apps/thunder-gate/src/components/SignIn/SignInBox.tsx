@@ -29,7 +29,6 @@ import {
   TextField,
   Typography,
   styled,
-  AlertTitle,
   Paper,
   ColorSchemeImage,
   Stack,
@@ -167,7 +166,6 @@ export default function SignInBox(): JSX.Element {
               <>
                 {error && (
                   <Alert severity="error" sx={{mb: 2}}>
-                    <AlertTitle>{t('signin:errors.signin.failed.message')}</AlertTitle>
                     {error.message ?? t('signin:errors.signin.failed.description')}
                   </Alert>
                 )}
@@ -229,9 +227,15 @@ export default function SignInBox(): JSX.Element {
                                       )!;
 
                                       // Tracker: https://github.com/asgardeo/javascript/issues/222
-                                      onSubmit({inputs: formInputs, action: submitAction?.id}).catch(() => {
-                                        // Error handled by onError callback
-                                      });
+                                      onSubmit({inputs: formInputs, action: submitAction?.id})
+                                        .finally(() => {
+                                          setFormInputs({});
+                                          setFieldErrors({});
+                                          setShowPasswordMap({});
+                                        })
+                                        .catch(() => {
+                                          // Error handled by onError callback
+                                        });
                                     }
                                   }}
                                   noValidate

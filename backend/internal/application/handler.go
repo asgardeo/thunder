@@ -72,6 +72,8 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		PolicyURI:                 appRequest.PolicyURI,
 		Contacts:                  appRequest.Contacts,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		LoginConsent:              appRequest.LoginConsent,
+		Metadata:                  appRequest.Metadata,
 	}
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -100,6 +102,8 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		PolicyURI:                 createdAppDTO.PolicyURI,
 		Contacts:                  createdAppDTO.Contacts,
 		AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
+		LoginConsent:              createdAppDTO.LoginConsent,
+		Metadata:                  createdAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -169,6 +173,8 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		PolicyURI:                 appDTO.PolicyURI,
 		Contacts:                  appDTO.Contacts,
 		AllowedUserTypes:          appDTO.AllowedUserTypes,
+		LoginConsent:              appDTO.LoginConsent,
+		Metadata:                  appDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -284,6 +290,8 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		PolicyURI:                 appRequest.PolicyURI,
 		Contacts:                  appRequest.Contacts,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		LoginConsent:              appRequest.LoginConsent,
+		Metadata:                  appRequest.Metadata,
 	}
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -312,6 +320,8 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		PolicyURI:                 updatedAppDTO.PolicyURI,
 		Contacts:                  updatedAppDTO.Contacts,
 		AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
+		LoginConsent:              updatedAppDTO.LoginConsent,
+		Metadata:                  updatedAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.

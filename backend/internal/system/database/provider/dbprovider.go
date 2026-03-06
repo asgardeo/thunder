@@ -36,6 +36,10 @@ import (
 const (
 	dataSourceTypePostgres = "postgres"
 	dataSourceTypeSQLite   = "sqlite"
+
+	dbNameConfig  = "config"
+	dbNameRuntime = "runtime"
+	dbNameUser    = "user"
 )
 
 // dbConfig represents the local database configuration.
@@ -62,12 +66,12 @@ type DBProviderCloser interface {
 
 // dbProvider is the implementation of DBProviderInterface.
 type dbProvider struct {
-	identityClient DBClientInterface
-	identityMutex  sync.RWMutex
-	runtimeClient  DBClientInterface
-	runtimeMutex   sync.RWMutex
-	userClient     DBClientInterface
-	userMutex      sync.RWMutex
+	configClient  DBClientInterface
+	configMutex   sync.RWMutex
+	runtimeClient DBClientInterface
+	runtimeMutex  sync.RWMutex
+	userClient    DBClientInterface
+	userMutex     sync.RWMutex
 }
 
 var (
@@ -99,40 +103,40 @@ func GetDBProviderCloser() DBProviderCloser {
 // GetConfigDBClient returns a database client for config datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetConfigDBClient() (DBClientInterface, error) {
-	identityDBConfig := config.GetThunderRuntime().Config.Database.Identity
-	return d.getOrInitClient(&d.identityClient, &d.identityMutex, identityDBConfig)
+	configDBConfig := config.GetThunderRuntime().Config.Database.Config
+	return d.getOrInitClient(&d.configClient, &d.configMutex, configDBConfig, dbNameConfig)
 }
 
 // GetRuntimeDBClient returns a database client for runtime datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetRuntimeDBClient() (DBClientInterface, error) {
 	runtimeDBConfig := config.GetThunderRuntime().Config.Database.Runtime
-	return d.getOrInitClient(&d.runtimeClient, &d.runtimeMutex, runtimeDBConfig)
+	return d.getOrInitClient(&d.runtimeClient, &d.runtimeMutex, runtimeDBConfig, dbNameRuntime)
 }
 
 // GetUserDBClient returns a database client for runtime datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetUserDBClient() (DBClientInterface, error) {
 	userDBConfig := config.GetThunderRuntime().Config.Database.User
-	return d.getOrInitClient(&d.userClient, &d.userMutex, userDBConfig)
+	return d.getOrInitClient(&d.userClient, &d.userMutex, userDBConfig, dbNameUser)
 }
 
 // GetConfigDBTransactioner returns a transactioner for the config database.
 // The transactioner manages database transactions with automatic nesting detection.
 func (d *dbProvider) GetConfigDBTransactioner() (transaction.Transactioner, error) {
-	return d.getTransactioner(d.GetConfigDBClient, "config")
+	return d.getTransactioner(d.GetConfigDBClient, dbNameConfig)
 }
 
 // GetUserDBTransactioner returns a transactioner for the user database.
 // The transactioner manages database transactions with automatic nesting detection.
 func (d *dbProvider) GetUserDBTransactioner() (transaction.Transactioner, error) {
-	return d.getTransactioner(d.GetUserDBClient, "user")
+	return d.getTransactioner(d.GetUserDBClient, dbNameUser)
 }
 
 // GetRuntimeDBTransactioner returns a transactioner for the runtime database.
 // The transactioner manages database transactions with automatic nesting detection.
 func (d *dbProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
-	return d.getTransactioner(d.GetRuntimeDBClient, "runtime")
+	return d.getTransactioner(d.GetRuntimeDBClient, dbNameRuntime)
 }
 
 // getTransactioner is a helper method that creates a transactioner for a given database client.
@@ -148,24 +152,24 @@ func (d *dbProvider) getTransactioner(
 	return client.GetTransactioner()
 }
 
-// initializeAllClients initializes both identity and runtime clients at startup.
+// initializeAllClients initializes config, runtime, and user database clients at startup.
 func (d *dbProvider) initializeAllClients() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBProvider"))
 
-	identityDBConfig := config.GetThunderRuntime().Config.Database.Identity
-	err := d.initializeClient(&d.identityClient, identityDBConfig)
+	configDBConfig := config.GetThunderRuntime().Config.Database.Config
+	err := d.initializeClient(&d.configClient, configDBConfig, dbNameConfig)
 	if err != nil {
-		logger.Error("Failed to initialize identity database client", log.Error(err))
+		logger.Error("Failed to initialize config database client", log.Error(err))
 	}
 
 	runtimeDBConfig := config.GetThunderRuntime().Config.Database.Runtime
-	err = d.initializeClient(&d.runtimeClient, runtimeDBConfig)
+	err = d.initializeClient(&d.runtimeClient, runtimeDBConfig, dbNameRuntime)
 	if err != nil {
 		logger.Error("Failed to initialize runtime database client", log.Error(err))
 	}
 
 	userDBConfig := config.GetThunderRuntime().Config.Database.User
-	err = d.initializeClient(&d.userClient, userDBConfig)
+	err = d.initializeClient(&d.userClient, userDBConfig, dbNameUser)
 	if err != nil {
 		logger.Error("Failed to initialize user database client", log.Error(err))
 	}
@@ -176,6 +180,7 @@ func (d *dbProvider) getOrInitClient(
 	clientPtr *DBClientInterface,
 	mutex *sync.RWMutex,
 	dataSource config.DataSource,
+	dbName string,
 ) (DBClientInterface, error) {
 	// Return error if database type is not configured
 	if dataSource.Type == "" {
@@ -197,7 +202,7 @@ func (d *dbProvider) getOrInitClient(
 		return *clientPtr, nil
 	}
 
-	if err := d.initializeClient(clientPtr, dataSource); err != nil {
+	if err := d.initializeClient(clientPtr, dataSource, dbName); err != nil {
 		return nil, err
 	}
 
@@ -205,9 +210,8 @@ func (d *dbProvider) getOrInitClient(
 }
 
 // initializeClient initializes a database client and assigns it to the provided pointer.
-func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource config.DataSource) error {
+func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource config.DataSource, dbName string) error {
 	dbConfig := d.getDBConfig(dataSource)
-	dbName := dataSource.Name
 
 	db, err := sql.Open(dbConfig.driverName, dbConfig.dsn)
 	if err != nil {
@@ -239,7 +243,7 @@ func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource c
 		}
 	}
 
-	*clientPtr = NewDBClient(model.NewDB(db), dbConfig.driverName)
+	*clientPtr = NewDBClient(model.NewDB(db), dbConfig.driverName, dbName)
 	return nil
 }
 
@@ -270,10 +274,10 @@ func (d *dbProvider) Close() error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBProvider"))
 	logger.Debug("Closing database connections")
 
-	identityErr := d.closeClient(&d.identityClient, &d.identityMutex, "identity")
+	configErr := d.closeClient(&d.configClient, &d.configMutex, "config")
 	runtimeErr := d.closeClient(&d.runtimeClient, &d.runtimeMutex, "runtime")
 	userErr := d.closeClient(&d.userClient, &d.userMutex, "user")
-	return errors.Join(identityErr, runtimeErr, userErr)
+	return errors.Join(configErr, runtimeErr, userErr)
 }
 
 // closeClient is a helper to close a DB client with locking.

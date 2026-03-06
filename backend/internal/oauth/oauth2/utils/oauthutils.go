@@ -70,6 +70,10 @@ const (
 	// OAuth2ClientSecretLength specifies the byte length for OAuth client secrets (32 bytes = 256 bits)
 	// This provides high entropy for cryptographic security as recommended by OAuth security best practices
 	OAuth2ClientSecretLength = 32
+
+	// OAuth2AuthorizationCodeLength specifies the byte length for OAuth authorization codes (20 bytes = 160 bits)
+	// This requires guessing probability ≤ 2^(-128) and recommends ≤ 2^(-160)
+	OAuth2AuthorizationCodeLength = 20
 )
 
 // OAuth2CredentialType represents the type of OAuth 2.0 credential to generate
@@ -81,6 +85,9 @@ const (
 
 	// ClientSecretCredential represents an OAuth 2.0 client secret
 	ClientSecretCredential OAuth2CredentialType = "client secret"
+
+	// AuthorizationCodeCredential represents an OAuth 2.0 authorization code
+	AuthorizationCodeCredential OAuth2CredentialType = "authorization code"
 )
 
 // generateOAuth2Credential generates a base64url-encoded OAuth 2.0 credential.
@@ -94,6 +101,8 @@ func generateOAuth2Credential(credentialType OAuth2CredentialType) (string, erro
 		length = OAuth2ClientIDLength
 	case ClientSecretCredential:
 		length = OAuth2ClientSecretLength
+	case AuthorizationCodeCredential:
+		length = OAuth2AuthorizationCodeLength
 	default:
 		return "", fmt.Errorf("unsupported credential type: %s", credentialType)
 	}
@@ -116,6 +125,11 @@ func GenerateOAuth2ClientID() (string, error) {
 // GenerateOAuth2ClientSecret generates a cryptographically secure OAuth 2.0 client secret.
 func GenerateOAuth2ClientSecret() (string, error) {
 	return generateOAuth2Credential(ClientSecretCredential)
+}
+
+// GenerateAuthorizationCode generates a cryptographically secure OAuth 2.0 authorization code.
+func GenerateAuthorizationCode() (string, error) {
+	return generateOAuth2Credential(AuthorizationCodeCredential)
 }
 
 // SeparateOIDCAndNonOIDCScopes separates the given scopes into OIDC and non-OIDC scopes.

@@ -145,52 +145,6 @@ func (_c *ExecutorInterfaceMock_GetDefaultInputs_Call) RunAndReturn(run func() [
 	return _c
 }
 
-// GetDefaultMeta provides a mock function for the type ExecutorInterfaceMock
-func (_mock *ExecutorInterfaceMock) GetDefaultMeta() interface{} {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetDefaultMeta")
-	}
-
-	var r0 interface{}
-	if returnFunc, ok := ret.Get(0).(func() interface{}); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	return r0
-}
-
-// ExecutorInterfaceMock_GetDefaultMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultMeta'
-type ExecutorInterfaceMock_GetDefaultMeta_Call struct {
-	*mock.Call
-}
-
-// GetDefaultMeta is a helper method to define mock.On call
-func (_e *ExecutorInterfaceMock_Expecter) GetDefaultMeta() *ExecutorInterfaceMock_GetDefaultMeta_Call {
-	return &ExecutorInterfaceMock_GetDefaultMeta_Call{Call: _e.mock.On("GetDefaultMeta")}
-}
-
-func (_c *ExecutorInterfaceMock_GetDefaultMeta_Call) Run(run func()) *ExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *ExecutorInterfaceMock_GetDefaultMeta_Call) Return(ifaceVal interface{}) *ExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Return(ifaceVal)
-	return _c
-}
-
-func (_c *ExecutorInterfaceMock_GetDefaultMeta_Call) RunAndReturn(run func() interface{}) *ExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetName provides a mock function for the type ExecutorInterfaceMock
 func (_mock *ExecutorInterfaceMock) GetName() string {
 	ret := _mock.Called()

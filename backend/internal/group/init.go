@@ -60,7 +60,7 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 	}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedMethods:   "GET, POST, PUT, DELETE",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
@@ -81,9 +81,12 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 		}, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /groups/{id}", groupHandler.HandleGroupPutRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /groups/{id}", groupHandler.HandleGroupDeleteRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/{id}", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	}, opts2))
+	// Handle OPTIONS preflight for /groups/{id} and /groups/{id}/members using the same
+	// catch-all pattern as the GET handler above, to avoid conflicts with /groups/tree/{path...}.
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts2))
 
 	opts3 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
@@ -97,4 +100,32 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/tree/{path...}", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts3))
+
+	// POST routes for /groups/{id}/members/add and /groups/{id}/members/remove.
+	// These use a catch-all pattern to avoid route conflicts with /groups/tree/{path...}.
+	opts4 := middleware.CORSOptions{
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
+		AllowCredentials: true,
+	}
+	mux.HandleFunc(middleware.WithCORS("POST /groups/",
+		func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/groups/")
+			segments := strings.Split(path, "/")
+
+			// Match /groups/{id}/members/add and /groups/{id}/members/remove
+			if len(segments) == 3 && segments[0] != "" && segments[1] == "members" {
+				r.SetPathValue("id", segments[0])
+				switch segments[2] {
+				case "add":
+					groupHandler.HandleGroupMembersAddRequest(w, r)
+				case "remove":
+					groupHandler.HandleGroupMembersRemoveRequest(w, r)
+				default:
+					http.NotFound(w, r)
+				}
+			} else {
+				http.NotFound(w, r)
+			}
+		}, opts4))
 }

@@ -104,8 +104,11 @@ func (ts *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata_GET_Success(
 	ts.Contains(metadata.RegistrationEndpoint, "/oauth2/dcr/register", "RegistrationEndpoint should contain correct path")
 	ts.Contains(metadata.IntrospectionEndpoint, "/oauth2/introspect", "IntrospectionEndpoint should contain correct path")
 
+	// Verify userinfo endpoint is present
+	ts.NotEmpty(metadata.UserInfoEndpoint, "UserInfoEndpoint should be present")
+	ts.Contains(metadata.UserInfoEndpoint, "/oauth2/userinfo", "UserInfoEndpoint should contain correct path")
+
 	// Verify not implemented endpoints are empty
-	ts.Empty(metadata.UserInfoEndpoint, "UserInfoEndpoint should be empty (not implemented)")
 	ts.Empty(metadata.RevocationEndpoint, "RevocationEndpoint should be empty (not implemented)")
 
 	// Verify supported grant types

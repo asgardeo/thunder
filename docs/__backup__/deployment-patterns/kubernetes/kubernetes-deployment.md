@@ -95,7 +95,7 @@ To access Thunder, you need to add the NGINX Ingress Controller's external IP to
 
 # Install with SQLite database (for development/testing)
 helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
-  --set configuration.database.identity.type=sqlite \
+  --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite
 ```
 
@@ -119,11 +119,11 @@ ingress:
 
 configuration:
   database:
-    identity:
+    config:
       type: postgres
       host: postgres.default.svc.cluster.local
       port: 5432
-      name: thunderdb
+      name: configdb
       username: thunder_user
       password: secure_password
       sslmode: require
@@ -160,7 +160,7 @@ Before deploying Thunder, ensure you have:
 
 1. **Created databases**:
    ```sql
-   CREATE DATABASE thunderdb;
+   CREATE DATABASE configdb;
    CREATE DATABASE runtimedb;
    CREATE DATABASE userdb; 
    ```
@@ -184,11 +184,11 @@ For detailed database setup using Bitnami PostgreSQL, refer to: [Bitnami Postgre
 ```yaml
 configuration:
   database:
-    identity:
+    config:
       type: postgres
       host: postgres.example.com
       port: 5432
-      name: thunderdb
+      name: configdb
       username: thunder_user
       password: secure_password
       sslmode: require
@@ -215,9 +215,9 @@ configuration:
 ```yaml
 configuration:
   database:
-    identity:
+    config:
       type: sqlite
-      sqlitePath: repository/database/thunderdb.db
+      sqlitePath: repository/database/configdb.db
       sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
     runtime:
       type: sqlite

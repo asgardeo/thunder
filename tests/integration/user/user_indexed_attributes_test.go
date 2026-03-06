@@ -60,6 +60,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 			},
 		},
@@ -77,6 +78,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 			},
 		},
@@ -91,6 +93,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 			},
 		},
@@ -118,6 +121,7 @@ var (
 				},
 				"password": map[string]interface{}{
 					"type": "string",
+					"credential": true,
 				},
 			},
 		},
@@ -529,8 +533,12 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithSingleIndexedAttrib
 
 	// Authenticate using username
 	authRequest := map[string]interface{}{
-		"username": "auth_user1",
-		"password": "TestPass123!",
+		"identifiers": map[string]interface{}{
+			"username": "auth_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPass123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -569,8 +577,12 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithSingleIndexedAttrib
 
 	// Authenticate using email
 	authRequest := map[string]interface{}{
-		"email":    "auth_email@test.com",
-		"password": "TestPass123!",
+		"identifiers": map[string]interface{}{
+			"email": "auth_email@test.com",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPass123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -609,8 +621,12 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithSingleIndexedAttrib
 
 	// Authenticate using mobile number
 	authRequest := map[string]interface{}{
-		"mobileNumber": "+1111111111",
-		"password":     "TestPass123!",
+		"identifiers": map[string]interface{}{
+			"mobileNumber": "+1111111111",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPass123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -650,11 +666,15 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithMultipleIndexedAttr
 
 	// Authenticate using all indexed attributes
 	authRequest := map[string]interface{}{
-		"username":     "auth_user3",
-		"email":        "auth3@test.com",
-		"mobileNumber": "+2222222222",
-		"sub":          "sub-auth3",
-		"password":     "TestPass123!",
+		"identifiers": map[string]interface{}{
+			"username":     "auth_user3",
+			"email":        "auth3@test.com",
+			"mobileNumber": "+2222222222",
+			"sub":          "sub-auth3",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPass123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -693,9 +713,13 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithMixedIndexedAndNonI
 
 	// Authenticate using indexed + non-indexed attributes (hybrid query)
 	authRequest := map[string]interface{}{
-		"username":    "auth_user4",
-		"displayName": "Auth User 4",
-		"password":    "TestPass123!",
+		"identifiers": map[string]interface{}{
+			"username":    "auth_user4",
+			"displayName": "Auth User 4",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPass123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -733,9 +757,13 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithOnlyNonIndexedAttri
 
 	// Authenticate using only non-indexed attributes (fallback to JSON query)
 	authRequest := map[string]interface{}{
-		"displayName": "Auth User 5",
-		"department":  "Sales",
-		"password":    "TestPass123!",
+		"identifiers": map[string]interface{}{
+			"displayName": "Auth User 5",
+			"department":  "Sales",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPass123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -780,29 +808,45 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithDifferentIndexedAtt
 		{
 			name: "Username only",
 			authRequest: map[string]interface{}{
-				"username": "auth_user_variations",
-				"password": "TestPass123!",
+				"identifiers": map[string]interface{}{
+					"username": "auth_user_variations",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPass123!",
+				},
 			},
 		},
 		{
 			name: "Email only",
 			authRequest: map[string]interface{}{
-				"email":    "auth_variations@test.com",
-				"password": "TestPass123!",
+				"identifiers": map[string]interface{}{
+					"email": "auth_variations@test.com",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPass123!",
+				},
 			},
 		},
 		{
 			name: "MobileNumber only",
 			authRequest: map[string]interface{}{
-				"mobileNumber": "+3333333333",
-				"password":     "TestPass123!",
+				"identifiers": map[string]interface{}{
+					"mobileNumber": "+3333333333",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPass123!",
+				},
 			},
 		},
 		{
 			name: "Sub only",
 			authRequest: map[string]interface{}{
-				"sub":      "sub-variations",
-				"password": "TestPass123!",
+				"identifiers": map[string]interface{}{
+					"sub": "sub-variations",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPass123!",
+				},
 			},
 		},
 	}

@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -41,11 +42,12 @@ func (suite *DeclarativeModeServiceTestSuite) SetupTest() {
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	suite.Require().NoError(err)
 
 	// Create service with mock store (store won't be called in declarative mode)
 	mockStore := new(organizationUnitStoreInterfaceMock)
-	suite.service = newOrganizationUnitService(mockStore)
+	suite.service = newOrganizationUnitService(nil, mockStore, nil)
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TearDownTest() {
@@ -59,7 +61,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestCreateOrganizationUnit_FailsIn
 		Description: "Test Description",
 	}
 
-	ou, err := suite.service.CreateOrganizationUnit(request)
+	ou, err := suite.service.CreateOrganizationUnit(context.Background(), request)
 
 	// Should fail with immutable resource error
 	assert.NotNil(suite.T(), err)
@@ -74,7 +76,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnit_FailsIn
 		Description: "Updated Description",
 	}
 
-	ou, err := suite.service.UpdateOrganizationUnit("ou-1", request)
+	ou, err := suite.service.UpdateOrganizationUnit(context.Background(), "ou-1", request)
 
 	// Should fail with immutable resource error
 	assert.NotNil(suite.T(), err)
@@ -89,7 +91,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnitByPath_F
 		Description: "Updated Description",
 	}
 
-	ou, err := suite.service.UpdateOrganizationUnitByPath("/path/to/ou", request)
+	ou, err := suite.service.UpdateOrganizationUnitByPath(context.Background(), "/path/to/ou", request)
 
 	// Should fail because even getting the OU to update will check declarative mode
 	// Or fail during update operation
@@ -98,7 +100,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnitByPath_F
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestDeleteOrganizationUnit_FailsInDeclarativeMode() {
-	err := suite.service.DeleteOrganizationUnit("ou-1")
+	err := suite.service.DeleteOrganizationUnit(context.Background(), "ou-1")
 
 	// Should fail with immutable resource error
 	assert.NotNil(suite.T(), err)
@@ -106,7 +108,7 @@ func (suite *DeclarativeModeServiceTestSuite) TestDeleteOrganizationUnit_FailsIn
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestDeleteOrganizationUnitByPath_FailsInDeclarativeMode() {
-	err := suite.service.DeleteOrganizationUnitByPath("/path/to/ou")
+	err := suite.service.DeleteOrganizationUnitByPath(context.Background(), "/path/to/ou")
 
 	// Should fail because even getting the OU to delete will check declarative mode
 	// Or fail during delete operation

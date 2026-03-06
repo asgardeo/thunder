@@ -60,6 +60,7 @@ const translations = {
     'actions.upload': 'Upload',
     'actions.export': 'Export',
     'actions.import': 'Import',
+    'actions.openActionsMenu': 'Open actions menu',
     'actions.view': 'View',
     'actions.details': 'Details',
     'actions.settings': 'Settings',
@@ -310,14 +311,20 @@ const translations = {
   // Navigation namespace - Navigation related translations
   // ============================================================================
   navigation: {
+    'categories.identities': 'Identities',
+    'categories.resources': 'Resources',
+    'categories.configure': 'Configure',
+    'categories.customize': 'Customize',
     'pages.home': 'Home',
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
     'pages.organizationUnits': 'Organization Units',
+    'pages.groups': 'Groups',
     'pages.integrations': 'Integrations',
     'pages.applications': 'Applications',
     'pages.dashboard': 'Dashboard',
     'pages.flows': 'Flows',
+    'pages.translations': 'Translations',
     'breadcrumb.develop': 'Develop',
   },
 
@@ -325,6 +332,7 @@ const translations = {
   // Users namespace - User management feature translations
   // ============================================================================
   users: {
+    // Listing page
     title: 'User Management',
     subtitle: 'Manage users, roles, and permissions across your organization',
     addUser: 'Add User',
@@ -356,13 +364,39 @@ const translations = {
     userDeletedSuccess: 'User deleted successfully',
     'errors.failed.title': 'Error',
     'errors.failed.description': 'An error occurred. Please try again.',
+
+    // Edit page
+    'manageUser.title': 'Manage User',
+    'manageUser.subtitle': 'View and manage user information',
+
+    // Create page
+    'createUser.title': 'Create User',
+    'createUser.subtitle': 'Add a new user to your organization',
+
+    // Create wizard steps
+    'createWizard.steps.userType': 'User Type',
+    'createWizard.steps.organizationUnit': 'Organization Unit',
+    'createWizard.steps.userDetails': 'User Details',
+    'createWizard.selectUserType.title': 'Select a user type',
+    'createWizard.selectUserType.subtitle': 'Choose a user type (schema) for the new user.',
+    'createWizard.selectUserType.fieldLabel': 'User Type',
+    'createWizard.selectUserType.placeholder': 'Select a user type',
+    'createWizard.selectOrganizationUnit.title': 'Select an organization unit',
+    'createWizard.selectOrganizationUnit.subtitle': 'Choose which organization unit this user should belong to.',
+    'createWizard.selectOrganizationUnit.fieldLabel': 'Organization Unit',
+    'createWizard.userDetails.title': 'Enter user details',
+    'createWizard.userDetails.subtitle': 'Fill in the required information for the new user.',
+    'createWizard.validationErrors.userTypeRequired': 'Please select a user type before proceeding.',
+    'createWizard.validationErrors.ouIdMissing': 'Organization unit ID is missing for the selected user type.',
   },
 
   // ============================================================================
   // User Types namespace - User types feature translations
   // ============================================================================
   userTypes: {
+    // Listing page
     title: 'User Types',
+    subtitle: 'Define and manage user types with custom schemas',
     addUserType: 'Add User Type',
     createUserType: 'Create User Type',
     editUserType: 'Edit User Type',
@@ -381,11 +415,17 @@ const translations = {
     propertyNamePlaceholder: 'e.g., email, age, address',
     propertyType: 'Type',
     addProperty: 'Add Property',
+    credential: 'Credential',
     unique: 'Unique',
+    removeProperty: 'Remove property',
     regexPattern: 'Regular Expression Pattern (Optional)',
     regexPlaceholder: 'e.g., ^[a-zA-Z0-9]+$',
     enumValues: 'Allowed Values (Enum) - Optional',
     enumPlaceholder: 'Add value and press Enter',
+    'tooltips.required': 'Users must provide a value for this field',
+    'tooltips.unique': 'Each user must have a distinct value for this field',
+    'tooltips.credential': 'Values will be hashed and not returned in API responses',
+    credentialHint: 'This field will be treated as a secret. Values will be hashed and cannot be retrieved.',
     'types.string': 'String',
     'types.number': 'Number',
     'types.boolean': 'Boolean',
@@ -400,12 +440,37 @@ const translations = {
     noUserTypes: 'No user types found',
     noOrganizationUnits: 'No organization units available',
     confirmDeleteUserType: 'Are you sure you want to delete this user type?',
+
+    // Edit page
+    'manageUserType.title': 'Manage User Type',
+    'manageUserType.subtitle': 'View and manage user type information',
+
+    // Create page
+    'createUserType.title': 'Create User Type',
+    'createUserType.subtitle': 'Add a new user type to your organization',
+
+    // Create wizard steps
+    'createWizard.steps.name': 'Name',
+    'createWizard.steps.general': 'General',
+    'createWizard.steps.properties': 'Properties',
+    'createWizard.name.title': "Let's name your user type",
+    'createWizard.name.fieldLabel': 'User Type Name',
+    'createWizard.name.placeholder': 'Enter your user type name',
+    'createWizard.name.suggestions.label': 'In a hurry? Pick a random name:',
+    'createWizard.general.title': 'Configure general settings',
+    'createWizard.general.subtitle': 'Choose an organization unit and set registration preferences',
+    'createWizard.properties.title': 'Define your schema properties',
+    'createWizard.properties.subtitle': 'Add the fields that make up this user type',
   },
 
   // ============================================================================
   // Organization Units namespace - Organization unit management feature translations
   // ============================================================================
   organizationUnits: {
+    // Tree picker (shared component)
+    'treePicker.empty': 'No organization units available',
+    'treePicker.error': 'Failed to load organization unit data',
+
     // Listing page
     'listing.title': 'Organization Units (OU)',
     'listing.subtitle': 'Manage organization units and hierarchies',
@@ -417,6 +482,7 @@ const translations = {
     'listing.treeView.loadError': 'Failed to load child organization units',
     'listing.treeView.addChild': 'Add Child OU',
     'listing.treeView.addChildOrganizationUnit': 'Add Child Organization Unit',
+    'listing.treeView.loadMore': 'Load more',
     'listing.columns.name': 'Name',
     'listing.columns.handle': 'Handle',
     'listing.columns.description': 'Description',
@@ -430,13 +496,15 @@ const translations = {
 
     'delete.dialog.title': 'Delete Organization Unit',
     'delete.dialog.message': 'Are you sure you want to delete this organization unit? This action cannot be undone.',
-    'delete.dialog.disclaimer': 'Warning: All associated data, configurations, and user assignments will be permanently removed.',
+    'delete.dialog.disclaimer':
+      'Warning: All associated data, configurations, and user assignments will be permanently removed.',
     'delete.dialog.error': 'Failed to delete organization unit. Please try again.',
 
     /* -------------------- Edit page -------------------- */
     // Common
     'edit.page.error': 'Failed to load organization unit',
     'edit.page.notFound': 'Organization unit not found',
+    'edit.page.logoUpdate.label': 'Update Logo',
     'edit.page.back': 'Back to Organization Units',
     'edit.page.backToOU': 'Back to {{name}}',
     'edit.page.description.empty': 'No description',
@@ -507,6 +575,89 @@ const translations = {
     'edit.customization.labels.theme': 'Theme',
     'edit.customization.theme.placeholder': 'Select a theme',
     'edit.customization.theme.hint': 'The theme applied to this organization unit.',
+  },
+
+  // ============================================================================
+  // Groups namespace - Group management feature translations
+  // ============================================================================
+  groups: {
+    // List page
+    'listing.title': 'Groups',
+    'listing.subtitle': 'Manage groups and their members across organization units',
+    'listing.addGroup': 'Add Group',
+    'listing.error': 'Failed to load groups',
+    'listing.search.placeholder': 'Search groups...',
+    'listing.columns.name': 'Name',
+    'listing.columns.description': 'Description',
+    'listing.columns.organizationUnit': 'Organization Unit',
+    'listing.columns.actions': 'Actions',
+
+    // Create page
+    'create.title': 'Create Group',
+    'create.heading': 'Create a new group',
+    'create.error': 'Failed to create group. Please try again.',
+    'create.form.name.label': 'Group Name',
+    'create.form.name.placeholder': 'Enter group name',
+    'create.form.name.required': 'Group name is required',
+    'create.form.description.label': 'Description',
+    'create.form.description.placeholder': 'Enter group description',
+    'create.form.organizationUnit.label': 'Organization Unit',
+    'create.form.organizationUnit.placeholder': 'Select an organization unit',
+    'create.form.organizationUnit.required': 'Organization unit is required',
+
+    // Edit page
+    'edit.page.back': 'Back to Groups',
+    'edit.page.error': 'Failed to load group',
+    'edit.page.notFound': 'Group not found',
+    'edit.page.description.placeholder': 'Add a description...',
+    'edit.page.description.empty': 'No description',
+    'edit.page.header.groupId': 'ID',
+    'edit.page.header.ouId': 'Organization Unit',
+    'edit.page.header.editName': 'Edit group name',
+    'edit.page.header.editDescription': 'Edit description',
+    'edit.page.tabs.general': 'General',
+    'edit.page.tabs.members': 'Members',
+    'edit.page.unsavedChanges': 'You have unsaved changes',
+    'edit.page.reset': 'Reset',
+    'edit.page.save': 'Save Changes',
+    'edit.page.saving': 'Saving...',
+
+    // General settings
+    'edit.general.sections.quickCopy.title': 'Quick Copy',
+    'edit.general.sections.quickCopy.description': 'Copy group identifiers for quick reference.',
+    'edit.general.sections.quickCopy.groupId': 'Group ID',
+    'edit.general.sections.quickCopy.copyGroupId': 'Copy Group ID',
+    'edit.general.sections.quickCopy.copyOrganizationUnitId': 'Copy organization unit ID',
+    'edit.general.sections.organizationUnit.title': 'Organization Unit',
+    'edit.general.sections.organizationUnit.description': 'The organization unit this group belongs to.',
+    'edit.general.sections.dangerZone.title': 'Danger Zone',
+    'edit.general.sections.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
+    'edit.general.sections.dangerZone.deleteGroup': 'Delete this group',
+    'edit.general.sections.dangerZone.deleteGroupDescription': 'Deleting this group is permanent and cannot be undone.',
+
+    // Members settings
+    'edit.members.sections.manage.title': 'Members',
+    'edit.members.sections.manage.description': 'Manage the members of this group',
+    'edit.members.sections.manage.listing.columns.id': 'Member ID',
+    'edit.members.sections.manage.listing.columns.type': 'Type',
+    'edit.members.sections.manage.addMember': 'Add Member',
+    'edit.members.sections.manage.noMembers': 'No members in this group',
+
+    // Add member dialog
+    'addMember.title': 'Add Member',
+    'addMember.search.placeholder': 'Search users...',
+    'addMember.noResults': 'No users found',
+    'addMember.add': 'Add Selected',
+    'addMember.columns.userId': 'User ID',
+    'addMember.error': 'Failed to add member. Please try again.',
+    'addMember.fetchError': 'Failed to load users. Please try again.',
+    'removeMember.error': 'Failed to remove member. Please try again.',
+
+    // Delete dialog
+    'delete.title': 'Delete Group',
+    'delete.message': 'Are you sure you want to delete this group?',
+    'delete.disclaimer': 'This action cannot be undone. All group associations will be permanently removed.',
+    'delete.error': 'Failed to delete group. Please try again.',
   },
 
   // ============================================================================
@@ -625,6 +776,10 @@ const translations = {
     serverError: 'Server error occurred',
     networkError: 'Network error. Please check your connection.',
     redirectFailed: 'Redirect failed',
+    'page.defaultTitle': "Oops, that didn't work",
+    'page.defaultDescription': "We're sorry, we ran into a problem. Please try again!",
+    'page.invalidRequest.title': 'Oh no, we ran into a problem!',
+    'page.invalidRequest.description': 'The request is invalid. Please check and try again.',
   },
 
   // ============================================================================
@@ -922,6 +1077,7 @@ const translations = {
     'edit.page.error': 'Failed to load application information',
     'edit.page.notFound': 'Application not found',
     'edit.page.back': 'Back to Applications',
+    'edit.page.logoUpdate.label': 'Update Logo',
     'edit.page.description.empty': 'No description',
     'edit.page.description.placeholder': 'Add a description',
     'edit.page.tabs.overview': 'Guide',
@@ -999,7 +1155,6 @@ const translations = {
     // Token section
     'edit.token.labels.title': 'Token Settings',
     'edit.token.intro': 'Customize your access and ID tokens by adding user attributes.',
-    'edit.token.labels.issuer': 'Issuer URL',
     'edit.token.labels.accessToken': 'Access Token Configuration',
     'edit.token.labels.idToken': 'ID Token Configuration',
     'edit.token.labels.accessTokenValidity': 'Access Token Validity (seconds)',
@@ -1040,9 +1195,7 @@ const translations = {
     'edit.token.sharedConfigs.hint': 'User attributes will be shared between Access Token and ID Token',
     'edit.token.sharedValidity.hint': 'Token validity period in seconds',
     'edit.token.tokenValidation.title': 'Token Validation',
-    'edit.token.tokenValidation.description': 'Configure token validation settings such as issuer URL and audience',
-    'edit.token.tokenIssuer.title': 'Token Issuer',
-    'edit.token.tokenIssuer.description': 'Configure the issuer URL that will be included in both access and ID tokens',
+    'edit.token.tokenValidation.description': 'Configure token validation settings such as audience and validity',
     'edit.token.accessTokenValidation.title': 'Access Token Validation',
     'edit.token.accessTokenValidation.description': 'Configure how long access tokens remain valid before expiration',
     'edit.token.idTokenValidation.title': 'ID Token Validation',
@@ -1056,19 +1209,16 @@ const translations = {
     'edit.token.idTokenUserAttributes.title': 'ID Token User Attributes',
     'edit.token.idTokenUserAttributes.description':
       'Configure user attributes that will be included in the ID token. You can add custom attributes from user profiles and define scope-based attributes.',
+    'edit.token.userInfoAttributes.title': 'User Info Attributes',
+    'edit.token.userInfoAttributes.description': 'Configure the user attributes to include in the User Info response.',
+    'edit.token.inheritFromIdToken': 'Use same attributes as ID Token',
     'edit.token.tokenConfiguration.title': 'Token Configuration',
-    'edit.token.tokenConfiguration.description':
-      'Configure token validity and issuer settings that apply to all issued tokens.',
+    'edit.token.tokenConfiguration.description': 'Configure token validity settings that apply to all issued tokens.',
     'edit.token.validity.title': 'Token Validity',
     'edit.token.validity.description':
       'Configure how long tokens remain valid before expiration. Shorter validity periods enhance security.',
     'edit.token.validity.hint': 'Token validity period in seconds (e.g., 3600 for 1 hour)',
     'edit.token.validity.error': 'Validity period must be at least 1 second',
-    'edit.token.issuer.title': 'URLs',
-    'edit.token.issuer.description': 'Configure token-related URLs such as issuer, audience, and other endpoints.',
-    'edit.token.issuer.hint': 'The issuer URL will be included in the "iss" attribute of issued tokens',
-    'edit.token.issuer.placeholder': 'https://your-domain.com',
-    'edit.token.issuer.error': 'Please enter a valid URL',
     'edit.token.scopes.title': 'OAuth Scopes',
     'edit.token.scopes.description':
       'Scopes define the level of access that the application is requesting. Users will see these during consent.',
@@ -1279,6 +1429,7 @@ const translations = {
     // Execution steps - branching handles
     'core.executions.handles.success': 'onSuccess',
     'core.executions.handles.failure': 'onFailure',
+    'core.executions.handles.incomplete': 'onIncomplete',
 
     // Canvas hints and tips
     'core.canvas.hints.autoLayout': 'Tip: Use auto-layout to organize your flow',
@@ -1358,8 +1509,21 @@ const translations = {
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
     'core.elements.textPropertyField.tooltip.configureTranslation': 'Configure translation',
+    'core.elements.textPropertyField.tooltip.configureDynamicValue': 'Insert dynamic value',
     'core.elements.textPropertyField.i18nKey': 'Translation Key',
     'core.elements.textPropertyField.resolvedValue': 'Resolved Value',
+
+    // Elements - dynamic value popover
+    'core.elements.textPropertyField.dynamicValuePopover.title': 'Dynamic Value for {{field}}',
+    'core.elements.textPropertyField.dynamicValuePopover.tabs.translation': 'Translation',
+    'core.elements.textPropertyField.dynamicValuePopover.tabs.variables': 'Variables',
+
+    // Elements - meta card
+    'core.elements.textPropertyField.metaCard.title': 'Variable for {{field}}',
+    'core.elements.textPropertyField.metaCard.variablePath': 'Variable Path',
+    'core.elements.textPropertyField.metaCard.variablePathPlaceholder': 'e.g. application.name',
+    'core.elements.textPropertyField.metaCard.variablePathHint': 'Select a common variable or type a custom path',
+    'core.elements.textPropertyField.metaCard.formattedValue': 'Formatted Value',
 
     // Elements - i18n card
     'core.elements.textPropertyField.i18nCard.title': 'Translation for {{field}}',
@@ -1481,6 +1645,105 @@ const translations = {
   appearance: {
     'theme.defaultTheme': 'Default Theme',
     'theme.appTheme.displayName': '{{appName}} Theme',
+  },
+
+  // ============================================================================
+  // Translations namespace - Text & Translations feature
+  // ============================================================================
+  translations: {
+    'page.title': 'Translations',
+    'page.subtitle': 'Manage and customize UI text and translations for your application.',
+
+    'listing.addLanguage': 'Add Language',
+    'listing.columns.language': 'Language',
+    'listing.columns.actions': 'Actions',
+
+    'language.selectPlaceholder': 'Select a language',
+    'language.addOption': 'Add new language...',
+
+    'language.create.steps.country': 'Country',
+    'language.create.steps.language': 'Language',
+    'language.create.steps.localeCode': 'Locale Code',
+    'language.create.steps.initialize': 'Initialize',
+
+    'language.create.country.title': 'Choose a Country',
+    'language.create.country.subtitle': 'Select the country for the language you want to add.',
+    'language.create.countryLabel': 'Country',
+    'language.create.country.placeholder': 'Select a country',
+    'language.create.country.helperText':
+      'Country name will be used to derive a BCP 47 compliant locale code for the language.',
+
+    'language.create.language.title': 'Choose a Language',
+    'language.create.language.subtitle': 'Select the language variant spoken in {{country}}.',
+    'language.create.language.label': 'Language',
+    'language.create.language.placeholder': 'Select a language',
+    'language.create.language.helperText':
+      'Language picked here together with the country selection will determine the BCP 47 compliant locale code.',
+
+    'language.create.localeCode.title': 'Review Locale Code',
+    'language.create.localeCode.subtitle':
+      'The locale code was derived from your selection. Override it here if you need a different tag.',
+
+    'language.create.initialize.title': 'Initialize Translations',
+    'language.create.initialize.subtitle': 'Choose how to populate the translation keys for this language.',
+    'language.create.initialize.copyFromEnglish.label': 'Copy from English',
+    'language.create.initialize.copyFromEnglish.description':
+      'All keys will be pre-filled with English (en-US) text as a starting point. You can edit them afterwards.',
+    'language.create.initialize.startEmpty.label': 'Start empty',
+    'language.create.initialize.startEmpty.description':
+      'All keys will be created with empty values. Useful when you have your own translations ready to paste in.',
+
+    'language.create.createButton': 'Create Language',
+
+    'language.add.dialogTitle': 'Add New Language',
+    'language.add.code.label': 'Language Code',
+    'language.add.codePlaceholder': 'e.g. fr-FR, de-DE, ja-JP',
+    'language.add.code.helperText':
+      'If you are manually modifying the generated code, use BCP 47 format (e.g. fr-FR for French, de-DE for German, etc.).',
+    'language.add.populateLabel': 'Pre-populate from English (en-US)',
+    'language.add.populateHelper': 'All keys will be pre-filled with English text. You can update them after.',
+    'language.add.emptyHelper': 'All keys will be added with empty values. You can fill them in later.',
+    'language.add.adding': 'Adding translations...',
+    'language.add.success': '"{{code}}" added successfully.',
+    'language.add.error': 'Failed to add language. Please try again.',
+
+    'namespace.label': 'Namespaces',
+    'namespace.noKeys': 'No translatable keys in this namespace.',
+
+    'editor.panelHeader': 'Edit Translations',
+    'editor.fieldsTab': 'Fields',
+    'editor.jsonTab': 'JSON',
+    'editor.searchPlaceholder': 'Search by key or value...',
+    'editor.noResults': 'No matching translations.',
+    'editor.noLanguageSelected': 'Select a language to start editing.',
+    'editor.loading': 'Loading translations...',
+    'editor.fieldSaveSuccess': 'Saved.',
+    'editor.fieldSaveError': 'Failed to save.',
+    'editor.jsonSaveAll': 'Save All',
+    'editor.jsonSaveSuccess': 'All translations saved.',
+    'editor.jsonSaveError': 'Failed to save some translations.',
+    'editor.jsonInvalid': 'Invalid JSON — fix errors before saving.',
+    'editor.resetField': 'Reset to saved value',
+    'editor.noKeys': 'No translatable keys in this namespace.',
+    'editor.unsavedCount': '{{count}} unsaved change',
+    'editor.namespace': 'Namespace',
+    'editor.namespace.helperText':
+      'A namespace typically represents a page or a section within a page. It helps group and organize related translation keys for better structure and maintainability.',
+    'editor.textFields': 'Fields',
+    'editor.rawJson': 'Raw JSON',
+
+    'actions.saveChanges': 'Save Changes',
+    'actions.discardChanges': 'Discard Changes',
+    'actions.resetToDefault': 'Reset to Default',
+    'preview.noTheme': 'No themes configured. Preview unavailable.',
+  },
+
+  design: {
+    'themes.delete.title': 'Delete theme',
+    'themes.delete.message': 'Are you sure you want to delete "{{name}}"? This action cannot be undone.',
+    'themes.delete.messageUnnamed': 'Are you sure you want to delete this theme? This action cannot be undone.',
+    'themes.delete.disclaimer': 'Any applications currently using this theme will revert to the default appearance.',
+    'themes.delete.error': 'Failed to delete theme. Please try again.',
   },
 } as const;
 

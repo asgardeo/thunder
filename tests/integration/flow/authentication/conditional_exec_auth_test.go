@@ -125,16 +125,41 @@ var (
 		Name:                  "conditional_exec_flow_user",
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
+			"username": map[string]interface{}{
+				"type": "string",
+			},
+			"password": map[string]interface{}{
+				"type":       "string",
+				"credential": true,
+			},
 			"sub": map[string]interface{}{
 				"type": "string",
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
+			"email_verified": map[string]interface{}{
+				"type": "string",
+			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"given_name": map[string]interface{}{
+				"type": "string",
+			},
+			"family_name": map[string]interface{}{
+				"type": "string",
+			},
 			"givenName": map[string]interface{}{
 				"type": "string",
 			},
 			"familyName": map[string]interface{}{
+				"type": "string",
+			},
+			"picture": map[string]interface{}{
+				"type": "string",
+			},
+			"locale": map[string]interface{}{
 				"type": "string",
 			},
 		},

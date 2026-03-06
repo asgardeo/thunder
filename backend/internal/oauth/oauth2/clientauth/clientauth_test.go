@@ -19,6 +19,7 @@
 package clientauth
 
 import (
+	"encoding/base64"
 	"net/http"
 	"net/url"
 	"strings"
@@ -111,6 +112,63 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic() {
 	}
 }
 
+func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic_URLEncodedCredentials() {
+	rawClientID := "client:id"
+	rawClientSecret := "secret with spaces"
+	encodedClientID := url.QueryEscape(rawClientID)
+	encodedClientSecret := url.QueryEscape(rawClientSecret)
+	hashedSecret := hash.GenerateThumbprintFromString(rawClientSecret)
+	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID:                rawClientID,
+		HashedClientSecret:      hashedSecret,
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
+		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+	}
+
+	suite.mockAppService.On("GetOAuthApplication", rawClientID).
+		Return(mockApp, nil).Once()
+
+	// Manually construct the Basic Auth header with URL-encoded credentials.
+	basicValue := base64.StdEncoding.EncodeToString([]byte(encodedClientID + ":" + encodedClientSecret))
+	req, _ := http.NewRequest("POST", "/test", nil)
+	req.Header.Set("Authorization", "Basic "+basicValue)
+
+	clientInfo, authErr := authenticate(req, suite.mockAppService)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), clientInfo)
+	if clientInfo != nil {
+		assert.Equal(suite.T(), rawClientID, clientInfo.ClientID)
+		assert.Equal(suite.T(), rawClientSecret, clientInfo.ClientSecret)
+	}
+}
+
+func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEncoding() {
+	// Use an invalid percent-encoded value in the client ID.
+	basicValue := base64.StdEncoding.EncodeToString([]byte("client%ZZid:secret"))
+	req, _ := http.NewRequest("POST", "/test", nil)
+	req.Header.Set("Authorization", "Basic "+basicValue)
+
+	clientInfo, authErr := authenticate(req, suite.mockAppService)
+
+	assert.NotNil(suite.T(), authErr)
+	assert.Nil(suite.T(), clientInfo)
+	assert.Equal(suite.T(), errInvalidAuthorizationHeader, authErr)
+}
+
+func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEncodingInSecret() {
+	// Client ID is valid but secret contains an invalid percent-encoded value.
+	basicValue := base64.StdEncoding.EncodeToString([]byte("validclient:secret%ZZvalue"))
+	req, _ := http.NewRequest("POST", "/test", nil)
+	req.Header.Set("Authorization", "Basic "+basicValue)
+
+	clientInfo, authErr := authenticate(req, suite.mockAppService)
+
+	assert.NotNil(suite.T(), authErr)
+	assert.Nil(suite.T(), clientInfo)
+	assert.Equal(suite.T(), errInvalidAuthorizationHeader, authErr)
+}
+
 func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PublicClient() {
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                "public-client-id",
@@ -149,7 +207,7 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientID() {
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
 	assert.Equal(suite.T(), errMissingClientID, authErr)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, authErr.ErrorCode)
 	assert.Equal(suite.T(), "Missing client_id parameter", authErr.ErrorDescription)
 }
 

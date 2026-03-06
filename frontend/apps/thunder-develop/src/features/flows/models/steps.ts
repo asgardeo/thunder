@@ -50,6 +50,11 @@ export interface StepAction {
    */
   onFailure?: string;
   /**
+   * The ID of the next step to navigate to on incomplete.
+   * Used for TASK_EXECUTION nodes.
+   */
+  onIncomplete?: string;
+  /**
    * The executor configuration for this action.
    */
   executor?: {

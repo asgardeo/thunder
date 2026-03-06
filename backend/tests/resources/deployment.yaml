@@ -7,11 +7,11 @@ tls:
   key_file: /path/to/key.pem
 
 database:
-  identity:
+  config:
     type: postgres
     hostname: localhost
     port: 5432
-    name: identity_db
+    name: configdb
     username: postgres
     password: postgres
     sslmode: disable

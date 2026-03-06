@@ -48,7 +48,7 @@ paths:
               example:
                 status: "UP"
                 service_status:
-                  - service_name: "IdentityDB"
+                  - service_name: "ConfigDB"
                     status: "UP"
                   - service_name: "RuntimeDB"
                     status: "UP"
@@ -63,7 +63,7 @@ paths:
               example:
                 status: "DOWN"
                 service_status:
-                  - service_name: "IdentityDB"
+                  - service_name: "ConfigDB"
                     status: "DOWN"
                   - service_name: "RuntimeDB"
                     status: "UP"
@@ -89,7 +89,7 @@ components:
               service_name:
                 type: string
                 enum:
-                  - IdentityDB
+                  - ConfigDB
                   - RuntimeDB
                   - UserDB
               status:

@@ -19,6 +19,7 @@
 package idp
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -36,18 +37,18 @@ const (
 	paramTypIdentityProvider     = "IdentityProvider"
 )
 
-// IDPExporter implements declarativeresource.ResourceExporter for identity providers.
-type IDPExporter struct {
+// idpExporter implements declarativeresource.ResourceExporter for identity providers.
+type idpExporter struct {
 	service IDPServiceInterface
 }
 
 // newIDPExporter creates a new IDP exporter.
-func newIDPExporter(service IDPServiceInterface) *IDPExporter {
-	return &IDPExporter{service: service}
+func newIDPExporter(service IDPServiceInterface) *idpExporter {
+	return &idpExporter{service: service}
 }
 
 // NewIDPExporterForTest creates a new IDP exporter for testing purposes.
-func NewIDPExporterForTest(service IDPServiceInterface) *IDPExporter {
+func NewIDPExporterForTest(service IDPServiceInterface) *idpExporter {
 	if !testing.Testing() {
 		panic("only for tests!")
 	}
@@ -55,18 +56,18 @@ func NewIDPExporterForTest(service IDPServiceInterface) *IDPExporter {
 }
 
 // GetResourceType returns the resource type for identity providers.
-func (e *IDPExporter) GetResourceType() string {
+func (e *idpExporter) GetResourceType() string {
 	return resourceTypeIdentityProvider
 }
 
 // GetParameterizerType returns the parameterizer type for identity providers.
-func (e *IDPExporter) GetParameterizerType() string {
+func (e *idpExporter) GetParameterizerType() string {
 	return paramTypIdentityProvider
 }
 
 // GetAllResourceIDs retrieves all identity provider IDs.
-func (e *IDPExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	idps, err := e.service.GetIdentityProviderList()
+func (e *idpExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+	idps, err := e.service.GetIdentityProviderList(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +79,10 @@ func (e *IDPExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError)
 }
 
 // GetResourceByID retrieves an identity provider by its ID.
-func (e *IDPExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	idpDTO, err := e.service.GetIdentityProvider(id)
+func (e *idpExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
+	idpDTO, err := e.service.GetIdentityProvider(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -87,7 +90,7 @@ func (e *IDPExporter) GetResourceByID(id string) (interface{}, string, *servicee
 }
 
 // ValidateResource validates an identity provider resource.
-func (e *IDPExporter) ValidateResource(
+func (e *idpExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger) (string, *declarativeresource.ExportError) {
 	idpDTO, ok := resource.(*IDPDTO)
 	if !ok {
@@ -110,7 +113,7 @@ func (e *IDPExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for identity providers.
-func (e *IDPExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *idpExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		DynamicPropertyFields: []string{"Properties"},
 	}

@@ -65,6 +65,12 @@ html[data-color-scheme='dark'] {
       left: 50%;
       transform: translateX(-50%);
     }
+
+    &.incomplete-wrapper {
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
   }
 
   // Success handle styling (green)
@@ -87,6 +93,18 @@ html[data-color-scheme='dark'] {
     border: 2px solid #dc2626 !important;
     position: relative !important;
     bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+  }
+
+  // Incomplete handle styling (orange/yellow)
+  .execution-handle-incomplete {
+    background-color: #f59e0b !important;
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid #d97706 !important;
+    position: relative !important;
+    top: auto !important;
     left: auto !important;
     transform: none !important;
   }

@@ -1,3 +1,5 @@
+//go:build !windows
+
 /*
  * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
@@ -16,8 +18,6 @@
  * under the License.
  */
 
-//go:build !windows
-
 package testutils
 
 import (
@@ -28,4 +28,12 @@ import (
 // sendStopSignal sends SIGTERM to the process for graceful shutdown on Unix.
 func sendStopSignal(process *os.Process) error {
 	return process.Signal(syscall.SIGTERM)
+}
+
+// isProcessAlive reports whether the process identified by proc is still running.
+// On Unix the null signal (signal 0) is used: syscall.Kill returns ESRCH when the
+// PID no longer exists, which also protects against accidentally killing a recycled
+// PID after a grace-period sleep.
+func isProcessAlive(proc *os.Process) bool {
+	return proc.Signal(syscall.Signal(0)) == nil
 }

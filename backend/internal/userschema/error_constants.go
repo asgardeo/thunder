@@ -75,6 +75,55 @@ var (
 		Error:            "User validation failed",
 		ErrorDescription: "User attributes do not conform to the required schema",
 	}
+	// ErrorCannotModifyDeclarativeResource is the error returned when trying to modify a declarative resource.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1008",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The user schema is declarative and cannot be modified or deleted",
+	}
+	// ErrorResultLimitExceededInCompositeMode is the error returned when
+	// the result limit is exceeded in composite mode.
+	ErrorResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1009",
+		Error: "Result limit exceeded",
+		ErrorDescription: "The combined result set from both file-based and database " +
+			"stores exceeds the maximum limit. Please refine your query to return " +
+			"fewer results.",
+	}
+	// ErrorConsentSyncFailed is the error returned when user schema changes failed to sync with the consent service.
+	ErrorConsentSyncFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1010",
+		Error:            "Consent synchronization failed",
+		ErrorDescription: "Failed to synchronize consent configurations for the user schema",
+	}
+	// ErrorInvalidDisplayAttribute is the error returned when the display attribute
+	// does not reference a valid top-level attribute in the schema.
+	ErrorInvalidDisplayAttribute = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "USRS-1011",
+		Error: "Invalid display attribute",
+		ErrorDescription: "Display attribute must reference an attribute defined in the schema " +
+			"(use dot notation for nested attributes, e.g. 'address.city')",
+	}
+	// ErrorNonDisplayableAttribute is the error returned when the display attribute
+	// references an attribute with a non-displayable type (e.g. object or array).
+	ErrorNonDisplayableAttribute = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1012",
+		Error:            "Non-displayable attribute type",
+		ErrorDescription: "Display attribute must reference a string or number type",
+	}
+	// ErrorCredentialDisplayAttribute is the error returned when the display attribute
+	// references an attribute marked as a credential.
+	ErrorCredentialDisplayAttribute = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1013",
+		Error:            "Credential attribute not allowed as display",
+		ErrorDescription: "Display attribute must not reference a credential attribute",
+	}
 )
 
 // Server errors for user schema management operations.
@@ -98,4 +147,7 @@ var (
 
 	// ErrInvalidSchemaDefinition is returned when the schema definition is invalid.
 	ErrInvalidSchemaDefinition = errors.New("invalid schema definition")
+
+	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )

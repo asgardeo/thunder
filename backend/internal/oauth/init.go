@@ -30,12 +30,13 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/introspect"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/token"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
@@ -51,12 +52,13 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 ) {
 	jwks.Initialize(mux, pkiService)
+	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	grantHandlerProvider := granthandlers.Initialize(
-		mux, jwtService, userService, applicationService, flowExecService)
+		mux, jwtService, userService, applicationService, flowExecService, tokenBuilder, tokenValidator)
 	scopeValidator := scope.Initialize()
 	token.Initialize(mux, applicationService, grantHandlerProvider, scopeValidator, observabilitySvc)
 	introspect.Initialize(mux, jwtService)
-	userinfo.Initialize(mux, jwtService, applicationService, userService, ouService)
+	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, userService, ouService)
 	discovery.Initialize(mux)
 	dcr.Initialize(mux, applicationService)
 }

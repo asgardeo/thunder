@@ -160,8 +160,8 @@ func (e *Extractor) extractMessageFromLiteral(lit *ast.CompositeLit, fset *token
 		}
 
 		// Extract the string value
-		strValue := e.extractStringValue(kv.Value)
-		if strValue == "" {
+		strValue, ok := e.extractStringValue(kv.Value)
+		if !ok {
 			continue
 		}
 
@@ -188,21 +188,40 @@ func (e *Extractor) extractMessageFromLiteral(lit *ast.CompositeLit, fset *token
 }
 
 // extractStringValue extracts the string value from an AST expression.
-func (e *Extractor) extractStringValue(expr ast.Expr) string {
-	basicLit, ok := expr.(*ast.BasicLit)
-	if !ok {
-		return ""
+// It handles single string literals, concatenated strings (e.g., "str1" + "str2"),
+// and parenthesized expressions (e.g., ("str1" + "str2")).
+// The bool return value disambiguates success (true) from failure (false),
+// allowing empty strings to be valid results.
+func (e *Extractor) extractStringValue(expr ast.Expr) (string, bool) {
+	switch v := expr.(type) {
+	case *ast.BasicLit:
+		if v.Kind != token.STRING {
+			return "", false
+		}
+		// Unquote the string literal
+		value, err := strconv.Unquote(v.Value)
+		if err != nil {
+			return "", false
+		}
+		return value, true
+	case *ast.BinaryExpr:
+		// Handle string concatenation: "str1" + "str2"
+		if v.Op != token.ADD {
+			return "", false
+		}
+		left, ok := e.extractStringValue(v.X)
+		if !ok {
+			return "", false
+		}
+		right, ok := e.extractStringValue(v.Y)
+		if !ok {
+			return "", false
+		}
+		return left + right, true
+	case *ast.ParenExpr:
+		// Handle parenthesized expressions: ("str1" + "str2")
+		return e.extractStringValue(v.X)
+	default:
+		return "", false
 	}
-
-	if basicLit.Kind != token.STRING {
-		return ""
-	}
-
-	// Unquote the string literal
-	value, err := strconv.Unquote(basicLit.Value)
-	if err != nil {
-		return ""
-	}
-
-	return value
 }

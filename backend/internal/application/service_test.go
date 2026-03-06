@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -36,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
+	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
@@ -119,7 +121,6 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 func (suite *ServiceTestSuite) TestGetDefaultAssertionConfigFromDeployment() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test-issuer.com",
 			ValidityPeriod: 7200,
 		},
 	}
@@ -131,14 +132,12 @@ func (suite *ServiceTestSuite) TestGetDefaultAssertionConfigFromDeployment() {
 	result := getDefaultAssertionConfigFromDeployment()
 
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "https://test-issuer.com", result.Issuer)
 	assert.Equal(suite.T(), int64(7200), result.ValidityPeriod)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -150,38 +149,31 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 	tests := []struct {
 		name                    string
 		app                     *model.ApplicationDTO
-		expectedRootIssuer      string
 		expectedRootValidity    int64
 		expectedAccessValidity  int64
 		expectedIDTokenValidity int64
-		expectedTokenIssuer     string
 	}{
 		{
 			name: "No token config - uses defaults",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  3600,
 			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://default-issuer.com",
 		},
 		{
 			name: "Custom root token config",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 				Assertion: &model.AssertionConfig{
-					Issuer:         "https://custom-issuer.com",
 					ValidityPeriod: 7200,
 					UserAttributes: []string{"email", "name"},
 				},
 			},
-			expectedRootIssuer:      "https://custom-issuer.com",
 			expectedRootValidity:    7200,
 			expectedAccessValidity:  7200,
 			expectedIDTokenValidity: 7200,
-			expectedTokenIssuer:     "https://custom-issuer.com",
 		},
 		{
 			name: "Partial root token config",
@@ -191,14 +183,12 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					ValidityPeriod: 5000,
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    5000,
 			expectedAccessValidity:  5000,
 			expectedIDTokenValidity: 5000,
-			expectedTokenIssuer:     "https://default-issuer.com",
 		},
 		{
-			name: "OAuth token config with custom issuer",
+			name: "OAuth token config with custom validity periods",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
@@ -206,7 +196,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							Token: &model.OAuthTokenConfig{
-								Issuer: "https://oauth-issuer.com",
 								AccessToken: &model.AccessTokenConfig{
 									ValidityPeriod: 1800,
 								},
@@ -218,11 +207,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					},
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  1800,
 			expectedIDTokenValidity: 900,
-			expectedTokenIssuer:     "https://oauth-issuer.com",
 		},
 		{
 			name: "OAuth token with only access token config",
@@ -242,40 +229,16 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					},
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  2400,
 			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://default-issuer.com",
-		},
-		{
-			name: "OAuth token with issuer but no root token",
-			app: &model.ApplicationDTO{
-				Name: "Test App",
-				InboundAuthConfig: []model.InboundAuthConfigDTO{
-					{
-						Type: model.OAuthInboundAuthType,
-						OAuthAppConfig: &model.OAuthAppConfigDTO{
-							Token: &model.OAuthTokenConfig{
-								Issuer: "https://oauth-only-issuer.com",
-							},
-						},
-					},
-				},
-			},
-			expectedRootIssuer:      "https://default-issuer.com",
-			expectedRootValidity:    3600,
-			expectedAccessValidity:  3600,
-			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://oauth-only-issuer.com",
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(tt.app)
+			rootAssertion, accessToken, idToken := processTokenConfiguration(tt.app)
 
-			assert.Equal(suite.T(), tt.expectedRootIssuer, rootAssertion.Issuer)
 			assert.Equal(suite.T(), tt.expectedRootValidity, rootAssertion.ValidityPeriod)
 			assert.NotNil(suite.T(), rootAssertion.UserAttributes)
 
@@ -284,8 +247,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 
 			assert.Equal(suite.T(), tt.expectedIDTokenValidity, idToken.ValidityPeriod)
 			assert.NotNil(suite.T(), idToken.UserAttributes)
-
-			assert.Equal(suite.T(), tt.expectedTokenIssuer, tokenIssuer)
 		})
 	}
 }
@@ -952,11 +913,16 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	// Consent is disabled by default in the base test service; individual tests
+	// can override this via their own service instance.
+	mockConsentService.On("IsEnabled").Maybe().Return(false)
 	service := &applicationService{
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
 		userSchemaService: mockUserSchemaService,
+		consentService:    mockConsentService,
 	}
 	return service, mockStore, mockCertService, mockFlowMgtService
 }
@@ -1055,8 +1021,9 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
 	app := &model.ApplicationProcessedDTO{
-		ID:   "app123",
-		Name: "Test App",
+		ID:       "app123",
+		Name:     "Test App",
+		Metadata: map[string]interface{}{"service_key": "service_val"},
 	}
 
 	mockStore.On("GetApplicationByID", "app123").Return(app, nil)
@@ -1068,6 +1035,7 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "app123", result.ID)
+	assert.Equal(suite.T(), map[string]interface{}{"service_key": "service_val"}, result.Metadata)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
@@ -1195,6 +1163,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_NotFound() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(model.ApplicationNotFoundError)
 
 	svcErr := service.DeleteApplication("app123")
@@ -1216,6 +1185,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(errors.New("store error"))
 
 	svcErr := service.DeleteApplication("app123")
@@ -1236,6 +1206,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil)
@@ -1258,6 +1229,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().
 		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
@@ -1535,7 +1507,6 @@ func (suite *ServiceTestSuite) TestValidateRedirectURIs_InvalidParsedURI() {
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -1562,14 +1533,13 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() 
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(1200), idToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email"}, idToken.UserAttributes)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
@@ -1918,7 +1888,8 @@ func (suite *ServiceTestSuite) TestDeleteApplication_DeclarativeResourcesEnabled
 	require.NoError(suite.T(), err)
 	defer config.ResetThunderRuntime()
 
-	service, _, _, _ := suite.setupTestService()
+	service, mockStore, _, _ := suite.setupTestService()
+	mockStore.On("IsApplicationDeclarative", "app123").Return(true)
 
 	svcErr := service.DeleteApplication("app123")
 
@@ -1975,7 +1946,6 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -1987,27 +1957,23 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "https://custom-issuer.com",
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://custom-issuer.com", rootAssertion.Issuer)
 	assert.Equal(suite.T(), int64(1800), rootAssertion.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email", "name"}, rootAssertion.UserAttributes)
-	assert.Equal(suite.T(), "https://custom-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2019,25 +1985,21 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaul
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "",
 			ValidityPeriod: 0,
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://default-issuer.com", rootAssertion.Issuer)
 	assert.Equal(suite.T(), int64(3600), rootAssertion.ValidityPeriod)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2063,20 +2025,18 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"sub", "email"}, accessToken.UserAttributes)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2102,7 +2062,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootAssertion, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2115,7 +2075,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2142,7 +2101,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 		},
 	}
 
-	rootAssertion, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2152,44 +2111,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 	assert.Len(suite.T(), idToken.UserAttributes, 0)
 }
 
-func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthTokenIssuer() {
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
-			ValidityPeriod: 3600,
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetThunderRuntime()
-
-	app := &model.ApplicationDTO{
-		Name: "Test App",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
-			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					Token: &model.OAuthTokenConfig{
-						Issuer: "https://oauth-issuer.com",
-					},
-				},
-			},
-		},
-	}
-
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
-
-	assert.NotNil(suite.T(), rootAssertion)
-	assert.NotNil(suite.T(), accessToken)
-	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://oauth-issuer.com", tokenIssuer)
-}
-
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilUserAttributes() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2201,7 +2125,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "https://root-issuer.com",
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
@@ -2220,7 +2143,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2229,13 +2152,11 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
 	assert.Len(suite.T(), accessToken.UserAttributes, 0)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://root-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmptyUserAttributes() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2261,7 +2182,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmpt
 		},
 	}
 
-	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
 	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
@@ -2269,7 +2190,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmpt
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
 	assert.Len(suite.T(), accessToken.UserAttributes, 0)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_RedirectURIError() {
@@ -2602,6 +2522,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 		Name: "Updated App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	// Return an error that's not ApplicationNotFoundError
 	mockStore.On("GetApplicationByID", "app123").Return(nil, errors.New("database connection error"))
 
@@ -2634,6 +2555,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 		Name: "New App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	// Return an error that's not ApplicationNotFoundError when checking name
 	mockStore.On("GetApplicationByName", "New App").Return(nil, errors.New("database connection error"))
@@ -2689,6 +2611,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 		},
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything).Return(true).Maybe()
 	// Return an error that's not ApplicationNotFoundError when checking client ID
@@ -2733,6 +2656,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 		},
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
@@ -3373,7 +3297,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 
 	// Mock GetUserSchemaList to return empty list (first call)
 	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
+		GetUserSchemaList(mock.Anything, mock.Anything, 0).
 		Return(&userschema.UserSchemaListResponse{
 			TotalResults: 0,
 			Count:        0,
@@ -3406,7 +3330,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 
 	// Mock GetUserSchemaList to return a list with one valid user type
 	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
+		GetUserSchemaList(mock.Anything, mock.Anything, 0).
 		Return(&userschema.UserSchemaListResponse{
 			TotalResults: 1,
 			Count:        1,
@@ -3716,6 +3640,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
 		Name: "New Name",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(nil, model.ApplicationNotFoundError)
 
 	result, svcErr := service.UpdateApplication("app123", app)
@@ -3752,6 +3677,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 		Name: "New Name",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockStore.On("GetApplicationByName", "New Name").Return(existingAppWithName, nil)
 
@@ -3760,6 +3686,73 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"old_key": "old_value",
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"new_key":     "new_value",
+			"another_key": "another_value",
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.On("IsValidFlow", "default-auth-flow").Return(true)
+	mockFlowMgtService.On("IsValidFlow", "default-reg-flow").Return(true)
+	// Mock certificate service to return no certificate (nil, nil)
+	mockCertService.On("GetCertificateByReference", mock.Anything, cert.CertificateReferenceTypeApplication, "").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", existingApp, mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+		// Verify that metadata is properly set in the processed DTO
+		if dto.Metadata == nil {
+			return false
+		}
+		if dto.Metadata["new_key"] != "new_value" {
+			return false
+		}
+		if dto.Metadata["another_key"] != "another_value" {
+			return false
+		}
+		// Ensure old metadata is not present
+		if _, exists := dto.Metadata["old_key"]; exists {
+			return false
+		}
+		return true
+	})).Return(nil)
+
+	result, svcErr := service.UpdateApplication("app123", updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "new_value", result.Metadata["new_key"])
+	assert.Equal(suite.T(), "another_value", result.Metadata["another_key"])
+	mockStore.AssertExpectations(suite.T())
 }
 
 func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PublicClient() {
@@ -3953,6 +3946,427 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 	assert.Nil(t, err)
 	// Should generate a new secret since existing app doesn't have one
 	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// setupConsentEnabledService creates a test service with consent service enabled.
+func (suite *ServiceTestSuite) setupConsentEnabledService() (
+	*applicationService,
+	*applicationStoreInterfaceMock,
+	*certmock.CertificateServiceInterfaceMock,
+	*flowmgtmock.FlowMgtServiceInterfaceMock,
+	*consentmock.ConsentServiceInterfaceMock,
+) {
+	mockStore := newApplicationStoreInterfaceMock(suite.T())
+	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	service := &applicationService{
+		appStore:          mockStore,
+		certService:       mockCertService,
+		flowMgtService:    mockFlowMgtService,
+		userSchemaService: mockUserSchemaService,
+		consentService:    mockConsentService,
+	}
+	return service, mockStore, mockCertService, mockFlowMgtService, mockConsentService
+}
+
+// TestCreateApplication_ConsentSyncFails_CompensatesWithAppDeletion verifies that on consent
+// sync failure after app creation, the app is deleted as compensation.
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_CompensatesWithAppDeletion() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	// IsEnabled is called in validateConsentConfig and again before sync.
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockStore.On("CreateApplication", mock.Anything).Return(nil)
+	// Consent sync fails: ValidateConsentElements returns an I18n error.
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	// Compensation: app must be deleted.
+	mockStore.On("DeleteApplication", mock.Anything).Return(nil)
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	mockStore.AssertCalled(suite.T(), "DeleteApplication", mock.Anything)
+}
+
+// TestUpdateApplication_ConsentEnabled_LoginConsentDisabled_DeletesPurposes verifies
+// that when consent is enabled and login consent is disabled, consent purposes are deleted.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentEnabled_LoginConsentDisabled_DeletesPurposes() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		// LoginConsent is nil → validateConsentConfig sets Enabled=false
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(nil)
+	// Consent enabled → deleteConsentPurposes path (LoginConsent.Enabled=false)
+	mockConsentService.On("IsEnabled").Return(true)
+	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
+		Return((*serviceerror.I18nServiceError)(nil))
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), svcErr)
+	assert.NotNil(suite.T(), result)
+}
+
+// TestUpdateApplication_ConsentSyncFails_CompensatesWithAppRevert verifies that on consent
+// sync failure after an app update, the update is reverted as compensation.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentSyncFails_CompensatesWithAppRevert() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	// Both the actual update and the compensation revert use the same mock.
+	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(nil)
+	// IsEnabled called in validateConsentConfig (true) and in the consent sync block (true).
+	mockConsentService.On("IsEnabled").Return(true)
+	// Consent sync fails: ValidateConsentElements returns an I18n error.
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Verify compensation was called: UpdateApplication twice (update + revert).
+	mockStore.AssertNumberOfCalls(suite.T(), "UpdateApplication", 2)
+}
+
+// TestValidateApplication_ConsentConfigFails verifies that ValidateApplication returns
+// an error when LoginConsent.Enabled=true but the consent service is disabled.
+func (suite *ServiceTestSuite) TestValidateApplication_ConsentConfigFails() {
+	testConfig := &config.Config{
+		JWT:  config.JWTConfig{ValidityPeriod: 3600},
+		Flow: config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+	}
+
+	mockStore.On("GetApplicationByName", "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Consent service disabled → validateConsentConfig fails
+	mockConsentService.On("IsEnabled").Return(false)
+
+	result, inboundAuth, svcErr := service.ValidateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorConsentServiceNotEnabled.Code, svcErr.Code)
+}
+
+// TestUpdateApplication_ConsentConfigFails verifies that UpdateApplication returns
+// an error when LoginConsent.Enabled=true but the consent service is disabled.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentConfigFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Consent service disabled → validateConsentConfig fails
+	mockConsentService.On("IsEnabled").Return(false)
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorConsentServiceNotEnabled.Code, svcErr.Code)
+}
+
+// TestUpdateApplication_StoreFails_RollbackCertFails verifies that when the store update fails
+// and rolling back the certificate also fails, the rollback error is returned.
+func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, _ := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	// No Certificate on the update request → triggers deletion of the existing cert
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+	}
+	existingCert := &cert.Certificate{
+		ID:    "cert-id-1",
+		Type:  cert.CertificateTypeJWKS,
+		Value: `{"keys":[]}`,
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// updateApplicationCertificate: get existing cert, then delete it (no new cert in app)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(existingCert, nil)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil)
+	// Store update fails
+	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(errors.New("store error"))
+	// Rollback: re-create the old cert → server error
+	mockCertService.EXPECT().
+		CreateCertificate(mock.Anything, mock.Anything).
+		Return((*cert.Certificate)(nil), &serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Returns the rollback error, not the store error
+	assert.Equal(suite.T(), ErrorCertificateServerError.Code, svcErr.Code)
+}
+
+// TestCreateApplication_ConsentSyncFails_AppDeleteFails verifies that when consent sync fails
+// and the compensation deletion of the app also fails, the original consent error is returned.
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_AppDeleteFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockStore.On("CreateApplication", mock.Anything).Return(nil)
+	// Consent sync fails
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	// Compensation: app deletion itself also fails (logged, not propagated)
+	mockStore.On("DeleteApplication", mock.Anything).Return(errors.New("delete compensate error"))
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Returns the consent sync error, not the delete compensation error
+	mockStore.AssertCalled(suite.T(), "DeleteApplication", mock.Anything)
+}
+
+// TestCreateApplication_ConsentSyncFails_WithCert_CertRollbackFails verifies that when
+// consent sync fails with a cert in place and the cert rollback also fails, the original
+// consent error is still returned (rollback failure is only logged).
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_WithCert_CertRollbackFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App With Cert",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+		Certificate: &model.ApplicationCertificate{
+			Type:  cert.CertificateTypeJWKS,
+			Value: `{"keys":[]}`,
+		},
+	}
+
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", "Consent App With Cert").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Certificate is created successfully during app creation
+	mockCertService.EXPECT().
+		CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{
+			ID:   "cert-1",
+			Type: cert.CertificateTypeJWKS,
+		}, (*serviceerror.ServiceError)(nil))
+	mockStore.On("CreateApplication", mock.Anything).Return(nil)
+	// Consent sync fails
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	// Compensation: app deletion succeeds
+	mockStore.On("DeleteApplication", mock.Anything).Return(nil)
+	// Cert rollback fails (logged, not propagated)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, mock.Anything).
+		Return(&serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Returns the consent sync error despite cert rollback failing
+	mockStore.AssertCalled(suite.T(), "DeleteApplication", mock.Anything)
+}
+
+// TestDeleteApplication_ConsentEnabled_DeleteConsentPurposesFails verifies that when
+// the consent service is enabled but deleting consent purposes fails, the error is returned.
+func (suite *ServiceTestSuite) TestDeleteApplication_ConsentEnabled_DeleteConsentPurposesFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, _, mockConsentService := suite.setupConsentEnabledService()
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("DeleteApplication", "app123").Return(nil)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil)
+	mockConsentService.On("IsEnabled").Return(true)
+	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+	// Delete consent purpose fails with a non-associated-records error
+	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
+		Return(&serviceerror.InternalServerErrorWithI18n)
+
+	svcErr := service.DeleteApplication("app123")
+
+	assert.NotNil(suite.T(), svcErr)
 }
 
 // TestResolveClientSecret_ExistingPublicClientToConfidential tests conversion from public to confidential.

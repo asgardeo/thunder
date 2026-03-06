@@ -17,7 +17,7 @@
  */
 
 import type {JSX} from 'react';
-import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
+import {AcrylicOrangeTheme, OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {AsgardeoProvider} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -38,7 +38,7 @@ export default function AppWithConfig(): JSX.Element {
       scopes={getScopes().length > 0 ? getScopes() : undefined}
       platform="AsgardeoV2"
     >
-      <OxygenUIThemeProvider radialBackground>
+      <OxygenUIThemeProvider theme={AcrylicOrangeTheme}>
         <QueryClientProvider client={queryClient}>
           <I18nProvider>
             <App />

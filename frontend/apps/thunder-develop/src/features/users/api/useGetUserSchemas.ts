@@ -16,145 +16,49 @@
  * under the License.
  */
 
-import {useState, useEffect, useRef, useMemo} from 'react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {UserSchemaListResponse, SchemaListParams, ApiError} from '../types/users';
+import type {SchemaListParams, UserSchemaListResponse} from '../types/users';
+import UserQueryKeys from '../constants/user-query-keys';
 
 /**
- * Custom hook to fetch a list of user schemas
+ * Custom hook to fetch a list of user schemas.
+ *
  * @param params - Optional query parameters for pagination
- * @returns Object containing data, loading state, error, and refetch function
+ * @returns TanStack Query result object containing schema list data, loading state, and error information
  */
-export default function useGetUserSchemas(params?: SchemaListParams) {
+export default function useGetUserSchemas(params?: SchemaListParams): UseQueryResult<UserSchemaListResponse> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<UserSchemaListResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const {limit, offset} = params ?? {};
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
+  return useQuery<UserSchemaListResponse>({
+    queryKey: [UserQueryKeys.USER_SCHEMAS, {limit, offset}],
+    queryFn: async (): Promise<UserSchemaListResponse> => {
+      const serverUrl: string = getServerUrl();
+      const searchParams: URLSearchParams = new URLSearchParams();
 
-  useEffect(() => {
-    // Cancel previous request
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
-
-    const fetchUserSchemas = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const searchParams = new URLSearchParams();
-
-        if (params?.limit !== undefined) {
-          searchParams.append('limit', String(params.limit));
-        }
-        if (params?.offset !== undefined) {
-          searchParams.append('offset', String(params.offset));
-        }
-
-        const queryString = searchParams.toString();
-
-        const response = await http.request({
-          url: `${API_BASE_URL}/user-schemas${queryString ? `?${queryString}` : ''}`,
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: abortControllerRef.current?.signal,
-        } as unknown as Parameters<typeof http.request>[0]);
-
-        const jsonData = response.data as UserSchemaListResponse;
-        setData(jsonData);
-        setError(null);
-      } catch (err) {
-        // Don't set error if request was aborted
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-
-        const apiError: ApiError = {
-          code: 'FETCH_ERROR',
-          message: err instanceof Error ? err.message : 'An unknown error occurred',
-          description: 'Failed to fetch user schemas',
-        };
-        setError(apiError);
-      } finally {
-        setLoading(false);
+      if (limit !== undefined) {
+        searchParams.append('limit', String(limit));
       }
-    };
-
-    fetchUserSchemas().catch(() => {
-      // Error already handled
-    });
-
-    // Cleanup on unmount
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
-
-  const refetch = async (newParams?: SchemaListParams): Promise<void> => {
-    // Cancel previous request
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const searchParams = new URLSearchParams();
-      const finalParams = newParams ?? params;
-
-      if (finalParams?.limit !== undefined) {
-        searchParams.append('limit', String(finalParams.limit));
-      }
-      if (finalParams?.offset !== undefined) {
-        searchParams.append('offset', String(finalParams.offset));
+      if (offset !== undefined) {
+        searchParams.append('offset', String(offset));
       }
 
-      const queryString = searchParams.toString();
+      const queryString: string = searchParams.toString();
 
-      const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas${queryString ? `?${queryString}` : ''}`,
+      const response: {
+        data: UserSchemaListResponse;
+      } = await http.request({
+        url: `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        signal: abortControllerRef.current?.signal,
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as UserSchemaListResponse;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      // Don't set error if request was aborted
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-
-      const apiError: ApiError = {
-        code: 'FETCH_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to fetch user schemas',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    refetch,
-  };
+      return response.data;
+    },
+  });
 }

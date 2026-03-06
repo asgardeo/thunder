@@ -33,6 +33,7 @@ const (
 	jsonKeyResource            = "resource"
 	jsonKeyClaimsRequest       = "claims_request"
 	jsonKeyClaimsLocales       = "claims_locales"
+	jsonKeyNonce               = "nonce"
 )
 
 // Database column names for authorization request storage.
@@ -54,10 +55,11 @@ var queryGetAuthorizationCode = dbmodel.DBQuery{
 		"EXPIRY_TIME FROM AUTHORIZATION_CODE WHERE CLIENT_ID = $1 AND AUTHORIZATION_CODE = $2 AND DEPLOYMENT_ID = $3",
 }
 
-// queryUpdateAuthorizationCodeState is the query to update the state of an authorization code.
-var queryUpdateAuthorizationCodeState = dbmodel.DBQuery{
-	ID:    "AZQ-ACS-03",
-	Query: "UPDATE AUTHORIZATION_CODE SET STATE = $1 WHERE CODE_ID = $2 AND DEPLOYMENT_ID = $3",
+// queryConsumeAuthorizationCode atomically consumes an authorization code (ACTIVE → INACTIVE).
+var queryConsumeAuthorizationCode = dbmodel.DBQuery{
+	ID: "AZQ-ACS-04",
+	Query: "UPDATE AUTHORIZATION_CODE SET STATE = $1 WHERE CLIENT_ID = $2 AND AUTHORIZATION_CODE = $3 " +
+		"AND STATE = $4 AND DEPLOYMENT_ID = $5",
 }
 
 // queryInsertAuthRequest is the query to insert a new authorization request context.

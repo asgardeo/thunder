@@ -64,8 +64,8 @@ vi.mock('../../contexts/useOrganizationUnit', () => ({
 }));
 
 // Mock name suggestions utility
-vi.mock('../../utils/generateOrganizationUnitNameSuggestions', () => ({
-  default: () => ['Suggested Name One', 'Suggested Name Two', 'Suggested Name Three'],
+vi.mock('@thunder/utils', () => ({
+  generateRandomHumanReadableIdentifiers: () => ['Suggested Name One', 'Suggested Name Two', 'Suggested Name Three'],
 }));
 
 // Mock translations
@@ -131,9 +131,9 @@ describe('CreateOrganizationUnitPage', () => {
   it('should render name suggestions', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByText('Suggested Name One')).toBeInTheDocument();
-    expect(screen.getByText('Suggested Name Two')).toBeInTheDocument();
-    expect(screen.getByText('Suggested Name Three')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Suggested Name One'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Suggested Name Two'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Suggested Name Three'})).toBeInTheDocument();
   });
 
   it('should auto-generate handle from name', async () => {
@@ -149,7 +149,7 @@ describe('CreateOrganizationUnitPage', () => {
   it('should fill name when suggestion is clicked', async () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    fireEvent.click(screen.getByText('Suggested Name One'));
+    fireEvent.click(screen.getByRole('button', {name: 'Suggested Name One'}));
 
     const nameInput = screen.getByLabelText(/Name/i);
     expect(nameInput).toHaveValue('Suggested Name One');
@@ -158,7 +158,7 @@ describe('CreateOrganizationUnitPage', () => {
   it('should auto-generate handle when suggestion is clicked', async () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
-    fireEvent.click(screen.getByText('Suggested Name One'));
+    fireEvent.click(screen.getByRole('button', {name: 'Suggested Name One'}));
 
     const handleInput = screen.getByLabelText(/Handle/i);
     expect(handleInput).toHaveValue('suggested-name-one');
@@ -454,7 +454,7 @@ describe('CreateOrganizationUnitPage', () => {
     const handleInput = screen.getByLabelText(/Handle/i);
     fireEvent.change(handleInput, {target: {value: 'my-custom-handle'}});
 
-    fireEvent.click(screen.getByText('Suggested Name Two'));
+    fireEvent.click(screen.getByRole('button', {name: 'Suggested Name Two'}));
 
     // Handle should not change after suggestion click since it was manually edited
     expect(handleInput).toHaveValue('my-custom-handle');

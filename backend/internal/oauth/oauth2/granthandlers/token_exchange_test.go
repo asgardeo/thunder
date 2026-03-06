@@ -730,9 +730,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "Invalid subject_token")
-	assert.Contains(suite.T(), errResp.ErrorDescription, "invalid signature")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectToken_MissingSubClaim() {
@@ -757,8 +756,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "missing or invalid 'sub' claim")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectToken_DecodeError() {
@@ -777,8 +776,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "Invalid subject_token")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectToken_Expired() {
@@ -798,8 +797,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "token has expired")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectToken_NotYetValid() {
@@ -819,8 +818,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "token not yet valid")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidActorToken() {
@@ -863,8 +862,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidActorTok
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "Invalid actor_token")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid actor_token", errResp.ErrorDescription)
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidScope() {
@@ -1085,7 +1084,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedID
 
 	errResp := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errResp.Error)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
 	assert.Contains(suite.T(), errResp.ErrorDescription, "not supported")
 	assert.Contains(suite.T(), errResp.ErrorDescription, string(constants.TokenTypeIdentifierIDToken))
 }
@@ -1102,7 +1101,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedRe
 	// Test ValidateGrant first (which is called before HandleGrant in production)
 	errResp := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errResp.Error)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
 	assert.Contains(suite.T(), errResp.ErrorDescription, "not supported")
 	assert.Contains(suite.T(), errResp.ErrorDescription, string(constants.TokenTypeIdentifierRefreshToken))
 }
@@ -1718,8 +1717,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "auth assertion audience mismatch")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 	suite.mockTokenValidator.AssertExpectations(suite.T())
 }
 
@@ -1749,8 +1748,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "missing 'aud' claim")
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
+	assert.Equal(suite.T(), "Invalid subject_token", errResp.ErrorDescription)
 	suite.mockTokenValidator.AssertExpectations(suite.T())
 }
 

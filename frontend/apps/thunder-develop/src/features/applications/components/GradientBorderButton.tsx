@@ -17,9 +17,7 @@
  */
 
 import {forwardRef} from 'react';
-import {styled, keyframes} from '@mui/material/styles';
-import {Button} from '@wso2/oxygen-ui';
-import type {ButtonProps} from '@wso2/oxygen-ui';
+import {styled, keyframes, Button, type ButtonProps} from '@wso2/oxygen-ui';
 
 const spin = keyframes`
   0% {

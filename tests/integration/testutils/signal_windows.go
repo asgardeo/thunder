@@ -1,3 +1,5 @@
+//go:build windows
+
 /*
  * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
@@ -16,8 +18,6 @@
  * under the License.
  */
 
-//go:build windows
-
 package testutils
 
 import "os"
@@ -27,4 +27,12 @@ import "os"
 // via Process.Signal(). The only reliable approach is Process.Kill().
 func sendStopSignal(process *os.Process) error {
 	return process.Kill()
+}
+
+// isProcessAlive always returns true on Windows.
+// os.FindProcess opens an HANDLE via OpenProcess; the kernel will not recycle the
+// PID while any handle to the process object remains open, so a post-sleep Kill
+// will always target the original process.
+func isProcessAlive(_ *os.Process) bool {
+	return true
 }

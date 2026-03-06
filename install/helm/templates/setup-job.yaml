@@ -15,7 +15,7 @@
 # under the License.
 
 {{- if .Values.setup.enabled }}
-{{- $usingSqlite := or (eq .Values.configuration.database.identity.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
+{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
 apiVersion: batch/v1
 kind: Job
 metadata:

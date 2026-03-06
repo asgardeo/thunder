@@ -110,16 +110,34 @@ $customerUserTypeData = ([ordered]@{
             required = $true
             unique = $true
         }
+        password = @{
+            type = "string"
+            required = $true
+            credential = $true
+        }
         email = @{
             type = "string"
             required = $true
             unique = $true
+            regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         }
         given_name = @{
             type = "string"
             required = $false
         }
         family_name = @{
+            type = "string"
+            required = $false
+        }
+        firstName = @{
+            type = "string"
+            required = $false
+        }
+        lastName = @{
+            type = "string"
+            required = $false
+        }
+        mobileNumber = @{
             type = "string"
             required = $false
         }
@@ -172,7 +190,6 @@ $appData = @{
                 public_client = $true
                 scopes = @("openid", "profile", "email")
                 token = @{
-                    issuer = "thunder"
                     access_token = @{
                         validity_period = 3600
                         user_attributes = @("given_name","family_name","email","groups")
@@ -237,7 +254,6 @@ $reactSdkAppData = @{
     contacts = @("admin@example.com")
     is_registration_flow_enabled = $true
     assertion = @{
-        issuer = "thunder"
         validity_period = 3600
         user_attributes = $null
     }
@@ -259,7 +275,6 @@ $reactSdkAppData = @{
                 pkce_required = $true
                 public_client = $true
                 token = @{
-                    issuer = "https://localhost:8090"
                     access_token = @{
                         validity_period = 3600
                         user_attributes = @("given_name","family_name","email","groups","name")

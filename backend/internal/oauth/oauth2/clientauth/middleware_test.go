@@ -151,12 +151,12 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_MissingClie
 	middleware(handler).ServeHTTP(w, req)
 
 	// Verify error response
-	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "invalid_client", response["error"])
+	assert.Equal(suite.T(), "invalid_request", response["error"])
 }
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClient() {

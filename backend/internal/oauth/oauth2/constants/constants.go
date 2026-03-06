@@ -54,6 +54,14 @@ const (
 	RequestParamAudience            string = "audience"
 	RequestParamClaims              string = "claims"
 	RequestParamClaimsLocales       string = "claims_locales"
+	RequestParamNonce               string = "nonce"
+)
+
+// OAuth2 request parameter validation limits.
+const (
+	// MaxNonceLength defines the maximum allowed length of the nonce parameter.
+	// Aligned with FAPI 2.0 Security Profile recommendation (64 characters).
+	MaxNonceLength = 64
 )
 
 // Server OAuth constants.
@@ -173,7 +181,6 @@ func (tam TokenEndpointAuthMethod) IsValid() bool {
 // OAuth2 token types.
 const (
 	TokenTypeBearer = "Bearer"
-	TokenTypeJWT    = "JWT"
 )
 
 // TokenTypeIdentifier defines a type for RFC 8693 token type identifiers.
@@ -295,6 +302,11 @@ const (
 	UserAttributeGroups = "groups"
 	// DefaultGroupListLimit is the default limit for group list retrieval.
 	DefaultGroupListLimit = 20
+)
+
+// Standard OIDC scope names.
+const (
+	ScopeOpenID = "openid"
 )
 
 // GetSupportedResponseTypes returns all supported OAuth2 response types.

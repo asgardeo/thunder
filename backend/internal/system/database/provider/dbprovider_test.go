@@ -48,9 +48,9 @@ func (suite *DBProviderTestSuite) SetupTest() {
 	// Initialize a dummy config
 	dummyConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{Name: "identity", Type: "postgres"},
-			Runtime:  config.DataSource{Name: "runtime", Type: "postgres"},
-			User:     config.DataSource{Name: "user", Type: "postgres"},
+			Config:  config.DataSource{Name: "identity", Type: "postgres"},
+			Runtime: config.DataSource{Name: "runtime", Type: "postgres"},
+			User:    config.DataSource{Name: "user", Type: "postgres"},
 		},
 	}
 	err = config.InitializeThunderRuntime(".", dummyConfig)
@@ -71,7 +71,7 @@ func (suite *DBProviderTestSuite) TestGetUserDBTransactioner_Success() {
 
 	// Manually construct the provider with an initialized client
 	provider := &dbProvider{
-		userClient: NewDBClient(model.NewDB(db), "postgres"),
+		userClient: NewDBClient(model.NewDB(db), "postgres", "user"),
 	}
 
 	// Test getting the transactioner
@@ -90,7 +90,7 @@ func (suite *DBProviderTestSuite) TestGetRuntimeDBTransactioner_Success() {
 
 	// Manually construct the provider with an initialized client
 	provider := &dbProvider{
-		runtimeClient: NewDBClient(model.NewDB(db), "postgres"),
+		runtimeClient: NewDBClient(model.NewDB(db), "postgres", "runtime"),
 	}
 
 	// Test getting the transactioner

@@ -96,6 +96,13 @@ var (
 		Error:            "Invalid offset parameter",
 		ErrorDescription: "The offset parameter must be a non-negative integer",
 	}
+	// ErrorEmptyMembers is the error returned when the members list is empty.
+	ErrorEmptyMembers = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "GRP-1013",
+		Error:            "Empty members list",
+		ErrorDescription: "The members list cannot be empty",
+	}
 )
 
 // Server errors for group management operations.

@@ -20,394 +20,176 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetUserType from '../useGetUserType';
 import type {ApiUserSchema} from '../../types/user-types';
+import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
 
-// Mock useAsgardeo
-const mockHttpRequest = vi.fn();
+// Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+  useAsgardeo: vi.fn(),
 }));
 
-// Mock useConfig
-const mockGetServerUrl = vi.fn<() => string | undefined>(() => 'https://localhost:8090');
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
-    useConfig: () => ({
-      getServerUrl: mockGetServerUrl,
-    }),
+    useConfig: vi.fn(),
   };
 });
 
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
+
 describe('useGetUserType', () => {
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+
   const mockUserSchema: ApiUserSchema = {
     id: '123',
-    name: 'TestUserType',
-    ouId: 'root-ou',
+    name: 'Person',
+    ouId: 'ou-1',
     allowSelfRegistration: true,
     schema: {
-      username: {
-        type: 'string',
-        required: true,
-      },
       email: {
         type: 'string',
-        required: false,
+        required: true,
       },
     },
   };
 
   beforeEach(() => {
-    mockHttpRequest.mockReset();
-    mockGetServerUrl.mockReturnValue('https://localhost:8090');
+    mockHttpRequest = vi.fn();
+    mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: mockGetServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with default state when no id is provided', () => {
-    const {result} = renderHook(() => useGetUserType());
+  it('should initialize with loading state when id is provided', () => {
+    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    expect(result.current.data).toBeNull();
+    const {result} = renderHook(() => useGetUserType('123'));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
-    expect(result.current.loading).toBe(false);
-    expect(typeof result.current.refetch).toBe('function');
   });
 
-  it('should fetch user type when id is provided', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-      expect(result.current.error).toBeNull();
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/123', method: 'GET'}),
-    );
-  });
-
-  it('should set loading state during fetch', async () => {
-    // Create a promise we can control
-    let resolveRequest: (value: {data: ApiUserSchema}) => void;
-    const requestPromise = new Promise<{data: ApiUserSchema}>((resolve) => {
-      resolveRequest = resolve;
-    });
-
-    mockHttpRequest.mockReturnValueOnce(requestPromise);
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(true);
-    });
-
-    // Now resolve the request
-    resolveRequest!({data: mockUserSchema});
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should handle API error with JSON response', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('User type not found'));
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_USER_TYPE_ERROR',
-        message: 'User type not found',
-        description: 'Failed to fetch user type',
-      });
-      expect(result.current.data).toBeNull();
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should handle API error without JSON response', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('Internal Server Error'));
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_USER_TYPE_ERROR',
-        message: 'Internal Server Error',
-        description: 'Failed to fetch user type',
-      });
-      expect(result.current.data).toBeNull();
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should handle network error', async () => {
-    mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_USER_TYPE_ERROR',
-        message: 'Network error',
-        description: 'Failed to fetch user type',
-      });
-      expect(result.current.data).toBeNull();
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should refetch when refetch is called', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-    });
-
-    const callsBeforeRefetch = mockHttpRequest.mock.calls.length;
-    mockHttpRequest
-      .mockResolvedValueOnce({data: {...mockUserSchema, name: 'UpdatedUserType'}})
-      .mockResolvedValueOnce({data: {...mockUserSchema, name: 'UpdatedUserType'}});
-
-    await result.current.refetch();
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual({...mockUserSchema, name: 'UpdatedUserType'});
-    });
-
-    expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
-  });
-
-  it('should refetch with new id when provided to refetch', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-    });
-
-    const newMockUserSchema = {...mockUserSchema, id: '456', name: 'NewUserType'};
-
-    mockHttpRequest.mockResolvedValueOnce({data: newMockUserSchema}).mockResolvedValueOnce({data: newMockUserSchema});
-
-    await result.current.refetch('456');
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(newMockUserSchema);
-    });
-
-    expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/456', method: 'GET'}),
-    );
-  });
-
-  it('should not fetch if refetch is called without id when no id is provided', async () => {
+  it('should not fetch when no id is provided', () => {
     const {result} = renderHook(() => useGetUserType());
 
-    await result.current.refetch();
-
+    expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should prevent double-fetch in React Strict Mode', async () => {
-    mockHttpRequest.mockResolvedValue({data: mockUserSchema});
+  it('should not fetch when id is an empty string', () => {
+    const {result} = renderHook(() => useGetUserType(''));
 
-    const {result, rerender} = renderHook(() => useGetUserType('123'));
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
+  it('should successfully fetch a single user type', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUserSchema,
     });
 
-    // Simulate React Strict Mode double render
-    rerender();
+    const {result} = renderHook(() => useGetUserType('123'));
 
     await waitFor(() => {
-      // Should only fetch once, not twice
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual(mockUserSchema);
+    expect(result.current.data?.id).toBe('123');
+    expect(result.current.data?.name).toBe('Person');
+  });
+
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to fetch user type');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
+
+    const {result} = renderHook(() => useGetUserType('123'));
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('should use correct server URL and endpoint', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUserSchema,
+    });
+
+    renderHook(() => useGetUserType('123'));
+
+    await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('should fetch again when id changes', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result, rerender} = renderHook(({id}) => useGetUserType(id), {
-      initialProps: {id: '123'},
-    });
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-    });
-
-    const newMockUserSchema = {...mockUserSchema, id: '456', name: 'NewUserType'};
-
-    mockHttpRequest.mockResolvedValueOnce({data: newMockUserSchema});
-
-    rerender({id: '456'});
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(newMockUserSchema);
-    });
-
-    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
-    expect(mockHttpRequest).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/123', method: 'GET'}),
-    );
-    expect(mockHttpRequest).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/456', method: 'GET'}),
-    );
-  });
-
-  it('should clear data when id changes to undefined', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result, rerender} = renderHook(({id}) => useGetUserType(id), {
-      initialProps: {id: '123' as string | undefined},
-    });
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-    });
-
-    rerender({id: undefined});
-
-    expect(result.current.data).toBeNull();
-    expect(result.current.error).toBeNull();
-  });
-
-  it('should handle error in refetch without id', async () => {
-    const {result} = renderHook(() => useGetUserType());
-
-    await result.current.refetch();
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'INVALID_ID',
-        message: 'Invalid schema ID',
-        description: 'Schema ID is required',
-      });
-    });
-
-    expect(mockHttpRequest).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when refetch fails', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-    });
-
-    const error = new Error('Refetch failed');
-    mockHttpRequest.mockRejectedValueOnce(error);
-
-    await expect(result.current.refetch()).rejects.toThrow('Refetch failed');
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_USER_TYPE_ERROR',
-        message: 'Refetch failed',
-        description: 'Failed to fetch user type',
-      });
-      expect(result.current.data).toBeNull();
-    });
-  });
-
-  it('should handle non-Error thrown in refetch', async () => {
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
-    });
-
-    mockHttpRequest.mockRejectedValueOnce('String error');
-
-    await expect(result.current.refetch()).rejects.toBe('String error');
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_USER_TYPE_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to fetch user type',
-      });
-      expect(result.current.data).toBeNull();
-    });
-  });
-
-  it('should handle non-Error thrown in initial fetch', async () => {
-    mockHttpRequest.mockRejectedValueOnce('String error in fetch');
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_USER_TYPE_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to fetch user type',
-      });
-      expect(result.current.data).toBeNull();
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('should fallback to env variable when getServerUrl returns undefined', async () => {
-    mockGetServerUrl.mockReturnValue(undefined);
-    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
-
-    const {result} = renderHook(() => useGetUserType('123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
     });
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: expect.stringContaining('/user-schemas/123') as string,
+        url: 'https://api.test.com/user-schemas/123',
         method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
     );
   });
 
-  it('should return early when same id is fetched again (double-fetch prevention)', async () => {
-    mockHttpRequest.mockResolvedValue({data: mockUserSchema});
-
-    const {result, rerender} = renderHook(({id}) => useGetUserType(id), {
-      initialProps: {id: '123'},
+  it('should use correct query key', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUserSchema,
     });
+
+    const {result, queryClient} = renderHook(() => useGetUserType('123'));
 
     await waitFor(() => {
-      expect(result.current.data).toEqual(mockUserSchema);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    // First call made
-    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    const queryKey = [UserTypeQueryKeys.USER_TYPE, '123'];
+    const cachedData = queryClient.getQueryData(queryKey);
+    expect(cachedData).toEqual(mockUserSchema);
+  });
 
-    // Rerender with same id (simulating Strict Mode or re-render)
-    rerender({id: '123'});
+  it('should support refetching', async () => {
+    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
 
-    // Wait a bit for any potential additional calls
-    await new Promise((resolve) => {
-      setTimeout(resolve, 50);
+    const {result} = renderHook(() => useGetUserType('123'));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    // Should still only have one call due to double-fetch prevention
-    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    expect(result.current.data?.name).toBe('Person');
+
+    const updatedUserSchema: ApiUserSchema = {
+      ...mockUserSchema,
+      name: 'Updated Person',
+    };
+
+    mockHttpRequest.mockResolvedValueOnce({data: updatedUserSchema});
+
+    await result.current.refetch();
+
+    await waitFor(() => {
+      expect(result.current.data?.name).toBe('Updated Person');
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
   });
 });

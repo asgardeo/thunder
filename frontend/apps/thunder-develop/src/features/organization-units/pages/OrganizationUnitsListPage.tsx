@@ -17,7 +17,7 @@
  */
 
 import type {JSX} from 'react';
-import {Box, Stack, Typography} from '@wso2/oxygen-ui';
+import {PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import OrganizationUnitsTreeView from '../components/OrganizationUnitsTreeView';
 
@@ -25,19 +25,14 @@ export default function OrganizationUnitsListPage(): JSX.Element {
   const {t} = useTranslation();
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            {t('organizationUnits:listing.title')}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {t('organizationUnits:listing.subtitle')}
-          </Typography>
-        </Box>
-      </Stack>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.Header>{t('organizationUnits:listing.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('organizationUnits:listing.subtitle')}</PageTitle.SubHeader>
+      </PageTitle>
 
       <OrganizationUnitsTreeView />
-    </Box>
+    </PageContent>
   );
 }

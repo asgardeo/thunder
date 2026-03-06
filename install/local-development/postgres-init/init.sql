@@ -1,6 +1,6 @@
 -- Create databases
 CREATE DATABASE runtimedb;
-CREATE DATABASE thunderdb;
+CREATE DATABASE configdb;
 CREATE DATABASE userdb;
 
 -- Run db1 initialization
@@ -8,7 +8,7 @@ CREATE DATABASE userdb;
 \i /docker-entrypoint-initdb.d/runtime-postgres.sql
 
 -- Run db2 initialization
-\connect thunderdb
+\connect configdb
 \i /docker-entrypoint-initdb.d/thunder-postgres.sql
 
 -- Run db3 initialization

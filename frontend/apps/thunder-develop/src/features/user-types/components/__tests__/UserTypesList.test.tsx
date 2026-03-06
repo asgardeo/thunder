@@ -19,17 +19,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, no-underscore-dangle */
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
-import {type ReactNode} from 'react';
+import {type ReactElement, type ReactNode} from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import UserTypesList from '../UserTypesList';
 import type useGetUserTypesHook from '../../api/useGetUserTypes';
 import type useDeleteUserTypeHook from '../../api/useDeleteUserType';
-import type {UserSchemaListResponse, ApiError, UserSchemaListItem} from '../../types/user-types';
+import type {UserSchemaListResponse, UserSchemaListItem} from '../../types/user-types';
+
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
 
 const mockNavigate = vi.fn();
-const mockRefetch = vi.fn<() => Promise<void>>();
-const mockDeleteUserType = vi.fn();
-const mockResetDeleteUserType = vi.fn();
+const mockMutateAsync = vi.fn();
 
 type MockDataGridRow = UserSchemaListItem & Record<string, unknown>;
 
@@ -46,30 +48,46 @@ interface MockDataGridProps {
   rows?: MockDataGridRow[];
   columns?: MockDataGridColumn[];
   loading?: boolean;
-  onRowClick?: (params: {row: MockDataGridRow}, event: unknown, details: unknown) => void;
+  onRowClick?: (params: {row: MockDataGridRow}) => void;
+  getRowId?: (row: MockDataGridRow) => string;
 }
 
-// Mock DataGrid to avoid CSS import issues
+// Mock @wso2/oxygen-ui to avoid CSS import issues and use ListingTable
 vi.mock('@wso2/oxygen-ui', async () => {
   const actual = await vi.importActual<typeof OxygenUI>('@wso2/oxygen-ui');
   return {
     ...actual,
     DataGrid: {
       ...(actual.DataGrid ?? {}),
-      DataGrid: ({rows = [], columns = [], loading = false, onRowClick = () => undefined}: MockDataGridProps) => (
-        <div data-testid="data-grid" data-loading={loading}>
+      GridColDef: {},
+      GridRenderCellParams: {},
+    },
+    ListingTable: {
+      Provider: ({children, loading = false}: {children: ReactNode; loading?: boolean}) => (
+        <div data-testid="listing-table-provider" data-loading={loading ? 'true' : 'false'}>
+          {children}
+        </div>
+      ),
+      Container: ({children}: {children: ReactNode}): ReactElement => children as ReactElement,
+      DataGrid: ({
+        rows = [],
+        columns = [],
+        loading = false,
+        onRowClick = undefined,
+        getRowId = undefined,
+      }: MockDataGridProps) => (
+        <div data-testid="data-grid" data-loading={loading ? 'true' : 'false'}>
           {rows.map((row: MockDataGridRow) => {
-            const rowId = String(row.id ?? '');
+            const rowId = getRowId ? getRowId(row) : String(row.id ?? '');
             return (
-              <div key={row.id} className="MuiDataGrid-row-container">
-                <button
-                  type="button"
-                  className="MuiDataGrid-row"
-                  onClick={() => onRowClick?.({row}, {} as unknown, {} as unknown)}
-                  data-testid={`row-${rowId}`}
-                >
-                  {row.name}
-                </button>
+              <div
+                key={rowId}
+                role="row"
+                data-testid={`row-${rowId}`}
+                onClick={() => onRowClick?.({row})}
+                onKeyDown={() => onRowClick?.({row})}
+                tabIndex={0}
+              >
                 {columns.map((column) => {
                   if (!column?.field) return null;
 
@@ -104,11 +122,16 @@ vi.mock('@wso2/oxygen-ui', async () => {
           })}
         </div>
       ),
-      GridColDef: {},
+      CellIcon: ({primary, icon = undefined}: {primary: string; icon?: ReactNode}) => (
+        <>
+          {icon}
+          <span>{primary}</span>
+        </>
+      ),
+      RowActions: ({children}: {children: ReactNode}): ReactElement => children as ReactElement,
     },
   };
 });
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, react/destructuring-assignment */
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -118,7 +141,14 @@ vi.mock('react-router', async () => {
     useNavigate: () => mockNavigate,
   };
 });
-
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 // Mock hooks
 type UseGetUserTypesReturn = ReturnType<typeof useGetUserTypesHook>;
 type UseDeleteUserTypeReturn = ReturnType<typeof useDeleteUserTypeHook>;
@@ -168,16 +198,15 @@ describe('UserTypesList', () => {
     vi.clearAllMocks();
     mockUseGetUserTypes.mockReturnValue({
       data: mockUserTypesData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: false,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
       error: null,
-      reset: mockResetDeleteUserType,
-    });
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useDeleteUserTypeHook>);
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
       isLoading: false,
@@ -219,10 +248,9 @@ describe('UserTypesList', () => {
         ...mockUserTypesData,
         schemas: [{...mockUserTypesData.schemas[0], ouId: ''}],
       },
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -231,31 +259,24 @@ describe('UserTypesList', () => {
 
   it('displays loading state', () => {
     mockUseGetUserTypes.mockReturnValue({
-      data: null,
-      loading: true,
+      data: undefined,
+      isLoading: true,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
-    const grid = screen.getByTestId('data-grid');
-    expect(grid).toHaveAttribute('data-loading', 'true');
+    expect(screen.getByTestId('listing-table-provider')).toHaveAttribute('data-loading', 'true');
   });
 
   it('displays error in snackbar', async () => {
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load user types',
-      description: 'Error description',
-    };
+    const error = new Error('Failed to load user types');
 
     mockUseGetUserTypes.mockReturnValue({
-      data: null,
-      loading: false,
+      data: undefined,
+      isLoading: false,
       error,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -264,32 +285,21 @@ describe('UserTypesList', () => {
     });
   });
 
-  it('opens menu when actions button is clicked', async () => {
-    const user = userEvent.setup();
+  it('renders inline delete buttons for each row', async () => {
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // The component uses inline delete buttons instead of a menu
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    expect(deleteButtons.length).toBeGreaterThan(0);
   });
 
   it('navigates to view page when View is clicked', async () => {
     const user = userEvent.setup();
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    const viewButton = screen.getByText('View');
-    await user.click(viewButton);
+    // Row click navigates to the user type view page
+    const row = screen.getByTestId('row-schema1');
+    await user.click(row);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
@@ -300,15 +310,8 @@ describe('UserTypesList', () => {
     const user = userEvent.setup();
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User Type')).toBeInTheDocument();
@@ -320,11 +323,8 @@ describe('UserTypesList', () => {
     const user = userEvent.setup();
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User Type')).toBeInTheDocument();
@@ -340,15 +340,12 @@ describe('UserTypesList', () => {
 
   it('deletes user type when confirmed', async () => {
     const user = userEvent.setup();
-    mockDeleteUserType.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue(undefined);
 
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User Type')).toBeInTheDocument();
@@ -358,37 +355,28 @@ describe('UserTypesList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUserType).toHaveBeenCalledWith('schema1');
-      expect(mockRefetch).toHaveBeenCalled();
+      expect(mockMutateAsync).toHaveBeenCalledWith('schema1');
     });
   });
 
   it('displays delete error in dialog', async () => {
     const user = userEvent.setup();
-    const deleteError: ApiError = {
-      code: 'DELETE_ERROR',
-      message: 'Failed to delete',
-      description: 'Cannot delete user type',
-    };
+    const deleteError = new Error('Failed to delete');
 
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: false,
+      mutateAsync: mockMutateAsync,
+      isPending: false,
       error: deleteError,
-      reset: mockResetDeleteUserType,
-    });
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useDeleteUserTypeHook>);
 
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to delete')).toBeInTheDocument();
-      expect(screen.getByText('Cannot delete user type')).toBeInTheDocument();
     });
   });
 
@@ -408,18 +396,13 @@ describe('UserTypesList', () => {
 
   it('closes snackbar when close button is clicked', async () => {
     const user = userEvent.setup();
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load user types',
-      description: 'Error description',
-    };
+    const error = new Error('Failed to load user types');
 
     mockUseGetUserTypes.mockReturnValue({
-      data: null,
-      loading: false,
+      data: undefined,
+      isLoading: false,
       error,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -438,19 +421,16 @@ describe('UserTypesList', () => {
   it('displays deleting state on confirm button', async () => {
     const user = userEvent.setup();
     mockUseDeleteUserType.mockReturnValue({
-      deleteUserType: mockDeleteUserType,
-      loading: true,
+      mutateAsync: mockMutateAsync,
+      isPending: true,
       error: null,
-      reset: mockResetDeleteUserType,
-    });
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useDeleteUserTypeHook>);
 
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Loading...')).toBeInTheDocument();
@@ -465,28 +445,25 @@ describe('UserTypesList', () => {
         count: 0,
         schemas: [],
       },
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
     const grid = screen.getByTestId('data-grid');
     expect(grid).toBeInTheDocument();
+    expect(grid).toHaveAttribute('data-loading', 'false');
   });
 
-  it('closes delete dialog on delete error', async () => {
+  it('keeps delete dialog open on delete error', async () => {
     const user = userEvent.setup();
-    mockDeleteUserType.mockRejectedValue(new Error('Delete failed'));
+    mockMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User Type')).toBeInTheDocument();
@@ -496,23 +473,17 @@ describe('UserTypesList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUserType).toHaveBeenCalledWith('schema1');
-      // Dialog should be closed on error
-      expect(screen.queryByText('Delete User Type')).not.toBeInTheDocument();
+      expect(mockMutateAsync).toHaveBeenCalledWith('schema1');
+      // Dialog stays open so user can see error and retry
+      expect(screen.getByText('Delete User Type')).toBeInTheDocument();
     });
   });
 
   it('displays error from organization units in snackbar', async () => {
-    const orgError: ApiError = {
-      code: 'ORG_ERROR',
-      message: 'Failed to load organization units',
-      description: 'Error description',
-    };
-
     mockUseGetOrganizationUnits.mockReturnValue({
       data: undefined,
       isLoading: false,
-      error: new Error(orgError.message),
+      error: new Error('Failed to load organization units'),
       refetch: mockRefetchOrganizationUnits,
     });
 
@@ -538,25 +509,52 @@ describe('UserTypesList', () => {
     });
   });
 
-  it('handles navigation error when View menu item is clicked', async () => {
+  it('should navigate to user type when View action button is clicked', async () => {
     const user = userEvent.setup();
-    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
 
     render(<UserTypesList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(0);
+    await user.click(viewButtons[0]);
 
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    const viewButton = screen.getByText('View');
-    await user.click(viewButton);
-
-    // Navigation was called but failed - the catch handler silently handles the error
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
+    });
+  });
+
+  it('should navigate to correct user type when View action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    render(<UserTypesList />);
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(1);
+    await user.click(viewButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema2');
+    });
+  });
+
+  it('should log error when View button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    render(<UserTypesList />);
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to user type',
+        expect.objectContaining({
+          error: navigationError,
+          userTypeId: 'schema1',
+        }),
+      );
     });
   });
 });

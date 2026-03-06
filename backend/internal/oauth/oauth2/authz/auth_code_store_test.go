@@ -50,7 +50,7 @@ func TestAuthorizationCodeStoreTestSuite(t *testing.T) {
 func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -249,50 +249,57 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_EmptyCode
 	suite.mockDBClient.AssertExpectations(suite.T())
 }
 
-func (suite *AuthorizationCodeStoreTestSuite) TestDeactivateAuthorizationCode_Success() {
+func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_Success() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateAuthorizationCodeState,
-		AuthCodeStateInactive, suite.testAuthzCode.CodeID, testDeploymentID).Return(int64(1), nil)
+	suite.mockDBClient.On("Execute", queryConsumeAuthorizationCode,
+		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
+		Return(int64(1), nil)
 
-	err := suite.store.DeactivateAuthorizationCode(suite.testAuthzCode)
+	consumed, err := suite.store.ConsumeAuthorizationCode("test-client-id", "test-code")
 	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), consumed)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
 }
 
-func (suite *AuthorizationCodeStoreTestSuite) TestRevokeAuthorizationCode_Success() {
+func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_NotConsumed() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateAuthorizationCodeState,
-		AuthCodeStateRevoked, suite.testAuthzCode.CodeID, testDeploymentID).Return(int64(1), nil)
+	suite.mockDBClient.On("Execute", queryConsumeAuthorizationCode,
+		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
+		Return(int64(0), nil)
 
-	err := suite.store.RevokeAuthorizationCode(suite.testAuthzCode)
+	consumed, err := suite.store.ConsumeAuthorizationCode("test-client-id", "test-code")
 	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), consumed)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
 }
 
-func (suite *AuthorizationCodeStoreTestSuite) TestExpireAuthorizationCode_Success() {
-	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateAuthorizationCodeState,
-		AuthCodeStateExpired, suite.testAuthzCode.CodeID, testDeploymentID).Return(int64(1), nil)
-
-	err := suite.store.ExpireAuthorizationCode(suite.testAuthzCode)
-	assert.NoError(suite.T(), err)
-
-	suite.mockdbProvider.AssertExpectations(suite.T())
-	suite.mockDBClient.AssertExpectations(suite.T())
-}
-
-func (suite *AuthorizationCodeStoreTestSuite) TestUpdateAuthorizationCodeState_Error() {
+func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_DBClientError() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(nil, errors.New("db client error"))
 
-	err := suite.store.DeactivateAuthorizationCode(suite.testAuthzCode)
+	consumed, err := suite.store.ConsumeAuthorizationCode("test-client-id", "test-code")
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "db client error")
+	assert.False(suite.T(), consumed)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
+}
+
+func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_ExecuteError() {
+	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Execute", queryConsumeAuthorizationCode,
+		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
+		Return(int64(0), errors.New("execute error"))
+
+	consumed, err := suite.store.ConsumeAuthorizationCode("test-client-id", "test-code")
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "error consuming authorization code")
+	assert.False(suite.T(), consumed)
+
+	suite.mockdbProvider.AssertExpectations(suite.T())
+	suite.mockDBClient.AssertExpectations(suite.T())
 }
 
 const testTimeString = "2023-12-01 10:30:45.123456789"
@@ -676,14 +683,39 @@ func (suite *AuthorizationCodeStoreTestSuite) TestParseTimeField_InvalidStringFo
 	assert.True(suite.T(), result.IsZero())
 }
 
-func (suite *AuthorizationCodeStoreTestSuite) TestUpdateAuthorizationCodeState_ExecuteError() {
+func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_WithNonce() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateAuthorizationCodeState, AuthCodeStateInactive,
-		suite.testAuthzCode.CodeID, testDeploymentID).Return(int64(0), errors.New("execute error"))
 
-	err := suite.store.DeactivateAuthorizationCode(suite.testAuthzCode)
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "execute error")
+	authzData := map[string]interface{}{
+		"redirect_uri":       "https://client.example.com/callback",
+		"authorized_user_id": "test-user-id",
+		"scopes":             "read write",
+		"nonce":              "test-nonce-123",
+	}
+
+	authzDataJSON, _ := json.Marshal(authzData)
+
+	suite.mockDBClient.On("Query",
+		queryGetAuthorizationCode,
+		"test-client-id",
+		"test-code",
+		testDeploymentID,
+	).Return([]map[string]interface{}{
+		{
+			"code_id":            "test-code-id",
+			"authorization_code": "test-code",
+			"client_id":          "test-client-id",
+			"state":              AuthCodeStateActive,
+			"authz_data":         string(authzDataJSON),
+			"time_created":       "2023-01-01 12:00:00",
+			"expiry_time":        "2023-01-01 12:10:00",
+		},
+	}, nil)
+
+	result, err := suite.store.GetAuthorizationCode("test-client-id", "test-code")
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-nonce-123", result.Nonce)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())

@@ -43,7 +43,7 @@ func (s *InitTestSuite) SetupTest() {
 
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -706,7 +706,7 @@ func (s *InitTestSuite) TestInitializeStore_MutableMode() {
 			Store: string(serverconst.StoreModeMutable),
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -740,7 +740,7 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode() {
 			Store: string(serverconst.StoreModeDeclarative),
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -779,7 +779,7 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode() {
 			Store: string(serverconst.StoreModeComposite),
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -820,7 +820,7 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode_ResourceLoadingError
 			Store: string(serverconst.StoreModeDeclarative),
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -861,7 +861,7 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode_ResourceLoadingError()
 			Store: string(serverconst.StoreModeComposite),
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -902,7 +902,7 @@ func (s *InitTestSuite) TestInitializeStore_DefaultMode() {
 			Store: "", // Empty should fallback to mutable
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -939,7 +939,7 @@ func (s *InitTestSuite) TestInitializeStore_ModeNormalization() {
 			Store: "  COMPOSITE  ", // Should normalize to composite
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},

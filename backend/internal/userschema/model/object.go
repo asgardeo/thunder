@@ -34,6 +34,14 @@ func (p *object) isRequired() bool {
 	return p.required
 }
 
+func (p *object) isCredential() bool {
+	return false
+}
+
+func (p *object) isDisplayable() bool {
+	return false
+}
+
 func (p *object) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	valueMap, ok := value.(map[string]interface{})
 	if !ok {
@@ -62,6 +70,15 @@ func (p *object) validateValue(value interface{}, path string, logger *log.Logge
 			return false, err
 		}
 		if !isValid {
+			return false, nil
+		}
+	}
+
+	// Reject any nested keys not declared in the object schema.
+	for key := range valueMap {
+		if _, declared := p.properties[key]; !declared {
+			logger.Debug("Attribute not defined in schema",
+				log.String("attribute", path+"."+key))
 			return false, nil
 		}
 	}

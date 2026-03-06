@@ -326,7 +326,7 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(ctx)
+	userID := security.GetSubject(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -348,7 +348,7 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(ctx)
+	userID := security.GetSubject(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -381,7 +381,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(ctx)
+	userID := security.GetSubject(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -454,6 +454,8 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 			statusCode = http.StatusBadRequest
 		case ErrorAuthenticationFailed.Code:
 			statusCode = http.StatusUnauthorized
+		case serviceerror.ErrorUnauthorized.Code:
+			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
 		}

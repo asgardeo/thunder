@@ -151,7 +151,6 @@ func (suite *CacheBackedStoreTestSuite) createTestApp() *model.ApplicationProces
 		URL:                       "https://example.com",
 		LogoURL:                   "https://example.com/logo.png",
 		Assertion: &model.AssertionConfig{
-			Issuer:         "https://issuer.com",
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"email", "name"},
 		},
@@ -858,4 +857,74 @@ func (suite *CacheBackedStoreTestSuite) TestInvalidateApplicationCache_OAuthCach
 
 	// Should not panic or fail
 	suite.cachedStore.invalidateApplicationCache("", "", oauthApp.ClientID)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Success() {
+	appID := "test-app-123"
+
+	suite.mockStore.EXPECT().IsApplicationExists(appID).Return(true, nil).Once()
+
+	exists, err := suite.cachedStore.IsApplicationExists(appID)
+
+	suite.NoError(err)
+	suite.True(exists)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_NotFound() {
+	appID := "non-existent-app"
+
+	suite.mockStore.EXPECT().IsApplicationExists(appID).Return(false, nil).Once()
+
+	exists, err := suite.cachedStore.IsApplicationExists(appID)
+
+	suite.NoError(err)
+	suite.False(exists)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestIsApplicationExists_Error() {
+	appID := "error-app"
+	expectedErr := errors.New("database error")
+
+	suite.mockStore.EXPECT().IsApplicationExists(appID).Return(false, expectedErr).Once()
+
+	exists, err := suite.cachedStore.IsApplicationExists(appID)
+
+	suite.Error(err)
+	suite.False(exists)
+	suite.Equal(expectedErr, err)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_Success() {
+	appName := "Test Application"
+
+	suite.mockStore.EXPECT().IsApplicationExistsByName(appName).Return(true, nil).Once()
+
+	exists, err := suite.cachedStore.IsApplicationExistsByName(appName)
+
+	suite.NoError(err)
+	suite.True(exists)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_NotFound() {
+	appName := "Non-Existent App"
+
+	suite.mockStore.EXPECT().IsApplicationExistsByName(appName).Return(false, nil).Once()
+
+	exists, err := suite.cachedStore.IsApplicationExistsByName(appName)
+
+	suite.NoError(err)
+	suite.False(exists)
+}
+
+func (suite *CacheBackedStoreTestSuite) TestIsApplicationExistsByName_Error() {
+	appName := "Error App"
+	expectedErr := errors.New("database connection error")
+
+	suite.mockStore.EXPECT().IsApplicationExistsByName(appName).Return(false, expectedErr).Once()
+
+	exists, err := suite.cachedStore.IsApplicationExistsByName(appName)
+
+	suite.Error(err)
+	suite.False(exists)
+	suite.Equal(expectedErr, err)
 }

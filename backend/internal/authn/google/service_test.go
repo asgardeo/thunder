@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
@@ -772,16 +772,16 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestFetchUserInfoSuccess() {
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	sub := "user123"
-	user := &user.User{
-		ID:   "user123",
-		Type: "person",
+	user := &userprovider.User{
+		UserID:   "user123",
+		UserType: "person",
 	}
 	suite.mockOIDCService.On("GetInternalUser", sub).Return(user, nil)
 
 	result, err := suite.service.GetInternalUser(sub)
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(user.ID, result.ID)
+	suite.Equal(user.UserID, result.UserID)
 }
 
 // generateTestJWT creates a valid JWT token with the specified claims.

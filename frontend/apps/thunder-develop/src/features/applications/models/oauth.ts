@@ -212,8 +212,6 @@ export interface IDTokenConfig extends TokenConfig {
  * OAuth2 Token Settings
  *
  * Complete token configuration for both access tokens and ID tokens.
- * This includes token issuer information and separate configurations
- * for each token type.
  *
  * @public
  * @remarks
@@ -223,7 +221,6 @@ export interface IDTokenConfig extends TokenConfig {
  * @example
  * ```typescript
  * const tokenSettings: OAuth2Token = {
- *   issuer: 'https://auth.myapp.com',
  *   access_token: {
  *     validity_period: 3600,
  *     user_attributes: ['email', 'username']
@@ -285,7 +282,6 @@ export interface OAuth2Token {
  *   public_client: false,
  *   scopes: ['openid', 'profile', 'email'],
  *   token: {
- *     issuer: 'thunder',
  *     access_token: {
  *       validity_period: 3600,
  *       user_attributes: ['email', 'username']
@@ -440,7 +436,6 @@ export function getDefaultOAuthConfig(): OAuth2Config {
     public_client: false,
     scopes: ['openid', 'profile', 'email'],
     token: {
-      issuer: 'thunder',
       access_token: {
         validity_period: 3600,
         user_attributes: ['email', 'username'],

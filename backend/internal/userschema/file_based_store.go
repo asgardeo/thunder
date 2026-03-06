@@ -19,7 +19,9 @@
 package userschema
 
 import (
+	"context"
 	"errors"
+	"sort"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
@@ -32,21 +34,21 @@ type userSchemaFileBasedStore struct {
 // Create implements declarative_resource.Storer interface for resource loader
 func (f *userSchemaFileBasedStore) Create(id string, data interface{}) error {
 	schema := data.(*UserSchema)
-	return f.CreateUserSchema(*schema)
+	return f.CreateUserSchema(context.Background(), *schema)
 }
 
 // CreateUserSchema implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) CreateUserSchema(schema UserSchema) error {
+func (f *userSchemaFileBasedStore) CreateUserSchema(ctx context.Context, schema UserSchema) error {
 	return f.GenericFileBasedStore.Create(schema.ID, &schema)
 }
 
 // DeleteUserSchemaByID implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) DeleteUserSchemaByID(id string) error {
+func (f *userSchemaFileBasedStore) DeleteUserSchemaByID(ctx context.Context, id string) error {
 	return errors.New("DeleteUserSchemaByID is not supported in file-based store")
 }
 
 // GetUserSchemaByID implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchema, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error) {
 	data, err := f.GenericFileBasedStore.Get(schemaID)
 	if err != nil {
 		return UserSchema{}, ErrUserSchemaNotFound
@@ -60,7 +62,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchem
 }
 
 // GetUserSchemaByName implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaByName(schemaName string) (UserSchema, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaByName(ctx context.Context, schemaName string) (UserSchema, error) {
 	data, err := f.GenericFileBasedStore.GetByField(schemaName, func(d interface{}) string {
 		return d.(*UserSchema).Name
 	})
@@ -71,7 +73,9 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByName(schemaName string) (UserS
 }
 
 // GetUserSchemaList implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaList(
+	ctx context.Context, limit, offset int,
+) ([]UserSchemaListItem, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -85,6 +89,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserS
 				Name:                  schema.Name,
 				OrganizationUnitID:    schema.OrganizationUnitID,
 				AllowSelfRegistration: schema.AllowSelfRegistration,
+				SystemAttributes:      schema.SystemAttributes,
 			}
 			schemaList = append(schemaList, listItem)
 		}
@@ -104,13 +109,89 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserS
 }
 
 // GetUserSchemaListCount implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaListCount() (int, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaListCount(ctx context.Context) (int, error) {
 	return f.GenericFileBasedStore.Count()
 }
 
+// GetUserSchemaListByOUIDs implements userSchemaStoreInterface.
+func (f *userSchemaFileBasedStore) GetUserSchemaListByOUIDs(
+	ctx context.Context, ouIDs []string, limit, offset int,
+) ([]UserSchemaListItem, error) {
+	ouIDSet := make(map[string]struct{}, len(ouIDs))
+	for _, id := range ouIDs {
+		ouIDSet[id] = struct{}{}
+	}
+
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var filtered []UserSchemaListItem
+	for _, item := range list {
+		if schema, ok := item.Data.(*UserSchema); ok {
+			if _, exists := ouIDSet[schema.OrganizationUnitID]; exists {
+				filtered = append(filtered, UserSchemaListItem{
+					ID:                    schema.ID,
+					Name:                  schema.Name,
+					OrganizationUnitID:    schema.OrganizationUnitID,
+					AllowSelfRegistration: schema.AllowSelfRegistration,
+					SystemAttributes:      schema.SystemAttributes,
+				})
+			}
+		}
+	}
+
+	// Sort the filtered list by name to ensure deterministic pagination
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Name < filtered[j].Name
+	})
+
+	// Apply pagination.
+	start := offset
+	end := offset + limit
+	if start > len(filtered) {
+		return []UserSchemaListItem{}, nil
+	}
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+
+	return filtered[start:end], nil
+}
+
+// GetUserSchemaListCountByOUIDs implements userSchemaStoreInterface.
+func (f *userSchemaFileBasedStore) GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error) {
+	ouIDSet := make(map[string]struct{}, len(ouIDs))
+	for _, id := range ouIDs {
+		ouIDSet[id] = struct{}{}
+	}
+
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, item := range list {
+		if schema, ok := item.Data.(*UserSchema); ok {
+			if _, exists := ouIDSet[schema.OrganizationUnitID]; exists {
+				count++
+			}
+		}
+	}
+
+	return count, nil
+}
+
 // UpdateUserSchemaByID implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(schemaID string, schema UserSchema) error {
+func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(ctx context.Context, schemaID string, schema UserSchema) error {
 	return errors.New("UpdateUserSchemaByID is not supported in file-based store")
+}
+
+// IsUserSchemaDeclarative returns true as file-based schemas are always immutable.
+func (f *userSchemaFileBasedStore) IsUserSchemaDeclarative(schemaID string) bool {
+	return true
 }
 
 // newUserSchemaFileBasedStore creates a new instance of a file-based store.

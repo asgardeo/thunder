@@ -64,8 +64,8 @@ helm install thunder install/openchoreo/helm/ \
   --namespace identity-platform \
   --create-namespace \
   --set database.host="$DB_HOST" \
-  --set database.identity.username="$DB_USER" \
-  --set database.identity.password="$DB_PASS" \
+  --set database.config.username="$DB_USER" \
+  --set database.config.password="$DB_PASS" \
   --set database.runtime.username="$DB_USER" \
   --set database.runtime.password="$DB_PASS" \
   --set organization.name="identity-platform"
@@ -94,11 +94,11 @@ helm upgrade --install thunder install/openchoreo/helm/ \
   --namespace identity-platform \
   --create-namespace \
   --set database.host="postgres.example.com" \
-  --set database.identity.username="thunder_user" \
-  --set database.identity.password="secure_password" \
+  --set database.config.username="thunder_user" \
+  --set database.config.password="secure_password" \
   --set database.runtime.username="thunder_user" \
   --set database.runtime.password="secure_password" \
-  --set database.identity.sslmode="require" \
+  --set database.config.sslmode="require" \
   --set database.runtime.sslmode="require" \
   --set organization.name="my-organization"
 ```
@@ -122,7 +122,7 @@ database:
   host: postgres.example.com
   port: 5432
   identity:
-    database: thunderdb
+    database: configdb
     username: thunder_user
     password: secure_identity_password
     type: postgres
@@ -201,7 +201,7 @@ Before deploying Thunder, ensure you have:
 
 1. **Created databases**:
    ```sql
-   CREATE DATABASE thunderdb;
+   CREATE DATABASE configdb;
    CREATE DATABASE runtimedb;
    CREATE DATABASE userdb;
    ```
@@ -228,7 +228,7 @@ database:
   host: postgres.example.com
   port: 5432
   identity:
-    database: thunderdb
+    database: configdb
     username: thunder_user
     password: secure_password
     type: postgres
@@ -254,7 +254,7 @@ database:
   host: postgres.default.svc.cluster.local
   port: 5432
   identity:
-    database: thunderdb
+    database: configdb
     username: thunder_user
     password: secure_password
     type: postgres

@@ -44,7 +44,60 @@ var (
 				"executor": map[string]interface{}{
 					"name": "UserTypeResolver",
 				},
-				"onSuccess": "google_auth",
+				"onSuccess":    "google_auth",
+				"onIncomplete": "prompt_usertype",
+			},
+			{
+				"id":   "prompt_usertype",
+				"type": "PROMPT",
+				"meta": map[string]interface{}{
+					"components": []map[string]interface{}{
+						{
+							"type":    "TEXT",
+							"id":      "heading_usertype",
+							"label":   "Sign Up",
+							"variant": "HEADING_2",
+						},
+						{
+							"type": "BLOCK",
+							"id":   "block_usertype",
+							"components": []map[string]interface{}{
+								{
+									"type":        "SELECT",
+									"id":          "usertype_input",
+									"ref":         "userType",
+									"label":       "User Type",
+									"placeholder": "Select your user type",
+									"required":    true,
+									"options":     []interface{}{},
+								},
+								{
+									"type":      "ACTION",
+									"id":        "action_usertype",
+									"label":     "Continue",
+									"variant":   "PRIMARY",
+									"eventType": "SUBMIT",
+								},
+							},
+						},
+					},
+				},
+				"prompts": []map[string]interface{}{
+					{
+						"inputs": []map[string]interface{}{
+							{
+								"ref":        "usertype_input",
+								"identifier": "userType",
+								"type":       "SELECT",
+								"required":   true,
+							},
+						},
+						"action": map[string]interface{}{
+							"ref":      "action_usertype",
+							"nextNode": "user_type_resolver",
+						},
+					},
+				},
 			},
 			{
 				"id":   "google_auth",
@@ -103,10 +156,28 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
+			"email_verified": map[string]interface{}{
+				"type": "string",
+			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"given_name": map[string]interface{}{
+				"type": "string",
+			},
+			"family_name": map[string]interface{}{
+				"type": "string",
+			},
 			"givenName": map[string]interface{}{
 				"type": "string",
 			},
 			"familyName": map[string]interface{}{
+				"type": "string",
+			},
+			"picture": map[string]interface{}{
+				"type": "string",
+			},
+			"locale": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -265,9 +336,9 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 
 	// Update flow definition with created IDs
 	nodes := googleRegGroupRoleFlow.Nodes.([]map[string]interface{})
-	nodes[2]["properties"].(map[string]interface{})["idpId"] = idpID
-	nodes[3]["properties"].(map[string]interface{})["assignGroup"] = groupID
-	nodes[3]["properties"].(map[string]interface{})["assignRole"] = roleID
+	nodes[3]["properties"].(map[string]interface{})["idpId"] = idpID
+	nodes[4]["properties"].(map[string]interface{})["assignGroup"] = groupID
+	nodes[4]["properties"].(map[string]interface{})["assignRole"] = roleID
 	googleRegGroupRoleFlow.Nodes = nodes
 
 	// Create registration flow

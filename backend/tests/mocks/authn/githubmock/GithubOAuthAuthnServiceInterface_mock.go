@@ -7,7 +7,7 @@ package githubmock
 import (
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -247,23 +247,23 @@ func (_c *GithubOAuthAuthnServiceInterfaceMock_FetchUserInfo_Call) RunAndReturn(
 }
 
 // GetInternalUser provides a mock function for the type GithubOAuthAuthnServiceInterfaceMock
-func (_mock *GithubOAuthAuthnServiceInterfaceMock) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
+func (_mock *GithubOAuthAuthnServiceInterfaceMock) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(sub)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
 	}
 
-	var r0 *user.User
+	var r0 *userprovider.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*userprovider.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(sub)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *userprovider.User); ok {
 		r0 = returnFunc(sub)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*user.User)
+			r0 = ret.Get(0).(*userprovider.User)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
@@ -300,12 +300,12 @@ func (_c *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call) Run(run fun
 	return _c
 }
 
-func (_c *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call) Return(user1 *user.User, serviceError *serviceerror.ServiceError) *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
-	_c.Call.Return(user1, serviceError)
+func (_c *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call) Return(user *userprovider.User, serviceError *serviceerror.ServiceError) *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
+	_c.Call.Return(user, serviceError)
 	return _c
 }
 
-func (_c *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string) (*user.User, *serviceerror.ServiceError)) *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
+func (_c *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string) (*userprovider.User, *serviceerror.ServiceError)) *GithubOAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

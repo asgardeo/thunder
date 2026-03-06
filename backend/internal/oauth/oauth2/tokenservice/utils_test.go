@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -80,61 +81,61 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithOnlyDefaultIssuer() {
 	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 }
 
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithCustomTokenIssuer() {
+func (suite *UtilsTestSuite) TestGetValidIssuers_WithTokenConfig() {
+	// OAuthApp with a Token config should still use Thunder-level issuer from config
+	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID: "test-client",
+		Token:    &appmodel.OAuthTokenConfig{},
+	}
+
+	validIssuers := getValidIssuers(oauthApp)
+
+	assert.NotNil(suite.T(), validIssuers)
+	assert.Len(suite.T(), validIssuers, 1)
+	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
+}
+
+func (suite *UtilsTestSuite) TestGetValidIssuers_WithAccessTokenConfig() {
+	// OAuthApp with Token and AccessToken config should still use Thunder-level issuer from config
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://custom.thunder.io",
+			AccessToken: &appmodel.AccessTokenConfig{
+				ValidityPeriod: 7200,
+			},
 		},
 	}
 
 	validIssuers := getValidIssuers(oauthApp)
 
 	assert.NotNil(suite.T(), validIssuers)
-	// Only the OAuth-level issuer is returned (resolved from Token.Issuer)
 	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://custom.thunder.io")
+	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 }
 
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithOAuthLevelIssuer() {
+func (suite *UtilsTestSuite) TestGetValidIssuers_WithIDTokenConfig() {
+	// OAuthApp with Token and IDToken config should still use Thunder-level issuer from config
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://oauth.thunder.io",
+			IDToken: &appmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+			},
 		},
 	}
 
 	validIssuers := getValidIssuers(oauthApp)
 
 	assert.NotNil(suite.T(), validIssuers)
-	// ResolveTokenConfig returns the OAuth-level issuer
 	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://oauth.thunder.io")
+	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 }
 
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithOAuthLevelIssuerOnly() {
+func (suite *UtilsTestSuite) TestGetValidIssuers_AlwaysUsesThunderIssuer() {
+	// Valid issuers always come from Thunder config, never empty strings
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://custom.thunder.io",
-			// AccessToken should not have its own issuer - it uses OAuth-level issuer
-		},
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	assert.NotNil(suite.T(), validIssuers)
-	// ResolveTokenConfig returns OAuth-level issuer
-	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://custom.thunder.io")
-}
-
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithEmptyIssuerStrings() {
-	// Empty issuer strings should not be added
-	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer:      "",
 			AccessToken: &appmodel.AccessTokenConfig{},
 		},
 	}
@@ -142,7 +143,6 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithEmptyIssuerStrings() {
 	validIssuers := getValidIssuers(oauthApp)
 
 	assert.NotNil(suite.T(), validIssuers)
-	// Only default issuer from config should be present
 	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 	assert.NotContains(suite.T(), validIssuers, "")
 }
@@ -161,29 +161,30 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidDefaultIssuer() {
 	assert.NoError(suite.T(), err)
 }
 
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidCustomIssuer() {
+func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndTokenConfig() {
+	// Thunder-level issuer is always valid regardless of token config presence
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://custom.thunder.io",
-		},
+		Token:    &appmodel.OAuthTokenConfig{},
 	}
 
-	err := validateIssuer("https://custom.thunder.io", oauthApp)
+	err := validateIssuer("https://thunder.io", oauthApp)
 
 	assert.NoError(suite.T(), err)
 }
 
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidOAuthLevelIssuer() {
+func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndAccessTokenConfig() {
+	// Thunder-level issuer is always valid regardless of access token config presence
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://oauth.thunder.io",
-			// AccessToken should not have its own issuer - it uses OAuth-level issuer
+			AccessToken: &appmodel.AccessTokenConfig{
+				ValidityPeriod: 3600,
+			},
 		},
 	}
 
-	err := validateIssuer("https://oauth.thunder.io", oauthApp)
+	err := validateIssuer("https://thunder.io", oauthApp)
 
 	assert.NoError(suite.T(), err)
 }
@@ -191,9 +192,6 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidOAuthLevelIssuer() {
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithInvalidIssuer() {
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://custom.thunder.io",
-		},
 	}
 
 	err := validateIssuer("https://evil.example.com", oauthApp)
@@ -228,25 +226,22 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithNilOAuthAppInvalidIssuer() {
 	assert.Contains(suite.T(), err.Error(), "not supported")
 }
 
-func (suite *UtilsTestSuite) TestFederationScenario_MultipleThunderIssuers() {
-	// Simulates a scenario where an organization has multiple Thunder instances
+func (suite *UtilsTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
+	// Only the Thunder-level issuer from config is accepted; app-level issuers are no longer supported
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer:      "https://thunder-prod.company.com",
-			AccessToken: &appmodel.AccessTokenConfig{
-				// AccessToken uses OAuth-level issuer
-			},
+			AccessToken: &appmodel.AccessTokenConfig{},
 		},
 	}
 
 	validIssuers := getValidIssuers(oauthApp)
 
-	// Only the OAuth-level issuer is returned (resolved from Token.Issuer)
-	assert.Contains(suite.T(), validIssuers, "https://thunder-prod.company.com")
+	// Only the Thunder-level issuer from config is returned
+	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 
-	// Validate the configured issuer
-	assert.NoError(suite.T(), validateIssuer("https://thunder-prod.company.com", oauthApp))
+	// Validate the Thunder-level issuer passes
+	assert.NoError(suite.T(), validateIssuer("https://thunder.io", oauthApp))
 
 	// Should reject unknown issuers
 	assert.Error(suite.T(), validateIssuer("https://thunder-staging.company.com", oauthApp))
@@ -260,19 +255,12 @@ func (suite *UtilsTestSuite) TestFederationScenario_FutureExternalIssuerSupport(
 
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://thunder.company.com",
-			// In the future, add field for external issuers:
-			// ExternalIssuers: []ExternalIssuerConfig{
-			//     {Issuer: "https://external-idp.com", JWKSEndpoint: "..."},
-			// }
-		},
 	}
 
 	validIssuers := getValidIssuers(oauthApp)
 
-	// Currently only Thunder issuers are returned
-	assert.Contains(suite.T(), validIssuers, "https://thunder.company.com")
+	// Currently only the Thunder-level issuer from config is returned
+	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 
 	// In the future, external issuers should also be included
 	// assert.Contains(suite.T(), validIssuers, "https://external-idp.com")
@@ -641,7 +629,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserError() {
 	}
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(nil, serverErr)
 
-	_, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch user")
@@ -659,7 +647,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UnmarshalError() {
 		Type:       "local",
 	}, nil)
 
-	_, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal user attributes")
@@ -678,7 +666,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAttributes() {
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -699,7 +687,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyAllowedClaims() {
 	}, nil)
 
 	// Empty allowedClaims - no special claims should be added
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", []string{})
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", []string{})
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -724,7 +712,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAllowedClaims() {
 	}, nil)
 
 	// Nil allowedClaims - no special claims should be added
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -748,7 +736,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoType() {
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -772,7 +760,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoOrganizationUnit(
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -797,7 +785,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
 	}, nil)
 
 	// Mock GetOrganizationUnit to return OU details
-	mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{
 		ID:     "ou-123",
 		Handle: "test-org",
 		Name:   "Test Organization",
@@ -805,7 +793,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
 
 	// Request all OU-related claims
 	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle, constants.ClaimOUName}
-	attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -830,15 +818,16 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceError() {
 	}, nil)
 
 	// Mock GetOrganizationUnit to return error
-	mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "OU_NOT_FOUND",
-		ErrorDescription: "organization unit not found",
-	})
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "OU_NOT_FOUND",
+			ErrorDescription: "organization unit not found",
+		})
 
 	// Request ouHandle which requires OU service
 	allowedClaims := []string{constants.ClaimOUHandle}
-	_, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch organization unit details")
@@ -863,7 +852,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_OUDetailsNotRequestedSkipsO
 
 	// Request only ouId (not ouHandle or ouName)
 	allowedClaims := []string{constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -890,7 +879,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilOUServiceSkipsOUDetails(
 
 	// Request ouHandle but pass nil ouService
 	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -934,7 +923,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithGroups() {
 		constants.ClaimOUID,
 		constants.UserAttributeGroups,
 	}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -971,7 +960,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithEmptyGroups() {
 
 	// Request groups
 	allowedClaims := []string{constants.UserAttributeGroups}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -1002,7 +991,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserGroupsError() {
 
 	// Request groups in allowed claims to trigger the error
 	allowedClaims := []string{constants.UserAttributeGroups}
-	_, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch user groups")
@@ -1022,7 +1011,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithoutGroups() {
 
 	// Include userType but NOT groups - so GetUserGroups should not be called
 	allowedClaims := []string{"email", constants.ClaimUserType}
-	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -1072,13 +1061,14 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_SingleOUClaim() {
 				OrganizationUnit: "ou-123",
 			}, nil)
 
-			mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{
+			mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{
 				ID:     "ou-123",
 				Handle: "test-org",
 				Name:   "Test Organization",
 			}, nil)
 
-			attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", tc.allowedClaims)
+			attrs, err := FetchUserAttributes(
+				context.Background(), mockUserService, mockOUService, "test-user", tc.allowedClaims)
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), attrs)
@@ -1170,8 +1160,8 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithNilOAuthApp
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
 }
 
-func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithCustomIssuer() {
-	// Reset and initialize config with refresh token validity period
+func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig() {
+	// Refresh token always uses Thunder-level issuer from config
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
@@ -1188,17 +1178,14 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithCustomIssue
 
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://custom.thunder.io",
-		},
+		Token:    &appmodel.OAuthTokenConfig{},
 	}
 
 	result := resolveTokenConfig(oauthApp, TokenTypeRefresh)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(86400), result.ValidityPeriod)
-	// Should use OAuth-level custom issuer
-	assert.Equal(suite.T(), "https://custom.thunder.io", result.Issuer)
+	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilOAuthApp() {
@@ -1350,7 +1337,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithCustomIssuer_NilOAuthApp
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
 }
 
-func (suite *UtilsTestSuite) TestResolveTokenConfig_WithCustomIssuer_EmptyIssuer() {
+func (suite *UtilsTestSuite) TestResolveTokenConfig_WithTokenConfig_UsesThunderIssuer() {
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
@@ -1360,12 +1347,10 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithCustomIssuer_EmptyIssuer
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	// Empty issuer in oauthApp should use default
+	// OAuthApp with token config always uses Thunder-level issuer from config
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "",
-		},
+		Token:    &appmodel.OAuthTokenConfig{},
 	}
 
 	result := resolveTokenConfig(oauthApp, TokenTypeAccess)

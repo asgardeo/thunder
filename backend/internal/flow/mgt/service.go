@@ -142,11 +142,6 @@ func (s *flowMgtService) CreateFlow(flowDef *FlowDefinition) (
 		return nil, &ErrorDuplicateFlowHandle
 	}
 
-	svcErr := s.applyExecutorDefaultMeta(flowDef)
-	if svcErr != nil {
-		return nil, svcErr
-	}
-
 	flowID, genErr := utils.GenerateUUIDv7()
 	if genErr != nil {
 		s.logger.Error("Failed to generate UUID v7", log.Error(genErr))
@@ -247,11 +242,6 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 	// Prevent changing the handle
 	if existingFlow.Handle != flowDef.Handle {
 		return nil, &ErrorHandleUpdateNotAllowed
-	}
-
-	svcErr := s.applyExecutorDefaultMeta(flowDef)
-	if svcErr != nil {
-		return nil, svcErr
 	}
 
 	updatedFlow, err := s.store.UpdateFlow(flowID, flowDef)
@@ -566,13 +556,6 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 		return
 	}
 
-	metaErr := s.applyExecutorDefaultMeta(regFlowDef)
-	if metaErr != nil {
-		logger.Error("Failed to apply executor default meta to inferred registration flow",
-			log.String("error", metaErr.Code))
-		return
-	}
-
 	regFlowID, uuidErr := utils.GenerateUUIDv7()
 	if uuidErr != nil {
 		logger.Error("Failed to generate UUID for inferred registration flow", log.Error(uuidErr))
@@ -588,41 +571,6 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 	logger.Debug("Successfully inferred and created registration flow",
 		log.String("authFlowName", authFlowDef.Name), log.String("regFlowID", regFlowID),
 		log.String("regFlowName", regFlowDef.Name))
-}
-
-// applyExecutorDefaultMeta applies default meta from executors to TASK_EXECUTION nodes.
-func (s *flowMgtService) applyExecutorDefaultMeta(flowDef *FlowDefinition) *serviceerror.ServiceError {
-	if s.executorRegistry == nil {
-		s.logger.Error("Executor registry is nil, cannot apply default meta")
-		return &serviceerror.InternalServerError
-	}
-
-	for i := range flowDef.Nodes {
-		node := &flowDef.Nodes[i]
-
-		if node.Type != string(common.NodeTypeTaskExecution) || node.Executor == nil {
-			continue
-		}
-		if node.Meta != nil {
-			s.logger.Debug("Node already has meta, skipping default meta application",
-				log.String("nodeID", node.ID), log.String("executorName", node.Executor.Name))
-			continue
-		}
-
-		exec, err := s.executorRegistry.GetExecutor(node.Executor.Name)
-		if err != nil {
-			s.logger.Error("Failed to get executor for default meta application",
-				log.String("nodeID", node.ID), log.String("executorName", node.Executor.Name), log.Error(err))
-			return &serviceerror.InternalServerError
-		}
-
-		meta := exec.GetDefaultMeta()
-		if meta != nil {
-			node.Meta = meta
-		}
-	}
-
-	return nil
 }
 
 // hasPasskeyRegistrationModes checks if the flow contains PasskeyAuthExecutor with both

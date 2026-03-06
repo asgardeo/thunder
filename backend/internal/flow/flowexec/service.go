@@ -29,11 +29,10 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	sysContext "github.com/asgardeo/thunder/internal/system/context"
-
-	"github.com/asgardeo/thunder/internal/observability"
-	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -117,9 +116,9 @@ func (s *flowExecService) Execute(ctx context.Context,
 		}
 	}
 
-	// Set trace ID and HTTP context to context
+	// Set trace ID and HTTP context to engine context
 	context.TraceID = traceID
-	context.HTTPContext = ctx
+	context.Context = ctx
 
 	flowStep, flowErr := s.flowEngine.Execute(context)
 

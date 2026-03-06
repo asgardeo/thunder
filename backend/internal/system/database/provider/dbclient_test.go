@@ -53,7 +53,7 @@ func (suite *DBClientTestSuite) SetupTest() {
 	}
 
 	db := model.NewDB(suite.mockDB)
-	suite.dbClient = NewDBClient(db, "mock")
+	suite.dbClient = NewDBClient(db, "mock", "test")
 }
 
 func (suite *DBClientTestSuite) TearDownTest() {
@@ -294,7 +294,7 @@ func (suite *DBClientTestSuite) TestQueryContextWithTransaction() {
 	suite.mock.ExpectQuery("SELECT id FROM users").WillReturnRows(rows)
 
 	tx, _ := suite.mockDB.Begin()
-	ctx := transaction.WithTx(context.Background(), tx)
+	ctx := transaction.WithKeyedTx(context.Background(), "test", tx)
 
 	results, err := suite.dbClient.QueryContext(ctx, testQuery)
 
@@ -352,7 +352,7 @@ func (suite *DBClientTestSuite) TestExecuteContextWithTransaction() {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	tx, _ := suite.mockDB.Begin()
-	ctx := transaction.WithTx(context.Background(), tx)
+	ctx := transaction.WithKeyedTx(context.Background(), "test", tx)
 
 	rowsAffected, err := suite.dbClient.ExecuteContext(ctx, testQuery, args...)
 

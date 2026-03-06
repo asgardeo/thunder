@@ -1,4 +1,4 @@
-Asgardeo
+[Aa]sgardeo
 WSO2
 OIDC
 OAuth
@@ -18,4 +18,10 @@ APIs
 UIs
 iCloud
 hostname
-
+[Ss][Qq][Ll]ite
+[Pp]ostgres
+[Cc]onfig
+[Pp]laintext
+JWTs
+JWT
+[Cc]rypto

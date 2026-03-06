@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
@@ -96,28 +97,28 @@ func (suite *FileBasedStoreTestSuite) TestCreateSender_Success() {
 	sender := suite.createTestSender("sender-001", "Twilio Test Sender")
 
 	// Act
-	err := suite.store.createSender(*sender)
+	err := suite.store.createSender(context.Background(), *sender)
 
 	// Assert
 	suite.NoError(err)
 
 	// Verify sender was created
-	retrieved, err := suite.store.getSenderByID("sender-001")
+	actualSender, err := suite.store.getSenderByName(context.Background(), sender.Name)
 	suite.NoError(err)
-	suite.NotNil(retrieved)
-	suite.Equal("sender-001", retrieved.ID)
-	suite.Equal("Twilio Test Sender", retrieved.Name)
-	suite.Equal(common.MessageProviderTypeTwilio, retrieved.Provider)
+	suite.NotNil(actualSender)
+	suite.Equal("sender-001", actualSender.ID)
+	suite.Equal("Twilio Test Sender", actualSender.Name)
+	suite.Equal(common.MessageProviderTypeTwilio, actualSender.Provider)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetSenderByID_Success() {
 	// Arrange
 	sender := suite.createTestSender("sender-002", "Vonage Test Sender")
 	sender.Provider = common.MessageProviderTypeVonage
-	_ = suite.store.createSender(*sender)
+	_ = suite.store.createSender(context.Background(), *sender)
 
 	// Act
-	retrieved, err := suite.store.getSenderByID("sender-002")
+	retrieved, err := suite.store.getSenderByID(context.Background(), "sender-002")
 
 	// Assert
 	suite.NoError(err)
@@ -129,7 +130,7 @@ func (suite *FileBasedStoreTestSuite) TestGetSenderByID_Success() {
 
 func (suite *FileBasedStoreTestSuite) TestGetSenderByID_NotFound() {
 	// Act
-	retrieved, err := suite.store.getSenderByID("non-existent")
+	retrieved, err := suite.store.getSenderByID(context.Background(), "non-existent")
 
 	// Assert
 	suite.Error(err)
@@ -140,10 +141,10 @@ func (suite *FileBasedStoreTestSuite) TestGetSenderByName_Success() {
 	// Arrange
 	sender := suite.createTestSender("sender-003", "Custom SMS Sender")
 	sender.Provider = common.MessageProviderTypeCustom
-	_ = suite.store.createSender(*sender)
+	_ = suite.store.createSender(context.Background(), *sender)
 
 	// Act
-	retrieved, err := suite.store.getSenderByName("Custom SMS Sender")
+	retrieved, err := suite.store.getSenderByName(context.Background(), "Custom SMS Sender")
 
 	// Assert
 	suite.NoError(err)
@@ -155,16 +156,16 @@ func (suite *FileBasedStoreTestSuite) TestGetSenderByName_Success() {
 
 func (suite *FileBasedStoreTestSuite) TestGetSenderByName_NotFound() {
 	// Act
-	retrieved, err := suite.store.getSenderByName("Non-Existent Sender")
+	actualSender, err := suite.store.getSenderByName(context.Background(), "invalid-name")
 
 	// Assert
 	suite.NoError(err)
-	suite.Nil(retrieved)
+	suite.Nil(actualSender)
 }
 
 func (suite *FileBasedStoreTestSuite) TestListSenders_Empty() {
 	// Act
-	senders, err := suite.store.listSenders()
+	senders, err := suite.store.listSenders(context.Background())
 
 	// Assert
 	suite.NoError(err)
@@ -178,12 +179,12 @@ func (suite *FileBasedStoreTestSuite) TestListSenders_MultipleSenders() {
 	sender2 := suite.createTestSender("sender-005", "Sender Two")
 	sender3 := suite.createTestSender("sender-006", "Sender Three")
 
-	_ = suite.store.createSender(*sender1)
-	_ = suite.store.createSender(*sender2)
-	_ = suite.store.createSender(*sender3)
+	_ = suite.store.createSender(context.Background(), *sender1)
+	_ = suite.store.createSender(context.Background(), *sender2)
+	_ = suite.store.createSender(context.Background(), *sender3)
 
 	// Act
-	senders, err := suite.store.listSenders()
+	senders, err := suite.store.listSenders(context.Background())
 
 	// Assert
 	suite.NoError(err)
@@ -201,11 +202,8 @@ func (suite *FileBasedStoreTestSuite) TestListSenders_MultipleSenders() {
 }
 
 func (suite *FileBasedStoreTestSuite) TestUpdateSender_ReturnsError() {
-	// Arrange
-	sender := suite.createTestSender("sender-007", "Test Sender")
-
 	// Act
-	err := suite.store.updateSender("sender-007", *sender)
+	err := suite.store.updateSender(context.Background(), "any-id", common.NotificationSenderDTO{})
 
 	// Assert
 	suite.Error(err)
@@ -214,7 +212,7 @@ func (suite *FileBasedStoreTestSuite) TestUpdateSender_ReturnsError() {
 
 func (suite *FileBasedStoreTestSuite) TestDeleteSender_ReturnsError() {
 	// Act
-	err := suite.store.deleteSender("sender-001")
+	err := suite.store.deleteSender(context.Background(), "any-id")
 
 	// Assert
 	suite.Error(err)
@@ -244,19 +242,19 @@ func (suite *FileBasedStoreTestSuite) TestCreateMultipleSenders_WithProperties()
 	}
 
 	// Act
-	err1 := suite.store.createSender(*twilioSender)
-	err2 := suite.store.createSender(*vonageSender)
+	err1 := suite.store.createSender(context.Background(), *twilioSender)
+	err2 := suite.store.createSender(context.Background(), *vonageSender)
 
 	// Assert
 	suite.NoError(err1)
 	suite.NoError(err2)
 
 	// Verify both senders exist with correct properties
-	twilioRetrieved, err := suite.store.getSenderByID("twilio-001")
+	twilioRetrieved, err := suite.store.getSenderByID(context.Background(), "twilio-001")
 	suite.NoError(err)
 	suite.Len(twilioRetrieved.Properties, 3)
 
-	vonageRetrieved, err := suite.store.getSenderByID("vonage-001")
+	vonageRetrieved, err := suite.store.getSenderByID(context.Background(), "vonage-001")
 	suite.NoError(err)
 	suite.Len(vonageRetrieved.Properties, 3)
 }

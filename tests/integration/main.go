@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
@@ -171,5 +172,15 @@ func runTests() error {
 	cmd = exec.Command(cmdName, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	// Export test-context state so that test subprocesses can self-initialize
+	// via ensureInitialized() without requiring an explicit InitializeTestContext call.
+	cmd.Env = append(os.Environ(),
+		"THUNDER_EXTRACTED_HOME="+testutils.GetExtractedProductHome(),
+		"THUNDER_SERVER_PORT="+serverPort,
+		"THUNDER_ZIP_PATTERN="+zipFilePattern,
+		"THUNDER_SERVER_PID="+strconv.Itoa(testutils.GetServerPID()),
+	)
+
 	return cmd.Run()
 }

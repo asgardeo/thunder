@@ -79,7 +79,8 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "authorization_check"
+            "onSuccess": "authorization_check",
+            "onIncomplete": "prompt_credentials"
         },
         {
             "id": "authorization_check",

@@ -130,11 +130,6 @@ func (f *flowFactory) CloneNode(source NodeInterface) (NodeInterface, error) {
 		})
 	}
 
-	// Copy meta if present
-	if sourceMeta := source.GetMeta(); sourceMeta != nil {
-		nodeCopy.SetMeta(sourceMeta)
-	}
-
 	// Copy onSuccess for representation nodes (START/END)
 	if repSource, ok := source.(RepresentationNodeInterface); ok {
 		if repCopy, ok := nodeCopy.(RepresentationNodeInterface); ok {
@@ -149,15 +144,17 @@ func (f *flowFactory) CloneNode(source NodeInterface) (NodeInterface, error) {
 			executableCopy.SetInputs(append([]common.Input{}, executableSource.GetInputs()...))
 			executableCopy.SetOnSuccess(executableSource.GetOnSuccess())
 			executableCopy.SetOnFailure(executableSource.GetOnFailure())
+			executableCopy.SetOnIncomplete(executableSource.GetOnIncomplete())
 		} else {
 			return nil, errors.New("mismatch in node types during cloning. copy is not executor-backed")
 		}
 	}
 
-	// Copy prompts if the node is a prompt node
+	// Copy prompts and meta if the node is a prompt node
 	if promptSource, ok := source.(PromptNodeInterface); ok {
 		if promptCopy, ok := nodeCopy.(PromptNodeInterface); ok {
 			promptCopy.SetPrompts(append([]common.Prompt{}, promptSource.GetPrompts()...))
+			promptCopy.SetMeta(sysutils.DeepCopyInterface(promptSource.GetMeta()))
 		} else {
 			return nil, errors.New("mismatch in node types during cloning. copy is not a prompt node")
 		}

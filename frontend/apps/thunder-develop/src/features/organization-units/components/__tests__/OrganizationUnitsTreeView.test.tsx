@@ -114,7 +114,9 @@ const translations: Record<string, string> = {
   'organizationUnits:delete.dialog.disclaimer': 'This action is permanent and cannot be undone.',
   'organizationUnits:listing.addRootOrganizationUnit': 'Add Root Organization Unit',
   'organizationUnits:listing.treeView.addChildOrganizationUnit': 'Add Engineering Unit',
+  'organizationUnits:listing.treeView.loadMore': 'Load more',
   'common:actions.cancel': 'Cancel',
+  'common:status.loading': 'Loading...',
   'common:status.deleting': 'Deleting...',
 };
 const stableT = (key: string): string => translations[key] ?? key;
@@ -534,8 +536,7 @@ describe('OrganizationUnitsTreeView', () => {
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith(
         'Failed to load child organization units',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        expect.objectContaining({parentId: expect.any(String)}),
+        expect.objectContaining({parentId: 'ou-1'}),
       );
     });
 
@@ -781,6 +782,228 @@ describe('OrganizationUnitsTreeView', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
+    });
+  });
+
+  it('should navigate to create page when add root row is activated via Enter key', async () => {
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    fireEvent.keyDown(addRootButton, {key: 'Enter'});
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
+    });
+  });
+
+  it('should navigate to create page when add root row is activated via Space key', async () => {
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    fireEvent.keyDown(addRootButton, {key: ' '});
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
+    });
+  });
+
+  it('should navigate via keyboard on empty state add root button', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+        organizationUnits: [],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No organization units found')).toBeInTheDocument();
+    });
+
+    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    fireEvent.keyDown(addRootButton, {key: 'Enter'});
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
+    });
+  });
+
+  it('should trigger keyboard handler for load more item via Enter key', async () => {
+    const childOUResponse: OrganizationUnitListResponse = {
+      totalResults: 50,
+      startIndex: 1,
+      count: 1,
+      organizationUnits: [
+        {id: 'ou-child-1', handle: 'child1', name: 'Fetched Child', description: null, parent: 'ou-1'},
+      ],
+    };
+
+    mockHttpRequest.mockResolvedValue({data: childOUResponse});
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Expand the first tree item to load children with load more
+    const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
+    fireEvent.click(expandIcons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Fetched Child')).toBeInTheDocument();
+    });
+
+    // Find the load more button and activate via keyboard
+    await waitFor(() => {
+      expect(screen.getByText('Load more')).toBeInTheDocument();
+    });
+
+    const loadMoreButton = screen.getByText('Load more').closest('[role="button"]')!;
+    mockHttpRequest.mockClear();
+    mockHttpRequest.mockResolvedValue({
+      data: {
+        totalResults: 50,
+        startIndex: 2,
+        count: 1,
+        organizationUnits: [
+          {id: 'ou-child-2', handle: 'child2', name: 'Fetched Child 2', description: null, parent: 'ou-1'},
+        ],
+      },
+    });
+    fireEvent.keyDown(loadMoreButton, {key: 'Enter'});
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalled();
+    });
+  });
+
+  it('should not fetch children when collapsing a node', async () => {
+    const childOUResponse: OrganizationUnitListResponse = {
+      totalResults: 1,
+      startIndex: 1,
+      count: 1,
+      organizationUnits: [
+        {id: 'ou-child-1', handle: 'child1', name: 'Fetched Child', description: null, parent: 'ou-1'},
+      ],
+    };
+
+    mockHttpRequest.mockResolvedValue({data: childOUResponse});
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Expand
+    const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
+    fireEvent.click(expandIcons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Fetched Child')).toBeInTheDocument();
+    });
+
+    const callCount = mockHttpRequest.mock.calls.length;
+
+    // Collapse - should not trigger another fetch
+    const collapseIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
+    fireEvent.click(collapseIcons[0]);
+
+    // Verify no additional HTTP calls were made on collapse
+    expect(mockHttpRequest).toHaveBeenCalledTimes(callCount);
+  });
+
+  it('should show root load more button when there are more root items', async () => {
+    const paginatedData: OrganizationUnitListResponse = {
+      totalResults: 50,
+      startIndex: 1,
+      count: 2,
+      organizationUnits: [
+        {id: 'ou-1', handle: 'root', name: 'Root Organization', description: null, parent: null},
+        {id: 'ou-2', handle: 'engineering', name: 'Engineering', description: null, parent: null},
+      ],
+    };
+
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: paginatedData,
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Load more')).toBeInTheDocument();
+    });
+  });
+
+  it('should log error when add root navigation fails', async () => {
+    mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Add Root Organization Unit'));
+
+    await waitFor(() => {
+      expect(stableLogger.error).toHaveBeenCalledWith('Failed to navigate to create organization unit page', {
+        error: expect.objectContaining({message: 'Navigation failed'}) as Error,
+      });
+    });
+  });
+
+  it('should use fallback error message when error.message is missing', async () => {
+    const errorWithMessage = {message: 'Server unavailable'};
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: errorWithMessage,
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Server unavailable')).toBeInTheDocument();
+    });
+  });
+
+  it('should log error when add root navigation fails via keyboard', async () => {
+    mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const addRootButton = screen.getByText('Add Root Organization Unit').closest('[role="button"]')!;
+    fireEvent.keyDown(addRootButton, {key: 'Enter'});
+
+    await waitFor(() => {
+      expect(stableLogger.error).toHaveBeenCalledWith('Failed to navigate to create organization unit page', {
+        error: expect.objectContaining({message: 'Navigation failed'}) as Error,
+      });
     });
   });
 });

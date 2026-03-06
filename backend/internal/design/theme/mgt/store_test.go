@@ -91,14 +91,14 @@ func (suite *ThemeStoreTestSuite) TestGetThemeListCount_QueryError() {
 func (suite *ThemeStoreTestSuite) TestGetThemeList_Success() {
 	results := []map[string]interface{}{
 		{
-			"theme_id":     "theme-1",
+			"id":           "theme-1",
 			"display_name": "Theme 1",
 			"description":  "Description 1",
 			"created_at":   "2024-01-15T10:30:00Z",
 			"updated_at":   "2024-01-15T10:30:00Z",
 		},
 		{
-			"theme_id":     "theme-2",
+			"id":           "theme-2",
 			"display_name": "Theme 2",
 			"description":  "Description 2",
 			"created_at":   "2024-01-15T10:30:00Z",
@@ -145,7 +145,7 @@ func (suite *ThemeStoreTestSuite) TestCreateTheme_Success() {
 func (suite *ThemeStoreTestSuite) TestGetTheme_Success() {
 	results := []map[string]interface{}{
 		{
-			"theme_id":     "theme-123",
+			"id":           "theme-123",
 			"display_name": "Test Theme",
 			"description":  "A test theme",
 			"theme":        `{"colors": {"primary": "#007bff"}}`,
@@ -178,8 +178,8 @@ func (suite *ThemeStoreTestSuite) TestGetTheme_NotFound() {
 // Test GetTheme - Multiple results (unexpected)
 func (suite *ThemeStoreTestSuite) TestGetTheme_MultipleResults() {
 	results := []map[string]interface{}{
-		{"theme_id": "1", "display_name": "A", "description": "X", "theme": `{}`},
-		{"theme_id": "2", "display_name": "B", "description": "Y", "theme": `{}`},
+		{"id": "1", "display_name": "A", "description": "X", "theme": `{}`},
+		{"id": "2", "display_name": "B", "description": "Y", "theme": `{}`},
 	}
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Query", mock.Anything, "theme-123", "test-deployment").Return(results, nil)
@@ -291,7 +291,7 @@ func (suite *ThemeStoreTestSuite) TestParseCountResult_UnsupportedType() {
 // Test buildThemeListItemFromResultRow helper
 func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_Success() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test Theme",
 		"description":  "A description",
 		"created_at":   "2024-01-15T10:30:00Z",
@@ -318,7 +318,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingID(
 
 func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDisplayName() {
 	row := map[string]interface{}{
-		"theme_id":    "theme-1",
+		"id":          "theme-1",
 		"description": "Desc",
 	}
 
@@ -328,7 +328,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDis
 
 func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDescription() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test",
 	}
 
@@ -339,7 +339,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDes
 // Test buildThemeFromResultRow helper
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_StringTheme() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test Theme",
 		"description":  "A description",
 		"theme":        `{"colors": {"primary": "#007bff"}}`,
@@ -356,7 +356,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_StringTheme() {
 
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_ByteTheme() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test Theme",
 		"description":  "Desc",
 		"theme":        []byte(`{"colors": {}}`),
@@ -372,7 +372,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_ByteTheme() {
 
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_MissingTheme() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test",
 		"description":  "Desc",
 	}
@@ -383,7 +383,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_MissingTheme() {
 
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_UnsupportedThemeType() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test",
 		"description":  "Desc",
 		"theme":        12345,
@@ -395,7 +395,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_UnsupportedThemeTy
 
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_OptionalDescription() {
 	row := map[string]interface{}{
-		"theme_id":     "theme-1",
+		"id":           "theme-1",
 		"display_name": "Test Theme",
 		"theme":        `{"colors": {}}`,
 		"created_at":   "2024-01-15T10:30:00Z",

@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
 import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
@@ -31,6 +32,18 @@ vi.mock('react-router', async () => {
     useNavigate: () => mockNavigate,
     useParams: () => ({id: 'ou-123'}),
     useLocation: () => mockUseLocation(),
+    Link: ({to, children = undefined, ...props}: {to: string; children?: ReactNode; [key: string]: unknown}) => (
+      <a
+        {...(props as Record<string, unknown>)}
+        href={to}
+        onClick={(e) => {
+          e.preventDefault();
+          Promise.resolve(mockNavigate(to)).catch(() => {});
+        }}
+      >
+        {children}
+      </a>
+    ),
   };
 });
 
@@ -106,6 +119,22 @@ vi.mock('../../contexts/useOrganizationUnit', () => ({
 // Mock useDataGridLocaleText
 vi.mock('../../../../hooks/useDataGridLocaleText', () => ({
   default: () => ({}),
+}));
+
+// Mock LogoUpdateModal
+vi.mock('../../../../components/LogoUpdateModal', () => ({
+  default: vi.fn(
+    ({open, onLogoUpdate, onClose}: {open: boolean; onLogoUpdate: (url: string) => void; onClose: () => void}) => (
+      <div data-testid="logo-update-modal" style={{display: open ? 'block' : 'none'}}>
+        <button type="button" onClick={() => onLogoUpdate('https://example.com/new-logo.png')}>
+          Update Logo
+        </button>
+        <button type="button" onClick={onClose}>
+          Close
+        </button>
+      </div>
+    ),
+  ),
 }));
 
 // Mock translations
@@ -868,5 +897,369 @@ describe('OrganizationUnitEditPage', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
       });
     }
+  });
+
+  describe('Avatar Image', () => {
+    it('should hide avatar image when image fails to load', () => {
+      mockUseGetOrganizationUnit.mockReturnValue({
+        data: {...mockOrganizationUnit, logo_url: 'https://example.com/logo.png'},
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      const avatar = screen.getByRole('img');
+      fireEvent.error(avatar);
+
+      expect(avatar).toHaveStyle({display: 'none'});
+    });
+
+    it('should open logo modal when avatar is clicked', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({
+        data: {...mockOrganizationUnit, logo_url: 'https://example.com/logo.png'},
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      const avatar = screen.getByRole('img');
+      fireEvent.click(avatar);
+
+      await waitFor(() => {
+        const modal = screen.getByTestId('logo-update-modal');
+        expect(modal).toHaveStyle({display: 'block'});
+      });
+    });
+
+    it('should display edited logo_url in avatar when editedOU has logo_url', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({
+        data: {...mockOrganizationUnit, logo_url: 'https://example.com/original.png'},
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      // Open logo modal and update logo
+      const avatar = screen.getByRole('img');
+      fireEvent.click(avatar);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+      });
+
+      fireEvent.click(screen.getByText('Update Logo'));
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Logo Update Modal', () => {
+    it('should open logo modal when edit icon button is clicked', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      const editButtons = screen.getAllByRole('button');
+      const logoEditButton = editButtons.find(
+        (btn) => btn.getAttribute('aria-label') === 'organizationUnits:edit.page.logoUpdate.label',
+      );
+
+      if (logoEditButton) {
+        fireEvent.click(logoEditButton);
+
+        await waitFor(() => {
+          const modal = screen.getByTestId('logo-update-modal');
+          expect(modal).toHaveStyle({display: 'block'});
+        });
+      }
+    });
+
+    it('should close logo modal when close button is clicked', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      // Open the modal via logo edit icon button
+      const editButtons = screen.getAllByRole('button');
+      const logoEditButton = editButtons.find(
+        (btn) => btn.getAttribute('aria-label') === 'organizationUnits:edit.page.logoUpdate.label',
+      );
+
+      expect(logoEditButton).toBeInTheDocument();
+      fireEvent.click(logoEditButton!);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+      });
+
+      // Close the modal
+      fireEvent.click(screen.getByText('Close'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'none'});
+      });
+    });
+
+    it('should update logo and close modal when logo is updated', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      // Open the modal
+      const editButtons = screen.getAllByRole('button');
+      const logoEditButton = editButtons.find(
+        (btn) => btn.getAttribute('aria-label') === 'organizationUnits:edit.page.logoUpdate.label',
+      );
+
+      if (logoEditButton) {
+        fireEvent.click(logoEditButton);
+
+        await waitFor(() => {
+          expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+        });
+
+        // Click update logo
+        fireEvent.click(screen.getByText('Update Logo'));
+
+        // Modal should close
+        await waitFor(() => {
+          expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'none'});
+        });
+
+        // Should show unsaved changes
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      }
+    });
+  });
+
+  describe('Delete Error and Snackbar', () => {
+    it('should show error snackbar when delete fails', async () => {
+      // Mock delete to trigger onError
+      mockDeleteMutate.mockImplementation((_id: string, options: {onError?: (err: Error) => void}) => {
+        options.onError?.(new Error('Delete failed'));
+      });
+
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      });
+
+      // Open delete dialog
+      fireEvent.click(screen.getByText('Delete Organization Unit'));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
+        ).toBeInTheDocument();
+      });
+
+      // Find and click the delete confirm button in dialog
+      const deleteButtons = screen.getAllByText('Delete');
+      const confirmDeleteButton = deleteButtons.find((btn) => btn.closest('.MuiDialog-root'));
+      if (confirmDeleteButton) {
+        fireEvent.click(confirmDeleteButton);
+
+        // Snackbar should appear with error
+        await waitFor(() => {
+          expect(screen.getByRole('alert')).toBeInTheDocument();
+        });
+      }
+    });
+  });
+
+  describe('Edited OU Fallbacks', () => {
+    it(
+      'should display edited name when re-editing after a name change',
+      async () => {
+        renderWithProviders(<OrganizationUnitEditPage />);
+
+        await waitFor(() => {
+          expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+        });
+
+        // First edit: change name
+        const editButtons = screen.getAllByRole('button');
+        const nameEditButton = editButtons.find(
+          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
+        );
+
+        if (nameEditButton) {
+          fireEvent.click(nameEditButton);
+          const nameInput = screen.getByDisplayValue('Test Organization Unit');
+          fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+          fireEvent.blur(nameInput);
+
+          await waitFor(() => {
+            expect(screen.getByText('Updated Name')).toBeInTheDocument();
+          });
+
+          // Second edit: the input should show the edited name
+          const editButtons2 = screen.getAllByRole('button');
+          const nameEditButton2 = editButtons2.find(
+            (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
+          );
+
+          if (nameEditButton2) {
+            fireEvent.click(nameEditButton2);
+            expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
+          }
+        }
+      },
+      15_000,
+    );
+
+    it('should display edited description when re-editing after a description change', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('A test description')).toBeInTheDocument();
+      });
+
+      // First edit: change description
+      const editButtons = screen.getAllByRole('button');
+      const descEditButton = editButtons.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
+      );
+
+      if (descEditButton) {
+        fireEvent.click(descEditButton);
+        const descInput = screen.getByDisplayValue('A test description');
+        fireEvent.change(descInput, {target: {value: 'Updated Description'}});
+        fireEvent.blur(descInput);
+
+        await waitFor(() => {
+          expect(screen.getByText('Updated Description')).toBeInTheDocument();
+        });
+
+        // Second edit: Escape should restore the edited description
+        const editButtons2 = screen.getAllByRole('button');
+        const descEditButton2 = editButtons2.find(
+          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Description'),
+        );
+
+        if (descEditButton2) {
+          fireEvent.click(descEditButton2);
+          fireEvent.keyDown(screen.getByDisplayValue('Updated Description'), {key: 'Escape'});
+
+          await waitFor(() => {
+            expect(screen.getByText('Updated Description')).toBeInTheDocument();
+          });
+        }
+      }
+    });
+
+    it('should restore edited name on Escape key when editedOU has name', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+      });
+
+      // First edit: change name
+      const editButtons = screen.getAllByRole('button');
+      const nameEditButton = editButtons.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
+      );
+
+      if (nameEditButton) {
+        fireEvent.click(nameEditButton);
+        const nameInput = screen.getByDisplayValue('Test Organization Unit');
+        fireEvent.change(nameInput, {target: {value: 'Edited Name'}});
+        fireEvent.blur(nameInput);
+
+        await waitFor(() => {
+          expect(screen.getByText('Edited Name')).toBeInTheDocument();
+        });
+
+        // Re-edit and press Escape
+        const editButtons2 = screen.getAllByRole('button');
+        const nameEditButton2 = editButtons2.find(
+          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Edited Name'),
+        );
+
+        if (nameEditButton2) {
+          fireEvent.click(nameEditButton2);
+          const nameInput2 = screen.getByDisplayValue('Edited Name');
+          fireEvent.change(nameInput2, {target: {value: 'Something Else'}});
+          fireEvent.keyDown(nameInput2, {key: 'Escape'});
+
+          // Should restore to the edited name, not the original
+          await waitFor(() => {
+            expect(screen.getByText('Edited Name')).toBeInTheDocument();
+          });
+        }
+      }
+    });
+
+    it('should save name changes on Enter with trimmed value', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+      });
+
+      const editButtons = screen.getAllByRole('button');
+      const nameEditButton = editButtons.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
+      );
+
+      if (nameEditButton) {
+        fireEvent.click(nameEditButton);
+        const nameInput = screen.getByDisplayValue('Test Organization Unit');
+        fireEvent.change(nameInput, {target: {value: ''}});
+        fireEvent.keyDown(nameInput, {key: 'Enter'});
+
+        // Should not save empty name, should exit editing
+        await waitFor(() => {
+          expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+        });
+      }
+    });
+  });
+
+  describe('Save with edited fields', () => {
+    it('should include description and theme_id in save when edited', async () => {
+      mockMutateAsync.mockResolvedValue({});
+
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+      });
+
+      // Make a description change
+      const editButtons = screen.getAllByRole('button');
+      const descEditButton = editButtons.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
+      );
+
+      if (descEditButton) {
+        fireEvent.click(descEditButton);
+        const descInput = screen.getByDisplayValue('A test description');
+        fireEvent.change(descInput, {target: {value: 'New description'}});
+        fireEvent.blur(descInput);
+
+        await waitFor(() => {
+          expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+        });
+
+        // Click save
+        fireEvent.click(screen.getByText('Save'));
+
+        await waitFor(() => {
+          expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'ou-123',
+              data: expect.objectContaining({
+                description: 'New description',
+              }) as unknown,
+            }),
+          );
+        });
+      }
+    });
   });
 });

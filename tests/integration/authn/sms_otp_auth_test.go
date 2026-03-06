@@ -46,6 +46,7 @@ var smsOTPUserSchema = testutils.UserSchema{
 		},
 		"password": map[string]interface{}{
 			"type": "string",
+			"credential": true,
 		},
 		"email": map[string]interface{}{
 			"type": "string",
@@ -596,8 +597,12 @@ func (suite *SMSOTPAuthTestSuite) TestSMSOTPNoAssertionGeneration() {
 func (suite *SMSOTPAuthTestSuite) TestSMSOTPWithCredentialsMultiFactorAAL2() {
 	// First, authenticate with credentials (get assertion for first factor)
 	credentialsRequest := map[string]interface{}{
-		"username": "smsotp_user",
-		"password": "Test@1234",
+		"identifiers": map[string]interface{}{
+			"username": "smsotp_user",
+		},
+		"credentials": map[string]interface{}{
+			"password": "Test@1234",
+		},
 	}
 	credJSON, err := json.Marshal(credentialsRequest)
 	suite.Require().NoError(err)

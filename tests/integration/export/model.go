@@ -52,6 +52,7 @@ type Application struct {
 	TosURI                    string              `json:"tos_uri,omitempty"`
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
+	LoginConsent              *LoginConsentConfig `json:"login_consent,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
 }
 
@@ -83,14 +84,12 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
 // AssertionConfig represents the assertion configuration (for application-level).
 type AssertionConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
@@ -105,6 +104,12 @@ type AccessTokenConfig struct {
 type IDTokenConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	Enabled        bool  `json:"enabled"`
+	ValidityPeriod int64 `json:"validity_period,omitempty"`
 }
 
 // IDPProperty represents a property of an identity provider.

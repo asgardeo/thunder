@@ -5,7 +5,6 @@ ignorecase: true
 scope: text
 
 swap:
-  '\bconfig\b': configuration
   '\bconfigs\b': configurations
   '\bdev\b': development
   '\bprod\b': production

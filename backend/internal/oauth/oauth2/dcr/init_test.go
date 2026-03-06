@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 )
 
@@ -40,6 +41,11 @@ func TestInitTestSuite(t *testing.T) {
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	_ = config.InitializeThunderRuntime("test", &config.Config{})
+}
+
+func (suite *InitTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {

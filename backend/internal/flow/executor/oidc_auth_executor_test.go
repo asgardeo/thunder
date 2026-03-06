@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -31,7 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -85,7 +86,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 	suite.mockOIDCService.On("BuildAuthorizeURL", "idp-123").
 		Return("https://oidc.provider.com/authorize?client_id=abc&scope=openid", nil)
 
-	suite.mockIDPService.On("GetIdentityProvider", "idp-123").
+	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
 		Return(&idp.IDPDTO{ID: "idp-123", Name: "TestOIDCProvider"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -129,10 +130,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_Au
 		"iat":   1234567800,
 	}
 
-	existingUser := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -192,10 +193,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 		"aud":   "client-id",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-456",
-		OrganizationUnit: "ou-456",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-456",
+		OrganizationUnitID: "ou-456",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -438,9 +439,9 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyE
 		"sub": "existing-user-sub",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-789",
-		OrganizationUnit: "ou-789",
+	existingUser := &userprovider.User{
+		UserID:             "user-789",
+		OrganizationUnitID: "ou-789",
 	}
 
 	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
@@ -580,10 +581,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_WithAddition
 		"address": "123 Main St",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -669,10 +670,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 		"nonce":   "nonce_value",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -736,10 +737,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		"aud":   "client-id",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-789",
-		OrganizationUnit: "ou-789",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-789",
+		OrganizationUnitID: "ou-789",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -797,10 +798,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDT
 		"aud":  "client-id",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-789",
-		OrganizationUnit: "ou-789",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-789",
+		OrganizationUnitID: "ou-789",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -858,10 +859,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailIn
 		"aud":   "client-id",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-789",
-		OrganizationUnit: "ou-789",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-789",
+		OrganizationUnitID: "ou-789",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -985,10 +986,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUse
 		"name":  "Test User",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-789",
-		OrganizationUnit: "ou-789",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-789",
+		OrganizationUnitID: "ou-789",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -1048,10 +1049,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		"aud":   "client-id",
 	}
 
-	existingUser := &user.User{
-		ID:               "user-999",
-		OrganizationUnit: "ou-999",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-999",
+		OrganizationUnitID: "ou-999",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -1130,7 +1131,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
 		})
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 		Return(&userschema.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
@@ -1239,10 +1240,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 		"iat":   float64(1234567000),
 	}
 
-	existingUser := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
 	}
 
 	oauthConfig := &authnoauth.OAuthClientConfig{
@@ -1302,10 +1303,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegis
 		"iat": float64(1234567000),
 	}
 
-	existingUser := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
+	existingUser := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
 	}
 
 	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).

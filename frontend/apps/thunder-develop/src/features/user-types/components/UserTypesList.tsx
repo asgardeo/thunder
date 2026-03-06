@@ -18,16 +18,17 @@
 
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
+  Avatar,
   Box,
+  Chip,
   IconButton,
+  Tooltip,
   Typography,
   Snackbar,
   Alert,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  ListingTable,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -35,9 +36,9 @@ import {
   DialogActions,
   Button,
   DataGrid,
-  Chip,
+  useTheme,
 } from '@wso2/oxygen-ui';
-import {EllipsisVertical, Trash2, Eye} from '@wso2/oxygen-ui-icons-react';
+import {Eye, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetUserTypes from '../api/useGetUserTypes';
@@ -50,17 +51,18 @@ type GridRenderCellParams<R extends DataGrid.GridValidRowModel = DataGrid.GridVa
   DataGrid.GridRenderCellParams<R>;
 
 export default function UserTypesList() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('UserTypesList');
   const dataGridLocaleText = useDataGridLocaleText();
 
   const {
     data: userTypesData,
-    loading: isUserTypesRequestLoading,
+    isLoading: isUserTypesRequestLoading,
     error: userTypesRequestError,
-    refetch,
   } = useGetUserTypes();
-  const {deleteUserType, loading: isDeleting, error: deleteUserTypeError} = useDeleteUserType();
+  const deleteUserTypeMutation = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
     isLoading: organizationUnitsLoading,
@@ -82,7 +84,6 @@ export default function UserTypesList() {
   }, [organizationUnits]);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUserTypeId, setSelectedUserTypeId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -97,69 +98,73 @@ export default function UserTypesList() {
     setSnackbarOpen(false);
   };
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, userTypeId: string) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+  const handleDeleteClick = useCallback((userTypeId: string): void => {
     setSelectedUserTypeId(userTypeId);
+    setDeleteDialogOpen(true);
   }, []);
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleViewUserType = async () => {
-    if (selectedUserTypeId) {
-      await navigate(`/user-types/${selectedUserTypeId}`);
-    }
-    handleMenuClose();
-  };
-
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
-  };
+  const handleViewClick = useCallback(
+    (userTypeId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/user-types/${userTypeId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to user type', {error: _error, userTypeId});
+      });
+    },
+    [logger, navigate],
+  );
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setSelectedUserTypeId(null);
+    deleteUserTypeMutation.reset();
   };
 
   const handleDeleteConfirm = async () => {
     if (!selectedUserTypeId) return;
 
     try {
-      await deleteUserType(selectedUserTypeId);
+      await deleteUserTypeMutation.mutateAsync(selectedUserTypeId);
       setDeleteDialogOpen(false);
       setSelectedUserTypeId(null);
-      // Refetch user types list after successful deletion
-      await refetch();
     } catch {
-      // Error is already handled in the hook
-      setDeleteDialogOpen(false);
+      // Keep dialog open so inline error is visible and user can retry
     }
   };
-
-  const handleRowClick = useCallback(
-    async (userTypeId: string) => {
-      await navigate(`/user-types/${userTypeId}`);
-    },
-    [navigate],
-  );
 
   const columns: GridColDef<UserSchemaListItem>[] = useMemo(
     () => [
       {
         field: 'name',
         headerName: t('common:edit.general.name.label'),
-        flex: 1,
-        minWidth: 200,
-        valueGetter: (_value, row) => row.name ?? null,
+        flex: 1.5,
+        minWidth: 220,
+        renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
+          <ListingTable.CellIcon
+            sx={{width: '100%'}}
+            icon={
+              <Avatar
+                sx={{
+                  backgroundColor: theme.vars?.palette.grey[500],
+                  width: 30,
+                  height: 30,
+                  fontSize: '0.875rem',
+                  ...theme.applyStyles('dark', {
+                    backgroundColor: theme.vars?.palette.grey[900],
+                  }),
+                }}
+              >
+                <UserRoundCog size={14} />
+              </Avatar>
+            }
+            primary={params.row.name ?? '-'}
+          />
+        ),
       },
       {
         field: 'id',
         headerName: 'ID',
-        flex: 1,
-        minWidth: 250,
+        width: 350,
         valueGetter: (_value, row) => row.id ?? null,
       },
       {
@@ -210,96 +215,88 @@ export default function UserTypesList() {
       {
         field: 'actions',
         headerName: t('users:actions'),
-        width: 80,
+        width: 150,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
         filterable: false,
         hideable: false,
         renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
-          <IconButton
-            size="small"
-            aria-label="Open actions menu"
-            onClick={(e) => {
-              handleMenuOpen(e, params.row.id);
-            }}
-          >
-            <EllipsisVertical size={16} />
-          </IconButton>
+          <ListingTable.RowActions visibility="hover">
+            <Tooltip title={t('common:actions.view')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewClick(params.row.id);
+                }}
+              >
+                <Eye size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('common:actions.delete')}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(params.row.id);
+                }}
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            </Tooltip>
+          </ListingTable.RowActions>
         ),
       },
     ],
-    [organizationUnitMap, t, handleMenuOpen],
+    [organizationUnitMap, t, handleDeleteClick, handleViewClick, theme],
   );
 
   return (
     <>
-      <Box sx={{height: 600, width: '100%'}}>
-        <DataGrid.DataGrid
-          rows={userTypesData?.schemas ?? []}
-          columns={columns}
-          loading={isLoading}
-          getRowId={(row) => row.id}
-          onRowClick={(params) => {
-            const userTypeId = (params.row as UserSchemaListItem).id;
-            handleRowClick(userTypeId).catch(() => {
-              // Handle error
-            });
-          }}
-          initialState={{
-            pagination: {
-              paginationModel: {pageSize: 10},
-            },
-          }}
-          pageSizeOptions={[5, 10, 25, 50]}
-          disableRowSelectionOnClick
-          localeText={dataGridLocaleText}
-          sx={{
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-            },
-          }}
-        />
-      </Box>
-
-      {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem
-          onClick={() => {
-            handleViewUserType().catch(() => {
-              // Handle error
-            });
-          }}
-        >
-          <ListItemIcon>
-            <Eye size={16} />
-          </ListItemIcon>
-          <ListItemText>{t('common:actions.view')}</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleDeleteClick}>
-          <ListItemIcon>
-            <Trash2 size={16} color="red" />
-          </ListItemIcon>
-          <ListItemText sx={{color: 'error.main'}}>{t('common:actions.delete')}</ListItemText>
-        </MenuItem>
-      </Menu>
+      <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
+        <ListingTable.Container disablePaper>
+          <ListingTable.DataGrid
+            rows={userTypesData?.schemas ?? []}
+            columns={columns}
+            getRowId={(row) => (row as UserSchemaListItem).id}
+            onRowClick={(params) => {
+              handleViewClick((params.row as UserSchemaListItem).id);
+            }}
+            initialState={{
+              pagination: {
+                paginationModel: {pageSize: 10},
+              },
+            }}
+            pageSizeOptions={[5, 10, 25, 50]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            sx={{
+              height: 'auto',
+              '& .MuiDataGrid-row': {
+                cursor: 'pointer',
+              },
+            }}
+          />
+        </ListingTable.Container>
+      </ListingTable.Provider>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
         <DialogTitle>{t('userTypes:deleteUserType')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('userTypes:confirmDeleteUserType')}</DialogContentText>
-          {deleteUserTypeError && (
+          {deleteUserTypeMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserTypeError.message}
+                {deleteUserTypeMutation.error.message}
               </Typography>
-              {deleteUserTypeError.description && (
-                <Typography variant="caption">{deleteUserTypeError.description}</Typography>
-              )}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserTypeMutation.isPending}>
             {t('common:actions.cancel')}
           </Button>
           <Button
@@ -310,9 +307,9 @@ export default function UserTypesList() {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserTypeMutation.isPending}
           >
-            {isDeleting ? t('common:status.loading') : t('common:actions.delete')}
+            {deleteUserTypeMutation.isPending ? t('common:status.loading') : t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

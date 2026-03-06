@@ -16,7 +16,8 @@
           "name": "BasicAuthExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -38,7 +39,8 @@
           "mode": "send"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -60,7 +62,8 @@
           "mode": "verify"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -81,7 +84,8 @@
           "name": "OAuthExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -105,7 +109,8 @@
           "name": "OIDCAuthExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -129,7 +134,8 @@
           "name": "GithubOAuthExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -153,7 +159,8 @@
           "name": "GoogleOIDCAuthExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -178,7 +185,8 @@
           "mode": "challenge"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "relyingPartyId": "localhost",
@@ -204,7 +212,8 @@
           "mode": "verify"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -226,7 +235,8 @@
           "mode": "register_start"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "relyingPartyId": "localhost",
@@ -252,7 +262,8 @@
           "mode": "register_finish"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -273,7 +284,8 @@
           "name": "IdentifyingExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -315,7 +327,8 @@
           "name": "ProvisioningExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -336,7 +349,8 @@
           "name": "AttributeCollector"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -357,7 +371,8 @@
           "name": "AuthorizationExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -378,7 +393,8 @@
           "name": "OUExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -420,7 +436,8 @@
           "name": "UserTypeResolver"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -441,7 +458,8 @@
           "name": "AppleExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -465,7 +483,8 @@
           "name": "FacebookExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -489,7 +508,8 @@
           "name": "Office365Executor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -513,7 +533,8 @@
           "name": "MagicLinkExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -534,7 +555,8 @@
           "name": "ConfirmationCodeValidationExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -555,7 +577,8 @@
           "name": "SendEmailOTPExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -576,7 +599,8 @@
           "name": "VerifyEmailOTPExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   },
@@ -597,7 +621,8 @@
           "name": "IdentifyingExecutor"
         },
         "onSuccess": "",
-        "onFailure": ""
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   }

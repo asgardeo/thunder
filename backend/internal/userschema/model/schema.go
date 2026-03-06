@@ -21,6 +21,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -41,6 +42,8 @@ const (
 
 type property interface {
 	isRequired() bool
+	isCredential() bool
+	isDisplayable() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
 		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
@@ -49,6 +52,75 @@ type property interface {
 // Schema represents a user schema with a set of properties.
 type Schema struct {
 	properties map[string]property
+}
+
+// getPropertyByPath returns the property at the given dot-notation path
+// (e.g. "address.city") by walking through nested object types. For a simple
+// (non-dotted) name, it returns the top-level property directly.
+func (cs *Schema) getPropertyByPath(path string) (property, bool) {
+	segments := strings.Split(path, ".")
+	currentProps := cs.properties
+
+	for i, segment := range segments {
+		prop, exists := currentProps[segment]
+		if !exists {
+			return nil, false
+		}
+
+		if i == len(segments)-1 {
+			return prop, true
+		}
+
+		obj, ok := prop.(*object)
+		if !ok {
+			return nil, false
+		}
+		currentProps = obj.properties
+	}
+
+	return nil, false
+}
+
+// DisplayAttributeStatus represents the result of validating an attribute as a display attribute.
+type DisplayAttributeStatus int
+
+const (
+	// DisplayAttributeValid indicates the attribute is valid for use as a display attribute.
+	DisplayAttributeValid DisplayAttributeStatus = iota
+	// DisplayAttributeNotFound indicates the attribute does not exist in the schema.
+	DisplayAttributeNotFound
+	// DisplayAttributeNotDisplayable indicates the attribute type is not displayable.
+	DisplayAttributeNotDisplayable
+	// DisplayAttributeIsCredential indicates the attribute is marked as a credential.
+	DisplayAttributeIsCredential
+)
+
+// ValidateAsDisplayAttribute resolves the path once and checks existence, displayability,
+// and credential status in a single pass.
+func (cs *Schema) ValidateAsDisplayAttribute(name string) DisplayAttributeStatus {
+	prop, exists := cs.getPropertyByPath(name)
+	if !exists {
+		return DisplayAttributeNotFound
+	}
+	if !prop.isDisplayable() {
+		return DisplayAttributeNotDisplayable
+	}
+	if prop.isCredential() {
+		return DisplayAttributeIsCredential
+	}
+	return DisplayAttributeValid
+}
+
+// GetCredentialAttributes returns the names of top-level properties marked as credentials.
+func (cs *Schema) GetCredentialAttributes() []string {
+	var fields []string
+	for name, prop := range cs.properties {
+		if prop.isCredential() {
+			fields = append(fields, name)
+		}
+	}
+
+	return fields
 }
 
 // Validate validates the user attributes against the schema.
@@ -81,6 +153,14 @@ func (cs *Schema) Validate(attributes json.RawMessage, logger *log.Logger) (bool
 			return false, err
 		}
 		if !isValid {
+			return false, nil
+		}
+	}
+
+	// Reject any user attributes not declared in the schema.
+	for key := range userAttrs {
+		if _, declared := cs.properties[key]; !declared {
+			logger.Debug("Attribute not defined in schema", log.String("attribute", key))
 			return false, nil
 		}
 	}

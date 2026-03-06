@@ -7,13 +7,19 @@ name: "🔎 PR Check"
 on:
   pull_request:
     types: [opened, synchronize, labeled, unlabeled, ready_for_review]
+  merge_group:
 
 jobs:
   check-labels:
     name: "🏷️ Check PR Labels"
     runs-on: ubuntu-latest
     steps:
+      - name: Skip label check for merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "Skipping label check for merge queue."
+
       - name: Check for required PR labels
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |

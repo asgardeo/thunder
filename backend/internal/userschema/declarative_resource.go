@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -28,6 +29,8 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/userschema/model"
 
 	"gopkg.in/yaml.v3"
 )
@@ -37,47 +40,53 @@ const (
 	paramTypUserSchema     = "UserSchema"
 )
 
-// UserSchemaExporter implements declarative_resource.ResourceExporter for user schemas.
-type UserSchemaExporter struct {
+// userSchemaExporter implements declarative_resource.ResourceExporter for user schemas.
+type userSchemaExporter struct {
 	service UserSchemaServiceInterface
 }
 
 // newUserSchemaExporter creates a new user schema exporter.
-func newUserSchemaExporter(service UserSchemaServiceInterface) *UserSchemaExporter {
-	return &UserSchemaExporter{service: service}
+func newUserSchemaExporter(service UserSchemaServiceInterface) *userSchemaExporter {
+	return &userSchemaExporter{service: service}
 }
 
 // NewUserSchemaExporterForTest creates a new user schema exporter for testing purposes.
-func NewUserSchemaExporterForTest(service UserSchemaServiceInterface) *UserSchemaExporter {
+func NewUserSchemaExporterForTest(service UserSchemaServiceInterface) *userSchemaExporter {
 	return newUserSchemaExporter(service)
 }
 
 // GetResourceType returns the resource type for user schemas.
-func (e *UserSchemaExporter) GetResourceType() string {
+func (e *userSchemaExporter) GetResourceType() string {
 	return resourceTypeUserSchema
 }
 
 // GetParameterizerType returns the parameterizer type for user schemas.
-func (e *UserSchemaExporter) GetParameterizerType() string {
+func (e *userSchemaExporter) GetParameterizerType() string {
 	return paramTypUserSchema
 }
 
 // GetAllResourceIDs retrieves all user schema IDs.
-func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(serverconst.MaxPageSize, 0)
+// In composite mode, this excludes declarative (YAML-based) user schemas.
+func (e *userSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
+	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
 	ids := make([]string, 0, len(response.Schemas))
 	for _, schema := range response.Schemas {
-		ids = append(ids, schema.ID)
+		// Only include mutable (database-backed) user schemas
+		if !schema.IsReadOnly {
+			ids = append(ids, schema.ID)
+		}
 	}
 	return ids, nil
 }
 
 // GetResourceByID retrieves a user schema by its ID.
-func (e *UserSchemaExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	schema, err := e.service.GetUserSchema(id)
+func (e *userSchemaExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
+	schema, err := e.service.GetUserSchema(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -85,7 +94,7 @@ func (e *UserSchemaExporter) GetResourceByID(id string) (interface{}, string, *s
 }
 
 // ValidateResource validates a user schema resource.
-func (e *UserSchemaExporter) ValidateResource(
+func (e *userSchemaExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	schema, ok := resource.(*UserSchema)
@@ -109,15 +118,32 @@ func (e *UserSchemaExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for user schemas.
-func (e *UserSchemaExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *userSchemaExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{}
 }
 
 // loadDeclarativeResources loads declarative user schema resources from files.
+// Works in both declarative-only and composite modes:
+// - In declarative mode: userSchemaStore is a fileBasedStore
+// - In composite mode: userSchemaStore is a compositeUserSchemaStore (contains both file and DB stores)
 func loadDeclarativeResources(
 	userSchemaStore userSchemaStoreInterface, ouService oupkg.OrganizationUnitServiceInterface) error {
+	var fileStore userSchemaStoreInterface
+
+	// Determine store type and extract file store
+	switch store := userSchemaStore.(type) {
+	case *compositeUserSchemaStore:
+		// Composite mode: extract file store from composite
+		fileStore = store.fileStore
+	case *userSchemaFileBasedStore:
+		// Declarative-only mode: only file store available
+		fileStore = store
+	default:
+		return fmt.Errorf("invalid store type for loading declarative resources")
+	}
+
 	// Type assert to access Storer interface for resource loading
-	fileBasedStore, ok := userSchemaStore.(*userSchemaFileBasedStore)
+	fileBasedStore, ok := fileStore.(*userSchemaFileBasedStore)
 	if !ok {
 		return fmt.Errorf("failed to assert userSchemaStore to *userSchemaFileBasedStore")
 	}
@@ -163,6 +189,7 @@ func parseToUserSchemaDTO(data []byte) (*UserSchema, error) {
 		Name:                  schemaRequest.Name,
 		OrganizationUnitID:    schemaRequest.OrganizationUnitID,
 		AllowSelfRegistration: schemaRequest.AllowSelfRegistration,
+		SystemAttributes:      schemaRequest.SystemAttributes,
 		Schema:                []byte(schemaRequest.Schema),
 	}
 
@@ -194,18 +221,26 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 	}
 
 	// Validate organization unit exists
-	_, err := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
+	_, err := ouService.GetOrganizationUnit(
+		security.WithRuntimeContext(context.Background()), schemaDTO.OrganizationUnitID)
 	if err != nil {
 		return fmt.Errorf("organization unit '%s' not found for user schema '%s'",
 			schemaDTO.OrganizationUnitID, schemaDTO.Name)
 	}
 
-	// Validate schema is valid JSON
-	if len(schemaDTO.Schema) > 0 {
-		var testSchema map[string]interface{}
-		if err := json.Unmarshal(schemaDTO.Schema, &testSchema); err != nil {
-			return fmt.Errorf("invalid schema JSON for user schema '%s': %w", schemaDTO.Name, err)
-		}
+	// Validate schema definition is present and valid.
+	if len(schemaDTO.Schema) == 0 {
+		return fmt.Errorf("schema definition is required for user schema '%s'", schemaDTO.Name)
+	}
+
+	compiledSchema, compileErr := model.CompileUserSchema(schemaDTO.Schema)
+	if compileErr != nil {
+		return fmt.Errorf("invalid schema for user schema '%s': %w", schemaDTO.Name, compileErr)
+	}
+
+	if svcErr := validateSystemAttributes(compiledSchema, schemaDTO.SystemAttributes); svcErr != nil {
+		return fmt.Errorf("invalid system attributes for user schema '%s': %s",
+			schemaDTO.Name, svcErr.ErrorDescription)
 	}
 
 	return nil

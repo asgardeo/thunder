@@ -45,11 +45,11 @@ database:
 
 if ($DbType -eq "postgres") {
     $dbConfig = @"
-  identity:
+  config:
     type: postgres
     hostname: localhost
     port: 5432
-    name: identitydb
+    name: configdb
     username: asgthunder
     password: asgthunder
     sslmode: disable
@@ -80,7 +80,7 @@ if ($DbType -eq "postgres") {
 "@
 } else {
     $dbConfig = @"
-  identity:
+  config:
     type: sqlite
     hostname: ""
     port: 0
@@ -88,7 +88,7 @@ if ($DbType -eq "postgres") {
     username: ""
     password: ""
     sslmode: ""
-    path: "repository/database/thunderdb.db"
+    path: "repository/database/configdb.db"
     options: "cache=shared"
 
   runtime:

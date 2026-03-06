@@ -37,6 +37,7 @@ vi.mock('@thunder/shared-design', () => ({
 
 // Mock OxygenUI components - capture props passed to theme provider
 vi.mock('@wso2/oxygen-ui', () => ({
+  AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
   OxygenUIThemeProvider: ({
     children,
     ...rest
@@ -108,8 +109,8 @@ describe('AppWithTheme', () => {
 
     render(<AppWithTheme />);
     expect(capturedThemeProviderProps).toBeDefined();
-    expect(capturedThemeProviderProps?.theme).toBeUndefined();
-    expect(capturedThemeProviderProps?.radialBackground).toBe(true);
+    // transformedTheme is null so AcrylicOrangeTheme is used as the fallback
+    expect(capturedThemeProviderProps?.theme).toEqual({palette: {primary: {main: '#ff5700'}}});
   });
 
   it('does not pass theme to OxygenUIThemeProvider when theme is undefined', () => {
@@ -122,7 +123,8 @@ describe('AppWithTheme', () => {
 
     render(<AppWithTheme />);
     expect(capturedThemeProviderProps).toBeDefined();
-    expect(capturedThemeProviderProps?.theme).toBeUndefined();
+    // transformedTheme is undefined so AcrylicOrangeTheme is used as the fallback
+    expect(capturedThemeProviderProps?.theme).toEqual({palette: {primary: {main: '#ff5700'}}});
   });
 
   it('passes theme to OxygenUIThemeProvider when theme is available', () => {

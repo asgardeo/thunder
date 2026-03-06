@@ -190,7 +190,10 @@ func (h *resourceHandler) HandleResourcePostRequest(w http.ResponseWriter, r *ht
 		Name:        sanitized.Name,
 		Handle:      sanitized.Handle,
 		Description: sanitized.Description,
-		Parent:      sanitized.Parent,
+		Parent:      nil,
+	}
+	if sanitized.Parent != nil {
+		serviceReq.Parent = sanitized.Parent
 	}
 
 	result, svcErr := h.resourceService.CreateResource(ctx, rsID, serviceReq)
@@ -609,6 +612,7 @@ func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
 		Identifier:         rs.Identifier,
 		OrganizationUnitID: rs.OrganizationUnitID,
 		Delimiter:          rs.Delimiter,
+		IsReadOnly:         rs.IsReadOnly,
 	}
 }
 

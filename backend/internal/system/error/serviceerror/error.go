@@ -34,6 +34,8 @@ const (
 )
 
 // ServiceError defines a generic error structure that can be used across the service layer.
+//
+// Deprecated: Use I18nServiceError instead for new services or when migrating existing services to i18n.
 type ServiceError struct {
 	Code             string           `json:"code"`
 	Type             ServiceErrorType `json:"type"`
@@ -65,14 +67,42 @@ type I18nServiceError struct {
 	ErrorDescription core.I18nMessage `json:"error_description,omitempty"`
 }
 
+// Authorization errors
+var (
+	// ErrorUnauthorized is the error returned when the caller is not authorized to perform the operation.
+	ErrorUnauthorized = ServiceError{
+		Type:             ClientErrorType,
+		Code:             "SSE-4030",
+		Error:            "Unauthorized",
+		ErrorDescription: "The caller is not authorized to perform this operation",
+	}
+)
+
 // Server errors
 var (
 	// InternalServerError is the error returned for unexpected server errors.
+	//
+	// Deprecated: Use InternalServerErrorWithI18n instead for new services or when migrating
+	// existing services to i18n.
 	InternalServerError = ServiceError{
 		Type:             ServerErrorType,
 		Code:             "SSE-5000",
 		Error:            "Internal server error",
 		ErrorDescription: "An unexpected error occurred while processing the request",
+	}
+
+	// InternalServerErrorWithI18n is the i18n version of InternalServerError.
+	InternalServerErrorWithI18n = I18nServiceError{
+		Type: ServerErrorType,
+		Code: "SSE-5000",
+		Error: core.I18nMessage{
+			Key:          "error.internal_server_error",
+			DefaultValue: "Internal server error",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.internal_server_error_description",
+			DefaultValue: "An unexpected error occurred while processing the request",
+		},
 	}
 
 	// EncodingError is the error returned when encoding the response.

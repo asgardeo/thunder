@@ -244,3 +244,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: mgt
       filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/asgardeo/thunder/internal/consent:
+    config:
+      all: true
+      dir: internal/consent
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: consent
+      filename: "{{.InterfaceName}}_mock_test.go"

@@ -20,6 +20,7 @@ package dcr
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -29,7 +30,9 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/security"
 )
 
 // DCRHandlerTestSuite is the test suite for DCR handler
@@ -45,7 +48,14 @@ func TestDCRHandlerTestSuite(t *testing.T) {
 
 func (s *DCRHandlerTestSuite) SetupTest() {
 	s.mockService = NewDCRServiceInterfaceMock(s.T())
+	_ = config.InitializeThunderRuntime("test", &config.Config{
+		OAuth: config.OAuthConfig{DCR: config.DCRConfig{Insecure: true}},
+	})
 	s.handler = newDCRHandler(s.mockService)
+}
+
+func (s *DCRHandlerTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 // TestHandleDCRRegistration_InvalidRequestFormat tests handling of invalid JSON in request body
@@ -281,4 +291,85 @@ func TestWriteServiceErrorResponse_DirectCall(t *testing.T) {
 			assert.Equal(t, tc.serviceError.Code, errorResponse["error"])
 		})
 	}
+}
+
+// TestHandleDCRRegistration_ClosedDCR_NoToken tests that a missing token is rejected when insecure=false.
+// Uses the default config where Insecure defaults to false (secure by default).
+func TestHandleDCRRegistration_ClosedDCR_NoToken(t *testing.T) {
+	_ = config.InitializeThunderRuntime("test", &config.Config{})
+	defer config.ResetThunderRuntime()
+
+	mockService := NewDCRServiceInterfaceMock(t)
+	handler := newDCRHandler(mockService)
+
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr/register", bytes.NewReader([]byte(`{}`)))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	handler.HandleDCRRegistration(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	var errResp map[string]interface{}
+	assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &errResp))
+	assert.Equal(t, "unauthorized_client", errResp["error"])
+	mockService.AssertNotCalled(t, "RegisterClient")
+}
+
+// TestHandleDCRRegistration_ClosedDCR_InsufficientPermissions tests that a token without 'system'
+// permission is rejected when insecure=false.
+// Uses the default config where Insecure defaults to false (secure by default).
+func TestHandleDCRRegistration_ClosedDCR_InsufficientPermissions(t *testing.T) {
+	_ = config.InitializeThunderRuntime("test", &config.Config{})
+	defer config.ResetThunderRuntime()
+
+	mockService := NewDCRServiceInterfaceMock(t)
+	handler := newDCRHandler(mockService)
+
+	secCtx := security.NewSecurityContextForTest("user1", "ou1", "tok", []string{"openid", "profile"}, nil)
+	ctx := security.WithSecurityContextTest(context.Background(), secCtx)
+
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr/register", bytes.NewReader([]byte(`{}`)))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.HandleDCRRegistration(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	var errResp map[string]interface{}
+	assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &errResp))
+	assert.Equal(t, "unauthorized_client", errResp["error"])
+	mockService.AssertNotCalled(t, "RegisterClient")
+}
+
+// TestHandleDCRRegistration_ClosedDCR_WithSystemPermission tests that a token with the 'system'
+// permission is accepted when insecure=false.
+// Uses the default config where Insecure defaults to false (secure by default).
+func TestHandleDCRRegistration_ClosedDCR_WithSystemPermission(t *testing.T) {
+	_ = config.InitializeThunderRuntime("test", &config.Config{})
+	defer config.ResetThunderRuntime()
+
+	mockService := NewDCRServiceInterfaceMock(t)
+	handler := newDCRHandler(mockService)
+
+	secCtx := security.NewSecurityContextForTest("admin", "ou1", "tok", []string{"system"}, nil)
+	ctx := security.WithSecurityContextTest(context.Background(), secCtx)
+
+	request := &DCRRegistrationRequest{
+		RedirectURIs: []string{"https://client.example.com/callback"},
+		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+	}
+	response := &DCRRegistrationResponse{ClientID: "new-client"}
+	mockService.On("RegisterClient", request).Return(response, (*serviceerror.ServiceError)(nil))
+
+	requestJSON, _ := json.Marshal(request)
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr/register", bytes.NewReader(requestJSON))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.HandleDCRRegistration(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	mockService.AssertExpectations(t)
 }

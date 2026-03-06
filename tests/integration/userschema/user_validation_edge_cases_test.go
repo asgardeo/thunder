@@ -124,7 +124,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithPartialAttributes(
 
 // TestCreateUserWithExtraAttributes tests user creation with extra attributes not in schema
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithExtraAttributes() {
-	// Create a user with extra attributes not defined in schema (should succeed)
+	// Create a user with extra attributes not defined in schema (should fail - strict validation)
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
@@ -139,8 +139,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithExtraAttributes() 
 		}`),
 	}
 
-	userID := ts.createUserAndExpectSuccess(createUserReq)
-	ts.createdUsers = append(ts.createdUsers, userID)
+	ts.createUserAndExpectError(createUserReq, "USR-1019")
 }
 
 // TestCreateUserWithNumberValidation tests user creation with number validation

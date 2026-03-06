@@ -1,270 +1,291 @@
 [
-    {
-        "id": "start",
-        "type": "START",
-        "onSuccess": "user_type_resolver"
+  {
+    "id": "start",
+    "type": "START",
+    "onSuccess": "user_type_resolver"
+  },
+  {
+    "id": "user_type_resolver",
+    "type": "TASK_EXECUTION",
+    "executor": {
+      "name": "UserTypeResolver"
     },
-    {
-        "id": "user_type_resolver",
-        "type": "TASK_EXECUTION",
-        "meta": {
-            "components": [
-                {
-                    "id": "usertype_heading",
-                    "label": "{{ t(signup:heading) }}",
-                    "type": "TEXT",
-                    "variant": "HEADING_2"
-                },
-                {
-                    "components": [
-                        {
-                            "id": "usertype_input",
-                            "label": "{{ t(elements:fields.usertype.label) }}",
-                            "placeholder": "{{ t(elements:fields.usertype.placeholder) }}",
-                            "ref": "userType",
-                            "required": true,
-                            "type": "SELECT"
-                        },
-                        {
-                            "eventType": "SUBMIT",
-                            "id": "usertype_submit",
-                            "label": "{{ t(elements:buttons.submit.text) }}",
-                            "type": "ACTION",
-                            "variant": "PRIMARY"
-                        }
-                    ],
-                    "id": "usertype_block",
-                    "type": "BLOCK"
-                }
-            ]
+    "onSuccess": "prompt_credentials",
+    "onIncomplete": "prompt_user_type"
+  },
+  {
+    "id": "prompt_user_type",
+    "type": "PROMPT",
+    "meta": {
+      "components": [
+        {
+          "id": "usertype_heading",
+          "label": "{{ t(signup:heading) }}",
+          "type": "TEXT",
+          "variant": "HEADING_2"
         },
-        "executor": {
-            "name": "UserTypeResolver"
-        },
-        "onSuccess": "prompt_credentials"
-    },
-    {
-        "id": "prompt_credentials",
-        "type": "PROMPT",
-        "meta": {
-            "components": [
-                {
-                    "id": "heading_credentials",
-                    "label": "Sign Up",
-                    "type": "TEXT",
-                    "variant": "HEADING_2"
-                },
-                {
-                    "components": [
-                        {
-                            "id": "input_username",
-                            "label": "Username",
-                            "placeholder": "Enter your username",
-                            "ref": "username",
-                            "required": true,
-                            "type": "TEXT_INPUT"
-                        },
-                        {
-                            "id": "input_password",
-                            "label": "Password",
-                            "placeholder": "Enter your password",
-                            "ref": "password",
-                            "required": true,
-                            "type": "PASSWORD_INPUT"
-                        },
-                        {
-                            "eventType": "SUBMIT",
-                            "id": "action_credentials",
-                            "label": "Continue",
-                            "type": "ACTION",
-                            "variant": "PRIMARY"
-                        }
-                    ],
-                    "id": "block_credentials",
-                    "type": "BLOCK"
-                }
-            ]
-        },
-        "prompts": [
+        {
+          "components": [
             {
-                "inputs": [
-                    {
-                        "ref": "input_username",
-                        "type": "TEXT_INPUT",
-                        "identifier": "username",
-                        "required": true
-                    },
-                    {
-                        "ref": "input_password",
-                        "type": "PASSWORD_INPUT",
-                        "identifier": "password",
-                        "required": true
-                    }
-                ],
-                "action": {
-                    "ref": "action_credentials",
-                    "nextNode": "basic_auth"
-                }
-            }
-        ]
-    },
-    {
-        "id": "basic_auth",
-        "type": "TASK_EXECUTION",
-        "executor": {
-            "name": "BasicAuthExecutor"
-        },
-        "onSuccess": "prompt_user_info"
-    },
-    {
-        "id": "prompt_user_info",
-        "type": "PROMPT",
-        "meta": {
-            "components": [
-                {
-                    "id": "heading_user_info",
-                    "label": "Sign Up",
-                    "type": "TEXT",
-                    "variant": "HEADING_2"
-                },
-                {
-                    "components": [
-                        {
-                            "id": "input_firstName",
-                            "label": "First Name",
-                            "placeholder": "Enter your first name",
-                            "ref": "firstName",
-                            "required": true,
-                            "type": "TEXT_INPUT"
-                        },
-                        {
-                            "id": "input_lastName",
-                            "label": "Last Name",
-                            "placeholder": "Enter your last name",
-                            "ref": "lastName",
-                            "required": true,
-                            "type": "TEXT_INPUT"
-                        },
-                        {
-                            "id": "input_email",
-                            "label": "Email Address",
-                            "placeholder": "Enter your email address",
-                            "ref": "email",
-                            "required": true,
-                            "type": "EMAIL_INPUT"
-                        },
-                        {
-                            "id": "input_mobile",
-                            "label": "Mobile Number",
-                            "placeholder": "Enter your mobile number (e.g., +94771234567)",
-                            "ref": "mobileNumber",
-                            "required": true,
-                            "type": "TEXT_INPUT"
-                        },
-                        {
-                            "eventType": "SUBMIT",
-                            "id": "action_user_info",
-                            "label": "Sign Up",
-                            "type": "ACTION",
-                            "variant": "PRIMARY"
-                        }
-                    ],
-                    "id": "block_user_info",
-                    "type": "BLOCK"
-                }
-            ]
-        },
-        "prompts": [
+              "id": "usertype_input",
+              "label": "{{ t(elements:fields.usertype.label) }}",
+              "placeholder": "{{ t(elements:fields.usertype.placeholder) }}",
+              "ref": "userType",
+              "required": true,
+              "type": "SELECT"
+            },
             {
-                "inputs": [
-                    {
-                        "ref": "input_firstName",
-                        "type": "TEXT_INPUT",
-                        "identifier": "firstName",
-                        "required": true
-                    },
-                    {
-                        "ref": "input_lastName",
-                        "type": "TEXT_INPUT",
-                        "identifier": "lastName",
-                        "required": true
-                    },
-                    {
-                        "ref": "input_email",
-                        "type": "EMAIL_INPUT",
-                        "identifier": "email",
-                        "required": true
-                    },
-                    {
-                        "ref": "input_mobile",
-                        "type": "TEXT_INPUT",
-                        "identifier": "mobileNumber",
-                        "required": true
-                    }
-                ],
-                "action": {
-                    "ref": "action_user_info",
-                    "nextNode": "provisioning"
-                }
+              "eventType": "SUBMIT",
+              "id": "usertype_submit",
+              "label": "{{ t(elements:buttons.submit.text) }}",
+              "type": "ACTION",
+              "variant": "PRIMARY"
             }
-        ]
+          ],
+          "id": "usertype_block",
+          "type": "BLOCK"
+        }
+      ]
     },
-    {
-        "id": "provisioning",
-        "type": "TASK_EXECUTION",
-        "executor": {
-            "name": "ProvisioningExecutor",
-            "inputs": [
-                {
-                    "ref": "input_username",
-                    "type": "TEXT_INPUT",
-                    "identifier": "username",
-                    "required": true
-                },
-                {
-                    "ref": "input_password",
-                    "type": "PASSWORD_INPUT",
-                    "identifier": "password",
-                    "required": true
-                },
-                {
-                    "ref": "input_firstName",
-                    "type": "TEXT_INPUT",
-                    "identifier": "firstName",
-                    "required": true
-                },
-                {
-                    "ref": "input_lastName",
-                    "type": "TEXT_INPUT",
-                    "identifier": "lastName",
-                    "required": true
-                },
-                {
-                    "ref": "input_email",
-                    "type": "EMAIL_INPUT",
-                    "identifier": "email",
-                    "required": true
-                },
-                {
-                    "ref": "input_mobile",
-                    "type": "TEXT_INPUT",
-                    "identifier": "mobileNumber",
-                    "required": true
-                }
-            ]
+    "prompts": [
+      {
+        "inputs": [
+          {
+            "ref": "usertype_input",
+            "type": "SELECT",
+            "identifier": "userType",
+            "required": true
+          }
+        ],
+        "action": {
+          "ref": "usertype_submit",
+          "nextNode": "user_type_resolver"
+        }
+      }
+    ]
+  },
+  {
+    "id": "prompt_credentials",
+    "type": "PROMPT",
+    "meta": {
+      "components": [
+        {
+          "id": "heading_credentials",
+          "label": "Sign Up",
+          "type": "TEXT",
+          "variant": "HEADING_2"
         },
-        "onSuccess": "auth_assert"
+        {
+          "components": [
+            {
+              "id": "input_username",
+              "label": "Username",
+              "placeholder": "Enter your username",
+              "ref": "username",
+              "required": true,
+              "type": "TEXT_INPUT"
+            },
+            {
+              "id": "input_password",
+              "label": "Password",
+              "placeholder": "Enter your password",
+              "ref": "password",
+              "required": true,
+              "type": "PASSWORD_INPUT"
+            },
+            {
+              "eventType": "SUBMIT",
+              "id": "action_credentials",
+              "label": "Continue",
+              "type": "ACTION",
+              "variant": "PRIMARY"
+            }
+          ],
+          "id": "block_credentials",
+          "type": "BLOCK"
+        }
+      ]
     },
-    {
-        "id": "auth_assert",
-        "type": "TASK_EXECUTION",
-        "executor": {
-            "name": "AuthAssertExecutor"
+    "prompts": [
+      {
+        "inputs": [
+          {
+            "ref": "input_username",
+            "type": "TEXT_INPUT",
+            "identifier": "username",
+            "required": true
+          },
+          {
+            "ref": "input_password",
+            "type": "PASSWORD_INPUT",
+            "identifier": "password",
+            "required": true
+          }
+        ],
+        "action": {
+          "ref": "action_credentials",
+          "nextNode": "basic_auth"
+        }
+      }
+    ]
+  },
+  {
+    "id": "basic_auth",
+    "type": "TASK_EXECUTION",
+    "executor": {
+      "name": "BasicAuthExecutor"
+    },
+    "onSuccess": "prompt_user_info"
+  },
+  {
+    "id": "prompt_user_info",
+    "type": "PROMPT",
+    "meta": {
+      "components": [
+        {
+          "id": "heading_user_info",
+          "label": "Sign Up",
+          "type": "TEXT",
+          "variant": "HEADING_2"
         },
-        "onSuccess": "end"
+        {
+          "components": [
+            {
+              "id": "input_firstName",
+              "label": "First Name",
+              "placeholder": "Enter your first name",
+              "ref": "firstName",
+              "required": true,
+              "type": "TEXT_INPUT"
+            },
+            {
+              "id": "input_lastName",
+              "label": "Last Name",
+              "placeholder": "Enter your last name",
+              "ref": "lastName",
+              "required": true,
+              "type": "TEXT_INPUT"
+            },
+            {
+              "id": "input_email",
+              "label": "Email Address",
+              "placeholder": "Enter your email address",
+              "ref": "email",
+              "required": true,
+              "type": "EMAIL_INPUT"
+            },
+            {
+              "id": "input_mobile",
+              "label": "Mobile Number",
+              "placeholder": "Enter your mobile number (e.g., +94771234567)",
+              "ref": "mobileNumber",
+              "required": true,
+              "type": "TEXT_INPUT"
+            },
+            {
+              "eventType": "SUBMIT",
+              "id": "action_user_info",
+              "label": "Sign Up",
+              "type": "ACTION",
+              "variant": "PRIMARY"
+            }
+          ],
+          "id": "block_user_info",
+          "type": "BLOCK"
+        }
+      ]
     },
-    {
-        "id": "end",
-        "type": "END"
-    }
+    "prompts": [
+      {
+        "inputs": [
+          {
+            "ref": "input_firstName",
+            "type": "TEXT_INPUT",
+            "identifier": "firstName",
+            "required": true
+          },
+          {
+            "ref": "input_lastName",
+            "type": "TEXT_INPUT",
+            "identifier": "lastName",
+            "required": true
+          },
+          {
+            "ref": "input_email",
+            "type": "EMAIL_INPUT",
+            "identifier": "email",
+            "required": true
+          },
+          {
+            "ref": "input_mobile",
+            "type": "TEXT_INPUT",
+            "identifier": "mobileNumber",
+            "required": true
+          }
+        ],
+        "action": {
+          "ref": "action_user_info",
+          "nextNode": "provisioning"
+        }
+      }
+    ]
+  },
+  {
+    "id": "provisioning",
+    "type": "TASK_EXECUTION",
+    "executor": {
+      "name": "ProvisioningExecutor",
+      "inputs": [
+        {
+          "ref": "input_username",
+          "type": "TEXT_INPUT",
+          "identifier": "username",
+          "required": true
+        },
+        {
+          "ref": "input_password",
+          "type": "PASSWORD_INPUT",
+          "identifier": "password",
+          "required": true
+        },
+        {
+          "ref": "input_firstName",
+          "type": "TEXT_INPUT",
+          "identifier": "firstName",
+          "required": true
+        },
+        {
+          "ref": "input_lastName",
+          "type": "TEXT_INPUT",
+          "identifier": "lastName",
+          "required": true
+        },
+        {
+          "ref": "input_email",
+          "type": "EMAIL_INPUT",
+          "identifier": "email",
+          "required": true
+        },
+        {
+          "ref": "input_mobile",
+          "type": "TEXT_INPUT",
+          "identifier": "mobileNumber",
+          "required": true
+        }
+      ]
+    },
+    "onSuccess": "auth_assert"
+  },
+  {
+    "id": "auth_assert",
+    "type": "TASK_EXECUTION",
+    "executor": {
+      "name": "AuthAssertExecutor"
+    },
+    "onSuccess": "end"
+  },
+  {
+    "id": "end",
+    "type": "END"
+  }
 ]

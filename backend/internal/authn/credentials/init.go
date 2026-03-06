@@ -18,9 +18,9 @@
 
 package credentials
 
-import "github.com/asgardeo/thunder/internal/user"
+import "github.com/asgardeo/thunder/internal/authnprovider"
 
-// Initialize initializes the credentials authentication service.
-func Initialize(userSvc user.UserServiceInterface) CredentialsAuthnServiceInterface {
-	return newCredentialsAuthnService(userSvc)
+// Initialize initializes the credentials authenticator service.
+func Initialize(authnProvider authnprovider.AuthnProviderInterface) CredentialsAuthnServiceInterface {
+	return newCredentialsAuthnService(authnProvider)
 }

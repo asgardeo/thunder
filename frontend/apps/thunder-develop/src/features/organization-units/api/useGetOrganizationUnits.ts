@@ -22,6 +22,7 @@ import {useAsgardeo} from '@asgardeo/react';
 import type {OrganizationUnitListParams} from '../models/requests';
 import type {OrganizationUnitListResponse} from '../models/responses';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
+import fetchOrganizationUnits from './fetchOrganizationUnits';
 
 /**
  * Custom React hook to fetch a paginated list of organization units from the Thunder server.
@@ -55,6 +56,7 @@ import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys
  */
 export default function useGetOrganizationUnits(
   params?: OrganizationUnitListParams,
+  enabled = true,
 ): UseQueryResult<OrganizationUnitListResponse> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
@@ -62,24 +64,8 @@ export default function useGetOrganizationUnits(
 
   return useQuery<OrganizationUnitListResponse>({
     queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit, offset}],
-    queryFn: async (): Promise<OrganizationUnitListResponse> => {
-      const serverUrl: string = getServerUrl();
-      const queryParams: URLSearchParams = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-      });
-
-      const response: {
-        data: OrganizationUnitListResponse;
-      } = await http.request({
-        url: `${serverUrl}/organization-units?${queryParams.toString()}`,
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      } as unknown as Parameters<typeof http.request>[0]);
-
-      return response.data;
-    },
+    queryFn: async (): Promise<OrganizationUnitListResponse> =>
+      fetchOrganizationUnits(http, getServerUrl(), {limit, offset}),
+    enabled,
   });
 }

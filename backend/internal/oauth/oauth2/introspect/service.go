@@ -113,8 +113,19 @@ func (s *tokenIntrospectionService) prepareValidResponse(payload map[string]inte
 	if sub, ok := payload[constants.ClaimSub].(string); ok {
 		response.Sub = sub
 	}
-	if aud, ok := payload[constants.ClaimAud].(string); ok {
+	switch aud := payload[constants.ClaimAud].(type) {
+	case string:
 		response.Aud = aud
+	case []interface{}:
+		audSlice := make([]string, 0, len(aud))
+		for _, v := range aud {
+			if s, ok := v.(string); ok {
+				audSlice = append(audSlice, s)
+			}
+		}
+		if len(audSlice) > 0 {
+			response.Aud = audSlice
+		}
 	}
 	if iss, ok := payload[constants.ClaimIss].(string); ok {
 		response.Iss = iss

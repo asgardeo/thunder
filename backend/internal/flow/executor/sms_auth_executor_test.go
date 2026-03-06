@@ -29,19 +29,19 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
-	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type SMSAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserService   *usermock.UserServiceInterfaceMock
 	mockOTPService    *notificationmock.OTPServiceInterfaceMock
 	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
 	mockObservability *observabilitymock.ObservabilityServiceInterfaceMock
+	mockUserProvider  *userprovidermock.UserProviderInterfaceMock
 	executor          *smsOTPAuthExecutor
 }
 
@@ -50,10 +50,10 @@ func TestSMSAuthExecutorSuite(t *testing.T) {
 }
 
 func (suite *SMSAuthExecutorTestSuite) SetupTest() {
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockOTPService = notificationmock.NewOTPServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 
 	// Default behavior for observability: disabled
 	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -67,7 +67,7 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 		},
 	}
 	prerequisites := []common.Input{
-		mobileNumberInput,
+		MobileNumberInput,
 	}
 
 	// Mock identifying executor
@@ -97,8 +97,8 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites).Return(mockExec)
 
-	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory, suite.mockUserService,
-		suite.mockOTPService, suite.mockObservability)
+	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory,
+		suite.mockOTPService, suite.mockObservability, suite.mockUserProvider)
 	// Inject the mock base executor
 	suite.executor.ExecutorInterface = mockExec
 }
@@ -134,12 +134,6 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlo
 	assert.Equal(suite.T(), "PHONE_INPUT", execResp.Inputs[0].Type)
 	assert.Equal(suite.T(), "mobile_number_input", execResp.Inputs[0].Ref)
 	assert.True(suite.T(), execResp.Inputs[0].Required)
-
-	// Should include meta for UI rendering
-	assert.NotNil(suite.T(), execResp.Meta)
-	meta, ok := execResp.Meta.(core.MetaStructure)
-	assert.True(suite.T(), ok, "Meta should be of type core.MetaStructure")
-	assert.NotEmpty(suite.T(), meta.Components, "Meta should contain components")
 }
 
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_PrerequisitesMet() {
@@ -194,49 +188,6 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_AuthenticationF
 	assert.False(suite.T(), result, "Should return false when prerequisites not met")
 	assert.NotEqual(suite.T(), common.ExecUserInputRequired, execResp.Status,
 		"Authentication flows should not prompt for mobile number directly")
-}
-
-func (suite *SMSAuthExecutorTestSuite) TestGetMobileInputMeta() {
-	meta := suite.executor.getMobileInputMeta()
-
-	// Should return MetaStructure
-	metaStruct, ok := meta.(core.MetaStructure)
-	assert.True(suite.T(), ok, "getMobileInputMeta should return core.MetaStructure")
-	assert.NotEmpty(suite.T(), metaStruct.Components, "Meta should contain components")
-
-	// Verify components structure
-	var hasHeading, hasBlock bool
-	for _, comp := range metaStruct.Components {
-		if comp.Type == "TEXT" && comp.Variant == "HEADING_2" {
-			hasHeading = true
-			assert.Equal(suite.T(), "{{ t(signup:heading) }}", comp.Label)
-		}
-		if comp.Type == "BLOCK" {
-			hasBlock = true
-			// Block should contain input and action
-			assert.GreaterOrEqual(suite.T(), len(comp.Components), 1)
-
-			// Find the input and action within block
-			var hasInput, hasAction bool
-			for _, blockComp := range comp.Components {
-				if blockComp.Type == "PHONE_INPUT" {
-					hasInput = true
-					assert.Equal(suite.T(), userAttributeMobileNumber, blockComp.Ref)
-					assert.Equal(suite.T(), "{{ t(elements:fields.mobile.label) }}", blockComp.Label)
-				}
-				if blockComp.Type == "ACTION" {
-					hasAction = true
-					assert.Equal(suite.T(), "{{ t(elements:buttons.submit.text) }}", blockComp.Label)
-					assert.Equal(suite.T(), "SUBMIT", blockComp.EventType)
-				}
-			}
-			assert.True(suite.T(), hasInput, "Block should contain PHONE_INPUT component")
-			assert.True(suite.T(), hasAction, "Block should contain ACTION component")
-		}
-	}
-
-	assert.True(suite.T(), hasHeading, "Meta should contain heading")
-	assert.True(suite.T(), hasBlock, "Meta should contain block with inputs")
 }
 
 // TestGetAuthenticatedUser_MFA_AddsMobileNumberToAttributes verifies that when user is already authenticated
@@ -299,14 +250,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -317,7 +268,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 	// Verify mobile number was added to attributes even though it wasn't in stored attributes
 	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
 	assert.Equal(suite.T(), "test@example.com", result.Attributes["email"]) // Existing attributes preserved
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 // TestGetAuthenticatedUser_FetchFromStore_PreservesExistingMobileNumber verifies that when fetching user
@@ -345,14 +296,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -361,7 +312,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 	assert.True(suite.T(), result.IsAuthenticated)
 	// Verify stored mobile number is preserved (not overwritten by RuntimeData)
 	assert.Equal(suite.T(), "+9876543210", result.Attributes[userAttributeMobileNumber])
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 // TestGetUserMobileNumber_NotFoundInAttributesOrContext verifies that when mobile number
@@ -386,14 +337,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	mobileNumber, err := suite.executor.getUserMobileNumber("user-123", ctx, execResp)
 
@@ -401,7 +352,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 	assert.Empty(suite.T(), mobileNumber)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), "Mobile number not found in user attributes or context", execResp.FailureReason)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 // TestGetAuthenticatedUser_MFA_NilAttributes verifies that when the authenticated user
@@ -457,14 +408,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON, // null JSON
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON, // null JSON
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -473,5 +424,5 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.NotNil(suite.T(), result.Attributes) // Attrs should be initialized from nil
 	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }

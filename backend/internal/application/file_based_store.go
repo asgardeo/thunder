@@ -50,7 +50,7 @@ func (f *fileBasedStore) DeleteApplication(id string) error {
 func (f *fileBasedStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
-		return nil, err
+		return nil, model.ApplicationNotFoundError
 	}
 	app, ok := data.(*model.ApplicationProcessedDTO)
 	if !ok {
@@ -128,6 +128,37 @@ func (f *fileBasedStore) GetTotalApplicationCount() (int, error) {
 func (f *fileBasedStore) UpdateApplication(existingApp *model.ApplicationProcessedDTO,
 	updatedApp *model.ApplicationProcessedDTO) error {
 	return errors.New("UpdateApplication is not supported in file-based store")
+}
+
+// IsApplicationExists implements applicationStoreInterface.
+func (f *fileBasedStore) IsApplicationExists(id string) (bool, error) {
+	_, err := f.GetApplicationByID(id)
+	if err != nil {
+		if errors.Is(err, model.ApplicationNotFoundError) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// IsApplicationExistsByName implements applicationStoreInterface.
+func (f *fileBasedStore) IsApplicationExistsByName(name string) (bool, error) {
+	_, err := f.GetApplicationByName(name)
+	if err != nil {
+		if errors.Is(err, model.ApplicationNotFoundError) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// IsApplicationDeclarative checks if an application is immutable.
+// For file-based store, all applications are declarative/immutable.
+func (f *fileBasedStore) IsApplicationDeclarative(id string) bool {
+	exists, err := f.IsApplicationExists(id)
+	return err == nil && exists
 }
 
 // newFileBasedStore creates a new instance of a file-based store.

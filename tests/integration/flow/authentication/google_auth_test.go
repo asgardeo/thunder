@@ -101,7 +101,8 @@ var googleUserSchema = testutils.UserSchema{
 			"type": "string",
 		},
 		"password": map[string]interface{}{
-			"type": "string",
+			"type":       "string",
+			"credential": true,
 		},
 		"sub": map[string]interface{}{
 			"type": "string",
@@ -109,10 +110,28 @@ var googleUserSchema = testutils.UserSchema{
 		"email": map[string]interface{}{
 			"type": "string",
 		},
+		"email_verified": map[string]interface{}{
+			"type": "boolean",
+		},
+		"name": map[string]interface{}{
+			"type": "string",
+		},
+		"given_name": map[string]interface{}{
+			"type": "string",
+		},
+		"family_name": map[string]interface{}{
+			"type": "string",
+		},
 		"givenName": map[string]interface{}{
 			"type": "string",
 		},
 		"familyName": map[string]interface{}{
+			"type": "string",
+		},
+		"picture": map[string]interface{}{
+			"type": "string",
+		},
+		"locale": map[string]interface{}{
 			"type": "string",
 		},
 	},

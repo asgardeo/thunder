@@ -29,6 +29,7 @@ import type {StepData} from '../../models/steps';
 import {StepTypes, StaticStepTypes} from '../../models/steps';
 import {ElementTypes, ElementCategories, ActionEventTypes, ButtonTypes} from '../../models/elements';
 import type {Element} from '../../models/elements';
+import VisualFlowConstants from '../../constants/VisualFlowConstants';
 
 // Mock generateResourceId
 vi.mock('../generateResourceId', () => ({
@@ -507,6 +508,31 @@ describe('reactFlowTransformer', () => {
         const execNode = result.nodes.find((n) => n.type === 'TASK_EXECUTION');
         expect(execNode?.onSuccess).toBe('success-1');
         expect(execNode?.onFailure).toBe('failure-1');
+      });
+
+      it('should set onIncomplete for EXECUTION node when incomplete handle exists', () => {
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode('exec-1', StepTypes.Execution),
+            createNode('success-1', StepTypes.End),
+            createNode('incomplete-1', StepTypes.End),
+          ],
+          edges: [
+            createEdge('edge-1', 'exec-1', 'success-1'),
+            createEdge(
+              'edge-2',
+              'exec-1',
+              'incomplete-1',
+              `exec-1${VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX}`,
+            ),
+          ],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const execNode = result.nodes.find((n) => n.type === 'TASK_EXECUTION');
+        expect(execNode?.onSuccess).toBe('success-1');
+        expect(execNode?.onIncomplete).toBe('incomplete-1');
       });
 
       it('should set onSuccess for DECISION node from edges', () => {

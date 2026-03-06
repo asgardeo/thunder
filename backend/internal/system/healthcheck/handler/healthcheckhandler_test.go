@@ -75,7 +75,7 @@ func (suite *HealthCheckHandlerTestSuite) TestHandleReadinessRequest_AllUp() {
 	// Setup mock to return status UP
 	serviceStatus := []model.ServiceStatus{
 		{
-			ServiceName: "IdentityDB",
+			ServiceName: "ConfigDB",
 			Status:      model.StatusUp,
 		},
 		{
@@ -117,7 +117,7 @@ func (suite *HealthCheckHandlerTestSuite) TestHandleReadinessRequest_Down() {
 	// Setup mock to return status DOWN
 	serviceStatus := []model.ServiceStatus{
 		{
-			ServiceName: "IdentityDB",
+			ServiceName: "ConfigDB",
 			Status:      model.StatusUp,
 		},
 		{

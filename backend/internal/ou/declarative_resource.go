@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -35,18 +36,18 @@ const (
 	paramTypeOU    = "OrganizationUnit"
 )
 
-// OUExporter implements declarativeresource.ResourceExporter for organization units.
-type OUExporter struct {
+// ouExporter implements declarativeresource.ResourceExporter for organization units.
+type ouExporter struct {
 	service OrganizationUnitServiceInterface
 }
 
 // newOUExporter creates a new OU exporter.
-func newOUExporter(service OrganizationUnitServiceInterface) *OUExporter {
-	return &OUExporter{service: service}
+func newOUExporter(service OrganizationUnitServiceInterface) *ouExporter {
+	return &ouExporter{service: service}
 }
 
 // NewOUExporterForTest creates a new OU exporter for testing purposes.
-func NewOUExporterForTest(service OrganizationUnitServiceInterface) *OUExporter {
+func NewOUExporterForTest(service OrganizationUnitServiceInterface) *ouExporter {
 	if !testing.Testing() {
 		panic("only for tests!")
 	}
@@ -54,22 +55,22 @@ func NewOUExporterForTest(service OrganizationUnitServiceInterface) *OUExporter 
 }
 
 // GetResourceType returns the resource type for organization units.
-func (e *OUExporter) GetResourceType() string {
+func (e *ouExporter) GetResourceType() string {
 	return resourceTypeOU
 }
 
 // GetParameterizerType returns the parameterizer type for organization units.
-func (e *OUExporter) GetParameterizerType() string {
+func (e *ouExporter) GetParameterizerType() string {
 	return paramTypeOU
 }
 
 // GetAllResourceIDs retrieves all organization unit IDs from the database store.
 // Note: This only exports DB-backed OUs (runtime OUs). YAML-based declarative resources
 // are not included in the export as they are already defined in YAML files.
-func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *ouExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all OUs by requesting a large limit from the service
 	// In composite mode, this returns OUs from both file-based and database stores
-	ous, err := e.service.GetOrganizationUnitList(serverconst.MaxPageSize, 0)
+	ous, err := e.service.GetOrganizationUnitList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +80,7 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 	ids := make([]string, 0, len(ous.OrganizationUnits))
 	for _, ouBasic := range ous.OrganizationUnits {
 		// Only include mutable OUs (exclude immutable ones)
-		if !e.service.IsOrganizationUnitDeclarative(ouBasic.ID) {
+		if !e.service.IsOrganizationUnitDeclarative(ctx, ouBasic.ID) {
 			ids = append(ids, ouBasic.ID)
 		}
 	}
@@ -88,7 +89,7 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
-		childIDs, err := e.getAllChildIDs(id)
+		childIDs, err := e.getAllChildIDs(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -106,8 +107,8 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 }
 
 // getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
-func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.ServiceError) {
-	children, err := e.service.GetOrganizationUnitChildren(parentID, serverconst.MaxPageSize, 0)
+func (e *ouExporter) getAllChildIDs(ctx context.Context, parentID string) ([]string, *serviceerror.ServiceError) {
+	children, err := e.service.GetOrganizationUnitChildren(ctx, parentID, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +116,9 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 	allIDs := []string{}
 	for _, childBasic := range children.OrganizationUnits {
 		// Only include mutable children (exclude immutable ones)
-		if !e.service.IsOrganizationUnitDeclarative(childBasic.ID) {
+		if !e.service.IsOrganizationUnitDeclarative(ctx, childBasic.ID) {
 			allIDs = append(allIDs, childBasic.ID)
-			grandchildIDs, err := e.getAllChildIDs(childBasic.ID)
+			grandchildIDs, err := e.getAllChildIDs(ctx, childBasic.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -129,8 +130,8 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 }
 
 // GetResourceByID retrieves an organization unit by its ID.
-func (e *OUExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	ou, err := e.service.GetOrganizationUnit(id)
+func (e *ouExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
+	ou, err := e.service.GetOrganizationUnit(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -138,7 +139,7 @@ func (e *OUExporter) GetResourceByID(id string) (interface{}, string, *serviceer
 }
 
 // ValidateResource validates an organization unit resource.
-func (e *OUExporter) ValidateResource(
+func (e *ouExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	ou, ok := resource.(*OrganizationUnit)
@@ -155,7 +156,7 @@ func (e *OUExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for organization units.
-func (e *OUExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *ouExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	// OUs typically don't have parameterizable fields
 	return &declarativeresource.ResourceRules{
 		Variables:      []string{},
@@ -238,7 +239,11 @@ func validateOUWrapper(data interface{}, fileStore *fileBasedStore, dbStore orga
 
 	// Check for duplicate ID in the database store (only in composite mode)
 	if dbStore != nil {
-		if exists, err := dbStore.IsOrganizationUnitExists(ou.ID); err == nil && exists {
+		exists, err := dbStore.IsOrganizationUnitExists(context.Background(), ou.ID)
+		if err != nil {
+			return fmt.Errorf("failed to check organization unit existence for ID '%s': %w", ou.ID, err)
+		}
+		if exists {
 			return fmt.Errorf("duplicate organization unit ID '%s': "+
 				"an organization unit with this ID already exists in the database store", ou.ID)
 		}

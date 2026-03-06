@@ -127,3 +127,131 @@ var testMsg = core.I18nMessage{Key: "ignored", DefaultValue: "Ignored"}
 		t.Errorf("Not all keys found. Found: %v", foundKeys)
 	}
 }
+
+func TestExtractParenthesizedStringExpression(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir := t.TempDir()
+
+	// content with parenthesized string expressions
+	fileContent := `
+package main
+
+import "github.com/wso2/thunder/backend/internal/system/i18n/core"
+
+var msg1 = core.I18nMessage{
+    Key: ("paren.key"),
+    DefaultValue: ("Parenthesized value"),
+}
+
+var msg2 = core.I18nMessage{
+    Key: "paren.concat",
+    DefaultValue: ("first part " + "second part"),
+}
+`
+
+	// Create file
+	if err := os.WriteFile(filepath.Join(tempDir, "paren.go"), []byte(fileContent), 0644); err != nil {
+		t.Fatalf("Failed to create file: %v", err)
+	}
+
+	// Run extractor
+	extractor := NewExtractor(false)
+	messages, err := extractor.ExtractFromDirectory(tempDir)
+	if err != nil {
+		t.Fatalf("ExtractFromDirectory failed: %v", err)
+	}
+
+	if len(messages) != 2 {
+		t.Errorf("Expected 2 messages, got %d", len(messages))
+	}
+
+	expectedKeys := map[string]string{
+		"paren.key":    "Parenthesized value",
+		"paren.concat": "first part second part",
+	}
+
+	foundKeys := make(map[string]bool)
+	for _, msg := range messages {
+		if expectedVal, ok := expectedKeys[msg.Key]; ok {
+			if msg.DefaultValue != expectedVal {
+				t.Errorf("Mismatch value for key %s:\nexpected: %q\ngot: %q", msg.Key, expectedVal, msg.DefaultValue)
+			}
+			foundKeys[msg.Key] = true
+		} else {
+			t.Errorf("Unexpected key found: %s with value: %q", msg.Key, msg.DefaultValue)
+		}
+	}
+
+	if len(foundKeys) != 2 {
+		t.Errorf("Not all keys found. Found: %v", foundKeys)
+	}
+}
+
+func TestExtractMultilineStringConcatenation(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir := t.TempDir()
+
+	// content with multiline string concatenation
+	fileContent := `
+package main
+
+import "github.com/wso2/thunder/backend/internal/system/i18n/core"
+
+var msg1 = core.I18nMessage{
+    Key: "multiline.key",
+    DefaultValue: "This is a long string that spans " +
+        "multiple lines using concatenation",
+}
+
+var msg2 = core.I18nMessage{
+    Key: "single.line",
+    DefaultValue: "Single line value",
+}
+
+var msg3 = core.I18nMessage{
+    Key: "triple.concat",
+    DefaultValue: "First part " +
+        "second part " +
+        "third part",
+}
+`
+
+	// Create file
+	if err := os.WriteFile(filepath.Join(tempDir, "multiline.go"), []byte(fileContent), 0644); err != nil {
+		t.Fatalf("Failed to create file: %v", err)
+	}
+
+	// Run extractor
+	extractor := NewExtractor(false)
+	messages, err := extractor.ExtractFromDirectory(tempDir)
+	if err != nil {
+		t.Fatalf("ExtractFromDirectory failed: %v", err)
+	}
+
+	// Verify results
+	if len(messages) != 3 {
+		t.Errorf("Expected 3 messages, got %d", len(messages))
+	}
+
+	expectedKeys := map[string]string{
+		"multiline.key": "This is a long string that spans multiple lines using concatenation",
+		"single.line":   "Single line value",
+		"triple.concat": "First part second part third part",
+	}
+
+	foundKeys := make(map[string]bool)
+	for _, msg := range messages {
+		if expectedVal, ok := expectedKeys[msg.Key]; ok {
+			if msg.DefaultValue != expectedVal {
+				t.Errorf("Mismatch value for key %s:\nexpected: %q\ngot: %q", msg.Key, expectedVal, msg.DefaultValue)
+			}
+			foundKeys[msg.Key] = true
+		} else {
+			t.Errorf("Unexpected key found: %s with value: %q", msg.Key, msg.DefaultValue)
+		}
+	}
+
+	if len(foundKeys) != 3 {
+		t.Errorf("Not all keys found. Found: %v", foundKeys)
+	}
+}

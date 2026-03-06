@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useNavigate, useParams} from 'react-router';
+import {Link, useNavigate, useParams} from 'react-router';
 import {useState, useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -49,6 +49,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  PageContent,
+  PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Save, X, Trash2, Check} from '@wso2/oxygen-ui-icons-react';
 import useGetUserType from '../api/useGetUserType';
@@ -66,9 +68,9 @@ export default function ViewUserTypePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const {data: userType, loading: isUserTypeLoading, error: userTypeError, refetch} = useGetUserType(id);
-  const {updateUserType, error: updateUserTypeError, reset: resetUpdateError} = useUpdateUserType();
-  const {deleteUserType, loading: isDeleting, error: deleteUserTypeError} = useDeleteUserType();
+  const {data: userType, isLoading: isUserTypeLoading, error: userTypeError} = useGetUserType(id);
+  const updateUserTypeMutation = useUpdateUserType();
+  const deleteUserTypeMutation = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
     isLoading: organizationUnitsLoading,
@@ -98,6 +100,7 @@ export default function ViewUserTypePage() {
       type: value.type,
       required: value.required ?? false,
       unique: 'unique' in value ? (value.unique ?? false) : false,
+      credential: 'credential' in value ? (value.credential ?? false) : false,
       enum: 'enum' in value ? (value.enum ?? []) : [],
       regex: 'regex' in value ? (value.regex ?? '') : '',
     }));
@@ -119,7 +122,7 @@ export default function ViewUserTypePage() {
 
   const handleCancel = () => {
     setIsEditMode(false);
-    resetUpdateError();
+    updateUserTypeMutation.reset();
     if (userType) {
       setName(userType.name);
       setOuId(userType.ouId);
@@ -232,23 +235,22 @@ export default function ViewUserTypePage() {
         schema[prop.name.trim()] = propDef as PropertyDefinition;
       });
 
-      await updateUserType(id, {
-        name: name.trim(),
-        ouId: trimmedOuId,
-        allowSelfRegistration,
-        schema,
+      await updateUserTypeMutation.mutateAsync({
+        userTypeId: id,
+        data: {
+          name: name.trim(),
+          ouId: trimmedOuId,
+          allowSelfRegistration,
+          schema,
+        },
       });
-
-      // Refetch user type data to show updated values
-      await refetch(id);
 
       // Exit edit mode
       setIsEditMode(false);
     } catch (error) {
       // Error is already handled in the hook and displayed in the UI
       // Keep the form in edit mode so the user can correct the error
-      // eslint-disable-next-line no-console
-      console.error('Failed to update user type:', error);
+      logger.error('Failed to update user type', {error: error as Error, userTypeId: id});
     } finally {
       setIsSubmitting(false);
     }
@@ -260,19 +262,20 @@ export default function ViewUserTypePage() {
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
+    deleteUserTypeMutation.reset();
   };
 
   const handleDeleteConfirm = async () => {
     if (!id) return;
 
     try {
-      await deleteUserType(id);
+      await deleteUserTypeMutation.mutateAsync(id);
       setDeleteDialogOpen(false);
       // Navigate back to user types list after successful deletion
       await navigate('/user-types');
-    } catch (error) {
-      logger.error('Failed to delete user type', {error, userTypeId: id});
-      setDeleteDialogOpen(false);
+    } catch (err) {
+      // Keep dialog open so inline error is visible and user can retry
+      logger.error('Failed to delete user type', {error: err as Error, userTypeId: id});
     }
   };
 
@@ -288,7 +291,7 @@ export default function ViewUserTypePage() {
   // Error state
   if (userTypeError) {
     return (
-      <Box sx={{maxWidth: 1000, mx: 'auto', pt: 6}}>
+      <PageContent>
         <Alert severity="error" sx={{mb: 2}}>
           {userTypeError.message ?? 'Failed to load user type information'}
         </Alert>
@@ -302,14 +305,14 @@ export default function ViewUserTypePage() {
         >
           Back to User Types
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   // No user type found
   if (!userType) {
     return (
-      <Box sx={{maxWidth: 1000, mx: 'auto', pt: 6}}>
+      <PageContent>
         <Alert severity="warning" sx={{mb: 2}}>
           User type not found
         </Alert>
@@ -323,46 +326,30 @@ export default function ViewUserTypePage() {
         >
           Back to User Types
         </Button>
-      </Box>
+      </PageContent>
     );
   }
 
   return (
-    <Box>
-      <Button
-        onClick={() => {
-          handleBack().catch(() => {
-            // Handle navigation error
-          });
-        }}
-        variant="text"
-        sx={{mb: 3}}
-        aria-label="Go back"
-        startIcon={<ArrowLeft size={16} />}
-      >
-        Back
-      </Button>
-
-      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={4} gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            User Type Details
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            View and manage user type schema
-          </Typography>
-        </Box>
-        {!isEditMode && (
-          <Stack direction="row" spacing={2}>
-            <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
-              Delete
-            </Button>
-            <Button variant="contained" startIcon={<Edit size={16} />} onClick={handleEdit}>
-              Edit
-            </Button>
-          </Stack>
-        )}
-      </Stack>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.BackButton component={<Link to="/user-types" />} />
+        <PageTitle.Header>{t('userTypes:manageUserType.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('userTypes:manageUserType.subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
+          {!isEditMode && (
+            <>
+              <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
+                Delete
+              </Button>
+              <Button variant="contained" startIcon={<Edit size={16} />} onClick={handleEdit}>
+                Edit
+              </Button>
+            </>
+          )}
+        </PageTitle.Actions>
+      </PageTitle>
 
       <Paper sx={{p: 4}}>
         {/* Basic Information */}
@@ -488,7 +475,7 @@ export default function ViewUserTypePage() {
 
           {!isEditMode ? (
             // View Mode - Display properties in a table
-            <TableContainer>
+            <TableContainer component={Paper}>
               <Table sx={{'& .MuiTableCell-root': {py: 2}}}>
                 <TableHead>
                   <TableRow>
@@ -688,14 +675,11 @@ export default function ViewUserTypePage() {
               ))}
 
               {/* Update Error Display */}
-              {updateUserTypeError && (
+              {updateUserTypeMutation.error && (
                 <Alert severity="error" sx={{mt: 2}}>
                   <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                    {updateUserTypeError.message}
+                    {updateUserTypeMutation.error.message}
                   </Typography>
-                  {updateUserTypeError.description && (
-                    <Typography variant="body2">{updateUserTypeError.description}</Typography>
-                  )}
                 </Alert>
               )}
 
@@ -730,19 +714,16 @@ export default function ViewUserTypePage() {
             Are you sure you want to delete this user type? This action cannot be undone and may affect existing users
             of this type.
           </DialogContentText>
-          {deleteUserTypeError && (
+          {deleteUserTypeMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserTypeError.message}
+                {deleteUserTypeMutation.error.message}
               </Typography>
-              {deleteUserTypeError.description && (
-                <Typography variant="caption">{deleteUserTypeError.description}</Typography>
-              )}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserTypeMutation.isPending}>
             Cancel
           </Button>
           <Button
@@ -753,9 +734,9 @@ export default function ViewUserTypePage() {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserTypeMutation.isPending}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {deleteUserTypeMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -770,6 +751,6 @@ export default function ViewUserTypePage() {
           {validationError}
         </Alert>
       </Snackbar>
-    </Box>
+    </PageContent>
   );
 }

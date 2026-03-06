@@ -24,21 +24,21 @@ var (
 	// queryCreateLayout creates a new layout configuration.
 	queryCreateLayout = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-01",
-		Query: "INSERT INTO LAYOUT (LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, DEPLOYMENT_ID) " +
+		Query: "INSERT INTO LAYOUT (ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, DEPLOYMENT_ID) " +
 			"VALUES ($1, $2, $3, $4, $5)",
 	}
 
 	// queryGetLayoutByID retrieves a layout configuration by ID.
 	queryGetLayoutByID = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-02",
-		Query: "SELECT LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, CREATED_AT, UPDATED_AT FROM LAYOUT " +
-			"WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, CREATED_AT, UPDATED_AT FROM LAYOUT " +
+			"WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryGetLayoutList retrieves a list of layout configurations with pagination.
 	queryGetLayoutList = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-03",
-		Query: "SELECT LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM LAYOUT " +
+		Query: "SELECT ID, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM LAYOUT " +
 			"WHERE DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2",
 	}
 
@@ -52,23 +52,23 @@ var (
 	queryUpdateLayout = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-05",
 		PostgresQuery: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, LAYOUT = $3, " +
-			"UPDATED_AT = NOW() WHERE LAYOUT_ID = $4 AND DEPLOYMENT_ID = $5",
+			"UPDATED_AT = NOW() WHERE ID = $4 AND DEPLOYMENT_ID = $5",
 		SQLiteQuery: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, LAYOUT = $3, " +
-			"UPDATED_AT = datetime('now') WHERE LAYOUT_ID = $4 AND DEPLOYMENT_ID = $5",
+			"UPDATED_AT = datetime('now') WHERE ID = $4 AND DEPLOYMENT_ID = $5",
 		Query: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, LAYOUT = $3, " +
-			"UPDATED_AT = datetime('now') WHERE LAYOUT_ID = $4 AND DEPLOYMENT_ID = $5",
+			"UPDATED_AT = datetime('now') WHERE ID = $4 AND DEPLOYMENT_ID = $5",
 	}
 
 	// queryDeleteLayout deletes a layout configuration.
 	queryDeleteLayout = dbmodel.DBQuery{
 		ID:    "LAQ-LAYOUT_MGT-06",
-		Query: "DELETE FROM LAYOUT WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "DELETE FROM LAYOUT WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryCheckLayoutExists checks if a layout exists.
 	queryCheckLayoutExists = dbmodel.DBQuery{
 		ID:    "LAQ-LAYOUT_MGT-07",
-		Query: "SELECT COUNT(*) as total FROM LAYOUT WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT COUNT(*) as total FROM LAYOUT WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryGetApplicationsCountByLayoutID retrieves the count of applications using a layout.

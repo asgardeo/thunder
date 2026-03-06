@@ -48,6 +48,8 @@ class VisualFlowConstants {
 
   public static readonly FLOW_BUILDER_PREVIOUS_HANDLE_SUFFIX: string = `_${ActionTypes.Previous}`;
 
+  public static readonly FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX: string = `_${ActionTypes.Incomplete}`;
+
   public static readonly FLOW_BUILDER_CANVAS_ALLOWED_RESOURCE_TYPES: string[] = [
     StepTypes.View,
     StepTypes.Rule,

@@ -150,7 +150,7 @@ jobs:
         env:
           POSTGRES_USER: asgthunder
           POSTGRES_PASSWORD: asgthunder
-          POSTGRES_DB: thunderdb
+          POSTGRES_DB: configdb
         ports:
           - 5432:5432
         options: >-

@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -185,7 +186,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs()
 	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(listResponse, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -205,7 +206,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs_E
 	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(nil, expectedError)
 
 	exporter := newFlowGraphExporter(mockService)
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -223,7 +224,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs_E
 	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(listResponse, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -241,7 +242,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetResourceByID() {
 	mockService.EXPECT().GetFlow("flow-001").Return(flow, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	resource, name, err := exporter.GetResourceByID("flow-001")
+	resource, name, err := exporter.GetResourceByID(context.Background(), "flow-001")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), flow, resource)
@@ -260,7 +261,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetResourceByID_Err
 	mockService.EXPECT().GetFlow("flow-001").Return(nil, expectedError)
 
 	exporter := newFlowGraphExporter(mockService)
-	resource, name, err := exporter.GetResourceByID("flow-001")
+	resource, name, err := exporter.GetResourceByID(context.Background(), "flow-001")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)
@@ -562,12 +563,12 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporterIntegration() {
 	exporter := newFlowGraphExporter(mockService)
 
 	// Get all IDs
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 1)
 
 	// Get resource by ID
-	resource, name, err := exporter.GetResourceByID(ids[0])
+	resource, name, err := exporter.GetResourceByID(context.Background(), ids[0])
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), flow, resource)
 	assert.Equal(s.T(), "Authentication Flow", name)
@@ -942,7 +943,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowExport_WithComplexMeta() {
 	mockService.EXPECT().GetFlow("test-flow-001").Return(complexFlow, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	resource, name, err := exporter.GetResourceByID("test-flow-001")
+	resource, name, err := exporter.GetResourceByID(context.Background(), "test-flow-001")
 
 	require.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Flow with Complex Meta", name)

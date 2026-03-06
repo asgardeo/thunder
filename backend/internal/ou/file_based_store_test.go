@@ -19,6 +19,8 @@
 package ou
 
 import (
+	"context"
+
 	"strconv"
 	"testing"
 
@@ -60,11 +62,11 @@ func (s *FileBasedStoreTestSuite) TestCreateOrganizationUnit() {
 		Parent:      nil,
 	}
 
-	err := s.store.CreateOrganizationUnit(ou)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
 	assert.NoError(s.T(), err)
 
 	// Verify it was created
-	retrieved, err := s.store.GetOrganizationUnit("test-ou-1")
+	retrieved, err := s.store.GetOrganizationUnit(context.Background(), "test-ou-1")
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), ou.ID, retrieved.ID)
 	assert.Equal(s.T(), ou.Name, retrieved.Name)
@@ -72,7 +74,7 @@ func (s *FileBasedStoreTestSuite) TestCreateOrganizationUnit() {
 }
 
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitNotFound() {
-	_, err := s.store.GetOrganizationUnit("non-existent")
+	_, err := s.store.GetOrganizationUnit(context.Background(), "non-existent")
 	assert.Error(s.T(), err)
 	assert.ErrorIs(s.T(), err, ErrOrganizationUnitNotFound)
 }
@@ -92,9 +94,9 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitList() {
 		Parent: nil,
 	}
 
-	err := s.store.CreateOrganizationUnit(ou1)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou1)
 	assert.NoError(s.T(), err)
-	err = s.store.CreateOrganizationUnit(ou2)
+	err = s.store.CreateOrganizationUnit(context.Background(), ou2)
 	assert.NoError(s.T(), err)
 
 	// Create child OU (should not be in root list)
@@ -105,11 +107,11 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitList() {
 		Name:   "Child 1",
 		Parent: &parentID,
 	}
-	err = s.store.CreateOrganizationUnit(child)
+	err = s.store.CreateOrganizationUnit(context.Background(), child)
 	assert.NoError(s.T(), err)
 
 	// Get list should only return root OUs
-	list, err := s.store.GetOrganizationUnitList(10, 0)
+	list, err := s.store.GetOrganizationUnitList(context.Background(), 10, 0)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), list, 2)
 }
@@ -121,13 +123,13 @@ func (s *FileBasedStoreTestSuite) TestUpdateNotSupported() {
 		Name:   "Test OU",
 	}
 
-	err := s.store.UpdateOrganizationUnit(ou)
+	err := s.store.UpdateOrganizationUnit(context.Background(), ou)
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported")
 }
 
 func (s *FileBasedStoreTestSuite) TestDeleteNotSupported() {
-	err := s.store.DeleteOrganizationUnit("test-ou-1")
+	err := s.store.DeleteOrganizationUnit(context.Background(), "test-ou-1")
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported")
 }
@@ -140,16 +142,16 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitNameConflict() {
 		Parent: nil,
 	}
 
-	err := s.store.CreateOrganizationUnit(ou)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
 	assert.NoError(s.T(), err)
 
 	// Check for conflict with same name and parent
-	conflict, err := s.store.CheckOrganizationUnitNameConflict("Test OU", nil)
+	conflict, err := s.store.CheckOrganizationUnitNameConflict(context.Background(), "Test OU", nil)
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), conflict)
 
 	// No conflict with different name
-	conflict, err = s.store.CheckOrganizationUnitNameConflict("Different Name", nil)
+	conflict, err = s.store.CheckOrganizationUnitNameConflict(context.Background(), "Different Name", nil)
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), conflict)
 }
@@ -162,7 +164,7 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitChildren() {
 		Name:   "Parent OU",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(parent)
+	err := s.store.CreateOrganizationUnit(context.Background(), parent)
 	assert.NoError(s.T(), err)
 
 	// Create children
@@ -180,18 +182,18 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitChildren() {
 		Parent: &parentID,
 	}
 
-	err = s.store.CreateOrganizationUnit(child1)
+	err = s.store.CreateOrganizationUnit(context.Background(), child1)
 	assert.NoError(s.T(), err)
-	err = s.store.CreateOrganizationUnit(child2)
+	err = s.store.CreateOrganizationUnit(context.Background(), child2)
 	assert.NoError(s.T(), err)
 
 	// Get children
-	children, err := s.store.GetOrganizationUnitChildrenList(testParentOUID, 10, 0)
+	children, err := s.store.GetOrganizationUnitChildrenList(context.Background(), testParentOUID, 10, 0)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), children, 2)
 
 	// Get children count
-	count, err := s.store.GetOrganizationUnitChildrenCount(testParentOUID)
+	count, err := s.store.GetOrganizationUnitChildrenCount(context.Background(), testParentOUID)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 2, count)
 }
@@ -219,23 +221,23 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitByPath() {
 		Parent: &engID,
 	}
 
-	err := s.store.CreateOrganizationUnit(root)
+	err := s.store.CreateOrganizationUnit(context.Background(), root)
 	assert.NoError(s.T(), err)
-	err = s.store.CreateOrganizationUnit(engineering)
+	err = s.store.CreateOrganizationUnit(context.Background(), engineering)
 	assert.NoError(s.T(), err)
-	err = s.store.CreateOrganizationUnit(backend)
+	err = s.store.CreateOrganizationUnit(context.Background(), backend)
 	assert.NoError(s.T(), err)
 
 	// Test getting by path
-	ou, err := s.store.GetOrganizationUnitByPath([]string{"root"})
+	ou, err := s.store.GetOrganizationUnitByPath(context.Background(), []string{"root"})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "root-1", ou.ID)
 
-	ou, err = s.store.GetOrganizationUnitByPath([]string{"root", "engineering"})
+	ou, err = s.store.GetOrganizationUnitByPath(context.Background(), []string{"root", "engineering"})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "eng-1", ou.ID)
 
-	ou, err = s.store.GetOrganizationUnitByPath([]string{"root", "engineering", "backend"})
+	ou, err = s.store.GetOrganizationUnitByPath(context.Background(), []string{"root", "engineering", "backend"})
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "backend-1", ou.ID)
 }
@@ -247,16 +249,16 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitByPath_NotFound() {
 		Name:   "Root",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(root)
+	err := s.store.CreateOrganizationUnit(context.Background(), root)
 	assert.NoError(s.T(), err)
 
 	// Test invalid path
-	_, err = s.store.GetOrganizationUnitByPath([]string{"root", "nonexistent"})
+	_, err = s.store.GetOrganizationUnitByPath(context.Background(), []string{"root", "nonexistent"})
 	assert.Error(s.T(), err)
 	assert.ErrorIs(s.T(), err, ErrOrganizationUnitNotFound)
 
 	// Test completely invalid path
-	_, err = s.store.GetOrganizationUnitByPath([]string{"invalid"})
+	_, err = s.store.GetOrganizationUnitByPath(context.Background(), []string{"invalid"})
 	assert.Error(s.T(), err)
 	assert.ErrorIs(s.T(), err, ErrOrganizationUnitNotFound)
 }
@@ -268,16 +270,16 @@ func (s *FileBasedStoreTestSuite) TestIsOrganizationUnitExists() {
 		Name:   "Test OU",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(ou)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
 	assert.NoError(s.T(), err)
 
 	// Test existing OU
-	exists, err := s.store.IsOrganizationUnitExists("test-ou-1")
+	exists, err := s.store.IsOrganizationUnitExists(context.Background(), "test-ou-1")
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), exists)
 
 	// Test non-existent OU
-	exists, err = s.store.IsOrganizationUnitExists("non-existent")
+	exists, err = s.store.IsOrganizationUnitExists(context.Background(), "non-existent")
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), exists)
 }
@@ -289,16 +291,16 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitHandleConflict() {
 		Name:   "Test OU",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(ou)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
 	assert.NoError(s.T(), err)
 
 	// Check for conflict with same handle and parent
-	conflict, err := s.store.CheckOrganizationUnitHandleConflict("test-handle", nil)
+	conflict, err := s.store.CheckOrganizationUnitHandleConflict(context.Background(), "test-handle", nil)
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), conflict)
 
 	// No conflict with different handle
-	conflict, err = s.store.CheckOrganizationUnitHandleConflict("different-handle", nil)
+	conflict, err = s.store.CheckOrganizationUnitHandleConflict(context.Background(), "different-handle", nil)
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), conflict)
 
@@ -310,16 +312,16 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitHandleConflict() {
 		Name:   "Child",
 		Parent: &parentID,
 	}
-	err = s.store.CreateOrganizationUnit(child)
+	err = s.store.CreateOrganizationUnit(context.Background(), child)
 	assert.NoError(s.T(), err)
 
-	conflict, err = s.store.CheckOrganizationUnitHandleConflict("child-handle", &parentID)
+	conflict, err = s.store.CheckOrganizationUnitHandleConflict(context.Background(), "child-handle", &parentID)
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), conflict)
 
 	// Different parent, same handle should not conflict
 	differentParent := "different-parent"
-	conflict, err = s.store.CheckOrganizationUnitHandleConflict("child-handle", &differentParent)
+	conflict, err = s.store.CheckOrganizationUnitHandleConflict(context.Background(), "child-handle", &differentParent)
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), conflict)
 }
@@ -332,7 +334,7 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitNameConflict_WithPare
 		Name:   "Parent",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(parent)
+	err := s.store.CreateOrganizationUnit(context.Background(), parent)
 	assert.NoError(s.T(), err)
 
 	child := OrganizationUnit{
@@ -341,22 +343,22 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitNameConflict_WithPare
 		Name:   "Child Name",
 		Parent: &parentID,
 	}
-	err = s.store.CreateOrganizationUnit(child)
+	err = s.store.CreateOrganizationUnit(context.Background(), child)
 	assert.NoError(s.T(), err)
 
 	// Same name, same parent - should conflict
-	conflict, err := s.store.CheckOrganizationUnitNameConflict("Child Name", &parentID)
+	conflict, err := s.store.CheckOrganizationUnitNameConflict(context.Background(), "Child Name", &parentID)
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), conflict)
 
 	// Same name, different parent - should not conflict
 	differentParent := "different-parent"
-	conflict, err = s.store.CheckOrganizationUnitNameConflict("Child Name", &differentParent)
+	conflict, err = s.store.CheckOrganizationUnitNameConflict(context.Background(), "Child Name", &differentParent)
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), conflict)
 
 	// Same name, nil parent vs actual parent - should not conflict
-	conflict, err = s.store.CheckOrganizationUnitNameConflict("Child Name", nil)
+	conflict, err = s.store.CheckOrganizationUnitNameConflict(context.Background(), "Child Name", nil)
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), conflict)
 }
@@ -368,11 +370,11 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitHasChildResources() {
 		Name:   "Parent",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(parent)
+	err := s.store.CreateOrganizationUnit(context.Background(), parent)
 	assert.NoError(s.T(), err)
 
 	// No children initially
-	hasChildren, err := s.store.CheckOrganizationUnitHasChildResources(testParentOUID)
+	hasChildren, err := s.store.CheckOrganizationUnitHasChildResources(context.Background(), testParentOUID)
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), hasChildren)
 
@@ -384,18 +386,18 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitHasChildResources() {
 		Name:   "Child",
 		Parent: &parentID,
 	}
-	err = s.store.CreateOrganizationUnit(child)
+	err = s.store.CreateOrganizationUnit(context.Background(), child)
 	assert.NoError(s.T(), err)
 
 	// Should have children now
-	hasChildren, err = s.store.CheckOrganizationUnitHasChildResources(testParentOUID)
+	hasChildren, err = s.store.CheckOrganizationUnitHasChildResources(context.Background(), testParentOUID)
 	assert.NoError(s.T(), err)
 	assert.True(s.T(), hasChildren)
 }
 
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitListCount() {
 	// Initially empty
-	count, err := s.store.GetOrganizationUnitListCount()
+	count, err := s.store.GetOrganizationUnitListCount(context.Background())
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 0, count)
 
@@ -412,13 +414,13 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitListCount() {
 		Name:   "Root 2",
 		Parent: nil,
 	}
-	err = s.store.CreateOrganizationUnit(root1)
+	err = s.store.CreateOrganizationUnit(context.Background(), root1)
 	assert.NoError(s.T(), err)
-	err = s.store.CreateOrganizationUnit(root2)
+	err = s.store.CreateOrganizationUnit(context.Background(), root2)
 	assert.NoError(s.T(), err)
 
 	// Should count only root OUs
-	count, err = s.store.GetOrganizationUnitListCount()
+	count, err = s.store.GetOrganizationUnitListCount(context.Background())
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 2, count)
 
@@ -430,11 +432,11 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitListCount() {
 		Name:   "Child",
 		Parent: &parentID,
 	}
-	err = s.store.CreateOrganizationUnit(child)
+	err = s.store.CreateOrganizationUnit(context.Background(), child)
 	assert.NoError(s.T(), err)
 
 	// Count should still be 2
-	count, err = s.store.GetOrganizationUnitListCount()
+	count, err = s.store.GetOrganizationUnitListCount(context.Background())
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 2, count)
 }
@@ -449,27 +451,27 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitList_Pagination() {
 			Name:   "Root " + iStr,
 			Parent: nil,
 		}
-		err := s.store.CreateOrganizationUnit(ou)
+		err := s.store.CreateOrganizationUnit(context.Background(), ou)
 		assert.NoError(s.T(), err)
 	}
 
 	// Test pagination - first page
-	list, err := s.store.GetOrganizationUnitList(2, 0)
+	list, err := s.store.GetOrganizationUnitList(context.Background(), 2, 0)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), list, 2)
 
 	// Test pagination - second page
-	list, err = s.store.GetOrganizationUnitList(2, 2)
+	list, err = s.store.GetOrganizationUnitList(context.Background(), 2, 2)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), list, 2)
 
 	// Test pagination - last page
-	list, err = s.store.GetOrganizationUnitList(2, 4)
+	list, err = s.store.GetOrganizationUnitList(context.Background(), 2, 4)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), list, 1)
 
 	// Test offset beyond range
-	list, err = s.store.GetOrganizationUnitList(10, 100)
+	list, err = s.store.GetOrganizationUnitList(context.Background(), 10, 100)
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), list)
 }
@@ -482,7 +484,7 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitChildrenList_Pagination
 		Name:   "Parent",
 		Parent: nil,
 	}
-	err := s.store.CreateOrganizationUnit(parent)
+	err := s.store.CreateOrganizationUnit(context.Background(), parent)
 	assert.NoError(s.T(), err)
 
 	// Create multiple children
@@ -495,49 +497,49 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitChildrenList_Pagination
 			Name:   "Child " + iStr,
 			Parent: &parentID,
 		}
-		err := s.store.CreateOrganizationUnit(child)
+		err := s.store.CreateOrganizationUnit(context.Background(), child)
 		assert.NoError(s.T(), err)
 	}
 
 	// Test pagination
-	children, err := s.store.GetOrganizationUnitChildrenList(testParentOUID, 2, 0)
+	children, err := s.store.GetOrganizationUnitChildrenList(context.Background(), testParentOUID, 2, 0)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), children, 2)
 
-	children, err = s.store.GetOrganizationUnitChildrenList(testParentOUID, 2, 2)
+	children, err = s.store.GetOrganizationUnitChildrenList(context.Background(), testParentOUID, 2, 2)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), children, 2)
 
 	// Test offset beyond range
-	children, err = s.store.GetOrganizationUnitChildrenList(testParentOUID, 10, 100)
+	children, err = s.store.GetOrganizationUnitChildrenList(context.Background(), testParentOUID, 10, 100)
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), children)
 }
 
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitUsersCount() {
 	// Users are not stored in file-based mode
-	count, err := s.store.GetOrganizationUnitUsersCount("any-id")
+	count, err := s.store.GetOrganizationUnitUsersCount(context.Background(), "any-id")
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 0, count)
 }
 
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitUsersList() {
 	// Users are not stored in file-based mode
-	users, err := s.store.GetOrganizationUnitUsersList("any-id", 10, 0)
+	users, err := s.store.GetOrganizationUnitUsersList(context.Background(), "any-id", 10, 0)
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), users)
 }
 
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitGroupsCount() {
 	// Groups are not stored in file-based mode
-	count, err := s.store.GetOrganizationUnitGroupsCount("any-id")
+	count, err := s.store.GetOrganizationUnitGroupsCount(context.Background(), "any-id")
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 0, count)
 }
 
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitGroupsList() {
 	// Groups are not stored in file-based mode
-	groups, err := s.store.GetOrganizationUnitGroupsList("any-id", 10, 0)
+	groups, err := s.store.GetOrganizationUnitGroupsList(context.Background(), "any-id", 10, 0)
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), groups)
 }
@@ -555,7 +557,7 @@ func (s *FileBasedStoreTestSuite) TestCreate_StorerInterface() {
 	assert.NoError(s.T(), err)
 
 	// Verify it was created
-	retrieved, err := s.store.GetOrganizationUnit("test-ou-1")
+	retrieved, err := s.store.GetOrganizationUnit(context.Background(), "test-ou-1")
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), ou.ID, retrieved.ID)
 }
@@ -571,11 +573,11 @@ func (s *FileBasedStoreTestSuite) TestCreateAndRetrieveWithDesignFields() {
 		LogoURL:  "https://example.com/logo.png",
 	}
 
-	err := s.store.CreateOrganizationUnit(ou)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
 	assert.NoError(s.T(), err)
 
 	// Verify design fields are preserved on retrieval
-	retrieved, err := s.store.GetOrganizationUnit("design-ou-1")
+	retrieved, err := s.store.GetOrganizationUnit(context.Background(), "design-ou-1")
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "theme-123", retrieved.ThemeID)
 	assert.Equal(s.T(), "layout-456", retrieved.LayoutID)
@@ -593,10 +595,10 @@ func (s *FileBasedStoreTestSuite) TestListIncludesDesignFields() {
 		LogoURL:  "https://example.com/list-logo.png",
 	}
 
-	err := s.store.CreateOrganizationUnit(ou)
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
 	assert.NoError(s.T(), err)
 
-	list, err := s.store.GetOrganizationUnitList(10, 0)
+	list, err := s.store.GetOrganizationUnitList(context.Background(), 10, 0)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), list, 1)
 	assert.Equal(s.T(), "https://example.com/list-logo.png", list[0].LogoURL)
@@ -620,12 +622,12 @@ func (s *FileBasedStoreTestSuite) TestChildrenListIncludesDesignFields() {
 		LogoURL:  "https://example.com/child-logo.png",
 	}
 
-	err := s.store.CreateOrganizationUnit(parent)
+	err := s.store.CreateOrganizationUnit(context.Background(), parent)
 	assert.NoError(s.T(), err)
-	err = s.store.CreateOrganizationUnit(child)
+	err = s.store.CreateOrganizationUnit(context.Background(), child)
 	assert.NoError(s.T(), err)
 
-	children, err := s.store.GetOrganizationUnitChildrenList(parentID, 10, 0)
+	children, err := s.store.GetOrganizationUnitChildrenList(context.Background(), parentID, 10, 0)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), children, 1)
 	assert.Equal(s.T(), "https://example.com/child-logo.png", children[0].LogoURL)
@@ -640,4 +642,74 @@ func (s *FileBasedStoreTestSuite) TestNewFileBasedStore() {
 	fbStore, ok := store.(*fileBasedStore)
 	assert.True(s.T(), ok)
 	assert.NotNil(s.T(), fbStore.GenericFileBasedStore)
+}
+
+func (s *FileBasedStoreTestSuite) TestFileBasedStore_GetOrganizationUnitsByIDs() {
+	// Create some OUs
+	ou1 := OrganizationUnit{
+		ID:     "ou-1",
+		Handle: "handle-1",
+		Name:   "Name 1",
+		Parent: nil,
+	}
+	ou2 := OrganizationUnit{
+		ID:     "ou-2",
+		Handle: "handle-2",
+		Name:   "Name 2",
+		Parent: nil,
+	}
+	ou3 := OrganizationUnit{
+		ID:     "ou-3",
+		Handle: "handle-3",
+		Name:   "Name 3",
+		Parent: nil,
+	}
+
+	err := s.store.CreateOrganizationUnit(context.Background(), ou1)
+	s.Require().NoError(err)
+	err = s.store.CreateOrganizationUnit(context.Background(), ou2)
+	s.Require().NoError(err)
+	err = s.store.CreateOrganizationUnit(context.Background(), ou3)
+	s.Require().NoError(err)
+
+	// Test empty ids
+	result, err := s.store.GetOrganizationUnitsByIDs(context.Background(), []string{})
+	s.Require().NoError(err)
+	s.Require().Empty(result)
+
+	// Test existing ids
+	result, err = s.store.GetOrganizationUnitsByIDs(context.Background(), []string{"ou-1", "ou-3"})
+	s.Require().NoError(err)
+	s.Require().Len(result, 2)
+
+	validIDs := map[string]bool{"ou-1": true, "ou-3": true}
+	for _, ou := range result {
+		s.Require().True(validIDs[ou.ID])
+	}
+
+	// Test partial matching ids
+	result, err = s.store.GetOrganizationUnitsByIDs(context.Background(), []string{"ou-2", "non-existent"})
+	s.Require().NoError(err)
+	s.Require().Len(result, 1)
+	s.Require().Equal("ou-2", result[0].ID)
+}
+
+func (s *FileBasedStoreTestSuite) TestFileBasedStore_IsOrganizationUnitDeclarative() {
+	// Create an OU
+	ou := OrganizationUnit{
+		ID:     "ou-decl",
+		Handle: "handle-decl",
+		Name:   "Name Decl",
+		Parent: nil,
+	}
+	err := s.store.CreateOrganizationUnit(context.Background(), ou)
+	s.Require().NoError(err)
+
+	// Test existing OU
+	isDecl := s.store.IsOrganizationUnitDeclarative(context.Background(), "ou-decl")
+	s.Require().True(isDecl)
+
+	// Test non-existent OU
+	isDecl = s.store.IsOrganizationUnitDeclarative(context.Background(), "non-existent")
+	s.Require().False(isDecl)
 }

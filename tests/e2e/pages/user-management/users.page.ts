@@ -47,7 +47,12 @@ export class UsersPage extends BasePage {
   readonly userTable: Locator;
   readonly searchInput: Locator;
 
-  // Form Locators
+  // Wizard Locators (Step 1: Select User Type)
+  readonly wizardHeading: Locator;
+  readonly userTypeSelect: Locator;
+  readonly continueButton: Locator;
+
+  // Form Locators (Step 2: User Details)
   readonly usernameInput: Locator;
   readonly emailInput: Locator;
   readonly firstNameInput: Locator;
@@ -72,6 +77,15 @@ export class UsersPage extends BasePage {
       .or(page.locator('[data-testid*="add"][data-testid*="user"]'))
       .or(page.locator('a:has-text("Add User")'));
 
+    // Wizard: Step 1 heading ("Select a user type")
+    this.wizardHeading = page.locator("h1, h2, h3, h4, h5, h6").filter({ hasText: /select.*user.*type/i });
+
+    // Wizard: User type dropdown
+    this.userTypeSelect = page.locator('[data-testid="user-type-select"]').or(page.locator('#user-type-select'));
+
+    // Wizard: Continue button
+    this.continueButton = page.getByRole("button", { name: /continue/i });
+
     // User table
     this.userTable = page.locator('table, [role="table"], [data-testid*="user-list"]');
 
@@ -95,8 +109,8 @@ export class UsersPage extends BasePage {
     this.submitButton = page.getByRole("button", { name: /create.*user|add.*user|submit|save/i });
     this.cancelButton = page.getByRole("button", { name: /cancel|close/i });
 
-    // Form heading
-    this.formHeading = page.locator("h1, h2, h3, h4, h5, h6").filter({ hasText: /create.*user|add.*user|new.*user/i });
+    // Form heading (Step 2: "Enter user details")
+    this.formHeading = page.locator("h1, h2, h3, h4, h5, h6").filter({ hasText: /enter.*user.*details|user.*details/i });
 
     // Messages
     this.successMessage = page.locator('[class*="success"], [role="status"]');
@@ -133,21 +147,64 @@ export class UsersPage extends BasePage {
     await this.addUserButton.first().click();
   }
 
-  /** Wait for user creation form */
+  /** Wait for the wizard to load (Step 1: Select User Type) */
   async waitForUserForm() {
+    await expect(this.wizardHeading.first()).toBeVisible({ timeout: Timeouts.FORM_LOAD });
+  }
+
+  /** Select the first available user type and advance to Step 2 */
+  async selectUserTypeAndContinue() {
+    // Click the user type dropdown to open it
+    await this.userTypeSelect.first().click();
+
+    // Select the first non-disabled option (skip the placeholder)
+    const firstOption = this.page.locator('[role="option"]:not([aria-disabled="true"])').first();
+    await firstOption.waitFor({ state: "visible", timeout: Timeouts.ELEMENT_VISIBILITY });
+    await firstOption.click();
+
+    // Click Continue to advance to Step 2
+    await this.continueButton.first().waitFor({ state: "visible", timeout: Timeouts.ELEMENT_VISIBILITY });
+    await this.continueButton.first().click();
+
+    // Wait for the details form heading to appear
     await expect(this.formHeading.first()).toBeVisible({ timeout: Timeouts.FORM_LOAD });
   }
 
-  /** Fill the user form */
+  /** Fill the user form (Step 2: User Details) */
   async fillUserForm(data: UserFormData) {
-    await this.usernameInput.first().fill(data.username);
-    await this.emailInput.first().fill(data.email);
-    if (data.firstName) await this.firstNameInput.first().fill(data.firstName);
-    if (data.lastName) await this.lastNameInput.first().fill(data.lastName);
+    // Fill known fields by name/label
+    if (await this.usernameInput.first().isVisible().catch(() => false)) {
+      await this.usernameInput.first().fill(data.username);
+    }
+    if (await this.emailInput.first().isVisible().catch(() => false)) {
+      await this.emailInput.first().fill(data.email);
+    }
+    if (data.firstName && await this.firstNameInput.first().isVisible().catch(() => false)) {
+      await this.firstNameInput.first().fill(data.firstName);
+    }
+    if (data.lastName && await this.lastNameInput.first().isVisible().catch(() => false)) {
+      await this.lastNameInput.first().fill(data.lastName);
+    }
+
+    // Fill any remaining empty required text/password inputs with generated values
+    // (dynamic schema fields that aren't covered by the known field locators)
+    const requiredInputs = this.page.locator('input[required]:not([type="checkbox"]):not([type="radio"])');
+    const count = await requiredInputs.count();
+    for (let i = 0; i < count; i++) {
+      const input = requiredInputs.nth(i);
+      const currentValue = await input.inputValue();
+      if (!currentValue) {
+        const name = await input.getAttribute("name") ?? `field_${i}`;
+        const type = await input.getAttribute("type");
+        const value = type === "password" ? `Test@${Date.now()}` : `test_${name}_${Date.now()}`;
+        await input.fill(value);
+      }
+    }
   }
 
-  /** Submit the form */
+  /** Submit the form (clicks "Create User" on the last step) */
   async submitForm() {
+    await expect(this.submitButton.first()).toBeEnabled({ timeout: Timeouts.ELEMENT_VISIBILITY });
     await this.submitButton.first().click();
   }
 
@@ -156,10 +213,11 @@ export class UsersPage extends BasePage {
     await this.cancelButton.first().click();
   }
 
-  /** Create a new user (complete flow) */
+  /** Create a new user (complete wizard flow) */
   async createUser(data: UserFormData) {
     await this.clickAddUser();
     await this.waitForUserForm();
+    await this.selectUserTypeAndContinue();
     await this.fillUserForm(data);
     await this.submitForm();
   }

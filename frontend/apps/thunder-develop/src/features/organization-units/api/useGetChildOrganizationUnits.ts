@@ -22,6 +22,7 @@ import {useAsgardeo} from '@asgardeo/react';
 import type {OrganizationUnitListParams} from '../models/requests';
 import type {OrganizationUnitListResponse} from '../models/responses';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
+import fetchChildOrganizationUnits from './fetchChildOrganizationUnits';
 
 /**
  * Custom React hook to fetch child organization units of a specific organization unit.
@@ -63,25 +64,8 @@ export default function useGetChildOrganizationUnits(
 
   return useQuery<OrganizationUnitListResponse>({
     queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit, offset}],
-    queryFn: async (): Promise<OrganizationUnitListResponse> => {
-      const serverUrl: string = getServerUrl();
-      const queryParams: URLSearchParams = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-      });
-
-      const response: {
-        data: OrganizationUnitListResponse;
-      } = await http.request({
-        url: `${serverUrl}/organization-units/${parentId}/ous?${queryParams.toString()}`,
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      } as unknown as Parameters<typeof http.request>[0]);
-
-      return response.data;
-    },
+    queryFn: async (): Promise<OrganizationUnitListResponse> =>
+      fetchChildOrganizationUnits(http, getServerUrl(), parentId!, {limit, offset}),
     enabled: Boolean(parentId),
   });
 }

@@ -13,6 +13,8 @@
     "test:headed": "npx playwright test --headed",
     "test:debug": "npx playwright test --debug",
     "test:trace": "npx playwright test --trace on",
+    "test:a11y": "npx playwright test --grep @accessibility",
+    "test:a11y:verbose": "npx playwright test --grep @accessibility --reporter=list",
     "posttest": "npx playwright merge-reports --reporter html ./blob-report",
     "ui": "npx playwright test --ui",
     "report": "npx playwright show-report",
@@ -34,6 +36,7 @@
   "license": "Apache-2.0",
   "type": "commonjs",
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "1.57.0",
     "@types/express": "^5.0.6",
     "@types/node": "25.0.2",

@@ -31,6 +31,7 @@ import (
 
 // TokenValidatorInterface defines the interface for validating tokens.
 type TokenValidatorInterface interface {
+	ValidateAccessToken(token string) (*AccessTokenClaims, error)
 	ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error)
 	ValidateSubjectToken(token string, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (*SubjectTokenClaims, error)
 }
@@ -45,6 +46,64 @@ func newTokenValidator(jwtService jwt.JWTServiceInterface) TokenValidatorInterfa
 	return &tokenValidator{
 		jwtService: jwtService,
 	}
+}
+
+// ValidateAccessToken validates an access token and extracts the claims.
+func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims, error) {
+	// Verify signature and standard claims.
+	expectedIss := config.GetThunderRuntime().Config.JWT.Issuer
+	if err := tv.jwtService.VerifyJWT(token, "", expectedIss); err != nil {
+		return nil, fmt.Errorf("access token verification failed: %v", err)
+	}
+
+	// Validate the typ header.
+	header, err := jwt.DecodeJWTHeader(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode access token header: %w", err)
+	}
+
+	typ, _ := header["typ"].(string)
+	if typ != jwt.TokenTypeAccessToken {
+		return nil, fmt.Errorf(
+			"invalid token type: expected %q, got %q", jwt.TokenTypeAccessToken, typ)
+	}
+
+	// Decode payload claims.
+	claims, err := jwt.DecodeJWTPayload(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode access token payload: %w", err)
+	}
+
+	// Extract and validate claims.
+	sub, subErr := extractStringClaim(claims, "sub")
+	if subErr != nil {
+		return nil, fmt.Errorf("missing required 'sub' claim in access token")
+	}
+	iss, issErr := extractStringClaim(claims, "iss")
+	if issErr != nil {
+		return nil, fmt.Errorf("missing required 'iss' claim in access token")
+	}
+	aud, audErr := extractStringClaim(claims, "aud")
+	if audErr != nil {
+		return nil, fmt.Errorf("missing required 'aud' claim in access token")
+	}
+	clientID, cidErr := extractStringClaim(claims, "client_id")
+	if cidErr != nil {
+		return nil, fmt.Errorf("missing required 'client_id' claim in access token")
+	}
+
+	grantType, _ := extractStringClaim(claims, "grant_type")
+	scopes := extractScopesFromClaims(claims, false)
+
+	return &AccessTokenClaims{
+		Sub:       sub,
+		Iss:       iss,
+		Aud:       aud,
+		GrantType: grantType,
+		Scopes:    scopes,
+		ClientID:  clientID,
+		Claims:    claims,
+	}, nil
 }
 
 // ValidateRefreshToken validates a refresh token and extracts the claims.

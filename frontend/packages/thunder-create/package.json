@@ -58,15 +58,15 @@
   "dependencies": {
     "@clack/prompts": "^0.7.0",
     "lodash-es": "catalog:",
-    "@thunder/logger": "workspace:*",
+    "@thunder/logger": "workspace:^",
     "commander": "^11.1.0",
     "handlebars": "^4.7.8",
     "picocolors": "^1.0.0"
   },
   "devDependencies": {
-    "@thunder/eslint-plugin-thunder": "workspace:*",
+    "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
-    "@thunder/test-utils": "workspace:*",
+    "@thunder/test-utils": "workspace:^",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",

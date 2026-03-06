@@ -19,26 +19,25 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // credentialSetter allows users to set their credentials for an existing user account.
 type credentialSetter struct {
 	core.ExecutorInterface
-	userService user.UserServiceInterface
-	logger      *log.Logger
+	userProvider userprovider.UserProviderInterface
+	logger       *log.Logger
 }
 
 // newCredentialSetter creates a new instance of the credential setter executor.
 func newCredentialSetter(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *credentialSetter {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CredentialSetter"))
 	base := flowFactory.CreateExecutor(
@@ -61,7 +60,7 @@ func newCredentialSetter(
 	)
 	return &credentialSetter{
 		ExecutorInterface: base,
-		userService:       userService,
+		userProvider:      userProvider,
 		logger:            logger,
 	}
 }
@@ -136,7 +135,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	}
 
 	// Update user credentials
-	svcErr := e.userService.UpdateUserCredentials(context.TODO(), userID, credentials)
+	svcErr := e.userProvider.UpdateUserCredentials(userID, credentials)
 	if svcErr != nil {
 		logger.Debug("Failed to update user credentials", log.String("userID", userID))
 		execResp.Status = common.ExecFailure

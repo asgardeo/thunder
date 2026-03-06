@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"errors"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -40,21 +41,21 @@ func newFileBasedStore() organizationUnitStoreInterface {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	ou := data.(*OrganizationUnit)
-	return f.CreateOrganizationUnit(*ou)
+	return f.CreateOrganizationUnit(context.TODO(), *ou)
 }
 
 // CreateOrganizationUnit implements organizationUnitStoreInterface.
-func (f *fileBasedStore) CreateOrganizationUnit(ou OrganizationUnit) error {
+func (f *fileBasedStore) CreateOrganizationUnit(ctx context.Context, ou OrganizationUnit) error {
 	return f.GenericFileBasedStore.Create(ou.ID, &ou)
 }
 
 // DeleteOrganizationUnit implements organizationUnitStoreInterface.
-func (f *fileBasedStore) DeleteOrganizationUnit(id string) error {
+func (f *fileBasedStore) DeleteOrganizationUnit(ctx context.Context, id string) error {
 	return errors.New("DeleteOrganizationUnit is not supported in file-based store")
 }
 
 // GetOrganizationUnit implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnit(id string) (OrganizationUnit, error) {
+func (f *fileBasedStore) GetOrganizationUnit(ctx context.Context, id string) (OrganizationUnit, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return OrganizationUnit{}, ErrOrganizationUnitNotFound
@@ -68,7 +69,7 @@ func (f *fileBasedStore) GetOrganizationUnit(id string) (OrganizationUnit, error
 }
 
 // GetOrganizationUnitByPath implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitByPath(handles []string) (OrganizationUnit, error) {
+func (f *fileBasedStore) GetOrganizationUnitByPath(ctx context.Context, handles []string) (OrganizationUnit, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return OrganizationUnit{}, err
@@ -107,7 +108,9 @@ func (f *fileBasedStore) GetOrganizationUnitByPath(handles []string) (Organizati
 }
 
 // GetOrganizationUnitList implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitList(limit, offset int) ([]OrganizationUnitBasic, error) {
+func (f *fileBasedStore) GetOrganizationUnitList(
+	ctx context.Context, limit, offset int,
+) ([]OrganizationUnitBasic, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -144,7 +147,7 @@ func (f *fileBasedStore) GetOrganizationUnitList(limit, offset int) ([]Organizat
 }
 
 // GetOrganizationUnitListCount implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitListCount() (int, error) {
+func (f *fileBasedStore) GetOrganizationUnitListCount(ctx context.Context) (int, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return 0, err
@@ -163,9 +166,43 @@ func (f *fileBasedStore) GetOrganizationUnitListCount() (int, error) {
 	return count, nil
 }
 
+// GetOrganizationUnitsByIDs implements organizationUnitStoreInterface.
+func (f *fileBasedStore) GetOrganizationUnitsByIDs(ctx context.Context, ids []string) ([]OrganizationUnitBasic, error) {
+	if len(ids) == 0 {
+		return []OrganizationUnitBasic{}, nil
+	}
+
+	idSet := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		idSet[id] = struct{}{}
+	}
+
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []OrganizationUnitBasic
+	for _, item := range list {
+		if ou, ok := item.Data.(*OrganizationUnit); ok {
+			if _, found := idSet[ou.ID]; found {
+				result = append(result, OrganizationUnitBasic{
+					ID:          ou.ID,
+					Handle:      ou.Handle,
+					Name:        ou.Name,
+					Description: ou.Description,
+					LogoURL:     ou.LogoURL,
+				})
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // IsOrganizationUnitExists implements organizationUnitStoreInterface.
-func (f *fileBasedStore) IsOrganizationUnitExists(id string) (bool, error) {
-	_, err := f.GetOrganizationUnit(id)
+func (f *fileBasedStore) IsOrganizationUnitExists(ctx context.Context, id string) (bool, error) {
+	_, err := f.GetOrganizationUnit(ctx, id)
 	if err != nil {
 		if errors.Is(err, ErrOrganizationUnitNotFound) {
 			return false, nil
@@ -177,13 +214,15 @@ func (f *fileBasedStore) IsOrganizationUnitExists(id string) (bool, error) {
 
 // IsOrganizationUnitDeclarative checks if an organization unit is immutable.
 // File-based resources are always immutable, returns true if exists.
-func (f *fileBasedStore) IsOrganizationUnitDeclarative(id string) bool {
-	exists, err := f.IsOrganizationUnitExists(id)
+func (f *fileBasedStore) IsOrganizationUnitDeclarative(ctx context.Context, id string) bool {
+	exists, err := f.IsOrganizationUnitExists(ctx, id)
 	return err == nil && exists
 }
 
 // CheckOrganizationUnitNameConflict implements organizationUnitStoreInterface.
-func (f *fileBasedStore) CheckOrganizationUnitNameConflict(name string, parent *string) (bool, error) {
+func (f *fileBasedStore) CheckOrganizationUnitNameConflict(
+	ctx context.Context, name string, parent *string,
+) (bool, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return false, err
@@ -204,7 +243,9 @@ func (f *fileBasedStore) CheckOrganizationUnitNameConflict(name string, parent *
 }
 
 // CheckOrganizationUnitHandleConflict implements organizationUnitStoreInterface.
-func (f *fileBasedStore) CheckOrganizationUnitHandleConflict(handle string, parent *string) (bool, error) {
+func (f *fileBasedStore) CheckOrganizationUnitHandleConflict(
+	ctx context.Context, handle string, parent *string,
+) (bool, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return false, err
@@ -225,12 +266,12 @@ func (f *fileBasedStore) CheckOrganizationUnitHandleConflict(handle string, pare
 }
 
 // UpdateOrganizationUnit implements organizationUnitStoreInterface.
-func (f *fileBasedStore) UpdateOrganizationUnit(ou OrganizationUnit) error {
+func (f *fileBasedStore) UpdateOrganizationUnit(ctx context.Context, ou OrganizationUnit) error {
 	return errors.New("UpdateOrganizationUnit is not supported in file-based store")
 }
 
 // CheckOrganizationUnitHasChildResources implements organizationUnitStoreInterface.
-func (f *fileBasedStore) CheckOrganizationUnitHasChildResources(id string) (bool, error) {
+func (f *fileBasedStore) CheckOrganizationUnitHasChildResources(ctx context.Context, id string) (bool, error) {
 	// In file-based mode, we check if there are any child OUs
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
@@ -249,7 +290,7 @@ func (f *fileBasedStore) CheckOrganizationUnitHasChildResources(id string) (bool
 }
 
 // GetOrganizationUnitChildrenCount implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitChildrenCount(id string) (int, error) {
+func (f *fileBasedStore) GetOrganizationUnitChildrenCount(ctx context.Context, id string) (int, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return 0, err
@@ -269,7 +310,7 @@ func (f *fileBasedStore) GetOrganizationUnitChildrenCount(id string) (int, error
 
 // GetOrganizationUnitChildrenList implements organizationUnitStoreInterface.
 func (f *fileBasedStore) GetOrganizationUnitChildrenList(
-	id string, limit, offset int) ([]OrganizationUnitBasic, error) {
+	ctx context.Context, id string, limit, offset int) ([]OrganizationUnitBasic, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -305,25 +346,29 @@ func (f *fileBasedStore) GetOrganizationUnitChildrenList(
 }
 
 // GetOrganizationUnitUsersCount implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitUsersCount(id string) (int, error) {
+func (f *fileBasedStore) GetOrganizationUnitUsersCount(ctx context.Context, id string) (int, error) {
 	// In file-based mode, users are not stored with OUs
 	return 0, nil
 }
 
 // GetOrganizationUnitUsersList implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitUsersList(id string, limit, offset int) ([]User, error) {
+func (f *fileBasedStore) GetOrganizationUnitUsersList(
+	ctx context.Context, id string, limit, offset int,
+) ([]User, error) {
 	// In file-based mode, users are not stored with OUs
 	return []User{}, nil
 }
 
 // GetOrganizationUnitGroupsCount implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitGroupsCount(id string) (int, error) {
+func (f *fileBasedStore) GetOrganizationUnitGroupsCount(ctx context.Context, id string) (int, error) {
 	// In file-based mode, groups are not stored with OUs
 	return 0, nil
 }
 
 // GetOrganizationUnitGroupsList implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitGroupsList(id string, limit, offset int) ([]Group, error) {
+func (f *fileBasedStore) GetOrganizationUnitGroupsList(
+	ctx context.Context, id string, limit, offset int,
+) ([]Group, error) {
 	// In file-based mode, groups are not stored with OUs
 	return []Group{}, nil
 }

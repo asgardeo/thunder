@@ -95,7 +95,10 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		}
 	}
 
-	newTokenScopes := h.applyScopeDownscoping(tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
+	newTokenScopes, scopeErr := h.validateAndApplyScopes(tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
+	if scopeErr != nil {
+		return nil, scopeErr
+	}
 
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
 		Subject:        refreshTokenClaims.Sub,
@@ -119,6 +122,26 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	// Prepare the token response
 	tokenResponse := &model.TokenResponseDTO{
 		AccessToken: *accessToken,
+	}
+
+	// Generate ID token if 'openid' scope is present
+	if slices.Contains(newTokenScopes, constants.ScopeOpenID) {
+		idToken, idErr := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
+			Subject:        refreshTokenClaims.Sub,
+			Audience:       tokenRequest.ClientID,
+			Scopes:         newTokenScopes,
+			UserAttributes: refreshTokenClaims.UserAttributes,
+			OAuthApp:       oauthApp,
+			ClaimsRequest:  refreshTokenClaims.ClaimsRequest,
+		})
+		if idErr != nil {
+			logger.Error("Failed to generate ID token", log.Error(idErr))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to generate ID token",
+			}
+		}
+		tokenResponse.IDToken = *idToken
 	}
 
 	// Check configuration for refresh token renewal
@@ -186,29 +209,28 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	return nil
 }
 
-// applyScopeDownscoping applies OAuth2 scope downscoping logic.
+// validateAndApplyScopes validates and applies OAuth2 scope downscoping logic per RFC 6749 §6.
 // If no scopes are requested, all refresh token scopes are granted.
-// If scopes are requested, only the intersection with refresh token scopes is granted.
-func (h *refreshTokenGrantHandler) applyScopeDownscoping(requestedScopes string,
-	refreshTokenScopes []string, logger *log.Logger) []string {
+// If scopes are requested, they must be a subset of the original grant; otherwise an invalid_scope error is returned.
+func (h *refreshTokenGrantHandler) validateAndApplyScopes(requestedScopes string,
+	refreshTokenScopes []string, logger *log.Logger) ([]string, *model.ErrorResponse) {
 	trimmedRequestedScopes := tokenservice.ParseScopes(requestedScopes)
 
 	if len(trimmedRequestedScopes) == 0 {
 		logger.Debug("No scopes requested. Granting all scopes from refresh token",
 			log.Any("scopes", refreshTokenScopes))
-		return refreshTokenScopes
+		return refreshTokenScopes, nil
 	}
 
-	newTokenScopes := []string{}
 	for _, requestedScope := range trimmedRequestedScopes {
-		if slices.Contains(refreshTokenScopes, requestedScope) {
-			newTokenScopes = append(newTokenScopes, requestedScope)
-		} else {
-			logger.Debug("Requested scope not found in refresh token, skipping",
-				log.String("scope", requestedScope))
+		if !slices.Contains(refreshTokenScopes, requestedScope) {
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorInvalidScope,
+				ErrorDescription: "Requested scope exceeds the scope granted by the resource owner",
+			}
 		}
 	}
 
-	logger.Debug("Applied scope downscoping", log.Any("grantedScopes", newTokenScopes))
-	return newTokenScopes
+	logger.Debug("Applied scope downscoping", log.Any("grantedScopes", trimmedRequestedScopes))
+	return trimmedRequestedScopes, nil
 }

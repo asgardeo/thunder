@@ -71,7 +71,7 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 	}
 	if tokenRequest.Code == "" {
 		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
+			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Authorization code is required",
 		}
 	}
@@ -159,7 +159,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	}
 
 	// Generate ID token if 'openid' scope is present
-	if slices.Contains(authorizedScopes, "openid") {
+	if slices.Contains(authorizedScopes, constants.ScopeOpenID) {
 		idToken, err := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
 			Subject:        authCode.AuthorizedUserID,
 			Audience:       tokenRequest.ClientID,
@@ -168,6 +168,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 			AuthTime:       authCode.TimeCreated.Unix(),
 			OAuthApp:       oauthApp,
 			ClaimsRequest:  authCode.ClaimsRequest,
+			Nonce:          authCode.Nonce,
 		})
 		if err != nil {
 			logger.Error("Failed to generate ID token", log.Error(err))
@@ -229,8 +230,8 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 	code authz.AuthorizationCode) *model.ErrorResponse {
 	if tokenRequest.ClientID != code.ClientID {
 		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Invalid client Id",
+			Error:            constants.ErrorInvalidGrant,
+			ErrorDescription: "Invalid authorization code",
 		}
 	}
 
@@ -247,20 +248,6 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidTarget,
 			ErrorDescription: "Resource parameter mismatch",
-		}
-	}
-
-	if code.State == authz.AuthCodeStateInactive {
-		// TODO: Revoke all the tokens issued for this authorization code.
-
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Inactive authorization code",
-		}
-	} else if code.State != authz.AuthCodeStateActive {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Inactive authorization code",
 		}
 	}
 

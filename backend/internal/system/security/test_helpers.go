@@ -25,17 +25,17 @@ import (
 
 // NewSecurityContextForTest creates a new immutable SecurityContext.
 // Used for testing purposes.
-func NewSecurityContextForTest(userID, ouID, appID, token string,
-	attributes map[string]interface{}) *SecurityContext {
+func NewSecurityContextForTest(userID, ouID, token string,
+	permissions []string, attributes map[string]interface{}) *SecurityContext {
 	if !testing.Testing() {
 		panic("only for tests!")
 	}
 	return &SecurityContext{
-		userID:     userID,
-		ouID:       ouID,
-		appID:      appID,
-		token:      token,
-		attributes: attributes,
+		subject:     userID,
+		ouID:        ouID,
+		token:       token,
+		permissions: permissions,
+		attributes:  attributes,
 	}
 }
 
@@ -49,4 +49,16 @@ func WithSecurityContextTest(ctx context.Context, authCtx *SecurityContext) cont
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, securityContextKey, authCtx)
+}
+
+// WithSkipSecurityTest returns a context marked as security-skipped.
+// Used for testing purposes.
+func WithSkipSecurityTest(ctx context.Context) context.Context {
+	if !testing.Testing() {
+		panic("only for tests!")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return withSecuritySkipped(ctx)
 }

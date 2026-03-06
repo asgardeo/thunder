@@ -16,7 +16,7 @@ Thunder's configuration system supports multiple value formats for **any paramet
 2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
    ```yaml
    database:
-     identity:
+     config:
        password: "{{.DB_PASSWORD}}"
    server:
      publicUrl: "{{.PUBLIC_URL}}"
@@ -80,7 +80,7 @@ If you want to install Thunder with SQLite databases, use the following command:
 
 ```bash
 helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
-  --set configuration.database.identity.type=sqlite \
+  --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite \
   --set configuration.database.user.type=sqlite
 ```
@@ -137,7 +137,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.strategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during an update              | `0`                           |
 | `deployment.image.registry`             | Thunder image registry                                                                  | `ghcr.io/asgardeo`             |
 | `deployment.image.repository`           | Thunder image repository                                                                | `thunder`                      |
-| `deployment.image.tag`                  | Thunder image tag                                                                       | `0.7.0`                        |
+| `deployment.image.tag`                  | Thunder image tag                                                                       | `latest`                       |
 | `deployment.image.digest`               | Thunder image digest (use either tag or digest)                                         | `""`                           |
 | `deployment.image.pullPolicy`           | Thunder image pull policy                                                               | `Always`                       |
 | `deployment.terminationGracePeriodSeconds` | Pod termination grace period in seconds                                              | `10`                           |
@@ -148,10 +148,10 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.livenessProbe.periodSeconds` | Liveness probe period seconds                                                          | `10`                           |
 | `deployment.readinessProbe.initialDelaySeconds` | Readiness probe initial delay seconds                                           | `1`                            |
 | `deployment.readinessProbe.periodSeconds` | Readiness probe period seconds                                                        | `10`                           |
-| `deployment.resources.limits.cpu`       | CPU resource limits                                                                     | `1.5`                          |
-| `deployment.resources.limits.memory`    | Memory resource limits                                                                  | `512Mi`                        |
-| `deployment.resources.requests.cpu`     | CPU resource requests                                                                   | `1`                            |
-| `deployment.resources.requests.memory`  | Memory resource requests                                                                | `256Mi`                        |
+| `deployment.resources.limits.cpu`       | CPU resource limits                                                                     | `200m`                         |
+| `deployment.resources.limits.memory`    | Memory resource limits                                                                  | `100Mi`                        |
+| `deployment.resources.requests.cpu`     | CPU resource requests                                                                   | `100m`                         |
+| `deployment.resources.requests.memory`  | Memory resource requests                                                                | `50Mi`                         |
 | `deployment.securityContext.readOnlyRootFilesystem` | Enable read-only root filesystem (must be false for SQLite)                     | `true`                         |
 | `deployment.securityContext.enableRunAsUser` | Enforce user ID via pod security context                                               | `true`                         |
 | `deployment.securityContext.runAsUser`  | User ID to run the container                                                            | `10001`                        |
@@ -237,7 +237,7 @@ Provide passwords directly in the `password` field. Helm automatically creates a
 ```yaml
 configuration:
   database:
-    identity:
+    config:
       password: "my-secret-password-1"  # Auto-converted to Secret!
     runtime:
       password: "my-secret-password-2"
@@ -248,14 +248,14 @@ configuration:
 **Best Practice:** Use `--set` flags to avoid committing passwords:
 ```bash
 helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
-  --set configuration.database.identity.password=mypass1 \
+  --set configuration.database.config.password=mypass1 \
   --set configuration.database.runtime.password=mypass2 \
   --set configuration.database.user.password=mypass3
 ```
 
 Helm automatically:
 - Creates `<release-name>-db-credentials` Secret as a pre-install/pre-upgrade hook
-- Injects environment variables (`DB_IDENTITY_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_USER_PASSWORD`) into pods
+- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_USER_PASSWORD`) into pods
 - Updates pods when passwords change (via checksum annotations)
 
 #### Pattern 2: External Secret (For Production - Recommended)
@@ -265,7 +265,7 @@ Reference a pre-existing Kubernetes Secret (created manually or by external-secr
 **Step 1:** Create your Secret:
 ```bash
 kubectl create secret generic my-db-secrets \
-  --from-literal=identity-password=secret1 \
+  --from-literal=config-password=secret1 \
   --from-literal=runtime-password=secret2 \
   --from-literal=user-password=secret3
 ```
@@ -274,10 +274,10 @@ kubectl create secret generic my-db-secrets \
 ```yaml
 configuration:
   database:
-    identity:
+    config:
       passwordRef:
         name: "my-db-secrets"      # Your Secret name
-        key: "identity-password"    # Key within Secret
+        key: "config-password"      # Key within Secret
     runtime:
       passwordRef:
         name: "my-db-secrets"
@@ -300,100 +300,106 @@ Thunder reads configuration directly via its application config loader (e.g., fr
 value is first converted into a Kubernetes Secret by this chart.
 
 #### Password Field Options
-Each database section (`identity`, `runtime`, `user`) supports these fields:
+Each database section (`config`, `runtime`, `user`) supports these fields:
+
 | Field                  | Description                                                                                                                                    | Example                      |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | `password`             | Direct password value. When Thunder reads config directly, this may also be an env var placeholder (`{{.VAR}}`) or file reference (`file://path`). When using the auto-generated Secret, the value is stored **as-is** in the Secret and such placeholders are **not** resolved. | `"mypassword"` or `"{{.DB_PASSWORD}}"` or `"file:///secrets/pass"` |
 | `passwordRef.name`     | Kubernetes Secret name (optional, defaults to `<release-name>-db-credentials` for auto-convert)                                               | `"my-db-secrets"`            |
-| `passwordRef.key`      | Secret key name. When set, `password` field is ignored and external Secret is used                                                            | `"identity-password"`        |
+| `passwordRef.key`      | Secret key name. When set, `password` field is ignored and external Secret is used                                                            | `"config-password"`          |
+
 ### Thunder Configuration Parameters
 
-| Name                                              | Description                                                                                           | Default                      |
-|---------------------------------------------------|-------------------------------------------------------------------------------------------------------| ---------------------------- |
-| `configuration.server.port`                       | Thunder server port                                                                                   | `8090`                       |
-| `configuration.server.httpOnly`                   | Whether the server should run in HTTP-only mode                                                       | `false`                      |
-| `configuration.server.publicURL`                  | Public URL of the Thunder server                                                                      | `https://thunder.local`      |
-| `configuration.gateClient.hostname`               | Gate client hostname                                                                                  | `thunder.local`              |
-| `configuration.gateClient.port`                   | Gate client port                                                                                      | `443`                       |
-| `configuration.gateClient.scheme`                 | Gate client scheme                                                                                    | `https`                      |
-| `configuration.gateClient.path`                   | Gate client base path                                                                                 | `/gate`                      |
-| `configuration.developerClient.path`              | Developer client base path                                                                            | `/develop`                 |
-| `configuration.developerClient.clientId`          | Developer client ID                                                                                   | `DEVELOP`   |
-| `configuration.developerClient.scopes`            | Developer client scopes                                                                               | `['openid', 'profile', 'email', 'system']` |
-| `configuration.tls.minVersion`                    | Minimum TLS version                                                                                   | `1.3`                        |
-| `configuration.tls.certFile`                      | Server TLS certificate file path                                                                          | `repository/resources/security/server.cert` |
-| `configuration.tls.keyFile`                       | Server TLS key file path                                                                                  | `repository/resources/security/server.key`  |
-| `configuration.crypto.encryption.key`             | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production) | `file://repository/resources/security/crypto.key` |
-| `configuration.crypto.passwordHashing.algorithm`  | Password hashing algorithm                                                                            | `PBKDF2`                     |
-| `configuration.crypto.passwordHashing.parameters.iterations` | Password hashing iterations                                                                | `600000`                     |
-| `configuration.crypto.passwordHashing.parameters.keySize`    | Password hashing key size                                                                  | `32`                         |
-| `configuration.crypto.passwordHashing.parameters.saltSize`   | Password hashing salt size                                                                 | `16`                         |
-| `configuration.crypto.keys[].id`                  | Signing key identifier                                                                                | `default-key`                |
-| `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                         | `repository/resources/security/signing.cert` |
-| `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                 | `repository/resources/security/signing.key`  |
-| `configuration.database.identity.type`            | Identity database type (postgres or sqlite)                                                           | `postgres`                   |
-| `configuration.database.identity.sqlitePath`      | SQLite database path (for SQLite only)                                                                | `repository/database/thunderdb.db` |
-| `configuration.database.identity.sqliteOptions`   | SQLite options (for SQLite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.identity.name`            | Postgres database name (for postgres only)                                                            | `thunderdb`                  |
-| `configuration.database.identity.host`            | Postgres host (for postgres only)                                                                     | `localhost` |
-| `configuration.database.identity.port`            | Postgres port (for postgres only)                                                                     | `5432`                       |
-| `configuration.database.identity.username`        | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
-| `configuration.database.identity.password`        | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead. | `asgthunder`    |
-| `configuration.database.identity.passwordRef.name` | Kubernetes Secret name for identity database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
-| `configuration.database.identity.passwordRef.key`  | Kubernetes Secret key for identity database password. When set, overrides `password` field and uses external Secret | `""`    |
-| `configuration.database.identity.sslmode`         | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
-| `configuration.database.identity.max_open_conns`  | Maximum number of open connections to the database                                                    | `500`                        |
-| `configuration.database.identity.max_idle_conns`  | Maximum number of idle connections in the pool                                                        | `100`                        |
-| `configuration.database.identity.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                         | `3600`                       |
-| `configuration.database.runtime.type`             | Runtime database type (postgres or sqlite)                                                            | `postgres`                   |
-| `configuration.database.runtime.sqlitePath`       | SQLite database path (for SQLite only)                                                                | `repository/database/runtimedb.db` |
-| `configuration.database.runtime.sqliteOptions`    | SQLite options (for SQLite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.runtime.name`             | Postgres database name (for postgres only)                                                            | `runtimedb`                  |
-| `configuration.database.runtime.host`             | Postgres host (for postgres only)                                                                     | `localhost` |
-| `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                     | `5432`                      |
-| `configuration.database.runtime.username`         | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
-| `configuration.database.runtime.password`         | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead. | `asgthunder`     |
+| Name                                              | Description                                                                                                                                             | Default                      |
+|---------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------| ---------------------------- |
+| `configuration.server.port`                       | Thunder server port                                                                                                                                     | `8090`                       |
+| `configuration.server.httpOnly`                   | Whether the server should run in HTTP-only mode                                                                                                         | `false`                      |
+| `configuration.server.publicURL`                  | Public URL of the Thunder server                                                                                                                        | `https://thunder.local`      |
+| `configuration.gateClient.hostname`               | Gate client hostname                                                                                                                                    | `thunder.local`              |
+| `configuration.gateClient.port`                   | Gate client port                                                                                                                                        | `443`                       |
+| `configuration.gateClient.scheme`                 | Gate client scheme                                                                                                                                      | `https`                      |
+| `configuration.gateClient.path`                   | Gate client base path                                                                                                                                   | `/gate`                      |
+| `configuration.developerClient.path`              | Developer client base path                                                                                                                              | `/develop`                 |
+| `configuration.developerClient.clientId`          | Developer client ID                                                                                                                                     | `DEVELOP`   |
+| `configuration.developerClient.scopes`            | Developer client scopes                                                                                                                                 | `['openid', 'profile', 'email', 'system']` |
+| `configuration.tls.minVersion`                    | Minimum TLS version                                                                                                                                     | `1.3`                        |
+| `configuration.tls.certFile`                      | Server TLS certificate file path                                                                                                                        | `repository/resources/security/server.cert` |
+| `configuration.tls.keyFile`                       | Server TLS key file path                                                                                                                                | `repository/resources/security/server.key`  |
+| `configuration.crypto.encryption.key`             | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production)                                                   | `file://repository/resources/security/crypto.key` |
+| `configuration.crypto.passwordHashing.algorithm`  | Password hashing algorithm                                                                                                                              | `PBKDF2`                     |
+| `configuration.crypto.passwordHashing.parameters.iterations` | Password hashing iterations                                                                                                                             | `600000`                     |
+| `configuration.crypto.passwordHashing.parameters.keySize`    | Password hashing key size                                                                                                                               | `32`                         |
+| `configuration.crypto.passwordHashing.parameters.saltSize`   | Password hashing salt size                                                                                                                              | `16`                         |
+| `configuration.crypto.keys[].id`                  | Signing key identifier                                                                                                                                  | `default-key`                |
+| `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                                                                           | `repository/resources/security/signing.cert` |
+| `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                                                                   | `repository/resources/security/signing.key`  |
+| `configuration.database.config.type`            | Config database type (postgres or sqlite)                                                                                                               | `postgres`                   |
+| `configuration.database.config.sqlitePath`      | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/configdb.db` |
+| `configuration.database.config.sqliteOptions`   | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.config.name`            | Postgres database name (for postgres only)                                                                                                              | `configdb`                  |
+| `configuration.database.config.host`            | Postgres host (for postgres only)                                                                                                                       | `localhost` |
+| `configuration.database.config.port`            | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
+| `configuration.database.config.username`        | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.config.password`        | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                  | `asgthunder`    |
+| `configuration.database.config.passwordRef.name` | Kubernetes Secret name for config database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set  | `""`    |
+| `configuration.database.config.passwordRef.key`  | Kubernetes Secret key for config database password. When set, overrides `password` field and uses external Secret                                       | `""`    |
+| `configuration.database.config.sslmode`         | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.config.max_open_conns`  | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.config.max_idle_conns`  | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.config.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.runtime.type`             | Runtime database type (postgres or sqlite)                                                                                                              | `postgres`                   |
+| `configuration.database.runtime.sqlitePath`       | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/runtimedb.db` |
+| `configuration.database.runtime.sqliteOptions`    | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.runtime.name`             | Postgres database name (for postgres only)                                                                                                              | `runtimedb`                  |
+| `configuration.database.runtime.host`             | Postgres host (for postgres only)                                                                                                                       | `localhost` |
+| `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                                                                       | `5432`                      |
+| `configuration.database.runtime.username`         | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.runtime.password`         | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                  | `asgthunder`     |
 | `configuration.database.runtime.passwordRef.name`  | Kubernetes Secret name for runtime database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
-| `configuration.database.runtime.passwordRef.key`   | Kubernetes Secret key for runtime database password. When set, overrides `password` field and uses external Secret | `""`    |
-| `configuration.database.runtime.sslmode`          | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
-| `configuration.database.runtime.max_open_conns`   | Maximum number of open connections to the database                                                    | `500`                        |
-| `configuration.database.runtime.max_idle_conns`   | Maximum number of idle connections in the pool                                                        | `100`                        |
-| `configuration.database.runtime.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                          | `3600`                       |
-| `configuration.database.user.type`                | User database type (postgres or sqlite)                                                               | `postgres`                   |
-| `configuration.database.user.sqlitePath`          | SQLite database path (for SQLite only)                                                                | `repository/database/userdb.db` |
-| `configuration.database.user.sqliteOptions`       | SQLite options (for SQLite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.user.name`                | Postgres database name (for postgres only)                                                            | `userdb`                     |
-| `configuration.database.user.host`                | Postgres host (for postgres only)                                                                     | `localhost` |
-| `configuration.database.user.port`                | Postgres port (for postgres only)                                                                     | `5432`                       |
-| `configuration.database.user.username`            | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
-| `configuration.database.user.password`            | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead. | `asgthunder`        |
-| `configuration.database.user.passwordRef.name`     | Kubernetes Secret name for user database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
-| `configuration.database.user.passwordRef.key`      | Kubernetes Secret key for user database password. When set, overrides `password` field and uses external Secret | `""`    |
-| `configuration.database.user.sslmode`             | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
-| `configuration.database.user.max_open_conns`      | Maximum number of open connections to the database                                                    | `500`                        |
-| `configuration.database.user.max_idle_conns`      | Maximum number of idle connections in the pool                                                        | `100`                        |
-| `configuration.database.user.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                           | `3600`                       |
-| `configuration.cache.disabled`                    | Disable cache                                                                                         | `false`                      |
-| `configuration.cache.type`                        | Cache type                                                                                            | `inmemory`                   |
-| `configuration.cache.size`                        | Cache size                                                                                            | `1000`                       |
-| `configuration.cache.ttl`                         | Cache TTL in seconds                                                                                  | `3600`                       |
-| `configuration.cache.evictionPolicy`              | Cache eviction policy                                                                                 | `LRU`                        |
-| `configuration.cache.cleanupInterval`             | Cache cleanup interval in seconds                                                                     | `300`                        |
-| `configuration.jwt.issuer`                        | JWT issuer (derived from server.publicUrl if not set)                                                 | derived                      |
-| `configuration.jwt.validityPeriod`                | JWT validity period in seconds                                                                        | `3600`                       |
-| `configuration.jwt.audience`                      | Default audience for auth assertions                                                                  | `application`                |
-| `configuration.jwt.preferredKeyId`                | Preferred key ID for signing JWTs (must match a key in configuration.crypto.keys)                     | `default-key`                |
-| `configuration.oauth.refreshToken.renewOnGrant`   | Renew refresh token on grant                                                                          | `false`                      |
-| `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds                                                              | `86400`                      |
-| `configuration.flow.defaultAuthFlowHandle`        | Default authentication flow handle                                                                    | `default-basic-flow`         |
-| `configuration.flow.maxVersionHistory`            | Maximum flow version history to retain                                                                | `3`                          |
-| `configuration.flow.autoInferRegistration`        | Enable auto-infer registration flow                                                                   | `true`                       |
-| `configuration.cors.allowedOrigins`               | CORS allowed origins                                                                                  | See values.yaml              |
-| `configuration.passkey.allowedOrigins`            | Passkey allowed origins                                                                               | `[]`                         |
+| `configuration.database.runtime.passwordRef.key`   | Kubernetes Secret key for runtime database password. When set, overrides `password` field and uses external Secret                                      | `""`    |
+| `configuration.database.runtime.sslmode`          | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.runtime.max_open_conns`   | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.runtime.max_idle_conns`   | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.runtime.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.user.type`                | User database type (postgres or sqlite)                                                                                                                 | `postgres`                   |
+| `configuration.database.user.sqlitePath`          | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/userdb.db` |
+| `configuration.database.user.sqliteOptions`       | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.user.name`                | Postgres database name (for postgres only)                                                                                                              | `userdb`                     |
+| `configuration.database.user.host`                | Postgres host (for postgres only)                                                                                                                       | `localhost` |
+| `configuration.database.user.port`                | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
+| `configuration.database.user.username`            | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.user.password`            | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                   | `asgthunder`        |
+| `configuration.database.user.passwordRef.name`     | Kubernetes Secret name for user database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set    | `""`    |
+| `configuration.database.user.passwordRef.key`      | Kubernetes Secret key for user database password. When set, overrides `password` field and uses external Secret                                         | `""`    |
+| `configuration.database.user.sslmode`             | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.user.max_open_conns`      | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.user.max_idle_conns`      | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.user.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.cache.disabled`                    | Disable cache                                                                                                                                           | `false`                      |
+| `configuration.cache.type`                        | Cache type                                                                                                                                              | `inmemory`                   |
+| `configuration.cache.size`                        | Cache size                                                                                                                                              | `1000`                       |
+| `configuration.cache.ttl`                         | Cache TTL in seconds                                                                                                                                    | `3600`                       |
+| `configuration.cache.evictionPolicy`              | Cache eviction policy                                                                                                                                   | `LRU`                        |
+| `configuration.cache.cleanupInterval`             | Cache cleanup interval in seconds                                                                                                                       | `300`                        |
+| `configuration.jwt.issuer`                        | JWT issuer (derived from server.publicUrl if not set)                                                                                                   | derived                      |
+| `configuration.jwt.validityPeriod`                | JWT validity period in seconds                                                                                                                          | `3600`                       |
+| `configuration.jwt.audience`                      | Default audience for auth assertions                                                                                                                    | `application`                |
+| `configuration.jwt.preferredKeyId`                | Preferred key ID for signing JWTs (must match a key in configuration.crypto.keys)                                                                       | `default-key`                |
+| `configuration.oauth.refreshToken.renewOnGrant`   | Renew refresh token on grant                                                                                                                            | `false`                      |
+| `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds                                                                                                                | `86400`                      |
+| `configuration.flow.defaultAuthFlowHandle`        | Default authentication flow handle                                                                                                                      | `default-basic-flow`         |
+| `configuration.flow.maxVersionHistory`            | Maximum flow version history to retain                                                                                                                  | `3`                          |
+| `configuration.flow.autoInferRegistration`        | Enable auto-infer registration flow                                                                                                                     | `true`                       |
+| `configuration.cors.allowedOrigins`               | CORS allowed origins                                                                                                                                    | See values.yaml              |
+| `configuration.passkey.allowedOrigins`            | Passkey allowed origins                                                                                                                                 | `[]`                         |
+| `configuration.consent.enabled`                   | Enable consent service                                                                                                                                  | `false`                      |
+| `configuration.consent.baseUrl`                   | Base URL of the consent service                                                                                                                         | `""`                         |
+| `configuration.consent.timeout`                   | Timeout for consent service API calls in seconds                                                                                                        | `5`                          |
+| `configuration.consent.maxRetries`                | Max retry attempts for transient errors when calling consent service API                                                                                | `3`                          |
 
 ### Persistence Parameters
 
-Persistence is **automatically enabled** when using SQLite as the database type for any database (identity, runtime, or user). It creates a PersistentVolumeClaim to store SQLite database files.
+Persistence is **automatically enabled** when using SQLite as the database type for any database (config, runtime, or user). It creates a PersistentVolumeClaim to store SQLite database files.
 
 | Name                                   | Description                                                     | Default                      |
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
@@ -421,10 +427,10 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | `setup.debug`                          | Enable debug mode for setup                                     | `false`                      |
 | `setup.args`                           | Additional command-line arguments for setup.sh                  | `[]`                         |
 | `setup.env`                            | Additional environment variables for setup job                  | `[]`                         |
-| `setup.resources.requests.cpu`         | CPU request for setup job                                       | `250m`                       |
-| `setup.resources.requests.memory`      | Memory request for setup job                                    | `128Mi`                      |
-| `setup.resources.limits.cpu`           | CPU limit for setup job                                         | `500m`                       |
-| `setup.resources.limits.memory`        | Memory limit for setup job                                      | `256Mi`                      |
+| `setup.resources.requests.cpu`         | CPU request for setup job                                       | `100m`                       |
+| `setup.resources.requests.memory`      | Memory request for setup job                                    | `50Mi`                       |
+| `setup.resources.limits.cpu`           | CPU limit for setup job                                         | `200m`                       |
+| `setup.resources.limits.memory`        | Memory limit for setup job                                      | `100Mi`                      |
 | `setup.extraVolumeMounts`              | Additional volume mounts for setup job                          | `[]`                         |
 | `setup.extraVolumes`                   | Additional volumes for setup job                                | `[]`                         |
 

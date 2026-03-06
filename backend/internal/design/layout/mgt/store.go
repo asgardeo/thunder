@@ -40,6 +40,7 @@ type layoutMgtStoreInterface interface {
 	UpdateLayout(id string, layout UpdateLayoutRequest) error
 	DeleteLayout(id string) error
 	GetApplicationsCountByLayoutID(id string) (int, error)
+	IsLayoutDeclarative(id string) bool
 }
 
 // layoutMgtStore is the default implementation of layoutMgtStoreInterface.
@@ -58,7 +59,7 @@ func newLayoutMgtStore() layoutMgtStoreInterface {
 
 // GetLayoutListCount retrieves the total count of layout configurations.
 func (s *layoutMgtStore) GetLayoutListCount() (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +74,7 @@ func (s *layoutMgtStore) GetLayoutListCount() (int, error) {
 
 // GetLayoutList retrieves layout configurations with pagination.
 func (s *layoutMgtStore) GetLayoutList(limit, offset int) ([]Layout, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func (s *layoutMgtStore) GetLayoutList(limit, offset int) ([]Layout, error) {
 
 // CreateLayout creates a new layout configuration in the database.
 func (s *layoutMgtStore) CreateLayout(id string, layout CreateLayoutRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func (s *layoutMgtStore) CreateLayout(id string, layout CreateLayoutRequest) err
 
 // GetLayout retrieves a layout configuration by its id.
 func (s *layoutMgtStore) GetLayout(id string) (Layout, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return Layout{}, err
 	}
@@ -140,7 +141,7 @@ func (s *layoutMgtStore) GetLayout(id string) (Layout, error) {
 
 // IsLayoutExist checks if a layout configuration exists by its ID.
 func (s *layoutMgtStore) IsLayoutExist(id string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -164,7 +165,7 @@ func (s *layoutMgtStore) IsLayoutExist(id string) (bool, error) {
 
 // UpdateLayout updates a layout configuration.
 func (s *layoutMgtStore) UpdateLayout(id string, layout UpdateLayoutRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -184,7 +185,7 @@ func (s *layoutMgtStore) UpdateLayout(id string, layout UpdateLayoutRequest) err
 
 // DeleteLayout deletes a layout configuration.
 func (s *layoutMgtStore) DeleteLayout(id string) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ func (s *layoutMgtStore) DeleteLayout(id string) error {
 
 // GetApplicationsCountByLayoutID returns the count of applications using a specific layout.
 func (s *layoutMgtStore) GetApplicationsCountByLayoutID(id string) (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -212,11 +213,16 @@ func (s *layoutMgtStore) GetApplicationsCountByLayoutID(id string) (int, error) 
 	return parseCountResult(results)
 }
 
-// getIdentityDBClient retrieves the identity database client.
-func (s *layoutMgtStore) getIdentityDBClient() (provider.DBClientInterface, error) {
+// IsLayoutDeclarative checks if a layout is immutable (in database store, all layouts are mutable).
+func (s *layoutMgtStore) IsLayoutDeclarative(id string) bool {
+	return false
+}
+
+// getConfigDBClient retrieves the config database client.
+func (s *layoutMgtStore) getConfigDBClient() (provider.DBClientInterface, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get identity database client: %w", err)
+		return nil, fmt.Errorf("failed to get config database client: %w", err)
 	}
 	return dbClient, nil
 }
@@ -261,9 +267,9 @@ func (s *layoutMgtStore) getTimestamp(row map[string]interface{}, key string) (s
 
 // buildLayoutListItemFromResultRow builds a Layout from a database result row (list view).
 func (s *layoutMgtStore) buildLayoutListItemFromResultRow(row map[string]interface{}) (Layout, error) {
-	id, ok := row["layout_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Layout{}, fmt.Errorf("layout_id not found or invalid type")
+		return Layout{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)
@@ -297,9 +303,9 @@ func (s *layoutMgtStore) buildLayoutListItemFromResultRow(row map[string]interfa
 
 // buildLayoutFromResultRow builds a Layout from a database result row (detail view).
 func (s *layoutMgtStore) buildLayoutFromResultRow(row map[string]interface{}) (Layout, error) {
-	id, ok := row["layout_id"].(string)
+	id, ok := row["id"].(string)
 	if !ok {
-		return Layout{}, fmt.Errorf("layout_id not found or invalid type")
+		return Layout{}, fmt.Errorf("id not found or invalid type")
 	}
 
 	displayName, ok := row["display_name"].(string)

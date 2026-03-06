@@ -96,6 +96,13 @@ issues:
   exclude-use-default: false
   exclude-dirs:
     - tests/mocks
+  # TODO: Temporary exclude SA1019 (deprecated code usage) warnings until the code is refactored to 
+  # remove deprecated code usages.
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA1019"
+      severity: warning
 
 output:
   show-stats: true

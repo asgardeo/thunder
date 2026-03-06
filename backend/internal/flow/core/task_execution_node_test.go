@@ -282,8 +282,7 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponse() {
 		s.Run(tt.name, func() {
 			node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false).(*taskExecutionNode)
 			execResp := &common.ExecutorResponse{Status: tt.execStatus}
-			ctx := &NodeContext{FlowID: "test-flow"}
-			nodeResp := node.buildNodeResponse(execResp, ctx)
+			nodeResp := node.buildNodeResponse(execResp)
 
 			s.NotNil(nodeResp)
 			s.Equal(tt.nodeStatus, nodeResp.Status)
@@ -511,9 +510,8 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponseWithNilMaps() {
 		RuntimeData:    nil,
 		Inputs:         nil,
 	}
-	ctx := &NodeContext{FlowID: "test-flow"}
 
-	nodeResp := node.buildNodeResponse(execResp, ctx)
+	nodeResp := node.buildNodeResponse(execResp)
 
 	s.NotNil(nodeResp)
 	s.NotNil(nodeResp.AdditionalData, "AdditionalData should be initialized")
@@ -543,9 +541,8 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponsePreservesExecutorData(
 		AuthenticatedUser: authUser,
 		Assertion:         "assertion-token",
 	}
-	ctx := &NodeContext{FlowID: "test-flow"}
 
-	nodeResp := node.buildNodeResponse(execResp, ctx)
+	nodeResp := node.buildNodeResponse(execResp)
 
 	s.NotNil(nodeResp)
 	s.Equal("TEST_FAILURE", nodeResp.FailureReason)
@@ -650,228 +647,176 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithEmptyFailureReasonAnd
 	s.Empty(resp.NextNodeID, "NextNodeID should not be set when FailureReason is empty")
 }
 
-func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeWithMeta() {
+func (s *TaskExecutionNodeTestSuite) TestOnIncomplete() {
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, ok := node.(ExecutorBackedNodeInterface)
+	s.True(ok)
+
+	// Test default onIncomplete is empty
+	s.Empty(execNode.GetOnIncomplete())
+
+	// Test setting onIncomplete
+	execNode.SetOnIncomplete("prompt-node")
+	s.Equal("prompt-node", execNode.GetOnIncomplete())
+
+	// Test updating onIncomplete
+	execNode.SetOnIncomplete("another-prompt-node")
+	s.Equal("another-prompt-node", execNode.GetOnIncomplete())
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteHandler() {
 	mockExec := NewExecutorInterfaceMock(s.T())
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	metaData := map[string]interface{}{"title": "OTP Verification", "description": "Enter the code"}
-	node.SetMeta(metaData)
-
 	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnIncomplete("prompt-credentials")
 
 	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "otp", Required: true}},
+			Inputs: []common.Input{{Identifier: "username", Required: true}},
 		}, nil,
 	).Once()
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
+	ctx := &NodeContext{FlowID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
 	s.NotNil(resp)
-	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal(common.NodeResponseTypeView, resp.Type)
-	s.Equal(metaData, resp.Meta, "Meta should be included when verbose mode is enabled and prompting for user input")
+	s.Equal(common.NodeStatusForward, resp.Status, "Should forward to onIncomplete node")
+	s.Equal("prompt-credentials", resp.NextNodeID)
 }
 
-func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeWithoutMeta() {
+func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFailureReason() {
 	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	// No meta set
 
+	inputs := []common.Input{
+		{Identifier: "username", Required: true},
+		{Identifier: "password", Required: true},
+	}
+
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
 	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnIncomplete("prompt-credentials")
+	execNode.(*taskExecutionNode).inputs = inputs
 
 	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
-			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "otp", Required: true}},
+			Status:        common.ExecUserInputRequired,
+			Inputs:        inputs,
+			FailureReason: "Invalid credentials provided",
+			RuntimeData:   map[string]string{"existing": "data"},
 		}, nil,
 	).Once()
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
-	resp, err := node.Execute(ctx)
-
-	s.Nil(err)
-	s.NotNil(resp)
-	s.Nil(resp.Meta, "Meta should be nil when not set even in verbose mode")
-}
-
-func (s *TaskExecutionNodeTestSuite) TestExecuteNonVerboseModeWithMeta() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	metaData := map[string]interface{}{"title": "OTP Verification", "description": "Enter the code"}
-	node.SetMeta(metaData)
-
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	mockExec.On("GetName").Return("test-executor").Once()
-	mockExec.On("Execute", mock.Anything).Return(
-		&common.ExecutorResponse{
-			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "otp", Required: true}},
-		}, nil,
-	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: false}
-	resp, err := node.Execute(ctx)
-
-	s.Nil(err)
-	s.NotNil(resp)
-	s.Nil(resp.Meta, "Meta should not be included when verbose mode is disabled")
-}
-
-func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeMetaNotIncludedForNonViewResponses() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	metaData := map[string]interface{}{"title": "OTP Verification", "description": "Enter the code"}
-	node.SetMeta(metaData)
-
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	// Test complete status - meta should not be included
-	mockExec.On("GetName").Return("test-executor").Once()
-	mockExec.On("Execute", mock.Anything).Return(
-		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
-	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
-	resp, err := node.Execute(ctx)
-
-	s.Nil(err)
-	s.NotNil(resp)
-	s.Equal(common.NodeStatusComplete, resp.Status)
-	s.Nil(resp.Meta, "Meta should not be included for complete responses even in verbose mode")
-}
-
-func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeExecutorMetaTakesPrecedence() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	nodeMetaData := map[string]interface{}{"title": "Node Meta", "source": "node"}
-	node.SetMeta(nodeMetaData)
-
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	// Executor returns its own meta
-	executorMetaData := MetaStructure{
-		Components: []MetaComponent{
-			{Type: "SELECT", ID: "usertype_input", Ref: "userType"},
+	ctx := &NodeContext{
+		FlowID: "test-flow",
+		UserInputs: map[string]string{
+			"username": "testuser",
+			"password": "wrongpassword",
 		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status, "Should forward to onIncomplete node")
+	s.Equal("prompt-credentials", resp.NextNodeID)
+	s.Equal("Invalid credentials provided", resp.FailureReason)
+	s.Equal("Invalid credentials provided", resp.RuntimeData["failureReason"],
+		"Failure reason should be propagated to RuntimeData")
+	s.Equal("data", resp.RuntimeData["existing"], "Existing runtime data should be preserved")
+
+	// Verify user inputs consumed by the executor are cleared
+	s.Empty(ctx.UserInputs["username"], "Username should be cleared from UserInputs")
+	s.Empty(ctx.UserInputs["password"], "Password should be cleared from UserInputs")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFailureReasonNilRuntimeData() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+
+	inputs := []common.Input{
+		{Identifier: "username", Required: true},
+	}
+
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnIncomplete("prompt-credentials")
+	execNode.(*taskExecutionNode).inputs = inputs
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status:        common.ExecUserInputRequired,
+			Inputs:        inputs,
+			FailureReason: "User not found",
+			RuntimeData:   nil, // nil RuntimeData
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{
+		FlowID: "test-flow",
+		UserInputs: map[string]string{
+			"username": "nonexistent",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("prompt-credentials", resp.NextNodeID)
+	s.NotNil(resp.RuntimeData, "RuntimeData should be initialized when nil")
+	s.Equal("User not found", resp.RuntimeData["failureReason"],
+		"Failure reason should be stored even when RuntimeData was nil")
+	s.Empty(ctx.UserInputs["username"], "Username should be cleared from UserInputs")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteNoFailureReason() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnIncomplete("prompt-credentials")
+	execNode.(*taskExecutionNode).inputs = []common.Input{
+		{Identifier: "username", Required: true},
 	}
 
 	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "userType", Type: "SELECT", Required: true}},
-			Meta:   executorMetaData,
+			Inputs: []common.Input{{Identifier: "username", Required: true}},
+			// No FailureReason
 		}, nil,
 	).Once()
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
+	ctx := &NodeContext{
+		FlowID: "test-flow",
+		UserInputs: map[string]string{
+			"username": "testuser",
+		},
+	}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
 	s.NotNil(resp)
-	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal(common.NodeResponseTypeView, resp.Type)
-
-	// Executor meta should take precedence over node meta
-	s.Equal(executorMetaData, resp.Meta, "Executor meta should take precedence over node meta")
-}
-
-func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeExecutorMetaUsedWhenNodeMetaNil() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	// No node meta set
-
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	// Executor returns its own meta
-	executorMetaData := map[string]interface{}{"title": "Dynamic Meta", "source": "executor"}
-
-	mockExec.On("GetName").Return("test-executor").Once()
-	mockExec.On("Execute", mock.Anything).Return(
-		&common.ExecutorResponse{
-			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "field1", Required: true}},
-			Meta:   executorMetaData,
-		}, nil,
-	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
-	resp, err := node.Execute(ctx)
-
-	s.Nil(err)
-	s.NotNil(resp)
-	s.Equal(executorMetaData, resp.Meta, "Executor meta should be used when node meta is nil")
-}
-
-func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeNodeMetaUsedWhenExecutorMetaNil() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	nodeMetaData := map[string]interface{}{"title": "Static Node Meta"}
-	node.SetMeta(nodeMetaData)
-
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	mockExec.On("GetName").Return("test-executor").Once()
-	mockExec.On("Execute", mock.Anything).Return(
-		&common.ExecutorResponse{
-			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "field1", Required: true}},
-			Meta:   nil, // Executor does not return meta
-		}, nil,
-	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
-	resp, err := node.Execute(ctx)
-
-	s.Nil(err)
-	s.NotNil(resp)
-	s.Equal(nodeMetaData, resp.Meta, "Node meta should be used when executor meta is nil")
-}
-
-func (s *TaskExecutionNodeTestSuite) TestExecuteNonVerboseModeExecutorMetaNotIncluded() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	// Executor returns its own meta
-	executorMetaData := map[string]interface{}{"title": "Dynamic Meta"}
-
-	mockExec.On("GetName").Return("test-executor").Once()
-	mockExec.On("Execute", mock.Anything).Return(
-		&common.ExecutorResponse{
-			Status: common.ExecUserInputRequired,
-			Inputs: []common.Input{{Identifier: "field1", Required: true}},
-			Meta:   executorMetaData,
-		}, nil,
-	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow", Verbose: false} // Non-verbose mode
-	resp, err := node.Execute(ctx)
-
-	s.Nil(err)
-	s.NotNil(resp)
-	s.Nil(resp.Meta, "Meta should not be included in non-verbose mode even when executor provides meta")
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("prompt-credentials", resp.NextNodeID)
+	s.Empty(resp.FailureReason, "No failure reason should be set")
+	// UserInputs should NOT be cleared when there's no failure reason
+	s.Equal("testuser", ctx.UserInputs["username"],
+		"UserInputs should not be cleared without failure reason")
 }

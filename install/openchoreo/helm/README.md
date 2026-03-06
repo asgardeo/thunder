@@ -27,7 +27,7 @@ Thunder's configuration system supports multiple value formats for **any paramet
 2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
    ```yaml
    database:
-     identity:
+     config:
        password: "{{.DB_PASSWORD}}"
    jwt:
      issuer: "{{.JWT_ISSUER}}"
@@ -72,8 +72,8 @@ Thunder's configuration system supports multiple value formats for **any paramet
      --namespace identity-platform \
      --create-namespace \
      --set database.host="$DB_HOST" \
-     --set database.identity.username="$DB_USER" \
-     --set database.identity.password="$DB_PASS" \
+     --set database.config.username="$DB_USER" \
+     --set database.config.password="$DB_PASS" \
      --set database.runtime.username="$DB_USER" \
      --set database.runtime.password="$DB_PASS" \
      --set organization.name="identity-platform"
@@ -105,9 +105,9 @@ Thunder's configuration system supports multiple value formats for **any paramet
 |-----------|-------------|---------|----------|
 | `database.host` | Database hostname/FQDN | `<DB_HOST>` | **Yes** |
 | `database.port` | Database port | `5432` | No |
-| `database.identity.database` | Identity database name | `thunderdb` | No |
-| `database.identity.username` | Identity database username | `<DB_USERNAME>` | **Yes** |
-| `database.identity.password` | Identity database password | `<DB_PASSWORD>` | **Yes** |
+| `database.config.database` | Config database name | `configdb` | No |
+| `database.config.username` | Config database username | `<DB_USERNAME>` | **Yes** |
+| `database.config.password` | Config database password | `<DB_PASSWORD>` | **Yes** |
 | `database.runtime.database` | Runtime database name | `runtimedb` | No |
 | `database.runtime.username` | Runtime database username | `<DB_USERNAME>` | **Yes** |
 | `database.runtime.password` | Runtime database password | `<DB_PASSWORD>` | **Yes** |
@@ -189,8 +189,8 @@ If you already have cluster-scoped resources, reference them instead of creating
 helm template thunder install/openchoreo/helm/ \
   --namespace identity-platform \
   --set database.host="$DB_HOST" \
-  --set database.identity.username="$DB_USER" \
-  --set database.identity.password="$DB_PASS" \
+  --set database.config.username="$DB_USER" \
+  --set database.config.password="$DB_PASS" \
   --set database.runtime.username="$DB_USER" \
   --set database.runtime.password="$DB_PASS" \
   --set organization.name="identity-platform"
@@ -201,8 +201,8 @@ helm upgrade --install thunder install/openchoreo/helm/ \
   --create-namespace \
   --dry-run \
   --set database.host="$DB_HOST" \
-  --set database.identity.username="$DB_USER" \
-  --set database.identity.password="$DB_PASS" \
+  --set database.config.username="$DB_USER" \
+  --set database.config.password="$DB_PASS" \
   --set database.runtime.username="$DB_USER" \
   --set database.runtime.password="$DB_PASS" \
   --set organization.name="identity-platform"

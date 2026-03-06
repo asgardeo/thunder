@@ -103,6 +103,7 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithAuthAssert
 				Type: "TASK_EXECUTION",
 				Executor: &ExecutorDefinition{
 					Name: executor.ExecutorNameSMSAuth,
+					Mode: executor.ExecutorModeSend,
 				},
 				OnSuccess: "auth_assert",
 			},
@@ -143,6 +144,14 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithAuthAssert
 	s.True(s.hasNode(regFlow.Nodes, userTypeResolverNodeID))
 	resolverNode := s.getNode(regFlow.Nodes, userTypeResolverNodeID)
 	s.Equal(executor.ExecutorNameUserTypeResolver, resolverNode.Executor.Name)
+
+	// Verify phone input prompt was inserted before SMS send node
+	s.True(s.hasNode(regFlow.Nodes, phoneInputPromptNodeID))
+	phonePromptNode := s.getNode(regFlow.Nodes, phoneInputPromptNodeID)
+	s.Equal(string(common.NodeTypePrompt), phonePromptNode.Type)
+	s.Equal("auth", phonePromptNode.Prompts[0].Action.NextNode, "Phone prompt should point to SMS send node")
+	s.Len(phonePromptNode.Prompts[0].Inputs, 1)
+	s.Equal(common.InputTypePhone, phonePromptNode.Prompts[0].Inputs[0].Type)
 }
 
 func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithAuthAssertAndMultiplePaths() {
@@ -229,8 +238,8 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithExistingPr
 
 	s.NoError(err)
 	s.NotNil(regFlow)
-	// Should only have 4 nodes (start, user-type-resolver, task, end) - no duplicate provisioning
-	s.Len(regFlow.Nodes, 4)
+	// Should have 5 nodes (start, user-type-resolver, ut_prompt_node, task, end) - no duplicate provisioning
+	s.Len(regFlow.Nodes, 5)
 }
 
 func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithExistingUserTypeResolver() {
@@ -460,6 +469,146 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithLayout() {
 	s.NotNil(startNode.Layout)
 	s.Equal(float64(180), startNode.Layout.Size.Width)
 	s.Equal(float64(50), startNode.Layout.Position.X)
+}
+
+// Test insertPhoneInputPromptIfNeeded
+
+func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_NoSMSSendNode() {
+	service := s.service.(*flowInferenceService)
+	nodes := []NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "task"},
+		{
+			ID:   "task",
+			Type: "TASK_EXECUTION",
+			Executor: &ExecutorDefinition{
+				Name: executor.ExecutorNameBasicAuth,
+			},
+			OnSuccess: "end",
+		},
+		{ID: "end", Type: "END"},
+	}
+	initialCount := len(nodes)
+
+	service.insertPhoneInputPromptIfNeeded(&nodes, false)
+
+	s.Len(nodes, initialCount, "No node should be inserted when there is no SMS OTP send node")
+}
+
+func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_SMSNodeNotSendMode() {
+	service := s.service.(*flowInferenceService)
+	nodes := []NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "sms"},
+		{
+			ID:   "sms",
+			Type: "TASK_EXECUTION",
+			Executor: &ExecutorDefinition{
+				Name: executor.ExecutorNameSMSAuth,
+				Mode: executor.ExecutorModeVerify,
+			},
+			OnSuccess: "end",
+		},
+		{ID: "end", Type: "END"},
+	}
+	initialCount := len(nodes)
+
+	service.insertPhoneInputPromptIfNeeded(&nodes, false)
+
+	s.Len(nodes, initialCount, "No node should be inserted for SMS verify mode")
+}
+
+func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_PhoneInputAlreadyCollected() {
+	service := s.service.(*flowInferenceService)
+	nodes := []NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "phone_prompt"},
+		{
+			ID:   "phone_prompt",
+			Type: string(common.NodeTypePrompt),
+			Prompts: []PromptDefinition{
+				{
+					Inputs: []InputDefinition{
+						{Identifier: "mobileNumber", Type: common.InputTypePhone, Required: true},
+					},
+					Action: &ActionDefinition{NextNode: "sms"},
+				},
+			},
+			OnSuccess: "sms",
+		},
+		{
+			ID:   "sms",
+			Type: "TASK_EXECUTION",
+			Executor: &ExecutorDefinition{
+				Name: executor.ExecutorNameSMSAuth,
+				Mode: executor.ExecutorModeSend,
+			},
+			OnSuccess: "end",
+		},
+		{ID: "end", Type: "END"},
+	}
+	initialCount := len(nodes)
+
+	service.insertPhoneInputPromptIfNeeded(&nodes, false)
+
+	s.Len(nodes, initialCount, "No node should be inserted when PHONE_INPUT is already collected")
+}
+
+func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_InsertsPromptBeforeSMSSend() {
+	service := s.service.(*flowInferenceService)
+	nodes := []NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "sms"},
+		{
+			ID:   "sms",
+			Type: "TASK_EXECUTION",
+			Executor: &ExecutorDefinition{
+				Name: executor.ExecutorNameSMSAuth,
+				Mode: executor.ExecutorModeSend,
+			},
+			OnSuccess: "end",
+		},
+		{ID: "end", Type: "END"},
+	}
+
+	service.insertPhoneInputPromptIfNeeded(&nodes, false)
+
+	s.Len(nodes, 4, "Phone prompt node should be inserted")
+
+	// Verify the prompt node exists with correct type and input
+	s.True(s.hasNode(nodes, phoneInputPromptNodeID))
+	phonePrompt := s.getNode(nodes, phoneInputPromptNodeID)
+	s.Equal(string(common.NodeTypePrompt), phonePrompt.Type)
+	s.Len(phonePrompt.Prompts, 1)
+	s.Len(phonePrompt.Prompts[0].Inputs, 1)
+	s.Equal(common.InputTypePhone, phonePrompt.Prompts[0].Inputs[0].Type)
+	s.Equal("sms", phonePrompt.Prompts[0].Action.NextNode, "Phone prompt should point to SMS send node")
+	s.Nil(phonePrompt.Layout, "Layout should not be added when includeLayout is false")
+
+	// Verify START now points to phone prompt instead of SMS node
+	startNode := s.getNode(nodes, "start")
+	s.Equal(phoneInputPromptNodeID, startNode.OnSuccess)
+}
+
+func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_InsertsPromptWithLayout() {
+	service := s.service.(*flowInferenceService)
+	nodes := []NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "sms"},
+		{
+			ID:   "sms",
+			Type: "TASK_EXECUTION",
+			Executor: &ExecutorDefinition{
+				Name: executor.ExecutorNameSMSAuth,
+				Mode: executor.ExecutorModeSend,
+			},
+			OnSuccess: "end",
+		},
+		{ID: "end", Type: "END"},
+	}
+
+	service.insertPhoneInputPromptIfNeeded(&nodes, true)
+
+	phonePrompt := s.getNode(nodes, phoneInputPromptNodeID)
+	s.NotNil(phonePrompt)
+	s.NotNil(phonePrompt.Layout, "Layout should be added when includeLayout is true")
+	s.NotNil(phonePrompt.Layout.Size)
+	s.NotNil(phonePrompt.Layout.Position)
 }
 
 // Test generateRegistrationFlowName
@@ -837,12 +986,13 @@ func (s *FlowInferenceServiceTestSuite) TestCreateUserTypeResolverNode() {
 	service := s.service.(*flowInferenceService)
 
 	// Test with layout
-	nodeWithLayout := service.createUserTypeResolverNode(true)
+	nodeWithLayout := service.createUserTypeResolverNode(userTypePromptNodeID, true)
 
 	s.Equal(userTypeResolverNodeID, nodeWithLayout.ID)
 	s.Equal(string(common.NodeTypeTaskExecution), nodeWithLayout.Type)
 	s.NotNil(nodeWithLayout.Executor)
 	s.Equal(executor.ExecutorNameUserTypeResolver, nodeWithLayout.Executor.Name)
+	s.Equal(userTypePromptNodeID, nodeWithLayout.OnIncomplete, "OnIncomplete should be set to prompt node ID")
 
 	// Verify layout is set with default values
 	s.NotNil(nodeWithLayout.Layout)
@@ -854,12 +1004,13 @@ func (s *FlowInferenceServiceTestSuite) TestCreateUserTypeResolverNode() {
 	s.Equal(float64(0), nodeWithLayout.Layout.Position.Y)
 
 	// Test without layout
-	nodeWithoutLayout := service.createUserTypeResolverNode(false)
+	nodeWithoutLayout := service.createUserTypeResolverNode(userTypePromptNodeID, false)
 
 	s.Equal(userTypeResolverNodeID, nodeWithoutLayout.ID)
 	s.Equal(string(common.NodeTypeTaskExecution), nodeWithoutLayout.Type)
 	s.NotNil(nodeWithoutLayout.Executor)
 	s.Equal(executor.ExecutorNameUserTypeResolver, nodeWithoutLayout.Executor.Name)
+	s.Equal(userTypePromptNodeID, nodeWithoutLayout.OnIncomplete, "OnIncomplete should be set to prompt node ID")
 
 	// Verify layout is not set
 	s.Nil(nodeWithoutLayout.Layout)

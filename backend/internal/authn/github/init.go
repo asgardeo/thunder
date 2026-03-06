@@ -20,10 +20,11 @@ package github
 
 import (
 	"github.com/asgardeo/thunder/internal/idp"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // Initialize initializes the GitHub OAuth authentication service.
-func Initialize(idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface) GithubOAuthAuthnServiceInterface {
-	return newGithubOAuthAuthnService(idpSvc, userSvc)
+func Initialize(idpSvc idp.IDPServiceInterface,
+	userProvider userprovider.UserProviderInterface) GithubOAuthAuthnServiceInterface {
+	return newGithubOAuthAuthnService(idpSvc, userProvider)
 }

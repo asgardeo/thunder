@@ -189,7 +189,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingAu
 
 	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Authorization code is required", err.ErrorDescription)
 }
 
@@ -386,8 +386,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 
 	err := validateAuthorizationCode(invalidTokenReq, suite.testAuthzCode)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, err.Error)
-	assert.Equal(suite.T(), "Invalid client Id", err.ErrorDescription)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
+	assert.Equal(suite.T(), "Invalid authorization code", err.ErrorDescription)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_WrongRedirectURI() {
@@ -413,26 +413,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 
 	err := validateAuthorizationCode(tokenReq, authzCodeWithEmptyURI)
 	assert.Nil(suite.T(), err)
-}
-
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_InactiveCode() {
-	inactiveCode := suite.testAuthzCode
-	inactiveCode.State = authz.AuthCodeStateInactive
-
-	err := validateAuthorizationCode(suite.testTokenReq, inactiveCode)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
-	assert.Equal(suite.T(), "Inactive authorization code", err.ErrorDescription)
-}
-
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_InvalidState() {
-	invalidStateCode := suite.testAuthzCode
-	invalidStateCode.State = "INVALID_STATE"
-
-	err := validateAuthorizationCode(suite.testTokenReq, invalidStateCode)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
-	assert.Equal(suite.T(), "Inactive authorization code", err.ErrorDescription)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_ExpiredCode() {

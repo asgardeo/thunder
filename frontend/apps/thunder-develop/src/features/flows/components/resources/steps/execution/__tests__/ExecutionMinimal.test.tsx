@@ -26,8 +26,23 @@ const mockUseNodeId = vi.fn((): string | null => 'execution-node-id');
 
 vi.mock('@xyflow/react', () => ({
   useNodeId: () => mockUseNodeId(),
-  Handle: ({type, position, id = '', className = ''}: {type: string; position: string; id?: string; className?: string}) => (
-    <div data-testid={`handle-${type}${className ? `-${className}` : ''}`} data-position={position} data-id={id} data-classname={className} />
+  Handle: ({
+    type,
+    position,
+    id = '',
+    className = '',
+  }: {
+    type: string;
+    position: string;
+    id?: string;
+    className?: string;
+  }) => (
+    <div
+      data-testid={`handle-${type}${className ? `-${className}` : ''}`}
+      data-position={position}
+      data-id={id}
+      data-classname={className}
+    />
   ),
   Position: {
     Left: 'left',
@@ -70,6 +85,7 @@ vi.mock('../execution-factory/ExecutionFactory', () => ({
 vi.mock('@/features/flows/constants/VisualFlowConstants', () => ({
   default: {
     FLOW_BUILDER_NEXT_HANDLE_SUFFIX: '-next',
+    FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX: '-incomplete',
   },
 }));
 
@@ -237,6 +253,53 @@ describe('ExecutionMinimal', () => {
 
       const stepElement = container.querySelector('.execution-minimal-step');
       expect(stepElement).not.toHaveClass('has-branching');
+    });
+
+    it('should render incomplete handle when onIncomplete property exists', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+            onIncomplete: '',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      const incompleteHandle = screen.getByTestId('handle-source-execution-handle-incomplete');
+      expect(incompleteHandle).toBeInTheDocument();
+      expect(incompleteHandle).toHaveAttribute('data-position', 'top');
+    });
+
+    it('should render incomplete handle with correct id', () => {
+      const resource = createMockResource({
+        id: 'test-execution',
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onIncomplete: 'step-4',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      const incompleteHandle = screen.getByTestId('handle-source-execution-handle-incomplete');
+      expect(incompleteHandle).toHaveAttribute('data-id', 'test-execution-incomplete');
+    });
+
+    it('should not render incomplete handle when onIncomplete property is missing', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      expect(screen.queryByTestId('handle-source-execution-handle-incomplete')).not.toBeInTheDocument();
     });
   });
 

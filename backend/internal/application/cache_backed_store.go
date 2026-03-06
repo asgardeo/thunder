@@ -176,6 +176,21 @@ func (as *cachedBackedApplicationStore) DeleteApplication(id string) error {
 	return nil
 }
 
+// IsApplicationExists implements applicationStoreInterface.
+func (as *cachedBackedApplicationStore) IsApplicationExists(id string) (bool, error) {
+	return as.Store.IsApplicationExists(id)
+}
+
+// IsApplicationExistsByName implements applicationStoreInterface.
+func (as *cachedBackedApplicationStore) IsApplicationExistsByName(name string) (bool, error) {
+	return as.Store.IsApplicationExistsByName(name)
+}
+
+// IsApplicationDeclarative implements applicationStoreInterface.
+func (as *cachedBackedApplicationStore) IsApplicationDeclarative(id string) bool {
+	return as.Store.IsApplicationDeclarative(id)
+}
+
 // cacheApplication caches the application and OAuth application configuration if it exists.
 func (as *cachedBackedApplicationStore) cacheApplication(app *model.ApplicationProcessedDTO) {
 	if app == nil {

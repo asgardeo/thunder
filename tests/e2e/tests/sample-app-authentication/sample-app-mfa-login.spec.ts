@@ -440,21 +440,14 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log("✓ Registration form submitted");
 
     // Step 10: Verify user is auto-logged in after successful registration
+    // After registration, the app goes through an OAuth redirect chain:
+    //   registration complete → OAuth authorize → redirect with ?code= → token exchange → logged-in UI
+    // We wait for the avatar button which indicates the full flow completed successfully.
     console.log("\n[REGISTRATION] Step 10: Verifying auto-login after registration...");
-    await page.waitForLoadState("networkidle");
-    
-    // Wait for OAuth redirect to complete and page to fully render
-    // The app redirects with ?code=...&state=... and then processes the token
-    await page.waitForURL((url: URL) => !url.searchParams.has("code"), { timeout: 15000 }).catch(() => {
-      console.log("  Note: URL still contains code parameter, continuing...");
-    });
-    await page.waitForLoadState("networkidle");
-    
-    // Wait for the avatar/logout button to be visible (indicates logged-in UI is ready)
     const avatarOrLogout = page.locator(
-      'button[aria-haspopup="true"], button[aria-controls="account-menu"], button:has(> div[class*="MuiAvatar"]), button:has-text("Logout"), button:has-text("Sign Out")'
+      'button[aria-haspopup="true"], button:has(div[class*="MuiAvatar"])'
     ).first();
-    await avatarOrLogout.waitFor({ state: "visible", timeout: 15000 });
+    await avatarOrLogout.waitFor({ state: "visible", timeout: 30000 });
     console.log("✓ User auto-logged in after registration");
 
     // Step 11: Logout to test the MFA login flow

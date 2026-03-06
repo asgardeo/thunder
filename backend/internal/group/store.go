@@ -47,6 +47,8 @@ type groupStoreInterface interface {
 	GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error)
 	GetGroupsByOrganizationUnit(
 		ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
+	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
+	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
 }
 
 // groupStore is the default implementation of groupStoreInterface.
@@ -248,11 +250,6 @@ func (s *groupStore) UpdateGroup(ctx context.Context, group GroupDAO) error {
 		return ErrGroupNotFound
 	}
 
-	err = updateGroupMembers(ctx, dbClient, group.ID, group.Members, s.deploymentID)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -305,7 +302,7 @@ func (s *groupStore) ValidateGroupIDs(ctx context.Context, groupIDs []string) ([
 
 	existingGroupIDs := make(map[string]bool)
 	for _, row := range results {
-		if groupID, ok := row["group_id"].(string); ok {
+		if groupID, ok := row["id"].(string); ok {
 			existingGroupIDs[groupID] = true
 		}
 	}
@@ -385,27 +382,57 @@ func (s *groupStore) GetGroupsByOrganizationUnit(
 
 	groups := make([]GroupBasicDAO, 0, len(results))
 	for _, result := range results {
-		group := GroupBasicDAO{
-			ID:                 result["group_id"].(string),
-			OrganizationUnitID: result["ou_id"].(string),
-			Name:               result["name"].(string),
+		group, err := buildGroupFromResultRow(result)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build group from result row: %w", err)
 		}
 
-		if description, ok := result["description"].(string); ok {
-			group.Description = description
-		}
-
-		groups = append(groups, group)
+		groups = append(groups, GroupBasicDAO{
+			ID:                 group.ID,
+			OrganizationUnitID: group.OrganizationUnitID,
+			Name:               group.Name,
+			Description:        group.Description,
+		})
 	}
 
 	return groups, nil
 }
 
+// AddGroupMembers adds members to a group.
+func (s *groupStore) AddGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	return addMembersToGroup(ctx, dbClient, groupID, members, s.deploymentID)
+}
+
+// RemoveGroupMembers removes members from a group.
+func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	for _, member := range members {
+		_, err := dbClient.ExecuteContext(
+			ctx, QueryDeleteGroupMember,
+			groupID, member.Type, member.ID, s.deploymentID,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to remove member from group: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // buildGroupFromResultRow constructs a GroupDAO from a database result row.
 func buildGroupFromResultRow(row map[string]interface{}) (GroupDAO, error) {
-	groupID, ok := row["group_id"].(string)
+	groupID, ok := row["id"].(string)
 	if !ok {
-		return GroupDAO{}, fmt.Errorf("failed to parse group_id as string")
+		return GroupDAO{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)
@@ -446,27 +473,6 @@ func addMembersToGroup(
 		if err != nil {
 			return fmt.Errorf("failed to add member to group: %w", err)
 		}
-	}
-	return nil
-}
-
-// updateGroupMembers updates the members assigned to the group by first deleting existing members and
-// then adding new ones.
-func updateGroupMembers(
-	ctx context.Context,
-	dbClient provider.DBClientInterface,
-	groupID string,
-	members []Member,
-	deploymentID string,
-) error {
-	_, err := dbClient.ExecuteContext(ctx, QueryDeleteGroupMembers, groupID, deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to delete existing group member assignments: %w", err)
-	}
-
-	err = addMembersToGroup(ctx, dbClient, groupID, members, deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to assign members to group: %w", err)
 	}
 	return nil
 }

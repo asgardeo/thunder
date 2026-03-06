@@ -8,9 +8,9 @@ tls:
   key_file: "repository/resources/security/server.key"
 
 database:
-  identity:
+  config:
     type: "sqlite"
-    path: "repository/database/thunderdb.db"
+    path: "repository/database/configdb.db"
     options: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
     max_open_conns: 500
     max_idle_conns: 100

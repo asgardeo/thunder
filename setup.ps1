@@ -284,6 +284,7 @@ function Read-Config {
         $script:HOSTNAME = & yq eval '.server.hostname // "localhost"' $configFile 2>$null
         $script:PORT = & yq eval '.server.port // 8090' $configFile 2>$null
         $script:HTTP_ONLY = & yq eval '.server.http_only // false' $configFile 2>$null
+        $script:PUBLIC_URL = & yq eval '.server.public_url // ""' $configFile 2>$null
     }
     else {
         # Fallback: basic parsing with Select-String
@@ -312,6 +313,17 @@ function Read-Config {
         else {
             $script:HTTP_ONLY = "false"
         }
+
+        # Parse public_url (quoted or unquoted)
+        if ($content -match '(?m)^\s*public_url:\s*[''"]([^''"]+)[''"]') {
+            $script:PUBLIC_URL = $matches[1]
+        }
+        elseif ($content -match '(?m)^\s*public_url:\s*([^\s#]+)') {
+            $script:PUBLIC_URL = $matches[1]
+        }
+        else {
+            $script:PUBLIC_URL = ""
+        }
     }
 
     # Determine protocol
@@ -328,12 +340,16 @@ function Read-Config {
 # Read configuration
 Read-Config | Out-Null
 
-# Construct base URL
+# Construct base URL (internal API endpoint)
 $BASE_URL = "$($script:PROTOCOL)://$($script:HOSTNAME):$($script:PORT)"
 $script:THUNDER_API_BASE = $BASE_URL
 
-# Export THUNDER_API_BASE as environment variable for bootstrap scripts
+# Construct public URL (external/redirect URLs), strip trailing slash to avoid double slashes in paths
+$PUBLIC_URL = if ($script:PUBLIC_URL) { $script:PUBLIC_URL.TrimEnd('/') } else { $BASE_URL }
+
+# Export environment variables for bootstrap scripts
 $env:THUNDER_API_BASE = $BASE_URL
+$env:THUNDER_PUBLIC_URL = $PUBLIC_URL
 
 Write-Host ""
 Write-Host "========================================="
@@ -341,6 +357,7 @@ Write-Host "   Thunder Setup"
 Write-Host "========================================="
 Write-Host ""
 Write-Host "Server URL: $BASE_URL" -ForegroundColor Blue
+Write-Host "Public URL: $PUBLIC_URL" -ForegroundColor Blue
 if ($DEBUG_MODE) {
     Write-Host "Debug: Enabled (port $DEBUG_PORT)" -ForegroundColor Blue
 }
@@ -417,6 +434,8 @@ Write-Host "[WARN] Starting temporary server with security disabled..." -Foregro
 Write-Host ""
 
 # Export environment variable to skip security
+$hadSkipSecurity = Test-Path Env:THUNDER_SKIP_SECURITY
+$previousSkipSecurity = $env:THUNDER_SKIP_SECURITY
 $env:THUNDER_SKIP_SECURITY = "true"
 
 # Resolve thunder executable path
@@ -694,6 +713,13 @@ finally {
         try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
         } catch { }
+    }
+
+    # Restore THUNDER_SKIP_SECURITY to its previous state
+    if (-not $hadSkipSecurity) {
+        Remove-Item Env:THUNDER_SKIP_SECURITY -ErrorAction SilentlyContinue
+    } else {
+        $env:THUNDER_SKIP_SECURITY = $previousSkipSecurity
     }
 }
 

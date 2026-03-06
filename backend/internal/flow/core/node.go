@@ -44,8 +44,6 @@ type NodeInterface interface {
 	RemovePreviousNode(previousNodeID string)
 	GetCondition() *NodeCondition
 	SetCondition(condition *NodeCondition)
-	GetMeta() interface{}
-	SetMeta(meta interface{})
 }
 
 // node implements the NodeInterface
@@ -58,7 +56,6 @@ type node struct {
 	nextNodeList     []string
 	previousNodeList []string
 	condition        *NodeCondition
-	meta             interface{}
 }
 
 var _ NodeInterface = (*node)(nil)
@@ -218,14 +215,4 @@ func (n *node) GetCondition() *NodeCondition {
 // SetCondition sets the execution condition for the node
 func (n *node) SetCondition(condition *NodeCondition) {
 	n.condition = condition
-}
-
-// GetMeta returns the meta object for the node
-func (n *node) GetMeta() interface{} {
-	return n.meta
-}
-
-// SetMeta sets the meta object for the node
-func (n *node) SetMeta(meta interface{}) {
-	n.meta = meta
 }

@@ -22,15 +22,33 @@ import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import {visualizer} from 'rollup-plugin-visualizer';
+import {readFileSync, copyFileSync, existsSync, writeFileSync} from 'fs';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5191;
 const HOST = process.env.HOST ?? 'localhost';
 const BASE_URL = process.env.BASE_URL ?? '/develop';
 
+// Copy version.txt from monorepo root into public/ so it is served at runtime
+// and included in the build output, then read the local copy for the build constant.
+// If the root version.txt is missing, create a fallback with v0.0.0.
+const rootVersionFile = resolve(currentDir, '../../../version.txt');
+const publicVersionFile = resolve(currentDir, 'public', 'version.txt');
+
+if (existsSync(rootVersionFile)) {
+  copyFileSync(rootVersionFile, publicVersionFile);
+} else {
+  writeFileSync(publicVersionFile, 'v0.0.0');
+}
+
+const VERSION = readFileSync(publicVersionFile, 'utf-8').trim();
+
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE_URL,
+  define: {
+    VERSION: JSON.stringify(VERSION),
+  },
   plugins: [
     basicSsl(),
     react({
@@ -69,8 +87,6 @@ export default defineConfig({
       // when using linked packages
       react: resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),
-      '@emotion/react': resolve(__dirname, './node_modules/@emotion/react'),
-      '@emotion/styled': resolve(__dirname, './node_modules/@emotion/styled'),
     },
     conditions: ['browser', 'module', 'import', 'default'],
   },
@@ -78,12 +94,14 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['@thunder/test-utils/setup'],
+    reporters: process.env.CI ? ['dot'] : ['default'],
+    restoreMocks: true,
     css: {
       modules: {
         classNameStrategy: 'non-scoped',
       },
     },
-    // Added to fix test failures dues to css imports from oxygen-ui. Need to check if can fix from oxygen-ui library.
+    // Inline deps that need Vite's CSS pipeline or have Node.js-style imports.
     server: {
       deps: {
         inline: [
@@ -92,15 +110,22 @@ export default defineConfig({
           '@wso2/oxygen-ui',
           '@wso2/oxygen-ui-icons-react',
           '@mui/x-data-grid',
-          '@mui/x-date-pickers',
-          '@mui/x-tree-view',
-          '@mui/x-charts',
         ],
+      },
+    },
+    // Pre-bundle remaining heavy dependencies with esbuild for faster test imports.
+    deps: {
+      optimizer: {
+        client: {
+          include: ['@mui/x-date-pickers', '@mui/x-tree-view', '@mui/x-charts'],
+        },
       },
     },
     coverage: {
       provider: 'istanbul',
-      reporter: ['text', 'json', 'html', ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]],
+      reporter: process.env.CI
+        ? [['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]]
+        : ['text', 'json', 'html', ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]],
       exclude: [
         'node_modules/',
         'dist/',

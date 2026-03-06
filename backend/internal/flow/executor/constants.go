@@ -43,6 +43,12 @@ const (
 	ExecutorNameCredentialSetter    = "CredentialSetter"
 )
 
+// Executor mode constants
+const (
+	ExecutorModeSend   = "send"
+	ExecutorModeVerify = "verify"
+)
+
 // User attribute and input constants
 const (
 	userAttributeUsername     = "username"
@@ -59,6 +65,7 @@ const (
 	userInputOuHandle    = "ouHandle"
 	userInputOuDesc      = "ouDescription"
 	userInputInviteToken = "inviteToken"
+	userInputOTP         = "otp"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
@@ -83,7 +90,8 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	"authorized_permissions", "requested_permissions", "required_attributes", "required_locales",
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
-	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken}
+	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken,
+	"applicationId", "idpId", "senderId"}
 
 const runtimeKeyStoredInviteToken = "storedInviteToken"
 
@@ -91,5 +99,7 @@ const runtimeKeyStoredInviteToken = "storedInviteToken"
 const (
 	failureReasonUserNotAuthenticated = "User is not authenticated"
 	failureReasonUserNotFound         = "User not found"
+	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
 	failureReasonFailedToIdentifyUser = "Failed to identify user"
+	failureReasonInvalidOTP           = "invalid OTP provided"
 )

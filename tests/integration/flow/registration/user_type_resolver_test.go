@@ -62,7 +62,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string"},
-			"password": map[string]interface{}{"type": "string"},
+			"password": map[string]interface{}{"type": "string", "credential": true},
 			"email":    map[string]interface{}{"type": "string"},
 		},
 	}
@@ -80,7 +80,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string"},
-			"password": map[string]interface{}{"type": "string"},
+			"password": map[string]interface{}{"type": "string", "credential": true},
 			"email":    map[string]interface{}{"type": "string"},
 		},
 	}

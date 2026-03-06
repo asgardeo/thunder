@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,371 +16,330 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetUser from '../useGetUser';
 import type {ApiUser} from '../../types/users';
+import UserQueryKeys from '../../constants/user-query-keys';
 
-// Mock useAsgardeo
-const mockHttpRequest = vi.fn();
+// Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+  useAsgardeo: vi.fn(),
 }));
 
-// Mock useConfig
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
-    useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
-    }),
+    useConfig: vi.fn(),
   };
 });
 
+const {useAsgardeo} = await import('@asgardeo/react');
+const {useConfig} = await import('@thunder/shared-contexts');
+
 describe('useGetUser', () => {
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+
+  const mockUser: ApiUser = {
+    id: 'user-1',
+    organizationUnit: 'ou-1',
+    type: 'Employee',
+    attributes: {username: 'john', email: 'john@test.com'},
+  };
+
   beforeEach(() => {
-    mockHttpRequest.mockReset();
+    mockHttpRequest = vi.fn();
+    mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {
+        request: mockHttpRequest,
+      },
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: mockGetServerUrl,
+    } as unknown as ReturnType<typeof useConfig>);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with correct default values', () => {
-    const {result} = renderHook(() => useGetUser(undefined));
+  it('should initialize with loading state when userId is provided', () => {
+    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(false);
+    const {result} = renderHook(() => useGetUser('user-1'));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
-    expect(typeof result.current.refetch).toBe('function');
   });
 
-  it('should fetch user successfully when id is provided', async () => {
-    const mockUser: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
+  it('should successfully fetch a single user', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
 
-    mockHttpRequest.mockResolvedValue({data: mockUser});
-
-    const {result} = renderHook(() => useGetUser('user-123'));
+    const userId = 'user-1';
+    const {result} = renderHook(() => useGetUser(userId));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
     expect(result.current.data).toEqual(mockUser);
-    expect(result.current.error).toBeNull();
+    expect(result.current.data?.id).toBe(userId);
+    expect(result.current.data?.attributes?.username).toBe('john');
+  });
+
+  it('should make correct API call with user ID', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const userId = 'user-1';
+    renderHook(() => useGetUser(userId));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/users/user-123',
+        url: `https://api.test.com/users/${userId}`,
         method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
     );
   });
 
-  it('should not fetch when id is not provided', () => {
-    const {result} = renderHook(() => useGetUser(undefined));
+  it('should use correct query key', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
 
-    expect(result.current.data).toBeNull();
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(mockHttpRequest).not.toHaveBeenCalled();
-  });
-
-  it('should handle API error with JSON response', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('User not found'));
-
-    const {result} = renderHook(() => useGetUser('user-123'));
+    const userId = 'user-1';
+    const {result, queryClient} = renderHook(() => useGetUser(userId));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'User not found',
-      description: 'Failed to fetch user',
-    });
-    expect(result.current.data).toBeNull();
+    const queryKey = [UserQueryKeys.USER, userId];
+    const cachedData = queryClient.getQueryData(queryKey);
+    expect(cachedData).toEqual(mockUser);
   });
 
-  it('should handle API error without JSON response', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Internal Server Error'));
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to fetch user');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetUser('user-123'));
+    const {result} = renderHook(() => useGetUser('user-1'));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Internal Server Error',
-      description: 'Failed to fetch user',
-    });
-    expect(result.current.data).toBeNull();
+    expect(result.current.error).toEqual(apiError);
+    expect(result.current.data).toBeUndefined();
   });
 
   it('should handle network error', async () => {
-    mockHttpRequest.mockRejectedValue(new Error('Network error'));
+    const networkError = new Error('Network request failed');
+    mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetUser('user-123'));
+    const {result} = renderHook(() => useGetUser('user-1'));
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'Network error',
-      description: 'Failed to fetch user',
-    });
-    expect(result.current.data).toBeNull();
+    expect(result.current.error).toEqual(networkError);
   });
 
-  it('should refetch user with the same id', async () => {
-    const mockUser: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValue({data: mockUser});
-
-    const {result} = renderHook(() => useGetUser('user-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser);
-    });
-
-    const callsBeforeRefetch = mockHttpRequest.mock.calls.length;
-    await result.current.refetch();
-
-    await waitFor(() => {
-      expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
-    });
-  });
-
-  it('should refetch user with a new id', async () => {
-    const mockUser1: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
-
-    const mockUser2: ApiUser = {
-      id: 'user-789',
-      organizationUnit: '/marketing',
-      type: 'employee',
-      attributes: {
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-      },
-    };
-
-    mockHttpRequest.mockImplementation(({url}: {url?: string}) =>
-      Promise.resolve({
-        data: url!.endsWith('user-123') ? mockUser1 : mockUser2,
-      }),
-    );
-
-    const {result, rerender} = renderHook(({id}) => useGetUser(id), {
-      initialProps: {id: 'user-123'},
-    });
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser1);
-    });
-
-    rerender({id: 'user-789'});
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser2);
-    });
-  });
-
-  it('should set error when refetch is called without id', async () => {
+  it('should not make API call when userId is undefined', () => {
     const {result} = renderHook(() => useGetUser(undefined));
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
+  it('should not make API call when userId is empty string', () => {
+    const {result} = renderHook(() => useGetUser(''));
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
+  it('should use correct server URL from config', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
     });
 
+    renderHook(() => useGetUser('user-1'));
+
+    await waitFor(() => {
+      expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.url).toContain('https://api.test.com/users/user-1');
+  });
+
+  it('should include correct headers', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    renderHook(() => useGetUser('user-1'));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const callArgs = mockHttpRequest.mock.calls[0][0];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.method).toBe('GET');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    expect(callArgs.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('should refetch when userId changes', async () => {
+    const user1 = {...mockUser, id: 'user-1', attributes: {username: 'john'}};
+    const user2 = {...mockUser, id: 'user-2', attributes: {username: 'jane'}};
+
+    mockHttpRequest.mockResolvedValueOnce({data: user1}).mockResolvedValueOnce({data: user2});
+
+    const {result, rerender} = renderHook(({userId}: {userId: string}) => useGetUser(userId), {
+      initialProps: {userId: 'user-1'},
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.id).toBe('user-1');
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Change the user ID
+    rerender({userId: 'user-2'});
+
+    await waitFor(() => {
+      expect(result.current.data?.id).toBe('user-2');
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('should cache user data', async () => {
+    mockHttpRequest.mockResolvedValueOnce({
+      data: mockUser,
+    });
+
+    const userId = 'user-1';
+
+    // First call - get the queryClient from the render result
+    const {result: result1, queryClient} = renderHook(() => useGetUser(userId));
+
+    await waitFor(() => {
+      expect(result1.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Set the data as fresh to prevent refetch
+    queryClient.setQueryDefaults([UserQueryKeys.USER, userId], {
+      staleTime: Infinity,
+    });
+
+    // Second call with same queryClient should use cache
+    const {result: result2} = renderHook(() => useGetUser(userId), {
+      queryClient,
+    });
+
+    await waitFor(() => {
+      expect(result2.current.isSuccess).toBe(true);
+    });
+
+    // Should still be called only once due to caching
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+    expect(result2.current.data).toEqual(mockUser);
+  });
+
+  it('should support refetching data', async () => {
+    mockHttpRequest.mockResolvedValue({
+      data: mockUser,
+    });
+
+    const {result} = renderHook(() => useGetUser('user-1'));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Refetch the data
     await result.current.refetch();
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // When userId is undefined, fetchUser returns early without setting error
-    expect(result.current.error).toBeNull();
-    expect(result.current.data).toBeNull();
+    expect(mockHttpRequest).toHaveBeenCalledTimes(2);
   });
 
-  it('should prevent double fetch in strict mode', async () => {
-    const mockUser: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
+  it('should handle different user IDs', async () => {
+    const user1 = {...mockUser, id: 'user-1', attributes: {username: 'john'}};
+    const user2 = {...mockUser, id: 'user-2', attributes: {username: 'jane'}};
 
-    mockHttpRequest.mockResolvedValue({data: mockUser});
+    mockHttpRequest.mockResolvedValueOnce({data: user1});
 
-    const {result} = renderHook(() => useGetUser('user-123'));
+    const {result: result1} = renderHook(() => useGetUser('user-1'));
 
     await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser);
+      expect(result1.current.isSuccess).toBe(true);
     });
 
-    expect(mockHttpRequest).toHaveBeenCalled();
+    expect(result1.current.data?.id).toBe('user-1');
+
+    mockHttpRequest.mockResolvedValueOnce({data: user2});
+
+    const {result: result2} = renderHook(() => useGetUser('user-2'));
+
+    await waitFor(() => {
+      expect(result2.current.isSuccess).toBe(true);
+    });
+
+    expect(result2.current.data?.id).toBe('user-2');
   });
 
-  it('should fetch when id changes', async () => {
-    const mockUser1: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
-
-    const mockUser2: ApiUser = {
-      id: 'user-789',
-      organizationUnit: '/marketing',
-      type: 'employee',
-      attributes: {
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-      },
-    };
-
-    mockHttpRequest.mockImplementation(({url}: {url?: string}) =>
-      Promise.resolve({
-        data: url!.endsWith('user-123') ? mockUser1 : mockUser2,
-      }),
-    );
-
-    const {result, rerender} = renderHook(({id}: {id?: string}) => useGetUser(id), {
-      initialProps: {id: 'user-123'},
+  it('should maintain correct loading state during fetch', async () => {
+    let resolveRequest: (value: {data: ApiUser}) => void;
+    const requestPromise = new Promise<{data: ApiUser}>((resolve) => {
+      resolveRequest = resolve;
     });
+
+    mockHttpRequest.mockReturnValueOnce(requestPromise);
+
+    const {result} = renderHook(() => useGetUser('user-1'));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isFetching).toBe(true);
+    expect(result.current.data).toBeUndefined();
+
+    resolveRequest!({data: mockUser});
 
     await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser1);
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    rerender({id: 'user-789'});
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser2);
-    });
-  });
-
-  it('should handle error when refetch is called and throw error', async () => {
-    const mockUser: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockUser});
-
-    const {result} = renderHook(() => useGetUser('user-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser);
-    });
-
-    const refetchError = new Error('Refetch failed');
-    mockHttpRequest.mockRejectedValueOnce(refetchError);
-
-    await expect(result.current.refetch()).rejects.toThrow('Refetch failed');
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_ERROR',
-        message: 'Refetch failed',
-        description: 'Failed to fetch user',
-      });
-    });
-  });
-
-  it('should handle non-Error object when refetch fails', async () => {
-    const mockUser: ApiUser = {
-      id: 'user-123',
-      organizationUnit: '/sales',
-      type: 'customer',
-      attributes: {
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    };
-
-    mockHttpRequest.mockResolvedValueOnce({data: mockUser});
-
-    const {result} = renderHook(() => useGetUser('user-123'));
-
-    await waitFor(() => {
-      expect(result.current.data).toEqual(mockUser);
-    });
-
-    mockHttpRequest.mockRejectedValueOnce('Unknown error');
-
-    await expect(result.current.refetch()).rejects.toEqual('Unknown error');
-
-    await waitFor(() => {
-      expect(result.current.error).toEqual({
-        code: 'FETCH_ERROR',
-        message: 'An unknown error occurred',
-        description: 'Failed to fetch user',
-      });
-    });
-
-    expect(result.current.loading).toBe(false);
-  });
-
-  it('should handle non-Error object during initial fetch', async () => {
-    mockHttpRequest.mockRejectedValue('String error during initial fetch');
-
-    const {result} = renderHook(() => useGetUser('user-123'));
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toEqual({
-      code: 'FETCH_ERROR',
-      message: 'An unknown error occurred',
-      description: 'Failed to fetch user',
-    });
-    expect(result.current.data).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toEqual(mockUser);
   });
 });

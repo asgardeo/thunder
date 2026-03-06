@@ -36,20 +36,24 @@ type Transactioner interface {
 	Transact(ctx context.Context, txFunc func(context.Context) error) error
 }
 
-// transactioner is the default implementation of Transactioner.
-type transactioner struct {
-	db *sql.DB
+// NewTransactioner creates a new Transactioner instance.
+func NewTransactioner(db *sql.DB, dbName string) Transactioner {
+	return &transactioner{
+		db:     db,
+		dbName: dbName,
+	}
 }
 
-// NewTransactioner creates a new Transactioner instance.
-func NewTransactioner(db *sql.DB) Transactioner {
-	return &transactioner{db: db}
+// transactioner is the default implementation of Transactioner.
+type transactioner struct {
+	db     *sql.DB
+	dbName string
 }
 
 // Transact executes the given function within a database transaction.
 func (t *transactioner) Transact(ctx context.Context, txFunc func(context.Context) error) (err error) {
-	// Check if we're already in a transaction
-	if HasTx(ctx) {
+	// Check if we're already in a transaction for this database
+	if HasKeyedTx(ctx, t.dbName) {
 		// Already in a transaction - just execute the function without creating a new one
 		return txFunc(ctx)
 	}
@@ -66,13 +70,17 @@ func (t *transactioner) Transact(ctx context.Context, txFunc func(context.Contex
 			// Capture stack trace
 			stack := string(debug.Stack())
 			log.GetLogger().Error("panic occurred during transaction",
+				log.String("dbName", t.dbName),
 				log.Any("panic", p),
 				log.String("stack", stack),
 			)
 
 			// Panic occurred - rollback and convert panic to error
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.GetLogger().Error("failed to rollback transaction after unexpected error", log.Error(rollbackErr))
+				log.GetLogger().Error("failed to rollback transaction after unexpected error",
+					log.String("dbName", t.dbName),
+					log.Error(rollbackErr),
+				)
 				// Convert panic to error and join with rollback error
 				switch v := p.(type) {
 				case error:
@@ -92,7 +100,10 @@ func (t *transactioner) Transact(ctx context.Context, txFunc func(context.Contex
 		} else if err != nil {
 			// Error occurred - rollback
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.GetLogger().Error("failed to rollback transaction", log.Error(rollbackErr))
+				log.GetLogger().Error("failed to rollback transaction",
+					log.String("dbName", t.dbName),
+					log.Error(rollbackErr),
+				)
 				err = errors.Join(err, rollbackErr)
 			}
 		} else {
@@ -102,7 +113,7 @@ func (t *transactioner) Transact(ctx context.Context, txFunc func(context.Contex
 	}()
 
 	// 3. Create context with transaction
-	txCtx := WithTx(ctx, tx)
+	txCtx := WithKeyedTx(ctx, t.dbName, tx)
 
 	// 4. Execute the user-provided function
 	err = txFunc(txCtx)

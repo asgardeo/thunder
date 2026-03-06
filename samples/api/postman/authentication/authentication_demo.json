@@ -1,10 +1,9 @@
 {
   "info": {
-    "_postman_id": "28f739e9-1857-41d7-9605-c2779603228b",
+    "_postman_id": "4daf4513-cbd8-4634-a0b6-5610c8d4d2ce",
     "name": "Demo - Authentication",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "15629984",
-    "_collection_link": "https://go.postman.co/collection/15629984-28f739e9-1857-41d7-9605-c2779603228b?source=collection_link"
+    "_exporter_id": "18934058"
   },
   "item": [
     {
@@ -1394,7 +1393,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"username\": \"{{demoLoginUser1Username}}\",\n  \"password\": \"{{demoLoginUser1Password}}\"\n//   \"skip_assertion\": false\n}",
+                  "raw": "{\n    \"identifiers\": {\n        \"username\": \"{{demoLoginUser1Username}}\"\n    },\n    \"credentials\": {\n        \"password\": \"{{demoLoginUser1Password}}\"\n    }\n    //   \"skip_assertion\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1431,7 +1430,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{demoLoginUser1Email}}\",\n  \"password\": \"{{demoLoginUser1Password}}\",\n  \"skip_assertion\": true\n}",
+                  "raw": "{\n    \"identifiers\": {\n        \"email\": \"{{demoLoginUser1Email}}\"\n    },\n    \"credentials\": {\n        \"password\": \"{{demoLoginUser1Password}}\"\n    },\n    \"skip_assertion\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"

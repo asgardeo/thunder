@@ -56,8 +56,8 @@ func GetHealthCheckService() HealthCheckServiceInterface {
 // CheckReadiness checks the readiness of the server and its dependencies.
 func (hcs *HealthCheckService) CheckReadiness() model.ServerStatus {
 	configDBStatus := model.ServiceStatus{
-		ServiceName: "IdentityDB",
-		Status:      hcs.checkIdentityDatabaseStatus(queryConfigDBTable),
+		ServiceName: "ConfigDB",
+		Status:      hcs.checkConfigDatabaseStatus(queryConfigDBTable),
 	}
 
 	runtimeDBStatus := model.ServiceStatus{
@@ -86,10 +86,10 @@ func (hcs *HealthCheckService) CheckReadiness() model.ServerStatus {
 	}
 }
 
-// checkIdentityDatabaseStatus checks the status of the identity database with the specified query.
-func (hcs *HealthCheckService) checkIdentityDatabaseStatus(query dbmodel.DBQuery) model.Status {
+// checkConfigDatabaseStatus checks the status of the config database with the specified query.
+func (hcs *HealthCheckService) checkConfigDatabaseStatus(query dbmodel.DBQuery) model.Status {
 	dbClient, err := hcs.DBProvider.GetConfigDBClient()
-	return hcs.executeDatabaseHealthCheck("IdentityDB", dbClient, err, query)
+	return hcs.executeDatabaseHealthCheck("ConfigDB", dbClient, err, query)
 }
 
 // checkRuntimeDatabaseStatus checks the status of the runtime database with the specified query.

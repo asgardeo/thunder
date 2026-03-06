@@ -16,22 +16,19 @@
  * under the License.
  */
 
-import {Box, Typography, Paper} from '@wso2/oxygen-ui';
+import {Box, Typography, Paper, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 
 export default function IntegrationsPage() {
   const {t} = useTranslation();
 
   return (
-    <Box>
-      <Box mb={4}>
-        <Typography variant="h1" gutterBottom>
-          {t('integrations:title')}
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          {t('integrations:subtitle')}
-        </Typography>
-      </Box>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.Header>{t('integrations:title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('integrations:subtitle')}</PageTitle.SubHeader>
+      </PageTitle>
 
       <Paper
         sx={{
@@ -52,6 +49,6 @@ export default function IntegrationsPage() {
           </Typography>
         </Box>
       </Paper>
-    </Box>
+    </PageContent>
   );
 }

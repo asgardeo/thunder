@@ -129,7 +129,7 @@ func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenReque
 		if requestedType != constants.TokenTypeIdentifierAccessToken &&
 			requestedType != constants.TokenTypeIdentifierJWT {
 			return &model.ErrorResponse{
-				Error: constants.ErrorInvalidTarget,
+				Error: constants.ErrorInvalidRequest,
 				ErrorDescription: fmt.Sprintf(
 					"Requested token type '%s' is not supported. Only access tokens and JWT tokens are supported.",
 					tokenRequest.RequestedTokenType,
@@ -152,8 +152,8 @@ func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest
 	if err != nil {
 		logger.Error("Failed to validate subject token", log.Error(err))
 		return nil, &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: fmt.Sprintf("Invalid subject_token: %s", err.Error()),
+			Error:            constants.ErrorInvalidRequest,
+			ErrorDescription: "Invalid subject_token",
 		}
 	}
 
@@ -164,8 +164,8 @@ func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest
 		if err != nil {
 			logger.Error("Failed to validate actor token", log.Error(err))
 			return nil, &model.ErrorResponse{
-				Error:            constants.ErrorInvalidGrant,
-				ErrorDescription: fmt.Sprintf("Invalid actor_token: %s", err.Error()),
+				Error:            constants.ErrorInvalidRequest,
+				ErrorDescription: "Invalid actor_token",
 			}
 		}
 	}

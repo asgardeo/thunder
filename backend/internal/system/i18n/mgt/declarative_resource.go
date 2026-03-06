@@ -19,6 +19,7 @@
 package mgt
 
 import (
+	"context"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
@@ -33,29 +34,29 @@ const (
 	resourceTypeTranslation = "translation"
 )
 
-// TranslationExporter implements declarativeresource.ResourceExporter for translations.
-type TranslationExporter struct {
+// translationExporter implements declarativeresource.ResourceExporter for translations.
+type translationExporter struct {
 	store i18nStoreInterface
 }
 
 // newTranslationExporter creates a new Translation exporter.
-func newTranslationExporter(store i18nStoreInterface) *TranslationExporter {
-	return &TranslationExporter{store: store}
+func newTranslationExporter(store i18nStoreInterface) *translationExporter {
+	return &translationExporter{store: store}
 }
 
 // GetResourceType returns the resource type for translations.
-func (e *TranslationExporter) GetResourceType() string {
+func (e *translationExporter) GetResourceType() string {
 	return resourceTypeTranslation
 }
 
 // GetParameterizerType returns the parameterizer type for translations.
-func (e *TranslationExporter) GetParameterizerType() string {
+func (e *translationExporter) GetParameterizerType() string {
 	return paramTypeTranslation
 }
 
 // GetAllResourceIDs retrieves all languages from the database store.
 // One file per language.
-func (e *TranslationExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+func (e *translationExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all translations from store
 	languages, err := e.store.GetDistinctLanguages()
 	if err != nil {
@@ -69,7 +70,9 @@ func (e *TranslationExporter) GetAllResourceIDs() ([]string, *serviceerror.Servi
 }
 
 // GetResourceByID retrieves all translations for a specific language.
-func (e *TranslationExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+func (e *translationExporter) GetResourceByID(ctx context.Context, id string) (
+	interface{}, string, *serviceerror.ServiceError,
+) {
 	translations, err := e.store.GetTranslations()
 	if err != nil {
 		return nil, "", &serviceerror.ServiceError{
@@ -107,7 +110,7 @@ func (e *TranslationExporter) GetResourceByID(id string) (interface{}, string, *
 }
 
 // ValidateResource validates a translation resource.
-func (e *TranslationExporter) ValidateResource(
+func (e *translationExporter) ValidateResource(
 	resource interface{}, id string, logger *log.Logger,
 ) (string, *declarativeresource.ExportError) {
 	trans, ok := resource.(*LanguageTranslations)
@@ -128,7 +131,7 @@ func (e *TranslationExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for translations.
-func (e *TranslationExporter) GetResourceRules() *declarativeresource.ResourceRules {
+func (e *translationExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		Variables:      []string{},
 		ArrayVariables: []string{},

@@ -102,6 +102,21 @@ func (s *GenericFileBasedStore) Delete(id string) error {
 	return errors.New("delete operation not supported in file-based store")
 }
 
+// ClearByType removes all entities of this specific key type (primarily for testing).
+func (s *GenericFileBasedStore) ClearByType() error {
+	list, err := s.List()
+	if err != nil {
+		return err
+	}
+	for _, item := range list {
+		err := s.storage.Delete(item.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // LogTypeAssertionError logs a type assertion error.
 func LogTypeAssertionError(resourceType, id string) {
 	log.GetLogger().Error("Type assertion failed while retrieving resource",

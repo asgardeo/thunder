@@ -9,7 +9,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -279,52 +279,6 @@ func (_c *oAuthExecutorInterfaceMock_GetDefaultInputs_Call) RunAndReturn(run fun
 	return _c
 }
 
-// GetDefaultMeta provides a mock function for the type oAuthExecutorInterfaceMock
-func (_mock *oAuthExecutorInterfaceMock) GetDefaultMeta() interface{} {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetDefaultMeta")
-	}
-
-	var r0 interface{}
-	if returnFunc, ok := ret.Get(0).(func() interface{}); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	return r0
-}
-
-// oAuthExecutorInterfaceMock_GetDefaultMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultMeta'
-type oAuthExecutorInterfaceMock_GetDefaultMeta_Call struct {
-	*mock.Call
-}
-
-// GetDefaultMeta is a helper method to define mock.On call
-func (_e *oAuthExecutorInterfaceMock_Expecter) GetDefaultMeta() *oAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	return &oAuthExecutorInterfaceMock_GetDefaultMeta_Call{Call: _e.mock.On("GetDefaultMeta")}
-}
-
-func (_c *oAuthExecutorInterfaceMock_GetDefaultMeta_Call) Run(run func()) *oAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *oAuthExecutorInterfaceMock_GetDefaultMeta_Call) Return(ifaceVal interface{}) *oAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Return(ifaceVal)
-	return _c
-}
-
-func (_c *oAuthExecutorInterfaceMock_GetDefaultMeta_Call) RunAndReturn(run func() interface{}) *oAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetIdpID provides a mock function for the type oAuthExecutorInterfaceMock
 func (_mock *oAuthExecutorInterfaceMock) GetIdpID(ctx *core.NodeContext) (string, error) {
 	ret := _mock.Called(ctx)
@@ -386,23 +340,23 @@ func (_c *oAuthExecutorInterfaceMock_GetIdpID_Call) RunAndReturn(run func(ctx *c
 }
 
 // GetInternalUser provides a mock function for the type oAuthExecutorInterfaceMock
-func (_mock *oAuthExecutorInterfaceMock) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*user.User, error) {
+func (_mock *oAuthExecutorInterfaceMock) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error) {
 	ret := _mock.Called(sub, execResp)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
 	}
 
-	var r0 *user.User
+	var r0 *userprovider.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) (*user.User, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) (*userprovider.User, error)); ok {
 		return returnFunc(sub, execResp)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) *user.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) *userprovider.User); ok {
 		r0 = returnFunc(sub, execResp)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*user.User)
+			r0 = ret.Get(0).(*userprovider.User)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, *common.ExecutorResponse) error); ok {
@@ -443,12 +397,12 @@ func (_c *oAuthExecutorInterfaceMock_GetInternalUser_Call) Run(run func(sub stri
 	return _c
 }
 
-func (_c *oAuthExecutorInterfaceMock_GetInternalUser_Call) Return(user1 *user.User, err error) *oAuthExecutorInterfaceMock_GetInternalUser_Call {
-	_c.Call.Return(user1, err)
+func (_c *oAuthExecutorInterfaceMock_GetInternalUser_Call) Return(user *userprovider.User, err error) *oAuthExecutorInterfaceMock_GetInternalUser_Call {
+	_c.Call.Return(user, err)
 	return _c
 }
 
-func (_c *oAuthExecutorInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string, execResp *common.ExecutorResponse) (*user.User, error)) *oAuthExecutorInterfaceMock_GetInternalUser_Call {
+func (_c *oAuthExecutorInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error)) *oAuthExecutorInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -880,7 +834,7 @@ func (_c *oAuthExecutorInterfaceMock_ProcessAuthFlowResponse_Call) RunAndReturn(
 }
 
 // ResolveContextUser provides a mock function for the type oAuthExecutorInterfaceMock
-func (_mock *oAuthExecutorInterfaceMock) ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *user.User) (*common0.AuthenticatedUser, error) {
+func (_mock *oAuthExecutorInterfaceMock) ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (*common0.AuthenticatedUser, error) {
 	ret := _mock.Called(ctx, execResp, sub, internalUser)
 
 	if len(ret) == 0 {
@@ -889,17 +843,17 @@ func (_mock *oAuthExecutorInterfaceMock) ResolveContextUser(ctx *core.NodeContex
 
 	var r0 *common0.AuthenticatedUser
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *user.User) (*common0.AuthenticatedUser, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *userprovider.User) (*common0.AuthenticatedUser, error)); ok {
 		return returnFunc(ctx, execResp, sub, internalUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *user.User) *common0.AuthenticatedUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *userprovider.User) *common0.AuthenticatedUser); ok {
 		r0 = returnFunc(ctx, execResp, sub, internalUser)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common0.AuthenticatedUser)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*core.NodeContext, *common.ExecutorResponse, string, *user.User) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(*core.NodeContext, *common.ExecutorResponse, string, *userprovider.User) error); ok {
 		r1 = returnFunc(ctx, execResp, sub, internalUser)
 	} else {
 		r1 = ret.Error(1)
@@ -916,12 +870,12 @@ type oAuthExecutorInterfaceMock_ResolveContextUser_Call struct {
 //   - ctx *core.NodeContext
 //   - execResp *common.ExecutorResponse
 //   - sub string
-//   - internalUser *user.User
+//   - internalUser *userprovider.User
 func (_e *oAuthExecutorInterfaceMock_Expecter) ResolveContextUser(ctx interface{}, execResp interface{}, sub interface{}, internalUser interface{}) *oAuthExecutorInterfaceMock_ResolveContextUser_Call {
 	return &oAuthExecutorInterfaceMock_ResolveContextUser_Call{Call: _e.mock.On("ResolveContextUser", ctx, execResp, sub, internalUser)}
 }
 
-func (_c *oAuthExecutorInterfaceMock_ResolveContextUser_Call) Run(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *user.User)) *oAuthExecutorInterfaceMock_ResolveContextUser_Call {
+func (_c *oAuthExecutorInterfaceMock_ResolveContextUser_Call) Run(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User)) *oAuthExecutorInterfaceMock_ResolveContextUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *core.NodeContext
 		if args[0] != nil {
@@ -935,9 +889,9 @@ func (_c *oAuthExecutorInterfaceMock_ResolveContextUser_Call) Run(run func(ctx *
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		var arg3 *user.User
+		var arg3 *userprovider.User
 		if args[3] != nil {
-			arg3 = args[3].(*user.User)
+			arg3 = args[3].(*userprovider.User)
 		}
 		run(
 			arg0,
@@ -954,7 +908,7 @@ func (_c *oAuthExecutorInterfaceMock_ResolveContextUser_Call) Return(authenticat
 	return _c
 }
 
-func (_c *oAuthExecutorInterfaceMock_ResolveContextUser_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *user.User) (*common0.AuthenticatedUser, error)) *oAuthExecutorInterfaceMock_ResolveContextUser_Call {
+func (_c *oAuthExecutorInterfaceMock_ResolveContextUser_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (*common0.AuthenticatedUser, error)) *oAuthExecutorInterfaceMock_ResolveContextUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

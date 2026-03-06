@@ -1,0 +1,279 @@
+---
+title: Configuration
+sidebar_position: 3
+---
+
+# Configuration
+
+Thunder's behavior is controlled by a combination of default configurations and deployment-specific overrides. This page covers all available configuration options and how to customize them.
+
+## Configuration System
+
+Thunder uses a two-tier configuration system:
+
+1. **Default Configuration** — Provides sensible defaults for all settings. These are built into Thunder.
+2. **Deployment Configuration** — Located at `repository/conf/deployment.yaml` in your Thunder installation directory. This file overrides specific defaults for your deployment.
+
+:::note
+Only settings you want to override need to be specified in `deployment.yaml`. All other values will use the built-in defaults.
+:::
+
+:::tip
+Thunder must be restarted after any configuration change.
+:::
+
+## Server Configuration
+
+Controls the Thunder server's network settings and identity.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `server.hostname` | `localhost` | Hostname or IP address the server binds to |
+| `server.port` | `8090` | Port the server listens on |
+| `server.http_only` | `false` | If `true`, disables HTTPS and uses HTTP only (not recommended for production) |
+| `server.identifier` | `default-deployment` | Unique identifier for this deployment instance |
+
+## Gate Client Configuration
+
+Configures the connection to Thunder Gate (the login UI).
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `gate_client.hostname` | `localhost` | Hostname where Thunder Gate is hosted |
+| `gate_client.port` | `8090` | Port where Thunder Gate is accessible |
+| `gate_client.scheme` | `https` | Protocol scheme (`http` or `https`) |
+| `gate_client.path` | `/gate` | Base path for Thunder Gate |
+
+## TLS Configuration
+
+Controls HTTPS/TLS settings for secure communication.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `tls.min_version` | `1.3` | Minimum TLS version to accept (`1.2` or `1.3`) |
+| `tls.cert_file` | `repository/resources/security/server.cert` | Path to TLS certificate file |
+| `tls.key_file` | `repository/resources/security/server.key` | Path to TLS private key file |
+
+:::warning Self-Signed Certificate
+Thunder ships with a self-signed certificate for local development at `repository/resources/security/server.cert`. For production, replace it with a certificate from a trusted Certificate Authority.
+:::
+
+## Database Configuration
+
+Thunder uses three separate databases for different purposes. Each database can be configured independently.
+
+### Config Database
+
+Stores identity provider configurations, applications, and authentication flows.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.config.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
+| `database.config.hostname` | `""` | Database server hostname (for PostgreSQL) |
+| `database.config.port` | `0` | Database server port (for PostgreSQL) |
+| `database.config.name` | `""` | Database name (for PostgreSQL) |
+| `database.config.username` | `""` | Database username (for PostgreSQL) |
+| `database.config.password` | `""` | Database password (for PostgreSQL) |
+| `database.config.sslmode` | `""` | SSL mode for PostgreSQL (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.config.path` | `repository/database/configdb.db` | SQLite database file path |
+| `database.config.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
+| `database.config.max_open_conns` | `500` | Maximum number of open connections |
+| `database.config.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.config.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+### Runtime Database
+
+Stores runtime data like sessions, tokens, and temporary data.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
+| `database.runtime.hostname` | `""` | Database server hostname (for PostgreSQL) |
+| `database.runtime.port` | `0` | Database server port (for PostgreSQL) |
+| `database.runtime.name` | `""` | Database name (for PostgreSQL) |
+| `database.runtime.username` | `""` | Database username (for PostgreSQL) |
+| `database.runtime.password` | `""` | Database password (for PostgreSQL) |
+| `database.runtime.sslmode` | `""` | SSL mode for PostgreSQL |
+| `database.runtime.path` | `repository/database/runtimedb.db` | SQLite database file path |
+| `database.runtime.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
+| `database.runtime.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+### User Database
+
+Stores user profiles and credentials.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.user.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
+| `database.user.hostname` | `""` | Database server hostname (for PostgreSQL) |
+| `database.user.port` | `0` | Database server port (for PostgreSQL) |
+| `database.user.name` | `""` | Database name (for PostgreSQL) |
+| `database.user.username` | `""` | Database username (for PostgreSQL) |
+| `database.user.password` | `""` | Database password (for PostgreSQL) |
+| `database.user.sslmode` | `""` | SSL mode for PostgreSQL |
+| `database.user.path` | `repository/database/userdb.db` | SQLite database file path |
+| `database.user.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
+| `database.user.max_open_conns` | `500` | Maximum number of open connections |
+| `database.user.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.user.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+## Cache Configuration
+
+Thunder includes an in-memory caching layer to improve performance.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `cache.disabled` | `false` | If `true`, disables caching entirely |
+| `cache.type` | `inmemory` | Cache type (currently only `inmemory` is supported) |
+| `cache.size` | `1000` | Maximum number of cache entries |
+| `cache.ttl` | `3600` | Default time-to-live for cache entries in seconds |
+| `cache.eviction_policy` | `LRU` | Cache eviction policy (`LRU` - Least Recently Used) |
+| `cache.cleanup_interval` | `300` | Interval in seconds to clean up expired entries |
+
+## JWT Configuration
+
+Controls JWT (JSON Web Token) generation and validation.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `jwt.validity_period` | `3600` | Default JWT validity period in seconds (1 hour) |
+| `jwt.audience` | `application` | Default audience claim for JWTs |
+| `jwt.preferred_key_id` | `default-key` | Key ID to use for signing JWTs |
+| `jwt.leeway` | `30` | Clock skew tolerance in seconds for token validation |
+
+## OAuth Configuration
+
+OAuth 2.0 and OpenID Connect settings.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `oauth.refresh_token.renew_on_grant` | `false` | If `true`, issues a new refresh token on each access token grant |
+| `oauth.refresh_token.validity_period` | `86400` | Refresh token validity period in seconds (24 hours) |
+| `oauth.authorization_code.validity_period` | `600` | Authorization code validity period in seconds (10 minutes) |
+| `oauth.dcr.insecure` | `false` | If `true`, allows insecure dynamic client registration (development only) |
+
+## Flow Configuration
+
+Authentication and registration flow settings.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `flow.default_auth_flow_handle` | `default-basic-flow` | Handle of the default authentication flow |
+| `flow.user_onboarding_flow_handle` | `default-user-onboarding` | Handle of the default user onboarding flow |
+| `flow.max_version_history` | `10` | Maximum number of flow versions to retain |
+| `flow.auto_infer_registration` | `true` | If `true`, automatically infers registration from authentication flows |
+
+## User Configuration
+
+User management settings.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `user.indexed_attributes` | `["username", "email", "mobileNumber", "sub"]` | User attributes that are indexed for fast lookups |
+
+## Declarative Resources
+
+Controls declarative configuration support.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `declarative_resources.enabled` | `false` | If `true`, enables declarative resource configuration |
+
+## Resource Configuration
+
+Authorization resource settings.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `resource.default_delimiter` | `:` | Default delimiter for resource hierarchies |
+
+## Observability Configuration
+
+Monitoring and observability settings.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `observability.enabled` | `false` | If `true`, enables observability features |
+| `observability.output.console.enabled` | `false` | If `true`, outputs observability data to console |
+| `observability.output.console.format` | `json` | Console output format (`json` or `text`) |
+| `observability.output.console.categories` | `["observability.all"]` | Observability categories to output |
+
+## Crypto Configuration
+
+Cryptographic settings for encryption and signing.
+
+### Encryption
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `crypto.encryption.key` | `file://repository/resources/security/crypto.key` | Path to encryption key file |
+
+### Password Hashing
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `crypto.password_hashing.algorithm` | `PBKDF2` | Password hashing algorithm |
+| `crypto.password_hashing.parameters.iterations` | `600000` | Number of hashing iterations |
+| `crypto.password_hashing.parameters.key_size` | `32` | Derived key size in bytes |
+| `crypto.password_hashing.parameters.salt_size` | `16` | Salt size in bytes |
+
+### Signing Keys
+
+Signing keys are configured as an array. Each key has the following properties:
+
+| Setting | Description |
+|---------|-------------|
+| `crypto.keys[].id` | Unique identifier for the key |
+| `crypto.keys[].cert_file` | Path to certificate file |
+| `crypto.keys[].key_file` | Path to private key file |
+
+**Default Key:**
+```yaml
+- id: "default-key"
+  cert_file: "repository/resources/security/signing.cert"
+  key_file: "repository/resources/security/signing.key"
+```
+
+## Authentication Provider Configuration
+
+External authentication provider settings.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `authn_provider.type` | `default` | Provider type (`default` or `rest`) |
+| `authn_provider.rest.base_url` | `""` | Base URL for REST authentication provider |
+| `authn_provider.rest.timeout` | `10` | Request timeout in seconds |
+| `authn_provider.rest.security.api_key` | `""` | API key for REST provider authentication |
+
+## CORS Configuration
+
+Cross-Origin Resource Sharing settings (typically defined in `deployment.yaml`).
+
+| Setting | Description |
+|---------|-------------|
+| `cors.allowed_origins` | Array of allowed origins for CORS requests |
+
+**Example:**
+```yaml
+cors:
+  allowed_origins:
+    - "https://localhost:3000"
+    - "http://localhost:5173"
+```
+
+## Passkey Configuration
+
+WebAuthn/Passkey settings (typically defined in `deployment.yaml`).
+
+| Setting | Description |
+|---------|-------------|
+| `passkey.allowed_origins` | Array of allowed origins for passkey operations |
+
+**Example:**
+```yaml
+passkey:
+  allowed_origins:
+    - "https://localhost:8090"
+```

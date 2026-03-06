@@ -27,8 +27,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -56,7 +59,9 @@ var (
 	zipFilePattern       string
 	extractedProductHome string
 	serverCmd            *exec.Cmd
+	serverPid            int
 	isInitialized        bool
+	subprocessMode       bool
 	dbType               string
 )
 
@@ -68,11 +73,63 @@ func InitializeTestContext(port string, zipPattern string, databaseType string) 
 	isInitialized = true
 }
 
-// ensureInitialized checks if the test context has been initialized and panics if not.
-func ensureInitialized() {
-	if !isInitialized {
-		panic("Test context not initialized. Call InitializeTestContext() first.")
+// GetExtractedProductHome returns the absolute path to the extracted product directory.
+// main.go uses this to propagate the path to test subprocesses via an env var.
+// Returning an absolute path ensures it resolves correctly regardless of the working
+// directory of the consumer (e.g. a test subprocess running from a sub-package directory).
+func GetExtractedProductHome() string {
+	if extractedProductHome == "" {
+		panic("Extracted product home is not set")
 	}
+
+	abs, err := filepath.Abs(extractedProductHome)
+	if err != nil {
+		return extractedProductHome
+	}
+	return abs
+}
+
+// GetServerPID returns the PID of the running Thunder server process, or 0 if not started.
+// main.go uses this to propagate the PID to test subprocesses via an env var so that
+// they can stop and restart the server when required.
+func GetServerPID() int {
+	return serverPid
+}
+
+// ensureInitialized checks if the test context has been initialized.
+// When the test context has not been set up via InitializeTestContext (e.g. when a
+// test subprocess was started by runTests in main.go), it attempts a lazy
+// initialization from environment variables that main.go exports before running tests:
+//
+//	THUNDER_EXTRACTED_HOME – path to the extracted product directory
+//	THUNDER_SERVER_PORT    – port Thunder is listening on
+//	THUNDER_ZIP_PATTERN    – zip file glob used to locate the product archive
+//	THUNDER_SERVER_PID     – PID of the running Thunder server process
+func ensureInitialized() {
+	if isInitialized {
+		return
+	}
+
+	// Attempt lazy initialization from environment variables injected by main.go.
+	if home := os.Getenv("THUNDER_EXTRACTED_HOME"); home != "" {
+		extractedProductHome = home
+		serverPort = os.Getenv("THUNDER_SERVER_PORT")
+		zipFilePattern = os.Getenv("THUNDER_ZIP_PATTERN")
+		dbType = os.Getenv("DB_TYPE")
+		if dbType == "" {
+			dbType = "sqlite"
+		}
+		if pidStr := os.Getenv("THUNDER_SERVER_PID"); pidStr != "" {
+			if pid, err := strconv.Atoi(pidStr); err == nil {
+				serverPid = pid
+			}
+		}
+		subprocessMode = true
+		isInitialized = true
+		return
+	}
+
+	panic("Test context not initialized. Call InitializeTestContext() first.")
 }
 
 func UnzipProduct() error {
@@ -311,7 +368,7 @@ func RunInitScript(zipFilePattern string) error {
 		schemaDir  string
 		dbFileName string
 	}{
-		{"thunderdb", "dbscripts/thunderdb", "thunderdb.db"},
+		{"configdb", "dbscripts/configdb", "configdb.db"},
 		{"runtimedb", "dbscripts/runtimedb", "runtimedb.db"},
 		{"userdb", "dbscripts/userdb", "userdb.db"},
 	}
@@ -374,13 +431,85 @@ func initSQLiteDB(name, schemaPath, dbPath string) error {
 	return nil
 }
 
+// pidFilePath returns the path to the well-known PID file that always reflects the
+// PID of the currently running Thunder process, even after subprocess restarts.
+// Returns an empty string when extractedProductHome is not yet set, so callers
+// can skip PID-file operations safely.
+func pidFilePath() string {
+	if extractedProductHome == "" {
+		return ""
+	}
+	return filepath.Join(extractedProductHome, "thunder.pid")
+}
+
+// writePidFile writes the given PID to the Thunder PID file.
+func writePidFile(pid int) {
+	path := pidFilePath()
+	if path == "" {
+		return
+	}
+	if err := os.WriteFile(path, []byte(strconv.Itoa(pid)), 0644); err != nil {
+		log.Printf("Warning: could not write PID file: %v", err)
+	}
+}
+
+// readPidFile reads the PID from the Thunder PID file. Returns 0 if the file does
+// not exist, cannot be parsed, or extractedProductHome is not set.
+func readPidFile() int {
+	path := pidFilePath()
+	if path == "" {
+		return 0
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return 0
+	}
+	return pid
+}
+
+// removePidFile deletes the Thunder PID file.
+func removePidFile() {
+	path := pidFilePath()
+	if path == "" {
+		return
+	}
+	os.Remove(path)
+}
+
 func StartServer(port string, zipFilePattern string) error {
 	log.Println("Starting server...")
 
 	serverPath := filepath.Join(extractedProductHome, ServerBinary)
 	cmd := exec.Command(serverPath, "-thunderHome="+extractedProductHome)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	// logFile is non-nil only when subprocessMode opens a log file. The parent
+	// must close its copy after cmd.Start() so it does not leak the FD.
+	var logFile *os.File
+	if subprocessMode {
+		// Running inside a test binary (go test subprocess). Thunder's stdout/stderr
+		// must NOT inherit the test process's pipes — go test waits for all I/O to
+		// drain before declaring the test done, and the long-lived Thunder process
+		// would keep those pipes open indefinitely, causing a 60s WaitDelay timeout.
+		// Redirect to a log file in the extracted product home so output is not lost.
+		logPath := filepath.Join(extractedProductHome, "thunder-restart.log")
+		var openErr error
+		logFile, openErr = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if openErr != nil {
+			log.Printf("Warning: could not open server log file %s, discarding output: %v", logPath, openErr)
+			cmd.Stdout = nil
+			cmd.Stderr = nil
+		} else {
+			cmd.Stdout = logFile
+			cmd.Stderr = logFile
+		}
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	// Preserve GOCOVERDIR environment variable for coverage collection
 	envVars := []string{
@@ -395,17 +524,27 @@ func StartServer(port string, zipFilePattern string) error {
 
 	err := cmd.Start()
 	if err != nil {
+		if logFile != nil {
+			logFile.Close()
+		}
 		return fmt.Errorf("failed to start server: %v", err)
 	}
+	// The child process has inherited the log file FD; close the parent's copy.
+	if logFile != nil {
+		logFile.Close()
+	}
 	serverCmd = cmd
+	serverPid = cmd.Process.Pid
+	writePidFile(serverPid)
 
 	return nil
 }
 
 func StopServer() {
 	log.Println("Stopping server...")
+
 	if serverCmd != nil {
-		// Send stop signal for graceful shutdown (SIGTERM on Unix, Kill on Windows)
+		// Normal case: we started this process and hold its Cmd handle.
 		if err := sendStopSignal(serverCmd.Process); err != nil {
 			log.Printf("Failed to send stop signal: %v, forcing kill...", err)
 			serverCmd.Process.Kill()
@@ -429,9 +568,47 @@ func StopServer() {
 				<-done // Wait for the goroutine's Wait() call to complete
 			}
 		}
+		serverCmd = nil
+	} else if serverPid != 0 {
+		// Subprocess case: we know the PID but did not start the process via Cmd.
+		// os.FindProcess always succeeds on Unix; use the handle only for signalling.
+		proc, err := os.FindProcess(serverPid)
+		if err == nil && proc != nil {
+			if err := sendStopSignal(proc); err != nil {
+				log.Printf("Failed to send stop signal to PID %d: %v, forcing kill...", serverPid, err)
+				proc.Kill()
+			} else {
+				// We cannot call proc.Wait() for a process we did not fork,
+				// so we give the server a grace period and then ensure it is dead.
+				// Check liveness before killing to avoid hitting a recycled PID.
+				time.Sleep(3 * time.Second)
+				if isProcessAlive(proc) {
+					proc.Kill()
+				}
+			}
+			time.Sleep(100 * time.Millisecond)
+		} else {
+			log.Printf("Could not find process with PID %d: %v", serverPid, err)
+		}
 	}
-	// Clear the stored command
+
 	serverCmd = nil
+	serverPid = 0
+
+	// Kill any residual Thunder process that may have been started by a test
+	// subprocess (e.g. after a config swap) whose PID is different from the one
+	// we just killed. The PID file is always updated by StartServer regardless of
+	// which process (parent or subprocess) called it.
+	if residualPid := readPidFile(); residualPid != 0 {
+		if proc, err := os.FindProcess(residualPid); err == nil && proc != nil {
+			_ = sendStopSignal(proc)
+			time.Sleep(2 * time.Second)
+			if isProcessAlive(proc) {
+				_ = proc.Kill()
+			}
+		}
+		removePidFile()
+	}
 }
 
 // RestartServer stops the current server and starts a new one with the same configuration.
@@ -446,7 +623,95 @@ func RestartServer() error {
 	time.Sleep(3 * time.Second)
 
 	// Start a new server instance
-	return StartServer(serverPort, zipFilePattern)
+	err := StartServer(serverPort, zipFilePattern)
+	if err != nil {
+		return fmt.Errorf("failed to restart server: %v", err)
+	}
+
+	if err := waitForServerReady(30 * time.Second); err != nil {
+		return fmt.Errorf("server did not become ready after restart: %w", err)
+	}
+
+	return nil
+}
+
+// waitForServerReady polls the server's health endpoint until it responds with a 2xx
+// status or the timeout is exceeded. A polling interval of 500ms is used.
+func waitForServerReady(timeout time.Duration) error {
+	healthURL := "https://localhost:" + serverPort + "/health/liveness"
+	client := GetHTTPClient()
+	deadline := time.Now().Add(timeout)
+
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(healthURL)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				log.Println("Server is ready")
+				return nil
+			}
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	return fmt.Errorf("server did not become ready within %s", timeout)
+}
+
+// UpdateDeploymentConfig overwrites the extracted product's deployment.yaml with the
+// file at srcPath. srcPath should be relative to the calling test package's directory.
+// After calling this, restart Thunder with RestartServer for changes to take effect.
+func UpdateDeploymentConfig(srcPath string) error {
+	ensureInitialized()
+
+	destPath := filepath.Join(extractedProductHome, "repository", "conf", "deployment.yaml")
+	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+		return fmt.Errorf("failed to ensure conf directory exists: %w", err)
+	}
+
+	if err := copyFile(srcPath, destPath); err != nil {
+		return fmt.Errorf("failed to update deployment.yaml from %s: %w", srcPath, err)
+	}
+
+	log.Printf("Deployment config updated from %s", srcPath)
+	return nil
+}
+
+// PatchDeploymentConfig reads the live deployment.yaml from the extracted product,
+// merges the provided patch over the existing top-level keys, and writes it back.
+// All keys not present in patch are preserved exactly as-is, making this safe to call
+// in any environment (SQLite, PostgreSQL, etc.).
+func PatchDeploymentConfig(patch map[string]interface{}) error {
+	ensureInitialized()
+
+	configPath := filepath.Join(extractedProductHome, "repository", "conf", "deployment.yaml")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read deployment.yaml: %w", err)
+	}
+
+	var cfg map[string]interface{}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("failed to parse deployment.yaml: %w", err)
+	}
+	if cfg == nil {
+		cfg = make(map[string]interface{})
+	}
+
+	for k, v := range patch {
+		cfg[k] = v
+	}
+
+	out, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated deployment.yaml: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, out, 0644); err != nil {
+		return fmt.Errorf("failed to write updated deployment.yaml: %w", err)
+	}
+
+	return nil
 }
 
 // RunSetupScript runs the setup script from the extracted product directory.

@@ -17,11 +17,11 @@ EOF
 
 if [ "$DB_TYPE" = "postgres" ]; then
   cat >> tests/integration/resources/deployment.yaml <<EOF
-  identity:
+  config:
     type: postgres
     hostname: localhost
     port: 5432
-    name: identitydb
+    name: configdb
     username: asgthunder
     password: asgthunder
     sslmode: disable
@@ -52,7 +52,7 @@ if [ "$DB_TYPE" = "postgres" ]; then
 EOF
 else
   cat >> tests/integration/resources/deployment.yaml <<EOF
-  identity:
+  config:
     type: sqlite
     hostname: ""
     port: 0
@@ -60,7 +60,7 @@ else
     username: ""
     password: ""
     sslmode: ""
-    path: "repository/database/thunderdb.db"
+    path: "repository/database/configdb.db"
     options: "cache=shared"
 
   runtime:

@@ -20,6 +20,7 @@
 package userinfo
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -29,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -39,12 +41,13 @@ const serviceLoggerComponentName = "UserInfoService"
 
 // userInfoServiceInterface defines the interface for OIDC UserInfo endpoint.
 type userInfoServiceInterface interface {
-	GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetUserInfo(ctx context.Context, accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)
 }
 
 // userInfoService implements the userInfoServiceInterface.
 type userInfoService struct {
 	jwtService         jwt.JWTServiceInterface
+	tokenValidator     tokenservice.TokenValidatorInterface
 	applicationService application.ApplicationServiceInterface
 	userService        user.UserServiceInterface
 	ouService          ou.OrganizationUnitServiceInterface
@@ -54,12 +57,14 @@ type userInfoService struct {
 // newUserInfoService creates a new userInfoService instance.
 func newUserInfoService(
 	jwtService jwt.JWTServiceInterface,
+	tokenValidator tokenservice.TokenValidatorInterface,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 ) userInfoServiceInterface {
 	return &userInfoService{
 		jwtService:         jwtService,
+		tokenValidator:     tokenValidator,
 		applicationService: applicationService,
 		userService:        userService,
 		ouService:          ouService,
@@ -68,20 +73,20 @@ func newUserInfoService(
 }
 
 // GetUserInfo validates the access token and returns user information based on authorized scopes.
-func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
+func (s *userInfoService) GetUserInfo(
+	ctx context.Context, accessToken string,
+) (*UserInfoResponse, *serviceerror.ServiceError) {
 	if accessToken == "" {
 		return nil, &errorInvalidAccessToken
 	}
 
-	tokenClaims, svcErr := s.validateAndDecodeToken(accessToken)
-	if svcErr != nil {
-		return nil, svcErr
+	accessTokenClaims, err := s.tokenValidator.ValidateAccessToken(accessToken)
+	if err != nil {
+		s.logger.Debug("Failed to verify access token", log.Error(err))
+		return nil, &errorInvalidAccessToken
 	}
-
-	sub, svcErr := s.extractSubClaim(tokenClaims)
-	if svcErr != nil {
-		return nil, svcErr
-	}
+	tokenClaims := accessTokenClaims.Claims
+	sub := accessTokenClaims.Sub
 
 	if svcErr := s.validateGrantType(tokenClaims); svcErr != nil {
 		return nil, svcErr
@@ -103,7 +108,7 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 	}
 
 	// Fetch user attributes with groups and default claims
-	userAttributes, err := tokenservice.FetchUserAttributes(s.userService, s.ouService,
+	userAttributes, err := tokenservice.FetchUserAttributes(ctx, s.userService, s.ouService,
 		sub, allowedUserAttributes)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))
@@ -115,33 +120,56 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		return nil, svcErr
 	}
 
-	return response, nil
-}
-
-// validateAndDecodeToken validates the JWT signature and decodes the payload.
-func (s *userInfoService) validateAndDecodeToken(accessToken string) (
-	map[string]interface{}, *serviceerror.ServiceError) {
-	if err := s.jwtService.VerifyJWT(accessToken, "", ""); err != nil {
-		s.logger.Debug("Failed to verify access token", log.String("error", err.Error))
-		return nil, &errorInvalidAccessToken
+	// Decide response type
+	responseType := appmodel.UserInfoResponseTypeJSON
+	if oauthApp != nil && oauthApp.UserInfo != nil {
+		responseType = oauthApp.UserInfo.ResponseType
 	}
 
-	claims, err := jwt.DecodeJWTPayload(accessToken)
+	if responseType == appmodel.UserInfoResponseTypeJWS {
+		return s.generateJWSUserInfo(sub, tokenClaims, response)
+	}
+
+	return &UserInfoResponse{
+		Type:     appmodel.UserInfoResponseTypeJSON,
+		JSONBody: response,
+	}, nil
+}
+
+// generateJWSUserInfo creates a signed JWT UserInfo response
+// based on the application configuration.
+func (s *userInfoService) generateJWSUserInfo(
+	sub string,
+	tokenClaims map[string]interface{},
+	response map[string]interface{},
+) (*UserInfoResponse, *serviceerror.ServiceError) {
+	clientID := ""
+	if cid, ok := tokenClaims["client_id"].(string); ok {
+		clientID = cid
+	}
+
+	runtime := config.GetThunderRuntime()
+
+	issuer := runtime.Config.JWT.Issuer
+	validity := runtime.Config.JWT.ValidityPeriod
+
+	signedJWT, _, err := s.jwtService.GenerateJWT(
+		sub,
+		clientID,
+		issuer,
+		validity,
+		response,
+		jwt.TokenTypeJWT,
+	)
 	if err != nil {
-		s.logger.Debug("Failed to decode access token", log.Error(err))
-		return nil, &errorInvalidAccessToken
+		s.logger.Error("Failed to generate signed UserInfo JWT")
+		return nil, &serviceerror.InternalServerError
 	}
 
-	return claims, nil
-}
-
-// extractSubClaim extracts and validates the sub claim from the token claims.
-func (s *userInfoService) extractSubClaim(claims map[string]interface{}) (string, *serviceerror.ServiceError) {
-	sub, ok := claims[constants.ClaimSub].(string)
-	if !ok || sub == "" {
-		return "", &errorMissingSubClaim
-	}
-	return sub, nil
+	return &UserInfoResponse{
+		Type:    appmodel.UserInfoResponseTypeJWS,
+		JWTBody: signedJWT,
+	}, nil
 }
 
 // validateGrantType validates that the token was not issued using client_credentials grant.
@@ -182,7 +210,7 @@ func (s *userInfoService) extractScopes(claims map[string]interface{}) []string 
 
 // validateOpenIDScope validates that the access token contains the required 'openid' scope.
 func (s *userInfoService) validateOpenIDScope(scopes []string) *serviceerror.ServiceError {
-	if !slices.Contains(scopes, "openid") {
+	if !slices.Contains(scopes, constants.ScopeOpenID) {
 		s.logger.Debug("UserInfo request missing required 'openid' scope",
 			log.String("scopes", tokenservice.JoinScopes(scopes)))
 		return &errorInsufficientScope

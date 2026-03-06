@@ -22,18 +22,28 @@ import React from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
 import UsersList from '../UsersList';
-import type {UserListResponse, ApiUserSchema, ApiError} from '../../types/users';
+import type {UserListResponse, ApiUserSchema} from '../../types/users';
 
-type DataGridProps = DataGrid.DataGridProps;
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
 
 const mockNavigate = vi.fn();
-const mockRefetch = vi.fn();
-const mockDeleteUser = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
 
 // Mock DataGrid to avoid CSS import issues
 interface MockRow {
   id: string;
   attributes?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+interface MockDataGridProps {
+  rows?: MockRow[];
+  columns?: DataGrid.GridColDef<MockRow>[];
+  loading?: boolean;
+  onRowClick?: (params: {row: MockRow}, event: never, details: never) => void;
+  getRowId?: (row: MockRow) => string;
   [key: string]: unknown;
 }
 
@@ -43,84 +53,91 @@ vi.mock('@wso2/oxygen-ui', async () => {
     ...actual,
     DataGrid: {
       ...(actual.DataGrid ?? {}),
-      DataGrid: (props: DataGridProps) => {
-        const {rows = [], columns = [], loading, onRowClick} = props;
-
-        return (
-          <div data-testid="data-grid" data-loading={loading}>
-            {rows.map((row) => {
-              const mockRow = row as MockRow;
-              const username = mockRow.attributes?.username;
-              const displayText = typeof username === 'string' ? username : mockRow.id;
-
-              return (
-                <div key={mockRow.id} className="MuiDataGrid-row-container">
-                  <button
-                    type="button"
-                    className="MuiDataGrid-row"
-                    onClick={() => {
-                      if (onRowClick) {
-                        onRowClick({row: mockRow} as never, {} as never, {} as never);
-                      }
-                    }}
-                    data-testid={`row-${mockRow.id}`}
-                  >
-                    {displayText}
-                  </button>
-                  {columns?.map((column) => {
-                    if (column?.field === undefined) return null;
-
-                    let value: unknown;
-                    if (typeof column.valueGetter === 'function') {
-                      value = column.valueGetter({} as never, mockRow as never, column as never, {} as never);
-                    } else if (column.field in mockRow) {
-                      value = mockRow[column.field];
-                    } else {
-                      value = mockRow.attributes?.[column.field];
-                    }
-
-                    const params = {
-                      row: mockRow,
-                      field: column.field,
-                      value,
-                      id: mockRow.id,
-                    };
-
-                    const content =
-                      typeof column.renderCell === 'function' ? column.renderCell(params as never) : value;
-
-                    if (content === null || content === undefined) {
-                      return null;
-                    }
-
-                    // Convert content to a renderable format
-                    let renderableContent: React.ReactNode;
-                    if (typeof content === 'string' || typeof content === 'number' || typeof content === 'boolean') {
-                      renderableContent = String(content);
-                    } else if (React.isValidElement(content)) {
-                      renderableContent = content;
-                    } else if (Array.isArray(content)) {
-                      renderableContent = JSON.stringify(content);
-                    } else if (typeof content === 'object') {
-                      renderableContent = JSON.stringify(content);
-                    } else {
-                      renderableContent = '';
-                    }
-
-                    return (
-                      <span key={`${mockRow.id}-${column.field}`} className="MuiDataGrid-cell">
-                        {renderableContent}
-                      </span>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        );
-      },
       GridColDef: {} as never,
       GridRenderCellParams: {} as never,
+    },
+    ListingTable: {
+      Provider: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      DataGrid: ({
+        rows = [],
+        columns = [],
+        loading = undefined,
+        onRowClick = undefined,
+        getRowId = undefined,
+      }: MockDataGridProps) => (
+        <div data-testid="data-grid" data-loading={loading}>
+          {rows.map((row) => {
+            const rowId = getRowId ? getRowId(row) : row.id;
+            const username = row.attributes?.username;
+            const displayText = typeof username === 'string' ? username : rowId;
+
+            return (
+              <div key={rowId} className="MuiDataGrid-row-container">
+                <button
+                  type="button"
+                  className="MuiDataGrid-row"
+                  onClick={() => {
+                    if (onRowClick) {
+                      onRowClick({row}, {} as never, {} as never);
+                    }
+                  }}
+                  data-testid={`row-${rowId}`}
+                >
+                  {displayText}
+                </button>
+                {columns?.map((column) => {
+                  if (column?.field === undefined) return null;
+
+                  let value: unknown;
+                  if (typeof column.valueGetter === 'function') {
+                    value = column.valueGetter({} as never, row as never, column as never, {} as never);
+                  } else if (column.field in row) {
+                    value = row[column.field];
+                  } else {
+                    value = row.attributes?.[column.field];
+                  }
+
+                  const params = {
+                    row,
+                    field: column.field,
+                    value,
+                    id: rowId,
+                  };
+
+                  const content = typeof column.renderCell === 'function' ? column.renderCell(params as never) : value;
+
+                  if (content === null || content === undefined) {
+                    return null;
+                  }
+
+                  // Convert content to a renderable format
+                  let renderableContent: React.ReactNode;
+                  if (typeof content === 'string' || typeof content === 'number' || typeof content === 'boolean') {
+                    renderableContent = String(content);
+                  } else if (React.isValidElement(content)) {
+                    renderableContent = content;
+                  } else if (Array.isArray(content)) {
+                    renderableContent = JSON.stringify(content);
+                  } else if (typeof content === 'object') {
+                    renderableContent = JSON.stringify(content);
+                  } else {
+                    renderableContent = '';
+                  }
+
+                  return (
+                    <span key={`${rowId}-${column.field}`} className="MuiDataGrid-cell">
+                      {renderableContent}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      ),
+      CellIcon: ({primary}: {primary: string}) => <span>{primary}</span>,
+      RowActions: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
     },
   };
 });
@@ -134,26 +151,38 @@ vi.mock('react-router', async () => {
   };
 });
 
-// Mock hooks
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+// Mock hooks - TanStack Query interfaces
 interface UseGetUsersReturn {
-  data: UserListResponse | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch: (params?: unknown) => void;
+  data: UserListResponse | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | null;
-  loading: boolean;
-  error: ApiError | null;
-  refetch?: (newId?: string) => void;
+  data: ApiUserSchema | undefined;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface UseDeleteUserReturn {
-  deleteUser: (userId: string) => Promise<boolean | undefined>;
-  loading: boolean;
-  error: ApiError | null;
-  reset?: () => void;
+  mutate: ReturnType<typeof vi.fn>;
+  mutateAsync: ReturnType<typeof vi.fn>;
+  isPending: boolean;
+  error: Error | null;
+  data: unknown;
+  isError: boolean;
+  isSuccess: boolean;
+  isIdle: boolean;
+  reset: () => void;
 }
 
 const mockUseGetUsers = vi.fn<() => UseGetUsersReturn>();
@@ -217,24 +246,32 @@ describe('UsersList', () => {
     },
   };
 
+  const defaultDeleteReturn: UseDeleteUserReturn = {
+    mutate: vi.fn(),
+    mutateAsync: mockDeleteMutateAsync,
+    isPending: false,
+    error: null,
+    data: undefined,
+    isError: false,
+    isSuccess: false,
+    isIdle: true,
+    reset: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
     mockUseGetUsers.mockReturnValue({
       data: mockUsersData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
     mockUseGetUserSchema.mockReturnValue({
       data: mockSchema,
-      loading: false,
+      isLoading: false,
       error: null,
     });
-    mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: false,
-      error: null,
-    });
+    mockUseDeleteUser.mockReturnValue({...defaultDeleteReturn});
   });
 
   it('renders DataGrid with users', async () => {
@@ -257,10 +294,9 @@ describe('UsersList', () => {
 
   it('displays loading state', () => {
     mockUseGetUsers.mockReturnValue({
-      data: null,
-      loading: true,
+      data: undefined,
+      isLoading: true,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -270,17 +306,10 @@ describe('UsersList', () => {
   });
 
   it('displays error from users request', async () => {
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load users',
-      description: 'Error description',
-    };
-
     mockUseGetUsers.mockReturnValue({
-      data: null,
-      loading: false,
-      error,
-      refetch: mockRefetch,
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load users'),
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -291,16 +320,10 @@ describe('UsersList', () => {
   });
 
   it('displays error from schema request', async () => {
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load schema',
-      description: 'Error description',
-    };
-
     mockUseGetUserSchema.mockReturnValue({
-      data: null,
-      loading: false,
-      error,
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load schema'),
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -310,24 +333,19 @@ describe('UsersList', () => {
     });
   });
 
-  it('opens menu when actions button is clicked', async () => {
-    const user = userEvent.setup();
+  it('should render inline delete buttons for each row', async () => {
     render(<UsersList selectedSchema="schema1" />);
 
     await waitFor(() => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // Actions are now inline buttons (Trash2), not a dropdown menu
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    expect(deleteButtons.length).toBeGreaterThan(0);
   });
 
-  it('navigates to view page when View is clicked', async () => {
+  it('navigates to view page when row is clicked', async () => {
     const user = userEvent.setup();
     render(<UsersList selectedSchema="schema1" />);
 
@@ -335,15 +353,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    const viewButton = screen.getByText('View');
-    await user.click(viewButton);
+    const row = screen.getByTestId('row-user1');
+    await user.click(row);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
@@ -358,11 +369,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -372,7 +380,6 @@ describe('UsersList', () => {
 
   it('deletes user when confirmed', async () => {
     const user = userEvent.setup();
-    mockDeleteUser.mockResolvedValue(undefined);
 
     render(<UsersList selectedSchema="schema1" />);
 
@@ -380,11 +387,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -394,8 +398,7 @@ describe('UsersList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUser).toHaveBeenCalledWith('user1');
-      expect(mockRefetch).toHaveBeenCalled();
+      expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user1');
     });
   });
 
@@ -432,9 +435,8 @@ describe('UsersList', () => {
         count: 0,
         users: [],
       },
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -447,8 +449,8 @@ describe('UsersList', () => {
 
   it('renders empty columns when schema is not loaded', () => {
     mockUseGetUserSchema.mockReturnValue({
-      data: null,
-      loading: true,
+      data: undefined,
+      isLoading: true,
       error: null,
     });
 
@@ -493,15 +495,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithTypes,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithTypes,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -519,11 +520,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -539,16 +537,12 @@ describe('UsersList', () => {
 
   it('displays delete error in dialog', async () => {
     const user = userEvent.setup();
-    const deleteError: ApiError = {
-      code: 'DELETE_ERROR',
-      message: 'Failed to delete',
-      description: 'Cannot delete user',
-    };
 
     mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: false,
-      error: deleteError,
+      ...defaultDeleteReturn,
+      error: new Error('Failed to delete'),
+      isError: true,
+      isIdle: false,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -557,31 +551,21 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to delete')).toBeInTheDocument();
-      expect(screen.getByText('Cannot delete user')).toBeInTheDocument();
     });
   });
 
   it('closes snackbar when close button is clicked', async () => {
     const user = userEvent.setup();
-    const error: ApiError = {
-      code: 'ERROR_CODE',
-      message: 'Failed to load users',
-      description: 'Error description',
-    };
 
     mockUseGetUsers.mockReturnValue({
-      data: null,
-      loading: false,
-      error,
-      refetch: mockRefetch,
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load users'),
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -601,7 +585,11 @@ describe('UsersList', () => {
   it('handles error when delete user fails', async () => {
     const user = userEvent.setup();
     const deleteError = new Error('Delete failed');
-    mockDeleteUser.mockRejectedValue(deleteError);
+    const failingDeleteMutateAsync = vi.fn().mockRejectedValue(deleteError);
+    mockUseDeleteUser.mockReturnValue({
+      ...defaultDeleteReturn,
+      mutateAsync: failingDeleteMutateAsync,
+    });
 
     render(<UsersList selectedSchema="schema1" />);
 
@@ -609,11 +597,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete User')).toBeInTheDocument();
@@ -623,8 +608,7 @@ describe('UsersList', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteUser).toHaveBeenCalledWith('user1');
-      // Note: Logger errors are tested separately, not via console.error spy
+      expect(failingDeleteMutateAsync).toHaveBeenCalledWith('user1');
     });
   });
 
@@ -647,6 +631,67 @@ describe('UsersList', () => {
     });
   });
 
+  it('should navigate to user when View action button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(0);
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
+    });
+  });
+
+  it('should navigate to correct user when View action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(1);
+    await user.click(viewButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/users/user2');
+    });
+  });
+
+  it('should log error when View button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    render(<UsersList selectedSchema="schema1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+    });
+
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    await user.click(viewButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to user details',
+        expect.objectContaining({
+          error: navigationError,
+          userId: 'user1',
+        }),
+      );
+    });
+  });
+
   it('renders schema without avatar when name fields are not present', async () => {
     const schemaWithoutNameFields: ApiUserSchema = {
       id: 'schema1',
@@ -659,15 +704,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithoutNameFields,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: mockUsersData,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -697,9 +741,8 @@ describe('UsersList', () => {
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithMissingAttrs,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -738,15 +781,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithArray,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithEmptyArray,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -785,15 +827,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithArray,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullArray,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -832,15 +873,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithObject,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullObject,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -879,15 +919,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -926,15 +965,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithStatus,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithStatus,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -973,15 +1011,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithStatus,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithInactiveStatus,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1020,15 +1057,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithActive,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullActive,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1038,8 +1074,7 @@ describe('UsersList', () => {
     });
   });
 
-  it('opens menu for multiple users independently', async () => {
-    const user = userEvent.setup();
+  it('renders independent inline delete buttons for each user row', async () => {
     render(<UsersList selectedSchema="schema1" />);
 
     await waitFor(() => {
@@ -1047,16 +1082,9 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    // Menu should be displayed
-    const viewButton = screen.getByText('View');
-    expect(viewButton).toBeInTheDocument();
+    // Each user row has its own inline delete button
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('handles number field with null value', async () => {
@@ -1088,15 +1116,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithNumber,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithNullNumber,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1127,9 +1154,8 @@ describe('UsersList', () => {
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithOnlyUsername,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1148,7 +1174,7 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: emptySchema,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
@@ -1189,15 +1215,14 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: schemaWithBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 
     mockUseGetUsers.mockReturnValue({
       data: usersWithFalseBoolean,
-      loading: false,
+      isLoading: false,
       error: null,
-      refetch: mockRefetch,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1210,9 +1235,9 @@ describe('UsersList', () => {
   it('displays loading state when deleting user', async () => {
     const user = userEvent.setup();
     mockUseDeleteUser.mockReturnValue({
-      deleteUser: mockDeleteUser,
-      loading: true,
-      error: null,
+      ...defaultDeleteReturn,
+      isPending: true,
+      isIdle: false,
     });
 
     render(<UsersList selectedSchema="schema1" />);
@@ -1221,11 +1246,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const actionButtons = screen.getAllByRole('button', {name: /open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    const deleteButton = screen.getByText('Delete');
-    await user.click(deleteButton);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
       const confirmButton = screen.getByRole('button', {name: /loading/i});
@@ -1250,7 +1272,7 @@ describe('UsersList', () => {
 
     mockUseGetUserSchema.mockReturnValue({
       data: comprehensiveSchema,
-      loading: false,
+      isLoading: false,
       error: null,
     });
 

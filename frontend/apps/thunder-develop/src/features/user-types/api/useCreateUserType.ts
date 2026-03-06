@@ -16,68 +16,42 @@
  * under the License.
  */
 
-import {useState, useMemo} from 'react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiError, ApiUserSchema, CreateUserSchemaRequest} from '../types/user-types';
+import type {ApiUserSchema, CreateUserSchemaRequest} from '../types/user-types';
+import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 
 /**
- * Custom hook to create a new user schema (user type)
- * @returns Object containing createUserType function, data, loading state, error, and reset function
+ * Custom React hook to create a new user schema (user type) in the Thunder server.
+ *
+ * @returns TanStack Query mutation object for creating user types
  */
-export default function useCreateUserType() {
+export default function useCreateUserType(): UseMutationResult<ApiUserSchema, Error, CreateUserSchemaRequest> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<ApiUserSchema | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
-
-  const createUserType = async (requestData: CreateUserSchemaRequest): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-      setData(null);
-
-      const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas`,
+  return useMutation<ApiUserSchema, Error, CreateUserSchemaRequest>({
+    mutationFn: async (requestData: CreateUserSchemaRequest): Promise<ApiUserSchema> => {
+      const serverUrl: string = getServerUrl();
+      const response: {
+        data: ApiUserSchema;
+      } = await http.request({
+        url: `${serverUrl}/user-schemas`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        data: requestData,
+        data: JSON.stringify(requestData),
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUserSchema;
-      setData(jsonData);
-      setError(null);
-    } catch (err) {
-      const apiError: ApiError = {
-        code: 'CREATE_USER_TYPE_ERROR',
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to create user type',
-      };
-      setError(apiError);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reset = () => {
-    setData(null);
-    setError(null);
-  };
-
-  return {
-    createUserType,
-    data,
-    loading,
-    error,
-    reset,
-  };
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPES]}).catch(() => {
+        // Ignore invalidation errors
+      });
+    },
+  });
 }

@@ -475,6 +475,50 @@ func (suite *OAuth2UtilsTestSuite) TestGenerateOAuth2ClientSecretUniqueness() {
 	assert.Equal(suite.T(), 1000, len(clientSecrets), "Should have generated 1000 unique client secrets")
 }
 
+func (suite *OAuth2UtilsTestSuite) TestGenerateAuthorizationCode() {
+	code, err := GenerateAuthorizationCode()
+
+	// Should not return an error
+	assert.NoError(suite.T(), err, "GenerateAuthorizationCode should not return an error")
+	assert.NotEmpty(suite.T(), code, "Generated authorization code should not be empty")
+
+	// Verify format - should be base64url without padding
+	base64URLPattern := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+	assert.True(suite.T(), base64URLPattern.MatchString(code),
+		"Authorization code should contain only base64url characters (A-Z, a-z, 0-9, -, _)")
+
+	// Should not contain padding characters
+	assert.False(suite.T(), strings.Contains(code, "="),
+		"Authorization code should not contain padding characters")
+
+	// Verify length - 20 bytes base64url encoded without padding should be 27 characters
+	expectedLength := base64.RawURLEncoding.EncodedLen(OAuth2AuthorizationCodeLength)
+	assert.Equal(suite.T(), expectedLength, len(code),
+		"Authorization code should have the expected encoded length")
+
+	// Verify it can be decoded back to original byte length (20 bytes = 160 bits)
+	decoded, err := base64.RawURLEncoding.DecodeString(code)
+	assert.NoError(suite.T(), err, "Generated authorization code should be valid base64url")
+	assert.Equal(suite.T(), OAuth2AuthorizationCodeLength, len(decoded),
+		"Decoded authorization code should have the expected byte length")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestGenerateAuthorizationCodeUniqueness() {
+	codes := make(map[string]bool)
+
+	// Generate multiple authorization codes and verify uniqueness
+	for i := 0; i < 1000; i++ {
+		code, err := GenerateAuthorizationCode()
+		assert.NoError(suite.T(), err, "Should not return an error during generation")
+
+		_, exists := codes[code]
+		assert.False(suite.T(), exists, "Generated authorization codes should be unique")
+		codes[code] = true
+	}
+
+	assert.Equal(suite.T(), 1000, len(codes), "Should have generated 1000 unique authorization codes")
+}
+
 func (suite *OAuth2UtilsTestSuite) TestOAuth2CredentialsDifferentFromUUID() {
 	// Generate OAuth credentials
 	clientID, err := GenerateOAuth2ClientID()

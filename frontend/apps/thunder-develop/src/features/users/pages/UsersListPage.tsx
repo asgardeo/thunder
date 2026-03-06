@@ -17,7 +17,7 @@
  */
 
 import {useNavigate} from 'react-router';
-import {Box, Stack, Typography, TextField, Button, InputAdornment, Select, MenuItem} from '@wso2/oxygen-ui';
+import {Stack, TextField, Button, InputAdornment, Select, MenuItem, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {useMemo, useState} from 'react';
 import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
@@ -60,35 +60,32 @@ export default function UsersListPage() {
   };
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            {t('users:title')}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {t('users:subtitle')}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2}>
-          <Button variant="outlined" startIcon={<Mail size={18} />} onClick={handleOpenInviteDialog}>
-            {t('users:inviteUser', 'Invite User')}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            onClick={() => {
-              (async () => {
-                await navigate('/users/create');
-              })().catch((error: unknown) => {
-                logger.error('Failed to navigate to create user page', {error});
-              });
-            }}
-          >
-            {t('users:addUser')}
-          </Button>
-        </Stack>
-      </Stack>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.Header>{t('users:title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('users:subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
+          <Stack direction="row" spacing={2}>
+            <Button variant="outlined" startIcon={<Mail size={18} />} onClick={handleOpenInviteDialog}>
+              {t('users:inviteUser', 'Invite User')}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => {
+                (async () => {
+                  await navigate('/users/create');
+                })().catch((error: unknown) => {
+                  logger.error('Failed to navigate to create user page', {error});
+                });
+              }}
+            >
+              {t('users:addUser')}
+            </Button>
+          </Stack>
+        </PageTitle.Actions>
+      </PageTitle>
 
       {/* Search and Filters */}
       <Stack direction="row" spacing={2} mb={4} flexWrap="wrap" useFlexGap>
@@ -121,11 +118,7 @@ export default function UsersListPage() {
       <UsersList selectedSchema={selectedSchema ?? ''} />
 
       {/* User Onboarding Dialog */}
-      <InviteUserDialog
-        open={isInviteDialogOpen}
-        onClose={handleCloseInviteDialog}
-        onSuccess={handleInviteSuccess}
-      />
-    </Box>
+      <InviteUserDialog open={isInviteDialogOpen} onClose={handleCloseInviteDialog} onSuccess={handleInviteSuccess} />
+    </PageContent>
   );
 }

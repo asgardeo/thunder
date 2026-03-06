@@ -24,8 +24,10 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/authn"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	"github.com/asgardeo/thunder/internal/design/resolve"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
@@ -38,7 +40,6 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
@@ -51,8 +52,11 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/mcp"
+	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -87,33 +91,56 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Add to exporters list (must be done after initializing list)
 	exporters = append(exporters, i18nExporter)
 
-	ouService, ouExporter, err := ou.Initialize(mux)
+	ouAuthzService, err := sysauthz.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize system authorization service", log.Error(err))
+	}
+
+	ouService, ouHierarchyResolver, ouExporter, err := ou.Initialize(mux, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
 	}
 	exporters = append(exporters, ouExporter)
 
+	// Complete the two-phase initialization: inject the OU hierarchy resolver into the
+	// authz service now that the ou package is ready. This breaks the import-cycle that
+	// would arise if sysauthz were to directly import the ou package.
+	ouAuthzService.SetOUHierarchyResolver(ouHierarchyResolver)
+
 	hashService := hash.Initialize()
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
+
+	// Initialize consent service
+	consentService := consent.Initialize()
+
+	// Initialize user schema service
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(
+		mux, ouService, ouAuthzService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
 	}
 	exporters = append(exporters, userSchemaExporter)
 
-	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
+	userService, userExporter, err := user.Initialize(mux, ouService, userSchemaService, hashService, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
+	exporters = append(exporters, userExporter)
+
 	groupService, err := group.Initialize(mux, ouService, userService)
 	if err != nil {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
 	}
 
-	resourceService, err := resource.Initialize(mux, ouService)
+	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}
-	roleService := role.Initialize(mux, userService, groupService, ouService, resourceService)
+	exporters = append(exporters, resourceExporter)
+	roleService, roleExporter, err := role.Initialize(mux, userService, groupService, ouService, resourceService)
+	if err != nil {
+		logger.Fatal("Failed to initialize RoleService", log.Error(err))
+	}
+	exporters = append(exporters, roleExporter)
 	authZService := authz.Initialize(roleService)
 
 	idpService, idpExporter, err := idp.Initialize(mux)
@@ -131,14 +158,23 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize MCP server
 	mcpServer := mcp.Initialize(mux, jwtService)
 
+	// Initialize authn provider
+	authnProvider := authnprovider.InitializeAuthnProvider(userService)
+
+	// Initialize user provider based on configuration
+	userProvider := userprovider.InitializeUserProvider(userService)
+
 	// Initialize authentication services.
-	_, authSvcRegistry := authn.Initialize(mux, mcpServer, idpService, jwtService, userService, otpService)
+	_, authSvcRegistry := authn.Initialize(
+		mux, mcpServer, idpService, jwtService, userService,
+		userProvider, otpService, authnProvider,
+	)
 
 	// Initialize flow and executor services.
 	flowFactory, graphCache := flowcore.Initialize()
-	execRegistry := executor.Initialize(flowFactory, userService, ouService,
+	execRegistry := executor.Initialize(flowFactory, ouService,
 		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
-		groupService, roleService)
+		groupService, roleService, userProvider)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {
@@ -164,7 +200,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, layoutExporter)
 
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService,
+		userSchemaService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}

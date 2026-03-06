@@ -23,9 +23,6 @@ import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
 
 // Mock child components
-vi.mock('../TokenIssuerSection', () => ({
-  default: () => <div data-testid="token-issuer-section">Token Issuer Section</div>,
-}));
 
 vi.mock('../TokenUserAttributesSection', () => ({
   default: ({tokenType, headerAction}: {tokenType: string; headerAction?: React.ReactNode}) => (
@@ -97,7 +94,6 @@ describe('EditTokenSettings', () => {
     allowed_user_types: ['default'],
     token: {
       validity_period: 3600,
-      issuer: 'https://issuer.com',
       user_attributes: ['email'],
     },
   } as Application;
@@ -125,12 +121,6 @@ describe('EditTokenSettings', () => {
       expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
     });
 
-    it('should render token issuer section', () => {
-      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
-
-      expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
-    });
-
     it('should not render access token sections in native mode', () => {
       render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
@@ -149,7 +139,6 @@ describe('EditTokenSettings', () => {
   describe.skip('OAuth2/OIDC Mode - SKIPPED: Component hangs due to async operations', () => {
     const mockOAuth2Config: OAuth2Config = {
       token: {
-        issuer: 'https://oauth-issuer.com',
         access_token: {
           validity_period: 1800,
           user_attributes: ['sub', 'email'],
@@ -207,18 +196,6 @@ describe('EditTokenSettings', () => {
       );
 
       expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
-    });
-
-    it('should render token issuer section', () => {
-      render(
-        <EditTokenSettings
-          application={mockApplication}
-          oauth2Config={mockOAuth2Config}
-          onFieldChange={mockOnFieldChange}
-        />,
-      );
-
-      expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
     });
 
     it('should not render shared token sections in OAuth mode', () => {
@@ -287,9 +264,7 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(container).toBeTruthy();
-      expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
-      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
+      expect(container).toBeTruthy();      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
@@ -300,9 +275,7 @@ describe('EditTokenSettings', () => {
 
       expect(container).toBeTruthy();
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
-      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
-      expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
-    });
+      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();    });
   });
 
   describe.skip('User Info Configuration Logic - SKIPPED: Component hangs due to async operations', () => {

@@ -24,7 +24,7 @@
     "build": "pnpm prebuild && docusaurus build",
     "clear": "docusaurus clear",
     "deploy": "docusaurus deploy",
-    "dev": "pnpm prebuild && docusaurus start",
+    "dev": "pnpm prebuild && docusaurus start --port 5180",
     "docusaurus": "docusaurus",
     "generate:api-specs": "node ./scripts/merge-openapi-specs.mjs",
     "generate:changelog": "node ./scripts/generate-changelog.mjs",

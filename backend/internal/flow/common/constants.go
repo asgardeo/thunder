@@ -146,6 +146,12 @@ const (
 	RuntimeKeyUserEligibleForProvisioning = "userEligibleForProvisioning"
 	// RuntimeKeySkipProvisioning indicates whether to skip provisioning
 	RuntimeKeySkipProvisioning = "skipProvisioning"
+	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
+	RuntimeKeyRequestedPermissions = "requested_permissions"
+	// RuntimeKeyRequiredAttributes holds the space-separated user attributes required for the flow.
+	RuntimeKeyRequiredAttributes = "required_attributes"
+	// RuntimeKeyRequiredLocales holds the space-separated locales requested for claims.
+	RuntimeKeyRequiredLocales = "required_locales"
 )
 
 // TODO: Define a go type for InputType when formalizing input types
@@ -158,6 +164,8 @@ const (
 	InputTypePassword = "PASSWORD_INPUT"
 	// InputTypeOTP represents a one-time password input type.
 	InputTypeOTP = "OTP_INPUT"
+	// InputTypePhone represents a phone number input type.
+	InputTypePhone = "PHONE_INPUT"
 
 	// TODO: Add support for other sensitive input types:
 	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
@@ -171,3 +179,9 @@ var sensitiveInputTypes = []string{
 	InputTypePassword,
 	InputTypeOTP,
 }
+
+// ForwardedData key constants define keys used in the ForwardedData map.
+const (
+	// ForwardedDataKeyInputs is the key used to store input data in ForwardedData.
+	ForwardedDataKeyInputs = "inputs"
+)

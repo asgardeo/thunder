@@ -954,3 +954,292 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
 	s.Equal("", resp.FailureReason, "Should not have failure reason on success")
 	s.Equal("next", resp.NextNodeID)
 }
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataOptions() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{
+					Ref:        "usertype_input",
+					Identifier: "userType",
+					Type:       "SELECT",
+					Required:   true,
+					Options:    []string{}, // Empty in prompt definition
+				},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// Execute with ForwardedData containing inputs with options
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{
+					Identifier: "userType",
+					Type:       "SELECT",
+					Options:    []string{"employee", "customer", "partner"},
+				},
+			},
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Len(resp.Inputs, 1)
+
+	// Verify the input is enriched with options from ForwardedData
+	enrichedInput := resp.Inputs[0]
+	s.Equal("userType", enrichedInput.Identifier)
+	s.Equal("usertype_input", enrichedInput.Ref, "Ref from prompt definition should be preserved")
+	s.Equal("SELECT", enrichedInput.Type, "Type from prompt definition should be preserved")
+	s.True(enrichedInput.Required, "Required from prompt definition should be preserved")
+	s.ElementsMatch([]string{"employee", "customer", "partner"}, enrichedInput.Options,
+		"Options should be enriched from ForwardedData")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataNoMatch() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// ForwardedData has inputs but different Identifier
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{
+					Identifier: "userType", // Different identifier
+					Options:    []string{"option1", "option2"},
+				},
+			},
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Len(resp.Inputs, 1)
+
+	// Verify prompt input is unchanged since no match
+	promptInput := resp.Inputs[0]
+	s.Equal("username", promptInput.Identifier)
+	s.Empty(promptInput.Options, "Options should remain empty when no matching forwarded input")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithNoForwardedData() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "userType", Type: "SELECT", Required: true, Options: []string{}},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// No ForwardedData
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Len(resp.Inputs, 1)
+
+	// Verify options remain empty
+	promptInput := resp.Inputs[0]
+	s.Equal("userType", promptInput.Identifier)
+	s.Empty(promptInput.Options, "Options should remain empty without ForwardedData")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataMultipleInputs() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "userType", Type: "SELECT", Required: true, Options: []string{}},
+				{Identifier: "region", Type: "SELECT", Required: true, Options: []string{}},
+				{Identifier: "username", Type: "TEXT", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// ForwardedData has options for only userType
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{
+					Identifier: "userType",
+					Options:    []string{"employee", "customer"},
+				},
+			},
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Len(resp.Inputs, 3)
+
+	// Find each input and verify
+	var userTypeInput, regionInput, usernameInput *common.Input
+	for i := range resp.Inputs {
+		switch resp.Inputs[i].Identifier {
+		case "userType":
+			userTypeInput = &resp.Inputs[i]
+		case "region":
+			regionInput = &resp.Inputs[i]
+		case "username":
+			usernameInput = &resp.Inputs[i]
+		}
+	}
+
+	s.NotNil(userTypeInput)
+	s.NotNil(regionInput)
+	s.NotNil(usernameInput)
+
+	// Only userType should be enriched
+	s.ElementsMatch([]string{"employee", "customer"}, userTypeInput.Options)
+	s.Empty(regionInput.Options, "Region options should remain empty")
+	s.Empty(usernameInput.Options, "Username should have no options")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataNonInputType() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "userType", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// ForwardedData has wrong type (string instead of []common.Input)
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: "not-an-input-slice",
+		},
+	}
+
+	// Should not panic, should handle gracefully
+	s.NotPanics(func() {
+		resp, err := node.Execute(ctx)
+		s.Nil(err)
+		s.NotNil(resp)
+		s.Len(resp.Inputs, 1)
+		s.Empty(resp.Inputs[0].Options, "Options should remain empty with invalid ForwardedData type")
+	})
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataPreservesPromptFields() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{
+					Ref:        "usertype_input_custom",
+					Identifier: "userType",
+					Type:       "SELECT",
+					Required:   true,
+					Options:    []string{},
+				},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// ForwardedData has different Ref and Type (should NOT overwrite)
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{
+					Ref:        "different_ref",     // Should NOT overwrite
+					Identifier: "userType",          // Match by this
+					Type:       "DIFFERENT_TYPE",    // Should NOT overwrite
+					Required:   false,               // Should NOT overwrite
+					Options:    []string{"option1"}, // Should enrich
+				},
+			},
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Len(resp.Inputs, 1)
+
+	// Verify only Options is enriched, other fields preserved from prompt definition
+	enrichedInput := resp.Inputs[0]
+	s.Equal("usertype_input_custom", enrichedInput.Ref, "Ref should NOT be overwritten")
+	s.Equal("userType", enrichedInput.Identifier)
+	s.Equal("SELECT", enrichedInput.Type, "Type should NOT be overwritten")
+	s.True(enrichedInput.Required, "Required should NOT be overwritten")
+	s.ElementsMatch([]string{"option1"}, enrichedInput.Options, "Only Options should be enriched")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataEmptyOptions() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "userType", Type: "SELECT", Required: true, Options: []string{"default"}},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// ForwardedData has matching input but with empty options
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{
+					Identifier: "userType",
+					Options:    []string{}, // Empty options
+				},
+			},
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Len(resp.Inputs, 1)
+
+	// Verify options are NOT enriched when ForwardedData has empty options
+	promptInput := resp.Inputs[0]
+	s.Equal("userType", promptInput.Identifier)
+	s.ElementsMatch([]string{"default"}, promptInput.Options,
+		"Options should not be overwritten with empty options from ForwardedData")
+}

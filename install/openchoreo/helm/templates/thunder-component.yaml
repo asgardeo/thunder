@@ -66,14 +66,14 @@ spec:
               key: "${THUNDER_CRYPTO_ENCRYPTION_KEY}"
 
           database:
-            identity:
-              type: "${THUNDER_DB_IDENTITY_TYPE}"
+            config:
+              type: "${THUNDER_DB_CONFIG_TYPE}"
               hostname: "${DATABASE_HOST}"
               port: ${DATABASE_PORT}
-              name: "${THUNDER_DB_IDENTITY_DATABASE}"
-              username: "${THUNDER_DB_IDENTITY_USERNAME}"
-              password: "${THUNDER_DB_IDENTITY_PASSWORD}"
-              sslmode: "${THUNDER_DB_IDENTITY_SSL_MODE}"
+              name: "${THUNDER_DB_CONFIG_DATABASE}"
+              username: "${THUNDER_DB_CONFIG_USERNAME}"
+              password: "${THUNDER_DB_CONFIG_PASSWORD}"
+              sslmode: "${THUNDER_DB_CONFIG_SSL_MODE}"
             runtime:
               type: "${THUNDER_DB_RUNTIME_TYPE}"
               hostname: "${DATABASE_HOST}"
@@ -128,16 +128,16 @@ spec:
           value: "{{ .Values.database.host }}"
         - key: DATABASE_PORT
           value: "{{ .Values.database.port }}"
-        - key: THUNDER_DB_IDENTITY_TYPE
-          value: "{{ .Values.database.identity.type }}"
-        - key: THUNDER_DB_IDENTITY_DATABASE
-          value: "{{ .Values.database.identity.database }}"
-        - key: THUNDER_DB_IDENTITY_USERNAME
-          value: "{{ .Values.database.identity.username }}"
-        - key: THUNDER_DB_IDENTITY_PASSWORD
-          value: "{{ .Values.database.identity.password }}"
-        - key: THUNDER_DB_IDENTITY_SSL_MODE
-          value: "{{ .Values.database.identity.sslmode }}"
+        - key: THUNDER_DB_CONFIG_TYPE
+          value: "{{ .Values.database.config.type }}"
+        - key: THUNDER_DB_CONFIG_DATABASE
+          value: "{{ .Values.database.config.database }}"
+        - key: THUNDER_DB_CONFIG_USERNAME
+          value: "{{ .Values.database.config.username }}"
+        - key: THUNDER_DB_CONFIG_PASSWORD
+          value: "{{ .Values.database.config.password }}"
+        - key: THUNDER_DB_CONFIG_SSL_MODE
+          value: "{{ .Values.database.config.sslmode }}"
         - key: THUNDER_DB_RUNTIME_TYPE
           value: "{{ .Values.database.runtime.type }}"
         - key: THUNDER_DB_RUNTIME_DATABASE

@@ -35,7 +35,7 @@ import (
 type sessionStoreInterface interface {
 	storeSession(
 		sessionKey, userID, relyingPartyID string,
-		sessionData *sessionData,
+		session *sessionData,
 		expiryTime time.Time,
 	) error
 	retrieveSession(sessionKey string) (*sessionData, string, string, error)
@@ -60,7 +60,7 @@ func newSessionStore() sessionStoreInterface {
 
 // storeSession stores a WebAuthn session in the database.
 func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
-	sessionData *sessionData, expiryTime time.Time) error {
+	session *sessionData, expiryTime time.Time) error {
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		s.logger.Error("Failed to get database client", log.Error(err))
@@ -68,7 +68,7 @@ func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
 	}
 
 	// Serialize session data to JSON
-	jsonDataBytes, err := s.serializeSessionData(sessionData)
+	jsonDataBytes, err := s.serializeSessionData(session)
 	if err != nil {
 		s.logger.Error("Failed to marshal session data to JSON", log.Error(err))
 		return err

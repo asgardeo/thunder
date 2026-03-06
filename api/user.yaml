@@ -934,14 +934,20 @@ paths:
                     name: "employee"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                     allowSelfRegistration: false
+                    systemAttributes:
+                      display: "username"
                   - id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "customer"
                     ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
                     allowSelfRegistration: true
+                    systemAttributes:
+                      display: "email"
                   - id: "770e8400-e29b-41d4-a716-446655440002"
                     name: "partner"
                     ouId: "770e8400-e29b-41d4-a716-446655440002"
                     allowSelfRegistration: false
+                    systemAttributes:
+                      display: "email"
         "400":
           description: Bad request
           content:
@@ -981,6 +987,8 @@ paths:
               name: "partner"
               ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
               allowSelfRegistration: false
+              systemAttributes:
+                display: "email"
               schema:
                 firstname:
                   type: "string"
@@ -991,6 +999,10 @@ paths:
                   type: "string"
                   required: true
                   unique: true
+                password:
+                  type: "string"
+                  required: true
+                  credential: true
                 company:
                   type: "string"
                 role:
@@ -1012,6 +1024,8 @@ paths:
                 name: "partner"
                 ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
                 allowSelfRegistration: false
+                systemAttributes:
+                  display: "email"
                 schema:
                   firstname:
                     type: "string"
@@ -1022,6 +1036,10 @@ paths:
                     type: "string"
                     required: true
                     unique: true
+                  password:
+                    type: "string"
+                    required: true
+                    credential: true
                   company:
                     type: "string"
                   role:
@@ -1093,6 +1111,8 @@ paths:
                     name: "employee"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                     allowSelfRegistration: false
+                    systemAttributes:
+                      display: "username"
                     schema:
                       firstname:
                         type: "string"
@@ -1106,6 +1126,7 @@ paths:
                       password:
                         type: "string"
                         required: true
+                        credential: true
                         regex: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$"
                       employeeId:
                         type: "number"
@@ -1122,6 +1143,8 @@ paths:
                     name: "customer"
                     ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
                     allowSelfRegistration: true
+                    systemAttributes:
+                      display: "email"
                     schema:
                       email:
                         type: "string"
@@ -1188,11 +1211,17 @@ paths:
               name: "customer"
               ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
               allowSelfRegistration: true
+              systemAttributes:
+                display: "email"
               schema:
                 email:
                   type: "string"
                   required: true
                   unique: true
+                password:
+                  type: "string"
+                  required: true
+                  credential: true
                 age:
                   type: "number"
                 mobile:
@@ -1215,11 +1244,17 @@ paths:
                 name: "customer"
                 ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
                 allowSelfRegistration: true
+                systemAttributes:
+                  display: "email"
                 schema:
                   email:
                     type: "string"
                     required: true
                     unique: true
+                  password:
+                    type: "string"
+                    required: true
+                    credential: true
                   age:
                     type: "number"
                   mobile:
@@ -1550,18 +1585,26 @@ components:
           type: boolean
           description: "Indicates whether users of this type can perform self-registration flows"
           default: false
+        systemAttributes:
+          type: object
+          description: "System-level metadata for the user schema"
+          properties:
+            display:
+              type: string
+              description: "The schema attribute to use as the human-readable display name for users of this type"
+          additionalProperties: false
         schema:
           type: object
           description: "JSON Schema definition for the user type"
           additionalProperties:
             oneOf:
               - type: object
-                description: "Leaf property definition (string, number, or boolean type)"
+                description: "Leaf property - string or number"
                 required: [type]
                 properties:
                   type:
                     type: string
-                    enum: ["string", "number", "boolean"]
+                    enum: ["string", "number"]
                     description: "Data type of the property"
                   required:
                     type: boolean
@@ -1571,6 +1614,10 @@ components:
                     type: boolean
                     default: false
                     description: "Whether this property must be unique across all users"
+                  credential:
+                    type: boolean
+                    default: false
+                    description: "Whether this property should be treated as a credential attribute"
                   enum:
                     type: array
                     items:
@@ -1579,6 +1626,19 @@ components:
                   regex:
                     type: string
                     description: "Regular expression pattern for validating the property value"
+                additionalProperties: false
+              - type: object
+                description: "Leaf property - boolean"
+                required: [type]
+                properties:
+                  type:
+                    type: string
+                    enum: ["boolean"]
+                    description: "Data type of the property"
+                  required:
+                    type: boolean
+                    default: false
+                    description: "Whether this attribute must be provided for the user type"
                 additionalProperties: false
               - type: object
                 description: "Object property definition"
@@ -1613,16 +1673,24 @@ components:
                   items:
                     oneOf:
                       - type: object
-                        description: "Array of strings, numbers, or booleans"
+                        description: "Array of strings or numbers"
                         required: [type]
                         properties:
                           type:
                             type: string
-                            enum: ["string", "number", "boolean"]
+                            enum: ["string", "number"]
                           enum:
                             type: array
                             items:
                               type: string
+                        additionalProperties: false
+                      - type: object
+                        description: "Array of booleans"
+                        required: [type]
+                        properties:
+                          type:
+                            type: string
+                            enum: ["boolean"]
                         additionalProperties: false
                       - type: object
                         description: "Array of objects"
@@ -1646,6 +1714,7 @@ components:
             password:
               type: "string"
               required: true
+              credential: true
               regex: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$"
             age:
               type: "number"
@@ -1711,6 +1780,14 @@ components:
                 type: boolean
                 description: "Indicates whether users of this type can perform self-registration flows"
                 default: false
+              systemAttributes:
+                type: object
+                description: "System-level metadata for the user schema"
+                properties:
+                  display:
+                    type: string
+                    description: "The schema attribute to use as the human-readable display name for users of this type"
+                additionalProperties: false
         links:
           type: array
           items:
@@ -1731,6 +1808,8 @@ components:
           type: boolean
           description: "Whether the user type supports user-initiated registration"
           default: false
+        systemAttributes:
+          $ref: "#/components/schemas/UserSchema/properties/systemAttributes"
         schema:
           type: object
           description: "JSON Schema definition for the user type"
@@ -1752,6 +1831,8 @@ components:
           type: boolean
           description: "Whether the user type supports user-initiated registration"
           default: false
+        systemAttributes:
+          $ref: "#/components/schemas/UserSchema/properties/systemAttributes"
         schema:
           type: object
           description: "JSON Schema definition for the user type"

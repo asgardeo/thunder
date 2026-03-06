@@ -18,7 +18,7 @@
 
 import type {JSX} from 'react';
 import {useNavigate} from 'react-router';
-import {Box, Stack, Typography, Button} from '@wso2/oxygen-ui';
+import {Button, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -28,18 +28,14 @@ export default function FlowsListPage(): JSX.Element {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('FlowsListPage');
+
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h1" gutterBottom>
-            {t('flows:listing.title')}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {t('flows:listing.subtitle')}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2}>
+    <PageContent>
+      {/* Header */}
+      <PageTitle>
+        <PageTitle.Header>{t('flows:listing.title')}</PageTitle.Header>
+        <PageTitle.SubHeader>{t('flows:listing.subtitle')}</PageTitle.SubHeader>
+        <PageTitle.Actions>
           <Button
             variant="contained"
             startIcon={<Plus size={18} />}
@@ -55,10 +51,10 @@ export default function FlowsListPage(): JSX.Element {
           >
             {t('flows:listing.addFlow')}
           </Button>
-        </Stack>
-      </Stack>
+        </PageTitle.Actions>
+      </PageTitle>
 
       <FlowsList />
-    </Box>
+    </PageContent>
   );
 }

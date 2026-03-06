@@ -22,11 +22,13 @@ package clientauth
 import (
 	"encoding/base64"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // authenticate authenticates the OAuth2 client from the request.
@@ -114,11 +116,11 @@ func authenticate(
 // extractBasicAuthCredentials extracts the basic authentication credentials from the request header.
 func extractBasicAuthCredentials(r *http.Request) (string, string, *authError) {
 	authHeader := r.Header.Get(serverconst.AuthorizationHeaderName)
-	if !strings.HasPrefix(authHeader, serverconst.AuthSchemeBasic) {
+	if !utils.HasPrefixFold(authHeader, serverconst.AuthSchemeBasic) {
 		return "", "", errInvalidAuthorizationHeader
 	}
 
-	encodedCredentials := strings.TrimPrefix(authHeader, serverconst.AuthSchemeBasic)
+	encodedCredentials := utils.TrimPrefixFold(authHeader, serverconst.AuthSchemeBasic)
 	decodedCredentials, err := base64.StdEncoding.DecodeString(encodedCredentials)
 	if err != nil {
 		return "", "", errInvalidAuthorizationHeader
@@ -129,5 +131,15 @@ func extractBasicAuthCredentials(r *http.Request) (string, string, *authError) {
 		return "", "", errInvalidAuthorizationHeader
 	}
 
-	return credentials[0], credentials[1], nil
+	// URL-decode client credentials.
+	clientID, idErr := url.QueryUnescape(credentials[0])
+	if idErr != nil {
+		return "", "", errInvalidAuthorizationHeader
+	}
+	clientSecret, secretErr := url.QueryUnescape(credentials[1])
+	if secretErr != nil {
+		return "", "", errInvalidAuthorizationHeader
+	}
+
+	return clientID, clientSecret, nil
 }

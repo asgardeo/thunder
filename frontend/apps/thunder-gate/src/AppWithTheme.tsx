@@ -17,15 +17,15 @@
  */
 
 import type {JSX} from 'react';
-import {OxygenUIThemeProvider, ColorSchemeToggle, CircularProgress, Box} from '@wso2/oxygen-ui';
 import {useDesign} from '@thunder/shared-design';
+import {OxygenUIThemeProvider, ColorSchemeToggle, CircularProgress, Box, AcrylicOrangeTheme} from '@wso2/oxygen-ui';
 import App from './App';
 
 export default function AppWithTheme(): JSX.Element {
-  const {transformedTheme, isLoading} = useDesign();
+  const {transformedTheme, isLoading} = useDesign(AcrylicOrangeTheme);
 
   return (
-    <OxygenUIThemeProvider {...(transformedTheme && {theme: transformedTheme})} radialBackground>
+    <OxygenUIThemeProvider theme={transformedTheme ?? AcrylicOrangeTheme}>
       <ColorSchemeToggle
         sx={{
           position: 'fixed',

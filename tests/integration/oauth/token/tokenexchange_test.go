@@ -62,6 +62,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -268,8 +269,12 @@ func (ts *TokenExchangeTestSuite) deleteApplication(appID string) {
 
 func (ts *TokenExchangeTestSuite) getUserAssertion() string {
 	authRequest := map[string]interface{}{
-		"username": tokenExchangeTestUser,
-		"password": tokenExchangeTestPassword,
+		"identifiers": map[string]interface{}{
+			"username": tokenExchangeTestUser,
+		},
+		"credentials": map[string]interface{}{
+			"password": tokenExchangeTestPassword,
+		},
 	}
 
 	requestJSON, err := json.Marshal(authRequest)
@@ -463,7 +468,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_InvalidSubjectToken() {
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
 
@@ -661,7 +666,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_SubjectTokenMissingIssClaim(
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
 
@@ -679,6 +684,6 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_SubjectTokenUnsupportedIssue
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }

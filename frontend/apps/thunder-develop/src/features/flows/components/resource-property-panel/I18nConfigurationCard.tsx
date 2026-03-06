@@ -39,7 +39,6 @@ import {
 } from '@wso2/oxygen-ui';
 import {PlusIcon, XIcon} from '@wso2/oxygen-ui-icons-react';
 import {useGetLanguages, useGetTranslations, useUpdateTranslation} from '@thunder/i18n';
-import {useConfig} from '@thunder/shared-contexts';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 
@@ -88,18 +87,14 @@ function I18nConfigurationCard({
   i18nKey: selectedI18nKey,
 }: I18nConfigurationCardPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const {getServerUrl} = useConfig();
-  const serverUrl = getServerUrl();
   const {i18nText, i18nTextLoading} = useFlowBuilderCore();
   const updateTranslation = useUpdateTranslation({
-    serverUrl,
     onMutationSuccess: () => {
       invalidateI18nCache();
     },
   });
-  const {data: languagesData} = useGetLanguages({serverUrl});
+  const {data: languagesData} = useGetLanguages();
   const {data: translationsData, isLoading: translationsLoading} = useGetTranslations({
-    serverUrl,
     language: DEFAULT_LANGUAGE,
     namespace: DEFAULT_NAMESPACE,
     enabled: open,

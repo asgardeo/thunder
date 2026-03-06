@@ -88,32 +88,32 @@ This is used to trigger pod restarts when auto-generated Secrets change.
 {{- define "thunder.shouldIncludeSecretChecksum" -}}
 {{- $configuration := default dict .Values.configuration -}}
 {{- $database := default dict $configuration.database -}}
-{{- $identity := default dict $database.identity -}}
+{{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
-{{- if or (and $identity.password (not (default dict $identity.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) }}true{{- end }}
+{{- if or (and $config.password (not (default dict $config.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) }}true{{- end }}
 {{- end }}
 
 {{/*
 Generate database password environment variable definitions for both deployment and setup job.
-Injects DB_IDENTITY_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from either auto-generated or external Secrets.
+Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from either auto-generated or external Secrets.
 */}}
 {{- define "thunder.databasePasswordEnvVars" -}}
 {{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunder.fullname" .) -}}
 {{- $configuration := default dict .Values.configuration -}}
 {{- $database := default dict $configuration.database -}}
-{{- $identity := default dict $database.identity -}}
+{{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
-{{- $identityPasswordRef := default dict $identity.passwordRef -}}
+{{- $configPasswordRef := default dict $config.passwordRef -}}
 {{- $runtimePasswordRef := default dict $runtime.passwordRef -}}
 {{- $userPasswordRef := default dict $user.passwordRef -}}
-{{- if or $identity.password $identityPasswordRef.key }}
-- name: DB_IDENTITY_PASSWORD
+{{- if or $config.password $configPasswordRef.key }}
+- name: DB_CONFIG_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ if $identityPasswordRef.key }}{{ $identityPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
-      key: {{ $identityPasswordRef.key | default "identity-db-password" }}
+      name: {{ if $configPasswordRef.key }}{{ $configPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
+      key: {{ $configPasswordRef.key | default "config-db-password" }}
 {{- end }}
 {{- if or $runtime.password $runtimePasswordRef.key }}
 - name: DB_RUNTIME_PASSWORD

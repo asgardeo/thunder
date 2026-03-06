@@ -899,10 +899,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			body: `{
 				"name": " team <script> ",
 				"description": " desc ",
-				"organizationUnitId": " ou-001 ",
-				"members": [
-					{"id": " user-1 ", "type": "user"}
-				]
+				"organizationUnitId": " ou-001 "
 			}`,
 			setJSONHeader: true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
@@ -910,10 +907,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 					On("UpdateGroup", mock.Anything, "grp-001", mock.MatchedBy(func(request UpdateGroupRequest) bool {
 						return request.Name == "team &lt;script&gt;" &&
 							request.Description == "desc" &&
-							request.OrganizationUnitID == testOrganizationUnitID &&
-							len(request.Members) == 1 &&
-							request.Members[0].ID == "user-1" &&
-							request.Members[0].Type == MemberTypeUser
+							request.OrganizationUnitID == testOrganizationUnitID
 					})).
 					Return(&Group{ID: "grp-001"}, nil).
 					Once()
@@ -1318,6 +1312,264 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleErrorInternalServer()
 
 	require.Equal(t, http.StatusInternalServerError, rr.Code)
 	require.Equal(t, "Internal server error\n", rr.Body.String())
+}
+
+func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersAddRequest() {
+	testCases := []handlerTestCase{
+		{
+			name:           "success",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/add",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader:  true,
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("AddGroupMembers", mock.Anything, "grp-001",
+						[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
+					Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var group Group
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &group))
+				require.Equal(suite.T(), "grp-001", group.ID)
+			},
+		},
+		{
+			name:           "invalid body",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/add",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{invalid`,
+			setJSONHeader:  true,
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
+			},
+			assertService: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(suite.T(), "AddGroupMembers",
+					mock.Anything, mock.Anything, mock.Anything)
+			},
+		},
+		{
+			name:           "service error - group not found",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/add",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader:  true,
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(nil, &ErrorGroupNotFound).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusNotFound, rr.Code)
+			},
+		},
+		{
+			name:           "service error - empty members",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/add",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{"members":[]}`,
+			setJSONHeader:  true,
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(nil, &ErrorEmptyMembers).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
+				var body apierror.ErrorResponse
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &body))
+				require.Equal(suite.T(), ErrorEmptyMembers.Code, body.Code)
+			},
+		},
+		{
+			name:          "missing id",
+			method:        http.MethodPost,
+			url:           "/groups//members/add",
+			body:          `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader: true,
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
+			},
+			assertService: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(suite.T(), "AddGroupMembers",
+					mock.Anything, mock.Anything, mock.Anything)
+			},
+		},
+	}
+
+	runHandlerTestCases(suite, testCases, func(handler *groupHandler, writer http.ResponseWriter, req *http.Request) {
+		handler.HandleGroupMembersAddRequest(writer, req)
+	})
+}
+
+func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersRemoveRequest() {
+	testCases := []handlerTestCase{
+		{
+			name:           "success",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/remove",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader:  true,
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("RemoveGroupMembers", mock.Anything, "grp-001",
+						[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
+					Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var group Group
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &group))
+				require.Equal(suite.T(), "grp-001", group.ID)
+			},
+		},
+		{
+			name:           "invalid body",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/remove",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{invalid`,
+			setJSONHeader:  true,
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
+			},
+			assertService: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(suite.T(), "RemoveGroupMembers",
+					mock.Anything, mock.Anything, mock.Anything)
+			},
+		},
+		{
+			name:           "service error - group not found",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/remove",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader:  true,
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("RemoveGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(nil, &ErrorGroupNotFound).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusNotFound, rr.Code)
+			},
+		},
+		{
+			name:           "internal server error",
+			method:         http.MethodPost,
+			url:            "/groups/grp-001/members/remove",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			body:           `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader:  true,
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("RemoveGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(nil, &ErrorInternalServerError).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusInternalServerError, rr.Code)
+			},
+		},
+		{
+			name:          "missing id",
+			method:        http.MethodPost,
+			url:           "/groups//members/remove",
+			body:          `{"members":[{"id":"usr-001","type":"user"}]}`,
+			setJSONHeader: true,
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusBadRequest, rr.Code)
+			},
+			assertService: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(suite.T(), "RemoveGroupMembers",
+					mock.Anything, mock.Anything, mock.Anything)
+			},
+		},
+	}
+
+	runHandlerTestCases(suite, testCases, func(handler *groupHandler, writer http.ResponseWriter, req *http.Request) {
+		handler.HandleGroupMembersRemoveRequest(writer, req)
+	})
+}
+
+func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersAddDispatch() {
+	t := suite.T()
+	suite.ensureRuntime()
+	mux := http.NewServeMux()
+	serviceMock := NewGroupServiceInterfaceMock(t)
+	handler := newGroupHandler(serviceMock)
+	registerRoutes(mux, handler)
+
+	serviceMock.
+		On("AddGroupMembers", mock.Anything, "grp-001",
+			[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
+		Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
+		Once()
+
+	body := strings.NewReader(`{"members":[{"id":"usr-001","type":"user"}]}`)
+	req := httptest.NewRequest(http.MethodPost, "/groups/grp-001/members/add", body)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
+
+	require.Equal(t, http.StatusOK, resp.Code)
+}
+
+func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersRemoveDispatch() {
+	t := suite.T()
+	suite.ensureRuntime()
+	mux := http.NewServeMux()
+	serviceMock := NewGroupServiceInterfaceMock(t)
+	handler := newGroupHandler(serviceMock)
+	registerRoutes(mux, handler)
+
+	serviceMock.
+		On("RemoveGroupMembers", mock.Anything, "grp-001",
+			[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
+		Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
+		Once()
+
+	body := strings.NewReader(`{"members":[{"id":"usr-001","type":"user"}]}`)
+	req := httptest.NewRequest(http.MethodPost, "/groups/grp-001/members/remove", body)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
+
+	require.Equal(t, http.StatusOK, resp.Code)
+}
+
+func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersInvalidAction() {
+	t := suite.T()
+	suite.ensureRuntime()
+	mux := http.NewServeMux()
+	registerRoutes(mux, newGroupHandler(nil))
+
+	body := strings.NewReader(`{"members":[{"id":"usr-001","type":"user"}]}`)
+	req := httptest.NewRequest(http.MethodPost, "/groups/grp-001/members/invalid", body)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
+
+	require.Equal(t, http.StatusNotFound, resp.Code)
 }
 
 func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleErrorClientError() {

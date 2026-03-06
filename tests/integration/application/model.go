@@ -39,6 +39,7 @@ type Application struct {
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
 	AllowedUserTypes          []string            `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig `json:"login_consent,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
 }
 
@@ -72,21 +73,26 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
 // UserInfoConfig represents the UserInfo endpoint configuration.
 type UserInfoConfig struct {
+	ResponseType   string   `json:"response_type,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
 // AssertionConfig represents the assertion configuration (used for application-level assertion config).
 type AssertionConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	Enabled        bool  `json:"enabled"`
+	ValidityPeriod int64 `json:"validity_period,omitempty"`
 }
 
 // AccessTokenConfig represents the access token configuration.
@@ -174,8 +180,7 @@ func (app *Application) equals(expectedApp Application) bool {
 
 	// Assertion config
 	if (app.Assertion != nil) && (expectedApp.Assertion != nil) {
-		if app.Assertion.Issuer != expectedApp.Assertion.Issuer ||
-			app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
+		if app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
 			return false
 		}
 		if !compareStringSlices(app.Assertion.UserAttributes, expectedApp.Assertion.UserAttributes) {
@@ -183,6 +188,20 @@ func (app *Application) equals(expectedApp Application) bool {
 		}
 	} else if (app.Assertion == nil && expectedApp.Assertion != nil) ||
 		(app.Assertion != nil && expectedApp.Assertion == nil) {
+		return false
+	}
+
+	// LoginConsent config
+	if (app.LoginConsent != nil) && (expectedApp.LoginConsent != nil) {
+		if app.LoginConsent.Enabled != expectedApp.LoginConsent.Enabled ||
+			app.LoginConsent.ValidityPeriod != expectedApp.LoginConsent.ValidityPeriod {
+			return false
+		}
+	} else if app.LoginConsent == nil && expectedApp.LoginConsent != nil {
+		// Expected a LoginConsent object but absent
+		return false
+	} else if app.LoginConsent != nil && expectedApp.LoginConsent == nil {
+		// Actual has LoginConsent object but expected omitted it
 		return false
 	}
 
@@ -265,6 +284,9 @@ func (app *Application) equals(expectedApp Application) bool {
 				// Compare UserInfo config - lenient if expected is nil but actual is empty
 				if expectedOAuth.UserInfo != nil {
 					if oauth.UserInfo == nil {
+						return false
+					}
+					if oauth.UserInfo.ResponseType != expectedOAuth.UserInfo.ResponseType {
 						return false
 					}
 					if !compareStringSlices(oauth.UserInfo.UserAttributes, expectedOAuth.UserInfo.UserAttributes) {

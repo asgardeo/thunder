@@ -48,6 +48,7 @@ const mockInviteUserRenderProps: InviteUserRenderProps = {
   inviteLinkCopied: false,
   resetFlow: mockResetFlow,
   isValid: false,
+  meta: null,
 };
 
 vi.mock('@asgardeo/react', async () => {
@@ -105,13 +106,25 @@ let capturedOnSuccess: ((inviteLink: string) => void) | undefined;
 
 // Mock InviteUserDialog to capture callbacks
 vi.mock('../../components/InviteUserDialog', () => ({
-  default: ({open, onClose, onSuccess}: {open: boolean; onClose: () => void; onSuccess?: (inviteLink: string) => void}) => {
+  default: ({
+    open,
+    onClose,
+    onSuccess,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onSuccess?: (inviteLink: string) => void;
+  }) => {
     capturedOnSuccess = onSuccess;
     if (!open) return null;
     return (
       <div role="dialog" data-testid="invite-dialog">
-        <button type="button" onClick={onClose} aria-label="close">Close</button>
-        <button type="button" onClick={() => onSuccess?.('https://invite.link/123')} data-testid="trigger-success">Trigger Success</button>
+        <button type="button" onClick={onClose} aria-label="close">
+          Close
+        </button>
+        <button type="button" onClick={() => onSuccess?.('https://invite.link/123')} data-testid="trigger-success">
+          Trigger Success
+        </button>
       </div>
     );
   },

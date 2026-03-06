@@ -78,9 +78,9 @@ type DataSource struct {
 
 // DatabaseConfig holds the different database configuration details.
 type DatabaseConfig struct {
-	Identity DataSource `yaml:"identity" json:"identity"`
-	Runtime  DataSource `yaml:"runtime" json:"runtime"`
-	User     DataSource `yaml:"user" json:"user"`
+	Config  DataSource `yaml:"config" json:"config"`
+	Runtime DataSource `yaml:"runtime" json:"runtime"`
+	User    DataSource `yaml:"user" json:"user"`
 }
 
 // CacheProperty defines the properties for individual caches.
@@ -123,10 +123,16 @@ type AuthorizationCodeConfig struct {
 	ValidityPeriod int64 `yaml:"validity_period" json:"validity_period"`
 }
 
+// DCRConfig holds the Dynamic Client Registration configuration.
+type DCRConfig struct {
+	Insecure bool `yaml:"insecure" json:"insecure"`
+}
+
 // OAuthConfig holds the OAuth configuration details.
 type OAuthConfig struct {
 	RefreshToken      RefreshTokenConfig      `yaml:"refresh_token" json:"refresh_token"`
 	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
+	DCR               DCRConfig               `yaml:"dcr" json:"dcr"`
 }
 
 // FlowConfig holds the configuration details for the flow service.
@@ -228,11 +234,23 @@ type ObservabilityOTelConfig struct {
 // UserConfig holds the user management configuration details.
 type UserConfig struct {
 	IndexedAttributes []string `yaml:"indexed_attributes" json:"indexed_attributes"`
+	// Store defines the storage mode for users.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
 }
 
 // ResourceConfig holds the resource management configuration details.
 type ResourceConfig struct {
 	DefaultDelimiter string `yaml:"default_delimiter" json:"default_delimiter"`
+	// Store defines the storage mode for resource servers.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
 }
 
 // OrganizationUnitConfig holds the organization unit service configuration.
@@ -245,9 +263,100 @@ type OrganizationUnitConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// IdentityProviderConfig holds the identity provider service configuration.
+type IdentityProviderConfig struct {
+	// Store defines the storage mode for identity providers.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
+// ApplicationConfig holds the application service configuration.
+type ApplicationConfig struct {
+	// Store defines the storage mode for applications.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
+// UserSchemaConfig holds the user schema service configuration.
+type UserSchemaConfig struct {
+	// Store defines the storage mode for user schemas.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
+// RoleConfig holds the role service configuration.
+type RoleConfig struct {
+	// Store defines the storage mode for roles.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
+// ThemeConfig holds the theme service configuration.
+type ThemeConfig struct {
+	// Store defines the storage mode for themes.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
+// LayoutConfig holds the layout service configuration.
+type LayoutConfig struct {
+	// Store defines the storage mode for layouts.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // PasskeyConfig holds the passkey configuration details.
 type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
+}
+
+// AuthnProviderConfig holds the authentication provider configuration details.
+type AuthnProviderConfig struct {
+	Type string     `yaml:"type" json:"type"`
+	Rest RestConfig `yaml:"rest" json:"rest"`
+}
+
+// UserProviderConfig holds the user provider configuration details.
+type UserProviderConfig struct {
+	Type string `yaml:"type" json:"type"`
+}
+
+// RestConfig holds the REST authentication provider configuration details.
+type RestConfig struct {
+	BaseURL  string             `yaml:"base_url" json:"base_url"`
+	Timeout  int                `yaml:"timeout" json:"timeout"`
+	Security RestSecurityConfig `yaml:"security" json:"security"`
+}
+
+// RestSecurityConfig holds the REST authentication provider security configuration details.
+type RestSecurityConfig struct {
+	APIKey string `yaml:"api_key" json:"api_key"`
+}
+
+// ConsentConfig holds the configuration for the consent service integration.
+type ConsentConfig struct {
+	Enabled    bool   `yaml:"enabled" json:"enabled"`
+	BaseURL    string `yaml:"base_url" json:"base_url"`
+	Timeout    int    `yaml:"timeout" json:"timeout"`         // HTTP request timeout in seconds. Default: 5
+	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
 }
 
 // Config holds the complete configuration details of the server.
@@ -266,8 +375,17 @@ type Config struct {
 	DeclarativeResources DeclarativeResources   `yaml:"declarative_resources" json:"declarative_resources"`
 	Resource             ResourceConfig         `yaml:"resource" json:"resource"`
 	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
+	IdentityProvider     IdentityProviderConfig `yaml:"identity_provider" json:"identity_provider"`
+	Application          ApplicationConfig      `yaml:"application" json:"application"`
+	UserSchema           UserSchemaConfig       `yaml:"user_schema" json:"user_schema"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
+	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
+	UserProvider         UserProviderConfig     `yaml:"user_provider" json:"user_provider"`
+	Role                 RoleConfig             `yaml:"role" json:"role"`
+	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
+	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
+	Consent              ConsentConfig          `yaml:"consent" json:"consent"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

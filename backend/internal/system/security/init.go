@@ -27,7 +27,8 @@ import (
 // Initialize creates and returns the security middleware with necessary authenticators.
 func Initialize(jwtService jwt.JWTServiceInterface) (func(http.Handler) http.Handler, error) {
 	jwtAuthenticator := newJWTAuthenticator(jwtService)
-	securityService, err := NewSecurityService([]AuthenticatorInterface{jwtAuthenticator}, publicPaths)
+	securityService, err := newSecurityService(
+		[]AuthenticatorInterface{jwtAuthenticator}, publicPaths, apiPermissionEntries)
 	if err != nil {
 		return nil, err
 	}

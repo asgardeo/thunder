@@ -47,7 +47,60 @@ var (
 				"executor": map[string]interface{}{
 					"name": "UserTypeResolver",
 				},
-				"onSuccess": "github_auth",
+				"onSuccess":    "github_auth",
+				"onIncomplete": "prompt_usertype",
+			},
+			{
+				"id":   "prompt_usertype",
+				"type": "PROMPT",
+				"meta": map[string]interface{}{
+					"components": []map[string]interface{}{
+						{
+							"type":    "TEXT",
+							"id":      "heading_usertype",
+							"label":   "Sign Up",
+							"variant": "HEADING_2",
+						},
+						{
+							"type": "BLOCK",
+							"id":   "block_usertype",
+							"components": []map[string]interface{}{
+								{
+									"type":        "SELECT",
+									"id":          "usertype_input",
+									"ref":         "userType",
+									"label":       "User Type",
+									"placeholder": "Select your user type",
+									"required":    true,
+									"options":     []interface{}{},
+								},
+								{
+									"type":      "ACTION",
+									"id":        "action_usertype",
+									"label":     "Continue",
+									"variant":   "PRIMARY",
+									"eventType": "SUBMIT",
+								},
+							},
+						},
+					},
+				},
+				"prompts": []map[string]interface{}{
+					{
+						"inputs": []map[string]interface{}{
+							{
+								"ref":        "usertype_input",
+								"identifier": "userType",
+								"type":       "SELECT",
+								"required":   true,
+							},
+						},
+						"action": map[string]interface{}{
+							"ref":      "action_usertype",
+							"nextNode": "user_type_resolver",
+						},
+					},
+				},
 			},
 			{
 				"id":   "github_auth",
@@ -97,7 +150,8 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
+				"credential": true,
 			},
 			"sub": map[string]interface{}{
 				"type": "string",
@@ -109,6 +163,96 @@ var (
 				"type": "string",
 			},
 			"familyName": map[string]interface{}{
+				"type": "string",
+			},
+			"login": map[string]interface{}{
+				"type": "string",
+			},
+			"node_id": map[string]interface{}{
+				"type": "string",
+			},
+			"avatar_url": map[string]interface{}{
+				"type": "string",
+			},
+			"gravatar_id": map[string]interface{}{
+				"type": "string",
+			},
+			"url": map[string]interface{}{
+				"type": "string",
+			},
+			"html_url": map[string]interface{}{
+				"type": "string",
+			},
+			"followers_url": map[string]interface{}{
+				"type": "string",
+			},
+			"following_url": map[string]interface{}{
+				"type": "string",
+			},
+			"gists_url": map[string]interface{}{
+				"type": "string",
+			},
+			"starred_url": map[string]interface{}{
+				"type": "string",
+			},
+			"subscriptions_url": map[string]interface{}{
+				"type": "string",
+			},
+			"organizations_url": map[string]interface{}{
+				"type": "string",
+			},
+			"repos_url": map[string]interface{}{
+				"type": "string",
+			},
+			"events_url": map[string]interface{}{
+				"type": "string",
+			},
+			"received_events_url": map[string]interface{}{
+				"type": "string",
+			},
+			"type": map[string]interface{}{
+				"type": "string",
+			},
+			"site_admin": map[string]interface{}{
+				"type": "string",
+			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"company": map[string]interface{}{
+				"type": "string",
+			},
+			"blog": map[string]interface{}{
+				"type": "string",
+			},
+			"location": map[string]interface{}{
+				"type": "string",
+			},
+			"hireable": map[string]interface{}{
+				"type": "string",
+			},
+			"bio": map[string]interface{}{
+				"type": "string",
+			},
+			"twitter_username": map[string]interface{}{
+				"type": "string",
+			},
+			"public_repos": map[string]interface{}{
+				"type": "string",
+			},
+			"public_gists": map[string]interface{}{
+				"type": "string",
+			},
+			"followers": map[string]interface{}{
+				"type": "string",
+			},
+			"following": map[string]interface{}{
+				"type": "string",
+			},
+			"created_at": map[string]interface{}{
+				"type": "string",
+			},
+			"updated_at": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -248,7 +392,7 @@ func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 
 	// Update flow definition with created IDP ID
 	nodes := githubRegistrationFlow.Nodes.([]map[string]interface{})
-	nodes[2]["properties"].(map[string]interface{})["idpId"] = idpID
+	nodes[3]["properties"].(map[string]interface{})["idpId"] = idpID
 	githubRegistrationFlow.Nodes = nodes
 
 	// Create registration flow

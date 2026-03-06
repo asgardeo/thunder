@@ -49,18 +49,18 @@ crypto:
   {{- end }}
 
 database:
-  identity:
-    type: {{ .Values.configuration.database.identity.type | quote }}
-    {{- if eq .Values.configuration.database.identity.type "sqlite" }}
-    path: {{ .Values.configuration.database.identity.sqlitePath | quote }}
-    options: {{ .Values.configuration.database.identity.sqliteOptions | quote }}
+  config:
+    type: {{ .Values.configuration.database.config.type | quote }}
+    {{- if eq .Values.configuration.database.config.type "sqlite" }}
+    path: {{ .Values.configuration.database.config.sqlitePath | quote }}
+    options: {{ .Values.configuration.database.config.sqliteOptions | quote }}
     {{- else }}
-    hostname: {{ .Values.configuration.database.identity.host | quote }}
-    port: {{ .Values.configuration.database.identity.port }}
-    name: {{ .Values.configuration.database.identity.name | quote }}
-    username: {{ .Values.configuration.database.identity.username | quote }}
-    password: {{ "{{.DB_IDENTITY_PASSWORD}}" | quote }}
-    sslmode: {{ .Values.configuration.database.identity.sslmode | quote }}
+    hostname: {{ .Values.configuration.database.config.host | quote }}
+    port: {{ .Values.configuration.database.config.port }}
+    name: {{ .Values.configuration.database.config.name | quote }}
+    username: {{ .Values.configuration.database.config.username | quote }}
+    password: {{ "{{.DB_CONFIG_PASSWORD}}" | quote }}
+    sslmode: {{ .Values.configuration.database.config.sslmode | quote }}
     {{- end }}
   runtime:
     type: {{ .Values.configuration.database.runtime.type | quote }}
@@ -109,6 +109,8 @@ oauth:
     validity_period: {{ .Values.configuration.oauth.refreshToken.validityPeriod }}
   authorization_code:
     validity_period: {{ .Values.configuration.oauth.authorizationCode.validityPeriod }}
+  dcr:
+    insecure: {{ .Values.configuration.oauth.dcr.insecure }}
 
 flow:
   default_auth_flow_handle: {{ .Values.configuration.flow.defaultAuthFlowHandle | quote }}
@@ -126,3 +128,9 @@ passkey:
   {{- range .Values.configuration.passkey.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
+
+consent:
+  enabled: {{ .Values.configuration.consent.enabled }}
+  base_url: {{ .Values.configuration.consent.baseUrl | quote }}
+  timeout: {{ .Values.configuration.consent.timeout }}
+  max_retries: {{ .Values.configuration.consent.maxRetries }}

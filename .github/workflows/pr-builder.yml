@@ -7,6 +7,7 @@ name: 👷🛠️ PR Builder
 
 on:
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 env:
@@ -15,7 +16,7 @@ env:
 jobs:
   security-audit:
     name: 🔒 Security Audit
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -36,29 +37,69 @@ jobs:
         working-directory: frontend
         run: |
           echo "🔍 Running pnpm audit for frontend dependencies..."
-          pnpm audit --audit-level=high
+          IGNORE_ARGS=()
+          while IFS= read -r id; do
+            IGNORE_ARGS+=(--ignore "$id")
+          done < <(jq -r '.frontend[].id' "$GITHUB_WORKSPACE/.audit-ignore.json")
+          pnpm audit --audit-level=high "${IGNORE_ARGS[@]}"
 
       - name: 🔍 Run npm audit (E2E Tests)
         working-directory: tests/e2e
         run: |
           echo "🔍 Running npm audit for E2E test dependencies..."
-          npm audit --audit-level=high
+          IGNORED_GHSAS=$(jq '[(.common + .e2e)[].id]' "$GITHUB_WORKSPACE/.audit-ignore.json")
+          AUDIT_RESULT=$(npm audit --json --audit-level=high 2>&1) || true
+          REMAINING=$(echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
+            [.vulnerabilities[].via[] | select(type == "object")
+             | select(.severity == "high" or .severity == "critical")
+             | select(.url | test($ignored | join("|")) | not)
+            ] | length
+          ')
+          if [ "$REMAINING" -gt 0 ]; then
+            echo "❌ Found $REMAINING unignored high/critical advisories:"
+            echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
+              [.vulnerabilities[].via[] | select(type == "object")
+               | select(.severity == "high" or .severity == "critical")
+               | select(.url | test($ignored | join("|")) | not)
+              ] | unique_by(.url) | .[] | "\(.severity): \(.name) - \(.url)"
+            '
+            exit 1
+          fi
+          echo "✅ All high/critical advisories are in the ignored list."
 
       - name: 🔍 Run npm audit (Sample Apps)
         run: |
           echo "🔍 Running npm audit for sample app dependencies..."
+          IGNORED_GHSAS=$(jq '[(.common + ."sample-apps")[].id]' "$GITHUB_WORKSPACE/.audit-ignore.json")
           for app in samples/apps/*/; do
             if [ -f "${app}package-lock.json" ]; then
               echo "Auditing $app..."
               cd "$app"
-              npm audit --audit-level=high
+              AUDIT_RESULT=$(npm audit --json --audit-level=high 2>&1) || true
+              REMAINING=$(echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
+                [.vulnerabilities[].via[] | select(type == "object")
+                 | select(.severity == "high" or .severity == "critical")
+                 | select(.url | test($ignored | join("|")) | not)
+                ] | length
+              ')
+              if [ "$REMAINING" -gt 0 ]; then
+                echo "❌ Found $REMAINING unignored high/critical advisories in $app:"
+                echo "$AUDIT_RESULT" | jq --argjson ignored "$IGNORED_GHSAS" '
+                  [.vulnerabilities[].via[] | select(type == "object")
+                   | select(.severity == "high" or .severity == "critical")
+                   | select(.url | test($ignored | join("|")) | not)
+                  ] | unique_by(.url) | .[] | "\(.severity): \(.name) - \(.url)"
+                '
+                exit 1
+              fi
+              echo "✅ $app - All high/critical advisories are in the ignored list."
               cd - > /dev/null
             fi
           done
 
   dependency-review:
     name: 🔎 Dependency Review
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,10 +114,47 @@ jobs:
           fail-on-severity: high
           deny-licenses: GPL-3.0-only,GPL-3.0-or-later,AGPL-3.0-only,AGPL-3.0-or-later
           comment-summary-in-pr: always
+          base-ref: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          head-ref: ${{ github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
+
+  verify-mocks:
+    name: 🔍 Verify Mock Files
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Go Environment
+        uses: ./.github/actions/setup-go
+
+      - name: 🔧 Install Mockery
+        run: make install-mockery
+
+      - name: 🏭 Generate Mocks
+        run: make mockery
+
+      - name: 🔎 Check for Outdated Mocks
+        run: |
+          if [ -n "$(git status --porcelain --untracked-files=all -- backend/tests/mocks backend/internal)" ]; then
+            echo "❌ Mock files are out of sync with interface definitions!"
+            echo ""
+            echo "The following mock files need to be regenerated:"
+            git status --porcelain --untracked-files=all -- backend/tests/mocks backend/internal | awk '{print $2}'
+            echo ""
+            echo "To fix this:"
+            echo "  1. Run: make mockery"
+            echo "  2. Commit the updated mock files"
+            echo "  3. Push your changes"
+            echo ""
+            echo "This ensures mock implementations stay synchronized with their interfaces."
+            exit 1
+          fi
+          echo "✅ All mock files are up to date"
 
   lint:
     name: 🧹 Lint Code
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -89,6 +167,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+
+      - name: 🔄 Fetch main branch for Nx affected base
+        run: git fetch origin main:main --update-head-ok || true
 
       - name: 🐳 Set SHAs for Nx
         id: set-shas
@@ -122,11 +203,11 @@ jobs:
       - name: 🔍 Run Frontend Linter
         run: |
           cd frontend
-          pnpm nx affected --target=lint --parallel=3 --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+          pnpm nx affected --target=lint --parallel=3 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
 
   build:
     name: 🛠️ Build Product
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -190,29 +271,6 @@ jobs:
           DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
           echo "Built distribution: $DIST_PATH"
 
-      - name: 🧪 Run Frontend Tests with Coverage
-        run: |
-          cd frontend/apps/thunder-develop
-          pnpm test:coverage
-
-      - name: 🧪 Run Thunder-Gate Tests with Coverage
-        run: |
-          cd frontend/apps/thunder-gate
-          pnpm test:coverage
-
-      # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading to Codecov.
-      # React Compiler (babel-plugin-react-compiler) generates phantom branch points in compiled
-      # output that inflate the partial-line count in Codecov's coverage calculation.
-      # This is a known upstream issue: https://github.com/facebook/react/issues/32950
-      # Line and function coverage remain unaffected and accurately reflect test quality.
-      - name: 🧹 Strip branch data from frontend LCOV reports
-        run: |
-          for lcov_file in frontend/apps/thunder-develop/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
-            if [ -f "$lcov_file" ]; then
-              sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
-            fi
-          done
-
       - name: 📦 Upload Built Distribution
         uses: actions/upload-artifact@v4
         with:
@@ -237,11 +295,109 @@ jobs:
           path: backend/coverage_unit.out
           if-no-files-found: error
 
+  test-frontend:
+    name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 'latest'
+          run_install: false
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 📦 Install Frontend Dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+      - name: 🔨 Build Frontend Packages
+        run: |
+          cd frontend
+          pnpm build:packages
+
+      - name: 🧪 Run Thunder-Develop Tests with Coverage
+        run: |
+          cd frontend/apps/thunder-develop
+          pnpm vitest run --coverage --shard=${{ matrix.shard }}/4
+
+      - name: 🧪 Run Thunder-Gate Tests with Coverage
+        if: matrix.shard == 1
+        run: |
+          cd frontend/apps/thunder-gate
+          pnpm test:coverage
+
+      # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading.
+      # React Compiler (babel-plugin-react-compiler) generates phantom branch points in compiled
+      # output that inflate the partial-line count in Codecov's coverage calculation.
+      # This is a known upstream issue: https://github.com/facebook/react/issues/32950
+      # Line and function coverage remain unaffected and accurately reflect test quality.
+      - name: 🧹 Strip branch data from frontend LCOV reports
+        run: |
+          for lcov_file in frontend/apps/thunder-develop/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
+            if [ -f "$lcov_file" ]; then
+              sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
+            fi
+          done
+
+      - name: 📦 Upload thunder-develop coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: develop-coverage-shard-${{ matrix.shard }}
+          path: frontend/apps/thunder-develop/coverage/lcov.info
+          if-no-files-found: error
+
+      - name: 📦 Upload thunder-gate coverage artifact
+        if: matrix.shard == 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-coverage
+          path: frontend/apps/thunder-gate/coverage/lcov.info
+          if-no-files-found: error
+
+  upload-frontend-coverage:
+    name: 📊 Upload Frontend Coverage
+    needs: test-frontend
+    if: always() && needs.test-frontend.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: develop-coverage-shard-*
+          path: coverage/develop
+
+      - name: 📥 Download gate coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gate-coverage
+          path: coverage/gate
+
+      - name: 🔀 Merge thunder-develop coverage from shards
+        run: |
+          cat coverage/develop/develop-coverage-shard-*/lcov.info > coverage/develop-merged-lcov.info
+
       - name: 📊 Upload `@thunder/develop` Unit Test Coverage Report to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: frontend/apps/thunder-develop/coverage/lcov.info
+          files: coverage/develop-merged-lcov.info
           disable_search: true
           flags: frontend-apps-develop-unit
           name: Frontend Develop App Unit Tests
@@ -251,7 +407,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: frontend/apps/thunder-gate/coverage/lcov.info
+          files: coverage/gate/lcov.info
           disable_search: true
           flags: frontend-apps-gate-unit
           name: Frontend Gate App Unit Tests
@@ -259,7 +415,7 @@ jobs:
 
   build_samples:
     name: 🛠️ Build Sample Apps
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
+    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -591,7 +747,7 @@ jobs:
 
   detect-powershell-changes:
     name: 🔍 Detect PowerShell Changes
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
       should-run: ${{ steps.filter.outputs.powershell }}
@@ -600,6 +756,8 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
           filters: |
             powershell:
               - '**.ps1'

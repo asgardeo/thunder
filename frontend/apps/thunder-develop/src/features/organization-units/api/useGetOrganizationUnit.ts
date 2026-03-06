@@ -59,7 +59,7 @@ export default function useGetOrganizationUnit(
       const response: {
         data: OrganizationUnit;
       } = await http.request({
-        url: `${serverUrl}/organization-units/${id}`,
+        url: `${serverUrl}/organization-units/${encodeURIComponent(id!)}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

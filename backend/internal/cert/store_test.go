@@ -53,7 +53,7 @@ func (suite *StoreTestSuite) SetupTest() {
 // Helper function to create test result row
 func (suite *StoreTestSuite) createTestResultRow() map[string]interface{} {
 	return map[string]interface{}{
-		"cert_id":  "test-cert-id",
+		"id":       "test-cert-id",
 		"ref_type": "APPLICATION",
 		"ref_id":   "test-app-id",
 		"type":     "JWKS",
@@ -127,7 +127,7 @@ func (suite *StoreTestSuite) TestGetCertificateByID_NotFound() {
 func (suite *StoreTestSuite) TestGetCertificateByID_MultipleResults() {
 	row1 := suite.createTestResultRow()
 	row2 := suite.createTestResultRow()
-	row2["cert_id"] = "test-cert-id-2"
+	row2["id"] = "test-cert-id-2"
 	results := []map[string]interface{}{row1, row2}
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -203,13 +203,13 @@ func (suite *StoreTestSuite) TestBuildCertificateFromResultRow_Success() {
 
 func (suite *StoreTestSuite) TestBuildCertificateFromResultRow_InvalidCertID() {
 	row := suite.createTestResultRow()
-	row["cert_id"] = 123 // Invalid type
+	row["id"] = 123 // Invalid type
 
 	result, err := suite.store.buildCertificateFromResultRow(row)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to parse cert_id")
+	assert.Contains(suite.T(), err.Error(), "failed to parse id")
 }
 
 func (suite *StoreTestSuite) TestBuildCertificateFromResultRow_InvalidRefType() {

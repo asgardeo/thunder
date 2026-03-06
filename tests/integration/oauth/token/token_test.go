@@ -349,8 +349,8 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantNegativeCases() {
 			testName:       "MissingCredentialsInBody",
 			requestBody:    "grant_type=client_credentials",
 			authHeader:     "",
-			expectedStatus: http.StatusUnauthorized,
-			expectedError:  "invalid_client",
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "invalid_request",
 		},
 		{
 			testName:       "InvalidGrantType",

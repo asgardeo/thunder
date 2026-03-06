@@ -64,7 +64,7 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 
 	// Validate if the authorization code grant type is allowed for the app.
 	if !oauthApp.IsAllowedGrantType(constants.GrantTypeAuthorizationCode) {
-		return true, constants.ErrorUnsupportedGrantType,
+		return true, constants.ErrorUnauthorizedClient,
 			"Authorization code grant type is not allowed for the client"
 	}
 
@@ -89,6 +89,11 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 		if err := pkce.ValidateCodeChallenge(codeChallenge, codeChallengeMethod); err != nil {
 			return true, constants.ErrorInvalidRequest, "Invalid PKCE parameters"
 		}
+	}
+	// Validate nonce length (FAPI 2.0 aligned)
+	nonce := msg.RequestQueryParams[constants.RequestParamNonce]
+	if nonce != "" && len(nonce) > constants.MaxNonceLength {
+		return true, constants.ErrorInvalidRequest, "nonce exceeds maximum allowed length"
 	}
 
 	// Validate resource parameter if present

@@ -31,9 +31,11 @@ import {
   Avatar,
   Stack,
   OxygenUIThemeProvider,
+  OxygenTheme,
 } from '@wso2/oxygen-ui';
 import {AppWindowMac, KeyRound} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
+import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
@@ -107,12 +109,34 @@ export interface PreviewProps {
  */
 export default function Preview({appLogo, selectedTheme, integrations}: PreviewProps): JSX.Element {
   const {t} = useTranslation();
-  const {mode} = useColorScheme();
+  const {mode, systemMode} = useColorScheme();
   const theme = useTheme();
   const {data: identityProviders} = useIdentityProviders();
 
-  // Ensure mode is either 'light' or 'dark' for indexing colorSchemes
-  const colorMode: 'light' | 'dark' = mode === 'dark' ? 'dark' : 'light';
+  // Resolve the active color mode: when mode is 'system', fall back to the OS-reported systemMode
+  const colorMode: 'light' | 'dark' = (mode === 'system' ? systemMode : mode) === 'dark' ? 'dark' : 'light';
+
+  const previewPrimary = selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary;
+
+  // Buttons in the preview must NOT use variant="contained" / "outlined" with color="primary"
+  // because MUI's .MuiButton-containedPrimary class applies background-color via CSS variables
+  // that reference the outer app's theme and cannot be reliably overridden at class specificity.
+  // Instead we omit the variant and apply all visual styles directly through sx.
+  const previewPrimaryContainedSx = previewPrimary
+    ? {
+        backgroundColor: previewPrimary.main,
+        color: previewPrimary.contrastText,
+        '&:hover': {backgroundColor: previewPrimary.dark},
+      }
+    : undefined;
+
+  const previewPrimaryOutlinedSx = previewPrimary
+    ? {
+        borderColor: previewPrimary.main,
+        color: previewPrimary.main,
+        '&:hover': {borderColor: previewPrimary.dark, color: previewPrimary.dark, backgroundColor: 'transparent'},
+      }
+    : undefined;
 
   const hasUsernamePassword: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
   const hasPasskey: boolean = integrations[AuthenticatorTypes.PASSKEY] ?? false;
@@ -120,6 +144,8 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
     identityProviders?.filter((idp: IdentityProvider): boolean => integrations[idp.id]) ?? [];
   const hasSocialLogins: boolean = selectedProviders.length > 0;
   const hasSmsOtp: boolean = integrations['sms-otp'] ?? false;
+
+  const previewTheme = useMemo(() => oxygenUIThemeTransformer(OxygenTheme, selectedTheme), [selectedTheme]);
 
   return (
     <Box
@@ -201,7 +227,7 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
             position: 'relative',
           }}
         >
-          <OxygenUIThemeProvider theme={oxygenUIThemeTransformer(selectedTheme)}>
+          <OxygenUIThemeProvider theme={previewTheme}>
             <ThemeProvider mode={colorMode}>
               <Box>
                 <BaseSignIn onError={() => {}} onSuccess={() => {}}>
@@ -246,30 +272,31 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
                               disabled
                             />
                           </FormControl>
-                          <Button type="submit" fullWidth variant="contained" color="primary">
+                          <Button type="submit" fullWidth color="primary" sx={previewPrimaryContainedSx}>
                             {t('applications:onboarding.preview.signInButton')}
                           </Button>
                         </Box>
                       )}
 
-                    {/* Passkey option - Conditionally rendered */}
-                    {hasPasskey && (
-                      <Box
-                        component="form"
-                        onSubmit={(e) => e.preventDefault()}
-                        sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
-                      >
-                        <Button
-                          type="submit"
-                          fullWidth
-                          variant={hasUsernamePassword ? 'outlined' : 'contained'}
-                          color="primary"
-                          startIcon={<KeyRound />}
+                      {/* Passkey option - Conditionally rendered */}
+                      {hasPasskey && (
+                        <Box
+                          component="form"
+                          onSubmit={(e) => e.preventDefault()}
+                          sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
                         >
-                          {t('applications:onboarding.preview.passkeySignIn')}
-                        </Button>
-                      </Box>
-                    )}
+                          <Button
+                            type="submit"
+                            fullWidth
+                            variant={hasUsernamePassword ? 'outlined' : undefined}
+                            color="primary"
+                            startIcon={<KeyRound />}
+                            sx={hasUsernamePassword ? previewPrimaryOutlinedSx : previewPrimaryContainedSx}
+                          >
+                            {t('applications:onboarding.preview.passkeySignIn')}
+                          </Button>
+                        </Box>
+                      )}
 
                       {/* SMS OTP option - Conditionally rendered */}
                       {hasSmsOtp && (
@@ -295,19 +322,7 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
                               disabled
                             />
                           </FormControl>
-                          <Button
-                            type="submit"
-                            fullWidth
-                            variant="contained"
-                            color="secondary"
-                            sx={{
-                              color: '#fff',
-                              backgroundColor: selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary?.main,
-                              '&:hover': {
-                                backgroundColor: selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary?.dark,
-                              },
-                            }}
-                          >
+                          <Button type="submit" fullWidth color="primary" sx={previewPrimaryContainedSx}>
                             {t('applications:onboarding.preview.sendOtpButton', {
                               defaultValue: 'Send OTP',
                             })}
@@ -317,7 +332,7 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
 
                       {/* Divider - Show when multiple auth methods exist */}
                       {(((hasUsernamePassword || hasPasskey) && hasSmsOtp) ||
-                        (((hasUsernamePassword || hasPasskey) || hasSmsOtp) && hasSocialLogins)) && (
+                        ((hasUsernamePassword || hasPasskey || hasSmsOtp) && hasSocialLogins)) && (
                         <Divider>{t('applications:onboarding.preview.dividerText')}</Divider>
                       )}
 

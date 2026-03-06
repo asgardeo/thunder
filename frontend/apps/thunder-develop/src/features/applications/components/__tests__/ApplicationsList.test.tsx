@@ -23,6 +23,10 @@ import type {NavigateFunction} from 'react-router';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
 
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
 // Mock the dependencies
 vi.mock('../../api/useGetApplications');
 vi.mock('react-router', async () => {
@@ -40,6 +44,72 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
   return {
     ...actual,
     OxygenUIThemeProvider: ({children}: {children: React.ReactNode}) => children,
+    ListingTable: {
+      Provider: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      DataGrid: ({
+        rows,
+        columns,
+        onRowClick = undefined,
+        getRowId,
+      }: {
+        rows: Record<string, unknown>[];
+        columns: {
+          field: string;
+          renderCell?: (params: {row: Record<string, unknown>}) => React.ReactElement;
+          valueGetter?: (value: unknown, row: Record<string, unknown>) => string;
+        }[];
+        onRowClick?: (params: {row: Record<string, unknown>}) => void;
+        getRowId: (row: Record<string, unknown>) => string;
+      }) => (
+        <div role="grid" data-testid="data-grid">
+          {rows.map((row: Record<string, unknown>) => (
+            <div
+              key={getRowId(row)}
+              role="row"
+              onClick={() => onRowClick?.({row})}
+              onKeyDown={() => onRowClick?.({row})}
+              tabIndex={0}
+            >
+              {columns.map(
+                (col: {
+                  field: string;
+                  renderCell?: (params: {row: Record<string, unknown>}) => React.ReactElement;
+                  valueGetter?: (value: unknown, row: Record<string, unknown>) => string;
+                }) => {
+                  if (col.renderCell) {
+                    return <div key={col.field}>{col.renderCell({row})}</div>;
+                  }
+                  if (col.valueGetter) {
+                    return <div key={col.field}>{col.valueGetter(null, row)}</div>;
+                  }
+                  return <div key={col.field}>{row[col.field] as string}</div>;
+                },
+              )}
+            </div>
+          ))}
+          <div>
+            1–{rows.length} of {rows.length}
+          </div>
+        </div>
+      ),
+      CellIcon: ({
+        primary,
+        secondary = undefined,
+        icon = undefined,
+      }: {
+        primary: string;
+        secondary?: string;
+        icon?: React.ReactNode;
+      }) => (
+        <>
+          {icon}
+          <span>{primary}</span>
+          {secondary && <span>{secondary}</span>}
+        </>
+      ),
+      RowActions: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+    },
   };
 });
 
@@ -56,55 +126,13 @@ vi.mock('../ApplicationDeleteDialog', () => ({
     ) : null,
 }));
 
-// Mock MUI DataGrid to avoid CSS import issues
-vi.mock('@mui/x-data-grid', () => ({
-  DataGrid: ({
-    rows,
-    columns,
-    loading,
-    onRowClick,
-    getRowId,
-  }: {
-    rows: Record<string, unknown>[];
-    columns: {
-      field: string;
-      renderCell?: (params: {row: Record<string, unknown>}) => React.ReactElement;
-      valueGetter?: (value: unknown, row: Record<string, unknown>) => string;
-    }[];
-    loading: boolean;
-    onRowClick: () => void;
-    getRowId: (row: Record<string, unknown>) => string;
-  }) => (
-    <div role="grid" data-testid="data-grid">
-      {loading && <div role="progressbar">Loading...</div>}
-      {!loading &&
-        rows.map((row: Record<string, unknown>) => (
-          <div key={getRowId(row)} role="row" onClick={onRowClick} onKeyDown={onRowClick} tabIndex={0}>
-            {columns.map(
-              (col: {
-                field: string;
-                renderCell?: (params: {row: Record<string, unknown>}) => React.ReactElement;
-                valueGetter?: (value: unknown, row: Record<string, unknown>) => string;
-              }) => {
-                if (col.renderCell) {
-                  return <div key={col.field}>{col.renderCell({row})}</div>;
-                }
-                if (col.valueGetter) {
-                  return <div key={col.field}>{col.valueGetter(null, row)}</div>;
-                }
-                return <div key={col.field}>{row[col.field] as string}</div>;
-              },
-            )}
-          </div>
-        ))}
-      <div>
-        1–{rows.length} of {rows.length}
-      </div>
-    </div>
-  ),
-  GridColDef: {},
-  GridRenderCellParams: {},
-  GridRowParams: {},
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 const {default: useGetApplications} = await import('../../api/useGetApplications');
@@ -143,6 +171,7 @@ describe('ApplicationsList', () => {
 
   beforeEach(() => {
     mockNavigate = vi.fn();
+    mockLoggerError.mockReset();
     vi.mocked(useNavigate).mockReturnValue(mockNavigate as unknown as NavigateFunction);
     vi.mocked(useDataGridLocaleText).mockReturnValue({});
   });
@@ -257,7 +286,7 @@ describe('ApplicationsList', () => {
     expect(dashElements.length).toBeGreaterThan(0);
   });
 
-  it('should open actions menu when clicking menu button', async () => {
+  it('should open delete dialog when clicking Delete action', async () => {
     const user = userEvent.setup();
 
     vi.mocked(useGetApplications).mockReturnValue({
@@ -268,15 +297,15 @@ describe('ApplicationsList', () => {
 
     renderComponent();
 
-    const menuButtons = screen.getAllByLabelText('Open actions menu');
-    await user.click(menuButtons[0]);
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByRole('menu')).toBeInTheDocument();
+      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
     });
   });
 
-  it('should navigate to view page when clicking View action', async () => {
+  it('should navigate when clicking row', async () => {
     const user = userEvent.setup();
 
     vi.mocked(useGetApplications).mockReturnValue({
@@ -287,45 +316,60 @@ describe('ApplicationsList', () => {
 
     renderComponent();
 
-    const menuButtons = screen.getAllByLabelText('Open actions menu');
-    await user.click(menuButtons[0]);
+    const rows = screen.getAllByRole('row');
+
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    await user.click(rows[0]);
+  });
+
+  it('should close delete dialog when cancelled', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByRole('menu')).toBeInTheDocument();
+      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
     });
 
-    const viewMenuItem = screen.getByText('View');
-    await user.click(viewMenuItem);
+    const cancelButton = screen.getByRole('button', {name: /cancel/i});
+    await user.click(cancelButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('delete-dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should handle navigation error gracefully', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const rows = screen.getAllByRole('row');
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
     });
-  });
 
-  it('should close menu when pressing Escape', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(useGetApplications).mockReturnValue({
-      data: mockApplicationsData,
-      isLoading: false,
-      error: null,
-    } as ReturnType<typeof useGetApplications>);
-
-    renderComponent();
-
-    const menuButtons = screen.getAllByLabelText('Open actions menu');
-    await user.click(menuButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('menu')).toBeInTheDocument();
-    });
-
-    // Press Escape to close the menu
-    await user.keyboard('{Escape}');
-
-    await waitFor(() => {
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-    });
+    expect(screen.getByRole('grid')).toBeInTheDocument();
   });
 
   it('should handle empty applications list', () => {
@@ -358,14 +402,13 @@ describe('ApplicationsList', () => {
     renderComponent();
 
     const rows = screen.getAllByRole('row');
-    // Click on first data row (index 1, as 0 is the header)
-    if (rows[1]) {
-      await user.click(rows[1]);
+    // The mock DataGrid has no header row, so index 0 is the first data row (app-1)
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[0]);
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
-      });
-    }
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
+    });
   });
 
   it('should navigate to correct application when clicking different row', async () => {
@@ -380,14 +423,13 @@ describe('ApplicationsList', () => {
     renderComponent();
 
     const rows = screen.getAllByRole('row');
-    // Click on second data row (index 2)
-    if (rows[2]) {
-      await user.click(rows[2]);
+    // Click on second data row (index 1, no header row in mock)
+    expect(rows.length).toBeGreaterThan(1);
+    await user.click(rows[1]);
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/applications/app-2');
-      });
-    }
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-2');
+    });
   });
 
   it('should prevent row selection on click', () => {
@@ -431,100 +473,6 @@ describe('ApplicationsList', () => {
     // The cursor style is applied via sx prop to the DataGrid
   });
 
-  it('should open delete dialog when clicking Delete action', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(useGetApplications).mockReturnValue({
-      data: mockApplicationsData,
-      isLoading: false,
-      error: null,
-    } as ReturnType<typeof useGetApplications>);
-
-    renderComponent();
-
-    const menuButtons = screen.getAllByLabelText('Open actions menu');
-    await user.click(menuButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('menu')).toBeInTheDocument();
-    });
-
-    const deleteMenuItem = screen.getByText('Delete');
-    await user.click(deleteMenuItem);
-
-    // The delete dialog should be opened
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-  });
-
-  it('should close delete dialog when cancelled', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(useGetApplications).mockReturnValue({
-      data: mockApplicationsData,
-      isLoading: false,
-      error: null,
-    } as ReturnType<typeof useGetApplications>);
-
-    renderComponent();
-
-    // Open the menu and click delete
-    const menuButtons = screen.getAllByLabelText('Open actions menu');
-    await user.click(menuButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('menu')).toBeInTheDocument();
-    });
-
-    const deleteMenuItem = screen.getByText('Delete');
-    await user.click(deleteMenuItem);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-
-    // Close the dialog by clicking the cancel button
-    const cancelButton = screen.getByRole('button', {name: /cancel/i});
-    await user.click(cancelButton);
-
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-  });
-
-  it('should handle navigation error gracefully', async () => {
-    const user = userEvent.setup();
-    const navigationError = new Error('Navigation failed');
-    mockNavigate.mockRejectedValueOnce(navigationError);
-
-    vi.mocked(useGetApplications).mockReturnValue({
-      data: mockApplicationsData,
-      isLoading: false,
-      error: null,
-    } as ReturnType<typeof useGetApplications>);
-
-    renderComponent();
-
-    const menuButtons = screen.getAllByLabelText('Open actions menu');
-    await user.click(menuButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByRole('menu')).toBeInTheDocument();
-    });
-
-    const viewMenuItem = screen.getByText('View');
-    await user.click(viewMenuItem);
-
-    // Navigation should have been attempted
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
-    });
-
-    // The component should not crash despite the navigation error
-    expect(screen.getByRole('grid')).toBeInTheDocument();
-  });
-
   it('should handle avatar image error', () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
@@ -565,5 +513,72 @@ describe('ApplicationsList', () => {
     // Should display "-" for missing client_id
     const dashes = screen.getAllByText('-');
     expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it('should navigate to application when Edit action button is clicked', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(0);
+    await user.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
+    });
+  });
+
+  it('should navigate to correct application when Edit action is clicked for second row', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(1);
+    await user.click(editButtons[1]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/app-2');
+    });
+  });
+
+  it('should log error when Edit button navigation fails', async () => {
+    const user = userEvent.setup();
+    const navigationError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValueOnce(navigationError);
+
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetApplications>);
+
+    renderComponent();
+
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    await user.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to application',
+        expect.objectContaining({
+          error: navigationError,
+          applicationId: 'app-1',
+        }),
+      );
+    });
   });
 });

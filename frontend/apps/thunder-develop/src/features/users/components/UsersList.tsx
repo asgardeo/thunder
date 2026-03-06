@@ -19,17 +19,14 @@
 import {useEffect, useMemo, useState, useCallback} from 'react';
 import {useNavigate} from 'react-router';
 import {
-  Box,
   Avatar,
   Chip,
   IconButton,
+  Tooltip,
   Typography,
   Snackbar,
   Alert,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  ListingTable,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -38,7 +35,7 @@ import {
   Button,
   DataGrid,
 } from '@wso2/oxygen-ui';
-import {EllipsisVertical, Trash2, Eye} from '@wso2/oxygen-ui-icons-react';
+import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
@@ -58,12 +55,12 @@ export default function UsersList(props: UsersListProps) {
   const logger = useLogger('UsersList');
   const dataGridLocaleText = useDataGridLocaleText();
 
-  const {data: userData, loading: isUsersRequestLoading, error: usersRequestError, refetch} = useGetUsers();
-  const {deleteUser, loading: isDeleting, error: deleteUserError} = useDeleteUser();
+  const {data: userData, isLoading: isUsersRequestLoading, error: usersRequestError} = useGetUsers();
+  const deleteUserMutation = useDeleteUser();
 
   const {
     data: defaultUserSchema,
-    loading: isDefaultUserSchemaRequestLoading,
+    isLoading: isDefaultUserSchemaRequestLoading,
     error: defaultUserSchemaRequestError,
   } = useGetUserSchema(selectedSchema);
 
@@ -71,7 +68,6 @@ export default function UsersList(props: UsersListProps) {
   const isLoading = isUsersRequestLoading || isDefaultUserSchemaRequestLoading;
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -86,27 +82,21 @@ export default function UsersList(props: UsersListProps) {
     setSnackbarOpen(false);
   };
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, userId: string) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+  const handleDeleteClick = useCallback((userId: string): void => {
     setSelectedUserId(userId);
+    setDeleteDialogOpen(true);
   }, []);
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleViewUser = async () => {
-    if (selectedUserId) {
-      await navigate(`/users/${selectedUserId}`);
-    }
-    handleMenuClose();
-  };
-
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
-  };
+  const handleViewClick = useCallback(
+    (userId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/users/${userId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to user details', {error: _error, userId});
+      });
+    },
+    [logger, navigate],
+  );
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -117,11 +107,9 @@ export default function UsersList(props: UsersListProps) {
     if (!selectedUserId) return;
 
     try {
-      await deleteUser(selectedUserId);
+      await deleteUserMutation.mutateAsync(selectedUserId);
       setDeleteDialogOpen(false);
       setSelectedUserId(null);
-      // Refetch users list after successful deletion
-      await refetch();
     } catch (err) {
       // Error is already handled in the hook
       setDeleteDialogOpen(false);
@@ -155,80 +143,38 @@ export default function UsersList(props: UsersListProps) {
         .replace(/^./, (str) => str.toUpperCase())
         .trim();
 
-    // Add avatar column if firstname/lastname exist in schema
-    const hasNameFields = schemaEntries.some(([key]) => key === 'firstname' || key === 'lastname');
-
-    if (hasNameFields) {
-      schemaColumns.push({
-        field: 'avatar',
-        headerName: '',
-        width: 70,
-        sortable: false,
-        filterable: false,
-        renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => {
-          const firstname = params.row.attributes?.firstname as string | undefined;
-          const lastname = params.row.attributes?.lastname as string | undefined;
-          const username = params.row.attributes?.username as string | undefined;
-          const displayName = [firstname, lastname, username].filter(Boolean).join(' ');
-          return (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 30,
-                  height: 30,
-                  bgcolor: 'primary.main',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {getInitials(displayName)}
-              </Avatar>
-            </Box>
-          );
-        },
-      });
-    }
-
     // Dynamically generate columns from schema
     schemaEntries.forEach(([fieldName, fieldDef]) => {
-      // Special handling for username to show with full name
+      // Special handling for username to show with avatar
       if (fieldName === 'username') {
         schemaColumns.push({
           field: fieldName,
           headerName: formatHeaderName(fieldName),
           flex: 1,
-          minWidth: 150,
+          minWidth: 200,
           renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => {
-            const username = (params.row.attributes?.username as string | undefined) ?? '-';
-            const firstname = params.row.attributes?.firstname as string | undefined;
-            const lastname = params.row.attributes?.lastname as string | undefined;
-            const fullName = [firstname, lastname].filter(Boolean).join(' ');
+            const usernameVal = (params.row.attributes?.username as string | undefined) ?? '-';
+            const firstnameVal = params.row.attributes?.firstname as string | undefined;
+            const lastnameVal = params.row.attributes?.lastname as string | undefined;
+            const displayName = [firstnameVal, lastnameVal, usernameVal].filter(Boolean).join(' ');
 
             return (
-              <Box
-                sx={{
-                  lineHeight: 1.2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  height: '100%',
-                }}
-              >
-                <Typography variant="body2" sx={{lineHeight: 1.3}}>
-                  {username}
-                </Typography>
-                {fullName && (
-                  <Typography variant="caption" color="text.secondary" sx={{lineHeight: 1.2}}>
-                    {fullName}
-                  </Typography>
-                )}
-              </Box>
+              <ListingTable.CellIcon
+                sx={{width: '100%'}}
+                icon={
+                  <Avatar
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      bgcolor: 'primary.main',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    {getInitials(displayName)}
+                  </Avatar>
+                }
+                primary={usernameVal}
+              />
             );
           },
         });
@@ -322,25 +268,43 @@ export default function UsersList(props: UsersListProps) {
     schemaColumns.push({
       field: 'actions',
       headerName: t('users:actions'),
-      width: 80,
+      width: 150,
+      align: 'center',
+      headerAlign: 'center',
       sortable: false,
       filterable: false,
       hideable: false,
       renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
-        <IconButton
-          size="small"
-          aria-label="Open actions menu"
-          onClick={(e) => {
-            handleMenuOpen(e, params.row.id);
-          }}
-        >
-          <EllipsisVertical size={16} />
-        </IconButton>
+        <ListingTable.RowActions visibility="hover">
+          <Tooltip title={t('common:actions.view')}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewClick(params.row.id);
+              }}
+            >
+              <Eye size={16} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t('common:actions.delete')}>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteClick(params.row.id);
+              }}
+            >
+              <Trash2 size={16} />
+            </IconButton>
+          </Tooltip>
+        </ListingTable.RowActions>
       ),
     });
 
     return schemaColumns;
-  }, [defaultUserSchema, handleMenuOpen, t]);
+  }, [defaultUserSchema, handleDeleteClick, handleViewClick, t]);
 
   // Calculate initial column visibility: show first 4 columns, hide the rest
   const initialColumnVisibility = useMemo(() => {
@@ -350,14 +314,12 @@ export default function UsersList(props: UsersListProps) {
     const VISIBLE_COLUMN_COUNT = 4;
 
     columns.forEach((column, index) => {
-      // Always show avatar and actions columns
-      if (column.field === 'avatar' || column.field === 'actions') {
+      // Always show actions column
+      if (column.field === 'actions') {
         visibility[column.field] = true;
       } else {
         // Show first VISIBLE_COLUMN_COUNT data columns, hide the rest
-        const dataColumnIndex = columns
-          .slice(0, index)
-          .filter((col) => col.field !== 'avatar' && col.field !== 'actions').length;
+        const dataColumnIndex = columns.slice(0, index).filter((col) => col.field !== 'actions').length;
 
         visibility[column.field] = dataColumnIndex < VISIBLE_COLUMN_COUNT;
       }
@@ -368,78 +330,51 @@ export default function UsersList(props: UsersListProps) {
 
   return (
     <>
-      <Box sx={{height: 600, width: '100%'}}>
-        <DataGrid.DataGrid
-          rows={userData?.users}
-          columns={columns}
-          loading={isLoading}
-          getRowId={(row) => row.id}
-          onRowClick={(params) => {
-            const userId = (params.row as UserWithDetails).id;
-
-            (async () => {
-              await navigate(`/users/${userId}`);
-            })().catch((_error: unknown) => {
-              logger.error('Failed to navigate to user details', {error: _error, userId});
-            });
-          }}
-          initialState={{
-            pagination: {
-              paginationModel: {pageSize: 10},
-            },
-            columns: {
-              columnVisibilityModel: initialColumnVisibility,
-            },
-          }}
-          pageSizeOptions={[5, 10, 25, 50]}
-          disableRowSelectionOnClick
-          localeText={dataGridLocaleText}
-          sx={{
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-            },
-          }}
-        />
-      </Box>
-
-      {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem
-          onClick={() => {
-            handleViewUser().catch(() => {
-              // Handle error
-            });
-          }}
-        >
-          <ListItemIcon>
-            <Eye size={16} />
-          </ListItemIcon>
-          <ListItemText>{t('common:actions.view')}</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleDeleteClick}>
-          <ListItemIcon sx={{color: 'error.main'}}>
-            <Trash2 size={16} />
-          </ListItemIcon>
-          <ListItemText sx={{color: 'error.main'}}>{t('common:actions.delete')}</ListItemText>
-        </MenuItem>
-      </Menu>
+      <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
+        <ListingTable.Container disablePaper>
+          <ListingTable.DataGrid
+            rows={userData?.users ?? []}
+            columns={columns}
+            getRowId={(row) => (row as UserWithDetails).id}
+            onRowClick={(params) => {
+              handleViewClick((params.row as UserWithDetails).id);
+            }}
+            initialState={{
+              pagination: {
+                paginationModel: {pageSize: 10},
+              },
+              columns: {
+                columnVisibilityModel: initialColumnVisibility,
+              },
+            }}
+            pageSizeOptions={[5, 10, 25, 50]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            sx={{
+              height: 'auto',
+              '& .MuiDataGrid-row': {
+                cursor: 'pointer',
+              },
+            }}
+          />
+        </ListingTable.Container>
+      </ListingTable.Provider>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
         <DialogTitle>{t('users:deleteUser')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('users:confirmDeleteUser')}</DialogContentText>
-          {deleteUserError && (
+          {deleteUserMutation.error && (
             <Alert severity="error" sx={{mt: 2}}>
               <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserError.message}
+                {deleteUserMutation.error.message}
               </Typography>
-              {deleteUserError.description && <Typography variant="caption">{deleteUserError.description}</Typography>}
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button onClick={handleDeleteCancel} disabled={deleteUserMutation.isPending}>
             {t('common:actions.cancel')}
           </Button>
           <Button
@@ -450,9 +385,9 @@ export default function UsersList(props: UsersListProps) {
             }}
             color="error"
             variant="contained"
-            disabled={isDeleting}
+            disabled={deleteUserMutation.isPending}
           >
-            {isDeleting ? t('common:status.loading') : t('common:actions.delete')}
+            {deleteUserMutation.isPending ? t('common:status.loading') : t('common:actions.delete')}
           </Button>
         </DialogActions>
       </Dialog>

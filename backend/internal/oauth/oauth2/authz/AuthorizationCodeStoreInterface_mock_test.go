@@ -35,104 +35,68 @@ func (_m *AuthorizationCodeStoreInterfaceMock) EXPECT() *AuthorizationCodeStoreI
 	return &AuthorizationCodeStoreInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
-// DeactivateAuthorizationCode provides a mock function for the type AuthorizationCodeStoreInterfaceMock
-func (_mock *AuthorizationCodeStoreInterfaceMock) DeactivateAuthorizationCode(authzCode AuthorizationCode) error {
-	ret := _mock.Called(authzCode)
+// ConsumeAuthorizationCode provides a mock function for the type AuthorizationCodeStoreInterfaceMock
+func (_mock *AuthorizationCodeStoreInterfaceMock) ConsumeAuthorizationCode(clientID string, authCode string) (bool, error) {
+	ret := _mock.Called(clientID, authCode)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeactivateAuthorizationCode")
+		panic("no return value specified for ConsumeAuthorizationCode")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(AuthorizationCode) error); ok {
-		r0 = returnFunc(authzCode)
-	} else {
-		r0 = ret.Error(0)
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string, string) (bool, error)); ok {
+		return returnFunc(clientID, authCode)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(0).(func(string, string) bool); ok {
+		r0 = returnFunc(clientID, authCode)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = returnFunc(clientID, authCode)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeactivateAuthorizationCode'
-type AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call struct {
+// AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ConsumeAuthorizationCode'
+type AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call struct {
 	*mock.Call
 }
 
-// DeactivateAuthorizationCode is a helper method to define mock.On call
-//   - authzCode AuthorizationCode
-func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) DeactivateAuthorizationCode(authzCode interface{}) *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call {
-	return &AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call{Call: _e.mock.On("DeactivateAuthorizationCode", authzCode)}
+// ConsumeAuthorizationCode is a helper method to define mock.On call
+//   - clientID string
+//   - authCode string
+func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) ConsumeAuthorizationCode(clientID interface{}, authCode interface{}) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
+	return &AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call{Call: _e.mock.On("ConsumeAuthorizationCode", clientID, authCode)}
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call) Run(run func(authzCode AuthorizationCode)) *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call {
+func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) Run(run func(clientID string, authCode string)) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 AuthorizationCode
+		var arg0 string
 		if args[0] != nil {
-			arg0 = args[0].(AuthorizationCode)
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call) Return(err error) *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call {
-	_c.Call.Return(err)
+func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) Return(b bool, err error) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
+	_c.Call.Return(b, err)
 	return _c
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call) RunAndReturn(run func(authzCode AuthorizationCode) error) *AuthorizationCodeStoreInterfaceMock_DeactivateAuthorizationCode_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ExpireAuthorizationCode provides a mock function for the type AuthorizationCodeStoreInterfaceMock
-func (_mock *AuthorizationCodeStoreInterfaceMock) ExpireAuthorizationCode(authzCode AuthorizationCode) error {
-	ret := _mock.Called(authzCode)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ExpireAuthorizationCode")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(AuthorizationCode) error); ok {
-		r0 = returnFunc(authzCode)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExpireAuthorizationCode'
-type AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call struct {
-	*mock.Call
-}
-
-// ExpireAuthorizationCode is a helper method to define mock.On call
-//   - authzCode AuthorizationCode
-func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) ExpireAuthorizationCode(authzCode interface{}) *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call {
-	return &AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call{Call: _e.mock.On("ExpireAuthorizationCode", authzCode)}
-}
-
-func (_c *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call) Run(run func(authzCode AuthorizationCode)) *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 AuthorizationCode
-		if args[0] != nil {
-			arg0 = args[0].(AuthorizationCode)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call) Return(err error) *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call) RunAndReturn(run func(authzCode AuthorizationCode) error) *AuthorizationCodeStoreInterfaceMock_ExpireAuthorizationCode_Call {
+func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) RunAndReturn(run func(clientID string, authCode string) (bool, error)) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -252,57 +216,6 @@ func (_c *AuthorizationCodeStoreInterfaceMock_InsertAuthorizationCode_Call) Retu
 }
 
 func (_c *AuthorizationCodeStoreInterfaceMock_InsertAuthorizationCode_Call) RunAndReturn(run func(authzCode AuthorizationCode) error) *AuthorizationCodeStoreInterfaceMock_InsertAuthorizationCode_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// RevokeAuthorizationCode provides a mock function for the type AuthorizationCodeStoreInterfaceMock
-func (_mock *AuthorizationCodeStoreInterfaceMock) RevokeAuthorizationCode(authzCode AuthorizationCode) error {
-	ret := _mock.Called(authzCode)
-
-	if len(ret) == 0 {
-		panic("no return value specified for RevokeAuthorizationCode")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(AuthorizationCode) error); ok {
-		r0 = returnFunc(authzCode)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RevokeAuthorizationCode'
-type AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call struct {
-	*mock.Call
-}
-
-// RevokeAuthorizationCode is a helper method to define mock.On call
-//   - authzCode AuthorizationCode
-func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) RevokeAuthorizationCode(authzCode interface{}) *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call {
-	return &AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call{Call: _e.mock.On("RevokeAuthorizationCode", authzCode)}
-}
-
-func (_c *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call) Run(run func(authzCode AuthorizationCode)) *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 AuthorizationCode
-		if args[0] != nil {
-			arg0 = args[0].(AuthorizationCode)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call) Return(err error) *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call) RunAndReturn(run func(authzCode AuthorizationCode) error) *AuthorizationCodeStoreInterfaceMock_RevokeAuthorizationCode_Call {
 	_c.Call.Return(run)
 	return _c
 }

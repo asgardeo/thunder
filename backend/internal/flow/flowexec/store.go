@@ -68,7 +68,8 @@ func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryCreateFlowUserData, dbModel.FlowID,
 				dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID,
-				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
+				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
+				dbModel.AvailableAttributes, s.deploymentID)
 			return err
 		},
 	}
@@ -118,7 +119,8 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryUpdateFlowUserData, dbModel.FlowID, dbModel.IsAuthenticated,
 				dbModel.UserID, dbModel.OrganizationUnitID, dbModel.UserType,
-				dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
+				dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
+				dbModel.AvailableAttributes, s.deploymentID)
 			return err
 		},
 	}
@@ -197,6 +199,8 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	userInputs := s.parseOptionalString(row["user_inputs"])
 	runtimeData := s.parseOptionalString(row["runtime_data"])
 	userAttributes := s.parseOptionalString(row["user_attributes"])
+	token := s.parseOptionalString(row["token"])
+	availableAttributes := s.parseOptionalString(row["available_attributes"])
 	executionHistory := s.parseOptionalString(row["execution_history"])
 
 	// Parse boolean fields with type conversion support
@@ -204,20 +208,22 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	verbose := s.parseBoolean(row["verbose"])
 
 	return &FlowContextWithUserDataDB{
-		FlowID:             flowID,
-		AppID:              appID,
-		CurrentNodeID:      currentNodeID,
-		CurrentAction:      currentAction,
-		GraphID:            graphID,
-		RuntimeData:        runtimeData,
-		Verbose:            verbose,
-		IsAuthenticated:    isAuthenticated,
-		UserID:             userID,
-		OrganizationUnitID: organizationUnitID,
-		UserType:           userType,
-		UserInputs:         userInputs,
-		UserAttributes:     userAttributes,
-		ExecutionHistory:   executionHistory,
+		FlowID:              flowID,
+		AppID:               appID,
+		CurrentNodeID:       currentNodeID,
+		CurrentAction:       currentAction,
+		GraphID:             graphID,
+		RuntimeData:         runtimeData,
+		Verbose:             verbose,
+		IsAuthenticated:     isAuthenticated,
+		UserID:              userID,
+		OrganizationUnitID:  organizationUnitID,
+		UserType:            userType,
+		UserInputs:          userInputs,
+		UserAttributes:      userAttributes,
+		Token:               token,
+		AvailableAttributes: availableAttributes,
+		ExecutionHistory:    executionHistory,
 	}, nil
 }
 

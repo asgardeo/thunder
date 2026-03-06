@@ -45,7 +45,7 @@ func (suite *TransactionerTestSuite) SetupTest() {
 
 	suite.db = db
 	suite.mock = mock
-	suite.transactioner = NewTransactioner(db)
+	suite.transactioner = NewTransactioner(db, "test")
 }
 
 func (suite *TransactionerTestSuite) TearDownTest() {
@@ -63,8 +63,8 @@ func (suite *TransactionerTestSuite) TestTransact_Success() {
 	err := suite.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		executed = true
 		// Verify transaction is in context
-		suite.True(HasTx(txCtx))
-		suite.NotNil(TxFromContext(txCtx))
+		suite.True(HasKeyedTx(txCtx, "test"))
+		suite.NotNil(KeyedTxFromContext(txCtx, "test"))
 		return nil
 	})
 
@@ -125,15 +125,15 @@ func (suite *TransactionerTestSuite) TestTransact_NestedTransaction() {
 
 	err := suite.transactioner.Transact(ctx, func(txCtx1 context.Context) error {
 		outerExecuted = true
-		suite.True(HasTx(txCtx1))
-		tx1 := TxFromContext(txCtx1)
+		suite.True(HasKeyedTx(txCtx1, "test"))
+		tx1 := KeyedTxFromContext(txCtx1, "test")
 		suite.NotNil(tx1)
 
 		// Nested call - should reuse the same transaction
 		err := suite.transactioner.Transact(txCtx1, func(txCtx2 context.Context) error {
 			innerExecuted = true
-			suite.True(HasTx(txCtx2))
-			tx2 := TxFromContext(txCtx2)
+			suite.True(HasKeyedTx(txCtx2, "test"))
+			tx2 := KeyedTxFromContext(txCtx2, "test")
 			suite.NotNil(tx2)
 
 			// Should be the same transaction
@@ -211,7 +211,7 @@ func (suite *TransactionerTestSuite) TestTransact_CommitError() {
 	executed := false
 	err := suite.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		executed = true
-		suite.True(HasTx(txCtx))
+		suite.True(HasKeyedTx(txCtx, "test"))
 		return nil
 	})
 

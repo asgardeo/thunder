@@ -41,7 +41,7 @@ const (
 
 func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 	userID := testUserID123
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	expectedUser := &User{
@@ -83,7 +83,7 @@ func TestHandleSelfUserGetRequest_Unauthorized(t *testing.T) {
 
 func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 	userID := "user-456"
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 	attributes := json.RawMessage(`{"email":"alice@example.com"}`)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
@@ -112,7 +112,7 @@ func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 
 func TestHandleSelfUserPutRequest_InvalidBody(t *testing.T) {
 	userID := "user-456"
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	handler := newUserHandler(mockSvc)
@@ -132,7 +132,7 @@ func TestHandleSelfUserPutRequest_InvalidBody(t *testing.T) {
 
 func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 	userID := testUserID789
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	credentialsJSON := json.RawMessage(`{"password":[{"value":"Secret123!"}]}`)
@@ -152,7 +152,7 @@ func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 
 func TestHandleSelfUserCredentialUpdateRequest_StringValue(t *testing.T) {
 	userID := testUserID789
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	credentialsJSON := json.RawMessage(`{"password":"plaintext-password"}`)
@@ -172,7 +172,7 @@ func TestHandleSelfUserCredentialUpdateRequest_StringValue(t *testing.T) {
 
 func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) {
 	userID := testUserID789
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	handler := newUserHandler(mockSvc)
@@ -193,7 +193,7 @@ func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) 
 
 func TestHandleSelfUserCredentialUpdateRequest_ErrorCases(t *testing.T) {
 	userID := testUserID789
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	testCases := []struct {
 		name             string
@@ -253,7 +253,7 @@ func TestHandleSelfUserCredentialUpdateRequest_ErrorCases(t *testing.T) {
 
 func TestHandleSelfUserCredentialUpdateRequest_MultipleCredentialTypes(t *testing.T) {
 	userID := testUserID789
-	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	// Test that multiple credential types are updated in a single atomic call
@@ -564,4 +564,48 @@ func TestHandleUserDeleteRequest_ErrorCases(t *testing.T) {
 		handler.HandleUserDeleteRequest(rr, req)
 		require.Equal(t, http.StatusInternalServerError, rr.Code)
 	})
+}
+
+func TestHandleError_ErrorUnauthorized_Returns403(t *testing.T) {
+	tests := []struct {
+		name     string
+		svcErr   *serviceerror.ServiceError
+		wantCode int
+	}{
+		{
+			name:     "UnauthorizedError_ReturnsForbidden",
+			svcErr:   &serviceerror.ErrorUnauthorized,
+			wantCode: http.StatusForbidden,
+		},
+		{
+			name:     "AuthenticationFailedError_ReturnsUnauthorized",
+			svcErr:   &ErrorAuthenticationFailed,
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:     "InternalServerError_Returns500",
+			svcErr:   &ErrorInternalServerError,
+			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "UserNotFoundError_Returns404",
+			svcErr:   &ErrorUserNotFound,
+			wantCode: http.StatusNotFound,
+		},
+	}
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	handler := newUserHandler(mockSvc)
+	userID := "u1"
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc.On("GetUser", mock.Anything, userID).Return(nil, tc.svcErr).Once()
+			req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
+			req.SetPathValue("id", userID)
+			rr := httptest.NewRecorder()
+			handler.HandleUserGetRequest(rr, req)
+			require.Equal(t, tc.wantCode, rr.Code)
+		})
+	}
 }
