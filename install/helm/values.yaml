@@ -111,6 +111,16 @@ ingress:
       pathType: Prefix
   tlsSecretsName: "thunder-tls"
 
+# Gateway API configuration
+gateway:
+  enabled: false
+  name: "thunder-gateway"
+  className: "nginx"
+  tls:
+    enabled: true
+    secretName: "thunder-tls"
+    mode: Terminate
+
 # Gateway API HTTPRoute configuration (alternative to Ingress)
 httproute:
   enabled: false
