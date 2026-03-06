@@ -339,6 +339,8 @@ Write-Host ""
 #           └── Action handle "view"       → permission "system:ou:view"
 #       └── Resource handle "user"         → permission "system:user"
 #           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "group"        → permission "system:group"
+#           └── Action handle "view"       → permission "system:group:view"
 #       └── Resource handle "userschema"   → permission "system:userschema"
 #           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
@@ -628,6 +630,86 @@ elseif ($response.StatusCode -eq 409) {
 }
 else {
     Log-Error "Failed to create user schema view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Write-Host ""
+
+Log-Info "Creating 'group' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create group resource."
+    exit 1
+}
+
+$groupResourceData = @{
+    name        = "Group"
+    description = "Group resource"
+    handle      = "group"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $groupResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Group resource created successfully (permission: system:group)"
+    $body = $response.Body | ConvertFrom-Json
+    $GROUP_RESOURCE_ID = $body.id
+    if ($GROUP_RESOURCE_ID) {
+        Log-Info "Group resource ID: $GROUP_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract group resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Group resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $groupResource = $body.resources | Where-Object { $_.handle -eq "group" } | Select-Object -First 1
+
+        if ($groupResource) {
+            $GROUP_RESOURCE_ID = $groupResource.id
+            Log-Success "Found group resource ID: $GROUP_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find group resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create group resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'group' resource..."
+
+$groupViewActionData = @{
+    name        = "View"
+    description = "Read-only access to groups"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$GROUP_RESOURCE_ID/actions" -Data $groupViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Group view action created successfully (permission: system:group:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Group view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create group view action (HTTP $($response.StatusCode))"
     Log-Error "Response: $($response.Body)"
     exit 1
 }

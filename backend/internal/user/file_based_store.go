@@ -254,6 +254,41 @@ func (f *userFileBasedStore) ValidateUserIDs(ctx context.Context, userIDs []stri
 	return invalid, nil
 }
 
+// ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope.
+// Returns user IDs that do not belong to any of the provided OUs.
+func (f *userFileBasedStore) ValidateUserIDsInOUs(
+	ctx context.Context, userIDs []string, ouIDs []string,
+) ([]string, error) {
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	if len(ouIDs) == 0 {
+		return append([]string{}, userIDs...), nil
+	}
+
+	ouSet := make(map[string]bool, len(ouIDs))
+	for _, ou := range ouIDs {
+		ouSet[ou] = true
+	}
+
+	outOfScope := make([]string, 0)
+	for _, id := range userIDs {
+		u, err := f.GetUser(ctx, id)
+		if err != nil {
+			if errors.Is(err, ErrUserNotFound) {
+				// Not found in file store — treat as out of scope for this store.
+				outOfScope = append(outOfScope, id)
+				continue
+			}
+			return nil, err
+		}
+		if !ouSet[u.OrganizationUnit] {
+			outOfScope = append(outOfScope, id)
+		}
+	}
+	return outOfScope, nil
+}
+
 // IsUserDeclarative checks if a user is immutable (exists in file store).
 func (f *userFileBasedStore) IsUserDeclarative(ctx context.Context, id string) (bool, error) {
 	_, err := f.GetUser(ctx, id)

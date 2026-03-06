@@ -277,3 +277,76 @@ func (suite *FileBasedStoreTestSuite) TestGroupMethods() {
 	suite.NoError(err)
 	suite.Len(groups, 0)
 }
+
+// TestValidateUserIDsInOUs_EmptyUserIDs verifies short-circuit when no user IDs provided.
+func (suite *FileBasedStoreTestSuite) TestValidateUserIDsInOUs_EmptyUserIDs() {
+	out, err := suite.store.ValidateUserIDsInOUs(context.Background(), []string{}, []string{"ou-1"})
+	suite.NoError(err)
+	suite.Empty(out)
+}
+
+// TestValidateUserIDsInOUs_EmptyOUIDs verifies that all user IDs are out-of-scope when no OUs given.
+func (suite *FileBasedStoreTestSuite) TestValidateUserIDsInOUs_EmptyOUIDs() {
+	userIDs := []string{"usr-001", "usr-002"}
+	out, err := suite.store.ValidateUserIDsInOUs(context.Background(), userIDs, []string{})
+	suite.NoError(err)
+	suite.Equal(userIDs, out)
+}
+
+// TestValidateUserIDsInOUs covers the core OU-scope logic using real in-memory users.
+func (suite *FileBasedStoreTestSuite) TestValidateUserIDsInOUs() {
+	ctx := context.Background()
+
+	// Seed two users in different OUs.
+	user1 := suite.buildUser("usr-001", "ou-1", map[string]interface{}{"username": "alice"})
+	user2 := suite.buildUser("usr-002", "ou-2", map[string]interface{}{"username": "bob"})
+	suite.NoError(suite.store.CreateUser(ctx, user1, nil))
+	suite.NoError(suite.store.CreateUser(ctx, user2, nil))
+
+	testCases := []struct {
+		name           string
+		userIDs        []string
+		ouIDs          []string
+		wantOutOfScope []string
+	}{
+		{
+			name:           "user in scope",
+			userIDs:        []string{"usr-001"},
+			ouIDs:          []string{"ou-1"},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:           "user out of scope",
+			userIDs:        []string{"usr-001"},
+			ouIDs:          []string{"ou-2"},
+			wantOutOfScope: []string{"usr-001"},
+		},
+		{
+			name:           "user not found treated as out of scope",
+			userIDs:        []string{"usr-missing"},
+			ouIDs:          []string{"ou-1"},
+			wantOutOfScope: []string{"usr-missing"},
+		},
+		{
+			name:           "mixed in scope and out of scope",
+			userIDs:        []string{"usr-001", "usr-002"},
+			ouIDs:          []string{"ou-1"},
+			wantOutOfScope: []string{"usr-002"},
+		},
+		{
+			name:           "all users in scope across multiple OUs",
+			userIDs:        []string{"usr-001", "usr-002"},
+			ouIDs:          []string{"ou-1", "ou-2"},
+			wantOutOfScope: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			out, err := suite.store.ValidateUserIDsInOUs(ctx, tc.userIDs, tc.ouIDs)
+			suite.NoError(err)
+			suite.Equal(tc.wantOutOfScope, out)
+		})
+	}
+}

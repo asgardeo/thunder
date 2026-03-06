@@ -221,6 +221,7 @@ var apiPermissionEntries = []apiPermissionEntry{
 	{"GET /groups", PermissionGroupView},
 	{"POST /groups", PermissionGroup},
 	{"GET /groups/**", PermissionGroupView},
+	{"POST /groups/**", PermissionGroup},
 	{"PUT /groups/**", PermissionGroup},
 	{"DELETE /groups/**", PermissionGroup},
 

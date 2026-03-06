@@ -2730,6 +2730,98 @@ func TestUserService_ValidateUserIDs(t *testing.T) {
 	require.Len(t, invalidIDs, 0)
 }
 
+func TestUserService_ValidateUserIDsInOUs(t *testing.T) {
+	testCases := []struct {
+		name           string
+		userIDs        []string
+		ouIDs          []string
+		setup          func(*userStoreInterfaceMock)
+		wantOutOfScope []string
+		wantErr        bool
+	}{
+		{
+			name:           "empty user IDs returns empty slice immediately",
+			userIDs:        []string{},
+			ouIDs:          []string{"ou-1"},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:           "empty OU IDs returns all user IDs as out of scope",
+			userIDs:        []string{"usr-001", "usr-002"},
+			ouIDs:          []string{},
+			wantOutOfScope: []string{"usr-001", "usr-002"},
+		},
+		{
+			name:    "all users in scope returns empty out-of-scope list",
+			userIDs: []string{"usr-001", "usr-002"},
+			ouIDs:   []string{"ou-1"},
+			setup: func(storeMock *userStoreInterfaceMock) {
+				storeMock.On("ValidateUserIDsInOUs",
+					mock.Anything, []string{"usr-001", "usr-002"}, []string{"ou-1"}).
+					Return([]string{}, nil).Once()
+			},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:    "partial out-of-scope IDs returned",
+			userIDs: []string{"usr-001", "usr-002"},
+			ouIDs:   []string{"ou-1"},
+			setup: func(storeMock *userStoreInterfaceMock) {
+				storeMock.On("ValidateUserIDsInOUs",
+					mock.Anything, []string{"usr-001", "usr-002"}, []string{"ou-1"}).
+					Return([]string{"usr-002"}, nil).Once()
+			},
+			wantOutOfScope: []string{"usr-002"},
+		},
+		{
+			name:    "all users out of scope",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			setup: func(storeMock *userStoreInterfaceMock) {
+				storeMock.On("ValidateUserIDsInOUs",
+					mock.Anything, []string{"usr-001"}, []string{"ou-1"}).
+					Return([]string{"usr-001"}, nil).Once()
+			},
+			wantOutOfScope: []string{"usr-001"},
+		},
+		{
+			name:    "store error returns service error",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			setup: func(storeMock *userStoreInterfaceMock) {
+				storeMock.On("ValidateUserIDsInOUs",
+					mock.Anything, []string{"usr-001"}, []string{"ou-1"}).
+					Return(nil, errors.New("db failure")).Once()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			storeMock := newUserStoreInterfaceMock(t)
+			if tc.setup != nil {
+				tc.setup(storeMock)
+			}
+
+			service := &userService{userStore: storeMock}
+
+			outOfScope, err := service.ValidateUserIDsInOUs(context.Background(), tc.userIDs, tc.ouIDs)
+
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Nil(t, outOfScope)
+			} else {
+				require.Nil(t, err)
+				require.Equal(t, tc.wantOutOfScope, outOfScope)
+			}
+
+			storeMock.AssertExpectations(t)
+		})
+	}
+}
+
 func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
 	service := &userService{

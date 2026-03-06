@@ -48,6 +48,7 @@ type userStoreInterface interface {
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
 	GetCredentials(ctx context.Context, id string) (User, Credentials, error)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
+	ValidateUserIDsInOUs(ctx context.Context, userIDs []string, ouIDs []string) ([]string, error)
 	IsUserDeclarative(ctx context.Context, id string) (bool, error)
 }
 
@@ -533,6 +534,50 @@ func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]s
 	}
 
 	return invalidUserIDs, nil
+}
+
+// ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope.
+// It returns user IDs that exist but are not in any of the provided OUs.
+func (us *userStore) ValidateUserIDsInOUs(
+	ctx context.Context, userIDs []string, ouIDs []string,
+) ([]string, error) {
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	if len(ouIDs) == 0 {
+		// No accessible OUs — all provided IDs are out of scope.
+		return append([]string{}, userIDs...), nil
+	}
+
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query, args, err := buildBulkUserExistsQueryInOUs(userIDs, ouIDs, us.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	inScopeIDs := make(map[string]bool, len(results))
+	for _, row := range results {
+		if id, ok := row["id"].(string); ok {
+			inScopeIDs[id] = true
+		}
+	}
+
+	outOfScopeIDs := make([]string, 0)
+	for _, userID := range userIDs {
+		if !inScopeIDs[userID] {
+			outOfScopeIDs = append(outOfScopeIDs, userID)
+		}
+	}
+	return outOfScopeIDs, nil
 }
 
 // GetGroupCountForUser retrieves the total count of groups a user belongs to.

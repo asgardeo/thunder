@@ -485,3 +485,131 @@ func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_WithFilters(
 	suite.Equal(10, args[len(args)-2])
 	suite.Equal(0, args[len(args)-1])
 }
+
+// Test buildBulkUserExistsQueryInOUs
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_EmptyUserIDs() {
+	_, _, err := buildBulkUserExistsQueryInOUs([]string{}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "userIDs list cannot be empty")
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_EmptyOUIDs() {
+	_, _, err := buildBulkUserExistsQueryInOUs([]string{"usr-001"}, []string{}, testDeploymentIDForConstants)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "ouIDs list cannot be empty")
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_QueryID() {
+	query, _, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-001"}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-21", query.ID)
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_SingleUserSingleOU() {
+	query, args, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-001"}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	// Postgres: SELECT ID FROM "USER" WHERE DEPLOYMENT_ID = $1 AND OU_ID IN ($2) AND ID IN ($3)
+	suite.Contains(query.PostgresQuery, `SELECT ID FROM "USER"`)
+	suite.Contains(query.PostgresQuery, "DEPLOYMENT_ID = $1")
+	suite.Contains(query.PostgresQuery, "OU_ID IN ($2)")
+	suite.Contains(query.PostgresQuery, "ID IN ($3)")
+	// SQLite: all positional params are ?
+	suite.Contains(query.SQLiteQuery, "DEPLOYMENT_ID = ?")
+	suite.Contains(query.SQLiteQuery, "OU_ID IN (?)")
+	suite.Contains(query.SQLiteQuery, "ID IN (?)")
+	// Args layout: [deploymentID, ouIDs..., userIDs...]
+	suite.Len(args, 3)
+	suite.Equal(testDeploymentIDForConstants, args[0])
+	suite.Equal("ou-1", args[1])
+	suite.Equal("usr-001", args[2])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_MultipleUsersMultipleOUs() {
+	userIDs := []string{"usr-001", "usr-002", "usr-003"}
+	ouIDs := []string{"ou-1", "ou-2"}
+
+	query, args, err := buildBulkUserExistsQueryInOUs(userIDs, ouIDs, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	// Postgres placeholders: $1=deployment, $2,$3=ouIDs, $4,$5,$6=userIDs
+	suite.Contains(query.PostgresQuery, "DEPLOYMENT_ID = $1")
+	suite.Contains(query.PostgresQuery, "OU_ID IN ($2,$3)")
+	suite.Contains(query.PostgresQuery, "ID IN ($4,$5,$6)")
+	// SQLite has the right number of ? placeholders
+	suite.Contains(query.SQLiteQuery, "OU_ID IN (?,?)")
+	suite.Contains(query.SQLiteQuery, "ID IN (?,?,?)")
+	// Args layout: [deploymentID, ou-1, ou-2, usr-001, usr-002, usr-003]
+	suite.Len(args, 6)
+	suite.Equal(testDeploymentIDForConstants, args[0])
+	suite.Equal("ou-1", args[1])
+	suite.Equal("ou-2", args[2])
+	suite.Equal("usr-001", args[3])
+	suite.Equal("usr-002", args[4])
+	suite.Equal("usr-003", args[5])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_PostgresAndSQLiteAreSeparate() {
+	query, _, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-001"}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.NotEmpty(query.PostgresQuery)
+	suite.NotEmpty(query.SQLiteQuery)
+	suite.NotEqual(query.PostgresQuery, query.SQLiteQuery)
+	// Postgres uses $N placeholders
+	suite.Contains(query.PostgresQuery, "$1")
+	// SQLite uses ? placeholders
+	suite.NotContains(query.SQLiteQuery, "$")
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_ArgsOrderIsDeploymentFirstThenOUsThenUsers() {
+	query, args, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-A", "usr-B"},
+		[]string{"ou-X"},
+		"deploy-123",
+	)
+
+	suite.NoError(err)
+	_ = query
+	// First arg must be the deploymentID
+	suite.Equal("deploy-123", args[0])
+	// Next come the OU IDs
+	suite.Equal("ou-X", args[1])
+	// Then the user IDs
+	suite.Equal("usr-A", args[2])
+	suite.Equal("usr-B", args[3])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_QueryMatchesModel() {
+	query, _, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-001"}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	// The default Query field should match PostgresQuery (primary dialect)
+	suite.Equal(query.PostgresQuery, query.Query)
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_SelectsIDColumn() {
+	query, _, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-001"}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Contains(query.PostgresQuery, "SELECT ID FROM")
+}
+
+// Verify the returned DBQuery implements model.DBQuery structure expectations.
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQueryInOUs_ReturnsDBQuery() {
+	query, args, err := buildBulkUserExistsQueryInOUs(
+		[]string{"usr-001"}, []string{"ou-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.IsType(model.DBQuery{}, query)
+	suite.NotNil(args)
+}

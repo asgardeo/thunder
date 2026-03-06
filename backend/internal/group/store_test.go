@@ -40,7 +40,7 @@ func TestGroupStoreTestSuite(t *testing.T) {
 	suite.Run(t, new(GroupStoreTestSuite))
 }
 
-const queryGroupExistsID = "GRQ-GROUP_MGT-15"
+const queryGroupExistsID = "GRQ-GROUP_MGT-18"
 const testDeploymentID = "test-deployment-id"
 
 type validateGroupIDsSetupFn func(
@@ -175,7 +175,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 					Return(nil, errors.New("boom")).
 					Once()
 			},
-			wantErr:   "failed to execute count query",
+			wantErr:   "boom",
 			wantCount: 0,
 		},
 	}

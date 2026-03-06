@@ -30,6 +30,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -60,18 +62,21 @@ type groupService struct {
 	ouService     oupkg.OrganizationUnitServiceInterface
 	userService   user.UserServiceInterface
 	transactioner transaction.Transactioner
+	authzService  sysauthz.SystemAuthorizationServiceInterface
 }
 
 // newGroupService creates a new instance of GroupService with injected dependencies.
 func newGroupService(
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userService user.UserServiceInterface,
+	authzService sysauthz.SystemAuthorizationServiceInterface,
 	transactioner transaction.Transactioner,
 ) GroupServiceInterface {
 	return &groupService{
 		groupStore:    newGroupStore(),
 		ouService:     ouService,
 		userService:   userService,
+		authzService:  authzService,
 		transactioner: transactioner,
 	}
 }
@@ -80,12 +85,25 @@ func newGroupService(
 // integer
 func (gs *groupService) GetGroupList(ctx context.Context, limit, offset int) (
 	*GroupListResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
+	accessibleOUs, svcErr := gs.getAccessibleOUs(ctx, security.ActionListGroups)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	if accessibleOUs.AllAllowed {
+		return gs.listAllGroups(ctx, limit, offset)
+	}
+
+	return gs.listGroupsByOUIDs(ctx, accessibleOUs.IDs, limit, offset)
+}
+
+func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int) (
+	*GroupListResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	totalCount, err := gs.groupStore.GetGroupListCount(ctx)
 	if err != nil {
 		logger.Error("Failed to get group count", log.Error(err))
@@ -95,6 +113,58 @@ func (gs *groupService) GetGroupList(ctx context.Context, limit, offset int) (
 	groups, err := gs.groupStore.GetGroupList(ctx, limit, offset)
 	if err != nil {
 		logger.Error("Failed to list groups", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	groupBasics := make([]GroupBasic, 0, len(groups))
+	for _, groupDAO := range groups {
+		groupBasics = append(groupBasics, buildGroupBasic(groupDAO))
+	}
+
+	response := &GroupListResponse{
+		TotalResults: totalCount,
+		Groups:       groupBasics,
+		StartIndex:   offset + 1,
+		Count:        len(groupBasics),
+		Links:        buildPaginationLinks("/groups", limit, offset, totalCount),
+	}
+
+	return response, nil
+}
+
+func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) (
+	*GroupListResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(ouIDs) == 0 {
+		return &GroupListResponse{
+			TotalResults: 0,
+			Groups:       []GroupBasic{},
+			StartIndex:   offset + 1,
+			Count:        0,
+			Links:        []Link{},
+		}, nil
+	}
+
+	totalCount, err := gs.groupStore.GetGroupListCountByOUIDs(ctx, ouIDs)
+	if err != nil {
+		logger.Error("Failed to get group count by OU IDs", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	if totalCount == 0 {
+		return &GroupListResponse{
+			TotalResults: 0,
+			Groups:       []GroupBasic{},
+			StartIndex:   offset + 1,
+			Count:        0,
+			Links:        []Link{},
+		}, nil
+	}
+
+	groups, err := gs.groupStore.GetGroupListByOUIDs(ctx, ouIDs, limit, offset)
+	if err != nil {
+		logger.Error("Failed to list groups by OU IDs", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -136,6 +206,10 @@ func (gs *groupService) GetGroupsByPath(
 	organizationUnitID := ou.ID
 
 	if err := validatePaginationParams(limit, offset); err != nil {
+		return nil, err
+	}
+
+	if err := gs.checkGroupAccess(ctx, security.ActionListGroups, organizationUnitID, ""); err != nil {
 		return nil, err
 	}
 
@@ -181,6 +255,10 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		return nil, err
 	}
 
+	if err := gs.checkGroupAccess(ctx, security.ActionCreateGroup, request.OrganizationUnitID, ""); err != nil {
+		return nil, err
+	}
+
 	var userIDs []string
 	var groupIDs []string
 	for _, member := range request.Members {
@@ -192,7 +270,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		}
 	}
 
-	if err := gs.validateUserIDs(ctx, userIDs); err != nil {
+	if err := gs.validateUserIDsWithAccess(ctx, userIDs); err != nil {
 		return nil, err
 	}
 
@@ -304,6 +382,10 @@ func (gs *groupService) GetGroup(ctx context.Context, groupID string) (*Group, *
 		return nil, &ErrorInternalServerError
 	}
 
+	if err := gs.checkGroupAccess(ctx, security.ActionReadGroup, groupDAO.OrganizationUnitID, groupID); err != nil {
+		return nil, err
+	}
+
 	group := convertGroupDAOToGroup(groupDAO)
 	logger.Debug("Successfully retrieved group", log.String("id", group.ID), log.String("name", group.Name))
 	return &group, nil
@@ -348,6 +430,28 @@ func (gs *groupService) UpdateGroup(
 				return errors.New("rollback for invalid OU")
 			}
 			updateOrganizationUnitID = request.OrganizationUnitID
+		}
+
+		if err := gs.checkGroupAccess(
+			txCtx,
+			security.ActionUpdateGroup,
+			existingGroupDAO.OrganizationUnitID,
+			groupID,
+		); err != nil {
+			capturedSvcErr = err
+			return errors.New("rollback for unauthorized access")
+		}
+
+		if updateOrganizationUnitID != existingGroupDAO.OrganizationUnitID {
+			if err := gs.checkGroupAccess(
+				txCtx,
+				security.ActionUpdateGroup,
+				updateOrganizationUnitID,
+				groupID,
+			); err != nil {
+				capturedSvcErr = err
+				return errors.New("rollback for unauthorized access to target OU")
+			}
 		}
 
 		if existingGroup.Name != request.Name || existingGroup.OrganizationUnitID != request.OrganizationUnitID {
@@ -407,7 +511,7 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 	var capturedSvcErr *serviceerror.ServiceError
 
 	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		_, err := gs.groupStore.GetGroup(txCtx, groupID)
+		existingGroupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
 				logger.Debug("Group not found", log.String("id", groupID))
@@ -417,6 +521,16 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 			logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
 			capturedSvcErr = &ErrorInternalServerError
 			return err
+		}
+
+		if err := gs.checkGroupAccess(
+			txCtx,
+			security.ActionDeleteGroup,
+			existingGroupDAO.OrganizationUnitID,
+			groupID,
+		); err != nil {
+			capturedSvcErr = err
+			return errors.New("rollback for unauthorized access")
 		}
 
 		if err := gs.groupStore.DeleteGroup(txCtx, groupID); err != nil {
@@ -452,7 +566,7 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 		return nil, &ErrorMissingGroupID
 	}
 
-	_, err := gs.groupStore.GetGroup(ctx, groupID)
+	existingGroupDAO, err := gs.groupStore.GetGroup(ctx, groupID)
 	if err != nil {
 		if errors.Is(err, ErrGroupNotFound) {
 			logger.Debug("Group not found", log.String("id", groupID))
@@ -460,6 +574,15 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 		}
 		logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
 		return nil, &ErrorInternalServerError
+	}
+
+	if err := gs.checkGroupAccess(
+		ctx,
+		security.ActionReadGroup,
+		existingGroupDAO.OrganizationUnitID,
+		groupID,
+	); err != nil {
+		return nil, err
 	}
 
 	totalCount, err := gs.groupStore.GetGroupMemberCount(ctx, groupID)
@@ -510,7 +633,7 @@ func (gs *groupService) AddGroupMembers(
 	var updatedGroupDAO GroupDAO
 
 	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		_, err := gs.groupStore.GetGroup(txCtx, groupID)
+		existingGroupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
 				logger.Debug("Group not found", log.String("id", groupID))
@@ -520,6 +643,16 @@ func (gs *groupService) AddGroupMembers(
 			logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
 			capturedSvcErr = &ErrorInternalServerError
 			return err
+		}
+
+		if err := gs.checkGroupAccess(
+			txCtx,
+			security.ActionUpdateGroup,
+			existingGroupDAO.OrganizationUnitID,
+			groupID,
+		); err != nil {
+			capturedSvcErr = err
+			return errors.New("rollback for unauthorized access")
 		}
 
 		var userIDs []string
@@ -533,7 +666,7 @@ func (gs *groupService) AddGroupMembers(
 			}
 		}
 
-		if svcErr := gs.validateUserIDs(txCtx, userIDs); svcErr != nil {
+		if svcErr := gs.validateUserIDsWithAccess(txCtx, userIDs); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for invalid user IDs")
 		}
@@ -594,7 +727,7 @@ func (gs *groupService) RemoveGroupMembers(
 	var updatedGroupDAO GroupDAO
 
 	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		_, err := gs.groupStore.GetGroup(txCtx, groupID)
+		existingGroupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
 				logger.Debug("Group not found", log.String("id", groupID))
@@ -604,6 +737,16 @@ func (gs *groupService) RemoveGroupMembers(
 			logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
 			capturedSvcErr = &ErrorInternalServerError
 			return err
+		}
+
+		if err := gs.checkGroupAccess(
+			txCtx,
+			security.ActionUpdateGroup,
+			existingGroupDAO.OrganizationUnitID,
+			groupID,
+		); err != nil {
+			capturedSvcErr = err
+			return errors.New("rollback for unauthorized access")
 		}
 
 		if err := gs.groupStore.RemoveGroupMembers(txCtx, groupID, members); err != nil {
@@ -692,14 +835,14 @@ func (gs *groupService) isOrganizationUnitChanged(existingGroup Group, request U
 func (gs *groupService) validateOU(ctx context.Context, ouID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	_, err := gs.ouService.GetOrganizationUnit(ctx, ouID)
+	isExists, err := gs.ouService.IsOrganizationUnitExists(ctx, ouID)
 	if err != nil {
-		if err.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			return &ErrorInvalidOUID
-		} else {
-			logger.Error("Failed to get organization unit", log.Any("error: ", err))
-			return &ErrorInternalServerError
-		}
+		logger.Error("Failed to check organization unit existence", log.Any("error: ", err))
+		return &ErrorInternalServerError
+	}
+
+	if !isExists {
+		return &ErrorInvalidOUID
 	}
 
 	return nil
@@ -718,6 +861,48 @@ func (gs *groupService) validateUserIDs(ctx context.Context, userIDs []string) *
 	if len(invalidUserIDs) > 0 {
 		logger.Debug("Invalid user IDs found", log.Any("invalidUserIDs", invalidUserIDs))
 		return &ErrorInvalidUserMemberID
+	}
+
+	return nil
+}
+
+// validateUserIDsWithAccess validates user IDs in two steps:
+//  1. Existence check — returns ErrorInvalidUserMemberID for any unknown user ID.
+//  2. OU-scope check — returns ErrorUnauthorized for any user ID outside the caller's accessible OUs
+//     (OUs where the caller holds group-update permission).
+//
+// When the caller is a full admin (AllAllowed), only step 1 is performed.
+func (gs *groupService) validateUserIDsWithAccess(
+	ctx context.Context, userIDs []string,
+) *serviceerror.ServiceError {
+	if len(userIDs) == 0 {
+		return nil
+	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if err := gs.validateUserIDs(ctx, userIDs); err != nil {
+		return err
+	}
+
+	accessibleOUs, svcErr := gs.getAccessibleOUs(ctx, security.ActionUpdateGroup)
+	if svcErr != nil {
+		return svcErr
+	}
+
+	if accessibleOUs.AllAllowed {
+		// Full admin — no scope restriction.
+		return nil
+	}
+
+	outOfScopeIDs, svcErr := gs.userService.ValidateUserIDsInOUs(ctx, userIDs, accessibleOUs.IDs)
+	if svcErr != nil {
+		logger.Error("Failed to validate user IDs in OUs", log.String("error", svcErr.Error))
+		return &ErrorInternalServerError
+	}
+
+	if len(outOfScopeIDs) > 0 {
+		logger.Debug("User IDs outside accessible OUs", log.Any("outOfScopeIDs", outOfScopeIDs))
+		return &serviceerror.ErrorUnauthorized
 	}
 
 	return nil
@@ -799,6 +984,38 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 	}
 
 	return links
+}
+
+// checkGroupAccess performs an authorization check on the group resource against the current caller.
+func (gs *groupService) checkGroupAccess(
+	ctx context.Context, action security.Action, ouID string, groupID string) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	actionCtx := sysauthz.ActionContext{
+		ResourceType: security.ResourceTypeGroup,
+		OuID:         ouID,
+		ResourceID:   groupID,
+	}
+
+	hasAccess, err := gs.authzService.IsActionAllowed(ctx, action, &actionCtx)
+	if err != nil {
+		logger.Error("Failed to check authorization", log.String("err", err.Error))
+		return &ErrorInternalServerError
+	}
+	if !hasAccess {
+		return &serviceerror.ErrorUnauthorized
+	}
+	return nil
+}
+
+// getAccessibleOUs retrieves the accessible resources for the group.
+func (gs *groupService) getAccessibleOUs(
+	ctx context.Context, action security.Action) (*sysauthz.AccessibleResources, *serviceerror.ServiceError) {
+	accessibleResources, err := gs.authzService.GetAccessibleResources(ctx, action, security.ResourceTypeOU)
+	if err != nil {
+		return nil, err
+	}
+	return accessibleResources, nil
 }
 
 // validateAndProcessHandlePath validates and processes the handle path.

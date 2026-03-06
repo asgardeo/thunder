@@ -271,6 +271,42 @@ func (c *compositeUserStore) ValidateUserIDs(ctx context.Context, userIDs []stri
 	return invalidIDs, nil
 }
 
+// ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope
+// across both the database and file-based stores.
+// Returns user IDs that do not belong to any of the provided OUs in either store.
+func (c *compositeUserStore) ValidateUserIDsInOUs(
+	ctx context.Context, userIDs []string, ouIDs []string,
+) ([]string, error) {
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	if len(ouIDs) == 0 {
+		return append([]string{}, userIDs...), nil
+	}
+
+	ouSet := make(map[string]bool, len(ouIDs))
+	for _, ou := range ouIDs {
+		ouSet[ou] = true
+	}
+
+	outOfScope := make([]string, 0)
+	for _, id := range userIDs {
+		user, err := c.GetUser(ctx, id)
+		if err != nil {
+			if errors.Is(err, ErrUserNotFound) {
+				// Not found in any store — treat as out of scope.
+				outOfScope = append(outOfScope, id)
+				continue
+			}
+			return nil, err
+		}
+		if !ouSet[user.OrganizationUnit] {
+			outOfScope = append(outOfScope, id)
+		}
+	}
+	return outOfScope, nil
+}
+
 // mergeAndDeduplicateUsers merges and deduplicates users from two lists.
 // Database users take precedence over file-based users when IDs conflict.
 func mergeAndDeduplicateUsers(dbUsers, fileUsers []User) []User {

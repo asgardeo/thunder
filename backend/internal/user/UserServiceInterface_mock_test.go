@@ -1143,6 +1143,82 @@ func (_c *UserServiceInterfaceMock_ValidateUserIDs_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// ValidateUserIDsInOUs provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) ValidateUserIDsInOUs(ctx context.Context, userIDs []string, ouIDs []string) ([]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userIDs, ouIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateUserIDsInOUs")
+	}
+
+	var r0 []string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, []string) ([]string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userIDs, ouIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, []string) []string); ok {
+		r0 = returnFunc(ctx, userIDs, ouIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userIDs, ouIDs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_ValidateUserIDsInOUs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateUserIDsInOUs'
+type UserServiceInterfaceMock_ValidateUserIDsInOUs_Call struct {
+	*mock.Call
+}
+
+// ValidateUserIDsInOUs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIDs []string
+//   - ouIDs []string
+func (_e *UserServiceInterfaceMock_Expecter) ValidateUserIDsInOUs(ctx interface{}, userIDs interface{}, ouIDs interface{}) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	return &UserServiceInterfaceMock_ValidateUserIDsInOUs_Call{Call: _e.mock.On("ValidateUserIDsInOUs", ctx, userIDs, ouIDs)}
+}
+
+func (_c *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call) Run(run func(ctx context.Context, userIDs []string, ouIDs []string)) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call) Return(strings []string, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Return(strings, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call) RunAndReturn(run func(ctx context.Context, userIDs []string, ouIDs []string) ([]string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // VerifyUser provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) VerifyUser(ctx context.Context, userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, credentials)

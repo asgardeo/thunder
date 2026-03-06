@@ -66,6 +66,8 @@ type UserServiceInterface interface {
 		identifiers map[string]interface{},
 		credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
+	ValidateUserIDsInOUs(ctx context.Context, userIDs []string,
+		ouIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUserCredentialsByType(ctx context.Context, userID string,
 		credentialType string) ([]Credential, *serviceerror.ServiceError)
 	IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError)
@@ -1216,6 +1218,28 @@ func (us *userService) ValidateUserIDs(ctx context.Context, userIDs []string) ([
 	}
 
 	return invalidUserIDs, nil
+}
+
+// ValidateUserIDsInOUs validates that all provided user IDs belong to one of the given OUs.
+// Returns IDs that are outside the allowed OU scope.
+func (us *userService) ValidateUserIDsInOUs(
+	ctx context.Context, userIDs []string, ouIDs []string,
+) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	if len(ouIDs) == 0 {
+		// No accessible OUs — all IDs are out of scope.
+		return append([]string{}, userIDs...), nil
+	}
+
+	outOfScopeIDs, err := us.userStore.ValidateUserIDsInOUs(ctx, userIDs, ouIDs)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to validate user IDs in OUs", err)
+	}
+	return outOfScopeIDs, nil
 }
 
 // GetUserCredentialsByType retrieves credentials of a specific type for a user.

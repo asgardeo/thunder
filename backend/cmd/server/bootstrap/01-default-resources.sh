@@ -328,6 +328,8 @@ echo ""
 #           └── Action handle "view"       → permission "system:ou:view"
 #       └── Resource handle "user"         → permission "system:user"
 #           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "group"        → permission "system:group"
+#           └── Action handle "view"       → permission "system:group:view"
 #       └── Resource handle "userschema"   → permission "system:userschema"
 #           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
@@ -575,6 +577,74 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "User schema view action already exists, skipping"
 else
     log_error "Failed to create user schema view action (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+log_info "Creating 'group' sub-resource under the 'system' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
+  \"name\": \"Group\",
+  \"description\": \"Group resource\",
+  \"handle\": \"group\",
+  \"parent\": \"${SYSTEM_RESOURCE_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Group resource created successfully (permission: system:group)"
+    GROUP_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$GROUP_RESOURCE_ID" ]]; then
+        log_info "Group resource ID: $GROUP_RESOURCE_ID"
+    else
+        log_error "Could not extract group resource ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Group resource already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources?parentId=${SYSTEM_RESOURCE_ID}")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        GROUP_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"group"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$GROUP_RESOURCE_ID" ]]; then
+            log_success "Found group resource ID: $GROUP_RESOURCE_ID"
+        else
+            log_error "Could not find group resource in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create group resource (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'view' action under the 'group' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${GROUP_RESOURCE_ID}/actions" '{
+  "name": "View",
+  "description": "Read-only access to groups",
+  "handle": "view"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Group view action created successfully (permission: system:group:view)"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Group view action already exists, skipping"
+else
+    log_error "Failed to create group view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi
