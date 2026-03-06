@@ -351,6 +351,22 @@ type RestSecurityConfig struct {
 	APIKey string `yaml:"api_key" json:"api_key"`
 }
 
+// EmailConfig holds the email configuration details.
+type EmailConfig struct {
+	SMTP SMTPEmailConfig `yaml:"smtp" json:"smtp"`
+}
+
+// SMTPEmailConfig holds the SMTP email configuration details.
+type SMTPEmailConfig struct {
+	Host                 string `yaml:"host" json:"host"`
+	Port                 int    `yaml:"port" json:"port"`
+	Username             string `yaml:"username" json:"username"`
+	Password             string `yaml:"password" json:"password"`
+	FromAddress          string `yaml:"from_address" json:"from_address"`
+	EnableStartTLS       *bool  `yaml:"enable_start_tls" json:"enable_start_tls"`
+	EnableAuthentication *bool  `yaml:"enable_authentication" json:"enable_authentication"`
+}
+
 // ConsentConfig holds the configuration for the consent service integration.
 type ConsentConfig struct {
 	Enabled    bool   `yaml:"enabled" json:"enabled"`
@@ -385,6 +401,7 @@ type Config struct {
 	Role                 RoleConfig             `yaml:"role" json:"role"`
 	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
+	Email                EmailConfig            `yaml:"email" json:"email"`
 	Consent              ConsentConfig          `yaml:"consent" json:"consent"`
 }
 
