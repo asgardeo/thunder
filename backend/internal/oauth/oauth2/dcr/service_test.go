@@ -103,7 +103,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ClientNameProvided() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
 	response, err := s.service.RegisterClient(request)
@@ -143,7 +143,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
 	response, err := s.service.RegisterClient(request)
@@ -167,7 +167,8 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ApplicationServiceError() {
 		ErrorDescription: "The redirect URI is invalid",
 	}
 
-	s.mockAppService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(nil, appServiceErr)
+	s.mockAppService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(nil, appServiceErr)
 
 	response, err := s.service.RegisterClient(request)
 
@@ -237,7 +238,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertDCRToApplicationError() 
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(nil, &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "APP-5001",
@@ -277,7 +278,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
 	response, err := s.service.RegisterClient(request)
@@ -315,7 +316,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
 	response, err := s.service.RegisterClient(request)
@@ -349,7 +350,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
 	response, err := s.service.RegisterClient(request)
@@ -373,7 +374,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_EmptyInboundAuthConfig() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
 	response, err := s.service.RegisterClient(request)

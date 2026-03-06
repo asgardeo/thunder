@@ -19,6 +19,8 @@
 package application
 
 import (
+	"github.com/stretchr/testify/mock"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +54,7 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Suc
 	}
 
 	// Mock file store check - app does not exist
-	s.mockFileStore.EXPECT().IsApplicationExists("app123").Return(false, nil)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "app123").Return(false, nil)
 
 	err := validateApplicationWrapper(app, s.mockFileStore, nil)
 
@@ -67,10 +69,10 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Suc
 	}
 
 	// Mock file store check - app does not exist
-	s.mockFileStore.EXPECT().IsApplicationExists("app456").Return(false, nil)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "app456").Return(false, nil)
 
 	// Mock DB store check - app does not exist
-	s.mockDBStore.EXPECT().IsApplicationExists("app456").Return(false, nil)
+	s.mockDBStore.EXPECT().IsApplicationExists(mock.Anything, "app456").Return(false, nil)
 
 	err := validateApplicationWrapper(app, s.mockFileStore, s.mockDBStore)
 
@@ -108,7 +110,7 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Dup
 	}
 
 	// Mock file store check - app already exists
-	s.mockFileStore.EXPECT().IsApplicationExists("duplicate123").Return(true, nil)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "duplicate123").Return(true, nil)
 
 	err := validateApplicationWrapper(app, s.mockFileStore, nil)
 
@@ -125,10 +127,10 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Dup
 	}
 
 	// Mock file store check - app does not exist in file store
-	s.mockFileStore.EXPECT().IsApplicationExists("duplicate456").Return(false, nil)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "duplicate456").Return(false, nil)
 
 	// Mock DB store check - app already exists in DB
-	s.mockDBStore.EXPECT().IsApplicationExists("duplicate456").Return(true, nil)
+	s.mockDBStore.EXPECT().IsApplicationExists(mock.Anything, "duplicate456").Return(true, nil)
 
 	err := validateApplicationWrapper(app, s.mockFileStore, s.mockDBStore)
 
@@ -145,7 +147,7 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Fil
 	}
 
 	// Mock file store check returns an error
-	s.mockFileStore.EXPECT().IsApplicationExists("app999").Return(false, assert.AnError)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "app999").Return(false, assert.AnError)
 
 	err := validateApplicationWrapper(app, s.mockFileStore, nil)
 
@@ -161,10 +163,10 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_DBS
 	}
 
 	// Mock file store check - app does not exist
-	s.mockFileStore.EXPECT().IsApplicationExists("app888").Return(false, nil)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "app888").Return(false, nil)
 
 	// Mock DB store check returns an error
-	s.mockDBStore.EXPECT().IsApplicationExists("app888").Return(false, assert.AnError)
+	s.mockDBStore.EXPECT().IsApplicationExists(mock.Anything, "app888").Return(false, assert.AnError)
 
 	err := validateApplicationWrapper(app, s.mockFileStore, s.mockDBStore)
 
@@ -180,7 +182,7 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Dec
 	}
 
 	// Mock file store check - app does not exist
-	s.mockFileStore.EXPECT().IsApplicationExists("app777").Return(false, nil)
+	s.mockFileStore.EXPECT().IsApplicationExists(mock.Anything, "app777").Return(false, nil)
 
 	// DB store should not be called (nil check prevents it)
 	// No expectations set for mockDBStore
@@ -245,10 +247,10 @@ func (s *ValidateApplicationWrapperTestSuite) TestValidateApplicationWrapper_Mul
 			}
 
 			// Setup expectations
-			mockFileStore.EXPECT().IsApplicationExists(tc.app.ID).Return(tc.fileExists, nil)
+			mockFileStore.EXPECT().IsApplicationExists(mock.Anything, tc.app.ID).Return(tc.fileExists, nil)
 			if tc.useDBStore && !tc.fileExists {
 				dbStoreMock := mockDBStore.(*applicationStoreInterfaceMock)
-				dbStoreMock.EXPECT().IsApplicationExists(tc.app.ID).Return(tc.dbExists, nil)
+				dbStoreMock.EXPECT().IsApplicationExists(mock.Anything, tc.app.ID).Return(tc.dbExists, nil)
 			}
 
 			// Execute

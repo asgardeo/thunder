@@ -46,14 +46,18 @@ import (
 
 // ApplicationServiceInterface defines the interface for the application service.
 type ApplicationServiceInterface interface {
-	CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO, *serviceerror.ServiceError)
-	ValidateApplication(app *model.ApplicationDTO) (
+	CreateApplication(
+		ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationDTO, *serviceerror.ServiceError)
+	ValidateApplication(ctx context.Context, app *model.ApplicationDTO) (
 		*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError)
-	GetApplicationList() (*model.ApplicationListResponse, *serviceerror.ServiceError)
-	GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError)
-	GetApplication(appID string) (*model.Application, *serviceerror.ServiceError)
-	UpdateApplication(appID string, app *model.ApplicationDTO) (*model.ApplicationDTO, *serviceerror.ServiceError)
-	DeleteApplication(appID string) *serviceerror.ServiceError
+	GetApplicationList(ctx context.Context) (*model.ApplicationListResponse, *serviceerror.ServiceError)
+	GetOAuthApplication(
+		ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError)
+	GetApplication(ctx context.Context, appID string) (*model.Application, *serviceerror.ServiceError)
+	UpdateApplication(
+		ctx context.Context, appID string, app *model.ApplicationDTO) (
+		*model.ApplicationDTO, *serviceerror.ServiceError)
+	DeleteApplication(ctx context.Context, appID string) *serviceerror.ServiceError
 }
 
 // ApplicationService is the default implementation of the ApplicationServiceInterface.
@@ -89,7 +93,7 @@ func newApplicationService(
 }
 
 // CreateApplication creates the application.
-func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
+func (as *applicationService) CreateApplication(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 	if app == nil {
@@ -102,12 +106,12 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 
 	// Check if an application with the same ID exists and is declarative (in composite mode)
 	if app.ID != "" {
-		if as.appStore.IsApplicationDeclarative(app.ID) {
+		if as.appStore.IsApplicationDeclarative(ctx, app.ID) {
 			return nil, &ErrorCannotModifyDeclarativeResource
 		}
 	}
 
-	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(app)
+	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(ctx, app)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -128,7 +132,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 	}
 
 	// Create the application.
-	storeErr := as.appStore.CreateApplication(*processedDTO)
+	storeErr := as.appStore.CreateApplication(ctx, *processedDTO)
 	if storeErr != nil {
 		logger.Error("Failed to create application", log.Error(storeErr), log.String("appID", appID))
 
@@ -147,7 +151,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 	// On failure, compensate by deleting the application and the certificate.
 	if app.LoginConsent.Enabled && as.consentService.IsEnabled() {
 		if svcErr := as.syncConsentPurposeOnCreate(processedDTO); svcErr != nil {
-			if delErr := as.appStore.DeleteApplication(appID); delErr != nil {
+			if delErr := as.appStore.DeleteApplication(ctx, appID); delErr != nil {
 				logger.Error("Failed to compensate application creation after consent sync failure",
 					log.String("appID", appID), log.String("error", delErr.Error()))
 			}
@@ -212,7 +216,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 }
 
 // ValidateApplication validates the application data transfer object.
-func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
+func (as *applicationService) ValidateApplication(ctx context.Context, app *model.ApplicationDTO) (
 	*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
@@ -222,7 +226,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 	if app.Name == "" {
 		return nil, nil, &ErrorInvalidApplicationName
 	}
-	existingApp, appCheckErr := as.appStore.GetApplicationByName(app.Name)
+	existingApp, appCheckErr := as.appStore.GetApplicationByName(ctx, app.Name)
 	if appCheckErr != nil && !errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 		logger.Error("Failed to check existing application by name", log.Error(appCheckErr),
 			log.String("appName", app.Name))
@@ -232,7 +236,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		return nil, nil, &ErrorApplicationAlreadyExistsWithName
 	}
 
-	inboundAuthConfig, svcErr := as.processInboundAuthConfig(app, nil)
+	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, nil)
 	if svcErr != nil {
 		return nil, nil, svcErr
 	}
@@ -330,16 +334,17 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 }
 
 // GetApplicationList list the applications.
-func (as *applicationService) GetApplicationList() (*model.ApplicationListResponse, *serviceerror.ServiceError) {
+func (as *applicationService) GetApplicationList(
+	ctx context.Context) (*model.ApplicationListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	totalCount, err := as.appStore.GetTotalApplicationCount()
+	totalCount, err := as.appStore.GetTotalApplicationCount(ctx)
 	if err != nil {
 		logger.Error("Failed to retrieve total application count", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	applications, err := as.appStore.GetApplicationList()
+	applications, err := as.appStore.GetApplicationList(ctx)
 	if err != nil {
 		// Check for composite limit exceeded
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
@@ -382,14 +387,14 @@ func buildBasicApplicationResponse(app model.BasicApplicationDTO) model.BasicApp
 }
 
 // GetOAuthApplication retrieves the OAuth application based on the client id.
-func (as *applicationService) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO,
-	*serviceerror.ServiceError) {
+func (as *applicationService) GetOAuthApplication(
+	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError) {
 	if clientID == "" {
 		return nil, &ErrorInvalidClientID
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	oauthApp, err := as.appStore.GetOAuthApplication(clientID)
+	oauthApp, err := as.appStore.GetOAuthApplication(ctx, clientID)
 	if err != nil {
 		if errors.Is(err, model.ApplicationNotFoundError) {
 			return nil, &ErrorApplicationNotFound
@@ -407,13 +412,13 @@ func (as *applicationService) GetOAuthApplication(clientID string) (*model.OAuth
 }
 
 // GetApplication get the application for given app id.
-func (as *applicationService) GetApplication(appID string) (*model.Application,
+func (as *applicationService) GetApplication(ctx context.Context, appID string) (*model.Application,
 	*serviceerror.ServiceError) {
 	if appID == "" {
 		return nil, &ErrorInvalidApplicationID
 	}
 
-	applicationDTO, err := as.appStore.GetApplicationByID(appID)
+	applicationDTO, err := as.appStore.GetApplicationByID(ctx, appID)
 	if err != nil {
 		return nil, as.handleApplicationRetrievalError(err)
 	}
@@ -491,7 +496,7 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 }
 
 // UpdateApplication update the application for given app id.
-func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
+func (as *applicationService) UpdateApplication(ctx context.Context, appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
@@ -506,11 +511,11 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	}
 
 	// Check if the application is declarative (read-only)
-	if as.appStore.IsApplicationDeclarative(appID) {
+	if as.appStore.IsApplicationDeclarative(ctx, appID) {
 		return nil, &ErrorCannotModifyDeclarativeResource
 	}
 
-	existingApp, appCheckErr := as.appStore.GetApplicationByID(appID)
+	existingApp, appCheckErr := as.appStore.GetApplicationByID(ctx, appID)
 	if appCheckErr != nil {
 		if errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 			return nil, &ErrorApplicationNotFound
@@ -525,7 +530,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 	// If the application name is changed, check if an application with the new name already exists.
 	if existingApp.Name != app.Name {
-		existingAppWithName, appCheckErr := as.appStore.GetApplicationByName(app.Name)
+		existingAppWithName, appCheckErr := as.appStore.GetApplicationByName(ctx, app.Name)
 		if appCheckErr != nil && !errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 			logger.Error("Failed to check existing application by name", log.Error(appCheckErr),
 				log.String("appName", app.Name))
@@ -536,7 +541,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		}
 	}
 
-	inboundAuthConfig, svcErr := as.processInboundAuthConfig(app, existingApp)
+	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, existingApp)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -587,7 +592,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, svcErr
 	}
 
-	storeErr := as.appStore.UpdateApplication(existingApp, processedDTO)
+	storeErr := as.appStore.UpdateApplication(ctx, existingApp, processedDTO)
 	if storeErr != nil {
 		logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
 
@@ -603,7 +608,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	// This block runs whenever the consent service is enabled — regardless of whether login consent
 	// is being enabled or disabled to avoid leaving stale consent purposes.
 	if as.consentService.IsEnabled() {
-		if svcErr := as.syncConsentPurposeOnUpdate(appID, existingApp, processedDTO,
+		if svcErr := as.syncConsentPurposeOnUpdate(ctx, appID, existingApp, processedDTO,
 			existingCert, updatedCert); svcErr != nil {
 			return nil, svcErr
 		}
@@ -739,19 +744,19 @@ func (as *applicationService) buildReturnDTOForUpdate(appID string, app *model.A
 }
 
 // DeleteApplication delete the application for given app id.
-func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
+func (as *applicationService) DeleteApplication(ctx context.Context, appID string) *serviceerror.ServiceError {
 	if appID == "" {
 		return &ErrorInvalidApplicationID
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// Check if the application is declarative (read-only)
-	if as.appStore.IsApplicationDeclarative(appID) {
+	if as.appStore.IsApplicationDeclarative(ctx, appID) {
 		return &ErrorCannotModifyDeclarativeResource
 	}
 
 	// Delete the application from the store
-	appErr := as.appStore.DeleteApplication(appID)
+	appErr := as.appStore.DeleteApplication(ctx, appID)
 	if appErr != nil {
 		if errors.Is(appErr, model.ApplicationNotFoundError) {
 			logger.Debug("Application not found for the deletion", log.String("appID", appID))
@@ -1008,7 +1013,7 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 
 // processInboundAuthConfig validates and processes inbound auth configuration for
 // creating or updating an application.
-func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO,
+func (as *applicationService) processInboundAuthConfig(ctx context.Context, app *model.ApplicationDTO,
 	existingApp *model.ApplicationProcessedDTO) (
 	*model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
@@ -1036,7 +1041,7 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 			}
 			inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 		} else if clientID != existingClientID {
-			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(clientID)
+			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(ctx, clientID)
 			if clientCheckErr != nil && !errors.Is(clientCheckErr, model.ApplicationNotFoundError) {
 				logger.Error("Failed to check existing application by client ID", log.Error(clientCheckErr),
 					log.String("clientID", clientID))
@@ -1056,7 +1061,7 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 			}
 			inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 		} else {
-			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(clientID)
+			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(ctx, clientID)
 			if clientCheckErr != nil && !errors.Is(clientCheckErr, model.ApplicationNotFoundError) {
 				logger.Error("Failed to check existing application by client ID", log.Error(clientCheckErr),
 					log.String("clientID", clientID))
@@ -1809,7 +1814,7 @@ func (as *applicationService) syncConsentPurposeOnCreate(
 // syncConsentPurposeOnUpdate synchronizes the consent purpose when an application is updated.
 // It updates the existing consent purpose to match the updated application configuration or
 // deletes it if consent is disabled.
-func (as *applicationService) syncConsentPurposeOnUpdate(appID string,
+func (as *applicationService) syncConsentPurposeOnUpdate(ctx context.Context, appID string,
 	existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO,
 	existingCert, updatedCert *cert.Certificate) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
@@ -1822,7 +1827,7 @@ func (as *applicationService) syncConsentPurposeOnUpdate(appID string,
 	}
 
 	if consentSvcErr != nil {
-		if revertErr := as.appStore.UpdateApplication(updatedApp, existingApp); revertErr != nil {
+		if revertErr := as.appStore.UpdateApplication(ctx, updatedApp, existingApp); revertErr != nil {
 			logger.Error("Failed to compensate application update after consent sync failure",
 				log.String("appID", appID), log.Error(revertErr))
 		}

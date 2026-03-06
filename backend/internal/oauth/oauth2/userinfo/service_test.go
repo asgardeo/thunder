@@ -245,7 +245,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 			UserAttributes: []string{"name", constants.UserAttributeGroups},
 		},
 	}
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 	s.mockUserService.On("GetUserGroups", mock.Anything, "user123",
 		constants.DefaultGroupListLimit, 0).Return(nil, &serviceerror.ServiceError{
 		Code:  "INTERNAL_ERROR",
@@ -294,7 +294,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -351,7 +351,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 			{Name: "users"},
 		},
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -423,7 +423,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -496,7 +496,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_AppNotFound() {
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(nil, &serviceerror.ServiceError{
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, &serviceerror.ServiceError{
 		Code:  "APP_NOT_FOUND",
 		Error: "App not found",
 	})
@@ -547,7 +547,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -589,7 +589,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 		ID:         "user123",
 		Attributes: nil, // No attributes
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -747,7 +747,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilToken() {
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	// When Token is nil, groups are not added
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -790,7 +790,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilIDToken() {
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	// When IDToken is nil, groups are not added
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -845,7 +845,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 		constants.DefaultGroupListLimit, 0).Return(&user.UserGroupListResponse{
 		Groups: []user.UserGroup{}, // Empty groups
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	// When groups is empty, groups are not added to userAttributes
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
@@ -922,7 +922,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr, description)
@@ -1065,7 +1065,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_InMiddleOfScopeSt
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -1107,7 +1107,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_AtEnd() {
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
@@ -1160,7 +1160,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 	}, nil)
 
 	// App fetch
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	// JWT generation
 	s.mockJWTService.On(
@@ -1221,7 +1221,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 		Attributes: userAttrsJSON,
 	}, nil)
 
-	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	s.mockAppService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
 
 	// Simulate signing failure
 	s.mockJWTService.On(

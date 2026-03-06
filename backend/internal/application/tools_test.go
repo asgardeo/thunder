@@ -19,6 +19,8 @@
 package application
 
 import (
+	"github.com/stretchr/testify/mock"
+
 	"context"
 	"testing"
 
@@ -62,7 +64,7 @@ func (suite *ApplicationToolsTestSuite) TestListApplications_Success() {
 		},
 	}
 
-	mockService.On("GetApplicationList").Return(&model.ApplicationListResponse{
+	mockService.On("GetApplicationList", mock.Anything).Return(&model.ApplicationListResponse{
 		TotalResults: 2,
 		Applications: expectedApps,
 	}, nil)
@@ -85,7 +87,7 @@ func (suite *ApplicationToolsTestSuite) TestListApplications_Error() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	tools := &applicationTools{appService: mockService}
 
-	mockService.On("GetApplicationList").Return(nil, &serviceerror.ServiceError{
+	mockService.On("GetApplicationList", mock.Anything).Return(nil, &serviceerror.ServiceError{
 		ErrorDescription: "database error",
 	})
 
@@ -112,7 +114,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByID_Success() {
 		Description: "Test Description",
 	}
 
-	mockService.On("GetApplication", "app123").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "app123").Return(expectedApp, nil)
 
 	ctx := context.Background()
 	req := &mcp.CallToolRequest{}
@@ -131,7 +133,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByID_Error() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	tools := &applicationTools{appService: mockService}
 
-	mockService.On("GetApplication", "app123").Return(nil, &serviceerror.ServiceError{
+	mockService.On("GetApplication", mock.Anything, "app123").Return(nil, &serviceerror.ServiceError{
 		ErrorDescription: "application not found",
 	})
 
@@ -163,8 +165,8 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_Success() {
 		Name: "Test App",
 	}
 
-	mockService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
-	mockService.On("GetApplication", "app123").Return(expectedApp, nil)
+	mockService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
+	mockService.On("GetApplication", mock.Anything, "app123").Return(expectedApp, nil)
 
 	ctx := context.Background()
 	req := &mcp.CallToolRequest{}
@@ -183,7 +185,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_OAuthError(
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	tools := &applicationTools{appService: mockService}
 
-	mockService.On("GetOAuthApplication", "client123").Return(nil, &serviceerror.ServiceError{
+	mockService.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, &serviceerror.ServiceError{
 		ErrorDescription: "OAuth application not found",
 	})
 
@@ -210,8 +212,8 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_AppError() 
 		ClientID: "client123",
 	}
 
-	mockService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
-	mockService.On("GetApplication", "app123").Return(nil, &serviceerror.ServiceError{
+	mockService.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
+	mockService.On("GetApplication", mock.Anything, "app123").Return(nil, &serviceerror.ServiceError{
 		ErrorDescription: "application not found",
 	})
 
@@ -244,7 +246,7 @@ func (suite *ApplicationToolsTestSuite) TestCreateApplication_Success() {
 		Description: "New Description",
 	}
 
-	mockService.On("CreateApplication", &inputApp).Return(createdApp, nil)
+	mockService.On("CreateApplication", mock.Anything, &inputApp).Return(createdApp, nil)
 
 	ctx := context.Background()
 	req := &mcp.CallToolRequest{}
@@ -266,7 +268,7 @@ func (suite *ApplicationToolsTestSuite) TestCreateApplication_Error() {
 		Name: "New App",
 	}
 
-	mockService.On("CreateApplication", &inputApp).Return(nil, &serviceerror.ServiceError{
+	mockService.On("CreateApplication", mock.Anything, &inputApp).Return(nil, &serviceerror.ServiceError{
 		ErrorDescription: "validation error",
 	})
 
@@ -299,7 +301,7 @@ func (suite *ApplicationToolsTestSuite) TestUpdateApplication_Success() {
 		Description: "Updated Description",
 	}
 
-	mockService.On("UpdateApplication", "app123", &inputApp).Return(updatedApp, nil)
+	mockService.On("UpdateApplication", mock.Anything, "app123", &inputApp).Return(updatedApp, nil)
 
 	ctx := context.Background()
 	req := &mcp.CallToolRequest{}
@@ -322,7 +324,7 @@ func (suite *ApplicationToolsTestSuite) TestUpdateApplication_Error() {
 		Name: "Updated App",
 	}
 
-	mockService.On("UpdateApplication", "app123", &inputApp).Return(nil, &serviceerror.ServiceError{
+	mockService.On("UpdateApplication", mock.Anything, "app123", &inputApp).Return(nil, &serviceerror.ServiceError{
 		ErrorDescription: "application not found",
 	})
 

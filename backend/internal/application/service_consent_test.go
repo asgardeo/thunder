@@ -686,10 +686,10 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_Cons
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 	// Compensation: app revert also fails (logged, not propagated)
-	storeMock.On("UpdateApplication", mock.Anything, mock.Anything).
+	storeMock.On("UpdateApplication", mock.Anything, mock.Anything, mock.Anything).
 		Return(errors.New("revert store error"))
 
-	svcErr := svc.syncConsentPurposeOnUpdate("app-1", existingApp, updatedApp, nil, nil)
+	svcErr := svc.syncConsentPurposeOnUpdate(context.Background(), "app-1", existingApp, updatedApp, nil, nil)
 
 	// Returns the original consent error even though the revert also failed
 	s.NotNil(svcErr)
@@ -724,13 +724,13 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_Cons
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 	// Compensation: revert app succeeds
-	storeMock.On("UpdateApplication", mock.Anything, mock.Anything).Return(nil)
+	storeMock.On("UpdateApplication", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	// Cert rollback fails (existingCert=nil, updatedCert!=nil → DeleteCertificateByReference)
 	certMock.EXPECT().
 		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app-1").
 		Return(&serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
 
-	svcErr := svc.syncConsentPurposeOnUpdate("app-1", existingApp, updatedApp, nil, updatedCert)
+	svcErr := svc.syncConsentPurposeOnUpdate(context.Background(), "app-1", existingApp, updatedApp, nil, updatedCert)
 
 	// Returns the original consent error even though cert rollback also failed
 	s.NotNil(svcErr)
