@@ -608,7 +608,8 @@ func createApplication(app Application) (string, error) {
 	// Verify client secret is present in the create response for confidential clients
 	if len(createdApp.InboundAuthConfig) > 0 &&
 		createdApp.InboundAuthConfig[0].OAuthAppConfig != nil &&
-		!createdApp.InboundAuthConfig[0].OAuthAppConfig.PublicClient &&
+		(createdApp.InboundAuthConfig[0].OAuthAppConfig.TokenEndpointAuthMethod == "client_secret_basic" ||
+			createdApp.InboundAuthConfig[0].OAuthAppConfig.TokenEndpointAuthMethod == "client_secret_post") &&
 		createdApp.InboundAuthConfig[0].OAuthAppConfig.ClientSecret == "" {
 		return "", fmt.Errorf("expected client secret in create response but got empty string")
 	}
@@ -891,6 +892,172 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPartialDefaults() 
 	err = deleteApplication(appID)
 	if err != nil {
 		ts.T().Logf("Failed to delete test application: %v", err)
+	}
+}
+
+// TestApplicationCreationWithPrivateKeyJWT tests creating an application with private_key_jwt token endpoint auth method.
+func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
+	jwksJSON := `{"keys":[{"kty":"RSA","use":"sig","kid":"test-key","n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e":"AQAB"}]}`
+
+	testCases := []struct {
+		name              string
+		app               Application
+		expectError       bool
+		expectedCertType  string
+		expectedCertValue string
+	}{
+		{
+			name: "successful creation with JWKS_URI certificate",
+			app: Application{
+				Name:                      "Private Key JWT JWKS URI App",
+				Description:               "Application with private_key_jwt and JWKS_URI certificate",
+				URL:                       "https://pkjwt-jwksuri.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							RedirectURIs:            []string{"https://pkjwt-jwksuri.example.com/callback"},
+							GrantTypes:              []string{"authorization_code", "client_credentials"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+							Certificate: &ApplicationCert{
+								Type:  "JWKS_URI",
+								Value: "https://pkjwt-jwksuri.example.com/.well-known/jwks.json",
+							},
+						},
+					},
+				},
+			},
+			expectError:       false,
+			expectedCertType:  "JWKS_URI",
+			expectedCertValue: "https://pkjwt-jwksuri.example.com/.well-known/jwks.json",
+		},
+		{
+			name: "successful creation with inline JWKS certificate",
+			app: Application{
+				Name:                      "Private Key JWT JWKS App",
+				Description:               "Application with private_key_jwt and inline JWKS certificate",
+				URL:                       "https://pkjwt-jwks.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							RedirectURIs:            []string{"https://pkjwt-jwks.example.com/callback"},
+							GrantTypes:              []string{"authorization_code"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+							Certificate: &ApplicationCert{
+								Type:  "JWKS",
+								Value: jwksJSON,
+							},
+						},
+					},
+				},
+			},
+			expectError:       false,
+			expectedCertType:  "JWKS",
+			expectedCertValue: jwksJSON,
+		},
+		{
+			name: "failure - private_key_jwt without certificate (NONE type)",
+			app: Application{
+				Name:                      "Private Key JWT No Cert App",
+				Description:               "Application with private_key_jwt but no certificate",
+				URL:                       "https://pkjwt-nocert.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				Certificate: &ApplicationCert{
+					Type:  "NONE",
+					Value: "",
+				},
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							RedirectURIs:            []string{"https://pkjwt-nocert.example.com/callback"},
+							GrantTypes:              []string{"authorization_code"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "failure - private_key_jwt with client secret",
+			app: Application{
+				Name:                      "Private Key JWT With Secret App",
+				Description:               "Application with private_key_jwt and client secret",
+				URL:                       "https://pkjwt-secret.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							ClientSecret:            "should_not_be_allowed",
+							RedirectURIs:            []string{"https://pkjwt-secret.example.com/callback"},
+							GrantTypes:              []string{"authorization_code"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+							Certificate: &ApplicationCert{
+								Type:  "JWKS_URI",
+								Value: "https://pkjwt-secret.example.com/.well-known/jwks.json",
+							},
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		ts.Run(tc.name, func() {
+			appID, err := createApplication(tc.app)
+			if tc.expectError {
+				ts.Require().Error(err)
+				return
+			}
+
+			ts.Require().NoError(err)
+			ts.Require().NotEmpty(appID)
+			defer func() {
+				if err := deleteApplication(appID); err != nil {
+					ts.T().Logf("Failed to delete test application: %v", err)
+				}
+			}()
+
+			retrievedApp, err := getApplicationByID(appID)
+			ts.Require().NoError(err)
+			ts.Require().NotEmpty(retrievedApp.InboundAuthConfig)
+			ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig)
+
+			oauthConfig := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+			ts.Assert().Equal("private_key_jwt", oauthConfig.TokenEndpointAuthMethod)
+			ts.Require().NotNil(oauthConfig.Certificate)
+			ts.Assert().Equal(tc.expectedCertType, oauthConfig.Certificate.Type)
+			ts.Assert().Equal(tc.expectedCertValue, oauthConfig.Certificate.Value)
+			ts.Assert().Empty(oauthConfig.ClientSecret, "private_key_jwt app should not have a client secret")
+		})
 	}
 }
 

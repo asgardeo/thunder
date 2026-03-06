@@ -140,6 +140,14 @@ packages:
       pkgname: introspectmock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/oauth/oauth2/discovery:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/discoverymock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: discoverymock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/asgardeo/thunder/internal/user:
     config:
       all: true

@@ -34,11 +34,15 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/discoverymock"
 )
 
 type ClientAuthMiddlewareTestSuite struct {
 	suite.Suite
-	mockAppService *applicationmock.ApplicationServiceInterfaceMock
+	mockAppService       *applicationmock.ApplicationServiceInterfaceMock
+	mockJwtService       *jwtmock.JWTServiceInterfaceMock
+	mockDiscoveryService *discoverymock.DiscoveryServiceInterfaceMock
 }
 
 func TestClientAuthMiddlewareTestSuite(t *testing.T) {
@@ -47,6 +51,8 @@ func TestClientAuthMiddlewareTestSuite(t *testing.T) {
 
 func (suite *ClientAuthMiddlewareTestSuite) SetupTest() {
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	suite.mockJwtService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockDiscoveryService = discoverymock.NewDiscoveryServiceInterfaceMock(suite.T())
 }
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_ClientSecretPost() {
@@ -64,7 +70,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Create test handler that checks context
 	var clientInfo *OAuthClientInfo
@@ -110,7 +116,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Create test handler
 	var clientInfo *OAuthClientInfo
@@ -137,7 +143,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_MissingClientID() {
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -165,7 +171,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 		Return(nil, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -205,7 +211,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -238,7 +244,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_HandlerNotC
 		Return(nil, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Track if handler was called
 	handlerCalled := false
@@ -279,7 +285,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Create nested handler that also checks context
 	var clientInfo *OAuthClientInfo

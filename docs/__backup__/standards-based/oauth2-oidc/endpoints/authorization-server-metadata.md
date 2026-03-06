@@ -26,6 +26,7 @@ Returns OAuth 2.0 authorization server metadata including:
   "token_endpoint_auth_methods_supported": [
     "client_secret_basic",
     "client_secret_post",
+    "private_key_jwt",
     "none"
   ],
   "jwks_uri": "https://localhost:8090/oauth2/jwks",
