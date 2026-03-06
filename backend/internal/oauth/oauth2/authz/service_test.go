@@ -358,7 +358,6 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_MissingA
 		},
 	}
 	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
 
 	svc := suite.newService()
 	redirectURI, authErr := svc.HandleAuthorizationCallback(testAuthID, "")
@@ -378,7 +377,6 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidA
 		},
 	}
 	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
 	suite.mockJWTService.EXPECT().VerifyJWT("invalid-assertion", "", "").Return(&jwt.ErrorInvalidTokenSignature)
 
 	svc := suite.newService()
@@ -390,6 +388,39 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidA
 	assert.Equal(suite.T(), "test-state", authErr.State)
 }
 
+// TestHandleAuthorizationCallback_ContextPreservedAfterInvalidAssertion verifies the core security
+// property of the fix: a failed callback attempt (e.g. invalid assertion) does NOT consume the
+// authorization request context, so the legitimate flow can still complete on a subsequent call.
+func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_ContextPreservedAfterInvalidAssertion() {
+	authCtx := authRequestContext{
+		OAuthParameters: oauth2model.OAuthParameters{
+			ClientID:    "test-client",
+			RedirectURI: "https://client.example.com/callback",
+			State:       "test-state",
+		},
+	}
+
+	// First call: invalid assertion — context must NOT be cleared.
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT("invalid-assertion", "", "").Return(&jwt.ErrorInvalidTokenSignature).Once()
+
+	svc := suite.newService()
+	_, authErr := svc.HandleAuthorizationCallback(testAuthID, "invalid-assertion")
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorInvalidRequest, authErr.Code)
+
+	// Second call: valid assertion — context is still available and flow completes successfully.
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx).Once()
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Once()
+	suite.mockJWTService.EXPECT().VerifyJWT(svcJWTWithIat, "", "").Return(nil).Once()
+	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(nil).Once()
+
+	redirectURI, authErr := svc.HandleAuthorizationCallback(testAuthID, svcJWTWithIat)
+	assert.Nil(suite.T(), authErr)
+	assert.Contains(suite.T(), redirectURI, "https://client.example.com/callback")
+	assert.Contains(suite.T(), redirectURI, "code=")
+}
+
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_FailedToDecodeAssertion() {
 	authCtx := authRequestContext{
 		OAuthParameters: oauth2model.OAuthParameters{
@@ -399,7 +430,6 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_FailedTo
 		},
 	}
 	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
 	// VerifyJWT succeeds but "not.valid.jwt" cannot be decoded as a valid JWT payload.
 	suite.mockJWTService.EXPECT().VerifyJWT("not.valid.jwt", "", "").Return(nil)
 

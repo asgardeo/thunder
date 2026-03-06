@@ -356,6 +356,9 @@ func (as *authorizeService) HandleAuthorizationCallback(authID string, assertion
 		authRequestCtx.OAuthParameters.PermissionScopes = []string{}
 	}
 
+	// All validation passed. Clear the authorization request context from the store to prevent replay.
+	as.authReqStore.ClearRequest(authID)
+
 	// Generate the authorization code.
 	authzCode, err := createAuthorizationCode(authRequestCtx, &claims, authTime)
 	if err != nil {
@@ -404,8 +407,6 @@ func (as *authorizeService) loadAuthRequestContext(authID string) (*authRequestC
 		return nil, errors.New("authorization request context not found for auth ID: " + authID)
 	}
 
-	// Remove the authorization request context after retrieval.
-	as.authReqStore.ClearRequest(authID)
 	return &authRequestCtx, nil
 }
 
