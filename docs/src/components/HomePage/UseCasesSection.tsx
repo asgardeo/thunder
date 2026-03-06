@@ -189,7 +189,7 @@ export default function UseCasesSection(): JSX.Element {
               </Typography>
               <Button
                 component={Link}
-                href="/docs/guides/introduction"
+                href="/docs/next/use-cases/b2c/customer-identity"
                 variant="outlined"
                 size="small"
                 sx={{
@@ -229,7 +229,7 @@ export default function UseCasesSection(): JSX.Element {
               </Typography>
               <Button
                 component={Link}
-                href="/docs/guides/introduction"
+                href="/docs/next/use-cases/b2b/multi-tenant-saas"
                 variant="outlined"
                 size="small"
                 sx={{
