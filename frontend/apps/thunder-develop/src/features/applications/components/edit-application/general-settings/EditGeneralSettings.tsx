@@ -16,11 +16,16 @@
  * under the License.
  */
 
+import {useState, useCallback} from 'react';
+import type {JSX} from 'react';
 import {Stack} from '@wso2/oxygen-ui';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
 import QuickCopySection from './QuickCopySection';
 import AccessSection from './AccessSection';
+import DangerZoneSection from './DangerZoneSection';
+import ClientSecretSuccessDialog from '../../ClientSecretSuccessDialog';
+import RegenerateSecretDialog from '../../RegenerateSecretDialog';
 
 /**
  * Props for the {@link EditGeneralSettings} component.
@@ -62,6 +67,7 @@ interface EditGeneralSettingsProps {
  * Displays sections for:
  * - Quick copy of application credentials (ID, Client ID)
  * - Access configuration (URL, redirect URIs, allowed user types)
+ * - Danger zone (regenerate client secret)
  *
  * @param props - Component props
  * @returns General settings sections wrapped in a Stack
@@ -73,21 +79,57 @@ export default function EditGeneralSettings({
   oauth2Config = undefined,
   copiedField,
   onCopyToClipboard,
-}: EditGeneralSettingsProps) {
+}: EditGeneralSettingsProps): JSX.Element {
+  const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
+  const [secretDialogOpen, setSecretDialogOpen] = useState(false);
+  const [newClientSecret, setNewClientSecret] = useState<string>('');
+
+  const handleRegenerateClick = useCallback((): void => {
+    setRegenerateDialogOpen(true);
+  }, []);
+
+  const handleRegenerateSuccess = useCallback((clientSecret: string): void => {
+    setNewClientSecret(clientSecret);
+    setSecretDialogOpen(true);
+  }, []);
+
+  const handleSecretDialogClose = useCallback((): void => {
+    setSecretDialogOpen(false);
+    setNewClientSecret('');
+  }, []);
+
   return (
-    <Stack spacing={3}>
-      <QuickCopySection
-        application={application}
-        oauth2Config={oauth2Config}
-        copiedField={copiedField}
-        onCopyToClipboard={onCopyToClipboard}
+    <>
+      <Stack spacing={3}>
+        <QuickCopySection
+          application={application}
+          oauth2Config={oauth2Config}
+          copiedField={copiedField}
+          onCopyToClipboard={onCopyToClipboard}
+        />
+        <AccessSection
+          application={application}
+          editedApp={editedApp}
+          oauth2Config={oauth2Config}
+          onFieldChange={onFieldChange}
+        />
+        <DangerZoneSection onRegenerateClick={handleRegenerateClick} />
+      </Stack>
+
+      {/* Regenerate Client Secret Confirmation Dialog */}
+      <RegenerateSecretDialog
+        open={regenerateDialogOpen}
+        applicationId={application.id}
+        onClose={() => setRegenerateDialogOpen(false)}
+        onSuccess={handleRegenerateSuccess}
       />
-      <AccessSection
-        application={application}
-        editedApp={editedApp}
-        oauth2Config={oauth2Config}
-        onFieldChange={onFieldChange}
+
+      {/* New Client Secret Success Dialog */}
+      <ClientSecretSuccessDialog
+        open={secretDialogOpen}
+        clientSecret={newClientSecret}
+        onClose={handleSecretDialogClose}
       />
-    </Stack>
+    </>
   );
 }

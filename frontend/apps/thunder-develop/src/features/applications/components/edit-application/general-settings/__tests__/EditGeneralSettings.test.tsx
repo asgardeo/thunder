@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import EditGeneralSettings from '../EditGeneralSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -55,6 +55,51 @@ vi.mock('../AccessSection', () => ({
       {oauth2Config?.client_id ?? 'None'}
     </div>
   ),
+}));
+
+vi.mock('../DangerZoneSection', () => ({
+  default: ({onRegenerateClick}: {onRegenerateClick: () => void}) => (
+    <div data-testid="danger-zone-section">
+      <button type="button" onClick={onRegenerateClick} data-testid="regenerate-button">
+        Regenerate Client Secret
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock('../../../RegenerateSecretDialog', () => ({
+  default: ({
+    open,
+    applicationId,
+    onClose,
+    onSuccess,
+  }: {
+    open: boolean;
+    applicationId: string | null;
+    onClose: () => void;
+    onSuccess?: (clientSecret: string) => void;
+  }) =>
+    open ? (
+      <div data-testid="regenerate-dialog" data-application-id={applicationId}>
+        <button type="button" onClick={onClose} data-testid="dialog-close">
+          Close
+        </button>
+        <button type="button" onClick={() => onSuccess?.('new-test-secret')} data-testid="dialog-success">
+          Trigger Success
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock('../../../ClientSecretSuccessDialog', () => ({
+  default: ({open, clientSecret, onClose}: {open: boolean; clientSecret: string; onClose: () => void}) =>
+    open ? (
+      <div data-testid="secret-dialog" data-client-secret={clientSecret}>
+        <button type="button" onClick={onClose} data-testid="secret-dialog-close">
+          Close Secret Dialog
+        </button>
+      </div>
+    ) : null,
 }));
 
 describe('EditGeneralSettings', () => {
@@ -245,6 +290,127 @@ describe('EditGeneralSettings', () => {
       const sections = container.querySelectorAll('[data-testid]');
       expect(sections[0]).toHaveAttribute('data-testid', 'quick-copy-section');
       expect(sections[1]).toHaveAttribute('data-testid', 'access-section');
+      expect(sections[2]).toHaveAttribute('data-testid', 'danger-zone-section');
+    });
+
+    it('should render DangerZoneSection', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+    });
+  });
+
+  describe('Regenerate Secret Flow', () => {
+    it('should open regenerate dialog when regenerate button is clicked', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const regenerateButton = screen.getByTestId('regenerate-button');
+      fireEvent.click(regenerateButton);
+
+      expect(screen.getByTestId('regenerate-dialog')).toBeInTheDocument();
+    });
+
+    it('should pass application id to regenerate dialog', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const regenerateButton = screen.getByTestId('regenerate-button');
+      fireEvent.click(regenerateButton);
+
+      expect(screen.getByTestId('regenerate-dialog')).toHaveAttribute('data-application-id', 'app-123');
+    });
+
+    it('should close regenerate dialog when close is triggered', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const regenerateButton = screen.getByTestId('regenerate-button');
+      fireEvent.click(regenerateButton);
+
+      expect(screen.getByTestId('regenerate-dialog')).toBeInTheDocument();
+
+      const closeButton = screen.getByTestId('dialog-close');
+      fireEvent.click(closeButton);
+
+      expect(screen.queryByTestId('regenerate-dialog')).not.toBeInTheDocument();
+    });
+
+    it('should open secret dialog when regeneration is successful', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      const regenerateButton = screen.getByTestId('regenerate-button');
+      fireEvent.click(regenerateButton);
+
+      const successButton = screen.getByTestId('dialog-success');
+      fireEvent.click(successButton);
+
+      expect(screen.getByTestId('secret-dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('secret-dialog')).toHaveAttribute('data-client-secret', 'new-test-secret');
+    });
+
+    it('should close secret dialog when close is triggered', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      // Open regenerate dialog and trigger success
+      const regenerateButton = screen.getByTestId('regenerate-button');
+      fireEvent.click(regenerateButton);
+
+      const successButton = screen.getByTestId('dialog-success');
+      fireEvent.click(successButton);
+
+      expect(screen.getByTestId('secret-dialog')).toBeInTheDocument();
+
+      // Close secret dialog
+      const closeSecretButton = screen.getByTestId('secret-dialog-close');
+      fireEvent.click(closeSecretButton);
+
+      expect(screen.queryByTestId('secret-dialog')).not.toBeInTheDocument();
     });
   });
 });

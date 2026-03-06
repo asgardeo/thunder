@@ -42,7 +42,18 @@ await i18n.use(initReactI18next).init({
   debug: import.meta.env.DEV,
 });
 
-const queryClient: QueryClient = new QueryClient();
+const queryClient: QueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const status = (error as {response?: {status?: number}})?.response?.status;
+        if (status && status >= 400 && status < 500) return false;
+
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>

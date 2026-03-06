@@ -25,7 +25,18 @@ import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import I18nProvider from './i18n/I18nProvider';
 import App from './App';
 
-const queryClient: QueryClient = new QueryClient();
+const queryClient: QueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const status = (error as {response?: {status?: number}})?.response?.status;
+        if (status && status >= 400 && status < 500) return false;
+
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 export default function AppWithConfig(): JSX.Element {
   const {getClientId, getServerUrl, getClientUrl, getScopes} = useConfig();
