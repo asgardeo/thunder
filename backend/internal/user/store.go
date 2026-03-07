@@ -48,6 +48,7 @@ type userStoreInterface interface {
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
 	GetCredentials(ctx context.Context, id string) (User, Credentials, error)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
+	GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error)
 	ValidateUserIDsInOUs(ctx context.Context, userIDs []string, ouIDs []string) ([]string, error)
 	IsUserDeclarative(ctx context.Context, id string) (bool, error)
 }
@@ -534,6 +535,50 @@ func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]s
 	}
 
 	return invalidUserIDs, nil
+}
+
+// GetUsersByIDs retrieves users by a list of IDs.
+func (us *userStore) GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error) {
+	const batchSize = 100
+
+	if len(userIDs) == 0 {
+		return []User{}, nil
+	}
+
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	users := make([]User, 0, len(userIDs))
+
+	for start := 0; start < len(userIDs); start += batchSize {
+		end := start + batchSize
+		if end > len(userIDs) {
+			end = len(userIDs)
+		}
+		chunk := userIDs[start:end]
+
+		query, args, err := buildGetUsersByIDsQuery(chunk, us.deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build get users by IDs query: %w", err)
+		}
+
+		results, err := dbClient.QueryContext(ctx, query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute query: %w", err)
+		}
+
+		for _, row := range results {
+			user, err := buildUserFromResultRow(row)
+			if err != nil {
+				return nil, fmt.Errorf("failed to build user from result row: %w", err)
+			}
+			users = append(users, user)
+		}
+	}
+
+	return users, nil
 }
 
 // ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope.

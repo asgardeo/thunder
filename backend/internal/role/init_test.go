@@ -625,7 +625,7 @@ func (suite *InitTestSuite) TestInitialize_DBClientError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(mux, nil, nil, nil, nil)
+	_, _, err := Initialize(mux, nil, nil, nil, nil, nil)
 
 	suite.Error(err)
 	suite.Equal("mock db client error", err.Error())
@@ -649,7 +649,7 @@ func (suite *InitTestSuite) TestInitialize_TransactionerError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(mux, nil, nil, nil, nil)
+	_, _, err := Initialize(mux, nil, nil, nil, nil, nil)
 
 	suite.Error(err)
 	suite.Equal("mock transactioner error", err.Error())
@@ -680,7 +680,7 @@ func (suite *InitTestSuite) TestInitialize_Success() {
 	}()
 
 	mux := http.NewServeMux()
-	svc, exporter, err := Initialize(mux, nil, nil, nil, nil)
+	svc, exporter, err := Initialize(mux, nil, nil, nil, nil, nil)
 
 	suite.NoError(err)
 	suite.NotNil(svc)
@@ -716,7 +716,7 @@ func (suite *InitTestSuite) TestInitialize_StoreInitError() {
 	}()
 
 	mux := http.NewServeMux()
-	svc, exporter, err := Initialize(mux, nil, nil, nil, nil)
+	svc, exporter, err := Initialize(mux, nil, nil, nil, nil, nil)
 
 	suite.Error(err)
 	if err != nil {

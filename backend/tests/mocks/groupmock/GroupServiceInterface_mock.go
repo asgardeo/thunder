@@ -548,6 +548,76 @@ func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) RunAndReturn(run func(
 	return _c
 }
 
+// GetGroupsByIDs provides a mock function for the type GroupServiceInterfaceMock
+func (_mock *GroupServiceInterfaceMock) GetGroupsByIDs(ctx context.Context, groupIDs []string) (map[string]*group.Group, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, groupIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGroupsByIDs")
+	}
+
+	var r0 map[string]*group.Group
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) (map[string]*group.Group, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, groupIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) map[string]*group.Group); ok {
+		r0 = returnFunc(ctx, groupIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]*group.Group)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, groupIDs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// GroupServiceInterfaceMock_GetGroupsByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGroupsByIDs'
+type GroupServiceInterfaceMock_GetGroupsByIDs_Call struct {
+	*mock.Call
+}
+
+// GetGroupsByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupIDs []string
+func (_e *GroupServiceInterfaceMock_Expecter) GetGroupsByIDs(ctx interface{}, groupIDs interface{}) *GroupServiceInterfaceMock_GetGroupsByIDs_Call {
+	return &GroupServiceInterfaceMock_GetGroupsByIDs_Call{Call: _e.mock.On("GetGroupsByIDs", ctx, groupIDs)}
+}
+
+func (_c *GroupServiceInterfaceMock_GetGroupsByIDs_Call) Run(run func(ctx context.Context, groupIDs []string)) *GroupServiceInterfaceMock_GetGroupsByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_GetGroupsByIDs_Call) Return(stringToGroup map[string]*group.Group, serviceError *serviceerror.ServiceError) *GroupServiceInterfaceMock_GetGroupsByIDs_Call {
+	_c.Call.Return(stringToGroup, serviceError)
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_GetGroupsByIDs_Call) RunAndReturn(run func(ctx context.Context, groupIDs []string) (map[string]*group.Group, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_GetGroupsByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetGroupsByPath provides a mock function for the type GroupServiceInterfaceMock
 func (_mock *GroupServiceInterfaceMock) GetGroupsByPath(ctx context.Context, handlePath string, limit int, offset int) (*group.GroupListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, handlePath, limit, offset)

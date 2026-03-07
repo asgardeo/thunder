@@ -30,6 +30,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 var getDBProvider = provider.GetDBProvider
@@ -41,6 +42,7 @@ func Initialize(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
 ) (RoleServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Initialize store based on configuration
 	roleStore, err := initializeStore()
@@ -60,7 +62,9 @@ func Initialize(
 	}
 
 	// Step 2: Create service with store
-	roleService := newRoleService(roleStore, userService, groupService, ouService, resourceService, transactioner)
+	roleService := newRoleService(
+		roleStore, userService, groupService, ouService, resourceService, userSchemaService, transactioner,
+	)
 	roleHandler := newRoleHandler(roleService)
 	registerRoutes(mux, roleHandler)
 	exporter := newRoleExporter(roleService)

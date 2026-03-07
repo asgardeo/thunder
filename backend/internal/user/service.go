@@ -66,6 +66,7 @@ type UserServiceInterface interface {
 		identifiers map[string]interface{},
 		credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
+	GetUsersByIDs(ctx context.Context, userIDs []string) (map[string]*User, *serviceerror.ServiceError)
 	ValidateUserIDsInOUs(ctx context.Context, userIDs []string,
 		ouIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUserCredentialsByType(ctx context.Context, userID string,
@@ -1218,6 +1219,30 @@ func (us *userService) ValidateUserIDs(ctx context.Context, userIDs []string) ([
 	}
 
 	return invalidUserIDs, nil
+}
+
+// GetUsersByIDs retrieves users by a list of IDs.
+// Returns a map of userID -> *User for O(1) lookups. Missing IDs are absent from the map.
+func (us *userService) GetUsersByIDs(
+	ctx context.Context, userIDs []string,
+) (map[string]*User, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(userIDs) == 0 {
+		return map[string]*User{}, nil
+	}
+
+	users, err := us.userStore.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get users by IDs", err)
+	}
+
+	result := make(map[string]*User, len(users))
+	for i := range users {
+		result[users[i].ID] = &users[i]
+	}
+
+	return result, nil
 }
 
 // ValidateUserIDsInOUs validates that all provided user IDs belong to one of the given OUs.

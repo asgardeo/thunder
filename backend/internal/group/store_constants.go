@@ -215,33 +215,55 @@ var (
 	}
 )
 
-// buildBulkGroupExistsQuery constructs a query to check which group IDs exist from a list.
-func buildBulkGroupExistsQuery(groupIDs []string, deploymentID string) (dbmodel.DBQuery, []interface{}, error) {
+// buildGroupINClauseQuery constructs a query with an IN clause for group IDs.
+// The base query must use %s placeholders in the order: IN clause first, DEPLOYMENT_ID second.
+func buildGroupINClauseQuery(
+	queryID, baseQuery string, groupIDs []string, deploymentID string,
+) (dbmodel.DBQuery, []interface{}, error) {
 	if len(groupIDs) == 0 {
 		return dbmodel.DBQuery{}, nil, fmt.Errorf("groupIDs list cannot be empty")
 	}
+
 	args := make([]interface{}, len(groupIDs)+1)
-	args[0] = deploymentID
 
 	postgresPlaceholders := make([]string, len(groupIDs))
 	sqlitePlaceholders := make([]string, len(groupIDs))
 
 	for i, groupID := range groupIDs {
-		postgresPlaceholders[i] = fmt.Sprintf("$%d", i+2)
+		postgresPlaceholders[i] = fmt.Sprintf("$%d", i+1)
 		sqlitePlaceholders[i] = "?"
-		args[i+1] = groupID
+		args[i] = groupID
 	}
+	args[len(groupIDs)] = deploymentID
 
-	baseQuery := "SELECT ID FROM \"GROUP\" WHERE DEPLOYMENT_ID = %s AND ID IN (%s)"
-	postgresQuery := fmt.Sprintf(baseQuery, "$1", strings.Join(postgresPlaceholders, ","))
-	sqliteQuery := fmt.Sprintf(baseQuery, "?", strings.Join(sqlitePlaceholders, ","))
+	deploymentPlaceholder := fmt.Sprintf("$%d", len(groupIDs)+1)
+	postgresQuery := fmt.Sprintf(baseQuery, strings.Join(postgresPlaceholders, ","), deploymentPlaceholder)
+	sqliteQuery := fmt.Sprintf(baseQuery, strings.Join(sqlitePlaceholders, ","), "?")
 
 	query := dbmodel.DBQuery{
-		ID:            "GRQ-GROUP_MGT-18",
+		ID:            queryID,
 		Query:         postgresQuery,
 		PostgresQuery: postgresQuery,
 		SQLiteQuery:   sqliteQuery,
 	}
 
 	return query, args, nil
+}
+
+// buildBulkGroupExistsQuery constructs a query to check which group IDs exist from a list.
+func buildBulkGroupExistsQuery(groupIDs []string, deploymentID string) (dbmodel.DBQuery, []interface{}, error) {
+	return buildGroupINClauseQuery(
+		"GRQ-GROUP_MGT-18",
+		"SELECT ID FROM \"GROUP\" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		groupIDs, deploymentID,
+	)
+}
+
+// buildGetGroupsByIDsQuery constructs a query to fetch groups by a list of IDs.
+func buildGetGroupsByIDsQuery(groupIDs []string, deploymentID string) (dbmodel.DBQuery, []interface{}, error) {
+	return buildGroupINClauseQuery(
+		"GRQ-GROUP_MGT-19",
+		"SELECT ID, OU_ID, NAME, DESCRIPTION FROM \"GROUP\" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		groupIDs, deploymentID,
+	)
 }

@@ -470,6 +470,112 @@ func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_MultipleOUID
 	suite.Equal(10, args[5])
 }
 
+// ---------------------------------------------------------------------------
+// buildGetUsersByIDsQuery
+// ---------------------------------------------------------------------------
+
+func (suite *StoreConstantsTestSuite) TestBuildGetUsersByIDsQuery_EmptyIDs() {
+	query, args, err := buildGetUsersByIDsQuery([]string{}, testDeploymentIDForConstants)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "userIDs list cannot be empty")
+	suite.Nil(args)
+	suite.Empty(query.Query)
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildGetUsersByIDsQuery_SingleID() {
+	query, args, err := buildGetUsersByIDsQuery([]string{"user-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-22", query.ID)
+	suite.Equal(
+		`SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE ID IN ($1) AND DEPLOYMENT_ID = $2`,
+		query.PostgresQuery,
+	)
+	suite.Equal(
+		`SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE ID IN (?) AND DEPLOYMENT_ID = ?`,
+		query.SQLiteQuery,
+	)
+	suite.Len(args, 2)
+	suite.Equal("user-1", args[0])
+	suite.Equal(testDeploymentIDForConstants, args[1])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildGetUsersByIDsQuery_MultipleIDs() {
+	query, args, err := buildGetUsersByIDsQuery(
+		[]string{"user-1", "user-2", "user-3"}, testDeploymentIDForConstants,
+	)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-22", query.ID)
+	suite.Equal(
+		`SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE ID IN ($1,$2,$3) AND DEPLOYMENT_ID = $4`,
+		query.PostgresQuery,
+	)
+	suite.Equal(
+		`SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM "USER" WHERE ID IN (?,?,?) AND DEPLOYMENT_ID = ?`,
+		query.SQLiteQuery,
+	)
+	suite.Len(args, 4)
+	suite.Equal("user-1", args[0])
+	suite.Equal("user-2", args[1])
+	suite.Equal("user-3", args[2])
+	suite.Equal(testDeploymentIDForConstants, args[3])
+}
+
+// ---------------------------------------------------------------------------
+// buildBulkUserExistsQuery
+// ---------------------------------------------------------------------------
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQuery_EmptyIDs() {
+	query, args, err := buildBulkUserExistsQuery([]string{}, testDeploymentIDForConstants)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "userIDs list cannot be empty")
+	suite.Nil(args)
+	suite.Empty(query.Query)
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQuery_SingleID() {
+	query, args, err := buildBulkUserExistsQuery([]string{"user-1"}, testDeploymentIDForConstants)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-09", query.ID)
+	suite.Equal(
+		`SELECT ID FROM "USER" WHERE ID IN ($1) AND DEPLOYMENT_ID = $2`,
+		query.PostgresQuery,
+	)
+	suite.Equal(
+		`SELECT ID FROM "USER" WHERE ID IN (?) AND DEPLOYMENT_ID = ?`,
+		query.SQLiteQuery,
+	)
+	suite.Len(args, 2)
+	suite.Equal("user-1", args[0])
+	suite.Equal(testDeploymentIDForConstants, args[1])
+}
+
+func (suite *StoreConstantsTestSuite) TestBuildBulkUserExistsQuery_MultipleIDs() {
+	query, args, err := buildBulkUserExistsQuery(
+		[]string{"user-1", "user-2", "user-3"}, testDeploymentIDForConstants,
+	)
+
+	suite.NoError(err)
+	suite.Equal("ASQ-USER_MGT-09", query.ID)
+	suite.Equal(
+		`SELECT ID FROM "USER" WHERE ID IN ($1,$2,$3) AND DEPLOYMENT_ID = $4`,
+		query.PostgresQuery,
+	)
+	suite.Equal(
+		`SELECT ID FROM "USER" WHERE ID IN (?,?,?) AND DEPLOYMENT_ID = ?`,
+		query.SQLiteQuery,
+	)
+	suite.Len(args, 4)
+	suite.Equal("user-1", args[0])
+	suite.Equal("user-2", args[1])
+	suite.Equal("user-3", args[2])
+	suite.Equal(testDeploymentIDForConstants, args[3])
+}
+
 func (suite *StoreConstantsTestSuite) TestBuildUserListQueryByOUIDs_WithFilters() {
 	ouIDs := []string{"ou-1"}
 	filters := map[string]interface{}{"username": "alice"}

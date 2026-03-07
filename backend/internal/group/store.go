@@ -51,6 +51,7 @@ type groupStoreInterface interface {
 		ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
+	GetGroupsByIDs(ctx context.Context, groupIDs []string) ([]GroupBasicDAO, error)
 }
 
 // groupStore is the default implementation of groupStoreInterface.
@@ -495,6 +496,55 @@ func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, mem
 	}
 
 	return nil
+}
+
+// GetGroupsByIDs retrieves groups by a list of IDs.
+func (s *groupStore) GetGroupsByIDs(ctx context.Context, groupIDs []string) ([]GroupBasicDAO, error) {
+	const batchSize = 100
+
+	if len(groupIDs) == 0 {
+		return []GroupBasicDAO{}, nil
+	}
+
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	groups := make([]GroupBasicDAO, 0, len(groupIDs))
+
+	for start := 0; start < len(groupIDs); start += batchSize {
+		end := start + batchSize
+		if end > len(groupIDs) {
+			end = len(groupIDs)
+		}
+		chunk := groupIDs[start:end]
+
+		query, args, err := buildGetGroupsByIDsQuery(chunk, s.deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build get groups by IDs query: %w", err)
+		}
+
+		results, err := dbClient.QueryContext(ctx, query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute query: %w", err)
+		}
+
+		for _, row := range results {
+			group, err := buildGroupFromResultRow(row)
+			if err != nil {
+				return nil, fmt.Errorf("failed to build group from result row: %w", err)
+			}
+			groups = append(groups, GroupBasicDAO{
+				ID:                 group.ID,
+				Name:               group.Name,
+				Description:        group.Description,
+				OrganizationUnitID: group.OrganizationUnitID,
+			})
+		}
+	}
+
+	return groups, nil
 }
 
 // buildGroupFromResultRow constructs a GroupDAO from a database result row.

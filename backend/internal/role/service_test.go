@@ -20,6 +20,7 @@ package role
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -36,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 const (
@@ -59,13 +61,14 @@ func (f *fakeTransactioner) Transact(ctx context.Context, txFunc func(context.Co
 // Test Suite
 type RoleServiceTestSuite struct {
 	suite.Suite
-	mockStore           *roleStoreInterfaceMock
-	mockUserService     *usermock.UserServiceInterfaceMock
-	mockGroupService    *groupmock.GroupServiceInterfaceMock
-	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
-	mockResourceService *resourcemock.ResourceServiceInterfaceMock
-	transactioner       *fakeTransactioner
-	service             RoleServiceInterface
+	mockStore             *roleStoreInterfaceMock
+	mockUserService       *usermock.UserServiceInterfaceMock
+	mockGroupService      *groupmock.GroupServiceInterfaceMock
+	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
+	mockResourceService   *resourcemock.ResourceServiceInterfaceMock
+	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	transactioner         *fakeTransactioner
+	service               RoleServiceInterface
 }
 
 func TestRoleServiceTestSuite(t *testing.T) {
@@ -90,6 +93,7 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 	suite.mockGroupService = groupmock.NewGroupServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.transactioner = &fakeTransactioner{}
 	suite.service = newRoleService(
 		suite.mockStore,
@@ -97,6 +101,7 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 		suite.mockGroupService,
 		suite.mockOUService,
 		suite.mockResourceService,
+		suite.mockUserSchemaService,
 		suite.transactioner,
 	)
 }
@@ -1227,10 +1232,22 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_Success() 
 		"role1").Return(2, nil)
 	suite.mockStore.On("GetRoleAssignments", mock.Anything,
 		"role1", 10, 0).Return(expectedAssignments, nil)
-	suite.mockUserService.On("GetUser", mock.Anything,
-		testUserID1).Return(&user.User{ID: testUserID1}, nil).Once()
-	suite.mockGroupService.On("GetGroup", mock.Anything,
-		"group1").Return(&group.Group{Name: "Test Group"}, nil).Once()
+	suite.mockUserService.On("GetUsersByIDs", mock.Anything,
+		[]string{testUserID1}).Return(map[string]*user.User{
+		testUserID1: {
+			ID:         testUserID1,
+			Type:       "employee",
+			Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+		},
+	}, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockGroupService.On("GetGroupsByIDs", mock.Anything,
+		[]string{"group1"}).Return(map[string]*group.Group{
+		"group1": {Name: "Test Group"},
+	}, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockUserSchemaService.On("GetDisplayAttributesByNames", mock.Anything,
+		[]string{"employee"}).Return(map[string]string{
+		"employee": "email",
+	}, (*serviceerror.ServiceError)(nil)).Once()
 
 	result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
 
@@ -1238,8 +1255,31 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_Success() 
 	suite.NotNil(result)
 	suite.Equal(2, result.TotalResults)
 	suite.Equal(2, result.Count)
-	suite.Equal(testUserID1, result.Assignments[0].Display)
+	suite.Equal("alice@example.com", result.Assignments[0].Display)
 	suite.Equal("Test Group", result.Assignments[1].Display)
+}
+
+func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FallbackToID() {
+	expectedAssignments := []RoleAssignment{
+		{ID: testUserID1, Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything,
+		"role1").Return(true, nil)
+	suite.mockStore.On("GetRoleAssignmentsCount", mock.Anything,
+		"role1").Return(1, nil)
+	suite.mockStore.On("GetRoleAssignments", mock.Anything,
+		"role1", 10, 0).Return(expectedAssignments, nil)
+	suite.mockUserService.On("GetUsersByIDs", mock.Anything,
+		[]string{testUserID1}).Return(map[string]*user.User{
+		testUserID1: {ID: testUserID1},
+	}, (*serviceerror.ServiceError)(nil)).Once()
+
+	result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID1, result.Assignments[0].Display)
 }
 
 func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchErrors() {
@@ -1253,9 +1293,9 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchError
 			name:       "User fetch error",
 			assignment: RoleAssignment{ID: testUserID1, Type: AssigneeTypeUser},
 			setupMock: func() {
-				suite.mockUserService.On("GetUser", mock.Anything,
-					testUserID1).
-					Return(nil, &serviceerror.ServiceError{Code: "USER_NOT_FOUND"}).Once()
+				suite.mockUserService.On("GetUsersByIDs", mock.Anything,
+					[]string{testUserID1}).
+					Return((map[string]*user.User)(nil), &serviceerror.ServiceError{Code: "INTERNAL_ERROR"}).Once()
 			},
 			expectedDisplay: "",
 		},
@@ -1263,9 +1303,9 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchError
 			name:       "Group fetch error",
 			assignment: RoleAssignment{ID: "group1", Type: AssigneeTypeGroup},
 			setupMock: func() {
-				suite.mockGroupService.On("GetGroup", mock.Anything,
-					"group1").
-					Return(nil, &serviceerror.ServiceError{Code: "GROUP_NOT_FOUND"}).Once()
+				suite.mockGroupService.On("GetGroupsByIDs", mock.Anything,
+					[]string{"group1"}).
+					Return((map[string]*group.Group)(nil), &serviceerror.ServiceError{Code: "INTERNAL_ERROR"}).Once()
 			},
 			expectedDisplay: "",
 		},
@@ -1294,6 +1334,187 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchError
 			suite.Equal(tc.expectedDisplay, result.Assignments[0].Display)
 		})
 	}
+}
+
+func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_PartialResults() {
+	expectedAssignments := []RoleAssignment{
+		{ID: testUserID1, Type: AssigneeTypeUser},
+		{ID: "group1", Type: AssigneeTypeGroup},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything,
+		"role1").Return(true, nil)
+	suite.mockStore.On("GetRoleAssignmentsCount", mock.Anything,
+		"role1").Return(2, nil)
+	suite.mockStore.On("GetRoleAssignments", mock.Anything,
+		"role1", 10, 0).Return(expectedAssignments, nil)
+	// Empty user/group maps — no users or groups found
+	suite.mockUserService.On("GetUsersByIDs", mock.Anything,
+		[]string{testUserID1}).Return(map[string]*user.User{}, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockGroupService.On("GetGroupsByIDs", mock.Anything,
+		[]string{"group1"}).Return(map[string]*group.Group{}, (*serviceerror.ServiceError)(nil)).Once()
+
+	result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(2, result.TotalResults)
+	suite.Equal(2, result.Count)
+	suite.Equal("", result.Assignments[0].Display)
+	suite.Equal("", result.Assignments[1].Display)
+}
+
+func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_NestedDisplayAttribute() {
+	expectedAssignments := []RoleAssignment{
+		{ID: testUserID1, Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything,
+		"role1").Return(true, nil)
+	suite.mockStore.On("GetRoleAssignmentsCount", mock.Anything,
+		"role1").Return(1, nil)
+	suite.mockStore.On("GetRoleAssignments", mock.Anything,
+		"role1", 10, 0).Return(expectedAssignments, nil)
+	suite.mockUserService.On("GetUsersByIDs", mock.Anything,
+		[]string{testUserID1}).Return(map[string]*user.User{
+		testUserID1: {
+			ID:         testUserID1,
+			Type:       "employee",
+			Attributes: json.RawMessage(`{"profile":{"fullName":"Alice Smith"}}`),
+		},
+	}, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockUserSchemaService.On("GetDisplayAttributesByNames", mock.Anything,
+		[]string{"employee"}).Return(map[string]string{
+		"employee": "profile.fullName",
+	}, (*serviceerror.ServiceError)(nil)).Once()
+
+	result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal("Alice Smith", result.Assignments[0].Display)
+}
+
+func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_SchemaServiceError() {
+	expectedAssignments := []RoleAssignment{
+		{ID: testUserID1, Type: AssigneeTypeUser},
+	}
+
+	suite.mockStore.On("IsRoleExist", mock.Anything,
+		"role1").Return(true, nil)
+	suite.mockStore.On("GetRoleAssignmentsCount", mock.Anything,
+		"role1").Return(1, nil)
+	suite.mockStore.On("GetRoleAssignments", mock.Anything,
+		"role1", 10, 0).Return(expectedAssignments, nil)
+	suite.mockUserService.On("GetUsersByIDs", mock.Anything,
+		[]string{testUserID1}).Return(map[string]*user.User{
+		testUserID1: {
+			ID:         testUserID1,
+			Type:       "employee",
+			Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+		},
+	}, (*serviceerror.ServiceError)(nil)).Once()
+	// Schema service fails — should fall back to user ID
+	suite.mockUserSchemaService.On("GetDisplayAttributesByNames", mock.Anything,
+		[]string{"employee"}).Return(
+		(map[string]string)(nil), &serviceerror.ServiceError{Code: "INTERNAL_ERROR"},
+	).Once()
+
+	result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID1, result.Assignments[0].Display)
+}
+
+// extractDisplayValue Tests
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_TopLevel() {
+	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
+	suite.Equal("alice@example.com", extractDisplayValue(attrs, "email"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_Nested() {
+	attrs := json.RawMessage(`{"profile":{"fullName":"Alice Smith"}}`)
+	suite.Equal("Alice Smith", extractDisplayValue(attrs, "profile.fullName"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_NonExistentPath() {
+	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
+	suite.Equal("", extractDisplayValue(attrs, "missing.field"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_EmptyAttributes() {
+	suite.Equal("", extractDisplayValue(json.RawMessage(`{}`), "email"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_NilAttributes() {
+	suite.Equal("", extractDisplayValue(nil, "email"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_InvalidJSON() {
+	suite.Equal("", extractDisplayValue(json.RawMessage(`invalid`), "email"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_EmptyPath() {
+	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
+	suite.Equal("", extractDisplayValue(attrs, ""))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_NumericValue() {
+	attrs := json.RawMessage(`{"age":30}`)
+	suite.Equal("30", extractDisplayValue(attrs, "age"))
+}
+
+func (suite *RoleServiceTestSuite) TestExtractDisplayValue_BooleanValue() {
+	attrs := json.RawMessage(`{"active":true}`)
+	suite.Equal("true", extractDisplayValue(attrs, "active"))
+}
+
+// resolveUserDisplay Tests
+
+func (suite *RoleServiceTestSuite) TestResolveUserDisplay_WithDisplayAttr() {
+	u := &user.User{
+		ID:         "user-1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+	}
+	paths := map[string]string{"employee": "email"}
+	suite.Equal("alice@example.com", resolveUserDisplay(u, paths))
+}
+
+func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_NilPaths() {
+	u := &user.User{ID: "user-1", Type: "employee"}
+	suite.Equal("user-1", resolveUserDisplay(u, nil))
+}
+
+func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_EmptyType() {
+	u := &user.User{
+		ID:         "user-1",
+		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+	}
+	paths := map[string]string{"employee": "email"}
+	suite.Equal("user-1", resolveUserDisplay(u, paths))
+}
+
+func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_EmptyDisplayPath() {
+	u := &user.User{
+		ID:         "user-1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+	}
+	paths := map[string]string{"employee": ""}
+	suite.Equal("user-1", resolveUserDisplay(u, paths))
+}
+
+func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_MissingAttribute() {
+	u := &user.User{
+		ID:         "user-1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"name":"Alice"}`),
+	}
+	paths := map[string]string{"employee": "email"}
+	suite.Equal("user-1", resolveUserDisplay(u, paths))
 }
 
 // AddAssignments Tests
