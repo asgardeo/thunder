@@ -1,0 +1,39 @@
+---
+title: Customer Identity for B2C Applications
+description: Build secure and low-friction customer sign-in and sign-up flows.
+sidebar_position: 1
+---
+
+# Customer Identity for B2C Applications
+
+Choose this pattern when your users are individual consumers who expect fast onboarding and simple sign-in across web and mobile applications.
+
+## Typical Requirements
+
+- Support social, password, and passwordless sign-in options.
+- Keep registration short and progressively collect profile data.
+- Add step-up authentication only for high-risk actions.
+- Provide reliable account recovery paths.
+
+## Recommended Baseline Flow
+
+1. Start with email or social registration.
+2. Add passkey registration during onboarding or first successful sign-in.
+3. Use passkey-first sign-in with fallback to password or magic link.
+4. Trigger step-up authentication for sensitive operations.
+5. Offer recovery through verified email channels.
+
+## Thunder Capabilities to Use
+
+- **Flow engine** to orchestrate sign-up and sign-in journeys.
+- **Passkeys** for phishing-resistant authentication in the [Passkeys Guide](../../guides/key-concepts/authentication/passwordless/passkeys).
+- **Hosted or custom UI** depending on your product control needs.
+- **SDK integration** for frontend applications with the [React SDK Overview](../../sdks/react/overview).
+
+## Implementation Checklist
+
+1. Install and run Thunder using the [Installation Guide](../../guides/getting-started/get-thunder).
+2. Define your sign-up and sign-in flows.
+3. Enable passkeys and validate your relying party configuration.
+4. Integrate your frontend with Thunder APIs or SDK.
+5. Test onboarding, step-up, and recovery paths end-to-end.
