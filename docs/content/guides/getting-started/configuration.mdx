@@ -236,6 +236,41 @@ Signing keys are configured as an array. Each key has the following properties:
   key_file: "repository/resources/security/signing.key"
 ```
 
+## Email Configuration
+
+Controls email sending capabilities (e.g., for magic link authentication, user invitations).
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `email.smtp.host` | `""` | SMTP server hostname |
+| `email.smtp.port` | `0` | SMTP server port (e.g., 587 for STARTTLS) |
+| `email.smtp.username` | `""` | SMTP authentication username |
+| `email.smtp.password` | `""` | SMTP authentication password |
+| `email.smtp.from_address` | `""` | Sender email address |
+| `email.smtp.enable_start_tls` | `true` | Enable STARTTLS encryption |
+| `email.smtp.enable_authentication` | `true` | Enable SMTP authentication |
+
+**Example:**
+```yaml
+email:
+  smtp:
+    host: "smtp.example.com"
+    port: 587
+    username: "yourUsername"
+    password: "yourPassword"
+    from_address: "yourEmail"
+    enable_start_tls: true
+    enable_authentication: true
+```
+
+:::note
+**Transport Mode:** Referencing keys `enable_start_tls` and `enable_authentication`, only explicit STARTTLS is supported (set `enable_start_tls: true`). Implicit SMTPS (port 465) is not supported by this transport.
+:::
+
+:::note
+The email configuration is optional. If not provided, features that depend on email (e.g., magic link, user invitations) will not be available.
+:::
+
 ## Authentication Provider Configuration
 
 External authentication provider settings.
