@@ -35,11 +35,12 @@ import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {
-    const {transformedTheme, isLoading} = useDesign(AcrylicOrangeTheme);
+    const {theme: transformedTheme, isLoading} = useDesign(AcrylicOrangeTheme);
+    const theme = transformedTheme ?? AcrylicOrangeTheme;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     return (
-      <OxygenUIThemeProvider theme={transformedTheme ?? AcrylicOrangeTheme}>
+      <OxygenUIThemeProvider theme={theme}>
         <ColorSchemeToggle
           sx={{
             position: 'fixed',

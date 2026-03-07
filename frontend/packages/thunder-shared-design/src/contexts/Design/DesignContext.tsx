@@ -20,7 +20,6 @@ import {Context, createContext} from 'react';
 import type {Theme} from '@wso2/oxygen-ui';
 import type {LayoutConfig} from '../../models/layout';
 import type {DesignResolveResponse} from '../../models/responses';
-import type {ThemeConfig} from '../../models/theme';
 
 /**
  * Design context interface that provides access to Thunder design configuration
@@ -52,17 +51,12 @@ export interface DesignContextType {
   /**
    * The Thunder theme resolved from design data (directly accessible)
    */
-  theme?: ThemeConfig;
+  theme?: Theme;
 
   /**
    * The layout configuration from design data (directly accessible)
    */
   layout?: LayoutConfig;
-
-  /**
-   * The transformed OxygenUI theme resolved from Thunder theme (directly accessible)
-   */
-  transformedTheme?: Theme;
 }
 
 /**

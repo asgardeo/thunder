@@ -17,11 +17,10 @@
  */
 
 import type {PropsWithChildren, ReactElement} from 'react';
-import './ValidationPanel.scss';
 import {BellIcon, CircleXIcon, InfoIcon, TriangleAlertIcon, X} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import {Box, Drawer, IconButton, Stack, Tab, Tabs, Typography} from '@wso2/oxygen-ui';
-import classNames from 'classnames';
+import {Box, IconButton, Stack, Tab, Tabs, Typography} from '@wso2/oxygen-ui';
+import BuilderFloatingPanel from '../../../../components/BuilderLayout/BuilderFloatingPanel';
 import Notification, {NotificationType} from '../../models/notification';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
@@ -140,37 +139,14 @@ function ValidationPanel(): ReactElement {
   };
 
   return (
-    <Drawer
-      open={open}
-      anchor="right"
-      onClose={() => setOpenValidationPanel?.(false)}
-      elevation={5}
-      slotProps={{
-        paper: {
-          className: classNames('flow-builder-right-panel base'),
-          style: {position: 'absolute'},
-        },
-        backdrop: {
-          style: {position: 'absolute'},
-        },
-      }}
-      ModalProps={{
-        container: document.getElementById('drawer-container'),
-        keepMounted: true,
-        style: {pointerEvents: 'none'},
-      }}
-      sx={{
-        pointerEvents: 'none',
-        '& .MuiDrawer-paper': {
-          pointerEvents: 'auto',
-        },
-      }}
-      hideBackdrop
-      className="flow-builder-right-panel"
-      variant="temporary"
+    <BuilderFloatingPanel
+      open={open ?? false}
+      onClose={handleClose}
+      container={document.getElementById('drawer-container')}
     >
-      <Box display="flex" justifyContent="space-between" alignItems="center" className="flow-builder-right-panel">
-        <Stack direction="row" className="sub-title" gap={1} alignItems="center">
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" gap={1} alignItems="center">
           <BellIcon />
           <Typography variant="h5">{t('flows:core.notificationPanel.header')}</Typography>
         </Stack>
@@ -178,13 +154,40 @@ function ValidationPanel(): ReactElement {
           <X height={16} width={16} />
         </IconButton>
       </Box>
-      <Box marginTop={2}>
-        <Tabs value={currentActiveTab} onChange={handleTabChange} className="validation-tabs" variant="fullWidth">
+
+      {/* Tabs */}
+      <Box
+        sx={{
+          px: 2,
+          bgcolor: 'common.white',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          mt: 2,
+        }}
+      >
+        <Tabs
+          value={currentActiveTab}
+          onChange={handleTabChange}
+          variant="fullWidth"
+          sx={{
+            minHeight: 44,
+            '& .MuiTab-root': {
+              minHeight: 44,
+              py: 1,
+              px: 1.5,
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            },
+          }}
+        >
           <Tab
             label={
               <Box display="flex" alignItems="center" gap={0.5}>
                 {getNotificationIcon(NotificationType.ERROR)}
-                <Typography variant="h6">{t('flows:core.notificationPanel.tabs.errors')}</Typography>
+                <Typography variant="h6" sx={{fontSize: '0.8rem'}}>
+                  {t('flows:core.notificationPanel.tabs.errors')}
+                </Typography>
               </Box>
             }
           />
@@ -192,7 +195,9 @@ function ValidationPanel(): ReactElement {
             label={
               <Box display="flex" alignItems="center" gap={0.5}>
                 {getNotificationIcon(NotificationType.WARNING)}
-                <Typography variant="h6">{t('flows:core.notificationPanel.tabs.warnings')}</Typography>
+                <Typography variant="h6" sx={{fontSize: '0.8rem'}}>
+                  {t('flows:core.notificationPanel.tabs.warnings')}
+                </Typography>
               </Box>
             }
           />
@@ -200,13 +205,52 @@ function ValidationPanel(): ReactElement {
             label={
               <Box display="flex" alignItems="center" gap={0.5}>
                 {getNotificationIcon(NotificationType.INFO)}
-                <Typography variant="h6">{t('flows:core.notificationPanel.tabs.info')}</Typography>
+                <Typography variant="h6" sx={{fontSize: '0.8rem'}}>
+                  {t('flows:core.notificationPanel.tabs.info')}
+                </Typography>
               </Box>
             }
           />
         </Tabs>
       </Box>
-      <div className="flow-builder-right-panel content full-height validation-panel-content">
+
+      {/* Content */}
+      <Box
+        sx={{
+          p: 2,
+          height: 'calc(100% - 120px)',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          '&::-webkit-scrollbar': {width: '6px'},
+          '&::-webkit-scrollbar-track': {background: 'transparent'},
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '3px',
+            '&:hover': {background: 'rgba(0, 0, 0, 0.3)'},
+          },
+          '& .notification-item': {
+            width: '100%',
+            borderRadius: '8px',
+          },
+          '& .notification-action-button': {
+            p: 0,
+            width: 'auto',
+            textTransform: 'none',
+            fontSize: '0.8rem',
+            fontWeight: 500,
+            textDecoration: 'underline',
+            mt: '8px',
+            '&:hover': {
+              backgroundColor: 'transparent',
+              textDecoration: 'underline',
+              color: 'primary.dark',
+            },
+            '&.MuiButtonBase-root': {justifyContent: 'flex-end'},
+          },
+          '& .MuiList-root': {p: 0},
+          '& .MuiListItem-root': {py: '6px', px: 0},
+        }}
+      >
         <TabPanel value={currentActiveTab ?? 0} index={0}>
           <ValidationNotificationsList
             notifications={errorNotifications}
@@ -228,8 +272,8 @@ function ValidationPanel(): ReactElement {
             onNotificationClick={handleNotificationClick}
           />
         </TabPanel>
-      </div>
-    </Drawer>
+      </Box>
+    </BuilderFloatingPanel>
   );
 }
 

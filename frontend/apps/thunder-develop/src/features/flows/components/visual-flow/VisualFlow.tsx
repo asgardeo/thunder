@@ -26,7 +26,7 @@ import {
   type ReactFlowProps,
 } from '@xyflow/react';
 import {type ReactElement, useCallback} from 'react';
-import {Button, Card, Tooltip, useColorScheme} from '@wso2/oxygen-ui';
+import {Box, Button, Tooltip, useColorScheme} from '@wso2/oxygen-ui';
 import '@xyflow/react/dist/style.css';
 import './VisualFlow.scss';
 import {LayoutGrid, Save} from '@wso2/oxygen-ui-icons-react';
@@ -134,14 +134,12 @@ function VisualFlow({
       </Controls>
 
       {/* Save button - top right overlay */}
-      <Card
-        elevation={3}
+      <Box
         sx={{
           position: 'absolute',
           top: 5,
           right: 10,
           zIndex: 5,
-          borderRadius: 1,
         }}
       >
         <Tooltip title={t('flows:core.headerPanel.save')}>
@@ -149,7 +147,7 @@ function VisualFlow({
             {t('flows:core.headerPanel.save')}
           </Button>
         </Tooltip>
-      </Card>
+      </Box>
 
       <Background gap={20} />
       <CanvasValidationIndicator />

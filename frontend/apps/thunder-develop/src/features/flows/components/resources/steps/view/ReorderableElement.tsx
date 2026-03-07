@@ -17,7 +17,7 @@
  */
 
 import {Box, Menu, MenuItem, type BoxProps} from '@wso2/oxygen-ui';
-import {useRef, useState, useMemo, memo, type MouseEvent, type ReactElement} from 'react';
+import {useRef, useState, useMemo, memo, type MouseEvent, type ReactElement, type ReactNode} from 'react';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import FlowEventTypes from '@/features/flows/models/extension';
 import classNames from 'classnames';
@@ -57,6 +57,38 @@ export interface ReorderableComponentPropsInterface
    * @defaultValue undefined
    */
   onAddElementToForm?: (element: Resource, formId: string) => void;
+  /**
+   * When true, hides the drag grip handle.
+   * @defaultValue false
+   */
+  hideDrag?: boolean;
+  /**
+   * When true, hides the edit action button.
+   * @defaultValue false
+   */
+  hideEdit?: boolean;
+  /**
+   * When true, hides the delete action button.
+   * @defaultValue false
+   */
+  hideDelete?: boolean;
+  /**
+   * Extra action nodes rendered inside the actions toolbar (after edit, before delete).
+   * @defaultValue undefined
+   */
+  extraActions?: ReactNode;
+  /**
+   * Additional props to be passed to the Box component.
+   */
+  slotProps?: {
+    ContentContainer?: {
+      sx?: BoxProps['sx'];
+    };
+  };
+  /**
+   * Additional props to be passed to the Box component.
+   */
+  [key: string]: unknown;
 }
 
 /**
@@ -72,6 +104,11 @@ function ReorderableElement({
   className,
   availableElements = undefined,
   onAddElementToForm = undefined,
+  hideDrag = false,
+  hideEdit = false,
+  hideDelete = false,
+  extraActions = null,
+  slotProps = {},
   ...rest
 }: ReorderableComponentPropsInterface): ReactElement {
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -210,23 +247,34 @@ function ReorderableElement({
           onDoubleClick={handlePropertyPanelOpen}
         >
           <Box className="flow-builder-dnd-actions">
-            <Handle label="Drag" cursor="grab" ref={handleRef}>
-              <GripVertical size={16} color="white" />
-            </Handle>
-            <Handle label="Edit" onClick={handlePropertyPanelOpen}>
-              <PencilLineIcon size={16} color="white" />
-            </Handle>
-            {isForm && formCompatibleElements.length > 0 && (
-              <Handle label="Add Field" onClick={handleMenuOpen}>
-                <PlusIcon size={16} color="white" />
+            {!hideDrag && (
+              <Handle label="Drag" cursor="grab" ref={handleRef}>
+                <GripVertical size={16} />
               </Handle>
             )}
-            <Handle label="Delete" onClick={handleElementDelete}>
-              <Trash2Icon size={16} color="white" />
-            </Handle>
+            {!hideEdit && (
+              <Handle label="Edit" onClick={handlePropertyPanelOpen}>
+                <PencilLineIcon size={16} />
+              </Handle>
+            )}
+            {extraActions}
+            {isForm && formCompatibleElements.length > 0 && (
+              <Handle label="Add Field" onClick={handleMenuOpen}>
+                <PlusIcon size={16} />
+              </Handle>
+            )}
+            {!hideDelete && (
+              <Handle label="Delete" onClick={handleElementDelete}>
+                <Trash2Icon size={16} color="red" />
+              </Handle>
+            )}
           </Box>
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-          <div className="flow-builder-step-content-form-field-content" onClick={handlePropertyPanelOpen}>
+          <Box
+            className="flow-builder-step-content-form-field-content"
+            onClick={handlePropertyPanelOpen}
+            sx={{...slotProps?.ContentContainer?.sx}}
+          >
             <ElementFactory
               stepId={stepId ?? ''}
               resource={element}
@@ -234,7 +282,7 @@ function ReorderableElement({
               availableElements={availableElements}
               onAddElementToForm={onAddElementToForm}
             />
-          </div>
+          </Box>
         </Box>
       </ValidationErrorBoundary>
 

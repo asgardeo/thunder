@@ -117,17 +117,11 @@ describe('useCreateUser', () => {
   });
 
   it('should set pending state during creation', async () => {
-    mockHttpRequest.mockReturnValue(
-      new Promise((resolve) => {
-        setTimeout(
-          () =>
-            resolve({
-              data: mockUser,
-            }),
-          100,
-        );
-      }),
-    );
+    let resolveRequest: (value: unknown) => void;
+    const requestPromise = new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+    mockHttpRequest.mockReturnValue(requestPromise);
 
     const {result} = renderHook(() => useCreateUser());
 
@@ -137,12 +131,11 @@ describe('useCreateUser', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
-      () => {
-        expect(result.current.isSuccess).toBe(true);
-      },
-      {timeout: 200},
-    );
+    resolveRequest!({data: mockUser});
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
 
     expect(result.current.isPending).toBe(false);
   });

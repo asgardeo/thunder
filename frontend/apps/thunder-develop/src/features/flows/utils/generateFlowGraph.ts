@@ -190,7 +190,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
         type: 'ACTION',
         id: 'action_google',
         label: 'Sign in with Google',
-        variant: 'SOCIAL',
+        variant: 'OUTLINED',
         eventType: 'TRIGGER',
         startIcon: {icon: 'google'},
       });
@@ -208,7 +208,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
         type: 'ACTION',
         id: 'action_github',
         label: 'Sign in with GitHub',
-        variant: 'SOCIAL',
+        variant: 'OUTLINED',
         eventType: 'TRIGGER',
         startIcon: {icon: 'github'},
       });

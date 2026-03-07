@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
+import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {TextField} from '@wso2/oxygen-ui';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
-import useResolveI18n from '@/features/flows/hooks/useResolveI18n';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../../hint';
+import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
 
 const INPUT_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -94,7 +94,11 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
   useRequiredFields(resource, generalMessage, validationFields);
 
   const inputElement = resource as InputElement;
-  const resolvedPlaceholder = useResolveI18n(inputElement?.placeholder);
+
+  const rawLabel = inputElement?.label ?? '';
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
+    ? <TemplatePlaceholder value={rawLabel} t={t} />
+    : (resolve(rawLabel, {t}) ?? rawLabel);
 
   return (
     <TextField
@@ -106,9 +110,9 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
         maxLength: inputElement?.maxLength,
         minLength: inputElement?.minLength,
       }}
-      label={resolve(inputElement?.label, {t}) ?? inputElement?.label ?? ''}
+      label={labelNode}
       multiline={inputElement?.multiline}
-      placeholder={resolvedPlaceholder}
+      placeholder={resolve(inputElement?.placeholder, {t}) ?? inputElement?.placeholder ?? ''}
       required={inputElement?.required}
       InputLabelProps={{
         required: inputElement?.required,

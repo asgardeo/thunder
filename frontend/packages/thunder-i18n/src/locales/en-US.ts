@@ -1508,6 +1508,7 @@ const translations = {
 
     // Placeholders
     'core.placeholders.image': 'No image source',
+    'core.placeholders.image.dynamicSrc': 'Resolved at runtime',
 
     // Validation messages - rich text
     'core.validation.fields.richText.general':

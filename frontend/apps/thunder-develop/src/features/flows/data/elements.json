@@ -213,11 +213,11 @@
         "resourceType": "ELEMENT",
         "category": "ACTION",
         "type": "ACTION",
-        "variant": "SOCIAL",
+        "variant": "OUTLINED",
         "eventType": "TRIGGER",
-        "label": "Social Button",
+        "label": "Outlined Button",
         "display": {
-          "label": "Social Button",
+          "label": "Outlined Button",
           "image": "assets/images/icons/button.svg"
         }
       }
@@ -378,5 +378,33 @@
     },
     "src": "",
     "alt": ""
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "BLOCK",
+    "type": "STACK",
+    "display": {
+      "label": "Stack",
+      "image": "StretchHorizontal",
+      "showOnResourcePanel": true
+    },
+    "items": 1,
+    "direction": "row",
+    "gap": 2,
+    "align": "center",
+    "justify": "center"
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "ICON",
+    "display": {
+      "label": "Icon",
+      "image": "Star",
+      "showOnResourcePanel": true
+    },
+    "name": "User",
+    "size": 24,
+    "color": "currentColor"
   }
 ]

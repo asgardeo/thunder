@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useMemo, type ReactElement} from 'react';
+import {useMemo, type ReactElement, type ReactNode} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {Position} from '@xyflow/react';
@@ -27,6 +27,7 @@ import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants'
 import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import NodeHandle from './NodeHandle';
+import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
 
 const BUTTON_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -108,7 +109,7 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
 
   const {config, image} = useMemo(() => {
     let buttonProps: ButtonProps = {};
-    let buttonImage = '';
+    const buttonImage = '';
 
     if (resource.variant === ButtonVariants.Primary) {
       buttonProps = {
@@ -127,8 +128,7 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
         fullWidth: true,
         variant: 'text',
       };
-    } else if (resource.variant === ButtonVariants.Social) {
-      buttonImage = 'https://www.svgrepo.com/show/475656/google.svg';
+    } else if (resource.variant === ButtonVariants.Outlined) {
       buttonProps = {
         fullWidth: true,
         variant: 'outlined',
@@ -166,15 +166,17 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
     return undefined;
   }, [buttonElement?.endIcon]);
 
+  const rawLabel = buttonElement?.label ?? '';
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
+
   return (
     <div className="adapter button-adapter">
-      <Button
-        sx={buttonConfig?.styles}
-        startIcon={startIcon}
-        endIcon={endIcon}
-        {...config}
-      >
-        {resolve(buttonElement?.label, {t}) ?? buttonElement?.label ?? ''}
+      <Button sx={buttonConfig?.styles} startIcon={startIcon} endIcon={endIcon} {...config}>
+        {labelNode}
       </Button>
       <NodeHandle
         id={`${resource?.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`}

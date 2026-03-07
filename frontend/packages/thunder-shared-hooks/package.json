@@ -69,6 +69,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@thunder/utils": "workspace:^",
     "lucide-react": "catalog:",
     "tslib": "catalog:"
   },

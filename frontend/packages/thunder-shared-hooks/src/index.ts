@@ -16,12 +16,7 @@
  * under the License.
  */
 
-export {
-  default as useTemplateLiteralResolver,
-  TemplateLiteralType,
-  type TemplateLiteralResult,
-  type TemplateLiteralResolverResult,
-} from './useTemplateLiteralResolver';
+export {default as useTemplateLiteralResolver, type TemplateLiteralResolverResult} from './useTemplateLiteralResolver';
 
 export {
   default as useCopyToClipboard,

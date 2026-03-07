@@ -76,6 +76,7 @@ let mockColorSchemeSystemMode = 'light';
 
 // Mock @wso2/oxygen-ui
 vi.mock('@wso2/oxygen-ui', () => ({
+  Box: ({children, sx}: any) => <div style={sx}>{children}</div>,
   Button: ({children, onClick, startIcon, variant}: any) => (
     <button data-testid="save-button" onClick={onClick} data-variant={variant}>
       {startIcon}
@@ -324,14 +325,6 @@ describe('VisualFlow', () => {
       });
 
       expect(screen.getByTestId('save-button')).toBeInTheDocument();
-    });
-
-    it('should render save card container', () => {
-      render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(screen.getByTestId('save-card')).toBeInTheDocument();
     });
 
     it('should call onSave when save button is clicked', () => {

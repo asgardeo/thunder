@@ -17,7 +17,8 @@
  */
 
 import {useContext, useMemo} from 'react';
-import type {Theme} from '@wso2/oxygen-ui';
+import {type Theme} from '@wso2/oxygen-ui';
+import {isEmpty} from '@thunder/utils';
 import DesignContext, {DesignContextType} from './DesignContext';
 import oxygenUIThemeTransformer from '../../utils/oxygenUIThemeTransformer';
 
@@ -37,23 +38,25 @@ import oxygenUIThemeTransformer from '../../utils/oxygenUIThemeTransformer';
  */
 export default function useDesign(baseTheme?: Theme): DesignContextType {
   const context = useContext(DesignContext);
+
   if (context === undefined) {
     throw new Error('useDesign must be used within a DesignProvider');
   }
 
   // If a baseTheme is provided, override the transformedTheme
-  const overriddenTransformedTheme = useMemo(() => {
-    if (baseTheme && context.design?.theme) {
-      return oxygenUIThemeTransformer(baseTheme, context.design.theme);
+  const transformedTheme = useMemo(() => {
+    if (baseTheme && !isEmpty(context.design?.theme)) {
+      return oxygenUIThemeTransformer(baseTheme, context.design?.theme);
     }
+
     return undefined;
   }, [baseTheme, context.design?.theme]);
 
   return useMemo(
     () => ({
       ...context,
-      transformedTheme: overriddenTransformedTheme ?? context.transformedTheme,
+      theme: transformedTheme,
     }),
-    [context, overriddenTransformedTheme],
+    [context, transformedTheme],
   );
 }

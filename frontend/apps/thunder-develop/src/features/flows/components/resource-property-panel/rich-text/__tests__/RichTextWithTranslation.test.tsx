@@ -54,18 +54,20 @@ vi.mock('../RichText', () => ({
   ),
 }));
 
-// Mock I18nConfigurationCard
-vi.mock('../../I18nConfigurationCard', () => ({
-  default: ({open, onClose, onChange, i18nKey}: {
+// Mock DynamicValuePopover
+vi.mock('../../DynamicValuePopover', () => ({
+  default: ({open, onClose, onChange, value}: {
     open: boolean;
     onClose: () => void;
-    onChange: (key: string) => void;
-    i18nKey: string;
+    onChange: (value: string) => void;
+    value: string;
+    anchorEl: HTMLElement | null;
+    propertyKey: string;
   }) => (open ? (
-    <div data-testid="i18n-config-card" data-i18n-key={i18nKey}>
-      <button type="button" onClick={onClose} data-testid="close-i18n-card">Close</button>
-      <button type="button" onClick={() => onChange('test.key')} data-testid="change-i18n-key">Change Key</button>
-      <button type="button" onClick={() => onChange('')} data-testid="clear-i18n-key">Clear Key</button>
+    <div data-testid="dynamic-value-popover" data-value={value}>
+      <button type="button" onClick={onClose} data-testid="close-popover">Close</button>
+      <button type="button" onClick={() => onChange('new-test-value')} data-testid="change-value">Change Value</button>
+      <button type="button" onClick={() => onChange('')} data-testid="clear-value">Clear Value</button>
     </div>
   ) : null),
 }));
@@ -567,101 +569,86 @@ describe('TranslationRichText Component', () => {
     });
   });
 
-  describe('I18n Configuration Card Toggle', () => {
-    it('should open I18n configuration card when language button is clicked', () => {
+  describe('Dynamic Value Popover Toggle', () => {
+    it('should open dynamic value popover when configure button is clicked', () => {
       render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      // The language icon button
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // The I18nConfigurationCard should now be open
-      expect(screen.getByTestId('i18n-config-card')).toBeInTheDocument();
+      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
     });
 
-    it('should close I18n configuration card when close button is clicked', () => {
+    it('should close dynamic value popover when close button is clicked', () => {
       render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      // Open the card
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // Verify it's open
-      expect(screen.getByTestId('i18n-config-card')).toBeInTheDocument();
+      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
 
-      // Click close button
-      const closeButton = screen.getByTestId('close-i18n-card');
+      const closeButton = screen.getByTestId('close-popover');
       fireEvent.click(closeButton);
 
-      // The card should be closed
-      expect(screen.queryByTestId('i18n-config-card')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('dynamic-value-popover')).not.toBeInTheDocument();
     });
 
-    it('should toggle I18n configuration card on repeated button clicks', () => {
+    it('should toggle dynamic value popover on repeated button clicks', () => {
       render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
 
-      // Open
-      fireEvent.click(languageButton);
-      expect(screen.getByTestId('i18n-config-card')).toBeInTheDocument();
+      fireEvent.click(configureButton);
+      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
 
-      // Toggle closed via close button (since card is a popover)
-      const closeButton = screen.getByTestId('close-i18n-card');
+      const closeButton = screen.getByTestId('close-popover');
       fireEvent.click(closeButton);
-      expect(screen.queryByTestId('i18n-config-card')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('dynamic-value-popover')).not.toBeInTheDocument();
 
-      // Open again
-      fireEvent.click(languageButton);
-      expect(screen.getByTestId('i18n-config-card')).toBeInTheDocument();
+      fireEvent.click(configureButton);
+      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
     });
 
-    it('should pass i18n key from change handler and call onChange with formatted value', () => {
+    it('should call onChange when DynamicValuePopover onChange is triggered', () => {
       render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      // Open the card
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // Click the change key button in the mocked card
-      const changeKeyButton = screen.getByTestId('change-i18n-key');
-      fireEvent.click(changeKeyButton);
+      const changeButton = screen.getByTestId('change-value');
+      fireEvent.click(changeButton);
 
-      // Should call onChange with formatted i18n pattern
-      expect(mockOnChange).toHaveBeenCalledWith('{{t(test.key)}}');
+      expect(mockOnChange).toHaveBeenCalledWith('new-test-value');
     });
 
-    it('should pass empty string when i18n key is cleared from card', () => {
+    it('should call onChange with empty string when value is cleared from popover', () => {
       render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      // Open the card
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // Click the clear key button in the mocked card
-      const clearKeyButton = screen.getByTestId('clear-i18n-key');
-      fireEvent.click(clearKeyButton);
+      const clearButton = screen.getByTestId('clear-value');
+      fireEvent.click(clearButton);
 
-      // Should call onChange with empty string
       expect(mockOnChange).toHaveBeenCalledWith('');
     });
 
-    it('should extract and display correct i18n key when resource has t() pattern label', () => {
+    it('should pass resource label as value to DynamicValuePopover when label has t() pattern', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(flows.greeting.title)}}';
 
@@ -670,16 +657,14 @@ describe('TranslationRichText Component', () => {
         {wrapper: createWrapper()},
       );
 
-      // Open the card
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // The mocked I18nConfigurationCard should have the extracted key
-      const card = screen.getByTestId('i18n-config-card');
-      expect(card).toHaveAttribute('data-i18n-key', 'flows.greeting.title');
+      const popover = screen.getByTestId('dynamic-value-popover');
+      expect(popover).toHaveAttribute('data-value', '{{t(flows.greeting.title)}}');
     });
 
-    it('should pass empty i18n key when resource label is plain text', () => {
+    it('should pass plain text label to DynamicValuePopover', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Plain text content';
 
@@ -688,31 +673,26 @@ describe('TranslationRichText Component', () => {
         {wrapper: createWrapper()},
       );
 
-      // Open the card
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // The mocked I18nConfigurationCard should have empty key
-      const card = screen.getByTestId('i18n-config-card');
-      expect(card).toHaveAttribute('data-i18n-key', '');
+      const popover = screen.getByTestId('dynamic-value-popover');
+      expect(popover).toHaveAttribute('data-value', 'Plain text content');
     });
 
     it('should handle resource without label property', () => {
       const resource = createMockResource();
-      // Don't set label property
 
       render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      // Open the card
-      const languageButton = screen.getByRole('button', {name: /configureTranslation/i});
-      fireEvent.click(languageButton);
+      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      fireEvent.click(configureButton);
 
-      // The mocked I18nConfigurationCard should have empty key
-      const card = screen.getByTestId('i18n-config-card');
-      expect(card).toHaveAttribute('data-i18n-key', '');
+      const popover = screen.getByTestId('dynamic-value-popover');
+      expect(popover).toHaveAttribute('data-value', '');
     });
   });
 });

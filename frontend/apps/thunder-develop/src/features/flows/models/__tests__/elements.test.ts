@@ -75,8 +75,8 @@ describe('elements models', () => {
       expect(ElementTypes.Resend).toBe('RESEND');
     });
 
-    it('should have exactly 16 element types', () => {
-      expect(Object.keys(ElementTypes)).toHaveLength(16);
+    it('should have exactly 18 element types', () => {
+      expect(Object.keys(ElementTypes)).toHaveLength(18);
     });
   });
 
@@ -115,8 +115,8 @@ describe('elements models', () => {
       expect(ButtonVariants.Secondary).toBe('SECONDARY');
     });
 
-    it('should have Social variant', () => {
-      expect(ButtonVariants.Social).toBe('SOCIAL');
+    it('should have Outlined variant', () => {
+      expect(ButtonVariants.Outlined).toBe('OUTLINED');
     });
 
     it('should have Text variant', () => {

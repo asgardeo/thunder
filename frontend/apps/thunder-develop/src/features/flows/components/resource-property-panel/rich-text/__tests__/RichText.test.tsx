@@ -86,21 +86,6 @@ vi.mock('../helper-plugins/HTMLPlugin', () => ({
   ),
 }));
 
-// Mock i18n pattern utils
-vi.mock('@/features/flows/utils/i18nPatternUtils', () => ({
-  isI18nPattern: vi.fn((value: string | undefined) => {
-    if (!value) return false;
-    return /\{\{t\([^)]+\)\}\}/.test(value);
-  }),
-  resolveI18nValue: vi.fn((value: string | undefined, t: (key: string) => string) => {
-    if (!value) return '';
-    const match = /\{\{t\(([^)]+)\)\}\}/.exec(value);
-    if (match) {
-      return t(match[1]);
-    }
-    return value;
-  }),
-}));
 
 describe('RichText', () => {
   const mockOnChange = vi.fn();

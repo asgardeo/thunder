@@ -176,7 +176,12 @@ describe('resolveComponentMetadata', () => {
             variants: [
               createMockElement({
                 variant: 'PRIMARY',
-                display: {label: 'Primary Button', image: '', showOnResourcePanel: true, description: 'Primary variant'},
+                display: {
+                  label: 'Primary Button',
+                  image: '',
+                  showOnResourcePanel: true,
+                  description: 'Primary variant',
+                },
               }),
               createMockElement({
                 variant: 'SECONDARY',
@@ -205,7 +210,7 @@ describe('resolveComponentMetadata', () => {
         createMockElement({
           id: 'comp-1',
           type: 'ACTION',
-          variant: 'SOCIAL',
+          variant: 'OUTLINED',
         }),
       ];
 
@@ -213,12 +218,12 @@ describe('resolveComponentMetadata', () => {
         elements: [
           createMockElement({
             type: 'ACTION',
-            variant: 'SOCIAL',
+            variant: 'OUTLINED',
             display: {
-              label: 'Social Button',
-              image: '/images/social.svg',
+              label: 'Outlined Button',
+              image: '/images/outlined.svg',
               showOnResourcePanel: true,
-              description: 'Social login button',
+              description: 'Outlined button',
             },
           }),
           createMockElement({
@@ -236,7 +241,7 @@ describe('resolveComponentMetadata', () => {
       const result = resolveComponentMetadata(resources, components);
 
       // Metadata description is added
-      expect(result[0].display.description).toBe('Social login button');
+      expect(result[0].display.description).toBe('Outlined button');
     });
 
     it('should not merge when variant does not match', () => {
@@ -318,11 +323,21 @@ describe('resolveComponentMetadata', () => {
           }),
           createMockElement({
             type: 'TEXT_INPUT',
-            display: {label: 'Text Field', image: '/images/text.svg', showOnResourcePanel: true, description: 'Text input'},
+            display: {
+              label: 'Text Field',
+              image: '/images/text.svg',
+              showOnResourcePanel: true,
+              description: 'Text input',
+            },
           }),
           createMockElement({
             type: 'PASSWORD_INPUT',
-            display: {label: 'Password Field', image: '/images/password.svg', showOnResourcePanel: true, description: 'Password input'},
+            display: {
+              label: 'Password Field',
+              image: '/images/password.svg',
+              showOnResourcePanel: true,
+              description: 'Password input',
+            },
           }),
         ],
       });

@@ -29,12 +29,13 @@ import {
   Tooltip,
   Typography,
 } from '@wso2/oxygen-ui';
-import {Languages} from '@wso2/oxygen-ui-icons-react';
+import {SquareFunction} from '@wso2/oxygen-ui-icons-react';
 import startCase from 'lodash-es/startCase';
+import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Resource} from '../../models/resources';
-import I18nConfigurationCard from './I18nConfigurationCard';
-import {isI18nPattern as checkIsI18nPattern, extractI18nKey, resolveI18nValue} from '../../utils/i18nPatternUtils';
+import DynamicValuePopover from './DynamicValuePopover';
 
 /**
  * Props interface of {@link TextPropertyField}
@@ -79,33 +80,39 @@ function TextPropertyField({
   ...rest
 }: TextPropertyFieldPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const [isI18nCardOpen, setIsI18nCardOpen] = useState<boolean>(false);
+  const {resolve} = useTemplateLiteralResolver();
+  const [isDynamicValuePopoverOpen, setIsDynamicValuePopoverOpen] = useState<boolean>(false);
   const [localValue, setLocalValue] = useState<string>(propertyValue);
   const iconButtonRef = useRef<HTMLButtonElement>(null);
   const {selectedNotification} = useValidationStatus();
 
   /**
-   * Sync local state when propertyValue changes from external sources (e.g., i18n card).
+   * Sync local state when propertyValue changes from external sources.
    */
   useEffect(() => {
     setLocalValue(propertyValue);
   }, [propertyValue]);
 
   /**
-   * Check if the property value matches the i18n pattern.
+   * Check if the property value matches any dynamic value pattern (i18n or meta).
    */
-  const isI18nPattern: boolean = useMemo(() => checkIsI18nPattern(propertyValue), [propertyValue]);
+  const isDynamic: boolean = useMemo(
+    () => isI18nTemplatePattern(propertyValue) || isMetaTemplatePattern(propertyValue),
+    [propertyValue],
+  );
+
+  /**
+   * Check specifically for i18n pattern to resolve and display a preview.
+   */
+  const isI18nPattern: boolean = useMemo(() => isI18nTemplatePattern(propertyValue), [propertyValue]);
 
   /**
    * Resolve the i18n value if the pattern is detected.
    */
-  const resolvedI18nValue: string = useMemo(() => {
-    if (isI18nPattern) {
-      return resolveI18nValue(propertyValue, t);
-    }
-
-    return '';
-  }, [propertyValue, isI18nPattern, t]);
+  const resolvedI18nValue: string = useMemo(
+    () => (isI18nPattern ? resolve(propertyValue, {t}) ?? '' : ''),
+    [propertyValue, isI18nPattern, t, resolve],
+  );
 
   /**
    * Get the error message for the text property field.
@@ -121,17 +128,17 @@ function TextPropertyField({
   }, [propertyKey, resource?.id, selectedNotification]);
 
   /**
-   * Handles the toggle of the i18n configuration card.
+   * Handles the toggle of the dynamic value popover.
    */
-  const handleI18nToggle = () => {
-    setIsI18nCardOpen(!isI18nCardOpen);
+  const handleDynamicValueToggle = () => {
+    setIsDynamicValuePopoverOpen(!isDynamicValuePopoverOpen);
   };
 
   /**
-   * Handles the closing of the i18n configuration card.
+   * Handles the closing of the dynamic value popover.
    */
-  const handleI18nClose = () => {
-    setIsI18nCardOpen(false);
+  const handleDynamicValueClose = () => {
+    setIsDynamicValuePopoverOpen(false);
   };
 
   return (
@@ -148,7 +155,7 @@ function TextPropertyField({
           }}
           placeholder={t('flows:core.elements.textPropertyField.placeholder', {propertyName: startCase(propertyKey)})}
           sx={
-            isI18nPattern
+            isDynamic
               ? {
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
@@ -168,15 +175,15 @@ function TextPropertyField({
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureTranslation')}>
+                <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureDynamicValue')}>
                   <IconButton
                     ref={iconButtonRef}
-                    onClick={handleI18nToggle}
+                    onClick={handleDynamicValueToggle}
                     size="small"
                     edge="end"
-                    color={isI18nPattern ? 'primary' : 'default'}
+                    color={isDynamic ? 'primary' : 'default'}
                   >
-                    <Languages size={16} />
+                    <SquareFunction size={16} />
                   </IconButton>
                 </Tooltip>
               </InputAdornment>
@@ -205,13 +212,13 @@ function TextPropertyField({
           </Typography>
         </Box>
       )}
-      <I18nConfigurationCard
-        open={isI18nCardOpen}
+      <DynamicValuePopover
+        open={isDynamicValuePopoverOpen}
         anchorEl={iconButtonRef.current}
         propertyKey={propertyKey}
-        onClose={handleI18nClose}
-        i18nKey={extractI18nKey(propertyValue) ?? ''}
-        onChange={(i18nKey: string) => onChange(propertyKey, i18nKey ? `{{t(${i18nKey})}}` : '', resource)}
+        onClose={handleDynamicValueClose}
+        value={propertyValue}
+        onChange={(newValue: string) => onChange(propertyKey, newValue, resource)}
       />
     </Box>
   );

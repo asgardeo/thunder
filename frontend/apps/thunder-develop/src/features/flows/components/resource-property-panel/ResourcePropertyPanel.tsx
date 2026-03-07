@@ -17,10 +17,10 @@
  */
 
 import {memo, useCallback, useState, type HTMLAttributes, type ReactElement} from 'react';
-import {Box, Button, Drawer, IconButton, type DrawerProps} from '@wso2/oxygen-ui';
+import {Box, Button, IconButton, type DrawerProps} from '@wso2/oxygen-ui';
 import {useReactFlow} from '@xyflow/react';
-import classNames from 'classnames';
 import {X, TrashIcon} from '@wso2/oxygen-ui-icons-react';
+import BuilderFloatingPanel from '../../../../components/BuilderLayout/BuilderFloatingPanel';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import ResourceProperties from './ResourceProperties';
 import {ResourceTypes} from '../../models/resources';
@@ -44,7 +44,6 @@ function ResourcePropertyPanel({
   open,
   anchor = 'right',
   onComponentDelete,
-  className,
   ...rest
 }: ResourcePropertyPanelPropsInterface): ReactElement {
   const {deleteElements} = useReactFlow();
@@ -91,37 +90,7 @@ function ResourcePropertyPanel({
       {...rest}
     >
       {children}
-      <Drawer
-        open={open}
-        anchor={anchor}
-        onClose={handleClose}
-        elevation={5}
-        slotProps={{
-          paper: {
-            className: classNames('flow-builder-right-panel base', className),
-            style: {position: 'absolute'},
-          },
-          backdrop: {
-            style: {position: 'absolute'},
-          },
-        }}
-        ModalProps={{
-          container: containerEl,
-          keepMounted: true,
-          style: {pointerEvents: 'none'},
-        }}
-        sx={{
-          pointerEvents: 'none',
-          '& .MuiDrawer-paper': {
-            pointerEvents: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-          },
-        }}
-        hideBackdrop
-        className="flow-builder-right-panel"
-        variant="temporary"
-      >
+      <BuilderFloatingPanel open={open ?? false} onClose={handleClose} container={containerEl} anchor={anchor}>
         <Box display="flex" justifyContent="space-between" alignItems="center" paddingBottom={2} flexShrink={0}>
           {resourcePropertiesPanelHeading}
           <IconButton onClick={handleClose}>
@@ -164,7 +133,7 @@ function ResourcePropertyPanel({
             </Button>
           </Box>
         )}
-      </Drawer>
+      </BuilderFloatingPanel>
     </Box>
   );
 }

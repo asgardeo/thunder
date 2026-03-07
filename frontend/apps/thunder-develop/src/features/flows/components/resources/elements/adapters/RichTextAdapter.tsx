@@ -91,27 +91,25 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
 
   useRequiredFields(resource, generalMessage, validationFields);
 
-  const {resolve} = useTemplateLiteralResolver();
+  const {resolveAll} = useTemplateLiteralResolver();
 
   const richTextElement = resource as RichTextElement;
   const textContent = richTextElement?.label ?? '';
 
   const sanitizedHtml: string = useMemo(
     () =>
-      DOMPurify.sanitize(textContent, {
+      DOMPurify.sanitize(resolveAll(textContent, {t}) ?? textContent, {
         ADD_ATTR: ['target'],
         RETURN_TRUSTED_TYPE: false,
       }),
-    [textContent],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveAll is stable
+    [textContent, t],
   );
-
-  const resolvedKey = resolve(textContent);
-  const isTemplate = resolvedKey !== undefined && resolvedKey !== textContent;
 
   return (
     <div className="rich-text-content">
       {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- html-react-parser types issue */}
-      {isTemplate ? resolve(textContent, {t}) : parse(sanitizedHtml)}
+      {parse(sanitizedHtml)}
     </div>
   );
 }

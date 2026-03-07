@@ -93,11 +93,11 @@ describe('useDeleteUserType', () => {
   });
 
   it('should set pending state during deletion', async () => {
-    mockHttpRequest.mockReturnValue(
-      new Promise((resolve) => {
-        setTimeout(() => resolve(undefined), 100);
-      }),
-    );
+    let resolveRequest: (value: unknown) => void;
+    const requestPromise = new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+    mockHttpRequest.mockReturnValue(requestPromise);
 
     const {result} = renderHook(() => useDeleteUserType());
 
@@ -106,6 +106,8 @@ describe('useDeleteUserType', () => {
     await waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
+
+    resolveRequest!(undefined);
 
     await waitFor(() => {
       expect(result.current.isPending).toBe(false);
