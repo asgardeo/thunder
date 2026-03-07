@@ -136,7 +136,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}
 	exporters = append(exporters, resourceExporter)
-	roleService, roleExporter, err := role.Initialize(mux, userService, groupService, ouService, resourceService)
+	roleService, roleExporter, err := role.Initialize(
+		mux, userService, groupService, ouService, resourceService, userSchemaService,
+	)
 	if err != nil {
 		logger.Fatal("Failed to initialize RoleService", log.Error(err))
 	}

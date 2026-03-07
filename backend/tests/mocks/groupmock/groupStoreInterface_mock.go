@@ -839,6 +839,74 @@ func (_c *groupStoreInterfaceMock_GetGroupMembers_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// GetGroupsByIDs provides a mock function for the type groupStoreInterfaceMock
+func (_mock *groupStoreInterfaceMock) GetGroupsByIDs(ctx context.Context, groupIDs []string) ([]group.GroupBasicDAO, error) {
+	ret := _mock.Called(ctx, groupIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGroupsByIDs")
+	}
+
+	var r0 []group.GroupBasicDAO
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) ([]group.GroupBasicDAO, error)); ok {
+		return returnFunc(ctx, groupIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) []group.GroupBasicDAO); ok {
+		r0 = returnFunc(ctx, groupIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]group.GroupBasicDAO)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = returnFunc(ctx, groupIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// groupStoreInterfaceMock_GetGroupsByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGroupsByIDs'
+type groupStoreInterfaceMock_GetGroupsByIDs_Call struct {
+	*mock.Call
+}
+
+// GetGroupsByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupIDs []string
+func (_e *groupStoreInterfaceMock_Expecter) GetGroupsByIDs(ctx interface{}, groupIDs interface{}) *groupStoreInterfaceMock_GetGroupsByIDs_Call {
+	return &groupStoreInterfaceMock_GetGroupsByIDs_Call{Call: _e.mock.On("GetGroupsByIDs", ctx, groupIDs)}
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupsByIDs_Call) Run(run func(ctx context.Context, groupIDs []string)) *groupStoreInterfaceMock_GetGroupsByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupsByIDs_Call) Return(groupBasicDAOs []group.GroupBasicDAO, err error) *groupStoreInterfaceMock_GetGroupsByIDs_Call {
+	_c.Call.Return(groupBasicDAOs, err)
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupsByIDs_Call) RunAndReturn(run func(ctx context.Context, groupIDs []string) ([]group.GroupBasicDAO, error)) *groupStoreInterfaceMock_GetGroupsByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetGroupsByOrganizationUnit provides a mock function for the type groupStoreInterfaceMock
 func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnit(ctx context.Context, organizationUnitID string, limit int, offset int) ([]group.GroupBasicDAO, error) {
 	ret := _mock.Called(ctx, organizationUnitID, limit, offset)

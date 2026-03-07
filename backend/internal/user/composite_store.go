@@ -271,6 +271,26 @@ func (c *compositeUserStore) ValidateUserIDs(ctx context.Context, userIDs []stri
 	return invalidIDs, nil
 }
 
+// GetUsersByIDs retrieves users by a list of IDs from both stores.
+// Database users take precedence over file-based users for duplicate IDs.
+func (c *compositeUserStore) GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error) {
+	if len(userIDs) == 0 {
+		return []User{}, nil
+	}
+
+	dbUsers, err := c.dbStore.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	fileUsers, err := c.fileStore.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergeAndDeduplicateUsers(dbUsers, fileUsers), nil
+}
+
 // ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope
 // across both the database and file-based stores.
 // Returns user IDs that do not belong to any of the provided OUs in either store.

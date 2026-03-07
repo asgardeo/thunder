@@ -1073,7 +1073,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-1", "grp-2").
+					On("QueryContext", mock.Anything, queryMatcher(), "grp-1", "grp-2", testDeploymentID).
 					Return([]map[string]interface{}{{"id": "grp-1"}}, nil).
 					Once()
 			},
@@ -1092,7 +1092,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-miss", "", "grp-hit").
+					On("QueryContext", mock.Anything, queryMatcher(), "grp-miss", "", "grp-hit", testDeploymentID).
 					Return([]map[string]interface{}{{"id": "grp-hit"}}, nil).
 					Once()
 			},
@@ -1111,7 +1111,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-1").
+					On("QueryContext", mock.Anything, queryMatcher(), "grp-1", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -1693,6 +1693,113 @@ func (suite *GroupStoreTestSuite) TestGroupStore_BuildBulkGroupExistsQueryEmpty(
 	_, _, err := buildBulkGroupExistsQuery([]string{}, testDeploymentID)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "groupIDs list cannot be empty")
+}
+
+func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByIDs() {
+	t := suite.T()
+
+	queryMatcher := func() interface{} {
+		return mock.MatchedBy(func(q dbmodel.DBQuery) bool { return q.ID == "GRQ-GROUP_MGT-19" })
+	}
+
+	type testCase struct {
+		name      string
+		groupIDs  []string
+		setup     func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock)
+		wantCount int
+		wantErr   string
+	}
+
+	testCases := []testCase{
+		{
+			name:      "empty input returns empty slice",
+			groupIDs:  []string{},
+			wantCount: 0,
+		},
+		{
+			name:     "success with multiple groups",
+			groupIDs: []string{"grp-1", "grp-2"},
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything, queryMatcher(), "grp-1", "grp-2", testDeploymentID).
+					Return([]map[string]interface{}{
+						{"id": "grp-1", "ou_id": "ou-1", "name": "Group One", "description": "First group"},
+						{"id": "grp-2", "ou_id": "ou-1", "name": "Group Two", "description": "Second group"},
+					}, nil).Once()
+			},
+			wantCount: 2,
+		},
+		{
+			name:     "partial results - some IDs not found",
+			groupIDs: []string{"grp-1", "grp-missing"},
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On(
+					"QueryContext", mock.Anything, queryMatcher(), "grp-1", "grp-missing", testDeploymentID,
+				).
+					Return([]map[string]interface{}{
+						{"id": "grp-1", "ou_id": "ou-1", "name": "Group One", "description": "First group"},
+					}, nil).Once()
+			},
+			wantCount: 1,
+		},
+		{
+			name:     "query error",
+			groupIDs: []string{"grp-1"},
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(dbClientMock, nil).Once()
+				dbClientMock.On("QueryContext", mock.Anything, queryMatcher(), "grp-1", testDeploymentID).
+					Return(nil, errors.New("query fail")).Once()
+			},
+			wantErr: "failed to execute query",
+		},
+		{
+			name:     "db client error",
+			groupIDs: []string{"grp-1"},
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				_ *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.On("GetUserDBClient").Return(nil, errors.New("client fail")).Once()
+			},
+			wantErr: "failed to get database client",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			providerMock := providermock.NewDBProviderInterfaceMock(t)
+			dbClientMock := providermock.NewDBClientInterfaceMock(t)
+
+			if tc.setup != nil {
+				tc.setup(providerMock, dbClientMock)
+			}
+
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
+			groups, err := store.GetGroupsByIDs(context.Background(), tc.groupIDs)
+
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.wantErr)
+				require.Nil(t, groups)
+			} else {
+				require.NoError(t, err)
+				require.Len(t, groups, tc.wantCount)
+			}
+
+			providerMock.AssertExpectations(t)
+			dbClientMock.AssertExpectations(t)
+		})
+	}
 }
 
 func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError() {

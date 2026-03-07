@@ -631,6 +631,76 @@ func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// GetUsersByIDs provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetUsersByIDs(ctx context.Context, userIDs []string) (map[string]*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUsersByIDs")
+	}
+
+	var r0 map[string]*user.User
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) (map[string]*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) map[string]*user.User); ok {
+		r0 = returnFunc(ctx, userIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]*user.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userIDs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_GetUsersByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUsersByIDs'
+type UserServiceInterfaceMock_GetUsersByIDs_Call struct {
+	*mock.Call
+}
+
+// GetUsersByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIDs []string
+func (_e *UserServiceInterfaceMock_Expecter) GetUsersByIDs(ctx interface{}, userIDs interface{}) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	return &UserServiceInterfaceMock_GetUsersByIDs_Call{Call: _e.mock.On("GetUsersByIDs", ctx, userIDs)}
+}
+
+func (_c *UserServiceInterfaceMock_GetUsersByIDs_Call) Run(run func(ctx context.Context, userIDs []string)) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUsersByIDs_Call) Return(stringToUser map[string]*user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	_c.Call.Return(stringToUser, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUsersByIDs_Call) RunAndReturn(run func(ctx context.Context, userIDs []string) (map[string]*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUsersByPath provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) GetUsersByPath(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, handlePath, limit, offset, filters)

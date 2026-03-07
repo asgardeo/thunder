@@ -34,6 +34,7 @@ import (
 )
 
 const testDeploymentID = "test-deployment-id"
+const getUsersByIDsQueryID = "ASQ-USER_MGT-22"
 
 // MockDBClient is a mock implementation of provider.DBClientInterface
 type MockDBClient struct {
@@ -805,4 +806,72 @@ func (suite *UserStoreTestSuite) TestUpdateUser_DBError() {
 
 	err := suite.store.UpdateUser(context.Background(), &User{ID: "u1"})
 	suite.Error(err)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_EmptyInput() {
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{})
+	suite.NoError(err)
+	suite.Empty(users)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_Success() {
+	rows := []map[string]interface{}{
+		{"id": "user-1", "ou_id": "ou-1", "type": "person", "attributes": `{"username":"alice"}`},
+		{"id": "user-2", "ou_id": "ou-1", "type": "person", "attributes": `{"username":"bob"}`},
+	}
+
+	queryID := getUsersByIDsQueryID
+	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(q dbmodel.DBQuery) bool {
+		return q.ID == queryID
+	}), mock.Anything, mock.Anything, mock.Anything).
+		Return(rows, nil)
+
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{"user-1", "user-2"})
+	suite.NoError(err)
+	suite.Len(users, 2)
+	suite.Equal("user-1", users[0].ID)
+	suite.Equal("user-2", users[1].ID)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_PartialResults() {
+	rows := []map[string]interface{}{
+		{"id": "user-1", "ou_id": "ou-1", "type": "person", "attributes": `{"username":"alice"}`},
+	}
+
+	queryID := getUsersByIDsQueryID
+	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(q dbmodel.DBQuery) bool {
+		return q.ID == queryID
+	}), mock.Anything, mock.Anything, mock.Anything).
+		Return(rows, nil)
+
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{"user-1", "user-missing"})
+	suite.NoError(err)
+	suite.Len(users, 1)
+	suite.Equal("user-1", users[0].ID)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_QueryError() {
+	queryID := getUsersByIDsQueryID
+	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(q dbmodel.DBQuery) bool {
+		return q.ID == queryID
+	}), mock.Anything, mock.Anything).
+		Return(nil, errors.New("query failed"))
+
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{"user-1"})
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to execute query")
+	suite.Nil(users)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_DBClientError() {
+	store := &userStore{
+		deploymentID: testDeploymentID,
+		dbProvider:   &errorUserDBProvider{},
+	}
+
+	users, err := store.GetUsersByIDs(context.Background(), []string{"user-1"})
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to get database client")
+	suite.Nil(users)
 }

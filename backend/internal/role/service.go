@@ -21,8 +21,10 @@ package role
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
@@ -33,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 const loggerComponentName = "RoleMgtService"
@@ -58,12 +61,13 @@ type RoleServiceInterface interface {
 
 // roleService is the default implementation of the RoleServiceInterface.
 type roleService struct {
-	roleStore       roleStoreInterface
-	userService     user.UserServiceInterface
-	groupService    group.GroupServiceInterface
-	ouService       oupkg.OrganizationUnitServiceInterface
-	resourceService resourcepkg.ResourceServiceInterface
-	transactioner   transaction.Transactioner
+	roleStore         roleStoreInterface
+	userService       user.UserServiceInterface
+	groupService      group.GroupServiceInterface
+	ouService         oupkg.OrganizationUnitServiceInterface
+	resourceService   resourcepkg.ResourceServiceInterface
+	userSchemaService userschema.UserSchemaServiceInterface
+	transactioner     transaction.Transactioner
 }
 
 // newRoleService creates a new instance of RoleService with injected dependencies.
@@ -73,15 +77,17 @@ func newRoleService(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
 	transactioner transaction.Transactioner,
 ) RoleServiceInterface {
 	return &roleService{
-		roleStore:       roleStore,
-		userService:     userService,
-		groupService:    groupService,
-		ouService:       ouService,
-		resourceService: resourceService,
-		transactioner:   transactioner,
+		roleStore:         roleStore,
+		userService:       userService,
+		groupService:      groupService,
+		ouService:         ouService,
+		resourceService:   resourceService,
+		userSchemaService: userSchemaService,
+		transactioner:     transactioner,
 	}
 }
 
@@ -385,23 +391,13 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 	// Convert to service layer assignments
 	serviceAssignments := make([]RoleAssignmentWithDisplay, len(assignments))
 
-	for i := range assignments {
-		// Populate display names if requested
-		displayName := ""
-		if includeDisplay {
-			displayName, err = rs.getDisplayNameForAssignment(ctx, &assignments[i])
-			if err != nil {
-				logger.Warn("Failed to get display name for assignment",
-					log.String("assignmentID", assignments[i].ID),
-					log.String("assignmentType", string(assignments[i].Type)),
-					log.Error(err))
-				// Continue with empty display name rather than failing the entire request
-				displayName = ""
-			}
+	if includeDisplay {
+		rs.populateDisplayNames(ctx, assignments, serviceAssignments, logger)
+	} else {
+		for i := range assignments {
+			serviceAssignments[i].ID = assignments[i].ID
+			serviceAssignments[i].Type = assignments[i].Type
 		}
-		serviceAssignments[i].ID = assignments[i].ID
-		serviceAssignments[i].Type = assignments[i].Type
-		serviceAssignments[i].Display = displayName
 	}
 	baseURL := fmt.Sprintf("/roles/%s/assignments", id)
 	links := buildPaginationLinks(baseURL, limit, offset, totalCount)
@@ -711,28 +707,146 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 	return links
 }
 
-// getDisplayNameForAssignment retrieves the display name for a user or group assignment.
-func (rs *roleService) getDisplayNameForAssignment(ctx context.Context, assignment *RoleAssignment) (string, error) {
-	switch assignment.Type {
-	case AssigneeTypeUser:
-		userResp, svcErr := rs.userService.GetUser(ctx, assignment.ID)
-		if svcErr != nil {
-			return "", fmt.Errorf("failed to get user: %w", errors.New(svcErr.Error))
+// populateDisplayNames batch-fetches display names for all assignments using GetUsersByIDs/GetGroupsByIDs.
+func (rs *roleService) populateDisplayNames(
+	ctx context.Context, assignments []RoleAssignment,
+	serviceAssignments []RoleAssignmentWithDisplay, logger *log.Logger,
+) {
+	// Collect IDs by type
+	var userIDs, groupIDs []string
+	for _, a := range assignments {
+		switch a.Type {
+		case AssigneeTypeUser:
+			userIDs = append(userIDs, a.ID)
+		case AssigneeTypeGroup:
+			groupIDs = append(groupIDs, a.ID)
 		}
-		// Return user ID as display name (since User doesn't have a username field)
-		return userResp.ID, nil
-
-	case AssigneeTypeGroup:
-		groupResp, svcErr := rs.groupService.GetGroup(ctx, assignment.ID)
-		if svcErr != nil {
-			return "", fmt.Errorf("failed to get group: %w", errors.New(svcErr.Error))
-		}
-		// Return group name as display name
-		return groupResp.Name, nil
-
-	default:
-		return "", fmt.Errorf("unknown assignment type: %s", assignment.Type)
 	}
+
+	// Batch fetch users and groups
+	var usersMap map[string]*user.User
+	var groupsMap map[string]*group.Group
+
+	if len(userIDs) > 0 {
+		users, svcErr := rs.userService.GetUsersByIDs(ctx, userIDs)
+		if svcErr != nil {
+			logger.Warn("Failed to batch fetch users for display names", log.Any("error", svcErr))
+		} else {
+			usersMap = users
+		}
+	}
+
+	if len(groupIDs) > 0 {
+		groups, svcErr := rs.groupService.GetGroupsByIDs(ctx, groupIDs)
+		if svcErr != nil {
+			logger.Warn("Failed to batch fetch groups for display names", log.Any("error", svcErr))
+		} else {
+			groupsMap = groups
+		}
+	}
+
+	// Resolve display attribute paths for user types
+	displayAttrPaths := rs.resolveDisplayAttributePaths(ctx, usersMap, logger)
+
+	// Map lookup for each assignment (O(1) per assignment)
+	for i := range assignments {
+		serviceAssignments[i].ID = assignments[i].ID
+		serviceAssignments[i].Type = assignments[i].Type
+
+		switch assignments[i].Type {
+		case AssigneeTypeUser:
+			if usersMap != nil {
+				if u, ok := usersMap[assignments[i].ID]; ok {
+					serviceAssignments[i].Display = resolveUserDisplay(u, displayAttrPaths)
+				}
+			}
+		case AssigneeTypeGroup:
+			if groupsMap != nil {
+				if g, ok := groupsMap[assignments[i].ID]; ok {
+					serviceAssignments[i].Display = g.Name
+				}
+			}
+		}
+	}
+}
+
+// resolveDisplayAttributePaths fetches display attribute paths for all unique user types in the map.
+func (rs *roleService) resolveDisplayAttributePaths(
+	ctx context.Context, usersMap map[string]*user.User, logger *log.Logger,
+) map[string]string {
+	if rs.userSchemaService == nil || len(usersMap) == 0 {
+		return nil
+	}
+
+	uniqueTypes := make(map[string]struct{})
+	for _, u := range usersMap {
+		if u.Type != "" {
+			uniqueTypes[u.Type] = struct{}{}
+		}
+	}
+
+	if len(uniqueTypes) == 0 {
+		return nil
+	}
+
+	typeNames := make([]string, 0, len(uniqueTypes))
+	for t := range uniqueTypes {
+		typeNames = append(typeNames, t)
+	}
+
+	displayPaths, svcErr := rs.userSchemaService.GetDisplayAttributesByNames(ctx, typeNames)
+	if svcErr != nil {
+		logger.Warn("Failed to get display attribute paths", log.Any("error", svcErr))
+		return nil
+	}
+
+	return displayPaths
+}
+
+// resolveUserDisplay extracts the display value from user attributes using the schema-configured path.
+// Falls back to user ID if no display attribute is configured or extraction fails.
+func resolveUserDisplay(u *user.User, displayAttrPaths map[string]string) string {
+	if displayAttrPaths != nil && u.Type != "" {
+		if path, ok := displayAttrPaths[u.Type]; ok && path != "" {
+			if val := extractDisplayValue(u.Attributes, path); val != "" {
+				return val
+			}
+		}
+	}
+
+	return u.ID
+}
+
+// extractDisplayValue extracts a string value from JSON attributes using a dot-notation path.
+func extractDisplayValue(attributes json.RawMessage, path string) string {
+	if len(attributes) == 0 || path == "" {
+		return ""
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(attributes, &data); err != nil {
+		return ""
+	}
+
+	parts := strings.Split(path, ".")
+	var current interface{} = data
+
+	for _, part := range parts {
+		m, ok := current.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+		current = m[part]
+		if current == nil {
+			return ""
+		}
+	}
+
+	if s, ok := current.(string); ok {
+		return s
+	}
+
+	return fmt.Sprintf("%v", current)
 }
 
 // validatePermissions validates that all permissions exist in the resource management system.

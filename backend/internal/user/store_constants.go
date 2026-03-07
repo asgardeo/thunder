@@ -242,36 +242,48 @@ func buildIdentifyQuery(filters map[string]interface{}, deploymentID string) (mo
 	return filterQuery, args, nil
 }
 
-// buildBulkUserExistsQuery constructs a query to check which user IDs exist from a list.
-func buildBulkUserExistsQuery(userIDs []string, deploymentID string) (model.DBQuery, []interface{}, error) {
+// buildUserINClauseQuery constructs a query with an IN clause for user IDs.
+// The base query must use %s placeholders in the order: IN clause first, DEPLOYMENT_ID second.
+func buildUserINClauseQuery(
+	queryID, baseQuery string, userIDs []string, deploymentID string,
+) (model.DBQuery, []interface{}, error) {
 	if len(userIDs) == 0 {
 		return model.DBQuery{}, nil, fmt.Errorf("userIDs list cannot be empty")
 	}
-	// Build placeholders for IN clause
+
 	args := make([]interface{}, len(userIDs)+1)
-	args[0] = deploymentID // DEPLOYMENT_ID will be filled by caller
 
 	postgresPlaceholders := make([]string, len(userIDs))
 	sqlitePlaceholders := make([]string, len(userIDs))
 
 	for i, userID := range userIDs {
-		postgresPlaceholders[i] = fmt.Sprintf("$%d", i+2)
+		postgresPlaceholders[i] = fmt.Sprintf("$%d", i+1)
 		sqlitePlaceholders[i] = "?"
-		args[i+1] = userID
+		args[i] = userID
 	}
+	args[len(userIDs)] = deploymentID
 
-	baseQuery := "SELECT ID FROM \"USER\" WHERE DEPLOYMENT_ID = %s AND ID IN (%s)"
-	postgresQuery := fmt.Sprintf(baseQuery, "$1", strings.Join(postgresPlaceholders, ","))
-	sqliteQuery := fmt.Sprintf(baseQuery, "?", strings.Join(sqlitePlaceholders, ","))
+	deploymentPlaceholder := fmt.Sprintf("$%d", len(userIDs)+1)
+	postgresQuery := fmt.Sprintf(baseQuery, strings.Join(postgresPlaceholders, ","), deploymentPlaceholder)
+	sqliteQuery := fmt.Sprintf(baseQuery, strings.Join(sqlitePlaceholders, ","), "?")
 
 	query := model.DBQuery{
-		ID:            "ASQ-USER_MGT-09",
+		ID:            queryID,
 		Query:         postgresQuery,
 		PostgresQuery: postgresQuery,
 		SQLiteQuery:   sqliteQuery,
 	}
 
 	return query, args, nil
+}
+
+// buildBulkUserExistsQuery constructs a query to check which user IDs exist from a list.
+func buildBulkUserExistsQuery(userIDs []string, deploymentID string) (model.DBQuery, []interface{}, error) {
+	return buildUserINClauseQuery(
+		"ASQ-USER_MGT-09",
+		"SELECT ID FROM \"USER\" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		userIDs, deploymentID,
+	)
 }
 
 // buildBulkUserExistsQueryInOUs constructs a query that returns which of the provided user IDs
@@ -544,4 +556,13 @@ func buildIdentifyQueryHybrid(
 	}
 
 	return query, args, nil
+}
+
+// buildGetUsersByIDsQuery constructs a query to fetch users by a list of IDs.
+func buildGetUsersByIDsQuery(userIDs []string, deploymentID string) (model.DBQuery, []interface{}, error) {
+	return buildUserINClauseQuery(
+		"ASQ-USER_MGT-22",
+		"SELECT ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		userIDs, deploymentID,
+	)
 }
