@@ -47,13 +47,27 @@ export interface TemplateLiteralResult {
 }
 
 /**
+ * Map of handler functions keyed by TemplateLiteralType.
+ * When provided to resolve(), the matching handler is called with the extracted key.
+ *
+ * Since TemplateLiteralType.TRANSLATION = 't', you can pass `{ t }` directly from useTranslation().
+ *
+ * @example
+ * ```typescript
+ * const { t } = useTranslation();
+ * resolve('{{ t(signin:heading) }}', { t }); // calls t('signin:heading')
+ * ```
+ */
+export type TemplateLiteralHandlers = Partial<Record<TemplateLiteralType, (key: string) => string>>;
+
+/**
  * Return type for useTemplateLiteralResolver hook
  *
  * @interface TemplateLiteralResolverResult
  */
 export interface TemplateLiteralResolverResult {
-  /** Function to resolve template literals and extract keys */
-  resolve: (value?: string) => string | undefined;
+  /** Function to resolve template literals. If handlers are provided, calls the matching handler with the extracted key. */
+  resolve: (value?: string, handlers?: TemplateLiteralHandlers) => string | undefined;
 }
 
 /**
@@ -132,7 +146,7 @@ function parseTemplateLiteral(content: string): TemplateLiteralResult {
 export default function useTemplateLiteralResolver(): TemplateLiteralResolverResult {
   const resolve = useMemo(
     () =>
-      (value?: string): string | undefined => {
+      (value?: string, handlers?: TemplateLiteralHandlers): string | undefined => {
         if (!value || typeof value !== 'string') {
           return undefined;
         }
@@ -146,6 +160,10 @@ export default function useTemplateLiteralResolver(): TemplateLiteralResolverRes
         }
 
         const parsed: TemplateLiteralResult = parseTemplateLiteral(match[1].trim());
+
+        if (parsed.key && handlers?.[parsed.type]) {
+          return handlers[parsed.type]!(parsed.key);
+        }
 
         return parsed.key ?? value;
       },

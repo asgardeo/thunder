@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {TypographyVariants, ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
 import TypographyAdapter from '../TypographyAdapter';
@@ -75,12 +75,12 @@ describe('TypographyAdapter', () => {
       expect(container.querySelector('.MuiTypography-root')).toBeInTheDocument();
     });
 
-    it('should render label via PlaceholderComponent', () => {
+    it('should render label text', () => {
       const resource = createMockElement({label: 'Test Label'});
 
-      render(<TypographyAdapter resource={resource} stepId="step-1" />);
+      const {container} = render(<TypographyAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('Test Label');
+      expect(container.querySelector('.MuiTypography-root')).toHaveTextContent('Test Label');
     });
   });
 
@@ -159,9 +159,9 @@ describe('TypographyAdapter', () => {
         },
       });
 
-      render(<TypographyAdapter resource={resource} stepId="step-1" />);
+      const {container} = render(<TypographyAdapter resource={resource} stepId="step-1" />);
 
-      const typography = screen.getByTestId('placeholder').parentElement;
+      const typography = container.querySelector('.MuiTypography-root');
       // Color can be normalized to RGB format
       expect(typography).toHaveStyle({color: 'rgb(255, 0, 0)'});
     });
@@ -171,17 +171,17 @@ describe('TypographyAdapter', () => {
     it('should handle empty label', () => {
       const resource = createMockElement({label: ''});
 
-      render(<TypographyAdapter resource={resource} stepId="step-1" />);
+      const {container} = render(<TypographyAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(container.querySelector('.MuiTypography-root')).toHaveTextContent('');
     });
 
     it('should handle undefined label', () => {
       const resource = createMockElement({label: undefined});
 
-      render(<TypographyAdapter resource={resource} stepId="step-1" />);
+      const {container} = render(<TypographyAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(container.querySelector('.MuiTypography-root')).toHaveTextContent('');
     });
   });
 

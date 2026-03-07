@@ -27,8 +27,17 @@ vi.mock('react-dom/client', () => ({
   createRoot: mockCreateRoot,
 }));
 
-// Mock AppWithConfig
-vi.mock('../AppWithConfig', () => ({
+// Mock HOC wrappers as pass-through functions
+vi.mock('../hocs/withConfig', () => ({
+  default: (Component: React.ComponentType) => Component,
+}));
+vi.mock('../hocs/withI18n', () => ({
+  default: (Component: React.ComponentType) => Component,
+}));
+vi.mock('../hocs/withTheme', () => ({
+  default: (Component: React.ComponentType) => Component,
+}));
+vi.mock('../App', () => ({
   default: () => <div>App</div>,
 }));
 

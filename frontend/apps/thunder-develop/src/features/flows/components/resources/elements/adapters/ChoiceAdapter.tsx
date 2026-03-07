@@ -17,10 +17,11 @@
  */
 
 import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import type {FieldOption} from '@/features/flows/models/base';
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@wso2/oxygen-ui';
-import PlaceholderComponent from './PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../hint';
 
 /**
@@ -50,12 +51,14 @@ export interface ChoiceAdapterPropsInterface {
  * @returns The ChoiceAdapter component.
  */
 function ChoiceAdapter({resource}: ChoiceAdapterPropsInterface): ReactElement {
+  const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
   const choiceElement = resource as ChoiceElement;
 
   return (
     <FormControl sx={{my: 2}}>
       <FormLabel id={choiceElement?.id}>
-        <PlaceholderComponent value={choiceElement?.label ?? ''} />
+        {resolve(choiceElement?.label, {t}) ?? choiceElement?.label ?? ''}
       </FormLabel>
       <RadioGroup defaultValue={choiceElement?.defaultValue}>
         {choiceElement?.options?.map((option: FieldOption) => (
@@ -63,7 +66,7 @@ function ChoiceAdapter({resource}: ChoiceAdapterPropsInterface): ReactElement {
             key={option?.key}
             value={option?.value}
             control={<Radio />}
-            label={<PlaceholderComponent value={option?.label ?? ''} />}
+            label={resolve(option?.label, {t}) ?? option?.label ?? ''}
           />
         ))}
       </RadioGroup>

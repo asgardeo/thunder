@@ -30,6 +30,8 @@ const (
 	RequestParamGrantType           string = "grant_type"
 	RequestParamClientID            string = "client_id"
 	RequestParamClientSecret        string = "client_secret"
+	RequestParamClientAssertion     string = "client_assertion"
+	RequestParamClientAssertionType string = "client_assertion_type"
 	RequestParamRedirectURI         string = "redirect_uri"
 	RequestParamUsername            string = "username"
 	RequestParamPassword            string = "password"
@@ -55,7 +57,21 @@ const (
 	RequestParamClaims              string = "claims"
 	RequestParamClaimsLocales       string = "claims_locales"
 	RequestParamNonce               string = "nonce"
+	RequestParamPrompt              string = "prompt"
 )
+
+// OIDC prompt parameter values.
+const (
+	PromptNone          string = "none"
+	PromptLogin         string = "login"
+	PromptConsent       string = "consent"
+	PromptSelectAccount string = "select_account"
+)
+
+// ValidPromptValues contains all valid OIDC prompt parameter values.
+var ValidPromptValues = []string{
+	PromptNone, PromptLogin, PromptConsent, PromptSelectAccount,
+}
 
 // OAuth2 request parameter validation limits.
 const (
@@ -156,6 +172,9 @@ const (
 	TokenEndpointAuthMethodClientSecretBasic TokenEndpointAuthMethod = "client_secret_basic"
 	// TokenEndpointAuthMethodClientSecretPost represents the client secret post authentication method.
 	TokenEndpointAuthMethodClientSecretPost TokenEndpointAuthMethod = "client_secret_post"
+	// TokenEndpointAuthMethodPrivateKeyJWT represents the private key JWT authentication method.
+	// #nosec G101 - This is not a hardcoded credential, but a constant representing an authentication method.
+	TokenEndpointAuthMethodPrivateKeyJWT TokenEndpointAuthMethod = "private_key_jwt"
 	// TokenEndpointAuthMethodNone represents no authentication method.
 	TokenEndpointAuthMethodNone TokenEndpointAuthMethod = "none"
 )
@@ -165,6 +184,7 @@ const (
 var supportedTokenEndpointAuthMethods = []TokenEndpointAuthMethod{
 	TokenEndpointAuthMethodClientSecretBasic,
 	TokenEndpointAuthMethodClientSecretPost,
+	TokenEndpointAuthMethodPrivateKeyJWT,
 	TokenEndpointAuthMethodNone,
 }
 
@@ -218,16 +238,19 @@ func (tti TokenTypeIdentifier) IsValid() bool {
 
 // OAuth2 error codes.
 const (
-	ErrorInvalidRequest          string = "invalid_request"
-	ErrorInvalidClient           string = "invalid_client"
-	ErrorInvalidGrant            string = "invalid_grant"
-	ErrorUnauthorizedClient      string = "unauthorized_client"
-	ErrorUnsupportedGrantType    string = "unsupported_grant_type"
-	ErrorInvalidScope            string = "invalid_scope"
-	ErrorInvalidTarget           string = "invalid_target"
-	ErrorServerError             string = "server_error"
-	ErrorUnsupportedResponseType string = "unsupported_response_type"
-	ErrorAccessDenied            string = "access_denied"
+	ErrorInvalidRequest           string = "invalid_request"
+	ErrorInvalidClient            string = "invalid_client"
+	ErrorInvalidGrant             string = "invalid_grant"
+	ErrorUnauthorizedClient       string = "unauthorized_client"
+	ErrorUnsupportedGrantType     string = "unsupported_grant_type"
+	ErrorInvalidScope             string = "invalid_scope"
+	ErrorInvalidTarget            string = "invalid_target"
+	ErrorServerError              string = "server_error"
+	ErrorUnsupportedResponseType  string = "unsupported_response_type"
+	ErrorAccessDenied             string = "access_denied"
+	ErrorLoginRequired            string = "login_required"
+	ErrorConsentRequired          string = "consent_required"
+	ErrorAccountSelectionRequired string = "account_selection_required"
 )
 
 // UnSupportedGrantTypeError is returned when an unsupported grant type is requested.
@@ -307,6 +330,11 @@ const (
 // Standard OIDC scope names.
 const (
 	ScopeOpenID = "openid"
+)
+
+const (
+	// SupportedClientAssertionType is the constant for supported client assertion type.
+	SupportedClientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 )
 
 // GetSupportedResponseTypes returns all supported OAuth2 response types.

@@ -29,6 +29,10 @@ import {useTranslation} from 'react-i18next';
 export interface TranslationJsonEditorProps {
   /** Current merged values (server + local edits). */
   values: Record<string, string>;
+  /** Keys from the server — used to block adding new keys in non-custom namespaces. */
+  serverKeys: string[];
+  /** Whether the active namespace is "custom", which allows adding new keys. */
+  isCustomNamespace: boolean;
   /** Current color mode used to apply the Monaco editor theme. */
   colorMode: 'light' | 'dark';
   /**
@@ -72,7 +76,13 @@ export interface TranslationJsonEditorProps {
  *
  * @public
  */
-export default function TranslationJsonEditor({values, colorMode, onChange}: TranslationJsonEditorProps): JSX.Element {
+export default function TranslationJsonEditor({
+  values,
+  serverKeys,
+  isCustomNamespace,
+  colorMode,
+  onChange,
+}: TranslationJsonEditorProps): JSX.Element {
   const {t} = useTranslation('translations');
 
   const [jsonText, setJsonText] = useState(() => JSON.stringify(values, null, 2));
@@ -102,9 +112,14 @@ export default function TranslationJsonEditor({values, colorMode, onChange}: Tra
         const parsed = JSON.parse(text) as unknown;
         if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
           const record = parsed as Record<string, unknown>;
-          const stringRecord: Record<string, string> = Object.fromEntries(
+          let stringRecord: Record<string, string> = Object.fromEntries(
             Object.entries(record).filter(([, v]) => typeof v === 'string') as [string, string][],
           );
+          // In non-custom namespaces, strip any keys that don't already exist on the server
+          if (!isCustomNamespace) {
+            const allowed = new Set(serverKeys);
+            stringRecord = Object.fromEntries(Object.entries(stringRecord).filter(([k]) => allowed.has(k)));
+          }
           setJsonError(false);
           onChange(stringRecord);
         } else {
@@ -117,9 +132,14 @@ export default function TranslationJsonEditor({values, colorMode, onChange}: Tra
   };
 
   return (
-    <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', gap: 1}}>
+    <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+      {!isCustomNamespace && (
+        <Alert severity="info" sx={{flexShrink: 0, borderRadius: 0, border: 'none'}}>
+          {t('editor.readOnlyKeys')}
+        </Alert>
+      )}
       {jsonError && jsonText.trim().length > 0 && (
-        <Alert severity="warning" sx={{flexShrink: 0}}>
+        <Alert severity="warning" sx={{flexShrink: 0, borderRadius: 0, border: 'none'}}>
           {t('editor.jsonInvalid')}
         </Alert>
       )}

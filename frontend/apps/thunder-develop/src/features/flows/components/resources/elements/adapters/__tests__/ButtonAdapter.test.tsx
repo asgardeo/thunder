@@ -102,12 +102,12 @@ describe('ButtonAdapter', () => {
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
 
-    it('should render button label via PlaceholderComponent', () => {
+    it('should render button label', () => {
       const resource = createMockElement({label: 'Submit'});
 
       render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('Submit');
+      expect(screen.getByRole('button')).toHaveTextContent('Submit');
     });
 
     it('should render NodeHandle for edge connection', () => {
@@ -238,7 +238,7 @@ describe('ButtonAdapter', () => {
 
       render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(screen.getByRole('button')).toHaveTextContent('');
     });
 
     it('should handle undefined label', () => {
@@ -246,7 +246,7 @@ describe('ButtonAdapter', () => {
 
       render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(screen.getByRole('button')).toHaveTextContent('');
     });
   });
 });

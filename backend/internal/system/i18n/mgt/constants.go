@@ -25,7 +25,7 @@ import (
 )
 
 // SystemLanguage is the default language code for the system.
-const SystemLanguage = "en"
+const SystemLanguage = "en-US"
 
 // SystemNamespace is the default namespace for system translations.
 const SystemNamespace = "system"

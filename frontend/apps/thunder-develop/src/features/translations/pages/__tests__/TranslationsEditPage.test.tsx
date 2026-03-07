@@ -56,6 +56,15 @@ const {mockMutateAsync, mockUseGetTranslations, mockUseUpdateTranslation} = vi.h
 vi.mock('@thunder/i18n', () => ({
   useGetTranslations: mockUseGetTranslations,
   useUpdateTranslation: mockUseUpdateTranslation,
+  NamespaceConstants: {
+    COMMON: 'common',
+    AUTH: 'auth',
+    LOGIN_FLOW: 'loginFlow',
+  },
+}));
+
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn()}),
 }));
 
 // Stub child components to decouple from their internals
@@ -336,6 +345,47 @@ describe('TranslationsEditPage', () => {
       await user.click(screen.getByText('back'));
 
       expect(mockNavigate).toHaveBeenCalledWith('/translations');
+    });
+  });
+
+  describe('Reset to default', () => {
+    it('calls updateTranslation.mutateAsync for each default key when Reset is clicked', async () => {
+      // Provide default en translations
+      mockUseGetTranslations.mockImplementation(({language}: {language: string}) => {
+        if (language === 'fr-FR') {
+          return {
+            data: sampleTranslations,
+            isLoading: false,
+          };
+        }
+        // en default translations
+        return {
+          data: {
+            translations: {
+              common: {'actions.save': 'Save', 'actions.cancel': 'Cancel'},
+            },
+          },
+          isLoading: false,
+        };
+      });
+
+      const user = userEvent.setup();
+      render(<TranslationsEditPage />);
+
+      await user.click(screen.getByText('reset'));
+
+      expect(mockMutateAsync).toHaveBeenCalledWith({
+        language: 'fr-FR',
+        namespace: 'common',
+        key: 'actions.save',
+        value: 'Save',
+      });
+      expect(mockMutateAsync).toHaveBeenCalledWith({
+        language: 'fr-FR',
+        namespace: 'common',
+        key: 'actions.cancel',
+        value: 'Cancel',
+      });
     });
   });
 });

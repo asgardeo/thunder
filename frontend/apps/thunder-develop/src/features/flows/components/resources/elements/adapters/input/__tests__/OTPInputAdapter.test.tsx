@@ -67,12 +67,12 @@ describe('OTPInputAdapter', () => {
       expect(container.querySelector('.MuiInputLabel-root')).toBeInTheDocument();
     });
 
-    it('should render label via PlaceholderComponent', () => {
+    it('should render label text', () => {
       const resource = createMockElement({label: 'Verification Code'});
 
       render(<OTPInputAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('Verification Code');
+      expect(screen.getByText('Verification Code')).toBeInTheDocument();
     });
 
     it('should render 6 input boxes for OTP', () => {
@@ -191,17 +191,19 @@ describe('OTPInputAdapter', () => {
     it('should handle empty label', () => {
       const resource = createMockElement({label: ''});
 
-      render(<OTPInputAdapter resource={resource} />);
+      const {container} = render(<OTPInputAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      const label = container.querySelector('.MuiInputLabel-root');
+      expect(label).toHaveTextContent('');
     });
 
     it('should handle undefined label', () => {
       const resource = createMockElement({label: undefined});
 
-      render(<OTPInputAdapter resource={resource} />);
+      const {container} = render(<OTPInputAdapter resource={resource} />);
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      const label = container.querySelector('.MuiInputLabel-root');
+      expect(label).toHaveTextContent('');
     });
   });
 

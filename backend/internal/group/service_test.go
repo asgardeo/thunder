@@ -29,7 +29,10 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
@@ -39,6 +42,31 @@ type stubTransactioner struct{}
 
 func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
 	return txFunc(ctx)
+}
+
+const (
+	testOUID1 = "ou-123"
+	testOUID2 = "ou-456"
+)
+
+// newAllowAllAuthz returns a mock AuthzService that grants full access.
+func newAllowAllAuthz(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+	mockAuthz := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+	mockAuthz.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
+	mockAuthz.On("GetAccessibleResources", mock.Anything, mock.Anything, security.ResourceTypeOU).
+		Return(&sysauthz.AccessibleResources{AllAllowed: true}, (*serviceerror.ServiceError)(nil)).Maybe()
+	return mockAuthz
+}
+
+// newAuthzError returns a mock that simulates an internal authorization error.
+func newAuthzError(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+	mockAuthz := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+	mockAuthz.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &ErrorInternalServerError).Maybe()
+	mockAuthz.On("GetAccessibleResources", mock.Anything, mock.Anything, security.ResourceTypeOU).
+		Return((*sysauthz.AccessibleResources)(nil), &ErrorInternalServerError).Maybe()
+	return mockAuthz
 }
 
 type GroupServiceTestSuite struct {
@@ -108,6 +136,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 		limit      int
 		offset     int
 		setup      func(*groupStoreInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
 		wantErr    *serviceerror.ServiceError
 		wantResult *groupListExpectations
 	}{
@@ -167,6 +196,71 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 			},
 			wantErr: &ErrorInternalServerError,
 		},
+		{
+			name:   "filtered by OUIDs",
+			limit:  5,
+			offset: 0,
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"GetAccessibleResources",
+					mock.Anything,
+					security.ActionListGroups,
+					security.ResourceTypeOU,
+				).Return(
+					&sysauthz.AccessibleResources{AllAllowed: false, IDs: []string{testOUID1, testOUID2}},
+					(*serviceerror.ServiceError)(nil),
+				)
+				return authzMock
+			},
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				ouIDs := []string{testOUID1, testOUID2}
+				storeMock.On("GetGroupListCountByOUIDs", mock.Anything, ouIDs).Return(1, nil).Once()
+				storeMock.On("GetGroupListByOUIDs", mock.Anything, ouIDs, 5, 0).
+					Return([]GroupBasicDAO{{ID: "id1", Name: "name1", OrganizationUnitID: testOUID1}}, nil).Once()
+			},
+			wantResult: &groupListExpectations{
+				totalResults: 1,
+				count:        1,
+				startIndex:   1,
+				groupNames:   []string{"name1"},
+				linkRels:     []string{},
+				linkHrefs:    []string{},
+			},
+		},
+		{
+			name:   "empty OUIDs returns empty list",
+			limit:  5,
+			offset: 0,
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"GetAccessibleResources",
+					mock.Anything,
+					security.ActionListGroups,
+					security.ResourceTypeOU,
+				).Return(
+					&sysauthz.AccessibleResources{AllAllowed: false, IDs: []string{}},
+					(*serviceerror.ServiceError)(nil),
+				)
+				return authzMock
+			},
+			wantResult: &groupListExpectations{
+				totalResults: 0,
+				count:        0,
+				startIndex:   1,
+				groupNames:   []string{},
+				linkRels:     []string{},
+				linkHrefs:    []string{},
+			},
+		},
+		{
+			name:       "authz error",
+			limit:      5,
+			offset:     0,
+			authzSetup: newAuthzError,
+			wantErr:    &ErrorInternalServerError,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -178,8 +272,15 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 				tc.setup(storeMock)
 			}
 
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
 			service := &groupService{
-				groupStore: storeMock,
+				authzService: authzSvc,
+				groupStore:   storeMock,
 			}
 
 			response, err := service.GetGroupList(context.Background(), tc.limit, tc.offset)
@@ -210,6 +311,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			*groupStoreInterfaceMock,
 			*oumock.OrganizationUnitServiceInterfaceMock,
 		) *serviceerror.ServiceError
+		authzSetup          func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
 		wantErr             *serviceerror.ServiceError
 		wantErrFromSetup    bool
 		wantResult          *groupListExpectations
@@ -367,6 +469,28 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			},
 			wantErr: &ErrorInternalServerError,
 		},
+		{
+			name:   "access denied",
+			path:   "/org",
+			limit:  5,
+			offset: 0,
+			setup: func(
+				_ *groupStoreInterfaceMock,
+				ouMock *oumock.OrganizationUnitServiceInterfaceMock,
+			) *serviceerror.ServiceError {
+				ouMock.On("GetOrganizationUnitByPath", mock.Anything, "/org").
+					Return(oupkg.OrganizationUnit{ID: testOUID1}, (*serviceerror.ServiceError)(nil)).Once()
+				return nil
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On("IsActionAllowed", mock.Anything, security.ActionListGroups,
+					&sysauthz.ActionContext{OuID: testOUID1, ResourceType: security.ResourceTypeGroup}).
+					Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			wantErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -380,9 +504,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				expectedErr = tc.setup(storeMock, ouServiceMock)
 			}
 
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
 			service := &groupService{
-				groupStore: storeMock,
-				ouService:  ouServiceMock,
+				authzService: authzSvc,
+				groupStore:   storeMock,
+				ouService:    ouServiceMock,
 			}
 
 			response, err := service.GetGroupsByPath(context.Background(), tc.path, tc.limit, tc.offset)
@@ -421,11 +552,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 	}
 
 	testCases := []struct {
-		name      string
-		request   CreateGroupRequest
-		setup     func(*setupArgs)
-		expectErr *serviceerror.ServiceError
-		expectRes bool
+		name       string
+		request    CreateGroupRequest
+		setup      func(*setupArgs)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		expectErr  *serviceerror.ServiceError
+		expectRes  bool
 	}{
 		{
 			name: "success",
@@ -453,8 +585,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Return(nil).
 					Once()
 
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
-					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
+					Return(true, nil).
 					Once()
 
 				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
@@ -470,8 +602,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-unknown",
 			},
 			setup: func(args *setupArgs) {
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-unknown").
-					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-unknown").
+					Return(false, nil).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, []string{}).
 					Return([]string{}, nil).
@@ -490,8 +622,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(nil).
 					Maybe()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
-					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
+					Return(true, nil).
 					Once()
 				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-invalid"}).
 					Return([]string{"usr-invalid"}, nil).
@@ -509,11 +641,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(ErrGroupNameConflict).
 					Once()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
-					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
-					Once()
-				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
-					Return([]string{}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
+					Return(true, nil).
 					Once()
 				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
@@ -531,11 +660,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(errors.New("db failure")).
 					Once()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
-					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
-					Once()
-				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
-					Return([]string{}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
+					Return(true, nil).
 					Once()
 				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
@@ -559,11 +685,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.store.On("CreateGroup", mock.Anything, mock.Anything).
 					Return(errors.New("create fail")).
 					Once()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
-					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
-					Once()
-				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
-					Return([]string{}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
+					Return(true, nil).
 					Once()
 			},
 			expectErr: &ErrorInternalServerError,
@@ -575,12 +698,31 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-001").
-					Return(oupkg.OrganizationUnit{},
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
+					Return(false,
 						&serviceerror.ServiceError{Code: "OU-5000", Type: serviceerror.ServerErrorType}).
 					Once()
 			},
 			expectErr: &ErrorInternalServerError,
+		},
+		{
+			name: "access denied",
+			request: CreateGroupRequest{
+				Name:               "developers",
+				OrganizationUnitID: testOUID1,
+			},
+			setup: func(args *setupArgs) {
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
+					Return(true, (*serviceerror.ServiceError)(nil)).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On("IsActionAllowed", mock.Anything, security.ActionCreateGroup,
+					&sysauthz.ActionContext{OuID: testOUID1, ResourceType: security.ResourceTypeGroup}).
+					Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			expectErr: &serviceerror.ErrorUnauthorized,
 		},
 	}
 
@@ -598,7 +740,14 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				tc.setup(&setupArgs{store: storeMock, ou: ouServiceMock, user: userServiceMock})
 			}
 
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
 			service := &groupService{
+				authzService:  authzSvc,
 				groupStore:    storeMock,
 				ouService:     ouServiceMock,
 				userService:   userServiceMock,
@@ -694,6 +843,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroupByPath() {
 			}
 
 			service := &groupService{
+				authzService:  newAllowAllAuthz(suite.T()),
 				groupStore:    storeMock,
 				ouService:     ouServiceMock,
 				userService:   userServiceMock,
@@ -727,10 +877,11 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroupByPath() {
 
 func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 	testCases := []struct {
-		name    string
-		id      string
-		setup   func(*groupStoreInterfaceMock)
-		wantErr *serviceerror.ServiceError
+		name       string
+		id         string
+		setup      func(*groupStoreInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		wantErr    *serviceerror.ServiceError
 	}{
 		{
 			name:    "missing id",
@@ -757,6 +908,39 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 			},
 			wantErr: &ErrorGroupNotFound,
 		},
+		{
+			name: "success",
+			id:   "grp-001",
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", Name: "test", OrganizationUnitID: testOUID1}, nil).
+					Once()
+			},
+		},
+		{
+			name: "access denied",
+			id:   "grp-001",
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).
+					Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionReadGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			wantErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -769,7 +953,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 				tc.setup(storeMock)
 			}
 
-			service := &groupService{groupStore: storeMock}
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
+			service := &groupService{
+				authzService: authzSvc,
+				groupStore:   storeMock,
+			}
 
 			group, err := service.GetGroup(context.Background(), tc.id)
 
@@ -801,6 +994,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 		groupID     string
 		request     UpdateGroupRequest
 		setup       func(*setupArgs)
+		authzSetup  func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
 		expectErr   *serviceerror.ServiceError
 		expectGroup bool
 	}{
@@ -836,8 +1030,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				})).
 					Return(nil).
 					Once()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-new").
-					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-new").
+					Return(true, nil).
 					Once()
 			},
 			expectGroup: true,
@@ -856,8 +1050,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new-name", "ou-new", "grp-001").
 					Return(ErrGroupNameConflict).
 					Once()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-new").
-					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-new").
+					Return(true, nil).
 					Once()
 			},
 			expectErr: &ErrorGroupNameConflict,
@@ -901,8 +1095,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou-old"}, nil).
 					Once()
-				args.ou.On("GetOrganizationUnit", mock.Anything, "ou-new").
-					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-new").
+					Return(false, nil).
 					Once()
 			},
 			expectErr: &ErrorInvalidOUID,
@@ -944,6 +1138,72 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			},
 			expectErr: &ErrorInternalServerError,
 		},
+		{
+			name:    "access denied on source OU",
+			groupID: "grp-001",
+			request: UpdateGroupRequest{
+				Name:               "new-name",
+				OrganizationUnitID: testOUID1,
+			},
+			setup: func(args *setupArgs) {
+				args.store.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionUpdateGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			expectErr: &serviceerror.ErrorUnauthorized,
+		},
+		{
+			name:    "access denied on target OU",
+			groupID: "grp-001",
+			request: UpdateGroupRequest{
+				Name:               "new-name",
+				OrganizationUnitID: testOUID2,
+			},
+			setup: func(args *setupArgs) {
+				args.store.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+				args.ou.On("IsOrganizationUnitExists", mock.Anything, testOUID2).
+					Return(true, (*serviceerror.ServiceError)(nil)).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionUpdateGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(true, (*serviceerror.ServiceError)(nil))
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionUpdateGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID2,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			expectErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -960,7 +1220,14 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				tc.setup(&setupArgs{store: storeMock, ou: ouServiceMock, user: userServiceMock})
 			}
 
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
 			service := &groupService{
+				authzService:  authzSvc,
 				groupStore:    storeMock,
 				ouService:     ouServiceMock,
 				userService:   userServiceMock,
@@ -995,10 +1262,11 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 
 func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 	testCases := []struct {
-		name      string
-		id        string
-		setup     func(*groupStoreInterfaceMock)
-		expectErr *serviceerror.ServiceError
+		name       string
+		id         string
+		setup      func(*groupStoreInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		expectErr  *serviceerror.ServiceError
 	}{
 		{
 			name: "success",
@@ -1050,6 +1318,29 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			},
 			expectErr: &ErrorGroupNotFound,
 		},
+		{
+			name: "access denied",
+			id:   "grp-001",
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionDeleteGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			expectErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1061,7 +1352,17 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 				tc.setup(storeMock)
 			}
 
-			service := &groupService{groupStore: storeMock, transactioner: &stubTransactioner{}}
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
+			service := &groupService{
+				authzService:  authzSvc,
+				groupStore:    storeMock,
+				transactioner: &stubTransactioner{},
+			}
 
 			err := service.DeleteGroup(context.Background(), tc.id)
 
@@ -1081,13 +1382,14 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 
 func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 	testCases := []struct {
-		name      string
-		id        string
-		limit     int
-		offset    int
-		setup     func(*groupStoreInterfaceMock)
-		expectErr *serviceerror.ServiceError
-		expectRes bool
+		name       string
+		id         string
+		limit      int
+		offset     int
+		setup      func(*groupStoreInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		expectErr  *serviceerror.ServiceError
+		expectRes  bool
 	}{
 		{
 			name:   "success",
@@ -1181,6 +1483,31 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			},
 			expectErr: &ErrorInternalServerError,
 		},
+		{
+			name:   "access denied",
+			id:     "grp-001",
+			limit:  5,
+			offset: 0,
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionReadGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			expectErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1192,7 +1519,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 				tc.setup(storeMock)
 			}
 
-			service := &groupService{groupStore: storeMock}
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
+			service := &groupService{
+				authzService: authzSvc,
+				groupStore:   storeMock,
+			}
 
 			response, err := service.GetGroupMembers(context.Background(), tc.id, tc.limit, tc.offset)
 
@@ -1219,7 +1555,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest() {
-	service := &groupService{}
+	service := &groupService{
+		authzService: newAllowAllAuthz(suite.T())}
 
 	testCases := []groupRequestValidationTestCase[CreateGroupRequest]{
 		{
@@ -1265,7 +1602,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest(
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateUpdateGroupRequest() {
-	service := &groupService{}
+	service := &groupService{
+		authzService: newAllowAllAuthz(suite.T())}
 
 	testCases := []groupRequestValidationTestCase[UpdateGroupRequest]{
 		{
@@ -1294,15 +1632,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUpdateGroupRequest(
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateOUHandlesInternalError() {
 	t := suite.T()
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("GetOrganizationUnit", mock.Anything, "ou-1").
-		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(false, &serviceerror.ServiceError{
 			Code: "OU-5000",
 			Type: serviceerror.ServerErrorType,
 		}).
 		Once()
 
 	service := &groupService{
-		ouService: ouServiceMock,
+		authzService: newAllowAllAuthz(suite.T()),
+		ouService:    ouServiceMock,
 	}
 
 	err := service.validateOU(context.Background(), "ou-1")
@@ -1313,7 +1652,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateOUHandlesInternalEr
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateAndProcessHandlePath() {
 	t := suite.T()
-	service := &groupService{}
+	service := &groupService{
+		authzService: newAllowAllAuthz(suite.T())}
 
 	testCases := []struct {
 		name        string
@@ -1382,13 +1722,184 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsHandlesServi
 		Once()
 
 	service := &groupService{
-		userService: userServiceMock,
+		authzService: newAllowAllAuthz(suite.T()),
+		userService:  userServiceMock,
 	}
 
 	err := service.validateUserIDs(context.Background(), []string{"usr-001"})
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInternalServerError, *err)
+}
+
+func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsWithAccess() {
+	testCases := []struct {
+		name       string
+		userIDs    []string
+		setup      func(*usermock.UserServiceInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		wantErr    *serviceerror.ServiceError
+	}{
+		{
+			name:    "empty user IDs returns nil immediately",
+			userIDs: []string{},
+			wantErr: nil,
+		},
+		{
+			name:    "invalid user IDs returns 400",
+			userIDs: []string{"usr-invalid"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-invalid"}).
+					Return([]string{"usr-invalid"}, nil).Once()
+			},
+			wantErr: &ErrorInvalidUserMemberID,
+		},
+		{
+			name:    "user service error on validate IDs returns 500",
+			userIDs: []string{"usr-001"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return(nil, &serviceerror.ServiceError{Code: "USR-5000", Type: serviceerror.ServerErrorType}).
+					Once()
+			},
+			wantErr: &ErrorInternalServerError,
+		},
+		{
+			name:    "full admin skips OU scope check",
+			userIDs: []string{"usr-001"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+				// ValidateUserIDsInOUs must NOT be called when AllAllowed is true.
+			},
+			// authzSetup nil → newAllowAllAuthz → AllAllowed: true
+			wantErr: nil,
+		},
+		{
+			name:    "user in accessible OU returns nil",
+			userIDs: []string{"usr-001"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+				userMock.On("ValidateUserIDsInOUs", mock.Anything, []string{"usr-001"}, []string{testOUID1}).
+					Return([]string{}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				m := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				m.On("GetAccessibleResources", mock.Anything,
+					security.ActionUpdateGroup, security.ResourceTypeOU).
+					Return(&sysauthz.AccessibleResources{
+						AllAllowed: false, IDs: []string{testOUID1},
+					}, (*serviceerror.ServiceError)(nil))
+				return m
+			},
+			wantErr: nil,
+		},
+		{
+			name:    "user outside accessible OU returns 403",
+			userIDs: []string{"usr-002"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-002"}).
+					Return([]string{}, nil).Once()
+				userMock.On("ValidateUserIDsInOUs", mock.Anything, []string{"usr-002"}, []string{testOUID1}).
+					Return([]string{"usr-002"}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				m := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				m.On("GetAccessibleResources", mock.Anything,
+					security.ActionUpdateGroup, security.ResourceTypeOU).
+					Return(&sysauthz.AccessibleResources{
+						AllAllowed: false, IDs: []string{testOUID1},
+					}, (*serviceerror.ServiceError)(nil))
+				return m
+			},
+			wantErr: &serviceerror.ErrorUnauthorized,
+		},
+		{
+			name:    "no accessible OUs makes all users out of scope",
+			userIDs: []string{"usr-001"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+				userMock.On("ValidateUserIDsInOUs", mock.Anything, []string{"usr-001"}, []string{}).
+					Return([]string{"usr-001"}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				m := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				m.On("GetAccessibleResources", mock.Anything,
+					security.ActionUpdateGroup, security.ResourceTypeOU).
+					Return(&sysauthz.AccessibleResources{
+						AllAllowed: false, IDs: []string{},
+					}, (*serviceerror.ServiceError)(nil))
+				return m
+			},
+			wantErr: &serviceerror.ErrorUnauthorized,
+		},
+		{
+			name:    "authz service error propagates",
+			userIDs: []string{"usr-001"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+			},
+			authzSetup: newAuthzError,
+			wantErr:    &ErrorInternalServerError,
+		},
+		{
+			name:    "validate in OUs store error returns 500",
+			userIDs: []string{"usr-001"},
+			setup: func(userMock *usermock.UserServiceInterfaceMock) {
+				userMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+				userMock.On("ValidateUserIDsInOUs", mock.Anything, []string{"usr-001"}, []string{testOUID1}).
+					Return(nil, &serviceerror.ServiceError{Code: "USR-5000", Type: serviceerror.ServerErrorType}).
+					Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				m := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				m.On("GetAccessibleResources", mock.Anything,
+					security.ActionUpdateGroup, security.ResourceTypeOU).
+					Return(&sysauthz.AccessibleResources{
+						AllAllowed: false, IDs: []string{testOUID1},
+					}, (*serviceerror.ServiceError)(nil))
+				return m
+			},
+			wantErr: &ErrorInternalServerError,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			userServiceMock := usermock.NewUserServiceInterfaceMock(suite.T())
+			if tc.setup != nil {
+				tc.setup(userServiceMock)
+			}
+
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
+
+			service := &groupService{
+				authzService: authzSvc,
+				userService:  userServiceMock,
+			}
+
+			err := service.validateUserIDsWithAccess(context.Background(), tc.userIDs)
+
+			if tc.wantErr != nil {
+				suite.Require().NotNil(err)
+				suite.Require().Equal(*tc.wantErr, *err)
+			} else {
+				suite.Require().Nil(err)
+			}
+
+			userServiceMock.AssertExpectations(suite.T())
+		})
+	}
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
@@ -1421,7 +1932,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 		tc := tc
 		suite.Run(tc.name, func() {
 			storeMock := newGroupStoreInterfaceMock(suite.T())
-			service := &groupService{groupStore: storeMock}
+			service := &groupService{
+				authzService: newAllowAllAuthz(suite.T()), groupStore: storeMock}
 			tc.setup(storeMock)
 
 			err := service.ValidateGroupIDs(context.Background(), []string{"grp-001"})
@@ -1436,11 +1948,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 
 func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 	testCases := []struct {
-		name    string
-		groupID string
-		members []Member
-		setup   func(*groupStoreInterfaceMock, *usermock.UserServiceInterfaceMock)
-		wantErr *serviceerror.ServiceError
+		name       string
+		groupID    string
+		members    []Member
+		setup      func(*groupStoreInterfaceMock, *usermock.UserServiceInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		wantErr    *serviceerror.ServiceError
 	}{
 		{
 			name:    "missing group id",
@@ -1521,6 +2034,30 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 			},
 			wantErr: nil,
 		},
+		{
+			name:    "access denied",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock, _ *usermock.UserServiceInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionUpdateGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			wantErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1533,7 +2070,14 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 				tc.setup(storeMock, userServiceMock)
 			}
 
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
 			service := &groupService{
+				authzService:  authzSvc,
 				groupStore:    storeMock,
 				userService:   userServiceMock,
 				transactioner: &stubTransactioner{},
@@ -1558,11 +2102,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 
 func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 	testCases := []struct {
-		name    string
-		groupID string
-		members []Member
-		setup   func(*groupStoreInterfaceMock)
-		wantErr *serviceerror.ServiceError
+		name       string
+		groupID    string
+		members    []Member
+		setup      func(*groupStoreInterfaceMock)
+		authzSetup func(*testing.T) sysauthz.SystemAuthorizationServiceInterface
+		wantErr    *serviceerror.ServiceError
 	}{
 		{
 			name:    "missing group id",
@@ -1623,6 +2168,30 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 			},
 			wantErr: nil,
 		},
+		{
+			name:    "access denied",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+			},
+			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
+				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+				authzMock.On(
+					"IsActionAllowed",
+					mock.Anything,
+					security.ActionUpdateGroup,
+					&sysauthz.ActionContext{
+						OuID:         testOUID1,
+						ResourceType: security.ResourceTypeGroup,
+						ResourceID:   "grp-001",
+					},
+				).Return(false, (*serviceerror.ServiceError)(nil))
+				return authzMock
+			},
+			wantErr: &serviceerror.ErrorUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1634,7 +2203,14 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 				tc.setup(storeMock)
 			}
 
+			var authzSvc sysauthz.SystemAuthorizationServiceInterface
+			if tc.authzSetup != nil {
+				authzSvc = tc.authzSetup(suite.T())
+			} else {
+				authzSvc = newAllowAllAuthz(suite.T())
+			}
 			service := &groupService{
+				authzService:  authzSvc,
 				groupStore:    storeMock,
 				transactioner: &stubTransactioner{},
 			}

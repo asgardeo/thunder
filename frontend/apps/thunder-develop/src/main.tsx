@@ -20,23 +20,21 @@ import * as ReactDOM from 'react-dom/client';
 import {StrictMode} from 'react';
 import {ConfigProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger/react';
-import i18n from 'i18next';
-import {initReactI18next} from 'react-i18next';
-import enUS from '@thunder/i18n/locales/en-US';
-import AppWithConfig from './AppWithConfig';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
+import AppWithDecorators from './AppWithDecorators';
 
-// Initialize i18n before rendering the app
-await i18n.use(initReactI18next).init({
-  resources: {
-    'en-US': enUS,
+const queryClient: QueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const status = (error as {response?: {status?: number}})?.response?.status;
+        if (status && status >= 400 && status < 500) return false;
+
+        return failureCount < 3;
+      },
+    },
   },
-  lng: 'en-US',
-  fallbackLng: 'en-US',
-  defaultNS: 'common',
-  interpolation: {
-    escapeValue: false, // React already escapes by default
-  },
-  debug: import.meta.env.DEV,
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -47,7 +45,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           level: import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.INFO,
         }}
       >
-        <AppWithConfig />
+        <QueryClientProvider client={queryClient}>
+          <AppWithDecorators />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
       </LoggerProvider>
     </ConfigProvider>
   </StrictMode>,

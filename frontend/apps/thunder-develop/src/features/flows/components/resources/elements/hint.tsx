@@ -17,9 +17,10 @@
  */
 
 import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import {InfoIcon} from '@wso2/oxygen-ui-icons-react';
 import {Stack} from '@wso2/oxygen-ui';
-import PlaceholderComponent from './adapters/PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 
 /**
  * Props interface of {@link Hint}
@@ -38,12 +39,13 @@ export interface HintPropsInterface {
  * @returns The Hint component.
  */
 export function Hint({hint}: HintPropsInterface): ReactElement {
+  const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
+
   return (
     <Stack direction="row" gap={0.5} alignItems="center" justifyContent="flex-start">
       <InfoIcon size={12} />
-      <PlaceholderComponent value={hint}>
-        <span>{hint}</span>
-      </PlaceholderComponent>
+      <span>{resolve(hint, {t}) ?? hint}</span>
     </Stack>
   );
 }

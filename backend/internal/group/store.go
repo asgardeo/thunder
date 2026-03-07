@@ -35,6 +35,8 @@ var buildBulkGroupExistsQueryFunc = buildBulkGroupExistsQuery
 type groupStoreInterface interface {
 	GetGroupListCount(ctx context.Context) (int, error)
 	GetGroupList(ctx context.Context, limit, offset int) ([]GroupBasicDAO, error)
+	GetGroupListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error)
+	GetGroupListByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) ([]GroupBasicDAO, error)
 	CreateGroup(ctx context.Context, group GroupDAO) error
 	GetGroup(ctx context.Context, id string) (GroupDAO, error)
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) ([]Member, error)
@@ -74,7 +76,7 @@ func (s *groupStore) GetGroupListCount(ctx context.Context) (int, error) {
 
 	countResults, err := dbClient.QueryContext(ctx, QueryGetGroupListCount, s.deploymentID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to execute count query: %w", err)
+		return 0, fmt.Errorf("failed to execute group list count query: %w", err)
 	}
 
 	var totalCount int
@@ -93,7 +95,6 @@ func (s *groupStore) GetGroupList(ctx context.Context, limit, offset int) ([]Gro
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
-
 	results, err := dbClient.QueryContext(ctx, QueryGetGroupList, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute group list query: %w", err)
@@ -119,7 +120,75 @@ func (s *groupStore) GetGroupList(ctx context.Context, limit, offset int) ([]Gro
 	return groups, nil
 }
 
-// CreateGroup creates a new group in the database.
+// GetGroupListCountByOUIDs retrieves the total count of groups belonging to a set of OUs.
+func (s *groupStore) GetGroupListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error) {
+	if len(ouIDs) == 0 {
+		return 0, nil
+	}
+
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client for counter query: %w", err)
+	}
+
+	query, args := buildGetGroupsCountByOUIDsQuery(ouIDs, s.deploymentID)
+
+	var count int
+	countResults, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(countResults) > 0 {
+		if countVal, ok := countResults[0]["total"].(int64); ok {
+			count = int(countVal)
+		} else if countVal, ok := countResults[0]["total"].(float64); ok { // sqlite count result type
+			count = int(countVal)
+		}
+	}
+
+	return count, nil
+}
+
+// GetGroupListByOUIDs retrieves groups belonging to a set of OUs with pagination.
+func (s *groupStore) GetGroupListByOUIDs(
+	ctx context.Context, ouIDs []string, limit, offset int) ([]GroupBasicDAO, error) {
+	if len(ouIDs) == 0 {
+		return []GroupBasicDAO{}, nil
+	}
+
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client for query: %w", err)
+	}
+	query, args := buildGetGroupsByOUIDsQuery(ouIDs, limit, offset, s.deploymentID)
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	groups := make([]GroupBasicDAO, 0, len(results))
+	for _, row := range results {
+		group, err := buildGroupFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build group from result row: %w", err)
+		}
+
+		groupBasic := GroupBasicDAO{
+			ID:                 group.ID,
+			Name:               group.Name,
+			Description:        group.Description,
+			OrganizationUnitID: group.OrganizationUnitID,
+		}
+
+		groups = append(groups, groupBasic)
+	}
+
+	return groups, nil
+}
+
+// CreateGroup adds a new group record to the database.
 func (s *groupStore) CreateGroup(ctx context.Context, group GroupDAO) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {

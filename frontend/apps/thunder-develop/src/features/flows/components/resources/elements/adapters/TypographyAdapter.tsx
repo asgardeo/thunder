@@ -22,7 +22,7 @@ import {Typography, type TypographyProps} from '@wso2/oxygen-ui';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {TypographyVariants, type Element} from '@/features/flows/models/elements';
-import PlaceholderComponent from './PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 
 const TYPOGRAPHY_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -80,6 +80,7 @@ export interface TypographyAdapterPropsInterface {
  */
 function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -133,7 +134,7 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
       style={typographyConfig?.styles}
       {...config}
     >
-      <PlaceholderComponent value={typographyElement?.label ?? ''} />
+      {resolve(typographyElement?.label, {t}) ?? typographyElement?.label ?? ''}
     </Typography>
   );
 }

@@ -369,6 +369,8 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 			ErrorEmptyMembers.Code, ErrorInvalidUserMemberID.Code,
 			ErrorInvalidGroupMemberID.Code:
 			statusCode = http.StatusBadRequest
+		case serviceerror.ErrorUnauthorized.Code:
+			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
 		}

@@ -210,7 +210,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 	}
 
 	// Get i18n translations
-	lang := "en"
+	lang := "en-US"
 	if language != nil && *language != "" {
 		lang = *language
 	}

@@ -22,20 +22,28 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // ClientAuthMiddleware authenticates OAuth2 clients and attaches client info to request context.
-func ClientAuthMiddleware(appService application.ApplicationServiceInterface) func(http.Handler) http.Handler {
+func ClientAuthMiddleware(appService application.ApplicationServiceInterface, jwtService jwt.JWTServiceInterface,
+	discoveryService discovery.DiscoveryServiceInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Authenticate client
-			clientInfo, authErr := authenticate(r, appService)
+			clientInfo, authErr := authenticate(r, appService, jwtService, discoveryService)
 			if authErr != nil {
-				// Convert headers to the format expected by WriteJSONError
+				// If the client attempted to authenticate via the Authorization
+				// header, include WWW-Authenticate in 401 responses.
 				var respHeaders []map[string]string
-				if len(authErr.ResponseHeaders) > 0 {
-					respHeaders = []map[string]string{authErr.ResponseHeaders}
+				if authErr.StatusCode == http.StatusUnauthorized &&
+					r.Header.Get(serverconst.AuthorizationHeaderName) != "" {
+					respHeaders = []map[string]string{
+						{serverconst.WWWAuthenticateHeaderName: "Basic"},
+					}
 				}
 				// Write error response
 				utils.WriteJSONError(

@@ -328,6 +328,8 @@ echo ""
 #           └── Action handle "view"       → permission "system:ou:view"
 #       └── Resource handle "user"         → permission "system:user"
 #           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "group"        → permission "system:group"
+#           └── Action handle "view"       → permission "system:group:view"
 #       └── Resource handle "userschema"   → permission "system:userschema"
 #           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
@@ -575,6 +577,74 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "User schema view action already exists, skipping"
 else
     log_error "Failed to create user schema view action (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+log_info "Creating 'group' sub-resource under the 'system' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
+  \"name\": \"Group\",
+  \"description\": \"Group resource\",
+  \"handle\": \"group\",
+  \"parent\": \"${SYSTEM_RESOURCE_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Group resource created successfully (permission: system:group)"
+    GROUP_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$GROUP_RESOURCE_ID" ]]; then
+        log_info "Group resource ID: $GROUP_RESOURCE_ID"
+    else
+        log_error "Could not extract group resource ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Group resource already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources?parentId=${SYSTEM_RESOURCE_ID}")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        GROUP_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"group"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$GROUP_RESOURCE_ID" ]]; then
+            log_success "Found group resource ID: $GROUP_RESOURCE_ID"
+        else
+            log_error "Could not find group resource in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resources (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create group resource (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+log_info "Creating 'view' action under the 'group' resource..."
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${GROUP_RESOURCE_ID}/actions" '{
+  "name": "View",
+  "description": "Read-only access to groups",
+  "handle": "view"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Group view action created successfully (permission: system:group:view)"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Group view action already exists, skipping"
+else
+    log_error "Failed to create group view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi
@@ -1040,14 +1110,14 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
         },
         \"id_token\": {
           \"validity_period\": 3600,
-          \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\", \"ouId\"],
-          \"scope_claims\": {
-            \"profile\": [\"name\",\"given_name\",\"family_name\",\"picture\"],
-            \"email\": [\"email\",\"email_verified\"],
-            \"phone\": [\"phone_number\",\"phone_number_verified\"],
-            \"group\": [\"groups\"]
-          }
+          \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\", \"ouId\"]
         }
+      },
+      \"scope_claims\": {
+        \"profile\": [\"name\",\"given_name\",\"family_name\",\"picture\"],
+        \"email\": [\"email\",\"email_verified\"],
+        \"phone\": [\"phone_number\",\"phone_number_verified\"],
+        \"group\": [\"groups\"]
       }
     }
   }]
@@ -1133,6 +1203,63 @@ else
         log_info "Theme creation summary: ${THEME_SUCCESS} created, ${THEME_SKIPPED} skipped (Total: ${THEME_COUNT})"
     else
         log_warning "No theme files found in ${THEMES_DIR}"
+    fi
+fi
+
+echo ""
+
+# ============================================================================
+# Seed i18n Translations
+# ============================================================================
+
+log_info "Seeding i18n translations..."
+
+I18N_DIR="${SCRIPT_DIR}/i18n"
+
+if [[ ! -d "$I18N_DIR" ]]; then
+    log_warning "i18n directory not found at ${I18N_DIR}, skipping translation seeding"
+else
+    shopt -s nullglob
+    I18N_FILES=("$I18N_DIR"/*.json)
+    shopt -u nullglob
+
+    if [[ ${#I18N_FILES[@]} -gt 0 ]]; then
+        log_info "Processing i18n translations from ${I18N_DIR}..."
+
+        I18N_COUNT=0
+        I18N_SUCCESS=0
+
+        for I18N_FILE in "${I18N_FILES[@]}"; do
+            [[ ! -f "$I18N_FILE" ]] && continue
+
+            I18N_COUNT=$((I18N_COUNT + 1))
+
+            # Extract language from filename (e.g., en-US.json -> en-US)
+            LANGUAGE=$(basename "$I18N_FILE" .json)
+
+            log_info "Seeding translations for language: ${LANGUAGE} (from $(basename "$I18N_FILE"))"
+
+            PAYLOAD=$(cat "$I18N_FILE")
+
+            RESPONSE=$(thunder_api_call POST "/i18n/languages/${LANGUAGE}/translations" "$PAYLOAD")
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+
+            if [[ "$HTTP_CODE" == "200" ]]; then
+                TOTAL=$(echo "$BODY" | grep -o '"totalResults":[0-9]*' | cut -d':' -f2)
+                log_success "Translations for '${LANGUAGE}' seeded successfully (${TOTAL:-?} translations)"
+                I18N_SUCCESS=$((I18N_SUCCESS + 1))
+            else
+                log_error "Failed to seed translations for '${LANGUAGE}' (HTTP $HTTP_CODE)"
+                log_error "Response: $BODY"
+                exit 1
+            fi
+        done
+
+        echo ""
+        log_info "Translation seeding summary: ${I18N_SUCCESS} seeded (Total: ${I18N_COUNT})"
+    else
+        log_warning "No i18n translation files found in ${I18N_DIR}"
     fi
 fi
 

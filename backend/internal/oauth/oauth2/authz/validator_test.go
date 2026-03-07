@@ -406,8 +406,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 			constants.RequestParamClientID:            "test-client-id",
 			constants.RequestParamRedirectURI:         "https://client.example.com/callback",
 			constants.RequestParamResponseType:        string(constants.ResponseTypeCode),
-			constants.RequestParamCodeChallenge:       "invalid-challenge", // Invalid format
-			constants.RequestParamCodeChallengeMethod: "plain",             // Plain is not allowed
+			constants.RequestParamCodeChallenge:       "invalid-challenge",
+			constants.RequestParamCodeChallengeMethod: "plain", // Not supported per OAuth 2.0 Security BCP
 		},
 	}
 
@@ -451,6 +451,36 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 	assert.Empty(suite.T(), errorMessage)
 }
 
+func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_MissingCodeChallengeMethod() {
+	// Create an app that requires PKCE
+	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID:                "test-client-id",
+		HashedClientSecret:      "hashed-secret",
+		RedirectURIs:            []string{"https://client.example.com/callback"},
+		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+		PKCERequired:            true,
+	}
+
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:      "test-client-id",
+			constants.RequestParamRedirectURI:   "https://client.example.com/callback",
+			constants.RequestParamResponseType:  string(constants.ResponseTypeCode),
+			constants.RequestParamCodeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+			// Missing code_challenge_method - should fail instead of defaulting to S256
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, pkceApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Equal(suite.T(), "Invalid PKCE parameters", errorMessage)
+}
+
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCENotRequired() {
 	// Create an app that doesn't require PKCE
 	nonPKCEApp := &appmodel.OAuthAppConfigProcessedDTO{
@@ -478,4 +508,180 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 	assert.False(suite.T(), sendErrorToApp)
 	assert.Empty(suite.T(), errorCode)
 	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCENotRequired_InvalidPKCEParams() {
+	// Create an app that doesn't require PKCE
+	nonPKCEApp := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID:                "test-client-id",
+		HashedClientSecret:      "hashed-secret",
+		RedirectURIs:            []string{"https://client.example.com/callback"},
+		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+		PKCERequired:            false,
+	}
+
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:      "test-client-id",
+			constants.RequestParamRedirectURI:   "https://client.example.com/callback",
+			constants.RequestParamResponseType:  string(constants.ResponseTypeCode),
+			constants.RequestParamCodeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+			// Missing code_challenge_method - should fail even when PKCE is not required
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, nonPKCEApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Equal(suite.T(), "Invalid PKCE parameters", errorMessage)
+}
+
+// Prompt Parameter Validation Tests (OIDC Core §3.1.2.1)
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptNone_LoginRequired() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "none",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorLoginRequired, errorCode)
+	assert.Equal(suite.T(), "User authentication is required", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PromptLogin_Success() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "login",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptConsent_ConsentRequired() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "consent",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorConsentRequired, errorCode)
+	assert.Equal(suite.T(), "Consent is not supported", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptNoneCombined_InvalidRequest() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "none login",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Contains(suite.T(), errorMessage, "must not be combined")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptInvalidValue_InvalidRequest() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "invalid_value",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Contains(suite.T(), errorMessage, "Invalid prompt parameter value")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptSelectAccount() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "select_account",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorAccountSelectionRequired, errorCode)
+	assert.Equal(suite.T(), "Account selection is not supported", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptLoginConsent_ConsentRequired() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "login consent",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorConsentRequired, errorCode)
+	assert.Equal(suite.T(), "Consent is not supported", errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptEmpty_InvalidRequest() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamPrompt:       "",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
+	assert.Contains(suite.T(), errorMessage, "Invalid prompt parameter value")
 }

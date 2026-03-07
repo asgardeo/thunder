@@ -186,6 +186,11 @@ export default function UsersList(props: UsersListProps) {
         return;
       }
 
+      // Skip credential fields as they are not returned in the user list response
+      if ('credential' in fieldDef && fieldDef.credential) {
+        return;
+      }
+
       // Special handling for isActive/status fields with Chip
       if (fieldName === 'isActive' || fieldName === 'active' || fieldName === 'status') {
         schemaColumns.push({

@@ -60,6 +60,7 @@ curl -kL https://localhost:8090/.well-known/oauth-authorization-server
   "token_endpoint_auth_methods_supported": [
     "client_secret_basic",
     "client_secret_post",
+    "private_key_jwt",
     "none"
   ],
   "jwks_uri": "https://localhost:8090/oauth2/jwks",
@@ -70,7 +71,7 @@ curl -kL https://localhost:8090/.well-known/oauth-authorization-server
     "refresh_token",
     "urn:ietf:params:oauth:grant-type:token-exchange"
   ],
-  "code_challenge_methods_supported": ["S256", "plain"],
+  "code_challenge_methods_supported": ["S256"],
   "scopes_supported": ["openid", "profile", "email", "mcp:read", "mcp:write"],
   "registration_endpoint": "https://localhost:8090/oauth2/dcr/register",
   "introspection_endpoint": "https://localhost:8090/oauth2/introspect"

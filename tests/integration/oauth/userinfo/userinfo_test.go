@@ -49,7 +49,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -736,16 +736,12 @@ func (ts *UserInfoTestSuite) TestUserInfo_MissingToken() {
 	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
 	defer resp.Body.Close()
 
-	// Should return 401 Unauthorized (OAuth2 spec: missing authentication returns 401)
+	// Should return 401 Unauthorized (RFC 6750 §3.1: missing authentication returns 401)
 	assert.Equal(ts.T(), http.StatusUnauthorized, resp.StatusCode, "Should return 401 for missing token")
 
-	// Parse error response
-	var errorResp map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&errorResp)
-	ts.Require().NoError(err, "Failed to parse error response")
-
-	// Verify error details
-	assert.Equal(ts.T(), "invalid_request", errorResp["error"], "Error should be invalid_request")
+	// RFC 6750 §3.1: bare WWW-Authenticate: Bearer challenge for missing auth
+	assert.Equal(ts.T(), "Bearer", resp.Header.Get("WWW-Authenticate"),
+		"Should include bare WWW-Authenticate: Bearer challenge")
 }
 
 func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {

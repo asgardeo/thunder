@@ -225,9 +225,9 @@ https://localhost:8090/oauth2/authorize?
 - `scope`: Space-separated list of scopes (URL-encoded)
 - `state`: Random value for CSRF protection (recommended)
 
-**Optional Parameters:**
-- `code_challenge`: PKCE code challenge (if PKCE is required)
-- `code_challenge_method`: `"S256"` or `"plain"` (if PKCE is required)
+**PKCE Parameters (required if PKCE is enabled or for public clients):**
+- `code_challenge`: PKCE code challenge
+- `code_challenge_method`: Must be `"S256"`
 - `resource`: Target resource/audience (RFC 8707)
 
 ### Step 5: User Authentication
@@ -325,8 +325,7 @@ curl -kL -X POST https://localhost:8090/oauth2/token \
 ```
 
 **PKCE Code Challenge Methods:**
-- `S256`: SHA256 hash (recommended)
-- `plain`: Plain text (less secure)
+- `S256`: SHA256 hash (required, per Security Best  Practices).
 
 ## Resource Parameter (RFC 8707)
 

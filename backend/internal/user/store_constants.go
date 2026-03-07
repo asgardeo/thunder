@@ -274,6 +274,55 @@ func buildBulkUserExistsQuery(userIDs []string, deploymentID string) (model.DBQu
 	return query, args, nil
 }
 
+// buildBulkUserExistsQueryInOUs constructs a query that returns which of the provided user IDs
+// exist AND belong to one of the given organization unit IDs.
+func buildBulkUserExistsQueryInOUs(
+	userIDs []string, ouIDs []string, deploymentID string,
+) (model.DBQuery, []interface{}, error) {
+	if len(userIDs) == 0 {
+		return model.DBQuery{}, nil, fmt.Errorf("userIDs list cannot be empty")
+	}
+	if len(ouIDs) == 0 {
+		return model.DBQuery{}, nil, fmt.Errorf("ouIDs list cannot be empty")
+	}
+
+	// Layout: [$1=deploymentID, $2...$N=ouIDs, $N+1...=userIDs]
+	args := make([]interface{}, 0, 1+len(ouIDs)+len(userIDs))
+	args = append(args, deploymentID)
+
+	postgresOUPlaceholders := make([]string, len(ouIDs))
+	sqliteOUPlaceholders := make([]string, len(ouIDs))
+	for i, ouID := range ouIDs {
+		postgresOUPlaceholders[i] = fmt.Sprintf("$%d", i+2)
+		sqliteOUPlaceholders[i] = "?"
+		args = append(args, ouID)
+	}
+
+	idBase := 2 + len(ouIDs)
+	postgresIDPlaceholders := make([]string, len(userIDs))
+	sqliteIDPlaceholders := make([]string, len(userIDs))
+	for i, userID := range userIDs {
+		postgresIDPlaceholders[i] = fmt.Sprintf("$%d", idBase+i)
+		sqliteIDPlaceholders[i] = "?"
+		args = append(args, userID)
+	}
+
+	baseQueryTpl := "SELECT ID FROM \"USER\" WHERE DEPLOYMENT_ID = %s AND OU_ID IN (%s) AND ID IN (%s)"
+	postgresQuery := fmt.Sprintf(baseQueryTpl, "$1",
+		strings.Join(postgresOUPlaceholders, ","), strings.Join(postgresIDPlaceholders, ","))
+	sqliteQuery := fmt.Sprintf(baseQueryTpl, "?",
+		strings.Join(sqliteOUPlaceholders, ","), strings.Join(sqliteIDPlaceholders, ","))
+
+	query := model.DBQuery{
+		ID:            "ASQ-USER_MGT-21",
+		Query:         postgresQuery,
+		PostgresQuery: postgresQuery,
+		SQLiteQuery:   sqliteQuery,
+	}
+
+	return query, args, nil
+}
+
 // buildUserListQuery constructs a query to get users with optional filtering.
 func buildUserListQuery(
 	filters map[string]interface{}, limit, offset int, deploymentID string,

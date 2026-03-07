@@ -17,7 +17,7 @@
  */
 
 import {Alert, PageContent, Snackbar, useColorScheme} from '@wso2/oxygen-ui';
-import {useGetTranslations, useUpdateTranslation} from '@thunder/i18n';
+import {useGetTranslations, useUpdateTranslation, NamespaceConstants} from '@thunder/i18n';
 import {useCallback, useEffect, useMemo, useState, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
@@ -26,7 +26,11 @@ import NamespaceSelector from '../components/edit-translation/NamespaceSelector'
 import TranslationEditorCard from '../components/edit-translation/TranslationEditorCard';
 import TranslationEditorHeader from '../components/edit-translation/TranslationEditorHeader';
 
-interface ToastState {open: boolean; message: string; severity: 'success' | 'error'}
+interface ToastState {
+  open: boolean;
+  message: string;
+  severity: 'success' | 'error';
+}
 
 /**
  * Page for editing translation key-value pairs for a specific language.
@@ -82,7 +86,10 @@ export default function TranslationsEditPage(): JSX.Element {
 
   const updateTranslation = useUpdateTranslation();
 
-  const namespaces = useMemo(() => Object.keys(translationsData?.translations ?? {}), [translationsData]);
+  const namespaces = useMemo(() => {
+    const ns = Object.keys(translationsData?.translations ?? {});
+    return ns.includes(NamespaceConstants.CUSTOM_NAMESPACE) ? ns : [...ns, NamespaceConstants.CUSTOM_NAMESPACE];
+  }, [translationsData]);
 
   // Reset namespace when language changes
   useEffect(() => {
@@ -211,6 +218,7 @@ export default function TranslationsEditPage(): JSX.Element {
 
   const isLoading = !!selectedLanguage && translationsLoading;
   const isEnglish = selectedLanguage === 'en' || selectedLanguage === 'en-US';
+  const isCustomNamespace = selectedNamespace === NamespaceConstants.CUSTOM_NAMESPACE;
 
   return (
     <PageContent fullWidth sx={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0}}>
@@ -223,8 +231,14 @@ export default function TranslationsEditPage(): JSX.Element {
         hasNamespace={!!selectedNamespace}
         onBack={handleBack}
         onDiscard={handleDiscard}
-        onResetToDefault={() => { handleResetToDefault().catch((_error: unknown) => logger.error('Failed to reset to default', {error: _error})); }}
-        onSave={() => { handleSave().catch((_error: unknown) => logger.error('Failed to save translations', {error: _error})); }}
+        onResetToDefault={() => {
+          handleResetToDefault().catch((_error: unknown) =>
+            logger.error('Failed to reset to default', {error: _error}),
+          );
+        }}
+        onSave={() => {
+          handleSave().catch((_error: unknown) => logger.error('Failed to save translations', {error: _error}));
+        }}
       />
 
       <NamespaceSelector
@@ -241,6 +255,7 @@ export default function TranslationsEditPage(): JSX.Element {
         search={search}
         currentValues={currentValues}
         serverValues={serverValues}
+        isCustomNamespace={isCustomNamespace}
         colorMode={colorMode}
         onTabChange={handleTabChange}
         onSearchChange={setSearch}

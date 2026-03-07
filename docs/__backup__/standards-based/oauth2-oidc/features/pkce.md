@@ -24,7 +24,7 @@ Generate a random code verifier (43-128 characters, URL-safe)
 
 ### Step 2: Generate Code Challenge
 
-Create code challenge using S256 (recommended)
+Create code challenge using S256 (required)
 
 ### Step 3: Authorization Request
 
@@ -71,8 +71,9 @@ curl -kL -X POST https://localhost:8090/oauth2/token \
 ## Code Challenge Methods
 
 Thunder supports:
-- **S256**: SHA256 hash (recommended, more secure)
-- **plain**: Plain text (less secure, not recommended)
+- **S256**: SHA256 hash (required, per OAuth 2.0 Security Best Current Practice)
+
+The `plain` method is not supported as it does not provide adequate security. Per RFC 9700 (OAuth 2.0 Security Best Current Practice), clients MUST use S256 as the code challenge method.
 
 ## Application Configuration
 
@@ -89,7 +90,7 @@ Enable PKCE requirement for an application:
 }
 ```
 
-When `pkce_required` is `true`, PKCE parameters are mandatory. Additionally PKCE is checked mandatorily for `public_clients` during runtime.
+When `pkce_required` is `true`, both `code_challenge` and `code_challenge_method` parameters are mandatory in the authorization request. The `code_challenge_method` must be `S256`. Additionally, PKCE is checked mandatorily for `public_clients` during runtime.
 
 ## Related Documentation
 

@@ -183,14 +183,14 @@ read -r -d '' SAMPLE_APP_PAYLOAD <<JSON || true
         },
         "id_token": {
           "validity_period": 3600,
-          "user_attributes": ["given_name","family_name","email","groups"],
-          "scope_claims": {
-            "profile": ["name","given_name","family_name","picture"],
-            "email": ["email","email_verified"],
-            "phone": ["phone_number","phone_number_verified"],
-            "group": ["groups"]
-          }
+          "user_attributes": ["given_name","family_name","email","groups"]
         }
+      },
+      "scope_claims": {
+        "profile": ["name","given_name","family_name","picture"],
+        "email": ["email","email_verified"],
+        "phone": ["phone_number","phone_number_verified"],
+        "group": ["groups"]
       }
     }
   }]
@@ -265,14 +265,14 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
         },
         "id_token": {
           "validity_period": 3600,
-          "user_attributes": ["given_name","family_name","email","groups","name"],
-          "scope_claims": {
-            "email": ["email","email_verified"],
-            "group": ["groups"],
-            "phone": ["phone_number","phone_number_verified"],
-            "profile": ["name","given_name","family_name","picture"]
-          }
+          "user_attributes": ["given_name","family_name","email","groups","name"]
         }
+      },
+      "scope_claims": {
+        "email": ["email","email_verified"],
+        "group": ["groups"],
+        "phone": ["phone_number","phone_number_verified"],
+        "profile": ["name","given_name","family_name","picture"]
       }
     }
   }]

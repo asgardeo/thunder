@@ -15,8 +15,8 @@ GET /oauth2/authorize
 - `redirect_uri`: Redirect URI (must match registered URI)
 - `scope`: Space-separated scopes (URL-encoded)
 - `state`: CSRF protection token (recommended)
-- `code_challenge`: PKCE code challenge (if PKCE is used)
-- `code_challenge_method`: `"S256"` or `"plain"` (if PKCE is used)
+- `code_challenge`: PKCE code challenge (required if PKCE is used)
+- `code_challenge_method`: Must be `"S256"` (required if PKCE is used)
 - `resource`: Target resource/audience (RFC 8707, optional)
 
 ## Example

@@ -400,6 +400,122 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDs_StoreEr
 	suite.Nil(result)
 }
 
+// TestCompositeStore_ValidateUserIDsInOUs_EmptyUserIDs verifies short-circuit on empty user IDs.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs_EmptyUserIDs() {
+	out, err := suite.compositeStore.ValidateUserIDsInOUs(context.Background(), []string{}, []string{"ou-1"})
+	suite.NoError(err)
+	suite.Empty(out)
+}
+
+// TestCompositeStore_ValidateUserIDsInOUs_EmptyOUIDs verifies all IDs are out-of-scope when no OUs provided.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs_EmptyOUIDs() {
+	userIDs := []string{"usr-001", "usr-002"}
+	out, err := suite.compositeStore.ValidateUserIDsInOUs(context.Background(), userIDs, []string{})
+	suite.NoError(err)
+	suite.Equal(userIDs, out)
+}
+
+// TestCompositeStore_ValidateUserIDsInOUs covers OU-scope checking across both underlying stores.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name           string
+		userIDs        []string
+		ouIDs          []string
+		dbGetUser      func()
+		wantOutOfScope []string
+		wantError      bool
+	}{
+		{
+			name:    "user in scope found in db store",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			dbGetUser: func() {
+				suite.mockDBStore.On("GetUser", ctx, "usr-001").
+					Return(User{ID: "usr-001", OrganizationUnit: "ou-1"}, nil).Once()
+			},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:    "user out of scope",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-2"},
+			dbGetUser: func() {
+				suite.mockDBStore.On("GetUser", ctx, "usr-001").
+					Return(User{ID: "usr-001", OrganizationUnit: "ou-1"}, nil).Once()
+			},
+			wantOutOfScope: []string{"usr-001"},
+		},
+		{
+			name:    "user not found in either store treated as out of scope",
+			userIDs: []string{"usr-missing"},
+			ouIDs:   []string{"ou-1"},
+			dbGetUser: func() {
+				suite.mockDBStore.On("GetUser", ctx, "usr-missing").
+					Return(User{}, ErrUserNotFound).Once()
+				suite.mockFileStore.On("GetUser", ctx, "usr-missing").
+					Return(User{}, ErrUserNotFound).Once()
+			},
+			wantOutOfScope: []string{"usr-missing"},
+		},
+		{
+			name:    "user found in file store when not in db store",
+			userIDs: []string{"usr-file"},
+			ouIDs:   []string{"ou-1"},
+			dbGetUser: func() {
+				suite.mockDBStore.On("GetUser", ctx, "usr-file").
+					Return(User{}, ErrUserNotFound).Once()
+				suite.mockFileStore.On("GetUser", ctx, "usr-file").
+					Return(User{ID: "usr-file", OrganizationUnit: "ou-1"}, nil).Once()
+			},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:    "mixed in scope and out of scope",
+			userIDs: []string{"usr-001", "usr-002"},
+			ouIDs:   []string{"ou-1"},
+			dbGetUser: func() {
+				suite.mockDBStore.On("GetUser", ctx, "usr-001").
+					Return(User{ID: "usr-001", OrganizationUnit: "ou-1"}, nil).Once()
+				suite.mockDBStore.On("GetUser", ctx, "usr-002").
+					Return(User{ID: "usr-002", OrganizationUnit: "ou-2"}, nil).Once()
+			},
+			wantOutOfScope: []string{"usr-002"},
+		},
+		{
+			name:    "non-not-found error from GetUser propagates",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			dbGetUser: func() {
+				suite.mockDBStore.On("GetUser", ctx, "usr-001").
+					Return(User{}, errors.New("connection refused")).Once()
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			if tc.dbGetUser != nil {
+				tc.dbGetUser()
+			}
+
+			out, err := suite.compositeStore.ValidateUserIDsInOUs(ctx, tc.userIDs, tc.ouIDs)
+			if tc.wantError {
+				suite.Error(err)
+			} else {
+				suite.NoError(err)
+				suite.Equal(tc.wantOutOfScope, out)
+			}
+
+			suite.mockDBStore.AssertExpectations(suite.T())
+			suite.mockFileStore.AssertExpectations(suite.T())
+		})
+	}
+}
+
 // TestCompositeStoreTestSuite runs the test suite.
 func TestCompositeStoreTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeStoreTestSuite))

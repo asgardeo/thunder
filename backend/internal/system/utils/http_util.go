@@ -162,6 +162,12 @@ func SanitizeStringMap(inputs map[string]string) map[string]string {
 	return sanitized
 }
 
+// IsBearerAuth checks if the Authorization header uses the Bearer scheme (case-insensitive).
+func IsBearerAuth(authHeader string) bool {
+	parts := strings.SplitN(authHeader, " ", 2)
+	return len(parts) >= 1 && strings.EqualFold(parts[0], constants.TokenTypeBearer)
+}
+
 // ExtractBearerToken extracts the Bearer token from the Authorization header value.
 // It validates that the header is not empty, starts with "Bearer" (case-insensitive),
 // and contains a non-empty token. Returns the token and an error if validation fails.

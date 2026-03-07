@@ -339,6 +339,8 @@ Write-Host ""
 #           └── Action handle "view"       → permission "system:ou:view"
 #       └── Resource handle "user"         → permission "system:user"
 #           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "group"        → permission "system:group"
+#           └── Action handle "view"       → permission "system:group:view"
 #       └── Resource handle "userschema"   → permission "system:userschema"
 #           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
@@ -628,6 +630,86 @@ elseif ($response.StatusCode -eq 409) {
 }
 else {
     Log-Error "Failed to create user schema view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Write-Host ""
+
+Log-Info "Creating 'group' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create group resource."
+    exit 1
+}
+
+$groupResourceData = @{
+    name        = "Group"
+    description = "Group resource"
+    handle      = "group"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $groupResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Group resource created successfully (permission: system:group)"
+    $body = $response.Body | ConvertFrom-Json
+    $GROUP_RESOURCE_ID = $body.id
+    if ($GROUP_RESOURCE_ID) {
+        Log-Info "Group resource ID: $GROUP_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract group resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Group resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $groupResource = $body.resources | Where-Object { $_.handle -eq "group" } | Select-Object -First 1
+
+        if ($groupResource) {
+            $GROUP_RESOURCE_ID = $groupResource.id
+            Log-Success "Found group resource ID: $GROUP_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find group resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create group resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'group' resource..."
+
+$groupViewActionData = @{
+    name        = "View"
+    description = "Read-only access to groups"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$GROUP_RESOURCE_ID/actions" -Data $groupViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Group view action created successfully (permission: system:group:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Group view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create group view action (HTTP $($response.StatusCode))"
     Log-Error "Response: $($response.Body)"
     exit 1
 }
@@ -1067,13 +1149,13 @@ $appData = @{
                     id_token = @{
                         validity_period = 3600
                         user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
-                        scope_claims = @{
-                            profile = @("name", "given_name", "family_name", "picture")
-                            email = @("email", "email_verified")
-                            phone = @("phone_number", "phone_number_verified")
-                            group = @("groups")
-                        }
                     }
+                }
+                scope_claims = @{
+                    profile = @("name", "given_name", "family_name", "picture")
+                    email = @("email", "email_verified")
+                    phone = @("phone_number", "phone_number_verified")
+                    group = @("groups")
                 }
             }
         }
@@ -1159,6 +1241,59 @@ else {
     }
     else {
         Log-Warning "No theme files found in $themesDir"
+    }
+}
+
+Write-Host ""
+
+# ============================================================================
+# Seed i18n Translations
+# ============================================================================
+
+Log-Info "Seeding i18n translations..."
+
+$i18nDir = Join-Path $PSScriptRoot "i18n"
+
+if (-not (Test-Path $i18nDir)) {
+    Log-Warning "i18n directory not found at $i18nDir, skipping translation seeding"
+}
+else {
+    $i18nFiles = Get-ChildItem -Path $i18nDir -Filter "*.json" -File -ErrorAction SilentlyContinue
+
+    if ($i18nFiles.Count -gt 0) {
+        Log-Info "Processing i18n translations from $i18nDir..."
+
+        $i18nCount = 0
+        $i18nSuccess = 0
+
+        foreach ($i18nFile in $i18nFiles) {
+            $i18nCount++
+            $language = $i18nFile.BaseName
+
+            Log-Info "Seeding translations for language: $language (from $($i18nFile.Name))"
+
+            $payload = Get-Content $i18nFile.FullName -Raw
+
+            $response = Invoke-ThunderApi -Method POST -Endpoint "/i18n/languages/$language/translations" -Data $payload
+
+            if ($response.StatusCode -eq 200) {
+                $body = $response.Body | ConvertFrom-Json
+                $total = $body.totalResults
+                Log-Success "Translations for '$language' seeded successfully ($total translations)"
+                $i18nSuccess++
+            }
+            else {
+                Log-Error "Failed to seed translations for '$language' (HTTP $($response.StatusCode))"
+                Write-Host "Response: $($response.Body)"
+                exit 1
+            }
+        }
+
+        Write-Host ""
+        Log-Info "Translation seeding summary: $i18nSuccess seeded (Total: $i18nCount)"
+    }
+    else {
+        Log-Warning "No i18n translation files found in $i18nDir"
     }
 }
 

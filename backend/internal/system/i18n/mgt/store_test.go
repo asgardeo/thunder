@@ -108,7 +108,7 @@ func (suite *I18nStoreTestSuite) TestGetTranslations_Success() {
 
 	suite.NoError(err)
 	suite.NotNil(trans)
-	suite.Equal("v1", trans["k1"]["en-US"].Value)
+	suite.Equal("v1", trans["ns1|k1"]["en-US"].Value)
 }
 
 // GetTranslationsByNamespace Tests
@@ -125,7 +125,7 @@ func (suite *I18nStoreTestSuite) TestGetTranslationsByNamespace_Success() {
 
 	suite.NoError(err)
 	suite.NotNil(trans)
-	suite.Equal("v1", trans["k1"]["en-US"].Value)
+	suite.Equal("v1", trans["ns1|k1"]["en-US"].Value)
 }
 
 // GetTranslationsByKey Tests

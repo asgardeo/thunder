@@ -1068,3 +1068,77 @@ func (_c *userStoreInterfaceMock_ValidateUserIDs_Call) RunAndReturn(run func(ctx
 	_c.Call.Return(run)
 	return _c
 }
+
+// ValidateUserIDsInOUs provides a mock function for the type userStoreInterfaceMock
+func (_mock *userStoreInterfaceMock) ValidateUserIDsInOUs(ctx context.Context, userIDs []string, ouIDs []string) ([]string, error) {
+	ret := _mock.Called(ctx, userIDs, ouIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateUserIDsInOUs")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, []string) ([]string, error)); ok {
+		return returnFunc(ctx, userIDs, ouIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, []string) []string); ok {
+		r0 = returnFunc(ctx, userIDs, ouIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, []string) error); ok {
+		r1 = returnFunc(ctx, userIDs, ouIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// userStoreInterfaceMock_ValidateUserIDsInOUs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateUserIDsInOUs'
+type userStoreInterfaceMock_ValidateUserIDsInOUs_Call struct {
+	*mock.Call
+}
+
+// ValidateUserIDsInOUs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIDs []string
+//   - ouIDs []string
+func (_e *userStoreInterfaceMock_Expecter) ValidateUserIDsInOUs(ctx interface{}, userIDs interface{}, ouIDs interface{}) *userStoreInterfaceMock_ValidateUserIDsInOUs_Call {
+	return &userStoreInterfaceMock_ValidateUserIDsInOUs_Call{Call: _e.mock.On("ValidateUserIDsInOUs", ctx, userIDs, ouIDs)}
+}
+
+func (_c *userStoreInterfaceMock_ValidateUserIDsInOUs_Call) Run(run func(ctx context.Context, userIDs []string, ouIDs []string)) *userStoreInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_ValidateUserIDsInOUs_Call) Return(strings []string, err error) *userStoreInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *userStoreInterfaceMock_ValidateUserIDsInOUs_Call) RunAndReturn(run func(ctx context.Context, userIDs []string, ouIDs []string) ([]string, error)) *userStoreInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Return(run)
+	return _c
+}

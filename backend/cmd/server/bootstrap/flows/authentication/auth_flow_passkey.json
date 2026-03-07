@@ -16,13 +16,13 @@
                     {
                         "type": "TEXT",
                         "id": "text_001",
-                        "label": "Sign in with Passkey",
+                        "label": "{{ t(signin:forms.passkey.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "type": "TEXT",
                         "id": "text_002",
-                        "label": "Use your passkey to securely sign in to your account without a password.",
+                        "label": "{{ t(signin:forms.passkey.description) }}",
                         "variant": "BODY"
                     },
                     {
@@ -32,7 +32,7 @@
                             {
                                 "type": "ACTION",
                                 "id": "action_001",
-                                "label": "Sign in with Passkey",
+                                "label": "{{ t(signin:forms.passkey.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }

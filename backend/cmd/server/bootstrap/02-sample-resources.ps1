@@ -197,13 +197,13 @@ $appData = @{
                     id_token = @{
                         validity_period = 3600
                         user_attributes = @("given_name","family_name","email","groups")
-                        scope_claims = @{
-                            profile = @("name","given_name","family_name","picture")
-                            email = @("email","email_verified")
-                            phone = @("phone_number","phone_number_verified")
-                            group = @("groups")
-                        }
                     }
+                }
+                scope_claims = @{
+                    profile = @("name","given_name","family_name","picture")
+                    email = @("email","email_verified")
+                    phone = @("phone_number","phone_number_verified")
+                    group = @("groups")
                 }
             }
         }
@@ -282,13 +282,13 @@ $reactSdkAppData = @{
                     id_token = @{
                         validity_period = 3600
                         user_attributes = @("given_name","family_name","email","groups","name")
-                        scope_claims = @{
-                            email = @("email","email_verified")
-                            group = @("groups")
-                            phone = @("phone_number","phone_number_verified")
-                            profile = @("name","given_name","family_name","picture")
-                        }
                     }
+                }
+                scope_claims = @{
+                    email = @("email","email_verified")
+                    group = @("groups")
+                    phone = @("phone_number","phone_number_verified")
+                    profile = @("name","given_name","family_name","picture")
                 }
             }
         }

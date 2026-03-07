@@ -53,6 +53,9 @@ const ContentTypeJWT = "application/jwt"
 // ContentTypeFormURLEncoded is the content type for form-urlencoded data.
 const ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
 
+// WWWAuthenticateHeaderName is the name of the WWW-Authenticate header used in HTTP responses.
+const WWWAuthenticateHeaderName = "WWW-Authenticate"
+
 // CacheControlHeaderName is the name of the cache-control header used in HTTP responses.
 const CacheControlHeaderName = "Cache-Control"
 

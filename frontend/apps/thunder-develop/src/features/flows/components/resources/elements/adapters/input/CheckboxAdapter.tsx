@@ -22,8 +22,8 @@ import {Checkbox, FormControlLabel, FormHelperText} from '@wso2/oxygen-ui';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../../hint';
-import PlaceholderComponent from '../PlaceholderComponent';
 
 const CHECKBOX_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -60,6 +60,7 @@ export interface CheckboxAdapterPropsInterface {
  */
 function CheckboxAdapter({resource}: CheckboxAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -93,7 +94,7 @@ function CheckboxAdapter({resource}: CheckboxAdapterPropsInterface): ReactElemen
       <FormControlLabel
         control={<Checkbox defaultChecked />}
         className={checkboxElement?.className}
-        label={<PlaceholderComponent value={checkboxElement?.label ?? ''} />}
+        label={resolve(checkboxElement?.label, {t}) ?? checkboxElement?.label ?? ''}
         required={checkboxElement?.required}
         style={checkboxElement?.styles}
       />

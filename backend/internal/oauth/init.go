@@ -56,9 +56,10 @@ func Initialize(
 	grantHandlerProvider := granthandlers.Initialize(
 		mux, jwtService, userService, applicationService, flowExecService, tokenBuilder, tokenValidator)
 	scopeValidator := scope.Initialize()
-	token.Initialize(mux, applicationService, grantHandlerProvider, scopeValidator, observabilitySvc)
-	introspect.Initialize(mux, jwtService)
+	discoveryService := discovery.Initialize(mux)
+	token.Initialize(mux, jwtService, applicationService, grantHandlerProvider,
+		scopeValidator, observabilitySvc, discoveryService)
+	introspect.Initialize(mux, jwtService, applicationService, discoveryService)
 	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, userService, ouService)
-	discovery.Initialize(mux)
 	dcr.Initialize(mux, applicationService)
 }

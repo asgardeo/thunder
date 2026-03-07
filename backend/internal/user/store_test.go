@@ -124,6 +124,28 @@ func (m *MockDBProvider) GetRuntimeDBTransactioner() (transaction.Transactioner,
 	return nil, nil
 }
 
+// errorUserDBProvider is a provider that returns an error for GetUserDBClient calls.
+type errorUserDBProvider struct{}
+
+func (e *errorUserDBProvider) GetConfigDBClient() (provider.DBClientInterface, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetRuntimeDBClient() (provider.DBClientInterface, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetUserDBClient() (provider.DBClientInterface, error) {
+	return nil, errors.New("user db client unavailable")
+}
+func (e *errorUserDBProvider) GetConfigDBTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetUserDBTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+
 // UserStoreTestSuite is the test suite for userStore.
 type UserStoreTestSuite struct {
 	suite.Suite
@@ -544,6 +566,116 @@ func (suite *UserStoreTestSuite) TestValidateUserIDs() {
 	invalid, err := suite.store.ValidateUserIDs(context.Background(), userIDs)
 	suite.NoError(err)
 	suite.Empty(invalid)
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_EmptyUserIDs() {
+	outOfScope, err := suite.store.ValidateUserIDsInOUs(context.Background(), []string{}, []string{"ou-1"})
+	suite.NoError(err)
+	suite.Empty(outOfScope)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_EmptyOUIDs() {
+	userIDs := []string{"usr-001", "usr-002"}
+	outOfScope, err := suite.store.ValidateUserIDsInOUs(context.Background(), userIDs, []string{})
+	suite.NoError(err)
+	suite.Equal(userIDs, outOfScope)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs() {
+	testCases := []struct {
+		name           string
+		userIDs        []string
+		ouIDs          []string
+		dbRows         []map[string]interface{}
+		dbErr          error
+		wantOutOfScope []string
+		wantErr        bool
+	}{
+		{
+			name:    "user in scope",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			dbRows: []map[string]interface{}{
+				{"id": "usr-001"},
+			},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:           "user out of scope",
+			userIDs:        []string{"usr-001"},
+			ouIDs:          []string{"ou-1"},
+			dbRows:         []map[string]interface{}{},
+			wantOutOfScope: []string{"usr-001"},
+		},
+		{
+			name:    "query execution error",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			dbErr:   errors.New("db failure"),
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			// For 1 user + 1 OU: args = [deploymentID, ouID, userID] → 5 total (ctx, query, +3)
+			suite.mockDB.On("QueryContext",
+				mock.Anything,
+				mock.MatchedBy(func(query dbmodel.DBQuery) bool {
+					return query.ID == "ASQ-USER_MGT-21"
+				}),
+				mock.Anything, mock.Anything, mock.Anything).
+				Return(tc.dbRows, tc.dbErr).Once()
+
+			outOfScope, err := suite.store.ValidateUserIDsInOUs(
+				context.Background(), tc.userIDs, tc.ouIDs)
+
+			if tc.wantErr {
+				suite.Error(err)
+			} else {
+				suite.NoError(err)
+				suite.Equal(tc.wantOutOfScope, outOfScope)
+			}
+
+			suite.mockDB.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_PartialOutOfScope() {
+	// 2 users, 1 OU → args = [deploymentID, ou-1, usr-001, usr-002] → 6 total (ctx, query, +4)
+	suite.mockDB.On("QueryContext",
+		mock.Anything,
+		mock.MatchedBy(func(query dbmodel.DBQuery) bool {
+			return query.ID == "ASQ-USER_MGT-21"
+		}),
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]map[string]interface{}{{"id": "usr-001"}}, nil).Once()
+
+	outOfScope, err := suite.store.ValidateUserIDsInOUs(
+		context.Background(), []string{"usr-001", "usr-002"}, []string{"ou-1"})
+
+	suite.NoError(err)
+	suite.Equal([]string{"usr-002"}, outOfScope)
+	suite.mockDB.AssertExpectations(suite.T())
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_DBClientError() {
+	// Use a store wired to a provider that fails on GetUserDBClient.
+	errProvider := &errorUserDBProvider{}
+	store := &userStore{
+		deploymentID: testDeploymentID,
+		dbProvider:   errProvider,
+	}
+
+	_, err := store.ValidateUserIDsInOUs(
+		context.Background(), []string{"usr-001"}, []string{"ou-1"})
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to get database client")
 }
 
 func (suite *UserStoreTestSuite) TestIdentifyUser_NoIndexedFilters() {

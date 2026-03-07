@@ -24,7 +24,7 @@ import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-u
 import {Position} from '@xyflow/react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import PlaceholderComponent from './PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import NodeHandle from './NodeHandle';
 
 /**
@@ -63,6 +63,7 @@ export interface ResendButtonAdapterPropsInterface {
  */
 function ResendButtonAdapter({resource}: ResendButtonAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -98,7 +99,7 @@ function ResendButtonAdapter({resource}: ResendButtonAdapterPropsInterface): Rea
   return (
     <div className="adapter button-adapter">
       <Button sx={resendConfig?.styles} {...config}>
-        <PlaceholderComponent value={resendElement?.label ?? ''} />
+        {resolve(resendElement?.label, {t}) ?? resendElement?.label ?? ''}
       </Button>
       <NodeHandle
         id={`${resource?.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`}

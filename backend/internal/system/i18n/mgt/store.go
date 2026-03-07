@@ -253,10 +253,11 @@ func transformResults(results []map[string]interface{}) (map[string]map[string]T
 			return nil, err
 		}
 
-		if translations[trans.Key] == nil {
-			translations[trans.Key] = make(map[string]Translation)
+		compositeKey := trans.Namespace + "|" + trans.Key
+		if translations[compositeKey] == nil {
+			translations[compositeKey] = make(map[string]Translation)
 		}
-		translations[trans.Key][trans.Language] = *trans
+		translations[compositeKey][trans.Language] = *trans
 	}
 
 	return translations, nil

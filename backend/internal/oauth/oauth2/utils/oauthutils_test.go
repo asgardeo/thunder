@@ -676,7 +676,7 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(tc.scopes)
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(tc.scopes, nil)
 			// Compare lengths and contents, handling nil vs empty slice
 			if tc.expectedOIDC == nil {
 				assert.Nil(t, oidcScopes, "OIDC scopes should be nil")
@@ -706,7 +706,7 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_StandardOIDC
 
 	for _, scope := range standardOIDCScopes {
 		suite.T().Run("OIDCScope_"+scope, func(t *testing.T) {
-			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope)
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope, nil)
 			if oidcScopes == nil {
 				assert.Fail(t, "OIDC scopes should not be nil for standard OIDC scope")
 			} else {
@@ -725,7 +725,7 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_CustomScopes
 
 	for _, scope := range customScopes {
 		suite.T().Run("CustomScope_"+scope, func(t *testing.T) {
-			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope)
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope, nil)
 			// Handle nil case - function may return nil for empty slices
 			if oidcScopes == nil {
 				assert.Nil(t, oidcScopes, "OIDC scopes should be nil for custom scope")
@@ -733,6 +733,55 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_CustomScopes
 				assert.NotContains(t, oidcScopes, scope, "Custom scope should not be in OIDC list")
 			}
 			assert.Contains(t, nonOidcScopes, scope, "Custom scope should be in non-OIDC list")
+		})
+	}
+}
+
+func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_WithCustomScopeClaimsMapping() {
+	scopeClaimsMapping := map[string][]string{
+		"ou":       {"ouId", "ouName"},
+		"employee": {"emp_id", "department"},
+	}
+
+	testCases := []struct {
+		name            string
+		scopes          string
+		expectedOIDC    []string
+		expectedNonOIDC []string
+	}{
+		{
+			name:            "CustomMappedScopeIsOIDC",
+			scopes:          "openid ou",
+			expectedOIDC:    []string{"openid", "ou"},
+			expectedNonOIDC: nil,
+		},
+		{
+			name:            "UnmappedCustomScopeIsNonOIDC",
+			scopes:          "openid read",
+			expectedOIDC:    []string{"openid"},
+			expectedNonOIDC: []string{"read"},
+		},
+		{
+			name:            "MixedStandardAndCustomMappedScopes",
+			scopes:          "openid profile ou employee read",
+			expectedOIDC:    []string{"openid", "profile", "ou", "employee"},
+			expectedNonOIDC: []string{"read"},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(tc.scopes, scopeClaimsMapping)
+			if tc.expectedOIDC == nil {
+				assert.Nil(t, oidcScopes)
+			} else {
+				assert.Equal(t, tc.expectedOIDC, oidcScopes)
+			}
+			if tc.expectedNonOIDC == nil {
+				assert.Nil(t, nonOidcScopes)
+			} else {
+				assert.Equal(t, tc.expectedNonOIDC, nonOidcScopes)
+			}
 		})
 	}
 }

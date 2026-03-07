@@ -41,6 +41,8 @@ export interface TranslationEditorCardProps {
   currentValues: Record<string, string>;
   /** Server-saved values for the selected namespace. */
   serverValues: Record<string, string>;
+  /** Whether the active namespace is "custom", which allows adding new keys. */
+  isCustomNamespace: boolean;
   /** Color mode passed to the JSON editor. */
   colorMode: 'light' | 'dark';
   /** Called when the user switches between the Fields and JSON tabs. */
@@ -73,6 +75,7 @@ export default function TranslationEditorCard({
   search,
   currentValues,
   serverValues,
+  isCustomNamespace,
   colorMode,
   onTabChange,
   onSearchChange,
@@ -134,6 +137,7 @@ export default function TranslationEditorCard({
                 localValues={currentValues}
                 serverValues={serverValues}
                 search={search}
+                isCustomNamespace={isCustomNamespace}
                 onChange={onFieldChange}
                 onResetField={onResetField}
               />
@@ -143,7 +147,13 @@ export default function TranslationEditorCard({
 
         {selectedLanguage && !isLoading && editView === 'json' && (
           <Box sx={{flex: 1, overflow: 'hidden', p: 0}}>
-            <TranslationJsonEditor values={currentValues} colorMode={colorMode} onChange={onJsonChange} />
+            <TranslationJsonEditor
+              values={currentValues}
+              serverKeys={Object.keys(serverValues)}
+              isCustomNamespace={isCustomNamespace}
+              colorMode={colorMode}
+              onChange={onJsonChange}
+            />
           </Box>
         )}
       </Card>

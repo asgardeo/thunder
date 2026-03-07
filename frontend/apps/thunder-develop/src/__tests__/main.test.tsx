@@ -38,9 +38,9 @@ vi.mock('@thunder/shared-contexts', () => ({
   ConfigProvider: ({children}: {children: React.ReactNode}) => <div data-testid="config-provider">{children}</div>,
 }));
 
-// Mock AppWithConfig
-vi.mock('../AppWithConfig', () => ({
-  default: () => <div data-testid="app-with-config">AppWithConfig</div>,
+// Mock AppWithDecorators
+vi.mock('../AppWithDecorators', () => ({
+  default: () => <div data-testid="app-with-decorators">AppWithDecorators</div>,
 }));
 
 describe('main', () => {

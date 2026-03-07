@@ -22,7 +22,7 @@ import {Divider, type DividerProps} from '@wso2/oxygen-ui';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {DividerVariants, type Element as FlowElement} from '@/features/flows/models/elements';
-import PlaceholderComponent from './PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 
 const DIVIDER_VALIDATION_FIELD_NAMES = {
   variant: 'variant',
@@ -54,6 +54,7 @@ export interface DividerAdapterPropsInterface {
  */
 function DividerAdapter({resource}: DividerAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const generalMessage: ReactElement = useMemo(
     () => (
@@ -95,7 +96,7 @@ function DividerAdapter({resource}: DividerAdapterPropsInterface): ReactElement 
 
   return (
     <Divider {...config}>
-      {dividerElement?.label && <PlaceholderComponent value={dividerElement.label} />}
+      {dividerElement?.label && (resolve(dividerElement.label, {t}) ?? dividerElement.label)}
     </Divider>
   );
 }

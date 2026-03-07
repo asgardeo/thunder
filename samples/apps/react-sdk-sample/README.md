@@ -110,7 +110,7 @@ Before running the app, ensure your Thunder application is configured with:
 
 1. **Authorized Redirect URLs**: Add your application URL (e.g., `https://localhost:3000`)
 2. **Allowed Origins**: Add your application origin for CORS
-3. **Grant Types**: Authorization Code (with PKCE recommended for SPAs)
+3. **Grant Types**: Authorization Code (with PKCE required for SPAs)
 
 ## Troubleshooting
 

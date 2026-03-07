@@ -19,6 +19,7 @@
 package userinfo
 
 import (
+	"fmt"
 	"net/http"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -51,8 +52,12 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 	authHeader := r.Header.Get(serverconst.AuthorizationHeaderName)
 	accessToken, err := utils.ExtractBearerToken(authHeader)
 	if err != nil {
-		utils.WriteJSONError(w, constants.ErrorInvalidRequest,
-			err.Error(), http.StatusUnauthorized, nil)
+		if authHeader == "" || !utils.IsBearerAuth(authHeader) {
+			w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
+			w.WriteHeader(http.StatusUnauthorized)
+		} else {
+			writeBearerError(w, constants.ErrorInvalidRequest, err.Error(), http.StatusBadRequest)
+		}
 		return
 	}
 
@@ -93,5 +98,16 @@ func (h *userInfoHandler) writeServiceErrorResponse(w http.ResponseWriter, svcEr
 		statusCode = http.StatusUnauthorized
 	}
 
-	utils.WriteJSONError(w, svcErr.Code, svcErr.ErrorDescription, statusCode, nil)
+	if statusCode == http.StatusInternalServerError {
+		utils.WriteJSONError(w, constants.ErrorServerError, serviceerror.InternalServerError.Error, statusCode, nil)
+	} else {
+		writeBearerError(w, svcErr.Code, svcErr.ErrorDescription, statusCode)
+	}
+}
+
+// writeBearerError writes a JSON error response with a WWW-Authenticate: Bearer header.
+func writeBearerError(w http.ResponseWriter, errorCode, errorDescription string, statusCode int) {
+	wwwAuth := fmt.Sprintf("Bearer error=%q, error_description=%q", errorCode, errorDescription)
+	utils.WriteJSONError(w, errorCode, errorDescription, statusCode,
+		[]map[string]string{{serverconst.WWWAuthenticateHeaderName: wwwAuth}})
 }

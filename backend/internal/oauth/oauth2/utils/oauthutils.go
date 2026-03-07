@@ -133,13 +133,17 @@ func GenerateAuthorizationCode() (string, error) {
 }
 
 // SeparateOIDCAndNonOIDCScopes separates the given scopes into OIDC and non-OIDC scopes.
-func SeparateOIDCAndNonOIDCScopes(scopes string) ([]string, []string) {
+// A scope is treated as OIDC if it is a standard OIDC scope or is present in the app's
+// custom scope_claims mapping.
+func SeparateOIDCAndNonOIDCScopes(scopes string, scopeClaimsMapping map[string][]string) ([]string, []string) {
 	scopeSlice := utils.ParseStringArray(scopes, " ")
 	var oidcScopes []string
 	var nonOidcScopes []string
 
 	for _, scp := range scopeSlice {
-		if _, exists := constants.StandardOIDCScopes[scp]; exists {
+		_, isStandard := constants.StandardOIDCScopes[scp]
+		_, isCustomOIDC := scopeClaimsMapping[scp]
+		if isStandard || isCustomOIDC {
 			oidcScopes = append(oidcScopes, scp)
 		} else {
 			nonOidcScopes = append(nonOidcScopes, scp)

@@ -29,7 +29,6 @@ type authError struct {
 	ErrorCode        string
 	ErrorDescription string
 	StatusCode       int
-	ResponseHeaders  map[string]string
 }
 
 // newAuthError creates a new authentication error.
@@ -41,32 +40,21 @@ func newAuthError(errorCode, errorDescription string, statusCode int) *authError
 	}
 }
 
-// newAuthErrorWithHeaders creates a new authentication error with response headers.
-func newAuthErrorWithHeaders(errorCode, errorDescription string, statusCode int, headers map[string]string) *authError {
-	return &authError{
-		ErrorCode:        errorCode,
-		ErrorDescription: errorDescription,
-		StatusCode:       statusCode,
-		ResponseHeaders:  headers,
-	}
-}
-
 // Common authentication errors
 var (
-	errInvalidAuthorizationHeader = newAuthErrorWithHeaders(
+	errInvalidAuthorizationHeader = newAuthError(
 		constants.ErrorInvalidClient,
 		"Invalid client credentials",
 		http.StatusUnauthorized,
-		map[string]string{"WWW-Authenticate": "Basic"},
 	)
 	errInvalidClientCredentials = newAuthError(
 		constants.ErrorInvalidClient,
 		"Invalid client credentials",
 		http.StatusUnauthorized,
 	)
-	errBothHeaderAndBody = newAuthError(
+	errMultipleAuthMethods = newAuthError(
 		constants.ErrorInvalidRequest,
-		"Authorization information is provided in both header and body",
+		"Multiple client authentication methods were provided",
 		http.StatusBadRequest,
 	)
 	errMissingClientID = newAuthError(
@@ -74,14 +62,19 @@ var (
 		"Missing client_id parameter",
 		http.StatusBadRequest,
 	)
-	errMissingClientSecret = newAuthError(
-		constants.ErrorInvalidClient,
-		"Missing client_secret parameter",
-		http.StatusUnauthorized,
-	)
 	errUnauthorizedAuthMethod = newAuthError(
 		constants.ErrorUnauthorizedClient,
 		"Client is not allowed to use the specified token endpoint authentication method",
 		http.StatusBadRequest,
+	)
+	errClientIDMismatch = newAuthError(
+		constants.ErrorInvalidRequest,
+		"client_id in request body does not match client_id from authentication credentials",
+		http.StatusBadRequest,
+	)
+	errInvalidClientAssertion = newAuthError(
+		constants.ErrorInvalidClient,
+		"Invalid client assertion",
+		http.StatusUnauthorized,
 	)
 )

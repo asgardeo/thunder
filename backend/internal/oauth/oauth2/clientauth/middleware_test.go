@@ -34,11 +34,15 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/discoverymock"
 )
 
 type ClientAuthMiddlewareTestSuite struct {
 	suite.Suite
-	mockAppService *applicationmock.ApplicationServiceInterfaceMock
+	mockAppService       *applicationmock.ApplicationServiceInterfaceMock
+	mockJwtService       *jwtmock.JWTServiceInterfaceMock
+	mockDiscoveryService *discoverymock.DiscoveryServiceInterfaceMock
 }
 
 func TestClientAuthMiddlewareTestSuite(t *testing.T) {
@@ -47,6 +51,8 @@ func TestClientAuthMiddlewareTestSuite(t *testing.T) {
 
 func (suite *ClientAuthMiddlewareTestSuite) SetupTest() {
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	suite.mockJwtService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockDiscoveryService = discoverymock.NewDiscoveryServiceInterfaceMock(suite.T())
 }
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_ClientSecretPost() {
@@ -64,7 +70,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Create test handler that checks context
 	var clientInfo *OAuthClientInfo
@@ -110,7 +116,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Create test handler
 	var clientInfo *OAuthClientInfo
@@ -137,7 +143,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_MissingClientID() {
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -165,7 +171,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 		Return(nil, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -205,7 +211,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -238,7 +244,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_HandlerNotC
 		Return(nil, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Track if handler was called
 	handlerCalled := false
@@ -279,7 +285,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 		Return(mockApp, nil).Once()
 
 	// Create middleware
-	middleware := ClientAuthMiddleware(suite.mockAppService)
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
 
 	// Create nested handler that also checks context
 	var clientInfo *OAuthClientInfo
@@ -308,4 +314,95 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 	// Verify context was propagated
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 	assert.NotNil(suite.T(), clientInfo)
+}
+
+// Tests for RFC 6749 §5.2: WWW-Authenticate header on 401 responses when client used Authorization header.
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_401_IncludesWWWAuthenticate() {
+	// Client not found with Basic auth should include WWW-Authenticate: Basic
+	suite.mockAppService.On("GetOAuthApplication", testClientID).
+		Return(nil, nil).Once()
+
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("POST", "/test", nil)
+	req.SetBasicAuth(testClientID, testClientSecret)
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), "Basic", w.Header().Get("WWW-Authenticate"))
+}
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_InvalidCreds_IncludesWWWAuth() {
+	clientSecret := testClientSecret
+	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
+	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID:                testClientID,
+		HashedClientSecret:      hashedSecret,
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
+		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+	}
+
+	suite.mockAppService.On("GetOAuthApplication", testClientID).
+		Return(mockApp, nil).Once()
+
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("POST", "/test", nil)
+	req.SetBasicAuth(testClientID, "wrong-secret")
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), "Basic", w.Header().Get("WWW-Authenticate"))
+}
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_PostAuth_401_NoWWWAuthenticate() {
+	// Client not found with POST body auth should not include WWW-Authenticate
+	suite.mockAppService.On("GetOAuthApplication", "non-existent").
+		Return(nil, nil).Once()
+
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	formData := url.Values{}
+	formData.Set("client_id", "non-existent")
+	formData.Set("client_secret", testClientSecret)
+
+	req := httptest.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Empty(suite.T(), w.Header().Get("WWW-Authenticate"))
+}
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidBasicAuth_IncludesWWWAuthenticate() {
+	// Invalid Basic auth header format should include WWW-Authenticate: Basic
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("POST", "/test", nil)
+	req.Header.Set("Authorization", "Bearer some-token")
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), "Basic", w.Header().Get("WWW-Authenticate"))
 }

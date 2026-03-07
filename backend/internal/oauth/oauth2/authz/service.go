@@ -189,7 +189,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage)
 		return nil, authErr
 	}
 
-	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope)
+	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope, app.ScopeClaims)
 
 	// Construct authorization request context.
 	oauthParams := oauth2model.OAuthParameters{

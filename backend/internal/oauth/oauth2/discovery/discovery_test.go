@@ -161,11 +161,11 @@ func TestTokenEndpointAuthMethodIsValid(t *testing.T) {
 	assert.True(t, constants.TokenEndpointAuthMethodClientSecretBasic.IsValid())
 	assert.True(t, constants.TokenEndpointAuthMethodClientSecretPost.IsValid())
 	assert.True(t, constants.TokenEndpointAuthMethodNone.IsValid())
+	assert.True(t, constants.TokenEndpointAuthMethodPrivateKeyJWT.IsValid())
 
 	// Test invalid authentication methods
 	assert.False(t, constants.TokenEndpointAuthMethod("invalid").IsValid())
 	assert.False(t, constants.TokenEndpointAuthMethod("client_secret_jwt").IsValid())
-	assert.False(t, constants.TokenEndpointAuthMethod("private_key_jwt").IsValid())
 	assert.False(t, constants.TokenEndpointAuthMethod("").IsValid())
 }
 
@@ -201,12 +201,12 @@ func TestGetSupportedTokenEndpointAuthMethods(t *testing.T) {
 	supported := constants.GetSupportedTokenEndpointAuthMethods()
 
 	assert.NotNil(t, supported)
-	assert.Equal(t, 3, len(supported))
+	assert.Equal(t, 4, len(supported))
 	assert.Contains(t, supported, "client_secret_basic")
 	assert.Contains(t, supported, "client_secret_post")
 	assert.Contains(t, supported, "none")
+	assert.Contains(t, supported, "private_key_jwt")
 	assert.NotContains(t, supported, "client_secret_jwt")
-	assert.NotContains(t, supported, "private_key_jwt")
 }
 
 // TestGetSupportedSubjectTypes tests the GetSupportedSubjectTypes function

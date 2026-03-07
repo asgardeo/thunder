@@ -22,6 +22,7 @@ import (
 	"errors"
 	"net/http"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -59,7 +60,7 @@ func writeSecurityError(w http.ResponseWriter, err error) {
 		description = "Authentication is required to access this resource"
 		statusCode = http.StatusUnauthorized
 		// Set WWW-Authenticate header for 401 responses
-		w.Header().Set("WWW-Authenticate", "Bearer")
+		w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
 	} else if errors.Is(err, errForbidden) || errors.Is(err, errInsufficientPermissions) {
 		code = "forbidden"
 		description = "You do not have sufficient permissions to access this resource"
@@ -68,7 +69,7 @@ func writeSecurityError(w http.ResponseWriter, err error) {
 		code = "unauthorized"
 		description = "Authentication failed"
 		statusCode = http.StatusUnauthorized
-		w.Header().Set("WWW-Authenticate", "Bearer")
+		w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
 	}
 
 	// Use the existing WriteJSONError utility

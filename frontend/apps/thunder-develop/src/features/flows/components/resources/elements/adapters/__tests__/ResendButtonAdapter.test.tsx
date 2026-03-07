@@ -99,12 +99,12 @@ describe('ResendButtonAdapter', () => {
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
 
-    it('should render button label via PlaceholderComponent', () => {
+    it('should render button label', () => {
       const resource = createMockElement({label: 'Resend OTP'});
 
       render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('Resend OTP');
+      expect(screen.getByRole('button')).toHaveTextContent('Resend OTP');
     });
 
     it('should render NodeHandle for edge connection', () => {
@@ -148,7 +148,7 @@ describe('ResendButtonAdapter', () => {
 
       render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(screen.getByRole('button')).toHaveTextContent('');
     });
 
     it('should handle undefined label', () => {
@@ -156,7 +156,7 @@ describe('ResendButtonAdapter', () => {
 
       render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('placeholder')).toHaveTextContent('');
+      expect(screen.getByRole('button')).toHaveTextContent('');
     });
   });
 

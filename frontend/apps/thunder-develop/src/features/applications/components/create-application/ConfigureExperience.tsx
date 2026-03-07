@@ -36,6 +36,7 @@ import type {JSX, ChangeEvent} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {UserSchemaListItem} from '@/features/user-types/types/user-types';
+import {useConfig} from '@thunder/shared-contexts';
 import {ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
 
 /**
@@ -124,6 +125,10 @@ export default function ConfigureExperience({
   onUserTypesChange = undefined,
 }: ConfigureExperienceProps): JSX.Element {
   const {t} = useTranslation();
+  const {config} = useConfig();
+
+  const {brand} = config;
+  const {product_name: productName} = brand || {};
 
   // Determine if user types should be shown (2 or more available)
   const showUserTypes = userTypes.length >= 2;
@@ -208,13 +213,13 @@ export default function ConfigureExperience({
                         <ExternalLink size={20} />
                         <Typography variant="h6">
                           {t('applications:onboarding.configure.approach.inbuilt.title', {
-                            product: t('common:product.displayName'),
+                            product: config,
                           })}
                         </Typography>
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
                         {t('applications:onboarding.configure.approach.inbuilt.description', {
-                          product: t('common:product.displayName'),
+                          product: productName,
                         })}
                       </Typography>
                     </Box>
@@ -256,13 +261,13 @@ export default function ConfigureExperience({
                         <Code size={20} />
                         <Typography variant="h6">
                           {t('applications:onboarding.configure.approach.native.title', {
-                            product: t('common:product.displayName'),
+                            product: productName,
                           })}
                         </Typography>
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
                         {t('applications:onboarding.configure.approach.native.description', {
-                          product: t('common:product.displayName'),
+                          product: productName,
                         })}
                       </Typography>
                     </Box>

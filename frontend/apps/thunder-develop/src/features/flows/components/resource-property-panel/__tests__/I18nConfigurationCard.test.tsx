@@ -48,6 +48,7 @@ vi.mock('@thunder/shared-contexts', () => ({
 // Mock the API hooks from @thunder/i18n
 const mockMutate = vi.fn();
 vi.mock('@thunder/i18n', () => ({
+  NamespaceConstants: {CUSTOM_NAMESPACE: 'custom'},
   useUpdateTranslation: () => ({
     mutate: mockMutate,
     isPending: false,
@@ -59,7 +60,7 @@ vi.mock('@thunder/i18n', () => ({
     data: {
       language: 'en-US',
       translations: {
-        flowI18n: {
+        custom: {
           'login.title': 'Sign In',
           'login.description': 'Enter your credentials',
           'login.button.submit': 'Submit',
@@ -289,11 +290,11 @@ describe('I18nConfigurationCard', () => {
       const openButton = screen.getByTitle('Open');
       fireEvent.click(openButton);
 
-      // Keys are now prefixed with the namespace (flowI18n:)
+      // Keys are now prefixed with the namespace (custom:)
       await waitFor(() => {
-        expect(screen.getByText('flowI18n:login.title')).toBeInTheDocument();
-        expect(screen.getByText('flowI18n:login.description')).toBeInTheDocument();
-        expect(screen.getByText('flowI18n:common.continue')).toBeInTheDocument();
+        expect(screen.getByText('custom:login.title')).toBeInTheDocument();
+        expect(screen.getByText('custom:login.description')).toBeInTheDocument();
+        expect(screen.getByText('custom:common.continue')).toBeInTheDocument();
       });
     });
 
@@ -334,14 +335,14 @@ describe('I18nConfigurationCard', () => {
       const openButton = screen.getByTitle('Open');
       fireEvent.click(openButton);
 
-      // Keys are now prefixed with the namespace (flowI18n:)
+      // Keys are now prefixed with the namespace (custom:)
       await waitFor(() => {
-        expect(screen.getByText('flowI18n:login.title')).toBeInTheDocument();
+        expect(screen.getByText('custom:login.title')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('flowI18n:login.title'));
+      fireEvent.click(screen.getByText('custom:login.title'));
 
-      expect(mockOnChange).toHaveBeenCalledWith('flowI18n:login.title');
+      expect(mockOnChange).toHaveBeenCalledWith('custom:login.title');
     });
 
     it('should call onChange with empty string when selection is cleared', async () => {
@@ -546,7 +547,9 @@ describe('I18nConfigurationCard', () => {
       fireEvent.click(cancelButton);
 
       // Should be back in select mode - the placeholder text indicates we're in select mode
-      expect(screen.getByPlaceholderText('flows:core.elements.textPropertyField.i18nCard.selectI18nKey')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('flows:core.elements.textPropertyField.i18nCard.selectI18nKey'),
+      ).toBeInTheDocument();
     });
 
     it('should have disabled create button when key or value is empty', () => {
@@ -676,7 +679,7 @@ describe('I18nConfigurationCard', () => {
       expect(mockMutate).toHaveBeenCalledWith(
         {
           language: 'en-US',
-          namespace: 'flowI18n',
+          namespace: 'custom',
           key: 'my.new.key',
           value: 'My translation value',
         },
@@ -728,7 +731,7 @@ describe('I18nConfigurationCard', () => {
       callbacks.onSuccess();
 
       // Should have called onChange with the new key
-      expect(mockOnChange).toHaveBeenCalledWith('flowI18n:my.new.key');
+      expect(mockOnChange).toHaveBeenCalledWith('custom:my.new.key');
 
       // Should be back in select mode - check for the title change instead of placeholder
       await waitFor(() => {

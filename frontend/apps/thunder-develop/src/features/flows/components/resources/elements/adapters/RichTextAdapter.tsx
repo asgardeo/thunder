@@ -22,7 +22,7 @@ import parse from 'html-react-parser';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import PlaceholderComponent from './PlaceholderComponent';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import './RichTextAdapter.scss';
 
 // Register DOMPurify hook once at module level to handle anchor tags.
@@ -91,6 +91,8 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
 
   useRequiredFields(resource, generalMessage, validationFields);
 
+  const {resolve} = useTemplateLiteralResolver();
+
   const richTextElement = resource as RichTextElement;
   const textContent = richTextElement?.label ?? '';
 
@@ -103,10 +105,13 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
     [textContent],
   );
 
+  const resolvedKey = resolve(textContent);
+  const isTemplate = resolvedKey !== undefined && resolvedKey !== textContent;
+
   return (
     <div className="rich-text-content">
       {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- html-react-parser types issue */}
-      <PlaceholderComponent value={textContent}>{parse(sanitizedHtml)}</PlaceholderComponent>
+      {isTemplate ? resolve(textContent, {t}) : parse(sanitizedHtml)}
     </div>
   );
 }
