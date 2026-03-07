@@ -16,13 +16,14 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
+import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {Typography, type TypographyProps} from '@wso2/oxygen-ui';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {TypographyVariants, type Element} from '@/features/flows/models/elements';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
 
 const TYPOGRAPHY_VALIDATION_FIELD_NAMES = {
   label: 'label',
@@ -128,13 +129,18 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
 
   const muiVariant = variantStr ? VARIANT_TO_MUI_MAP[variantStr] : undefined;
 
+  const rawLabel = typographyElement?.label ?? '';
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
+    ? <TemplatePlaceholder value={rawLabel} t={t} />
+    : (resolve(rawLabel, {t}) ?? rawLabel);
+
   return (
     <Typography
       variant={muiVariant}
       style={typographyConfig?.styles}
       {...config}
     >
-      {resolve(typographyElement?.label, {t}) ?? typographyElement?.label ?? ''}
+      {labelNode}
     </Typography>
   );
 }

@@ -347,7 +347,7 @@ importers:
         version: 3.3.0
       elkjs:
         specifier: ^0.11.0
-        version: 0.11.0
+        version: 0.11.1
       html-react-parser:
         specifier: 5.2.10
         version: 5.2.10(@types/react@19.2.7)(react@19.2.3)
@@ -380,7 +380,7 @@ importers:
         version: 7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-syntax-highlighter:
         specifier: ^16.1.0
-        version: 16.1.0(react@19.2.3)
+        version: 16.1.1(react@19.2.3)
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -487,6 +487,9 @@ importers:
       '@thunder/shared-hooks':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-hooks
+      '@thunder/utils':
+        specifier: workspace:^
+        version: link:../../packages/thunder-utils
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.8.0(@mui/system@7.3.6(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(@wso2/oxygen-ui-icons-react@0.8.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -896,6 +899,9 @@ importers:
       '@thunder/shared-contexts':
         specifier: workspace:^
         version: link:../thunder-shared-contexts
+      '@thunder/utils':
+        specifier: workspace:^
+        version: link:../thunder-utils
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.8.0(@mui/system@7.3.6(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(@wso2/oxygen-ui-icons-react@0.8.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -966,6 +972,9 @@ importers:
 
   packages/thunder-shared-hooks:
     dependencies:
+      '@thunder/utils':
+        specifier: workspace:^
+        version: link:../thunder-utils
       lucide-react:
         specifier: 'catalog:'
         version: 0.545.0(react@19.2.3)
@@ -2806,11 +2815,23 @@ packages:
   '@floating-ui/core@1.7.4':
     resolution: {integrity: sha512-C3HlIdsBxszvm5McXlB8PeOEWfBhcGBTZGkGlWc2U0KFY5IwG5OQEuQ8rq52DZmcHDlPLd+YFBK+cZcytwIFWg==}
 
+  '@floating-ui/core@1.7.5':
+    resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
+
   '@floating-ui/dom@1.7.5':
     resolution: {integrity: sha512-N0bD2kIPInNHUHehXhMke1rBGs1dwqvC9O9KYMyyjK7iXt7GAhnro7UlcuYcGdS/yYOlq0MAVgrow8IbWJwyqg==}
 
+  '@floating-ui/dom@1.7.6':
+    resolution: {integrity: sha512-9gZSAI5XM36880PPMm//9dfiEngYoC6Am2izES1FF406YFsjvyBMmeJ2g4SAju3xWwtuynNRFL2s9hgxpLI5SQ==}
+
   '@floating-ui/react-dom@2.1.7':
     resolution: {integrity: sha512-0tLRojf/1Go2JgEVm+3Frg9A3IW8bJgKgdO0BN5RkF//ufuz2joZM63Npau2ff3J6lUVYgDSNzNkR+aH3IVfjg==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@floating-ui/react-dom@2.1.8':
+    resolution: {integrity: sha512-cC52bHwM/n/CxS87FH0yWdngEZrjdtLW/qVruo68qg+prK7ZQ4YGdut2GyDVpoGeAYe/h899rVeOVm6Oi40k2A==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -2821,14 +2842,17 @@ packages:
       react: '>=17.0.0'
       react-dom: '>=17.0.0'
 
-  '@floating-ui/react@0.27.18':
-    resolution: {integrity: sha512-xJWJxvmy3a05j643gQt+pRbht5XnTlGpsEsAPnMi5F5YTOEEJymA90uZKBD8OvIv5XvZ1qi4GcccSlqT3Bq44Q==}
+  '@floating-ui/react@0.27.19':
+    resolution: {integrity: sha512-31B8h5mm8YxotlE7/AU/PhNAl8eWxAmjL/v2QOxroDNkTFLk3Uu82u63N3b6TXa4EGJeeZLVcd/9AlNlVqzeog==}
     peerDependencies:
       react: '>=17.0.0'
       react-dom: '>=17.0.0'
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@floating-ui/utils@0.2.11':
+    resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
   '@floating-ui/vue@1.1.9':
     resolution: {integrity: sha512-BfNqNW6KA83Nexspgb9DZuz578R7HT8MZw1CfK9I6Ah4QReNWEJsXWHN+SdmOVLNGmTPDi+fDT535Df5PzMLbQ==}
@@ -6505,8 +6529,8 @@ packages:
   electron-to-chromium@1.5.267:
     resolution: {integrity: sha512-0Drusm6MVRXSOJpGbaSVgcQsuB4hEkMpHXaVstcPmhu5LIedxs1xNK/nIxmQIU/RPC0+1/o0AVZfBTkTNJOdUw==}
 
-  elkjs@0.11.0:
-    resolution: {integrity: sha512-u4J8h9mwEDaYMqo0RYJpqNMFDoMK7f+pu4GjcV+N8jIC7TRdORgzkfSjTJemhqONFfH6fBI3wpysgWbhgVWIXw==}
+  elkjs@0.11.1:
+    resolution: {integrity: sha512-zxxR9k+rx5ktMwT/FwyLdPCrq7xN6e4VGGHH8hA01vVYKjTFik7nHOxBnAYtrgYUB1RpAiLvA1/U2YraWxyKKg==}
 
   elliptic@6.6.1:
     resolution: {integrity: sha512-RaddvvMatK2LJHqFJ+YA4WysVN5Ita9E35botqIYspQ4TkRAlCicdzKOjlyv/1Za5RyTNn7di//eEV0uTAfe3g==}
@@ -9596,8 +9620,8 @@ packages:
       react-dom:
         optional: true
 
-  react-syntax-highlighter@16.1.0:
-    resolution: {integrity: sha512-E40/hBiP5rCNwkeBN1vRP+xow1X0pndinO+z3h7HLsHyjztbyjfzNWNKuAsJj+7DLam9iT4AaaOZnueCU+Nplg==}
+  react-syntax-highlighter@16.1.1:
+    resolution: {integrity: sha512-PjVawBGy80C6YbC5DDZJeUjBmC7skaoEUdvfFQediQHgCL7aKyVHe57SaJGfQsloGDac+gCpTfRdtxzWWKmCXA==}
     engines: {node: '>= 16.20.2'}
     peerDependencies:
       react: '>= 0.14.0'
@@ -13725,10 +13749,19 @@ snapshots:
     dependencies:
       '@floating-ui/utils': 0.2.10
 
+  '@floating-ui/core@1.7.5':
+    dependencies:
+      '@floating-ui/utils': 0.2.11
+
   '@floating-ui/dom@1.7.5':
     dependencies:
       '@floating-ui/core': 1.7.4
       '@floating-ui/utils': 0.2.10
+
+  '@floating-ui/dom@1.7.6':
+    dependencies:
+      '@floating-ui/core': 1.7.5
+      '@floating-ui/utils': 0.2.11
 
   '@floating-ui/react-dom@2.1.7(react-dom@19.1.4(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -13736,9 +13769,9 @@ snapshots:
       react: 19.2.3
       react-dom: 19.1.4(react@19.2.3)
 
-  '@floating-ui/react-dom@2.1.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@floating-ui/react-dom@2.1.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@floating-ui/dom': 1.7.5
+      '@floating-ui/dom': 1.7.6
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
@@ -13750,15 +13783,17 @@ snapshots:
       react-dom: 19.1.4(react@19.2.3)
       tabbable: 6.4.0
 
-  '@floating-ui/react@0.27.18(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@floating-ui/react@0.27.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@floating-ui/utils': 0.2.10
+      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@floating-ui/utils': 0.2.11
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       tabbable: 6.4.0
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@floating-ui/utils@0.2.11': {}
 
   '@floating-ui/vue@1.1.9(vue@3.5.28(typescript@5.6.3))':
     dependencies:
@@ -14221,7 +14256,7 @@ snapshots:
 
   '@lexical/react@0.38.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(yjs@13.6.29)':
     dependencies:
-      '@floating-ui/react': 0.27.18(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@floating-ui/react': 0.27.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@lexical/devtools-core': 0.38.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@lexical/dragon': 0.38.2
       '@lexical/extension': 0.38.2
@@ -17979,7 +18014,7 @@ snapshots:
 
   electron-to-chromium@1.5.267: {}
 
-  elkjs@0.11.0: {}
+  elkjs@0.11.1: {}
 
   elliptic@6.6.1:
     dependencies:
@@ -21796,7 +21831,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.3(react@19.2.3)
 
-  react-syntax-highlighter@16.1.0(react@19.2.3):
+  react-syntax-highlighter@16.1.1(react@19.2.3):
     dependencies:
       '@babel/runtime': 7.28.4
       highlight.js: 10.7.3

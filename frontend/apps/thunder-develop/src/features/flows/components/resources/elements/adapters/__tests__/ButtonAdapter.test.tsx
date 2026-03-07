@@ -149,7 +149,7 @@ describe('ButtonAdapter', () => {
     });
 
     it('should render social button variant with default image', () => {
-      const resource = createMockElement({variant: ButtonVariants.Social});
+      const resource = createMockElement({variant: ButtonVariants.Outlined});
 
       render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 

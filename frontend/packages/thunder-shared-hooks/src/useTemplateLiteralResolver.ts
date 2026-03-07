@@ -16,49 +16,13 @@
  * under the License.
  */
 
+import {
+  TEMPLATE_LITERAL_REGEX,
+  TemplateLiteralHandlers,
+  TemplateLiteralResult,
+  parseTemplateLiteral,
+} from '@thunder/utils';
 import {useMemo} from 'react';
-
-/**
- * Template literal types supported by the resolver
- *
- * @enum {string}
- */
-export enum TemplateLiteralType {
-  /** Translation template literal using t() function */
-  TRANSLATION = 't',
-  /** Unknown or unsupported template literal format */
-  UNKNOWN = 'unknown',
-}
-
-/**
- * Result of parsing a template literal
- *
- * @interface TemplateLiteralResult
- */
-export interface TemplateLiteralResult {
-  /** The type of template literal that was detected */
-  type: TemplateLiteralType;
-  /** The extracted key from the template literal (e.g., "signin:heading" from "{{ t(signin:heading) }}") */
-  key?: string;
-  /** Reserved for future use - the resolved value after processing */
-  resolvedValue?: string;
-  /** The original template literal content before parsing */
-  originalValue: string;
-}
-
-/**
- * Map of handler functions keyed by TemplateLiteralType.
- * When provided to resolve(), the matching handler is called with the extracted key.
- *
- * Since TemplateLiteralType.TRANSLATION = 't', you can pass `{ t }` directly from useTranslation().
- *
- * @example
- * ```typescript
- * const { t } = useTranslation();
- * resolve('{{ t(signin:heading) }}', { t }); // calls t('signin:heading')
- * ```
- */
-export type TemplateLiteralHandlers = Partial<Record<TemplateLiteralType, (key: string) => string>>;
 
 /**
  * Return type for useTemplateLiteralResolver hook
@@ -68,51 +32,12 @@ export type TemplateLiteralHandlers = Partial<Record<TemplateLiteralType, (key: 
 export interface TemplateLiteralResolverResult {
   /** Function to resolve template literals. If handlers are provided, calls the matching handler with the extracted key. */
   resolve: (value?: string, handlers?: TemplateLiteralHandlers) => string | undefined;
-}
-
-/**
- * Parse a template literal content and extract type and key
- *
- * Supports parsing function calls like:
- * - `t(signin:heading)` -> extracts "signin:heading" as a translation key
- * - Future: `context(user:name)` -> extracts "user:name" as a context key
- *
- * @param content - The content inside template literal braces (without {{ }})
- * @returns Parsed template literal information including type, key, and original value
- *
- * @example
- * ```typescript
- * parseTemplateLiteral('t(signin:heading)')
- * // Returns: { type: 'TRANSLATION', key: 'signin:heading', originalValue: 't(signin:heading)' }
- * ```
- */
-function parseTemplateLiteral(content: string): TemplateLiteralResult {
-  const originalValue: string = content;
-  const functionCallRegex = /^(\w+)\(([^)]+)\)$/;
-  const match: RegExpExecArray | null = functionCallRegex.exec(content);
-
-  if (!match) {
-    return {
-      type: TemplateLiteralType.UNKNOWN,
-      originalValue,
-    };
-  }
-
-  const [, functionName, key] = match;
-
-  switch (functionName) {
-    case 't':
-      return {
-        type: TemplateLiteralType.TRANSLATION,
-        key: key.trim(),
-        originalValue,
-      };
-    default:
-      return {
-        type: TemplateLiteralType.UNKNOWN,
-        originalValue,
-      };
-  }
+  /**
+   * Like `resolve`, but performs a global substitution — replaces every `{{type(key)}}` occurrence
+   * in the string with its handler result. Unresolved templates are left as-is.
+   * Use this when template literals are embedded inside a larger string (e.g. HTML content).
+   */
+  resolveAll: (value?: string, handlers?: TemplateLiteralHandlers) => string | undefined;
 }
 
 /**
@@ -151,9 +76,7 @@ export default function useTemplateLiteralResolver(): TemplateLiteralResolverRes
           return undefined;
         }
 
-        // Check if the string contains template literals
-        const templateLiteralRegex = /\{\{\s*([^}]+)\s*\}\}/;
-        const match: RegExpExecArray | null = templateLiteralRegex.exec(value);
+        const match: RegExpExecArray | null = TEMPLATE_LITERAL_REGEX.exec(value);
 
         if (!match) {
           return value;
@@ -170,5 +93,25 @@ export default function useTemplateLiteralResolver(): TemplateLiteralResolverRes
     [],
   );
 
-  return {resolve};
+  const resolveAll = useMemo(
+    () =>
+      (value?: string, handlers?: TemplateLiteralHandlers): string | undefined => {
+        if (!value || typeof value !== 'string') {
+          return undefined;
+        }
+
+        return value.replace(/\{\{\s*([^}]+)\s*\}\}/g, (fullMatch: string, inner: string) => {
+          const parsed: TemplateLiteralResult = parseTemplateLiteral(inner.trim());
+
+          if (parsed.key && handlers?.[parsed.type]) {
+            return handlers[parsed.type]!(parsed.key);
+          }
+
+          return fullMatch;
+        });
+      },
+    [],
+  );
+
+  return {resolve, resolveAll};
 }

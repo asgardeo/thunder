@@ -75,6 +75,7 @@
     "@asgardeo/react": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@thunder/shared-contexts": "workspace:^",
+    "@thunder/utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
     "lucide-react": "catalog:",

@@ -21,10 +21,10 @@ import {useMemo, useRef, useState, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {Box, FormHelperText, IconButton, Tooltip} from '@wso2/oxygen-ui';
-import {Languages} from '@wso2/oxygen-ui-icons-react';
+import {SquareFunction} from '@wso2/oxygen-ui-icons-react';
 import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
 import RichText from './RichText';
-import I18nConfigurationCard from '../I18nConfigurationCard';
+import DynamicValuePopover from '../DynamicValuePopover';
 
 /**
  * Props interface for the RichTextWithTranslation component.
@@ -60,8 +60,8 @@ function RichTextWithTranslation({
   resource,
 }: RichTextWithTranslationProps): ReactElement {
   const {t} = useTranslation();
-  const [isI18nCardOpen, setIsI18nCardOpen] = useState<boolean>(false);
-  const buttonRef = useRef(null);
+  const [isDynamicValuePopoverOpen, setIsDynamicValuePopoverOpen] = useState<boolean>(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const {selectedNotification} = useValidationStatus();
 
   /**
@@ -81,27 +81,23 @@ function RichTextWithTranslation({
     <Box sx={{position: 'relative'}}>
       <RichText ToolbarProps={ToolbarProps} className={className} onChange={onChange} resource={resource} />
       {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
-      <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureTranslation')}>
+      <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureDynamicValue')}>
         <IconButton
           ref={buttonRef}
-          onClick={() => setIsI18nCardOpen(!isI18nCardOpen)}
+          onClick={() => setIsDynamicValuePopoverOpen(!isDynamicValuePopoverOpen)}
           size="small"
           sx={{position: 'absolute', top: 8, right: 8}}
         >
-          <Languages size={13} />
+          <SquareFunction size={13} />
         </IconButton>
       </Tooltip>
-      <I18nConfigurationCard
-        open={isI18nCardOpen}
+      <DynamicValuePopover
+        open={isDynamicValuePopoverOpen}
         anchorEl={buttonRef.current}
         propertyKey="richText"
-        onClose={() => setIsI18nCardOpen(false)}
-        i18nKey={(() => {
-          const text = String((resource as Resource & {label?: string})?.label ?? '');
-          const match = /^\{\{t\(([^)]+)\)\}\}$/.exec(text);
-          return match?.[1] ?? '';
-        })()}
-        onChange={(i18nKey: string) => onChange(i18nKey ? `{{t(${i18nKey})}}` : '')}
+        onClose={() => setIsDynamicValuePopoverOpen(false)}
+        value={String((resource as Resource & {label?: string})?.label ?? '')}
+        onChange={(newValue: string) => onChange(newValue)}
       />
     </Box>
   );

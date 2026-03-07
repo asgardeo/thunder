@@ -23,7 +23,7 @@ import {AutoLinkNode, LinkNode} from '@lexical/link';
 import type {Resource} from '@/features/flows/models/resources';
 import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {isI18nPattern as checkIsI18nPattern, resolveI18nValue as getResolvedI18nValue} from '@/features/flows/utils/i18nPatternUtils';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Box, FormControl, FormLabel, Paper, TextField} from '@wso2/oxygen-ui';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
@@ -108,24 +108,20 @@ function RichText({
   disabled = false,
 }: RichTextProps): ReactElement {
   const {t} = useTranslation();
+  const {resolve} = useTemplateLiteralResolver();
 
   const labelValue: string | undefined = useMemo(() => (resource as Resource & {label?: string})?.label, [resource]);
 
   /**
-   * Check if the resource label matches the i18n pattern.
-   * Matches patterns like: {{t(hello.world)}}
-   * Extracts text content from HTML markup before checking.
+   * Resolve the label if it contains an i18n template literal (handles HTML wrapping naturally).
+   * Converts {{t(hello.world)}} — or <p>{{t(hello.world)}}</p> — to the translated string.
    */
-  const isI18nPattern: boolean = useMemo(() => checkIsI18nPattern(labelValue, true), [labelValue]);
+  const resolvedI18nValue: string = useMemo(() => {
+    const resolved = resolve(labelValue, {t});
+    return resolved !== undefined && resolved !== labelValue ? resolved : '';
+  }, [labelValue, t, resolve]);
 
-  /**
-   * Extract and resolve the i18n key from the label value.
-   * Converts {{t(hello.world)}} to the translated string.
-   */
-  const resolvedI18nValue: string = useMemo(
-    () => getResolvedI18nValue(labelValue, t, true),
-    [labelValue, t],
-  );
+  const isI18nPattern = !!resolvedI18nValue;
 
   return (
     <LexicalComposer initialConfig={editorConfig}>

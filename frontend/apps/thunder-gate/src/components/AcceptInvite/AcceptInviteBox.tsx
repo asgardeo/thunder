@@ -18,51 +18,29 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 
 import type {JSX} from 'react';
 import {
   Box,
-  Button,
-  FormLabel,
-  FormControl,
   Alert,
-  TextField,
   Typography,
   styled,
   AlertTitle,
   Paper,
   Stack,
   ColorSchemeImage,
-  IconButton,
-  InputAdornment,
-  Select,
-  MenuItem,
   CircularProgress,
 } from '@wso2/oxygen-ui';
-import {
-  EmbeddedFlowComponentType,
-  EmbeddedFlowEventType,
-  AcceptInvite,
-  type EmbeddedFlowComponent,
-} from '@asgardeo/react';
-import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
+import {AcceptInvite, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useNavigate} from 'react-router';
-import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {mapEmbeddedFlowTextVariant, useDesign} from '@thunder/shared-design';
 import {useConfig} from '@thunder/shared-contexts';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import ROUTES from '../../constants/routes';
-
-/** Typed shape for flow sub-components */
-type FlowSubComponent = EmbeddedFlowComponent & {
-  placeholder?: string;
-  required?: boolean;
-  options?: unknown[];
-  hint?: string;
-  variant?: string;
-  eventType?: string;
-};
+import FlowComponentRenderer from '../flow/FlowComponentRenderer';
 
 const StyledPaper = styled(Paper)(({theme}) => ({
   display: 'flex',
@@ -81,188 +59,12 @@ export default function AcceptInviteBox(): JSX.Element {
   const {resolve} = useTemplateLiteralResolver();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
-  const {isDesignEnabled} = useDesign();
 
-  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
   const baseUrl = getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string);
-
-  const togglePasswordVisibility = (field: string): void => {
-    setShowPasswordMap((prev) => ({...prev, [field]: !prev[field]}));
-  };
 
   const handleGoToSignIn = () => {
     const result = navigate(ROUTES.AUTH.SIGN_IN);
     if (result instanceof Promise) result.catch(() => {});
-  };
-
-  const getOptionValue = (option: unknown): string => {
-    if (typeof option === 'string') return option;
-    if (typeof option === 'object' && option !== null && 'value' in option) {
-      const {value} = option as {value: unknown};
-      if (typeof value === 'string') return value;
-      return JSON.stringify(value ?? option);
-    }
-    return JSON.stringify(option);
-  };
-
-  const getOptionLabel = (option: unknown): string => {
-    if (typeof option === 'string') return option;
-    if (typeof option === 'object' && option !== null && 'label' in option) {
-      const {label} = option as {label: unknown};
-      if (typeof label === 'string') return label;
-      return JSON.stringify(label ?? option);
-    }
-    return JSON.stringify(option);
-  };
-
-  const renderFormField = (
-    component: FlowSubComponent,
-    index: number,
-    values: Record<string, string>,
-    touched: Record<string, boolean>,
-    fieldErrors: Record<string, string>,
-    isLoading: boolean,
-    handleInputChange: (field: string, value: string) => void,
-  ) => {
-    const {type, ref, label, placeholder, required, options, hint} = component;
-    if (!ref) return null;
-
-    const hasError = touched?.[ref] && fieldErrors?.[ref];
-    const value = values?.[ref] ?? '';
-
-    // TEXT_INPUT
-    if (String(type) === String(EmbeddedFlowComponentType.TextInput) || type === 'TEXT_INPUT') {
-      return (
-        <FormControl key={component.id ?? index} required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(label)!)}</FormLabel>
-          <TextField
-            fullWidth
-            id={ref}
-            name={ref}
-            type="text"
-            placeholder={t(resolve(placeholder) ?? placeholder ?? '')}
-            autoComplete="off"
-            required={required}
-            variant="outlined"
-            disabled={isLoading}
-            error={!!hasError}
-            helperText={hasError ? fieldErrors[ref] : undefined}
-            color={hasError ? 'error' : 'primary'}
-            value={value}
-            onChange={(e) => handleInputChange(ref, e.target.value)}
-          />
-        </FormControl>
-      );
-    }
-
-    // EMAIL_INPUT
-    if (type === 'EMAIL_INPUT') {
-      return (
-        <FormControl key={component.id ?? index} required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(label)!)}</FormLabel>
-          <TextField
-            fullWidth
-            id={ref}
-            name={ref}
-            type="email"
-            placeholder={t(resolve(placeholder) ?? placeholder ?? '')}
-            autoComplete="email"
-            required={required}
-            variant="outlined"
-            disabled={isLoading}
-            error={!!hasError}
-            helperText={hasError ? fieldErrors[ref] : undefined}
-            color={hasError ? 'error' : 'primary'}
-            value={value}
-            onChange={(e) => handleInputChange(ref, e.target.value)}
-          />
-        </FormControl>
-      );
-    }
-
-    // PASSWORD_INPUT
-    if (String(type) === String(EmbeddedFlowComponentType.PasswordInput) || type === 'PASSWORD_INPUT') {
-      const showPassword = showPasswordMap[ref] ?? false;
-      return (
-        <FormControl key={component.id ?? index} required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(label)!)}</FormLabel>
-          <TextField
-            fullWidth
-            id={ref}
-            name={ref}
-            type={showPassword ? 'text' : 'password'}
-            placeholder={t(resolve(placeholder) ?? placeholder ?? '')}
-            autoComplete="new-password"
-            required={required}
-            variant="outlined"
-            disabled={isLoading}
-            error={!!hasError}
-            helperText={hasError ? fieldErrors[ref] : undefined}
-            color={hasError ? 'error' : 'primary'}
-            value={value}
-            onChange={(e) => handleInputChange(ref, e.target.value)}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={() => togglePasswordVisibility(ref)}
-                      edge="end"
-                      disabled={isLoading}
-                    >
-                      {showPassword ? <EyeClosed /> : <Eye />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-        </FormControl>
-      );
-    }
-
-    // SELECT
-    if (type === 'SELECT' && options) {
-      return (
-        <FormControl key={component.id ?? index} fullWidth>
-          <FormLabel htmlFor={ref}>{t(resolve(label)!)}</FormLabel>
-          <Select
-            displayEmpty
-            size="small"
-            id={ref}
-            name={ref}
-            required={required}
-            fullWidth
-            disabled={isLoading}
-            error={!!hasError}
-            value={value}
-            onChange={(e) => handleInputChange(ref, e.target.value)}
-          >
-            <MenuItem value="" disabled>
-              {t(resolve(placeholder) ?? 'Select an option')}
-            </MenuItem>
-            {options.map((option: unknown) => (
-              <MenuItem key={getOptionValue(option)} value={getOptionValue(option)}>
-                {getOptionLabel(option)}
-              </MenuItem>
-            ))}
-          </Select>
-          {hasError && (
-            <Typography variant="caption" color="error.main" sx={{mt: 0.5}}>
-              {fieldErrors[ref]}
-            </Typography>
-          )}
-          {hint && (
-            <Typography variant="caption" color="text.secondary">
-              {hint}
-            </Typography>
-          )}
-        </FormControl>
-      );
-    }
-
-    return null;
   };
 
   return (
@@ -301,8 +103,8 @@ export default function AcceptInviteBox(): JSX.Element {
             isComplete,
             isValidatingToken,
             isTokenInvalid,
-            isValid,
-          }) => {
+            isValid = true,
+          }: any) => {
             // Validating token
             if (isValidatingToken) {
               return (
@@ -353,92 +155,22 @@ export default function AcceptInviteBox(): JSX.Element {
                 )}
                 {components?.length > 0 && (
                   <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    {components.map((component: EmbeddedFlowComponent, index: number) => {
-                      // TEXT
-                      if (
-                        String(component.type) === String(EmbeddedFlowComponentType.Text) ||
-                        component.type === 'TEXT'
-                      ) {
-                        const variant = typeof component.variant === 'string' ? component.variant : undefined;
-                        const labelText = typeof component.label === 'string' ? component.label : '';
-                        return (
-                          <Typography
-                            key={component.id ?? index}
-                            variant={mapEmbeddedFlowTextVariant(variant)}
-                            sx={{mb: 1, textAlign: isDesignEnabled ? 'center' : 'left'}}
-                          >
-                            {t(resolve(labelText) ?? labelText)}
-                          </Typography>
-                        );
-                      }
-
-                      // BLOCK
-                      if (
-                        String(component.type) === String(EmbeddedFlowComponentType.Block) ||
-                        component.type === 'BLOCK'
-                      ) {
-                        const blockComponents = (component.components ?? []) as FlowSubComponent[];
-                        const submitAction = blockComponents.find(
-                          (c) =>
-                            (String(c.type) === String(EmbeddedFlowComponentType.Action) || c.type === 'ACTION') &&
-                            (String(c.eventType) === String(EmbeddedFlowEventType.Submit) || c.eventType === 'SUBMIT'),
-                        );
-
-                        if (!submitAction) return null;
-
-                        return (
-                          <Box
-                            key={component.id ?? index}
-                            component="form"
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              handleSubmit(submitAction, values).catch(() => {});
-                            }}
-                            noValidate
-                            sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2}}
-                          >
-                            {blockComponents.map((subComponent, compIndex) => {
-                              // Form fields
-                              const field = renderFormField(
-                                subComponent,
-                                compIndex,
-                                values,
-                                touched,
-                                fieldErrors,
-                                isLoading,
-                                handleInputChange,
-                              );
-                              if (field) return field;
-
-                              // Submit button
-                              if (
-                                (String(subComponent.type) === String(EmbeddedFlowComponentType.Action) ||
-                                  subComponent.type === 'ACTION') &&
-                                (String(subComponent.eventType) === String(EmbeddedFlowEventType.Submit) ||
-                                  subComponent.eventType === 'SUBMIT')
-                              ) {
-                                return (
-                                  <Button
-                                    key={subComponent.id ?? compIndex}
-                                    type="submit"
-                                    fullWidth
-                                    variant={subComponent.variant === 'PRIMARY' ? 'contained' : 'outlined'}
-                                    disabled={isLoading || !isValid}
-                                    sx={{mt: 2}}
-                                  >
-                                    {t(resolve(subComponent.label)!)}
-                                  </Button>
-                                );
-                              }
-
-                              return null;
-                            })}
-                          </Box>
-                        );
-                      }
-
-                      return null;
-                    })}
+                    {(components as EmbeddedFlowComponent[]).map((component, index) => (
+                      <FlowComponentRenderer
+                        key={component.id ?? index}
+                        component={component}
+                        index={index}
+                        values={values ?? {}}
+                        touched={touched}
+                        fieldErrors={fieldErrors}
+                        isLoading={isLoading || !isValid}
+                        resolve={resolve}
+                        onInputChange={handleInputChange}
+                        onSubmit={(action, inputs) => {
+                          handleSubmit(action, inputs).catch(() => {});
+                        }}
+                      />
+                    ))}
                   </Box>
                 )}
               </>

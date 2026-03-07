@@ -41,7 +41,7 @@ const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
   display: {
     label: 'Test Resource',
     description: 'Test Description',
-    image: 'test-image.svg',
+    image: 'path/test-image.svg',
     showOnResourcePanel: true,
   },
   ...overrides,
@@ -80,7 +80,7 @@ describe('ResourcePanelItem', () => {
       render(<ResourcePanelItem resource={resource} />);
 
       const avatar = screen.getByRole('img');
-      expect(avatar).toHaveAttribute('src', '/static/test-image.svg');
+      expect(avatar).toHaveAttribute('src', '/static/path/test-image.svg');
     });
 
     it('should render children when provided instead of default card', () => {

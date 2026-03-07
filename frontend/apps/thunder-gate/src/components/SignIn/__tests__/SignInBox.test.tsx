@@ -52,6 +52,7 @@ vi.mock('@thunder/shared-branding', () => ({
 vi.mock('@thunder/shared-hooks', () => ({
   useTemplateLiteralResolver: () => ({
     resolve: (key: string) => key,
+    resolveAll: (key: string) => key,
   }),
 }));
 
@@ -101,9 +102,7 @@ interface MockSignUpRenderProps {
 }
 
 // Factory function to create fresh mock SignIn props for each test
-const createMockSignInRenderProps = (
-  overrides: Partial<MockSignInRenderProps> = {},
-): MockSignInRenderProps => ({
+const createMockSignInRenderProps = (overrides: Partial<MockSignInRenderProps> = {}): MockSignInRenderProps => ({
   onSubmit: mockOnSubmit,
   isLoading: false,
   components: [],
@@ -113,9 +112,7 @@ const createMockSignInRenderProps = (
 });
 
 // Factory function to create fresh mock SignUp props for each test
-const createMockSignUpRenderProps = (
-  overrides: Partial<MockSignUpRenderProps> = {},
-): MockSignUpRenderProps => ({
+const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> = {}): MockSignUpRenderProps => ({
   components: [],
   ...overrides,
 });
@@ -128,10 +125,12 @@ vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
-    SignIn: ({children}: {children: (props: typeof mockSignInRenderProps) => React.ReactNode}) =>
-      <div data-testid="asgardeo-signin">{children(mockSignInRenderProps)}</div>,
-    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) =>
-      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>,
+    SignIn: ({children}: {children: (props: typeof mockSignInRenderProps) => React.ReactNode}) => (
+      <div data-testid="asgardeo-signin">{children(mockSignInRenderProps)}</div>
+    ),
+    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) => (
+      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>
+    ),
     EmbeddedFlowComponentType: {
       Text: 'TEXT',
       Block: 'BLOCK',
@@ -1920,7 +1919,7 @@ describe('SignInBox', () => {
     render(<SignInBox />);
 
     const emailInput = screen.getByLabelText(/Email Address/);
-    expect(emailInput).toHaveAttribute('autocomplete', 'off');
+    expect(emailInput).toHaveAttribute('autocomplete', 'email');
 
     const tokenInput = screen.getByLabelText(/API Token/);
     expect(tokenInput).toHaveAttribute('autocomplete', 'off');

@@ -73,7 +73,13 @@ vi.mock('@wso2/oxygen-ui', () => ({
   ColorSchemeToggle: () => <div data-testid="color-scheme-toggle">Toggle</div>,
   CircularProgress: () => <div data-testid="circular-progress">Loading...</div>,
   Box: ({children}: {children: React.ReactNode}) => <div data-testid="box">{children}</div>,
-  Button: ({children, onClick = undefined}: {children: React.ReactNode; onClick?: React.MouseEventHandler<HTMLButtonElement>}) => (
+  Button: ({
+    children,
+    onClick = undefined,
+  }: {
+    children: React.ReactNode;
+    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  }) => (
     <button type="button" data-testid="language-button" onClick={onClick}>
       {children}
     </button>
@@ -143,7 +149,7 @@ describe('withTheme', () => {
 
   it('uses AcrylicOrangeTheme as fallback when transformedTheme is null', () => {
     mockUseDesign.mockReturnValue({
-      transformedTheme: null,
+      theme: null,
       isLoading: false,
     });
 
@@ -153,7 +159,7 @@ describe('withTheme', () => {
 
   it('uses AcrylicOrangeTheme as fallback when transformedTheme is undefined', () => {
     mockUseDesign.mockReturnValue({
-      transformedTheme: undefined,
+      theme: undefined,
       isLoading: false,
     });
 
@@ -164,7 +170,7 @@ describe('withTheme', () => {
   it('passes transformedTheme to OxygenUIThemeProvider when available', () => {
     const mockTheme = {palette: {primary: {main: '#ff0000'}}};
     mockUseDesign.mockReturnValue({
-      transformedTheme: mockTheme,
+      theme: mockTheme,
       isLoading: false,
     });
 

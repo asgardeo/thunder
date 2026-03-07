@@ -1,0 +1,306 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import type {JSX} from 'react';
+import {Box, Button} from '@wso2/oxygen-ui';
+import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
+import getIntegrationIcon from '../../../utils/getIntegrationIcon';
+import TextInputAdapter from './TextInputAdapter';
+import PasswordInputAdapter from './PasswordInputAdapter';
+import OtpInputAdapter from './OtpInputAdapter';
+import SelectAdapter from './SelectAdapter';
+import type {FlowComponent, FlowFieldProps} from '../../../models/flow';
+
+interface BlockContext {
+  values: Record<string, string>;
+  touched?: Record<string, boolean>;
+  fieldErrors?: Record<string, string>;
+  isLoading: boolean;
+  resolve: (template: string | undefined) => string | undefined;
+  onInputChange: (field: string, value: string) => void;
+  onSubmit: (action: EmbeddedFlowComponent, inputs: Record<string, string>) => void;
+  onValidate?: (components: EmbeddedFlowComponent[]) => boolean;
+  passwordAutoComplete?: 'current-password' | 'new-password';
+  blockComponents?: EmbeddedFlowComponent[];
+}
+
+interface SubmitButtonAdapterProps {
+  component: FlowComponent;
+  isLoading: boolean;
+  resolve: (template: string | undefined) => string | undefined;
+}
+
+function SubmitButtonAdapter({component, isLoading, resolve}: SubmitButtonAdapterProps): JSX.Element {
+  const {t} = useTranslation();
+
+  return (
+    <Button
+      type="submit"
+      fullWidth
+      variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
+      disabled={isLoading}
+      sx={{mt: 2}}
+    >
+      {t(resolve(component.label)!)}
+    </Button>
+  );
+}
+
+interface ResendButtonAdapterProps {
+  component: FlowComponent;
+  isLoading: boolean;
+  resolve: (template: string | undefined) => string | undefined;
+}
+
+function ResendButtonAdapter({component, isLoading, resolve}: ResendButtonAdapterProps): JSX.Element {
+  const {t} = useTranslation();
+
+  return (
+    <Button type="submit" fullWidth variant="text" disabled={isLoading} sx={{mt: 1}}>
+      {t(resolve(component.label)!)}
+    </Button>
+  );
+}
+
+interface TriggerButtonAdapterProps {
+  component: FlowComponent;
+  isLoading: boolean;
+  resolve: (template: string | undefined) => string | undefined;
+  onSubmit: (action: EmbeddedFlowComponent, inputs: Record<string, string>) => void;
+  values: Record<string, string>;
+  blockComponents?: EmbeddedFlowComponent[];
+  onValidate?: (components: EmbeddedFlowComponent[]) => boolean;
+}
+
+function TriggerButtonAdapter({
+  component,
+  isLoading,
+  resolve,
+  onSubmit,
+  values,
+  blockComponents = undefined,
+  onValidate = undefined,
+}: TriggerButtonAdapterProps): JSX.Element {
+  const {t} = useTranslation();
+  const resolvedStartIcon = resolve(component.startIcon ?? component.image ?? '');
+
+  const iconElement =
+    resolvedStartIcon && /^https?:\/\//i.test(resolvedStartIcon) ? (
+      <Box component="img" src={resolvedStartIcon} sx={{width: 20, height: 20, objectFit: 'contain'}} />
+    ) : (
+      getIntegrationIcon(String(component.label ?? ''), resolvedStartIcon ?? '')
+    );
+
+  return (
+    <Button
+      fullWidth
+      variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
+      disabled={isLoading}
+      startIcon={iconElement}
+      onClick={() => {
+        if (onValidate && blockComponents && !onValidate(blockComponents)) return;
+        onSubmit(component, values);
+      }}
+    >
+      {t(resolve(component.label)!)}
+    </Button>
+  );
+}
+
+function renderFormSubComponent(
+  subComponent: EmbeddedFlowComponent,
+  compIndex: number,
+  ctx: BlockContext,
+): JSX.Element | null {
+  const sub = subComponent as FlowComponent;
+  const fieldProps: FlowFieldProps = {
+    component: sub,
+    values: ctx.values,
+    touched: ctx.touched,
+    fieldErrors: ctx.fieldErrors,
+    isLoading: ctx.isLoading,
+    resolve: ctx.resolve,
+    onInputChange: ctx.onInputChange,
+  };
+
+  if (
+    (sub.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.TextInput ||
+    sub.type === 'TEXT_INPUT' ||
+    sub.type === 'EMAIL_INPUT' ||
+    sub.type === 'PHONE_INPUT'
+  ) {
+    return <TextInputAdapter key={sub.id ?? compIndex} {...fieldProps} />;
+  }
+
+  if (
+    (sub.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.PasswordInput ||
+    sub.type === 'PASSWORD_INPUT'
+  ) {
+    return (
+      <PasswordInputAdapter
+        key={sub.id ?? compIndex}
+        {...fieldProps}
+        passwordAutoComplete={ctx.passwordAutoComplete ?? 'current-password'}
+      />
+    );
+  }
+
+  if (sub.type === 'OTP_INPUT') {
+    return <OtpInputAdapter key={sub.id ?? compIndex} {...fieldProps} />;
+  }
+
+  if (sub.type === 'SELECT') {
+    return <SelectAdapter key={sub.id ?? compIndex} {...fieldProps} />;
+  }
+
+  if (
+    (sub.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
+    sub.eventType === EmbeddedFlowEventType.Submit
+  ) {
+    return (
+      <SubmitButtonAdapter key={sub.id ?? compIndex} component={sub} isLoading={ctx.isLoading} resolve={ctx.resolve} />
+    );
+  }
+
+  if (sub.type === 'RESEND' && sub.eventType === EmbeddedFlowEventType.Submit) {
+    return (
+      <ResendButtonAdapter key={sub.id ?? compIndex} component={sub} isLoading={ctx.isLoading} resolve={ctx.resolve} />
+    );
+  }
+
+  if (
+    (sub.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
+    sub.eventType === EmbeddedFlowEventType.Trigger
+  ) {
+    return (
+      <TriggerButtonAdapter
+        key={sub.id ?? compIndex}
+        component={sub}
+        isLoading={ctx.isLoading}
+        resolve={ctx.resolve}
+        onSubmit={ctx.onSubmit}
+        values={ctx.values}
+        blockComponents={ctx.blockComponents}
+        onValidate={ctx.onValidate}
+      />
+    );
+  }
+
+  return null;
+}
+
+interface FormBlockAdapterProps extends BlockContext {
+  component: EmbeddedFlowComponent;
+  index: number;
+}
+
+function FormBlockAdapter({component, index, ...ctx}: FormBlockAdapterProps): JSX.Element {
+  const blockComponents: EmbeddedFlowComponent[] = component.components ?? [];
+
+  const submitAction = blockComponents.find(
+    (c) =>
+      (c.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
+      c.eventType === EmbeddedFlowEventType.Submit,
+  );
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (ctx.onValidate && !ctx.onValidate(blockComponents)) return;
+    if (submitAction) ctx.onSubmit(submitAction, ctx.values);
+  };
+
+  return (
+    <Box
+      key={component.id ?? index}
+      component="form"
+      onSubmit={handleSubmit}
+      noValidate
+      sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2}}
+    >
+      {blockComponents.map((subComponent, compIndex) =>
+        renderFormSubComponent(subComponent, compIndex, {...ctx, blockComponents}),
+      )}
+    </Box>
+  );
+}
+
+interface TriggerBlockAdapterProps extends BlockContext {
+  component: EmbeddedFlowComponent;
+  index: number;
+}
+
+function TriggerBlockAdapter({component, index, ...ctx}: TriggerBlockAdapterProps): JSX.Element {
+  const blockComponents: EmbeddedFlowComponent[] = component.components ?? [];
+
+  return (
+    <Box key={component.id ?? index} sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2, mt: 2}}>
+      {blockComponents.map((actionComponent, actionIndex) => {
+        const sub = actionComponent as FlowComponent;
+        if (
+          (sub.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
+          sub.eventType === EmbeddedFlowEventType.Trigger
+        ) {
+          return (
+            <TriggerButtonAdapter
+              key={sub.id ?? actionIndex}
+              component={sub}
+              isLoading={ctx.isLoading}
+              resolve={ctx.resolve}
+              onSubmit={ctx.onSubmit}
+              values={ctx.values}
+            />
+          );
+        }
+        return null;
+      })}
+    </Box>
+  );
+}
+
+interface BlockAdapterProps extends BlockContext {
+  component: EmbeddedFlowComponent;
+  index: number;
+}
+
+export default function BlockAdapter({
+  component,
+  index,
+  blockComponents: outerBlockComponents = undefined,
+  onValidate = undefined,
+  ...ctx
+}: BlockAdapterProps): JSX.Element | null {
+  const blockComponents: EmbeddedFlowComponent[] = component.components ?? [];
+
+  const hasSubmit = blockComponents.some(
+    (c) =>
+      ((c.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
+        c.eventType === EmbeddedFlowEventType.Submit) ||
+      (c.type === 'RESEND' && c.eventType === EmbeddedFlowEventType.Submit),
+  );
+
+  const hasTrigger = blockComponents.some(
+    (c) =>
+      (c.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
+      c.eventType === EmbeddedFlowEventType.Trigger,
+  );
+
+  if (hasSubmit) return <FormBlockAdapter component={component} index={index} blockComponents={outerBlockComponents} onValidate={onValidate} {...ctx} />;
+  if (hasTrigger) return <TriggerBlockAdapter component={component} index={index} blockComponents={outerBlockComponents} onValidate={onValidate} {...ctx} />;
+  return null;
+}

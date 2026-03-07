@@ -418,7 +418,7 @@
                       "id": "{{ID}}",
                       "category": "ACTION",
                       "type": "ACTION",
-                      "variant": "SOCIAL",
+                      "variant": "OUTLINED",
                       "eventType": "TRIGGER",
                       "label": "Continue with Google",
                       "image": "assets/images/icons/google.svg",

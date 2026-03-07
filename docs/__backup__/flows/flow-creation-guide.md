@@ -179,7 +179,7 @@ Meta components define the UI for PROMPT nodes. These are returned when executin
 |---------|-------------|
 | PRIMARY | Main action button |
 | SECONDARY | Secondary action |
-| SOCIAL | Social login button |
+| OUTLINED | Outlined button |
 | TEXT | Text link action |
 
 ### Containers

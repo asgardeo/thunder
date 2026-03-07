@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
+import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import {Trans, useTranslation} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
-import useResolveI18n from '@/features/flows/hooks/useResolveI18n';
 import {Box, FormHelperText, InputLabel, OutlinedInput} from '@wso2/oxygen-ui';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Hint} from '../../hint';
+import TemplatePlaceholder, {containsTemplateLiteral} from '../TemplatePlaceholder';
 
 /**
  * OTP Input element type with properties at top level.
@@ -81,12 +81,16 @@ function OTPInputAdapter({resource}: OTPInputAdapterPropsInterface): ReactElemen
   useRequiredFields(resource, generalMessage, fields);
 
   const otpElement = resource as OTPInputElement;
-  const resolvedPlaceholder = useResolveI18n(otpElement?.placeholder);
+
+  const rawLabel = otpElement?.label ?? '';
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
+    ? <TemplatePlaceholder value={rawLabel} t={t} />
+    : (resolve(rawLabel, {t}) ?? rawLabel);
 
   return (
     <div className={otpElement?.className}>
       <InputLabel htmlFor="otp-input-adapter" required={otpElement?.required} disableAnimation>
-        {resolve(otpElement?.label, {t}) ?? otpElement?.label ?? ''}
+        {labelNode}
       </InputLabel>
       <Box display="flex" flexDirection="row" gap={1}>
         {Array.from({length: 6}, (_, index) => (
@@ -96,7 +100,7 @@ function OTPInputAdapter({resource}: OTPInputAdapterPropsInterface): ReactElemen
             id="otp-input-adapter"
             type={otpElement?.inputType}
             style={otpElement?.styles}
-            placeholder={resolvedPlaceholder}
+            placeholder={resolve(otpElement?.placeholder, {t}) ?? otpElement?.placeholder ?? ''}
           />
         ))}
       </Box>

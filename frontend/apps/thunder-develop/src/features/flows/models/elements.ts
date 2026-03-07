@@ -53,8 +53,10 @@ export const ElementTypes = {
   Action: 'ACTION',
   Captcha: 'CAPTCHA',
   Divider: 'DIVIDER',
+  Icon: 'ICON',
   Image: 'IMAGE',
   RichText: 'RICH_TEXT',
+  Stack: 'STACK',
   Text: 'TEXT',
   Resend: 'RESEND',
 } as const;
@@ -76,7 +78,7 @@ export const InputVariants = {
 export const ButtonVariants = {
   Primary: 'PRIMARY',
   Secondary: 'SECONDARY',
-  Social: 'SOCIAL',
+  Outlined: 'OUTLINED',
   Text: 'TEXT',
 } as const;
 

@@ -300,14 +300,14 @@ describe('CommonElementPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for number property values', () => {
+    it('should render a text field for number property values', () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {getByTestId} = render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="count"
@@ -317,7 +317,7 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(container.firstChild).toBeNull();
+      expect(getByTestId('text-property-field')).toBeDefined();
     });
 
     it('should return null for array property values', () => {

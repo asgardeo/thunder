@@ -251,6 +251,18 @@ function ResourceProperties({
               propertyValue={(resource as Element & {alt?: string}).alt ?? ''}
               onChange={(_key, value, res) => handleChange('alt', value, res)}
             />
+            <TextPropertyField
+              resource={resource}
+              propertyKey="width"
+              propertyValue={(resource as Element & {width?: string}).width ?? ''}
+              onChange={(_key, value, res) => handleChange('width', value, res)}
+            />
+            <TextPropertyField
+              resource={resource}
+              propertyKey="height"
+              propertyValue={(resource as Element & {height?: string}).height ?? ''}
+              onChange={(_key, value, res) => handleChange('height', value, res)}
+            />
           </>
         );
       }
