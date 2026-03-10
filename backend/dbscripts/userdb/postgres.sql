@@ -1,5 +1,5 @@
 -- Table to store Organization Units
-CREATE TABLE ORGANIZATION_UNIT (
+CREATE TABLE IF NOT EXISTS ORGANIZATION_UNIT (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     OU_ID           VARCHAR(36) PRIMARY KEY,
     PARENT_ID       VARCHAR(36),
@@ -15,10 +15,10 @@ CREATE TABLE ORGANIZATION_UNIT (
 );
 
 -- Index for deployment isolation on ORGANIZATION_UNIT
-CREATE INDEX idx_organization_unit_deployment_id ON ORGANIZATION_UNIT (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_organization_unit_deployment_id ON ORGANIZATION_UNIT (DEPLOYMENT_ID);
 
 -- Table to store Users
-CREATE TABLE "USER" (
+CREATE TABLE IF NOT EXISTS "USER" (
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     ID          VARCHAR(36)        PRIMARY KEY,
     OU_ID       VARCHAR(36)        NOT NULL,
@@ -31,10 +31,10 @@ CREATE TABLE "USER" (
 );
 
 -- Index for deployment isolation on USER
-CREATE INDEX idx_user_deployment_id ON "USER" (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_user_deployment_id ON "USER" (DEPLOYMENT_ID);
 
 -- Table to store Groups
-CREATE TABLE "GROUP" (
+CREATE TABLE IF NOT EXISTS "GROUP" (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ID              VARCHAR(36)        PRIMARY KEY,
     OU_ID           VARCHAR(36)        NOT NULL,
@@ -46,10 +46,10 @@ CREATE TABLE "GROUP" (
 );
 
 -- Index for deployment isolation on GROUP
-CREATE INDEX idx_group_deployment_id ON "GROUP" (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_group_deployment_id ON "GROUP" (DEPLOYMENT_ID);
 
 -- Table to store Group member assignments
-CREATE TABLE GROUP_MEMBER_REFERENCE (
+CREATE TABLE IF NOT EXISTS GROUP_MEMBER_REFERENCE (
     ID          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     GROUP_ID    VARCHAR(36) NOT NULL,
@@ -62,10 +62,10 @@ CREATE TABLE GROUP_MEMBER_REFERENCE (
 );
 
 -- Index for deployment isolation on GROUP_MEMBER_REFERENCE
-CREATE INDEX idx_group_member_reference_deployment_id ON GROUP_MEMBER_REFERENCE (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_group_member_reference_deployment_id ON GROUP_MEMBER_REFERENCE (DEPLOYMENT_ID);
 
 -- Table to store indexed user attributes for fast lookups
-CREATE TABLE USER_INDEXED_ATTRIBUTES (
+CREATE TABLE IF NOT EXISTS USER_INDEXED_ATTRIBUTES (
     ID              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     USER_ID         VARCHAR(36) NOT NULL,
@@ -77,10 +77,10 @@ CREATE TABLE USER_INDEXED_ATTRIBUTES (
 );
 
 -- Index for fast attribute lookups (primary use case for authentication)
-CREATE INDEX idx_user_indexed_attributes_lookup ON USER_INDEXED_ATTRIBUTES (ATTRIBUTE_NAME, ATTRIBUTE_VALUE, DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_user_indexed_attributes_lookup ON USER_INDEXED_ATTRIBUTES (ATTRIBUTE_NAME, ATTRIBUTE_VALUE, DEPLOYMENT_ID);
 
 -- Index for user-based queries and cleanup
-CREATE INDEX idx_user_indexed_attributes_user ON USER_INDEXED_ATTRIBUTES (USER_ID, DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_user_indexed_attributes_user ON USER_INDEXED_ATTRIBUTES (USER_ID, DEPLOYMENT_ID);
 
 -- Index for deployment isolation
-CREATE INDEX idx_user_indexed_attributes_deployment_id ON USER_INDEXED_ATTRIBUTES (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_user_indexed_attributes_deployment_id ON USER_INDEXED_ATTRIBUTES (DEPLOYMENT_ID);
