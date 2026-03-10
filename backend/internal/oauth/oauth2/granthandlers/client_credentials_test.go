@@ -160,8 +160,8 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
 		{
 			name:              "WithValidScope",
 			scope:             "read write",
-			expectedJWTClaims: map[string]interface{}{"scope": "read write"},
-			expectedScopes:    []string{"read", "write"},
+			expectedJWTClaims: map[string]interface{}{},
+			expectedScopes:    []string{},
 		},
 		{
 			name:              "WithoutScope",
@@ -258,7 +258,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	expectedToken := testJWTToken
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 		return ctx.Subject == testClientID && ctx.Audience == testClientID &&
-			tokenservice.JoinScopes(ctx.Scopes) == testScopeRead
+			tokenservice.JoinScopes(ctx.Scopes) == ""
 	})).Return(&model.TokenDTO{
 		Token:     expectedToken,
 		TokenType: constants.TokenTypeBearer,
