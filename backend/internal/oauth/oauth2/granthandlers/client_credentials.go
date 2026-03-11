@@ -57,6 +57,14 @@ func (h *clientCredentialsGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 		}
 	}
 
+	// Scope is not supported for client credentials grant until client authorization is implemented.
+	if tokenRequest.Scope != "" {
+		return &model.ErrorResponse{
+			Error:            constants.ErrorInvalidScope,
+			ErrorDescription: "Scope is not supported for the client credentials grant type",
+		}
+	}
+
 	return nil
 }
 
@@ -64,7 +72,7 @@ func (h *clientCredentialsGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 func (h *clientCredentialsGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
-	scopes := tokenservice.ParseScopes(tokenRequest.Scope)
+	scopes := []string{}
 
 	finalAudience := tokenservice.DetermineAudience("", tokenRequest.Resource, "", tokenRequest.ClientID)
 
