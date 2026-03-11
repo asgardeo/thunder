@@ -227,12 +227,13 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 		requestedScopes string
 		expectedStatus  int
 		expectedScopes  []string
+		expectedError   string
 	}{
 		{
 			testName:        "WithAuthorizedScopes",
 			requestedScopes: "internal_user_mgt_view internal_user_mgt_edit internal_group_mgt_view",
-			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"internal_user_mgt_view", "internal_user_mgt_edit", "internal_group_mgt_view"},
+			expectedStatus:  http.StatusBadRequest,
+			expectedError:   "invalid_scope",
 		},
 		{
 			testName:        "WithoutScopes",
@@ -243,14 +244,14 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 		{
 			testName:        "WithUnknownScopes",
 			requestedScopes: "unknown_scope",
-			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"unknown_scope"},
+			expectedStatus:  http.StatusBadRequest,
+			expectedError:   "invalid_scope",
 		},
 		{
 			testName:        "WithAuthorizedAndUnknownScopes",
 			requestedScopes: "internal_user_mgt_view unknown_scope",
-			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"internal_user_mgt_view", "unknown_scope"},
+			expectedStatus:  http.StatusBadRequest,
+			expectedError:   "invalid_scope",
 		},
 	}
 
@@ -266,7 +267,7 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 			request.SetBasicAuth(clientId+"_client_secret_basic", clientSecret)
 
 			// Run the test.
-			ts.runClientCredentialsTestCase(request, tc.expectedStatus, tc.expectedScopes, "")
+			ts.runClientCredentialsTestCase(request, tc.expectedStatus, tc.expectedScopes, tc.expectedError)
 		})
 	}
 }
@@ -278,12 +279,13 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithBodyCredentials() {
 		requestedScopes string
 		expectedStatus  int
 		expectedScopes  []string
+		expectedError   string
 	}{
 		{
 			testName:        "WithAuthorizedScopes",
 			requestedScopes: "internal_user_mgt_view internal_user_mgt_edit",
-			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"internal_user_mgt_view", "internal_user_mgt_edit"},
+			expectedStatus:  http.StatusBadRequest,
+			expectedError:   "invalid_scope",
 		},
 		{
 			testName:        "WithoutScopes",
@@ -303,7 +305,7 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithBodyCredentials() {
 			}
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			ts.runClientCredentialsTestCase(request, tc.expectedStatus, tc.expectedScopes, "")
+			ts.runClientCredentialsTestCase(request, tc.expectedStatus, tc.expectedScopes, tc.expectedError)
 		})
 	}
 }
@@ -365,6 +367,13 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantNegativeCases() {
 			authHeader:     "Basic " + basicAuth(clientId+"_client_secret_basic", clientSecret),
 			expectedStatus: http.StatusBadRequest,
 			expectedError:  "invalid_request",
+		},
+		{
+			testName:       "ScopeProvided",
+			requestBody:    "grant_type=client_credentials&scope=read",
+			authHeader:     "Basic " + basicAuth(clientId+"_client_secret_basic", clientSecret),
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "invalid_scope",
 		},
 	}
 

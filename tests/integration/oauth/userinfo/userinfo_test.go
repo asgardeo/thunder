@@ -599,8 +599,8 @@ func (ts *UserInfoTestSuite) callUserInfo(accessToken string) (*http.Response, e
 
 // TestUserInfo_ClientCredentialsGrant_Rejected tests that client_credentials grant tokens are rejected
 func (ts *UserInfoTestSuite) TestUserInfo_ClientCredentialsGrant_Rejected() {
-	// Get access token using client_credentials grant
-	accessToken, err := ts.getClientCredentialsToken("read write")
+	// Get access token using client_credentials grant (no scope - scopes are not supported for client_credentials)
+	accessToken, err := ts.getClientCredentialsToken("")
 	ts.Require().NoError(err, "Failed to get client_credentials token")
 	ts.Require().NotEmpty(accessToken, "Access token should not be empty")
 
