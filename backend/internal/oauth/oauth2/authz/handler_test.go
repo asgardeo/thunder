@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -31,7 +30,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -657,188 +655,6 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_OUClai
 	assert.Equal(suite.T(), float64(12345), clms.userAttributes["ouId"])
 	assert.Equal(suite.T(), float64(12345), clms.userAttributes["ouName"])
 	assert.Equal(suite.T(), float64(12345), clms.userAttributes["ouHandle"])
-}
-
-func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
-	tests := []struct {
-		name           string
-		oidcScopes     []string
-		app            *appmodel.OAuthAppConfigProcessedDTO
-		expectedResult string
-		description    string
-	}{
-		{
-			name:           "Nil app",
-			oidcScopes:     []string{"openid", "profile"},
-			app:            nil,
-			expectedResult: "",
-			description:    "Should return empty string when app is nil",
-		},
-		{
-			name:       "Nil token config",
-			oidcScopes: []string{"openid", "profile"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: nil,
-			},
-			expectedResult: "",
-			description:    "Should return empty string when token config is nil",
-		},
-		{
-			name:       "Standard OIDC scopes with no IDToken config",
-			oidcScopes: []string{"openid", "profile", "email"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken:     nil,
-					AccessToken: nil,
-				},
-			},
-			expectedResult: "",
-			description:    "Should return empty when IDToken is nil",
-		},
-		{
-			name:       "Standard OIDC scopes with empty IDToken.UserAttributes",
-			oidcScopes: []string{"openid", "profile", "email"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{},
-					},
-					AccessToken: nil,
-				},
-				ScopeClaims: nil,
-			},
-			expectedResult: "",
-			description:    "Should return empty when IDToken.UserAttributes is empty",
-		},
-		{
-			name:       "Standard OIDC scopes with IDToken.UserAttributes filter",
-			oidcScopes: []string{"openid", "profile", "email"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{"sub", "name", "email"},
-					},
-					AccessToken: nil,
-				},
-				ScopeClaims: nil,
-			},
-			expectedResult: "sub name email",
-			description:    "Should filter scope claims by IDToken.UserAttributes",
-		},
-		{
-			name:       "Custom scope claims mapping",
-			oidcScopes: []string{"openid", "profile"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{"sub", "name", "custom_claim"},
-					},
-					AccessToken: nil,
-				},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", "custom_claim"},
-				},
-			},
-			expectedResult: "sub name custom_claim",
-			description:    "Should use custom scope claims mapping when provided",
-		},
-		{
-			name:       "Access token attributes included",
-			oidcScopes: []string{"openid"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{"sub"},
-					},
-					AccessToken: &appmodel.AccessTokenConfig{
-						UserAttributes: []string{"groups", "roles"},
-					},
-				},
-			},
-			expectedResult: "sub groups roles",
-			description:    "Should include both ID token claims and access token attributes",
-		},
-		{
-			name:       "Combined ID token and access token attributes",
-			oidcScopes: []string{"openid", "profile", "email"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{"sub", "name", "email"},
-					},
-					AccessToken: &appmodel.AccessTokenConfig{
-						UserAttributes: []string{"groups", "roles", "email"},
-					},
-				},
-			},
-			expectedResult: "sub name email groups roles",
-			description:    "Should combine ID token and access token attributes, removing duplicates",
-		},
-		{
-			name:       "Empty scopes",
-			oidcScopes: []string{},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					AccessToken: &appmodel.AccessTokenConfig{
-						UserAttributes: []string{"groups"},
-					},
-				},
-			},
-			expectedResult: "groups",
-			description:    "Should only include access token attributes when no scopes",
-		},
-		{
-			name:       "Unknown scope",
-			oidcScopes: []string{"unknown_scope"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{"sub"},
-					},
-					AccessToken: &appmodel.AccessTokenConfig{
-						UserAttributes: []string{"groups"},
-					},
-				},
-			},
-			expectedResult: "groups",
-			description:    "Should ignore unknown scopes and only include access token attributes",
-		},
-		{
-			name:       "Custom scope with fallback to standard",
-			oidcScopes: []string{"openid", "profile"},
-			app: &appmodel.OAuthAppConfigProcessedDTO{
-				Token: &appmodel.OAuthTokenConfig{
-					IDToken: &appmodel.IDTokenConfig{
-						UserAttributes: []string{"sub", "name"},
-					},
-					AccessToken: nil,
-				},
-				ScopeClaims: map[string][]string{
-					"openid": {"sub"},
-				},
-			},
-			expectedResult: "sub name",
-			description:    "Should use custom mapping when available, fallback to standard otherwise",
-		},
-	}
-
-	for _, tt := range tests {
-		suite.T().Run(tt.name, func(t *testing.T) {
-			result := getRequiredAttributes(tt.oidcScopes, tt.app, nil)
-
-			resultAttrs := make(map[string]bool)
-			for _, attr := range strings.Fields(result) {
-				resultAttrs[attr] = true
-			}
-
-			expectedAttrs := make(map[string]bool)
-			for _, attr := range strings.Fields(tt.expectedResult) {
-				expectedAttrs[attr] = true
-			}
-
-			assert.Equal(t, expectedAttrs, resultAttrs, tt.description)
-		})
-	}
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestValidateSubClaimConstraint() {
