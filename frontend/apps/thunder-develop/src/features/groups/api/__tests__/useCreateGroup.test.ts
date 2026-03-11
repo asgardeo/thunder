@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {Group} from '../../models/group';
 import type {CreateGroupRequest} from '../../models/requests';
 
@@ -60,8 +59,8 @@ describe('useCreateGroup', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateGroup());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useCreateGroup());
 
     expect(result.current.isIdle).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -69,11 +68,11 @@ describe('useCreateGroup', () => {
 
   it('should create a group successfully', async () => {
     mockHttpRequest.mockResolvedValue({data: mockGroup});
-    const {result} = renderHook(() => useCreateGroup());
+    const {result} = await renderHook(() => useCreateGroup());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockGroup);
       expect(result.current.isSuccess).toBe(true);
     });
@@ -89,11 +88,11 @@ describe('useCreateGroup', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Validation failed'));
-    const {result} = renderHook(() => useCreateGroup());
+    const {result} = await renderHook(() => useCreateGroup());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).toBeTruthy();
       expect(result.current.error?.message).toBe('Validation failed');
     });
@@ -106,16 +105,16 @@ describe('useCreateGroup', () => {
     });
     mockHttpRequest.mockReturnValue(requestPromise);
 
-    const {result} = renderHook(() => useCreateGroup());
+    const {result} = await renderHook(() => useCreateGroup());
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
     resolveRequest!({data: mockGroup});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
   });

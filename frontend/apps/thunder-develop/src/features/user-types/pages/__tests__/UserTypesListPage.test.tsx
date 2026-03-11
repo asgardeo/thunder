@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import UserTypesListPage from '../UserTypesListPage';
 
 const mockNavigate = vi.fn();
@@ -62,61 +63,59 @@ describe('UserTypesListPage', () => {
     });
   });
 
-  it('renders page title', () => {
-    render(<UserTypesListPage />);
+  it('renders page title', async () => {
+    await render(<UserTypesListPage />);
 
-    expect(screen.getByText('User Types')).toBeInTheDocument();
+    await expect.element(page.getByText('User Types')).toBeInTheDocument();
   });
 
-  it('renders page description', () => {
-    render(<UserTypesListPage />);
+  it('renders page description', async () => {
+    await render(<UserTypesListPage />);
 
-    expect(screen.getByText('Define and manage user types with custom schemas')).toBeInTheDocument();
+    await expect.element(page.getByText('Define and manage user types with custom schemas')).toBeInTheDocument();
   });
 
-  it('renders create user type button', () => {
-    render(<UserTypesListPage />);
+  it('renders create user type button', async () => {
+    await render(<UserTypesListPage />);
 
-    const createButton = screen.getByRole('button', {name: /create user type/i});
-    expect(createButton).toBeInTheDocument();
+    const createButton = page.getByRole('button', {name: /create user type/i});
+    await expect.element(createButton).toBeInTheDocument();
   });
 
-  it('renders UserTypesList component', () => {
-    render(<UserTypesListPage />);
+  it('renders UserTypesList component', async () => {
+    await render(<UserTypesListPage />);
 
-    expect(screen.getByTestId('user-types-list')).toBeInTheDocument();
+    await expect.element(page.getByTestId('user-types-list')).toBeInTheDocument();
   });
 
-  it('shows organization unit name within the list component', () => {
-    render(<UserTypesListPage />);
+  it('shows organization unit name within the list component', async () => {
+    await render(<UserTypesListPage />);
 
-    expect(screen.getByText('Organization Unit: Root Organization')).toBeInTheDocument();
+    await expect.element(page.getByText('Organization Unit: Root Organization')).toBeInTheDocument();
   });
 
   it('navigates to create page when create button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<UserTypesListPage />);
+    await render(<UserTypesListPage />);
 
-    const createButton = screen.getByRole('button', {name: /create user type/i});
-    await user.click(createButton);
+    const createButton = page.getByRole('button', {name: /create user type/i});
+    await userEvent.click(createButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/user-types/create');
   });
 
   it('handles navigation error when create button is clicked and logs error', async () => {
-    const user = userEvent.setup();
     const testError = new Error('Navigation failed');
     mockNavigate.mockRejectedValue(testError);
 
-    render(<UserTypesListPage />);
+    await render(<UserTypesListPage />);
 
-    const createButton = screen.getByRole('button', {name: /create user type/i});
-    await user.click(createButton);
+    const createButton = page.getByRole('button', {name: /create user type/i});
+    await userEvent.click(createButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/user-types/create');
 
     // Wait for the error to be logged
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(
         'Failed to navigate to create user type page',
         expect.objectContaining({error: testError}),

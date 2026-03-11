@@ -17,6 +17,7 @@
  */
 
 import {defineConfig} from 'vitest/config';
+import {playwright} from '@vitest/browser-playwright';
 import react from '@vitejs/plugin-react';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
@@ -42,6 +43,56 @@ if (existsSync(rootVersionFile)) {
 }
 
 const VERSION = readFileSync(publicVersionFile, 'utf-8').trim();
+
+const sharedTestConfig = {
+  reporters: process.env.CI ? ['dot'] : ['default'],
+  restoreMocks: true,
+  css: {
+    modules: {
+      classNameStrategy: 'non-scoped' as const,
+    },
+  },
+  server: {
+    deps: {
+      inline: [
+        '@asgardeo/browser',
+        '@asgardeo/react',
+        '@wso2/oxygen-ui',
+        '@wso2/oxygen-ui-icons-react',
+        '@mui/x-data-grid',
+      ],
+    },
+  },
+  deps: {
+    optimizer: {
+      client: {
+        include: ['@mui/x-date-pickers', '@mui/x-tree-view', '@mui/x-charts'],
+      },
+    },
+  },
+  coverage: {
+    provider: 'istanbul' as const,
+    reporter: process.env.CI
+      ? [['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}] as const]
+      : ['text' as const, 'json' as const, 'html' as const, ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}] as const],
+    exclude: [
+      'node_modules/',
+      'dist/',
+      'public/',
+      'coverage/',
+      'src/test/',
+      '**/*.d.ts',
+      '**/*.config.*',
+      '**/mockData',
+      '**/*.type.ts',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+      '**/EditTokenSettings.tsx',
+    ],
+  },
+};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -91,58 +142,23 @@ export default defineConfig({
     conditions: ['browser', 'module', 'import', 'default'],
   },
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['@thunder/test-utils/setup'],
-    reporters: process.env.CI ? ['dot'] : ['default'],
-    restoreMocks: true,
-    testTimeout: 30000,
-    css: {
-      modules: {
-        classNameStrategy: 'non-scoped',
-      },
-    },
-    // Inline deps that need Vite's CSS pipeline or have Node.js-style imports.
-    server: {
-      deps: {
-        inline: [
-          '@asgardeo/browser',
-          '@asgardeo/react',
-          '@wso2/oxygen-ui',
-          '@wso2/oxygen-ui-icons-react',
-          '@mui/x-data-grid',
-        ],
-      },
-    },
-    // Pre-bundle remaining heavy dependencies with esbuild for faster test imports.
-    deps: {
-      optimizer: {
-        client: {
-          include: ['@mui/x-date-pickers', '@mui/x-tree-view', '@mui/x-charts'],
+    // All tests run in Vitest Browser Mode (real Chromium via Playwright).
+    projects: [
+      {
+        extends: true,
+        test: {
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['@thunder/test-utils/setup-browser'],
+          pool: 'threads',
+          browser: {
+            enabled: true,
+            headless: true,
+            instances: [{browser: 'chromium'}],
+            provider: playwright(),
+          },
+          ...sharedTestConfig,
         },
       },
-    },
-    coverage: {
-      provider: 'istanbul',
-      reporter: process.env.CI
-        ? [['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]]
-        : ['text', 'json', 'html', ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'public/',
-        'coverage/',
-        'src/test/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/mockData',
-        '**/*.type.ts',
-        '**/*.test.ts',
-        '**/*.test.tsx',
-        '**/*.spec.ts',
-        '**/*.spec.tsx',
-        '**/EditTokenSettings.tsx',
-      ],
-    },
+    ],
   },
 });

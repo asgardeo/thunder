@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationsEditPage from '../TranslationsEditPage';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -168,181 +159,174 @@ describe('TranslationsEditPage', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the editor header', () => {
-      render(<TranslationsEditPage />);
+    it('renders the editor header', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('editor-header')).toBeInTheDocument();
+      await expect.element(page.getByTestId('editor-header')).toBeInTheDocument();
     });
 
-    it('renders the namespace selector', () => {
-      render(<TranslationsEditPage />);
+    it('renders the namespace selector', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('namespace-selector')).toBeInTheDocument();
+      await expect.element(page.getByTestId('namespace-selector')).toBeInTheDocument();
     });
 
-    it('renders the editor card', () => {
-      render(<TranslationsEditPage />);
+    it('renders the editor card', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('editor-card')).toBeInTheDocument();
+      await expect.element(page.getByTestId('editor-card')).toBeInTheDocument();
     });
 
-    it('passes the language from URL params to the editor header', () => {
-      render(<TranslationsEditPage />);
+    it('passes the language from URL params to the editor header', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('header-language')).toHaveTextContent('fr-FR');
+      await expect.element(page.getByTestId('header-language')).toHaveTextContent('fr-FR');
     });
 
-    it('passes the language from URL params to the editor card', () => {
-      render(<TranslationsEditPage />);
+    it('passes the language from URL params to the editor card', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('card-language')).toHaveTextContent('fr-FR');
+      await expect.element(page.getByTestId('card-language')).toHaveTextContent('fr-FR');
     });
 
-    it('initializes with the first namespace from the translation data', () => {
-      render(<TranslationsEditPage />);
+    it('initializes with the first namespace from the translation data', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('ns-value')).toHaveTextContent('common');
+      await expect.element(page.getByTestId('ns-value')).toHaveTextContent('common');
     });
 
-    it('passes loading=true to the editor card while translations are loading', () => {
+    it('passes loading=true to the editor card while translations are loading', async () => {
       mockUseGetTranslations.mockReturnValue({data: undefined, isLoading: true});
 
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('card-loading')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('card-loading')).toHaveTextContent('true');
     });
 
-    it('passes loading=false to the editor card once translations have loaded', () => {
-      render(<TranslationsEditPage />);
+    it('passes loading=false to the editor card once translations have loaded', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('card-loading')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('card-loading')).toHaveTextContent('false');
     });
 
-    it('sets isEnglish=false for a non-English language', () => {
-      render(<TranslationsEditPage />);
+    it('sets isEnglish=false for a non-English language', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('header-is-english')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('header-is-english')).toHaveTextContent('false');
     });
   });
 
   describe('Dirty change tracking', () => {
-    it('starts with no dirty changes', () => {
-      render(<TranslationsEditPage />);
+    it('starts with no dirty changes', async () => {
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('0');
     });
 
     it('increments the dirty count after a field is changed', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
+      await userEvent.click(page.getByText('change field'));
 
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('1');
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('1');
     });
 
     it('resets dirty changes after Discard is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('1');
+      await userEvent.click(page.getByText('change field'));
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('1');
 
-      await user.click(screen.getByText('discard'));
+      await userEvent.click(page.getByText('discard'));
 
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('0');
     });
 
     it('removes a single dirty key when reset field is called', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('1');
+      await userEvent.click(page.getByText('change field'));
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('1');
 
-      await user.click(screen.getByText('reset field'));
+      await userEvent.click(page.getByText('reset field'));
 
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('0');
     });
   });
 
   describe('Save', () => {
     it('calls updateTranslation.mutateAsync for each dirty key when Save is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      await user.click(screen.getByText('save'));
+      await userEvent.click(page.getByText('change field'));
+      await userEvent.click(page.getByText('save'));
 
-      expect(mockMutateAsync).toHaveBeenCalledWith({
-        language: 'fr-FR',
-        namespace: 'common',
-        key: 'actions.save',
-        value: 'Sauvegarder',
+      await vi.waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          language: 'fr-FR',
+          namespace: 'common',
+          key: 'actions.save',
+          value: 'Sauvegarder',
+        });
       });
     });
 
     it('shows a success toast after a successful save', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      await user.click(screen.getByText('save'));
+      await userEvent.click(page.getByText('change field'));
+      await userEvent.click(page.getByText('save'));
 
-      expect(screen.getByText('editor.jsonSaveSuccess')).toBeInTheDocument();
+      await expect.element(page.getByText('All translations saved.')).toBeInTheDocument();
     });
 
     it('clears dirty changes after a successful save', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      await user.click(screen.getByText('save'));
+      await userEvent.click(page.getByText('change field'));
+      await userEvent.click(page.getByText('save'));
 
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('0');
     });
 
     it('shows an error toast when at least one save request fails', async () => {
       mockMutateAsync.mockRejectedValueOnce(new Error('Network error'));
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      await user.click(screen.getByText('save'));
+      await renderWithProviders(<TranslationsEditPage />);
 
-      expect(screen.getByText('editor.jsonSaveError')).toBeInTheDocument();
+      await userEvent.click(page.getByText('change field'));
+      await userEvent.click(page.getByText('save'));
+
+      await expect.element(page.getByText('Failed to save some translations.')).toBeInTheDocument();
     });
   });
 
   describe('Namespace selection', () => {
     it('updates the selected namespace when a new one is chosen', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('select namespace'));
+      await userEvent.click(page.getByText('select namespace'));
 
-      expect(screen.getByTestId('ns-value')).toHaveTextContent('loginFlow');
+      await expect.element(page.getByTestId('ns-value')).toHaveTextContent('loginFlow');
     });
 
     it('resets dirty changes when the namespace changes', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('change field'));
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('1');
+      await userEvent.click(page.getByText('change field'));
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('1');
 
-      await user.click(screen.getByText('select namespace'));
+      await userEvent.click(page.getByText('select namespace'));
 
-      expect(screen.getByTestId('header-dirty-count')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('header-dirty-count')).toHaveTextContent('0');
     });
   });
 
   describe('Navigation', () => {
     it('navigates to /translations when the back button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('back'));
+      await userEvent.click(page.getByText('back'));
 
       expect(mockNavigate).toHaveBeenCalledWith('/translations');
     });
@@ -369,22 +353,23 @@ describe('TranslationsEditPage', () => {
         };
       });
 
-      const user = userEvent.setup();
-      render(<TranslationsEditPage />);
+      await renderWithProviders(<TranslationsEditPage />);
 
-      await user.click(screen.getByText('reset'));
+      await userEvent.click(page.getByText('reset'));
 
-      expect(mockMutateAsync).toHaveBeenCalledWith({
-        language: 'fr-FR',
-        namespace: 'common',
-        key: 'actions.save',
-        value: 'Save',
-      });
-      expect(mockMutateAsync).toHaveBeenCalledWith({
-        language: 'fr-FR',
-        namespace: 'common',
-        key: 'actions.cancel',
-        value: 'Cancel',
+      await vi.waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          language: 'fr-FR',
+          namespace: 'common',
+          key: 'actions.save',
+          value: 'Save',
+        });
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          language: 'fr-FR',
+          namespace: 'common',
+          key: 'actions.cancel',
+          value: 'Cancel',
+        });
       });
     });
   });

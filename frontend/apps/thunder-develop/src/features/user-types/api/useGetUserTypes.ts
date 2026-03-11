@@ -16,52 +16,148 @@
  * under the License.
  */
 
-import {useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
-import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
+import type {UserSchemaListParams, UserSchemaListResponse, ApiError} from '../types/user-types';
+
+/**
+ * Return type for the useGetUserTypes hook.
+ */
+export interface UseGetUserTypesReturn {
+  data: UserSchemaListResponse | null;
+  error: ApiError | null;
+  loading: boolean;
+  refetch: (newParams?: UserSchemaListParams) => Promise<void>;
+}
+
+function buildUrl(serverUrl: string, params?: UserSchemaListParams): string {
+  const queryParams = new URLSearchParams();
+  if (params?.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
+  if (params?.offset !== undefined) {
+    queryParams.append('offset', params.offset.toString());
+  }
+  const queryString = queryParams.toString();
+  return `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`;
+}
+
+function isAbortError(err: unknown): boolean {
+  return (
+    (err instanceof Error && err.name === 'AbortError') || (err instanceof Error && err.message === 'Aborted')
+  );
+}
 
 /**
  * Custom React hook to fetch a paginated list of user schemas (user types) from the Thunder server.
  *
  * @param params - Optional pagination parameters
- * @param params.limit - Maximum number of records to return
- * @param params.offset - Number of records to skip for pagination
- * @returns TanStack Query result object containing user types list data, loading state, and error information
+ * @returns Hook state and actions for fetching user types
  */
-export default function useGetUserTypes(params?: UserSchemaListParams): UseQueryResult<UserSchemaListResponse> {
+export default function useGetUserTypes(params?: UserSchemaListParams): UseGetUserTypesReturn {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const {limit, offset} = params ?? {};
 
-  return useQuery<UserSchemaListResponse>({
-    queryKey: [UserTypeQueryKeys.USER_TYPES, {limit, offset}],
-    queryFn: async (): Promise<UserSchemaListResponse> => {
-      const serverUrl: string = getServerUrl();
-      const queryParams: URLSearchParams = new URLSearchParams();
+  const [data, setData] = useState<UserSchemaListResponse | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
+  const [loading, setLoading] = useState(false);
 
-      if (limit !== undefined) {
-        queryParams.append('limit', limit.toString());
-      }
-      if (offset !== undefined) {
-        queryParams.append('offset', offset.toString());
-      }
+  // Keep stable refs to http and getServerUrl to avoid stale closure issues
+  const httpRef = useRef(http);
+  httpRef.current = http;
+  const getServerUrlRef = useRef(getServerUrl);
+  getServerUrlRef.current = getServerUrl;
 
-      const queryString: string = queryParams.toString();
-      const url = `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`;
+  // Ref to track current params for use inside refetch
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
 
-      const response: {
-        data: UserSchemaListResponse;
-      } = await http.request({
+  const limit = params?.limit;
+  const offset = params?.offset;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const {signal} = controller;
+
+    setLoading(true);
+
+    const currentHttp = httpRef.current;
+    const currentGetServerUrl = getServerUrlRef.current;
+    const serverUrl = currentGetServerUrl() ?? '';
+    const url = buildUrl(serverUrl, paramsRef.current);
+
+    currentHttp
+      .request({
         url,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-      } as unknown as Parameters<typeof http.request>[0]);
+        signal,
+      } as unknown as Parameters<typeof currentHttp.request>[0])
+      .then((response: unknown) => {
+        if (signal.aborted) return;
+        setData((response as {data: UserSchemaListResponse}).data);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (signal.aborted) return;
+        setLoading(false);
+        if (!isAbortError(err)) {
+          setError({
+            code: 'FETCH_USER_TYPES_ERROR',
+            message: err instanceof Error ? err.message : 'An unknown error occurred',
+            description: 'Failed to fetch user types',
+          });
+        }
+      });
 
-      return response.data;
+    return () => {
+      controller.abort();
+    };
+    // Depend on limit and offset individually to trigger re-fetch when params change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [limit, offset]);
+
+  const refetch = useCallback(
+    async (newParams?: UserSchemaListParams): Promise<void> => {
+      const fetchParams = newParams ?? paramsRef.current;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const serverUrl: string = getServerUrl() ?? '';
+        const url = buildUrl(serverUrl, fetchParams);
+        const response: {data: UserSchemaListResponse} = await http.request({
+          url,
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        } as unknown as Parameters<typeof http.request>[0]);
+
+        setData(response.data);
+        setLoading(false);
+      } catch (err: unknown) {
+        setLoading(false);
+
+        if (!isAbortError(err)) {
+          const apiError: ApiError = {
+            code: 'FETCH_USER_TYPES_ERROR',
+            message: err instanceof Error ? err.message : 'An unknown error occurred',
+            description: 'Failed to fetch user types',
+          };
+          setError(apiError);
+        }
+        throw err;
+      }
     },
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  return {data, error, loading, refetch};
 }

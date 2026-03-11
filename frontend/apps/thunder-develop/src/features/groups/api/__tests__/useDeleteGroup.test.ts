@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 
 const mockHttpRequest = vi.fn();
 vi.mock('@asgardeo/react', () => ({
@@ -49,11 +48,11 @@ describe('useDeleteGroup', () => {
 
   it('should delete a group successfully', async () => {
     mockHttpRequest.mockResolvedValue({});
-    const {result} = renderHook(() => useDeleteGroup());
+    const {result} = await renderHook(() => useDeleteGroup());
 
     result.current.mutate('g1');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -67,11 +66,11 @@ describe('useDeleteGroup', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Delete failed'));
-    const {result} = renderHook(() => useDeleteGroup());
+    const {result} = await renderHook(() => useDeleteGroup());
 
     result.current.mutate('g1');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error?.message).toBe('Delete failed');
     });
   });

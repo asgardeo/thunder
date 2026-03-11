@@ -20,7 +20,7 @@ import {Box, Stack, Typography, TextField} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import {useEffect} from 'react';
 import {useForm, Controller} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver} from '@/hooks/useZodResolver';
 import {z} from 'zod';
 import type {Application} from '../../../models/application';
 import SettingsCard from '../../../../../components/SettingsCard';

@@ -17,33 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import LogoUpdateModal from '../LogoUpdateModal';
 
 // Mock the utils
 vi.mock('../../features/applications/utils/generateAppLogoSuggestion', () => ({
   default: vi.fn((count: number) => Array.from({length: count}, (_, i) => `https://logo${i + 1}.com/logo.png`)),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:logoModal.title': 'Update Logo',
-        'applications:logoModal.preview.title': 'Preview',
-        'applications:logoModal.customUrl.title': 'Custom URL',
-        'applications:logoModal.customUrl.placeholder': 'Enter image URL',
-        'applications:logoModal.customUrl.hint': 'Provide a URL to an image',
-        'applications:logoModal.logos.title': 'Suggested Logos',
-        'applications:logoModal.logos.shuffle': 'Shuffle',
-        'applications:logoModal.cancel': 'Cancel',
-        'applications:logoModal.update': 'Update',
-      };
-      return translations[key] || key;
-    },
-  }),
 }));
 
 describe('LogoUpdateModal', () => {
@@ -56,46 +36,53 @@ describe('LogoUpdateModal', () => {
   });
 
   describe('Rendering', () => {
-    it('should render modal when open is true', () => {
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+    it('should render modal when open is true', async () => {
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      expect(screen.getByText('Update Logo')).toBeInTheDocument();
+      await expect.element(page.getByText('Update Application Logo')).toBeInTheDocument();
     });
 
-    it('should not render modal content when open is false', () => {
-      render(<LogoUpdateModal open={false} onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+    it('should not render modal content when open is false', async () => {
+      await render(<LogoUpdateModal open={false} onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      expect(screen.queryByText('Update Logo')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Update Application Logo')).not.toBeInTheDocument();
     });
 
-    it('should display preview section', () => {
-      render(
+    it('should display preview section', async () => {
+      await render(
         <LogoUpdateModal open onClose={mockOnClose} currentLogoUrl={currentLogoUrl} onLogoUpdate={mockOnLogoUpdate} />,
       );
 
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      await expect.element(page.getByText('Preview')).toBeInTheDocument();
     });
 
-    it('should display custom URL input section', () => {
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+    it('should display custom URL input section', async () => {
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      expect(screen.getByText('Custom URL')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Enter image URL')).toBeInTheDocument();
+      await expect.element(page.getByText('Custom Logo URL')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('https://example.com/logo.png')).toBeInTheDocument();
     });
 
-    it('should display suggested logos section', () => {
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+    it('should display suggested logos section', async () => {
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      expect(screen.getByText('Suggested Logos')).toBeInTheDocument();
-      expect(screen.getByText('Shuffle')).toBeInTheDocument();
+      await expect.element(page.getByText('Application Logo')).toBeInTheDocument();
+      await expect.element(page.getByText('Shuffle')).toBeInTheDocument();
     });
 
-    it('should render 12 logo suggestions', () => {
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+    it('should render 12 logo suggestions', async () => {
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const images = screen.getAllByRole('img');
+      const images = page.getByRole('img').all();
       // Filter out the preview image
-      const suggestionImages = images.filter((img) => img.getAttribute('src')?.startsWith('https://logo'));
+      const suggestionImages: typeof images = [];
+      // eslint-disable-next-line no-restricted-syntax
+      for (const img of images) {
+        const src = img.element().getAttribute('src');
+        if (src?.startsWith('https://logo')) {
+          suggestionImages.push(img);
+        }
+      }
 
       expect(suggestionImages.length).toBe(12);
     });
@@ -103,192 +90,227 @@ describe('LogoUpdateModal', () => {
 
   describe('User Interactions', () => {
     it('should call onClose when close button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const closeButton = screen.getAllByRole('button')[0]; // X icon button
-      await user.click(closeButton);
+      const buttons = page.getByRole('button').all();
+      await userEvent.click(buttons[0]); // X icon button
 
-      expect(mockOnClose).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(mockOnClose).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('should call onClose when cancel button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      await user.click(cancelButton);
+      await userEvent.click(page.getByRole('button', {name: 'Cancel'}));
 
-      expect(mockOnClose).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(mockOnClose).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('should update custom URL when typing in input', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const input = screen.getByPlaceholderText('Enter image URL');
-      await user.type(input, 'https://custom-logo.com/logo.png');
+      const input = page.getByPlaceholder('https://example.com/logo.png');
+      await userEvent.fill(input, 'https://custom-logo.com/logo.png');
 
-      expect(input).toHaveValue('https://custom-logo.com/logo.png');
+      await expect.element(input).toHaveValue('https://custom-logo.com/logo.png');
     });
 
     it('should generate new suggestions when shuffle button is clicked', async () => {
-      const user = userEvent.setup();
       const generateAppLogoSuggestions = await import('../../features/applications/utils/generateAppLogoSuggestion');
 
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const shuffleButton = screen.getByText('Shuffle');
-      await user.click(shuffleButton);
+      await userEvent.click(page.getByText('Shuffle'));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(generateAppLogoSuggestions.default).toHaveBeenCalledWith(12);
       });
     });
 
     it('should call onLogoUpdate with custom URL when update button is clicked', async () => {
-      const user = userEvent.setup();
       const customUrl = 'https://custom-logo.com/logo.png';
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const input = screen.getByPlaceholderText('Enter image URL');
-      await user.type(input, customUrl);
+      const input = page.getByPlaceholder('https://example.com/logo.png');
+      await userEvent.fill(input, customUrl);
 
-      const updateButton = screen.getByRole('button', {name: 'Update'});
-      await user.click(updateButton);
+      await userEvent.click(page.getByRole('button', {name: 'Update Logo'}));
 
-      expect(mockOnLogoUpdate).toHaveBeenCalledWith(customUrl);
+      await vi.waitFor(() => {
+        expect(mockOnLogoUpdate).toHaveBeenCalledWith(customUrl);
+      });
     });
 
     it('should select logo from suggestions when clicked', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const images = screen.getAllByRole('img');
-      const firstSuggestion = images.find((img) => img.getAttribute('src') === 'https://logo1.com/logo.png');
-
-      if (firstSuggestion?.parentElement) {
-        await user.click(firstSuggestion.parentElement);
+      const images = page.getByRole('img').all();
+      let firstSuggestion: (typeof images)[0] | undefined;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const img of images) {
+        const src = img.element().getAttribute('src');
+        if (src === 'https://logo1.com/logo.png') {
+          firstSuggestion = img;
+          break;
+        }
       }
 
-      const updateButton = screen.getByRole('button', {name: 'Update'});
-      await user.click(updateButton);
+      if (firstSuggestion) {
+        const {parentElement} = firstSuggestion.element();
+        if (parentElement) {
+          await userEvent.click(page.elementLocator(parentElement));
+        }
+      }
 
-      expect(mockOnLogoUpdate).toHaveBeenCalledWith('https://logo1.com/logo.png');
+      await userEvent.click(page.getByRole('button', {name: 'Update Logo'}));
+
+      await vi.waitFor(() => {
+        expect(mockOnLogoUpdate).toHaveBeenCalledWith('https://logo1.com/logo.png');
+      });
     });
 
     it('should clear selected logo when entering custom URL', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
       // First select a logo
-      const images = screen.getAllByRole('img');
-      const firstSuggestion = images.find((img) => img.getAttribute('src') === 'https://logo1.com/logo.png');
+      const images = page.getByRole('img').all();
+      let firstSuggestion: (typeof images)[0] | undefined;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const img of images) {
+        const src = img.element().getAttribute('src');
+        if (src === 'https://logo1.com/logo.png') {
+          firstSuggestion = img;
+          break;
+        }
+      }
 
-      if (firstSuggestion?.parentElement) {
-        await user.click(firstSuggestion.parentElement);
+      if (firstSuggestion) {
+        const {parentElement} = firstSuggestion.element();
+        if (parentElement) {
+          await userEvent.click(page.elementLocator(parentElement));
+        }
       }
 
       // Then type in custom URL
-      const input = screen.getByPlaceholderText('Enter image URL');
-      await user.type(input, 'https://custom.com/logo.png');
+      const input = page.getByPlaceholder('https://example.com/logo.png');
+      await userEvent.fill(input, 'https://custom.com/logo.png');
 
-      const updateButton = screen.getByRole('button', {name: 'Update'});
-      await user.click(updateButton);
+      await userEvent.click(page.getByRole('button', {name: 'Update Logo'}));
 
       // Should use custom URL, not selected logo
-      expect(mockOnLogoUpdate).toHaveBeenCalledWith('https://custom.com/logo.png');
+      await vi.waitFor(() => {
+        expect(mockOnLogoUpdate).toHaveBeenCalledWith('https://custom.com/logo.png');
+      });
     });
 
     it('should clear custom URL when selecting from suggestions', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
       // First type custom URL
-      const input = screen.getByPlaceholderText('Enter image URL');
-      await user.type(input, 'https://custom.com/logo.png');
+      const input = page.getByPlaceholder('https://example.com/logo.png');
+      await userEvent.fill(input, 'https://custom.com/logo.png');
 
       // Then select a logo
-      const images = screen.getAllByRole('img');
-      const firstSuggestion = images.find((img) => img.getAttribute('src') === 'https://logo1.com/logo.png');
-
-      if (firstSuggestion?.parentElement) {
-        await user.click(firstSuggestion.parentElement);
+      const images = page.getByRole('img').all();
+      let firstSuggestion: (typeof images)[0] | undefined;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const img of images) {
+        const src = img.element().getAttribute('src');
+        if (src === 'https://logo1.com/logo.png') {
+          firstSuggestion = img;
+          break;
+        }
       }
 
-      expect(input).toHaveValue('');
+      if (firstSuggestion) {
+        const {parentElement} = firstSuggestion.element();
+        if (parentElement) {
+          await userEvent.click(page.elementLocator(parentElement));
+        }
+      }
+
+      await expect.element(input).toHaveValue('');
     });
   });
 
   describe('Update Button State', () => {
     it('should enable update button when custom URL is provided', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const updateButton = screen.getByRole('button', {name: 'Update'});
-      expect(updateButton).toBeDisabled();
+      const updateButton = page.getByRole('button', {name: 'Update Logo'});
+      await expect.element(updateButton).toBeDisabled();
 
-      const input = screen.getByPlaceholderText('Enter image URL');
-      await user.type(input, 'https://custom-logo.com/logo.png');
+      const input = page.getByPlaceholder('https://example.com/logo.png');
+      await userEvent.fill(input, 'https://custom-logo.com/logo.png');
 
-      expect(updateButton).not.toBeDisabled();
+      await expect.element(updateButton).not.toBeDisabled();
     });
 
     it('should enable update button when logo is selected', async () => {
-      const user = userEvent.setup();
-      render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const images = screen.getAllByRole('img');
-      const firstSuggestion = images.find((img) => img.getAttribute('src') === 'https://logo1.com/logo.png');
-
-      if (firstSuggestion?.parentElement) {
-        await user.click(firstSuggestion.parentElement);
+      const images = page.getByRole('img').all();
+      let firstSuggestion: (typeof images)[0] | undefined;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const img of images) {
+        const src = img.element().getAttribute('src');
+        if (src === 'https://logo1.com/logo.png') {
+          firstSuggestion = img;
+          break;
+        }
       }
 
-      const updateButton = screen.getByRole('button', {name: 'Update'});
+      if (firstSuggestion) {
+        const {parentElement} = firstSuggestion.element();
+        if (parentElement) {
+          await userEvent.click(page.elementLocator(parentElement));
+        }
+      }
 
-      expect(updateButton).not.toBeDisabled();
+      const updateButton = page.getByRole('button', {name: 'Update Logo'});
+
+      await expect.element(updateButton).not.toBeDisabled();
     });
 
-    it('should enable update button when current logo URL is provided', () => {
-      render(
+    it('should enable update button when current logo URL is provided', async () => {
+      await render(
         <LogoUpdateModal open onClose={mockOnClose} currentLogoUrl={currentLogoUrl} onLogoUpdate={mockOnLogoUpdate} />,
       );
 
-      const updateButton = screen.getByRole('button', {name: 'Update'});
+      const updateButton = page.getByRole('button', {name: 'Update Logo'});
 
-      expect(updateButton).not.toBeDisabled();
+      await expect.element(updateButton).not.toBeDisabled();
     });
   });
 
   describe('Initial State', () => {
-    it('should populate custom URL with current logo URL on mount', () => {
-      render(
+    it('should populate custom URL with current logo URL on mount', async () => {
+      await render(
         <LogoUpdateModal open onClose={mockOnClose} currentLogoUrl={currentLogoUrl} onLogoUpdate={mockOnLogoUpdate} />,
       );
 
-      const input = screen.getByPlaceholderText('Enter image URL');
+      const input = page.getByPlaceholder('https://example.com/logo.png');
 
-      expect(input).toHaveValue(currentLogoUrl);
+      await expect.element(input).toHaveValue(currentLogoUrl);
     });
 
     it('should reset state when modal is reopened', async () => {
-      const {rerender} = render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      const {rerender} = await render(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      const user = userEvent.setup();
-      const input = screen.getByPlaceholderText('Enter image URL');
-      await user.type(input, 'https://test.com/logo.png');
+      const input = page.getByPlaceholder('https://example.com/logo.png');
+      await userEvent.fill(input, 'https://test.com/logo.png');
 
       // Close modal
-      rerender(<LogoUpdateModal open={false} onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await rerender(<LogoUpdateModal open={false} onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
       // Reopen modal
-      rerender(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
+      await rerender(<LogoUpdateModal open onClose={mockOnClose} onLogoUpdate={mockOnLogoUpdate} />);
 
-      await waitFor(() => {
-        const reopenedInput = screen.getByPlaceholderText('Enter image URL');
-        expect(reopenedInput).toHaveValue('');
-      });
+      await expect.element(page.getByPlaceholder('https://example.com/logo.png')).toHaveValue('');
     });
   });
 });

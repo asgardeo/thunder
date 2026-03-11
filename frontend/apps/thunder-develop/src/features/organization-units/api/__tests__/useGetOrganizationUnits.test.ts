@@ -18,7 +18,7 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetOrganizationUnits from '../useGetOrganizationUnits';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 
@@ -66,9 +66,9 @@ describe('useGetOrganizationUnits', () => {
   it('should fetch organization units on mount', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    const {result} = renderHook(() => useGetOrganizationUnits());
+    const {result} = await renderHook(() => useGetOrganizationUnits());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockOrganizationUnitList);
       expect(result.current.error).toBeNull();
       expect(result.current.isLoading).toBe(false);
@@ -85,9 +85,9 @@ describe('useGetOrganizationUnits', () => {
   it('should fetch organization units with limit parameter', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits({limit: 10}));
+    await renderHook(() => useGetOrganizationUnits({limit: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('limit=10'),
@@ -100,9 +100,9 @@ describe('useGetOrganizationUnits', () => {
   it('should fetch organization units with offset parameter', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits({offset: 5}));
+    await renderHook(() => useGetOrganizationUnits({offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('offset=5'),
@@ -115,9 +115,9 @@ describe('useGetOrganizationUnits', () => {
   it('should fetch organization units with both limit and offset parameters', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits({limit: 10, offset: 5}));
+    await renderHook(() => useGetOrganizationUnits({limit: 10, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringMatching(/limit=10.*offset=5|offset=5.*limit=10/),
@@ -135,19 +135,19 @@ describe('useGetOrganizationUnits', () => {
         }),
     );
 
-    const {result, unmount} = renderHook(() => useGetOrganizationUnits());
+    const {result, unmount} = await renderHook(() => useGetOrganizationUnits());
 
     expect(result.current.isLoading).toBe(true);
 
-    unmount();
+    await unmount();
   });
 
   it('should handle API error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Failed to fetch organization units'));
 
-    const {result} = renderHook(() => useGetOrganizationUnits());
+    const {result} = await renderHook(() => useGetOrganizationUnits());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).not.toBeNull();
       expect(result.current.data).toBeUndefined();
       expect(result.current.isLoading).toBe(false);
@@ -157,9 +157,9 @@ describe('useGetOrganizationUnits', () => {
   it('should refetch when refetch is called', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    const {result} = renderHook(() => useGetOrganizationUnits());
+    const {result} = await renderHook(() => useGetOrganizationUnits());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockOrganizationUnitList);
     });
 
@@ -169,7 +169,7 @@ describe('useGetOrganizationUnits', () => {
 
     await result.current.refetch();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
       expect(result.current.data).toEqual(updatedList);
     });
@@ -178,9 +178,9 @@ describe('useGetOrganizationUnits', () => {
   it('should use default params when no params provided', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits());
+    await renderHook(() => useGetOrganizationUnits());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('/organization-units'),
@@ -193,9 +193,9 @@ describe('useGetOrganizationUnits', () => {
   it('should use default values when params object is empty', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits({}));
+    await renderHook(() => useGetOrganizationUnits({}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('limit=30'),
@@ -207,9 +207,9 @@ describe('useGetOrganizationUnits', () => {
   it('should use default offset when only limit provided', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits({limit: 50}));
+    await renderHook(() => useGetOrganizationUnits({limit: 50}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('offset=0'),
@@ -221,9 +221,9 @@ describe('useGetOrganizationUnits', () => {
   it('should use default limit when only offset provided', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
 
-    renderHook(() => useGetOrganizationUnits({offset: 10}));
+    await renderHook(() => useGetOrganizationUnits({offset: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('limit=30'),

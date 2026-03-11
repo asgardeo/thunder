@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Step} from '@/features/flows/models/steps';
 import {StepTypes, StepCategories} from '@/features/flows/models/steps';
 import type {Resources} from '@/features/flows/models/resources';
@@ -79,45 +80,45 @@ describe('StepFactory', () => {
   });
 
   describe('Rendering', () => {
-    it('should render CommonStepFactory', () => {
+    it('should render CommonStepFactory', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep()],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should pass resourceId to CommonStepFactory', () => {
+    it('should pass resourceId to CommonStepFactory', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'my-resource-id',
         resources: [createMockStep()],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-resource-id', 'my-resource-id');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-resource-id', 'my-resource-id');
     });
 
-    it('should pass resources to CommonStepFactory', () => {
+    it('should pass resources to CommonStepFactory', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep(), createMockStep({id: 'step-2'})],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-resources-count', '2');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-resources-count', '2');
     });
   });
 
   describe('Optional Props', () => {
-    it('should pass allResources when provided', () => {
+    it('should pass allResources when provided', async () => {
       const allResources: Resources = {
         elements: [],
         steps: [],
@@ -132,24 +133,24 @@ describe('StepFactory', () => {
         allResources,
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'true');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'true');
     });
 
-    it('should handle undefined allResources', () => {
+    it('should handle undefined allResources', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep()],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'false');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'false');
     });
 
-    it('should pass onAddElement callback when provided', () => {
+    it('should pass onAddElement callback when provided', async () => {
       const onAddElement = vi.fn();
       const props = {
         ...createNodeProps(),
@@ -158,12 +159,12 @@ describe('StepFactory', () => {
         onAddElement,
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
     });
 
-    it('should pass onAddElementToForm callback when provided', () => {
+    it('should pass onAddElementToForm callback when provided', async () => {
       const onAddElementToForm = vi.fn();
       const props = {
         ...createNodeProps(),
@@ -172,12 +173,12 @@ describe('StepFactory', () => {
         onAddElementToForm,
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
     });
 
-    it('should handle all optional props together', () => {
+    it('should handle all optional props together', async () => {
       const allResources: Resources = {
         elements: [],
         steps: [],
@@ -196,9 +197,9 @@ describe('StepFactory', () => {
         onAddElementToForm,
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      const factory = screen.getByTestId('common-step-factory');
+      const factory = page.getByTestId('common-step-factory');
       expect(factory).toHaveAttribute('data-has-all-resources', 'true');
       expect(factory).toHaveAttribute('data-has-on-add-element', 'true');
       expect(factory).toHaveAttribute('data-has-on-add-element-to-form', 'true');
@@ -206,32 +207,32 @@ describe('StepFactory', () => {
   });
 
   describe('Memoization', () => {
-    it('should render with same props', () => {
+    it('should render with same props', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep()],
       };
 
-      const {rerender} = render(<StepFactory {...props} />);
+      const {rerender} = await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
 
-      rerender(<StepFactory {...props} />);
+      await rerender(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should render with different resource IDs', () => {
+    it('should render with different resource IDs', async () => {
       const props1 = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep()],
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
+      const {rerender} = await render(<StepFactory {...props1} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-resource-id', 'resource-1');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-resource-id', 'resource-1');
 
       // Create props2 with different id (which is in memo comparison) to trigger re-render
       const props2 = {
@@ -240,64 +241,64 @@ describe('StepFactory', () => {
         resourceId: 'resource-2',
       };
 
-      rerender(<StepFactory {...props2} />);
+      await rerender(<StepFactory {...props2} />);
 
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-resource-id', 'resource-2');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-resource-id', 'resource-2');
     });
   });
 
   describe('Different Step Types', () => {
-    it('should render with View step type', () => {
+    it('should render with View step type', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep({type: StepTypes.View})],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should render with Rule step type', () => {
+    it('should render with Rule step type', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep({type: StepTypes.Rule, category: StepCategories.Decision})],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should render with Execution step type', () => {
+    it('should render with Execution step type', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep({type: StepTypes.Execution, category: StepCategories.Workflow})],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should render with End step type', () => {
+    it('should render with End step type', async () => {
       const props = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep({type: StepTypes.End})],
       };
 
-      render(<StepFactory {...props} />);
+      await render(<StepFactory {...props} />);
 
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
   });
 
   describe('Memo Comparison', () => {
-    it('should not re-render when props are the same', () => {
+    it('should not re-render when props are the same', async () => {
       const resources = [createMockStep()];
       const data = {test: 'value'};
       const allResources: Resources = {
@@ -319,14 +320,14 @@ describe('StepFactory', () => {
         onAddElementToForm,
       };
 
-      const {rerender} = render(<StepFactory {...props} />);
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      const {rerender} = await render(<StepFactory {...props} />);
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
 
-      rerender(<StepFactory {...props} />);
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await rerender(<StepFactory {...props} />);
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should re-render when id changes', () => {
+    it('should re-render when id changes', async () => {
       const resources = [createMockStep()];
       const props1 = {
         ...createNodeProps({id: 'node-1'}),
@@ -334,19 +335,19 @@ describe('StepFactory', () => {
         resources,
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
 
       const props2 = {
         ...props1,
         id: 'node-2',
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should re-render when data changes', () => {
+    it('should re-render when data changes', async () => {
       const resources = [createMockStep()];
       const props1 = {
         ...createNodeProps({data: {value: 1}}),
@@ -354,38 +355,38 @@ describe('StepFactory', () => {
         resources,
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
 
       const props2 = {
         ...props1,
         data: {value: 2},
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toBeInTheDocument();
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toBeInTheDocument();
     });
 
-    it('should re-render when resources change', () => {
+    it('should re-render when resources change', async () => {
       const props1 = {
         ...createNodeProps(),
         resourceId: 'resource-1',
         resources: [createMockStep()],
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-resources-count', '1');
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-resources-count', '1');
 
       const props2 = {
         ...props1,
         resources: [createMockStep(), createMockStep({id: 'step-2'})],
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-resources-count', '2');
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-resources-count', '2');
     });
 
-    it('should re-render when allResources changes', () => {
+    it('should re-render when allResources changes', async () => {
       const props1 = {
         ...createNodeProps(),
         resourceId: 'resource-1',
@@ -393,8 +394,8 @@ describe('StepFactory', () => {
         allResources: undefined,
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'false');
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'false');
 
       const props2 = {
         ...props1,
@@ -407,11 +408,11 @@ describe('StepFactory', () => {
         },
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'true');
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-all-resources', 'true');
     });
 
-    it('should re-render when onAddElement changes', () => {
+    it('should re-render when onAddElement changes', async () => {
       const onAddElement1 = vi.fn();
       const props1 = {
         ...createNodeProps(),
@@ -420,8 +421,8 @@ describe('StepFactory', () => {
         onAddElement: onAddElement1,
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
 
       const onAddElement2 = vi.fn();
       const props2 = {
@@ -429,11 +430,11 @@ describe('StepFactory', () => {
         onAddElement: onAddElement2,
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
     });
 
-    it('should re-render when onAddElementToForm changes', () => {
+    it('should re-render when onAddElementToForm changes', async () => {
       const onAddElementToForm1 = vi.fn();
       const props1 = {
         ...createNodeProps(),
@@ -442,8 +443,8 @@ describe('StepFactory', () => {
         onAddElementToForm: onAddElementToForm1,
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
 
       const onAddElementToForm2 = vi.fn();
       const props2 = {
@@ -451,11 +452,11 @@ describe('StepFactory', () => {
         onAddElementToForm: onAddElementToForm2,
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
     });
 
-    it('should handle transition from undefined to defined callbacks', () => {
+    it('should handle transition from undefined to defined callbacks', async () => {
       const props1 = {
         ...createNodeProps(),
         resourceId: 'resource-1',
@@ -464,9 +465,9 @@ describe('StepFactory', () => {
         onAddElementToForm: undefined,
       };
 
-      const {rerender} = render(<StepFactory {...props1} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'false');
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'false');
+      const {rerender} = await render(<StepFactory {...props1} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'false');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'false');
 
       const props2 = {
         ...props1,
@@ -474,9 +475,9 @@ describe('StepFactory', () => {
         onAddElementToForm: vi.fn(),
       };
 
-      rerender(<StepFactory {...props2} />);
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
-      expect(screen.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
+      await rerender(<StepFactory {...props2} />);
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element', 'true');
+      await expect.element(page.getByTestId('common-step-factory')).toHaveAttribute('data-has-on-add-element-to-form', 'true');
     });
   });
 });

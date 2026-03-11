@@ -35,7 +35,7 @@ import {
 import {X, Lightbulb} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useForm, Controller} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver} from '@/hooks/useZodResolver';
 import {z} from 'zod';
 import {useLogger} from '@thunder/logger/react';
 import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';

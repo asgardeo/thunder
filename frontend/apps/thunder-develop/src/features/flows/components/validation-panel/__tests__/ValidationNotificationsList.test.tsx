@@ -19,21 +19,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ValidationNotificationsList from '../ValidationNotificationsList';
 import Notification, {NotificationType} from '../../../models/notification';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'common:show': 'Show',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 describe('ValidationNotificationsList', () => {
   const mockOnNotificationClick = vi.fn();
@@ -60,8 +49,8 @@ describe('ValidationNotificationsList', () => {
   });
 
   describe('Empty State', () => {
-    it('should display empty message when no notifications', () => {
-      render(
+    it('should display empty message when no notifications', async () => {
+      await render(
         <ValidationNotificationsList
           notifications={[]}
           emptyMessage="No errors found"
@@ -69,11 +58,11 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByText('No errors found')).toBeInTheDocument();
+      await expect.element(page.getByText('No errors found')).toBeInTheDocument();
     });
 
-    it('should display empty message for undefined notifications', () => {
-      render(
+    it('should display empty message for undefined notifications', async () => {
+      await render(
         <ValidationNotificationsList
           notifications={undefined as any}
           emptyMessage="No notifications"
@@ -81,18 +70,18 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByText('No notifications')).toBeInTheDocument();
+      await expect.element(page.getByText('No notifications')).toBeInTheDocument();
     });
   });
 
   describe('Notification Rendering', () => {
-    it('should render notification messages', () => {
+    it('should render notification messages', async () => {
       const notifications = [
         createNotification('1', 'Error message 1', NotificationType.ERROR),
         createNotification('2', 'Error message 2', NotificationType.ERROR),
       ];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No errors"
@@ -100,18 +89,18 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByText('Error message 1')).toBeInTheDocument();
-      expect(screen.getByText('Error message 2')).toBeInTheDocument();
+      await expect.element(page.getByText('Error message 1')).toBeInTheDocument();
+      await expect.element(page.getByText('Error message 2')).toBeInTheDocument();
     });
 
-    it('should render different notification types', () => {
+    it('should render different notification types', async () => {
       const notifications = [
         createNotification('1', 'Error notification', NotificationType.ERROR),
         createNotification('2', 'Warning notification', NotificationType.WARNING),
         createNotification('3', 'Info notification', NotificationType.INFO),
       ];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No notifications"
@@ -119,17 +108,17 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByText('Error notification')).toBeInTheDocument();
-      expect(screen.getByText('Warning notification')).toBeInTheDocument();
-      expect(screen.getByText('Info notification')).toBeInTheDocument();
+      await expect.element(page.getByText('Error notification')).toBeInTheDocument();
+      await expect.element(page.getByText('Warning notification')).toBeInTheDocument();
+      await expect.element(page.getByText('Info notification')).toBeInTheDocument();
     });
   });
 
   describe('Show Button', () => {
-    it('should show "Show" button when notification has resources', () => {
+    it('should show "Show" button when notification has resources', async () => {
       const notifications = [createNotification('1', 'Error with resources', NotificationType.ERROR, true)];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No errors"
@@ -137,13 +126,13 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByRole('button', {name: 'Show'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Show'})).toBeInTheDocument();
     });
 
-    it('should show "Show" button when notification has panel notification', () => {
+    it('should show "Show" button when notification has panel notification', async () => {
       const notifications = [createNotification('1', 'Error with panel', NotificationType.ERROR, false, true)];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No errors"
@@ -151,13 +140,13 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByRole('button', {name: 'Show'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Show'})).toBeInTheDocument();
     });
 
-    it('should not show "Show" button when notification has no resources or panel notification', () => {
+    it('should not show "Show" button when notification has no resources or panel notification', async () => {
       const notifications = [createNotification('1', 'Simple error', NotificationType.ERROR)];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No errors"
@@ -165,13 +154,13 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.queryByRole('button', {name: 'Show'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Show'})).not.toBeInTheDocument();
     });
 
-    it('should call onNotificationClick when Show button is clicked', () => {
+    it('should call onNotificationClick when Show button is clicked', async () => {
       const notifications = [createNotification('1', 'Error with resources', NotificationType.ERROR, true)];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No errors"
@@ -179,8 +168,8 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      const showButton = screen.getByRole('button', {name: 'Show'});
-      fireEvent.click(showButton);
+      const showButton = page.getByRole('button', {name: 'Show'});
+      await userEvent.click(showButton);
 
       expect(mockOnNotificationClick).toHaveBeenCalledTimes(1);
       expect(mockOnNotificationClick).toHaveBeenCalledWith(notifications[0]);
@@ -188,14 +177,14 @@ describe('ValidationNotificationsList', () => {
   });
 
   describe('Multiple Notifications', () => {
-    it('should render all notifications in a list', () => {
+    it('should render all notifications in a list', async () => {
       const notifications = [
         createNotification('1', 'First error', NotificationType.ERROR, true),
         createNotification('2', 'Second error', NotificationType.ERROR, true),
         createNotification('3', 'Third error', NotificationType.ERROR),
       ];
 
-      render(
+      await render(
         <ValidationNotificationsList
           notifications={notifications}
           emptyMessage="No errors"
@@ -203,12 +192,12 @@ describe('ValidationNotificationsList', () => {
         />,
       );
 
-      expect(screen.getByText('First error')).toBeInTheDocument();
-      expect(screen.getByText('Second error')).toBeInTheDocument();
-      expect(screen.getByText('Third error')).toBeInTheDocument();
+      await expect.element(page.getByText('First error')).toBeInTheDocument();
+      await expect.element(page.getByText('Second error')).toBeInTheDocument();
+      await expect.element(page.getByText('Third error')).toBeInTheDocument();
 
       // Only first two should have Show buttons
-      const showButtons = screen.getAllByRole('button', {name: 'Show'});
+      const showButtons = page.getByRole('button', {name: 'Show'}).all();
       expect(showButtons).toHaveLength(2);
     });
   });

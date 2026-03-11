@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import SelectLanguage from '../SelectLanguage';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string, opts?: Record<string, unknown>) => (opts ? `${key}` : key)}),
-  };
-});
 
 const mockLocales = [
   {code: 'fr-FR', displayName: 'French (France)', flag: '🇫🇷'},
@@ -54,76 +45,76 @@ describe('SelectLanguage', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the step title and subtitle', () => {
-      render(<SelectLanguage {...defaultProps} />);
+    it('renders the step title and subtitle', async () => {
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      expect(screen.getByText('language.create.language.title')).toBeInTheDocument();
-      expect(screen.getByText('language.create.language.subtitle')).toBeInTheDocument();
+      await expect.element(page.getByText('Choose a Language')).toBeInTheDocument();
+      // subtitle has interpolation: 'Select the language variant spoken in {{country}}.'
+      // with country = 'France' it becomes 'Select the language variant spoken in France.'
+      await expect.element(
+        page.getByText('Select the language variant spoken in France.'),
+      ).toBeInTheDocument();
     });
 
-    it('renders the language autocomplete label', () => {
-      render(<SelectLanguage {...defaultProps} />);
+    it('renders the language autocomplete label', async () => {
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      expect(screen.getByText('language.create.language.label')).toBeInTheDocument();
+      await expect.element(page.getByText('Language')).toBeInTheDocument();
     });
 
-    it('renders the helper tip', () => {
-      render(<SelectLanguage {...defaultProps} />);
+    it('renders the helper tip', async () => {
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      expect(screen.getByText('language.create.language.helperText')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'Language picked here together with the country selection will determine the BCP 47 compliant locale code.',
+        ),
+      ).toBeInTheDocument();
     });
 
-    it('renders the autocomplete combobox', () => {
-      render(<SelectLanguage {...defaultProps} />);
+    it('renders the autocomplete combobox', async () => {
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
   describe('Options', () => {
     it('shows all locale options when the dropdown is opened', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      render(<SelectLanguage {...defaultProps} />);
+      await userEvent.click(page.getByRole('combobox'));
 
-      await user.click(screen.getByRole('combobox'));
-
-      expect(screen.getByText('French (France)')).toBeInTheDocument();
-      expect(screen.getByText('French (Belgium)')).toBeInTheDocument();
-      expect(screen.getByText('French (Canada)')).toBeInTheDocument();
+      await expect.element(page.getByText('French (France)')).toBeInTheDocument();
+      await expect.element(page.getByText('French (Belgium)')).toBeInTheDocument();
+      await expect.element(page.getByText('French (Canada)')).toBeInTheDocument();
     });
 
     it('shows the BCP 47 code chip for each option', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      render(<SelectLanguage {...defaultProps} />);
+      await userEvent.click(page.getByRole('combobox'));
 
-      await user.click(screen.getByRole('combobox'));
-
-      expect(screen.getByText('fr-FR')).toBeInTheDocument();
-      expect(screen.getByText('fr-BE')).toBeInTheDocument();
+      await expect.element(page.getByText('fr-FR')).toBeInTheDocument();
+      await expect.element(page.getByText('fr-BE')).toBeInTheDocument();
     });
 
     it('filters options by display name', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      render(<SelectLanguage {...defaultProps} />);
+      await userEvent.type(page.getByRole('combobox'), 'Belgium');
 
-      await user.type(screen.getByRole('combobox'), 'Belgium');
-
-      expect(screen.getByText('French (Belgium)')).toBeInTheDocument();
-      expect(screen.queryByText('French (France)')).not.toBeInTheDocument();
+      await expect.element(page.getByText('French (Belgium)')).toBeInTheDocument();
+      await expect.element(page.getByText('French (France)')).not.toBeInTheDocument();
     });
 
     it('filters options by locale code', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
-      render(<SelectLanguage {...defaultProps} />);
+      await userEvent.type(page.getByRole('combobox'), 'fr-CA');
 
-      await user.type(screen.getByRole('combobox'), 'fr-CA');
-
-      expect(screen.getByText('French (Canada)')).toBeInTheDocument();
-      expect(screen.queryByText('French (Belgium)')).not.toBeInTheDocument();
+      await expect.element(page.getByText('French (Canada)')).toBeInTheDocument();
+      await expect.element(page.getByText('French (Belgium)')).not.toBeInTheDocument();
     });
   });
 
@@ -131,25 +122,27 @@ describe('SelectLanguage', () => {
     it('calls buildLocaleOptions with the selected country regionCode', async () => {
       const {buildLocaleOptions} = await import('@thunder/i18n');
 
-      render(<SelectLanguage {...defaultProps} />);
+      await renderWithProviders(<SelectLanguage {...defaultProps} />);
 
       expect(buildLocaleOptions).toHaveBeenCalledWith('FR');
     });
   });
 
   describe('onReadyChange', () => {
-    it('calls onReadyChange(false) on mount when no locale is selected', () => {
+    it('calls onReadyChange(false) on mount when no locale is selected', async () => {
       const onReadyChange = vi.fn();
 
-      render(<SelectLanguage {...defaultProps} onReadyChange={onReadyChange} selectedLocale={null} />);
+      await renderWithProviders(<SelectLanguage {...defaultProps} onReadyChange={onReadyChange} selectedLocale={null} />);
 
       expect(onReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('calls onReadyChange(true) on mount when a locale is already selected', () => {
+    it('calls onReadyChange(true) on mount when a locale is already selected', async () => {
       const onReadyChange = vi.fn();
 
-      render(<SelectLanguage {...defaultProps} onReadyChange={onReadyChange} selectedLocale={mockLocales[0]} />);
+      await renderWithProviders(
+        <SelectLanguage {...defaultProps} onReadyChange={onReadyChange} selectedLocale={mockLocales[0]} />,
+      );
 
       expect(onReadyChange).toHaveBeenCalledWith(true);
     });
@@ -158,25 +151,23 @@ describe('SelectLanguage', () => {
   describe('Interaction', () => {
     it('calls onLocaleChange with the selected locale when an option is clicked', async () => {
       const onLocaleChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(<SelectLanguage {...defaultProps} onLocaleChange={onLocaleChange} />);
+      await renderWithProviders(<SelectLanguage {...defaultProps} onLocaleChange={onLocaleChange} />);
 
-      await user.click(screen.getByRole('combobox'));
-      await user.click(screen.getByText('French (France)'));
+      await userEvent.click(page.getByRole('combobox'));
+      await userEvent.click(page.getByText('French (France)'));
 
       expect(onLocaleChange).toHaveBeenCalledWith(mockLocales[0]);
     });
 
     it('calls onLocaleChange(null) when the selection is cleared', async () => {
       const onLocaleChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(
+      await renderWithProviders(
         <SelectLanguage {...defaultProps} selectedLocale={mockLocales[0]} onLocaleChange={onLocaleChange} />,
       );
 
-      await user.clear(screen.getByRole('combobox'));
+      await userEvent.clear(page.getByRole('combobox'));
 
       expect(onLocaleChange).toHaveBeenCalledWith(null);
     });

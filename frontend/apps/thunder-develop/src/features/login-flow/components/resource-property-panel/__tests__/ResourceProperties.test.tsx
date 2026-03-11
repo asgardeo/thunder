@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {ElementCategories, ElementTypes} from '@/features/flows/models/elements';
 import {StepCategories, StepTypes, ExecutionTypes} from '@/features/flows/models/steps';
 import type {Resource} from '@/features/flows/models/resources';
@@ -121,10 +122,10 @@ describe('ResourceProperties', () => {
   });
 
   describe('Field Category', () => {
-    it('should render FieldExtendedProperties for Field category', () => {
+    it('should render FieldExtendedProperties for Field category', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{label: 'Test Label'}}
@@ -133,13 +134,13 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('field-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('field-extended-properties')).toBeInTheDocument();
     });
 
-    it('should render element ID for Field category', () => {
+    it('should render element ID for Field category', async () => {
       const resource = createMockResource({id: 'field-123', category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -148,14 +149,14 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-id')).toBeInTheDocument();
-      expect(screen.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'field-123');
+      await expect.element(page.getByTestId('resource-property-factory-id')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'field-123');
     });
 
-    it('should render property factories for Field category properties', () => {
+    it('should render property factories for Field category properties', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{label: 'Test Label', placeholder: 'Enter value'}}
@@ -164,19 +165,19 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-label')).toBeInTheDocument();
-      expect(screen.getByTestId('resource-property-factory-placeholder')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-label')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-placeholder')).toBeInTheDocument();
     });
   });
 
   describe('Action Category', () => {
-    it('should render ButtonExtendedProperties for Action type', () => {
+    it('should render ButtonExtendedProperties for Action type', async () => {
       const resource = createMockResource({
         category: ElementCategories.Action,
         type: ElementTypes.Action,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -185,17 +186,17 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('button-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('button-extended-properties')).toBeInTheDocument();
     });
 
-    it('should render element ID for Action category', () => {
+    it('should render element ID for Action category', async () => {
       const resource = createMockResource({
         id: 'action-456',
         category: ElementCategories.Action,
         type: ElementTypes.Action,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -204,16 +205,16 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'action-456');
+      await expect.element(page.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'action-456');
     });
 
-    it('should not render ButtonExtendedProperties for non-Action type in Action category', () => {
+    it('should not render ButtonExtendedProperties for non-Action type in Action category', async () => {
       const resource = createMockResource({
         category: ElementCategories.Action,
         type: 'LINK' as typeof ElementTypes.Action,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -222,18 +223,18 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.queryByTestId('button-extended-properties')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('button-extended-properties')).not.toBeInTheDocument();
     });
   });
 
   describe('Decision Category - Rule Type', () => {
-    it('should render RulesProperties for Rule type', () => {
+    it('should render RulesProperties for Rule type', async () => {
       const resource = createMockResource({
         category: StepCategories.Decision,
         type: StepTypes.Rule,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -242,17 +243,17 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('rules-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rules-properties')).toBeInTheDocument();
     });
 
-    it('should render element ID for Rule type', () => {
+    it('should render element ID for Rule type', async () => {
       const resource = createMockResource({
         id: 'rule-789',
         category: StepCategories.Decision,
         type: StepTypes.Rule,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -261,16 +262,16 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'rule-789');
+      await expect.element(page.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'rule-789');
     });
 
-    it('should return null for Decision category with non-Rule type', () => {
+    it('should return null for Decision category with non-Rule type', async () => {
       const resource = createMockResource({
         category: StepCategories.Decision,
         type: 'CONDITION' as typeof StepTypes.Rule,
       } as Partial<Resource>);
 
-      const {container} = render(
+      const {container} = await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -284,14 +285,14 @@ describe('ResourceProperties', () => {
   });
 
   describe('Interface Category - End Type', () => {
-    it('should render element ID for End type', () => {
+    it('should render element ID for End type', async () => {
       const resource = createMockResource({
         id: 'end-step',
         category: StepCategories.Interface,
         type: StepTypes.End,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -300,16 +301,16 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'end-step');
+      await expect.element(page.getByTestId('resource-property-factory-id')).toHaveAttribute('data-property-value', 'end-step');
     });
 
-    it('should return null for Interface category with non-End type', () => {
+    it('should return null for Interface category with non-End type', async () => {
       const resource = createMockResource({
         category: StepCategories.Interface,
         type: 'VIEW' as typeof StepTypes.End,
       } as Partial<Resource>);
 
-      const {container} = render(
+      const {container} = await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -323,13 +324,13 @@ describe('ResourceProperties', () => {
   });
 
   describe('Workflow Category', () => {
-    it('should render ExecutionExtendedProperties for Workflow category', () => {
+    it('should render ExecutionExtendedProperties for Workflow category', async () => {
       const resource = createMockResource({
         category: StepCategories.Workflow,
         type: StepTypes.Execution,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -338,10 +339,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('execution-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('execution-extended-properties')).toBeInTheDocument();
     });
 
-    it('should render ConfirmationCode execution type differently', () => {
+    it('should render ConfirmationCode execution type differently', async () => {
       const resource = createMockResource({
         category: StepCategories.Workflow,
         type: StepTypes.Execution,
@@ -354,7 +355,7 @@ describe('ResourceProperties', () => {
         },
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{prop1: 'value1'}}
@@ -364,20 +365,20 @@ describe('ResourceProperties', () => {
       );
 
       // ConfirmationCode renders property factories instead of ExecutionExtendedProperties
-      expect(screen.queryByTestId('execution-extended-properties')).not.toBeInTheDocument();
-      expect(screen.getByTestId('resource-property-factory-prop1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('execution-extended-properties')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-prop1')).toBeInTheDocument();
     });
   });
 
   describe('Display Category - Text Type', () => {
-    it('should render TextPropertyField for Text type', () => {
+    it('should render TextPropertyField for Text type', async () => {
       const resource = createMockResource({
         category: ElementCategories.Display,
         type: ElementTypes.Text,
         label: 'Sample Text',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -386,10 +387,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('text-property-field-label')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field-label')).toBeInTheDocument();
     });
 
-    it('should render variant selector for Text type with variants', () => {
+    it('should render variant selector for Text type with variants', async () => {
       const variants = [
         {variant: 'heading', id: 'v1'},
         {variant: 'body', id: 'v2'},
@@ -402,7 +403,7 @@ describe('ResourceProperties', () => {
         variant: 'heading',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -411,12 +412,12 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
   });
 
   describe('Display Category - Image Type', () => {
-    it('should render TextPropertyFields for Image type', () => {
+    it('should render TextPropertyFields for Image type', async () => {
       const resource = createMockResource({
         category: ElementCategories.Display,
         type: ElementTypes.Image,
@@ -424,7 +425,7 @@ describe('ResourceProperties', () => {
         alt: 'Sample Image',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -433,17 +434,17 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('text-property-field-src')).toBeInTheDocument();
-      expect(screen.getByTestId('text-property-field-alt')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field-src')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field-alt')).toBeInTheDocument();
     });
 
-    it('should handle empty src and alt values', () => {
+    it('should handle empty src and alt values', async () => {
       const resource = createMockResource({
         category: ElementCategories.Display,
         type: ElementTypes.Image,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -452,19 +453,19 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('text-property-field-src')).toHaveAttribute('data-property-value', '');
-      expect(screen.getByTestId('text-property-field-alt')).toHaveAttribute('data-property-value', '');
+      await expect.element(page.getByTestId('text-property-field-src')).toHaveAttribute('data-property-value', '');
+      await expect.element(page.getByTestId('text-property-field-alt')).toHaveAttribute('data-property-value', '');
     });
   });
 
   describe('Display Category - Other Types', () => {
-    it('should render default property factories for other Display types', () => {
+    it('should render default property factories for other Display types', async () => {
       const resource = createMockResource({
         category: ElementCategories.Display,
         type: 'DIVIDER' as typeof ElementTypes.Text,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{thickness: '2px'}}
@@ -473,17 +474,17 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-thickness')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-thickness')).toBeInTheDocument();
     });
   });
 
   describe('Default Category', () => {
-    it('should render default property factories for unknown category', () => {
+    it('should render default property factories for unknown category', async () => {
       const resource = createMockResource({
         category: 'UNKNOWN' as typeof ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{customProp: 'customValue'}}
@@ -492,13 +493,13 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-id')).toBeInTheDocument();
-      expect(screen.getByTestId('resource-property-factory-customProp')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-id')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-customProp')).toBeInTheDocument();
     });
   });
 
   describe('Variant Selection', () => {
-    it('should render variant selector when resource has variants', () => {
+    it('should render variant selector when resource has variants', async () => {
       const variants = [
         {variant: 'primary', id: 'v1'},
         {variant: 'secondary', id: 'v2'},
@@ -510,7 +511,7 @@ describe('ResourceProperties', () => {
         variant: 'primary',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -519,10 +520,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
 
-    it('should call onVariantChange when variant is selected', () => {
+    it('should call onVariantChange when variant is selected', async () => {
       const variants = [
         {variant: 'primary', id: 'v1'},
         {variant: 'secondary', id: 'v2'},
@@ -534,7 +535,7 @@ describe('ResourceProperties', () => {
         variant: 'primary',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -545,20 +546,20 @@ describe('ResourceProperties', () => {
 
       // Find the variant select by role combobox with the variant-select id
       const variantSelect = document.getElementById('variant-select')!;
-      fireEvent.mouseDown(variantSelect);
+      await userEvent.click(variantSelect);
 
-      const secondaryOption = screen.getByRole('option', {name: 'secondary'});
-      fireEvent.click(secondaryOption);
+      const secondaryOption = page.getByRole('option', {name: 'secondary'});
+      await userEvent.click(secondaryOption);
 
       expect(mockOnVariantChange).toHaveBeenCalledWith('secondary');
     });
 
-    it('should not render variant selector when resource has no variants', () => {
+    it('should not render variant selector when resource has no variants', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -567,16 +568,16 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.queryByText('Variant')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).not.toBeInTheDocument();
     });
 
-    it('should not render variant selector when variants array is empty', () => {
+    it('should not render variant selector when variants array is empty', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
         variants: [],
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -585,15 +586,15 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.queryByText('Variant')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).not.toBeInTheDocument();
     });
   });
 
   describe('onChange Handler - Type Preservation', () => {
-    it('should preserve boolean values in onChange', () => {
+    it('should preserve boolean values in onChange', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -604,12 +605,12 @@ describe('ResourceProperties', () => {
 
       // The internal handleChange function processes values
       // This test verifies the component renders without errors
-      expect(screen.getByTestId('field-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('field-extended-properties')).toBeInTheDocument();
     });
   });
 
   describe('Sync Selected Variant on Resource Change', () => {
-    it('should sync selected variant when resource changes', () => {
+    it('should sync selected variant when resource changes', async () => {
       const variants1 = [
         {variant: 'v1', id: 'variant-1'},
         {variant: 'v2', id: 'variant-2'},
@@ -634,7 +635,7 @@ describe('ResourceProperties', () => {
         variant: 'v3',
       } as Partial<Resource>);
 
-      const {rerender} = render(
+      const {rerender} = await render(
         <ResourceProperties
           resource={resource1}
           properties={{}}
@@ -643,9 +644,9 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
 
-      rerender(
+      await rerender(
         <ResourceProperties
           resource={resource2}
           properties={{}}
@@ -654,10 +655,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
 
-    it('should set selectedVariant to undefined when resource has no variants', () => {
+    it('should set selectedVariant to undefined when resource has no variants', async () => {
       const resource1 = createMockResource({
         id: 'resource-1',
         category: ElementCategories.Field,
@@ -671,7 +672,7 @@ describe('ResourceProperties', () => {
         variants: undefined,
       } as Partial<Resource>);
 
-      const {rerender} = render(
+      const {rerender} = await render(
         <ResourceProperties
           resource={resource1}
           properties={{}}
@@ -680,9 +681,9 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
 
-      rerender(
+      await rerender(
         <ResourceProperties
           resource={resource2}
           properties={{}}
@@ -691,10 +692,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.queryByText('Variant')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).not.toBeInTheDocument();
     });
 
-    it('should fall back to first variant when current variant is not found', () => {
+    it('should fall back to first variant when current variant is not found', async () => {
       const variants = [
         {variant: 'first', id: 'variant-1'},
         {variant: 'second', id: 'variant-2'},
@@ -707,7 +708,7 @@ describe('ResourceProperties', () => {
         variant: 'non-existent',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -716,15 +717,15 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
   });
 
   describe('handleChange Type Preservation', () => {
-    it('should preserve boolean values in onChange', () => {
+    it('should preserve boolean values in onChange', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -734,13 +735,13 @@ describe('ResourceProperties', () => {
       );
 
       // The component should render
-      expect(screen.getByTestId('field-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('field-extended-properties')).toBeInTheDocument();
     });
 
-    it('should preserve object values in onChange', () => {
+    it('should preserve object values in onChange', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -749,13 +750,13 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('field-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('field-extended-properties')).toBeInTheDocument();
     });
 
-    it('should convert number values to string in onChange', () => {
+    it('should convert number values to string in onChange', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{numericProp: 42}}
@@ -764,13 +765,13 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-numericProp')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-numericProp')).toBeInTheDocument();
     });
 
-    it('should default to empty string for null/undefined values', () => {
+    it('should default to empty string for null/undefined values', async () => {
       const resource = createMockResource({category: ElementCategories.Field});
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{nullProp: null as unknown as string}}
@@ -779,12 +780,12 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-nullProp')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-nullProp')).toBeInTheDocument();
     });
   });
 
   describe('Display Category - Text Type with Variants', () => {
-    it('should render variant selector for Text type and call onVariantChange', () => {
+    it('should render variant selector for Text type and call onVariantChange', async () => {
       const variants = [
         {variant: 'heading', id: 'v1'},
         {variant: 'body', id: 'v2'},
@@ -797,7 +798,7 @@ describe('ResourceProperties', () => {
         variant: 'heading',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -806,19 +807,19 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
 
       // Find and click the variant select
       const variantSelect = document.getElementById('variant-select')!;
-      fireEvent.mouseDown(variantSelect);
+      await userEvent.click(variantSelect);
 
-      const bodyOption = screen.getByRole('option', {name: 'body'});
-      fireEvent.click(bodyOption);
+      const bodyOption = page.getByRole('option', {name: 'body'});
+      await userEvent.click(bodyOption);
 
       expect(mockOnVariantChange).toHaveBeenCalledWith('body');
     });
 
-    it('should handle onVariantChange being undefined for Text type', () => {
+    it('should handle onVariantChange being undefined for Text type', async () => {
       const variants = [
         {variant: 'heading', id: 'v1'},
         {variant: 'body', id: 'v2'},
@@ -831,7 +832,7 @@ describe('ResourceProperties', () => {
         variant: 'heading',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -841,16 +842,16 @@ describe('ResourceProperties', () => {
       );
 
       const variantSelect = document.getElementById('variant-select')!;
-      fireEvent.mouseDown(variantSelect);
+      await userEvent.click(variantSelect);
 
-      const bodyOption = screen.getByRole('option', {name: 'body'});
-      fireEvent.click(bodyOption);
+      const bodyOption = page.getByRole('option', {name: 'body'});
+      await userEvent.click(bodyOption);
 
       // Should not throw error
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
 
-    it('should handle variant not found in variants array for Text type', () => {
+    it('should handle variant not found in variants array for Text type', async () => {
       const variants = [
         {variant: 'heading', id: 'v1'},
         {variant: 'body', id: 'v2'},
@@ -863,7 +864,7 @@ describe('ResourceProperties', () => {
         variant: 'heading',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -873,21 +874,21 @@ describe('ResourceProperties', () => {
       );
 
       const variantSelect = document.getElementById('variant-select')!;
-      fireEvent.mouseDown(variantSelect);
+      await userEvent.click(variantSelect);
 
       // Try to select a non-existent variant through the select component
       // The select should still work properly
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
 
-    it('should not render variant selector for Text type without variants', () => {
+    it('should not render variant selector for Text type without variants', async () => {
       const resource = createMockResource({
         category: ElementCategories.Display,
         type: ElementTypes.Text,
         label: 'Sample Text',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -896,10 +897,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.queryByText('Variant')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).not.toBeInTheDocument();
     });
 
-    it('should handle variant selection with empty variant value', () => {
+    it('should handle variant selection with empty variant value', async () => {
       const variants = [
         {variant: 'primary', id: 'v1'},
         {variant: '', id: 'v2'},
@@ -912,7 +913,7 @@ describe('ResourceProperties', () => {
         variant: 'primary',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -921,12 +922,12 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
   });
 
   describe('Workflow Category - Non-ConfirmationCode Execution', () => {
-    it('should render ExecutionExtendedProperties for regular execution', () => {
+    it('should render ExecutionExtendedProperties for regular execution', async () => {
       const resource = createMockResource({
         category: StepCategories.Workflow,
         type: StepTypes.Execution,
@@ -939,7 +940,7 @@ describe('ResourceProperties', () => {
         },
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -948,17 +949,17 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('execution-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('execution-extended-properties')).toBeInTheDocument();
     });
 
-    it('should render ExecutionExtendedProperties when executor is undefined', () => {
+    it('should render ExecutionExtendedProperties when executor is undefined', async () => {
       const resource = createMockResource({
         category: StepCategories.Workflow,
         type: StepTypes.Execution,
         data: {},
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -967,18 +968,18 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('execution-extended-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('execution-extended-properties')).toBeInTheDocument();
     });
   });
 
   describe('Display Category - Image Type', () => {
-    it('should render src and alt fields with empty values when not provided', () => {
+    it('should render src and alt fields with empty values when not provided', async () => {
       const resource = createMockResource({
         category: ElementCategories.Display,
         type: ElementTypes.Image,
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -987,19 +988,19 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('text-property-field-src')).toBeInTheDocument();
-      expect(screen.getByTestId('text-property-field-alt')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field-src')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field-alt')).toBeInTheDocument();
     });
   });
 
   describe('Interface Category - Non-End Type', () => {
-    it('should return null for VIEW type in Interface category', () => {
+    it('should return null for VIEW type in Interface category', async () => {
       const resource = createMockResource({
         category: StepCategories.Interface,
         type: StepTypes.View,
       } as Partial<Resource>);
 
-      const {container} = render(
+      const {container} = await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -1013,7 +1014,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Field Category with Variants', () => {
-    it('should render variant selector and handle empty variant selection', () => {
+    it('should render variant selector and handle empty variant selection', async () => {
       const variants = [
         {variant: 'text', id: 'v1'},
         {variant: 'password', id: 'v2'},
@@ -1025,7 +1026,7 @@ describe('ResourceProperties', () => {
         variant: 'text',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -1034,19 +1035,19 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
   });
 
   describe('Action Category - Non-Action Types', () => {
-    it('should render only ID for Link type in Action category', () => {
+    it('should render only ID for Link type in Action category', async () => {
       const resource = createMockResource({
         id: 'link-123',
         category: ElementCategories.Action,
         type: 'LINK',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{href: 'https://example.com'}}
@@ -1055,14 +1056,14 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByTestId('resource-property-factory-id')).toBeInTheDocument();
-      expect(screen.getByTestId('resource-property-factory-href')).toBeInTheDocument();
-      expect(screen.queryByTestId('button-extended-properties')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-id')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resource-property-factory-href')).toBeInTheDocument();
+      await expect.element(page.getByTestId('button-extended-properties')).not.toBeInTheDocument();
     });
   });
 
   describe('Action Category with Variants', () => {
-    it('should render variant selector for Action category with variants', () => {
+    it('should render variant selector for Action category with variants', async () => {
       const variants = [
         {variant: 'primary', id: 'v1'},
         {variant: 'secondary', id: 'v2'},
@@ -1075,7 +1076,7 @@ describe('ResourceProperties', () => {
         variant: 'primary',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -1084,10 +1085,10 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
 
-    it('should call onVariantChange for Action category variant selection', () => {
+    it('should call onVariantChange for Action category variant selection', async () => {
       const variants = [
         {variant: 'filled', id: 'v1'},
         {variant: 'outlined', id: 'v2'},
@@ -1100,7 +1101,7 @@ describe('ResourceProperties', () => {
         variant: 'filled',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -1110,15 +1111,15 @@ describe('ResourceProperties', () => {
       );
 
       const variantSelect = document.getElementById('variant-select')!;
-      fireEvent.mouseDown(variantSelect);
+      await userEvent.click(variantSelect);
 
-      const outlinedOption = screen.getByRole('option', {name: 'outlined'});
-      fireEvent.click(outlinedOption);
+      const outlinedOption = page.getByRole('option', {name: 'outlined'});
+      await userEvent.click(outlinedOption);
 
       expect(mockOnVariantChange).toHaveBeenCalledWith('outlined');
     });
 
-    it('should handle onVariantChange being undefined', () => {
+    it('should handle onVariantChange being undefined', async () => {
       const variants = [
         {variant: 'primary', id: 'v1'},
         {variant: 'secondary', id: 'v2'},
@@ -1131,7 +1132,7 @@ describe('ResourceProperties', () => {
         variant: 'primary',
       } as Partial<Resource>);
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{}}
@@ -1141,23 +1142,23 @@ describe('ResourceProperties', () => {
       );
 
       const variantSelect = document.getElementById('variant-select')!;
-      fireEvent.mouseDown(variantSelect);
+      await userEvent.click(variantSelect);
 
-      const secondaryOption = screen.getByRole('option', {name: 'secondary'});
-      fireEvent.click(secondaryOption);
+      const secondaryOption = page.getByRole('option', {name: 'secondary'});
+      await userEvent.click(secondaryOption);
 
       // Should not throw error
-      expect(screen.getByText('Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Variant')).toBeInTheDocument();
     });
   });
 
   describe('handleChange Type Processing', () => {
-    it('should preserve boolean values and call onChange with boolean', () => {
+    it('should preserve boolean values and call onChange with boolean', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{enabled: true}}
@@ -1167,20 +1168,20 @@ describe('ResourceProperties', () => {
       );
 
       // Trigger the change via the mocked button
-      const triggerButton = screen.getByTestId('trigger-change-enabled');
-      fireEvent.click(triggerButton);
+      const triggerButton = page.getByTestId('trigger-change-enabled');
+      await userEvent.click(triggerButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('enabled', true, resource);
     });
 
-    it('should preserve object values and call onChange with object', () => {
+    it('should preserve object values and call onChange with object', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
       const objectValue = {nested: 'value', count: 5};
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{config: objectValue}}
@@ -1189,18 +1190,18 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      const triggerButton = screen.getByTestId('trigger-change-config');
-      fireEvent.click(triggerButton);
+      const triggerButton = page.getByTestId('trigger-change-config');
+      await userEvent.click(triggerButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('config', objectValue, resource);
     });
 
-    it('should convert string values to string in onChange', () => {
+    it('should convert string values to string in onChange', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{label: 'test string'}}
@@ -1209,18 +1210,18 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      const triggerButton = screen.getByTestId('trigger-change-label');
-      fireEvent.click(triggerButton);
+      const triggerButton = page.getByTestId('trigger-change-label');
+      await userEvent.click(triggerButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('label', 'test string', resource);
     });
 
-    it('should convert number values to string in onChange', () => {
+    it('should convert number values to string in onChange', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{maxLength: 100}}
@@ -1229,18 +1230,18 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      const triggerButton = screen.getByTestId('trigger-change-maxLength');
-      fireEvent.click(triggerButton);
+      const triggerButton = page.getByTestId('trigger-change-maxLength');
+      await userEvent.click(triggerButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('maxLength', '100', resource);
     });
 
-    it('should convert null values to empty string in onChange', () => {
+    it('should convert null values to empty string in onChange', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{optionalProp: null as unknown as string}}
@@ -1249,18 +1250,18 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      const triggerButton = screen.getByTestId('trigger-change-optionalProp');
-      fireEvent.click(triggerButton);
+      const triggerButton = page.getByTestId('trigger-change-optionalProp');
+      await userEvent.click(triggerButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('optionalProp', '', resource);
     });
 
-    it('should convert undefined values to empty string in onChange', () => {
+    it('should convert undefined values to empty string in onChange', async () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
 
-      render(
+      await render(
         <ResourceProperties
           resource={resource}
           properties={{undefinedProp: undefined as unknown as string}}
@@ -1269,8 +1270,8 @@ describe('ResourceProperties', () => {
         />,
       );
 
-      const triggerButton = screen.getByTestId('trigger-change-undefinedProp');
-      fireEvent.click(triggerButton);
+      const triggerButton = page.getByTestId('trigger-change-undefinedProp');
+      await userEvent.click(triggerButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('undefinedProp', '', resource);
     });

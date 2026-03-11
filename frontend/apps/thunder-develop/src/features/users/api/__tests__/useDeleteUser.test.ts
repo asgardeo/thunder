@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useDeleteUser from '../useDeleteUser';
 import UserQueryKeys from '../../constants/user-query-keys';
 
@@ -60,8 +60,8 @@ describe('useDeleteUser', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useDeleteUser());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useDeleteUser());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -77,11 +77,11 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -94,11 +94,11 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -121,15 +121,15 @@ describe('useDeleteUser', () => {
     );
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
+    await vi.waitFor(
       () => {
         expect(result.current.isSuccess).toBe(true);
       },
@@ -144,11 +144,11 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -162,11 +162,11 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -178,7 +178,7 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result, queryClient} = renderHook(() => useDeleteUser());
+    const {result, queryClient} = await renderHook(() => useDeleteUser());
 
     // Pre-populate cache with user
     queryClient.setQueryData([UserQueryKeys.USER, userId], {
@@ -192,7 +192,7 @@ describe('useDeleteUser', () => {
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -208,7 +208,7 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result, queryClient} = renderHook(() => useDeleteUser());
+    const {result, queryClient} = await renderHook(() => useDeleteUser());
 
     // Pre-populate cache with users list
     queryClient.setQueryData([UserQueryKeys.USERS], {
@@ -228,7 +228,7 @@ describe('useDeleteUser', () => {
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -244,7 +244,7 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result, queryClient} = renderHook(() => useDeleteUser());
+    const {result, queryClient} = await renderHook(() => useDeleteUser());
 
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
@@ -252,7 +252,7 @@ describe('useDeleteUser', () => {
     result.current.mutate(userId);
 
     // The mutation should still succeed even if invalidateQueries fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
   });
@@ -263,19 +263,19 @@ describe('useDeleteUser', () => {
     const user1Id = 'user-1';
     const user2Id = 'user-2';
 
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     // Delete first user
     result.current.mutate(user1Id);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
     // Delete second user
     result.current.mutate(user2Id);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -298,13 +298,13 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     const deletePromise = result.current.mutateAsync(userId);
 
     await expect(deletePromise).resolves.toBeUndefined();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
   });
@@ -314,13 +314,13 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     const deletePromise = result.current.mutateAsync(userId);
 
     await expect(deletePromise).rejects.toEqual(apiError);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
   });
@@ -330,12 +330,12 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     // First attempt - should fail
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -344,7 +344,7 @@ describe('useDeleteUser', () => {
     // Second attempt - should succeed
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -362,7 +362,7 @@ describe('useDeleteUser', () => {
     const user1Data = {id: user1Id, organizationUnit: 'ou-1', type: 'Employee'};
     const user2Data = {id: user2Id, organizationUnit: 'ou-1', type: 'Employee'};
 
-    const {result, queryClient} = renderHook(() => useDeleteUser());
+    const {result, queryClient} = await renderHook(() => useDeleteUser());
 
     queryClient.setQueryData([UserQueryKeys.USER, user1Id], user1Data);
     queryClient.setQueryData([UserQueryKeys.USER, user2Id], user2Data);
@@ -370,7 +370,7 @@ describe('useDeleteUser', () => {
     // Delete first user
     result.current.mutate(user1Id);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -389,11 +389,11 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -413,11 +413,11 @@ describe('useDeleteUser', () => {
     mockHttpRequest.mockRejectedValueOnce(serverError);
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useDeleteUser());
+    const {result} = await renderHook(() => useDeleteUser());
 
     result.current.mutate(userId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 

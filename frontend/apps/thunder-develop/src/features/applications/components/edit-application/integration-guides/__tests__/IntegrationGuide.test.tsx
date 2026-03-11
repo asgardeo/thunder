@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import IntegrationGuide from '../IntegrationGuide';
 import type {IntegrationGuides} from '../../../../models/application-templates';
@@ -57,8 +58,8 @@ describe('IntegrationGuide', () => {
   });
 
   describe('Rendering', () => {
-    it('should render TechnologyGuide when integrationGuides are provided', () => {
-      render(
+    it('should render TechnologyGuide when integrationGuides are provided', async () => {
+      await render(
         <IntegrationGuide
           clientId="client-123"
           applicationId="app-123"
@@ -67,27 +68,27 @@ describe('IntegrationGuide', () => {
         />,
       );
 
-      expect(screen.getByTestId('technology-guide')).toBeInTheDocument();
+      await expect.element(page.getByTestId('technology-guide')).toBeInTheDocument();
     });
 
-    it('should not render TechnologyGuide when integrationGuides is null', () => {
-      render(
+    it('should not render TechnologyGuide when integrationGuides is null', async () => {
+      await render(
         <IntegrationGuide clientId="client-123" applicationId="app-123" integrationGuides={null} templateId="react" />,
       );
 
-      expect(screen.queryByTestId('technology-guide')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('technology-guide')).not.toBeInTheDocument();
     });
 
-    it('should not render TechnologyGuide when integrationGuides is undefined', () => {
-      render(<IntegrationGuide clientId="client-123" applicationId="app-123" templateId="react" />);
+    it('should not render TechnologyGuide when integrationGuides is undefined', async () => {
+      await render(<IntegrationGuide clientId="client-123" applicationId="app-123" templateId="react" />);
 
-      expect(screen.queryByTestId('technology-guide')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('technology-guide')).not.toBeInTheDocument();
     });
   });
 
   describe('Props Propagation', () => {
-    it('should pass all props to TechnologyGuide', () => {
-      render(
+    it('should pass all props to TechnologyGuide', async () => {
+      await render(
         <IntegrationGuide
           clientId="client-123"
           applicationId="app-123"
@@ -107,8 +108,8 @@ describe('IntegrationGuide', () => {
       );
     });
 
-    it('should pass empty string for clientId when not provided', () => {
-      render(<IntegrationGuide applicationId="app-123" integrationGuides={mockIntegrationGuides} templateId="react" />);
+    it('should pass empty string for clientId when not provided', async () => {
+      await render(<IntegrationGuide applicationId="app-123" integrationGuides={mockIntegrationGuides} templateId="react" />);
 
       expect(TechnologyGuide).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -118,8 +119,8 @@ describe('IntegrationGuide', () => {
       );
     });
 
-    it('should pass null for applicationId when not provided', () => {
-      render(<IntegrationGuide clientId="client-123" integrationGuides={mockIntegrationGuides} templateId="react" />);
+    it('should pass null for applicationId when not provided', async () => {
+      await render(<IntegrationGuide clientId="client-123" integrationGuides={mockIntegrationGuides} templateId="react" />);
 
       expect(TechnologyGuide).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -129,8 +130,8 @@ describe('IntegrationGuide', () => {
       );
     });
 
-    it('should handle undefined templateId', () => {
-      render(
+    it('should handle undefined templateId', async () => {
+      await render(
         <IntegrationGuide clientId="client-123" applicationId="app-123" integrationGuides={mockIntegrationGuides} />,
       );
 
@@ -144,8 +145,8 @@ describe('IntegrationGuide', () => {
   });
 
   describe('Layout', () => {
-    it('should render content in a Stack with proper styling', () => {
-      const {container} = render(
+    it('should render content in a Stack with proper styling', async () => {
+      const {container} = await render(
         <IntegrationGuide
           clientId="client-123"
           applicationId="app-123"

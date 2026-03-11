@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import IntegrationGuides from '../IntegrationGuides';
 import type {Application} from '../../../../models/application';
@@ -82,28 +83,28 @@ describe('IntegrationGuides', () => {
   });
 
   describe('Rendering', () => {
-    it('should render integration guide when guides are available', () => {
+    it('should render integration guide when guides are available', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} oauth2Config={mockOAuth2Config} />);
+      await render(<IntegrationGuides application={mockApplication} oauth2Config={mockOAuth2Config} />);
 
-      expect(screen.getByTestId('integration-guide')).toBeInTheDocument();
+      await expect.element(page.getByTestId('integration-guide')).toBeInTheDocument();
     });
 
-    it('should render fallback message when no guides are available', () => {
+    it('should render fallback message when no guides are available', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(null);
 
-      render(<IntegrationGuides application={mockApplication} />);
+      await render(<IntegrationGuides application={mockApplication} />);
 
-      expect(screen.getByText('No integration guides available for this application type.')).toBeInTheDocument();
+      await expect.element(page.getByText('No integration guides available for this application type.')).toBeInTheDocument();
     });
   });
 
   describe('Props Propagation', () => {
-    it('should pass clientId from oauth2Config to IntegrationGuide', () => {
+    it('should pass clientId from oauth2Config to IntegrationGuide', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} oauth2Config={mockOAuth2Config} />);
+      await render(<IntegrationGuides application={mockApplication} oauth2Config={mockOAuth2Config} />);
 
       expect(IntegrationGuide).toHaveBeenCalledWith(
         {
@@ -116,10 +117,10 @@ describe('IntegrationGuides', () => {
       );
     });
 
-    it('should pass empty clientId when oauth2Config is not provided', () => {
+    it('should pass empty clientId when oauth2Config is not provided', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} />);
+      await render(<IntegrationGuides application={mockApplication} />);
 
       expect(IntegrationGuide).toHaveBeenCalledWith(
         {
@@ -132,10 +133,10 @@ describe('IntegrationGuides', () => {
       );
     });
 
-    it('should pass applicationId to IntegrationGuide', () => {
+    it('should pass applicationId to IntegrationGuide', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} />);
+      await render(<IntegrationGuides application={mockApplication} />);
 
       expect(IntegrationGuide).toHaveBeenCalledWith(
         {
@@ -148,10 +149,10 @@ describe('IntegrationGuides', () => {
       );
     });
 
-    it('should pass integrationGuides to IntegrationGuide', () => {
+    it('should pass integrationGuides to IntegrationGuide', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} />);
+      await render(<IntegrationGuides application={mockApplication} />);
 
       expect(IntegrationGuide).toHaveBeenCalledWith(
         {
@@ -164,10 +165,10 @@ describe('IntegrationGuides', () => {
       );
     });
 
-    it('should pass templateId from application to IntegrationGuide', () => {
+    it('should pass templateId from application to IntegrationGuide', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} />);
+      await render(<IntegrationGuides application={mockApplication} />);
 
       expect(IntegrationGuide).toHaveBeenCalledWith(
         {
@@ -182,19 +183,19 @@ describe('IntegrationGuides', () => {
   });
 
   describe('Template Utility Integration', () => {
-    it('should call getIntegrationGuidesForTemplate with template from application', () => {
+    it('should call getIntegrationGuidesForTemplate with template from application', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(mockIntegrationGuides);
 
-      render(<IntegrationGuides application={mockApplication} />);
+      await render(<IntegrationGuides application={mockApplication} />);
 
       expect(getIntegrationGuidesForTemplate).toHaveBeenCalledWith('react');
     });
 
-    it('should call getIntegrationGuidesForTemplate with empty string when template is not defined', () => {
+    it('should call getIntegrationGuidesForTemplate with empty string when template is not defined', async () => {
       vi.mocked(getIntegrationGuidesForTemplate).mockReturnValue(null);
       const appWithoutTemplate = {...mockApplication, template: undefined};
 
-      render(<IntegrationGuides application={appWithoutTemplate} />);
+      await render(<IntegrationGuides application={appWithoutTemplate} />);
 
       expect(getIntegrationGuidesForTemplate).toHaveBeenCalledWith('');
     });

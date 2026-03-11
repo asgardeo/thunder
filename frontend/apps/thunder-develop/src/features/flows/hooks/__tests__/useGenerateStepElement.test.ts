@@ -19,7 +19,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGenerateStepElement from '../useGenerateStepElement';
 import type {Element} from '../../models/elements';
 
@@ -30,16 +30,16 @@ vi.mock('../../utils/generateResourceId', () => ({
 
 describe('useGenerateStepElement', () => {
   describe('Hook Interface', () => {
-    it('should return generateStepElement function', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should return generateStepElement function', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       expect(typeof result.current.generateStepElement).toBe('function');
     });
   });
 
   describe('generateStepElement', () => {
-    it('should generate element with unique ID based on category', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should generate element with unique ID based on category', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -53,8 +53,8 @@ describe('useGenerateStepElement', () => {
       expect(generatedElement.id).toBe('action-generated-id');
     });
 
-    it('should preserve original element properties', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should preserve original element properties', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -72,8 +72,8 @@ describe('useGenerateStepElement', () => {
       expect((generatedElement as any).config?.placeholder).toBe('Enter email');
     });
 
-    it('should convert category to lowercase for ID generation', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should convert category to lowercase for ID generation', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -87,8 +87,8 @@ describe('useGenerateStepElement', () => {
       expect(generatedElement.id).toBe('action-generated-id');
     });
 
-    it('should apply default variant when variants exist', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should apply default variant when variants exist', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -108,8 +108,8 @@ describe('useGenerateStepElement', () => {
       expect((generatedElement as any).color).toBe('primary');
     });
 
-    it('should use first variant when no defaultVariant is specified', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should use first variant when no defaultVariant is specified', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -128,8 +128,8 @@ describe('useGenerateStepElement', () => {
       expect((generatedElement as any).style).toBe('outlined');
     });
 
-    it('should not modify element without variants', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should not modify element without variants', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -144,8 +144,8 @@ describe('useGenerateStepElement', () => {
       expect((generatedElement as any).variants).toBeUndefined();
     });
 
-    it('should handle empty variants array', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should handle empty variants array', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -161,8 +161,8 @@ describe('useGenerateStepElement', () => {
       expect(generatedElement.type).toBe('TEXT');
     });
 
-    it('should handle element with undefined variants property', () => {
-      const {result} = renderHook(() => useGenerateStepElement());
+    it('should handle element with undefined variants property', async () => {
+      const {result} = await renderHook(() => useGenerateStepElement());
 
       const element: Element = {
         id: 'original-id',
@@ -178,10 +178,10 @@ describe('useGenerateStepElement', () => {
   });
 
   describe('Function Behavior', () => {
-    it('should work correctly after rerender', () => {
-      const {result, rerender} = renderHook(() => useGenerateStepElement());
+    it('should work correctly after rerender', async () => {
+      const {result, rerender} = await renderHook(() => useGenerateStepElement());
 
-      rerender();
+      await rerender();
 
       const element: Element = {
         id: 'original-id',

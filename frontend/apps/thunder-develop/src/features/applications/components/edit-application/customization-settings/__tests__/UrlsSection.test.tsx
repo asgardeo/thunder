@@ -17,16 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import UrlsSection from '../UrlsSection';
 import type {Application} from '../../../../models/application';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 describe('UrlsSection', () => {
   const mockApplication: Application = {
@@ -45,70 +39,70 @@ describe('UrlsSection', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the URLs section', () => {
-      render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should render the URLs section', async () => {
+      await render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.customization.sections.urls')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.sections.urls.description')).toBeInTheDocument();
+      await expect.element(page.getByText('URLs')).toBeInTheDocument();
+      await expect.element(page.getByText('Configure legal and policy URLs for your application.')).toBeInTheDocument();
     });
 
-    it('should render Terms of Service URL field', () => {
-      render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should render Terms of Service URL field', async () => {
+      await render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.customization.labels.tosUri')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByText('Terms of Service URI')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('https://example.com/terms')).toBeInTheDocument();
     });
 
-    it('should render Privacy Policy URL field', () => {
-      render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should render Privacy Policy URL field', async () => {
+      await render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.customization.labels.policyUri')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByText('Privacy Policy URI')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('https://example.com/privacy')).toBeInTheDocument();
     });
 
-    it('should display helper text for both fields', () => {
-      render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should display helper text for both fields', async () => {
+      await render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.customization.tosUri.hint')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.policyUri.hint')).toBeInTheDocument();
+      await expect.element(page.getByText("URL to your application's Terms of Service. May be displayed to users during consent or user sign-in, sign-up or recovery flows.")).toBeInTheDocument();
+      await expect.element(page.getByText("URL to your application's Privacy Policy. May be displayed to users during consent or user sign-in, sign-up or recovery flows.")).toBeInTheDocument();
     });
   });
 
   describe('Initial Values', () => {
-    it('should display URLs from application', () => {
-      render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should display URLs from application', async () => {
+      await render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
 
       expect(tosField).toHaveValue('https://example.com/terms');
       expect(policyField).toHaveValue('https://example.com/privacy');
     });
 
-    it('should prioritize editedApp URLs over application', () => {
+    it('should prioritize editedApp URLs over application', async () => {
       const editedApp = {
         tos_uri: 'https://edited.com/terms',
         policy_uri: 'https://edited.com/privacy',
       };
 
-      render(<UrlsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
 
       expect(tosField).toHaveValue('https://edited.com/terms');
       expect(policyField).toHaveValue('https://edited.com/privacy');
     });
 
-    it('should display empty strings when URLs are not provided', () => {
+    it('should display empty strings when URLs are not provided', async () => {
       const appWithoutUrls = {...mockApplication};
       delete (appWithoutUrls as Partial<Application>).tos_uri;
       delete (appWithoutUrls as Partial<Application>).policy_uri;
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
 
       expect(tosField).toHaveValue('');
       expect(policyField).toHaveValue('');
@@ -117,88 +111,82 @@ describe('UrlsSection', () => {
 
   describe('URL Validation', () => {
     it('should show error for invalid ToS URL', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+            const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      await user.type(tosField, 'invalid-url');
-      await user.tab();
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      await userEvent.type(tosField, 'invalid-url');
+      await userEvent.tab();
 
-      await waitFor(() => {
-        expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).toBeInTheDocument();
       });
     });
 
     it('should show error for invalid Policy URL', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+            const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
-      await user.type(policyField, 'not-a-url');
-      await user.tab();
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
+      await userEvent.type(policyField, 'not-a-url');
+      await userEvent.tab();
 
-      await waitFor(() => {
-        expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).toBeInTheDocument();
       });
     });
 
     it('should not show error for valid ToS URL', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+            const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      await user.type(tosField, 'https://example.com/terms');
-      await user.tab();
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      await userEvent.type(tosField, 'https://example.com/terms');
+      await userEvent.tab();
 
-      await waitFor(() => {
-        expect(screen.queryByText('Please enter a valid URL')).not.toBeInTheDocument();
-        expect(screen.getByText('applications:edit.customization.tosUri.hint')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).not.toBeInTheDocument();
+        await expect.element(page.getByText("URL to your application's Terms of Service. May be displayed to users during consent or user sign-in, sign-up or recovery flows.")).toBeInTheDocument();
       });
     });
 
     it('should accept empty string as valid', async () => {
-      const user = userEvent.setup({delay: null});
+      
+      await render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      render(<UrlsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      await userEvent.clear(tosField);
+      await userEvent.tab();
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      await user.clear(tosField);
-      await user.tab();
-
-      await waitFor(() => {
-        expect(screen.queryByText('Please enter a valid URL')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).not.toBeInTheDocument();
       });
     });
   });
 
   describe('User Input', () => {
     it('should accept valid ToS URL input', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+            const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      await user.type(tosField, 'https://new-url.com/terms');
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      await userEvent.type(tosField, 'https://new-url.com/terms');
 
       // Verify the field accepts input
       expect(tosField).toHaveValue('https://new-url.com/terms');
     });
 
     it('should accept valid Policy URL input', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+            const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
-      await user.type(policyField, 'https://new-url.com/privacy');
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
+      await userEvent.type(policyField, 'https://new-url.com/privacy');
 
       // Verify the field accepts input
       expect(policyField).toHaveValue('https://new-url.com/privacy');
@@ -206,29 +194,28 @@ describe('UrlsSection', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing URLs in application', () => {
+    it('should handle missing URLs in application', async () => {
       const appWithoutUrls = {...mockApplication};
       delete (appWithoutUrls as Partial<Application>).tos_uri;
       delete (appWithoutUrls as Partial<Application>).policy_uri;
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder')).toHaveValue('');
-      expect(screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder')).toHaveValue('');
+      await expect.element(page.getByPlaceholder('https://example.com/terms')).toHaveValue('');
+      await expect.element(page.getByPlaceholder('https://example.com/privacy')).toHaveValue('');
     });
 
     it('should validate URLs with different protocols', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+            const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
 
-      render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      await user.type(tosField, 'http://example.com/terms');
-      await user.tab();
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      await userEvent.type(tosField, 'http://example.com/terms');
+      await userEvent.tab();
 
-      await waitFor(() => {
-        expect(screen.queryByText('Please enter a valid URL')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).not.toBeInTheDocument();
       });
     });
   });

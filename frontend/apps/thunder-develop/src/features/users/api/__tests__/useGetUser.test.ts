@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetUser from '../useGetUser';
 import type {ApiUser} from '../../types/users';
 import UserQueryKeys from '../../constants/user-query-keys';
@@ -68,10 +68,10 @@ describe('useGetUser', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with loading state when userId is provided', () => {
+  it('should initialize with loading state when userId is provided', async () => {
     mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetUser('user-1'));
+    const {result} = await renderHook(() => useGetUser('user-1'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -84,9 +84,9 @@ describe('useGetUser', () => {
     });
 
     const userId = 'user-1';
-    const {result} = renderHook(() => useGetUser(userId));
+    const {result} = await renderHook(() => useGetUser(userId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -101,9 +101,9 @@ describe('useGetUser', () => {
     });
 
     const userId = 'user-1';
-    renderHook(() => useGetUser(userId));
+    await renderHook(() => useGetUser(userId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -124,9 +124,9 @@ describe('useGetUser', () => {
     });
 
     const userId = 'user-1';
-    const {result, queryClient} = renderHook(() => useGetUser(userId));
+    const {result, queryClient} = await renderHook(() => useGetUser(userId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -139,9 +139,9 @@ describe('useGetUser', () => {
     const apiError = new Error('Failed to fetch user');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetUser('user-1'));
+    const {result} = await renderHook(() => useGetUser('user-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -153,24 +153,24 @@ describe('useGetUser', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetUser('user-1'));
+    const {result} = await renderHook(() => useGetUser('user-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
     expect(result.current.error).toEqual(networkError);
   });
 
-  it('should not make API call when userId is undefined', () => {
-    const {result} = renderHook(() => useGetUser(undefined));
+  it('should not make API call when userId is undefined', async () => {
+    const {result} = await renderHook(() => useGetUser(undefined));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should not make API call when userId is empty string', () => {
-    const {result} = renderHook(() => useGetUser(''));
+  it('should not make API call when userId is empty string', async () => {
+    const {result} = await renderHook(() => useGetUser(''));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -181,9 +181,9 @@ describe('useGetUser', () => {
       data: mockUser,
     });
 
-    renderHook(() => useGetUser('user-1'));
+    await renderHook(() => useGetUser('user-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
 
@@ -198,9 +198,9 @@ describe('useGetUser', () => {
       data: mockUser,
     });
 
-    renderHook(() => useGetUser('user-1'));
+    await renderHook(() => useGetUser('user-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -218,11 +218,11 @@ describe('useGetUser', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: user1}).mockResolvedValueOnce({data: user2});
 
-    const {result, rerender} = renderHook(({userId}: {userId: string}) => useGetUser(userId), {
+    const {result, rerender} = await renderHook((props?: {userId: string}) => useGetUser(props!.userId), {
       initialProps: {userId: 'user-1'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -230,9 +230,9 @@ describe('useGetUser', () => {
     expect(mockHttpRequest).toHaveBeenCalledTimes(1);
 
     // Change the user ID
-    rerender({userId: 'user-2'});
+    await rerender({userId: 'user-2'});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.id).toBe('user-2');
     });
 
@@ -247,9 +247,9 @@ describe('useGetUser', () => {
     const userId = 'user-1';
 
     // First call - get the queryClient from the render result
-    const {result: result1, queryClient} = renderHook(() => useGetUser(userId));
+    const {result: result1, queryClient} = await renderHook(() => useGetUser(userId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -261,11 +261,11 @@ describe('useGetUser', () => {
     });
 
     // Second call with same queryClient should use cache
-    const {result: result2} = renderHook(() => useGetUser(userId), {
+    const {result: result2} = await renderHook(() => useGetUser(userId), {
       queryClient,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -279,9 +279,9 @@ describe('useGetUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useGetUser('user-1'));
+    const {result} = await renderHook(() => useGetUser('user-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -299,9 +299,9 @@ describe('useGetUser', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: user1});
 
-    const {result: result1} = renderHook(() => useGetUser('user-1'));
+    const {result: result1} = await renderHook(() => useGetUser('user-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -309,9 +309,9 @@ describe('useGetUser', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: user2});
 
-    const {result: result2} = renderHook(() => useGetUser('user-2'));
+    const {result: result2} = await renderHook(() => useGetUser('user-2'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -326,7 +326,7 @@ describe('useGetUser', () => {
 
     mockHttpRequest.mockReturnValueOnce(requestPromise);
 
-    const {result} = renderHook(() => useGetUser('user-1'));
+    const {result} = await renderHook(() => useGetUser('user-1'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isFetching).toBe(true);
@@ -334,7 +334,7 @@ describe('useGetUser', () => {
 
     resolveRequest!({data: mockUser});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

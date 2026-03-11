@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
 import TechnologyGuide from '../TechnologyGuide';
@@ -78,7 +79,7 @@ const mockIntegrationGuides: IntegrationGuides = {
 
 const mockWriteText = vi.fn();
 
-const renderWithProviders = (component: React.ReactElement) =>
+const renderWithProviders = async (component: React.ReactElement) =>
   render(<LoggerProvider logger={{level: LogLevel.DEBUG}}>{component}</LoggerProvider>);
 
 describe('TechnologyGuide', () => {
@@ -108,103 +109,103 @@ describe('TechnologyGuide', () => {
   });
 
   describe('Rendering', () => {
-    it('should return null when guides is null', () => {
-      const {container} = renderWithProviders(<TechnologyGuide guides={null} />);
+    it('should return null when guides is null', async () => {
+      const {container} = await renderWithProviders(<TechnologyGuide guides={null} />);
 
       expect(container.firstChild?.firstChild).toBeFalsy();
     });
 
-    it('should return null when selected guide is not found', () => {
+    it('should return null when selected guide is not found', async () => {
       const guidesWithoutInbuilt: IntegrationGuides = {
         OTHER: mockIntegrationGuides.INBUILT,
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithoutInbuilt} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithoutInbuilt} templateId="react" />);
 
       expect(container.firstChild?.firstChild).toBeFalsy();
     });
 
-    it('should render inbuilt guide for non-embedded template', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render inbuilt guide for non-embedded template', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('Use AI Assistant')).toBeInTheDocument();
-      expect(screen.getByText('Get AI-powered integration guidance')).toBeInTheDocument();
+      await expect.element(page.getByText('Use AI Assistant')).toBeInTheDocument();
+      await expect.element(page.getByText('Get AI-powered integration guidance')).toBeInTheDocument();
     });
 
-    it('should render embedded guide for embedded template', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react-embedded" />);
+    it('should render embedded guide for embedded template', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react-embedded" />);
 
-      expect(screen.getByText('Embedded Integration')).toBeInTheDocument();
+      await expect.element(page.getByText('Embedded Integration')).toBeInTheDocument();
     });
 
-    it('should default to inbuilt guide when templateId is null', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId={null} />);
+    it('should default to inbuilt guide when templateId is null', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId={null} />);
 
-      expect(screen.getByText('Use AI Assistant')).toBeInTheDocument();
+      await expect.element(page.getByText('Use AI Assistant')).toBeInTheDocument();
     });
   });
 
   describe('LLM Prompt Section', () => {
-    it('should render LLM prompt card with title and description', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="client-123" />);
+    it('should render LLM prompt card with title and description', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="client-123" />);
 
-      expect(screen.getByText('Use AI Assistant')).toBeInTheDocument();
-      expect(screen.getByText('Get AI-powered integration guidance')).toBeInTheDocument();
+      await expect.element(page.getByText('Use AI Assistant')).toBeInTheDocument();
+      await expect.element(page.getByText('Get AI-powered integration guidance')).toBeInTheDocument();
     });
 
-    it('should render copy prompt button', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render copy prompt button', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByTestId('copy-prompt-button')).toBeInTheDocument();
-      expect(screen.getByText('Copy Prompt')).toBeInTheDocument();
+      await expect.element(page.getByTestId('copy-prompt-button')).toBeInTheDocument();
+      await expect.element(page.getByText('Copy Prompt')).toBeInTheDocument();
     });
   });
 
   describe('Manual Steps Section', () => {
-    it('should render divider with "or" text', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render divider with "or" text', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or', {exact: true})).toBeInTheDocument();
     });
 
-    it('should render all manual steps', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render all manual steps', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('Install dependencies')).toBeInTheDocument();
-      expect(screen.getByText('Configure client')).toBeInTheDocument();
+      await expect.element(page.getByText('Install dependencies')).toBeInTheDocument();
+      await expect.element(page.getByText('Configure client')).toBeInTheDocument();
     });
 
-    it('should render step numbers', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render step numbers', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('1')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
+      await expect.element(page.getByText('1')).toBeInTheDocument();
+      await expect.element(page.getByText('2')).toBeInTheDocument();
     });
 
-    it('should render step descriptions', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render step descriptions', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('Install required packages for your application')).toBeInTheDocument();
-      expect(screen.getByText('Set up your application with the client ID')).toBeInTheDocument();
+      await expect.element(page.getByText('Install required packages for your application')).toBeInTheDocument();
+      await expect.element(page.getByText('Set up your application with the client ID')).toBeInTheDocument();
     });
 
-    it('should render sub-descriptions when provided', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render sub-descriptions when provided', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('Run the following command in your terminal')).toBeInTheDocument();
+      await expect.element(page.getByText('Run the following command in your terminal')).toBeInTheDocument();
     });
 
-    it('should render bullet points when provided', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render bullet points when provided', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('npm for Node Package Manager')).toBeInTheDocument();
-      expect(screen.getByText('yarn for Yarn Package Manager')).toBeInTheDocument();
+      await expect.element(page.getByText('npm for Node Package Manager')).toBeInTheDocument();
+      await expect.element(page.getByText('yarn for Yarn Package Manager')).toBeInTheDocument();
     });
   });
 
   describe('Code Blocks', () => {
-    it('should render code blocks for steps with code', () => {
-      const {container} = renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render code blocks for steps with code', async () => {
+      const {container} = await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
       // Check that code blocks exist
       const codeBlocks = container.querySelectorAll('pre');
@@ -215,23 +216,23 @@ describe('TechnologyGuide', () => {
       expect(container.textContent).toContain('const clientId = "{{clientId}}";');
     });
 
-    it('should render filenames when provided', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render filenames when provided', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      expect(screen.getByText('terminal')).toBeInTheDocument();
-      expect(screen.getByText('config.ts')).toBeInTheDocument();
+      await expect.element(page.getByText('terminal', {exact: true})).toBeInTheDocument();
+      await expect.element(page.getByText('config.ts')).toBeInTheDocument();
     });
 
-    it('should render copy buttons for each code block', () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+    it('should render copy buttons for each code block', async () => {
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      const copyButtons = screen.getAllByTestId(/copy-code-button-/);
+      const copyButtons = page.getByTestId(/copy-code-button-/);
       expect(copyButtons).toHaveLength(2);
     });
   });
 
   describe('Empty States', () => {
-    it('should not render code block when step has no code', () => {
+    it('should not render code block when step has no code', async () => {
       const guidesWithoutCode: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -245,13 +246,13 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithoutCode} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithoutCode} templateId="react" />);
 
       const codeBlocks = container.querySelectorAll('pre');
       expect(codeBlocks).toHaveLength(0);
     });
 
-    it('should not render manual steps section when manual_steps is empty', () => {
+    it('should not render manual steps section when manual_steps is empty', async () => {
       const guidesWithoutSteps: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -259,12 +260,12 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      renderWithProviders(<TechnologyGuide guides={guidesWithoutSteps} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={guidesWithoutSteps} templateId="react" />);
 
-      expect(screen.queryByText('or')).not.toBeInTheDocument();
+      await expect.element(page.getByText('or')).not.toBeInTheDocument();
     });
 
-    it('should not render copy prompt button when llm_prompt has no content', () => {
+    it('should not render copy prompt button when llm_prompt has no content', async () => {
       const guidesWithoutContent: IntegrationGuides = {
         INBUILT: {
           llm_prompt: {
@@ -278,15 +279,15 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      renderWithProviders(<TechnologyGuide guides={guidesWithoutContent} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={guidesWithoutContent} templateId="react" />);
 
-      expect(screen.queryByTestId('copy-prompt-button')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('copy-prompt-button')).not.toBeInTheDocument();
     });
   });
 
   describe('Placeholder Replacement', () => {
-    it('should replace {{clientId}} placeholder in code blocks', () => {
-      const {container} = renderWithProviders(
+    it('should replace {{clientId}} placeholder in code blocks', async () => {
+      const {container} = await renderWithProviders(
         <TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="my-client-id" />,
       );
 
@@ -295,7 +296,7 @@ describe('TechnologyGuide', () => {
     });
 
     it('should replace {{applicationId}} placeholder in LLM prompt when copied', async () => {
-      renderWithProviders(
+      await renderWithProviders(
         <TechnologyGuide
           guides={mockIntegrationGuides}
           templateId="react"
@@ -304,18 +305,18 @@ describe('TechnologyGuide', () => {
         />,
       );
 
-      const copyButton = screen.getByTestId('copy-prompt-button');
-      fireEvent.click(copyButton);
+      const copyButton = page.getByTestId('copy-prompt-button');
+      await userEvent.click(copyButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockWriteText).toHaveBeenCalledWith(
           'Integrate with clientId: test-client and applicationId: test-app-id',
         );
       });
     });
 
-    it('should not replace placeholders when clientId is empty', () => {
-      const {container} = renderWithProviders(
+    it('should not replace placeholders when clientId is empty', async () => {
+      const {container} = await renderWithProviders(
         <TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="" />,
       );
 
@@ -323,14 +324,14 @@ describe('TechnologyGuide', () => {
     });
 
     it('should not replace applicationId placeholder when applicationId is empty', async () => {
-      renderWithProviders(
+      await renderWithProviders(
         <TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="test-client" applicationId="" />,
       );
 
-      const copyButton = screen.getByTestId('copy-prompt-button');
-      fireEvent.click(copyButton);
+      const copyButton = page.getByTestId('copy-prompt-button');
+      await userEvent.click(copyButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockWriteText).toHaveBeenCalledWith(
           'Integrate with clientId: test-client and applicationId: {{applicationId}}',
         );
@@ -340,12 +341,12 @@ describe('TechnologyGuide', () => {
 
   describe('Copy Functionality', () => {
     it('should copy LLM prompt to clipboard when copy button is clicked', async () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      const copyButton = screen.getByTestId('copy-prompt-button');
-      fireEvent.click(copyButton);
+      const copyButton = page.getByTestId('copy-prompt-button');
+      await userEvent.click(copyButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockWriteText).toHaveBeenCalledWith(
           'Integrate with clientId: {{clientId}} and applicationId: {{applicationId}}',
         );
@@ -353,51 +354,51 @@ describe('TechnologyGuide', () => {
     });
 
     it('should show copied feedback after copying prompt', async () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      const copyButton = screen.getByTestId('copy-prompt-button');
-      fireEvent.click(copyButton);
+      const copyButton = page.getByTestId('copy-prompt-button');
+      await userEvent.click(copyButton);
 
       // The copied feedback is shown in the Tooltip
-      await waitFor(() => {
-        expect(screen.getByText('Copied to clipboard')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Copied to clipboard')).toBeInTheDocument();
       });
     });
 
     it('should copy code to clipboard when copy code button is clicked', async () => {
-      renderWithProviders(
+      await renderWithProviders(
         <TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="test-client-123" />,
       );
 
-      const copyCodeButton = screen.getByTestId('copy-code-button-1');
-      fireEvent.click(copyCodeButton);
+      const copyCodeButton = page.getByTestId('copy-code-button-1');
+      await userEvent.click(copyCodeButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockWriteText).toHaveBeenCalledWith('npm install @thunder/sdk');
       });
     });
 
     it('should show copied feedback after copying code', async () => {
-      renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-      const copyCodeButton = screen.getByTestId('copy-code-button-1');
-      fireEvent.click(copyCodeButton);
+      const copyCodeButton = page.getByTestId('copy-code-button-1');
+      await userEvent.click(copyCodeButton);
 
       // The copied feedback is shown as translated text
-      await waitFor(() => {
-        expect(screen.getByText('Copied to clipboard')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Copied to clipboard')).toBeInTheDocument();
       });
     });
 
     it('should replace placeholders in copied code', async () => {
-      renderWithProviders(
+      await renderWithProviders(
         <TechnologyGuide guides={mockIntegrationGuides} templateId="react" clientId="replaced-client-id" />,
       );
 
-      const copyCodeButton = screen.getByTestId('copy-code-button-2');
-      fireEvent.click(copyCodeButton);
+      const copyCodeButton = page.getByTestId('copy-code-button-2');
+      await userEvent.click(copyCodeButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockWriteText).toHaveBeenCalledWith('const clientId = "replaced-client-id";');
       });
     });
@@ -417,17 +418,11 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      renderWithProviders(<TechnologyGuide guides={guidesWithEmptyContent} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={guidesWithEmptyContent} templateId="react" />);
 
-      // Button should still render when content exists but is empty string
-      const copyButton = screen.queryByTestId('copy-prompt-button');
-      if (copyButton) {
-        fireEvent.click(copyButton);
-        // Wait a bit to ensure the click handler had time to run
-        await waitFor(() => {
-          expect(mockWriteText).not.toHaveBeenCalled();
-        });
-      }
+      // Empty string content is falsy, so the copy button should not be rendered
+      await expect.element(page.getByTestId('copy-prompt-button')).not.toBeInTheDocument();
+      expect(mockWriteText).not.toHaveBeenCalled();
     });
 
     describe('Clipboard Fallback', () => {
@@ -437,12 +432,12 @@ describe('TechnologyGuide', () => {
         const mockExecCommand = vi.fn().mockReturnValue(true);
         document.execCommand = mockExecCommand;
 
-        renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+        await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-        const copyButton = screen.getByTestId('copy-prompt-button');
-        fireEvent.click(copyButton);
+        const copyButton = page.getByTestId('copy-prompt-button');
+        await userEvent.click(copyButton);
 
-        await waitFor(() => {
+        await vi.waitFor(() => {
           expect(mockExecCommand).toHaveBeenCalledWith('copy');
         });
       });
@@ -453,12 +448,12 @@ describe('TechnologyGuide', () => {
         const mockExecCommand = vi.fn().mockReturnValue(true);
         document.execCommand = mockExecCommand;
 
-        renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+        await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-        const copyCodeButton = screen.getByTestId('copy-code-button-1');
-        fireEvent.click(copyCodeButton);
+        const copyCodeButton = page.getByTestId('copy-code-button-1');
+        await userEvent.click(copyCodeButton);
 
-        await waitFor(() => {
+        await vi.waitFor(() => {
           expect(mockExecCommand).toHaveBeenCalledWith('copy');
         });
       });
@@ -471,12 +466,12 @@ describe('TechnologyGuide', () => {
         });
         document.execCommand = mockExecCommand;
 
-        renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+        await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-        const copyButton = screen.getByTestId('copy-prompt-button');
+        const copyButton = page.getByTestId('copy-prompt-button');
 
         // Should not throw - component handles error gracefully
-        expect(() => fireEvent.click(copyButton)).not.toThrow();
+        expect(async () => userEvent.click(copyButton)).not.toThrow();
       });
 
       it('should handle fallback failure gracefully for code', async () => {
@@ -487,18 +482,18 @@ describe('TechnologyGuide', () => {
         });
         document.execCommand = mockExecCommand;
 
-        renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+        await renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
 
-        const copyCodeButton = screen.getByTestId('copy-code-button-1');
+        const copyCodeButton = page.getByTestId('copy-code-button-1');
 
         // Should not throw - component handles error gracefully
-        expect(() => fireEvent.click(copyCodeButton)).not.toThrow();
+        expect(async () => userEvent.click(copyCodeButton)).not.toThrow();
       });
     });
   });
 
   describe('Code Block Language Mapping', () => {
-    it('should map terminal language to bash', () => {
+    it('should map terminal language to bash', async () => {
       const guidesWithTerminal: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -516,13 +511,13 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithTerminal} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithTerminal} templateId="react" />);
 
       const codeBlock = container.querySelector('pre');
       expect(codeBlock).toBeInTheDocument();
     });
 
-    it('should map .env language to properties', () => {
+    it('should map .env language to properties', async () => {
       const guidesWithEnv: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -541,13 +536,13 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithEnv} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithEnv} templateId="react" />);
 
       const codeBlock = container.querySelector('pre');
       expect(codeBlock).toBeInTheDocument();
     });
 
-    it('should map typescript language to tsx', () => {
+    it('should map typescript language to tsx', async () => {
       const guidesWithTs: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -565,13 +560,13 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithTs} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithTs} templateId="react" />);
 
       const codeBlock = container.querySelector('pre');
       expect(codeBlock).toBeInTheDocument();
     });
 
-    it('should pass through unknown languages unchanged', () => {
+    it('should pass through unknown languages unchanged', async () => {
       const guidesWithPython: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -589,13 +584,13 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithPython} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithPython} templateId="react" />);
 
       const codeBlock = container.querySelector('pre');
       expect(codeBlock).toBeInTheDocument();
     });
 
-    it('should render code block without filename header when filename is not provided', () => {
+    it('should render code block without filename header when filename is not provided', async () => {
       const guidesWithoutFilename: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -613,16 +608,16 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      renderWithProviders(<TechnologyGuide guides={guidesWithoutFilename} templateId="react" />);
+      await renderWithProviders(<TechnologyGuide guides={guidesWithoutFilename} templateId="react" />);
 
       // Should not have a filename displayed
-      expect(screen.queryByText('terminal')).not.toBeInTheDocument();
-      expect(screen.queryByText('config.ts')).not.toBeInTheDocument();
+      await expect.element(page.getByText('terminal')).not.toBeInTheDocument();
+      await expect.element(page.getByText('config.ts')).not.toBeInTheDocument();
     });
   });
 
   describe('Bullets Rendering', () => {
-    it('should not render bullets section when bullets array is empty', () => {
+    it('should not render bullets section when bullets array is empty', async () => {
       const guidesWithEmptyBullets: IntegrationGuides = {
         INBUILT: {
           llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
@@ -637,7 +632,7 @@ describe('TechnologyGuide', () => {
         },
       };
 
-      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithEmptyBullets} templateId="react" />);
+      const {container} = await renderWithProviders(<TechnologyGuide guides={guidesWithEmptyBullets} templateId="react" />);
 
       const bulletLists = container.querySelectorAll('ul');
       expect(bulletLists).toHaveLength(0);

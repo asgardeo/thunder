@@ -17,68 +17,60 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render, page} from '@thunder/test-utils/browser';
 import {Palette} from '@wso2/oxygen-ui-icons-react';
 import SectionHeader from '../SectionHeader';
 
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string, fallback?: string | Record<string, unknown>) => (typeof fallback === 'string' ? fallback : key)}),
-  };
-});
-
 describe('SectionHeader', () => {
   describe('Rendering', () => {
-    it('renders the title', () => {
+    it('renders the title', async () => {
       render(<SectionHeader title="Themes" count={5} icon={<Palette />} />);
-      expect(screen.getByText('Themes')).toBeInTheDocument();
+      await expect.element(page.getByText('Themes')).toBeInTheDocument();
     });
 
-    it('renders the count', () => {
+    it('renders the count', async () => {
       render(<SectionHeader title="Themes" count={5} icon={<Palette />} />);
-      expect(screen.getByText('5')).toBeInTheDocument();
+      await expect.element(page.getByText('5')).toBeInTheDocument();
     });
 
-    it('renders zero count', () => {
+    it('renders zero count', async () => {
       render(<SectionHeader title="Themes" count={0} icon={<Palette />} />);
-      expect(screen.getByText('0')).toBeInTheDocument();
+      await expect.element(page.getByText('0')).toBeInTheDocument();
     });
 
-    it('renders icon', () => {
+    it('renders icon', async () => {
       const {container} = render(<SectionHeader title="Themes" count={3} icon={<Palette />} />);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
   });
 
   describe('Optional action prop', () => {
-    it('renders action element when provided', () => {
+    it('renders action element when provided', async () => {
       const action = <button type="button">Add</button>;
       render(<SectionHeader title="Themes" count={3} icon={<Palette />} action={action} />);
-      expect(screen.getByText('Add')).toBeInTheDocument();
+      await expect.element(page.getByText('Add')).toBeInTheDocument();
     });
 
-    it('does not render action area when not provided', () => {
+    it('does not render action area when not provided', async () => {
       render(<SectionHeader title="Themes" count={3} icon={<Palette />} />);
-      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button')).not.toBeInTheDocument();
     });
   });
 
   describe('comingSoon prop', () => {
-    it('renders "Coming Soon" badge when comingSoon is true', () => {
+    it('renders "Coming Soon" badge when comingSoon is true', async () => {
       render(<SectionHeader title="Themes" count={3} icon={<Palette />} comingSoon />);
-      expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+      await expect.element(page.getByText(/coming soon/i)).toBeInTheDocument();
     });
 
-    it('does not render "Coming Soon" badge by default', () => {
+    it('does not render "Coming Soon" badge by default', async () => {
       render(<SectionHeader title="Themes" count={3} icon={<Palette />} />);
-      expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+      await expect.element(page.getByText(/coming soon/i)).not.toBeInTheDocument();
     });
 
-    it('does not render "Coming Soon" badge when comingSoon is false', () => {
+    it('does not render "Coming Soon" badge when comingSoon is false', async () => {
       render(<SectionHeader title="Themes" count={3} icon={<Palette />} comingSoon={false} />);
-      expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+      await expect.element(page.getByText(/coming soon/i)).not.toBeInTheDocument();
     });
   });
 });

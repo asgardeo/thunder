@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
@@ -121,8 +121,8 @@ describe('useStaticContentField', () => {
   });
 
   describe('Plugin Registration', () => {
-    it('should register event handlers on mount', () => {
-      renderHook(() => useStaticContentField(), {
+    it('should register event handlers on mount', async () => {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -130,12 +130,12 @@ describe('useStaticContentField', () => {
       expect(mockRegisterSync).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, expect.any(Function));
     });
 
-    it('should unregister event handlers on unmount', () => {
-      const {unmount} = renderHook(() => useStaticContentField(), {
+    it('should unregister event handlers on unmount', async () => {
+      const {unmount} = await renderHook(() => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
-      unmount();
+      await unmount();
 
       expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_CHANGE, 'addStaticContent');
       expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, 'addStaticContentProperties');
@@ -144,7 +144,7 @@ describe('useStaticContentField', () => {
 
   describe('addStaticContent Handler', () => {
     it('should return true for non-execution step types', async () => {
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -161,7 +161,7 @@ describe('useStaticContentField', () => {
     });
 
     it('should return true for properties other than enableStaticContent', async () => {
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -188,7 +188,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -216,7 +216,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -240,7 +240,7 @@ describe('useStaticContentField', () => {
         },
       );
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -274,7 +274,7 @@ describe('useStaticContentField', () => {
         },
       );
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -304,10 +304,10 @@ describe('useStaticContentField', () => {
   });
 
   describe('addStaticContentProperties Handler', () => {
-    it('should return true when node is not found', () => {
+    it('should return true when node is not found', async () => {
       mockGetNode.mockReturnValue(undefined);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -330,7 +330,7 @@ describe('useStaticContentField', () => {
       expect(properties.enableStaticContent).toBeUndefined();
     });
 
-    it('should return true for non-execution step types', () => {
+    it('should return true for non-execution step types', async () => {
       const viewNode: Node = {
         id: 'view-1',
         type: StepTypes.View,
@@ -340,7 +340,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(viewNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -357,7 +357,7 @@ describe('useStaticContentField', () => {
       expect(properties.enableStaticContent).toBeUndefined();
     });
 
-    it('should not add enableStaticContent property for non-allowed execution types', () => {
+    it('should not add enableStaticContent property for non-allowed execution types', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -369,7 +369,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -393,7 +393,7 @@ describe('useStaticContentField', () => {
       expect(properties.enableStaticContent).toBeUndefined();
     });
 
-    it('should not add property for non-allowed execution types even without components', () => {
+    it('should not add property for non-allowed execution types even without components', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -405,7 +405,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -429,7 +429,7 @@ describe('useStaticContentField', () => {
       expect(properties.enableStaticContent).toBeUndefined();
     });
 
-    it('should return true for MagicLinkExecutor without adding property', () => {
+    it('should return true for MagicLinkExecutor without adding property', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -441,7 +441,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -463,7 +463,7 @@ describe('useStaticContentField', () => {
       expect(properties.enableStaticContent).toBeUndefined();
     });
 
-    it('should return true when executor name is not in allowed types', () => {
+    it('should return true when executor name is not in allowed types', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -475,7 +475,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 
@@ -496,7 +496,7 @@ describe('useStaticContentField', () => {
       expect(result).toBe(true);
     });
 
-    it('should return true when executor is undefined', () => {
+    it('should return true when executor is undefined', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: StepTypes.Execution,
@@ -508,7 +508,7 @@ describe('useStaticContentField', () => {
 
       mockGetNode.mockReturnValue(executionNode);
 
-      renderHook(() => useStaticContentField(), {
+      await renderHook(()  => useStaticContentField(), {
         wrapper: createWrapper(),
       });
 

@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {MemoryRouter} from 'react-router';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import FlowsListPage from '../FlowsListPage';
 
 // Mock @thunder/logger/react
@@ -30,20 +30,6 @@ vi.mock('@thunder/logger/react', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: mockLoggerError,
-  }),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:listing.title': 'Flows',
-        'flows:listing.subtitle': 'Manage your authentication and registration flows',
-        'flows:listing.addFlow': 'Add Flow',
-      };
-      return translations[key] || key;
-    },
   }),
 }));
 
@@ -68,93 +54,66 @@ describe('FlowsListPage', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the page title', () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should render the page title', async () => {
+      await render(<FlowsListPage />);
 
-      expect(screen.getByText('Flows')).toBeInTheDocument();
+      // Use heading role to uniquely find the title
+      await expect.element(page.getByRole('heading', {name: 'Flows'})).toBeInTheDocument();
     });
 
-    it('should render the page subtitle', () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should render the page subtitle', async () => {
+      await render(<FlowsListPage />);
 
-      expect(screen.getByText('Manage your authentication and registration flows')).toBeInTheDocument();
+      // Actual translation: 'Create and manage authentication and registration flows for your applications'
+      await expect.element(
+        page.getByText('Create and manage authentication and registration flows for your applications'),
+      ).toBeInTheDocument();
     });
 
-    it('should render the Add Flow button', () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should render the Create New Flow button', async () => {
+      await render(<FlowsListPage />);
 
-      expect(screen.getByRole('button', {name: /add flow/i})).toBeInTheDocument();
+      // Actual translation: 'Create New Flow'
+      await expect.element(page.getByRole('button', {name: /create new flow/i})).toBeInTheDocument();
     });
 
-    it('should render FlowsList component', () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should render FlowsList component', async () => {
+      await render(<FlowsListPage />);
 
-      expect(screen.getByTestId('flows-list')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flows-list')).toBeInTheDocument();
     });
   });
 
-  describe('Add Flow Button', () => {
-    it('should navigate to login-builder when Add Flow is clicked', async () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+  describe('Create New Flow Button', () => {
+    it('should navigate to login-builder when Create New Flow is clicked', async () => {
+      await render(<FlowsListPage />);
 
-      const addButton = screen.getByRole('button', {name: /add flow/i});
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button', {name: /create new flow/i});
+      await userEvent.click(addButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/flows/signin');
       });
     });
 
-    it('should render button with contained variant', () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should render button with contained variant', async () => {
+      await render(<FlowsListPage />);
 
-      const addButton = screen.getByRole('button', {name: /add flow/i});
+      const addButton = page.getByRole('button', {name: /create new flow/i});
       expect(addButton).toHaveClass('MuiButton-contained');
     });
   });
 
   describe('Layout', () => {
-    it('should render title as h1', () => {
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should render title as h1', async () => {
+      await render(<FlowsListPage />);
 
-      const title = screen.getByRole('heading', {level: 1});
+      const title = page.getByRole('heading', {level: 1});
       expect(title).toHaveTextContent('Flows');
     });
 
-    it('should have proper structure with header and list', () => {
-      const {container} = render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+    it('should have proper structure with header and list', async () => {
+      const {container} = await render(<FlowsListPage />);
 
       // Check that the page has a box container
       expect(container.querySelector('.MuiBox-root')).toBeInTheDocument();
@@ -162,25 +121,21 @@ describe('FlowsListPage', () => {
   });
 
   describe('Navigation Error Handling', () => {
-    it('should handle navigation errors when add flow button is clicked', async () => {
+    it('should handle navigation errors when Create New Flow button is clicked', async () => {
       const navigationError = new Error('Navigation failed');
       mockNavigate.mockRejectedValueOnce(navigationError);
 
-      render(
-        <MemoryRouter>
-          <FlowsListPage />
-        </MemoryRouter>,
-      );
+      await render(<FlowsListPage />);
 
-      const addButton = screen.getByRole('button', {name: /add flow/i});
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button', {name: /create new flow/i});
+      await userEvent.click(addButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/flows/signin');
       });
 
       // Verify that the error was caught and logged
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockLoggerError).toHaveBeenCalledWith('Failed to navigate to flow builder page', {
           error: navigationError,
         });

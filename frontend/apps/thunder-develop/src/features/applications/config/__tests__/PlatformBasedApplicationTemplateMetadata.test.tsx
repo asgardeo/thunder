@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
 import PlatformBasedApplicationTemplateMetadata from '../PlatformBasedApplicationTemplateMetadata';
 import {PlatformApplicationTemplate} from '../../models/application-templates';
 
@@ -55,9 +55,9 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
       expect(browserMetadata?.value).toBe(PlatformApplicationTemplate.BROWSER);
     });
 
-    it('should have icon component', () => {
+    it('should have icon component', async () => {
       expect(browserMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{browserMetadata?.icon}</div>);
+      const {container} = await render(<div>{browserMetadata?.icon}</div>);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -91,9 +91,9 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
       expect(serverMetadata?.value).toBe(PlatformApplicationTemplate.SERVER);
     });
 
-    it('should have icon component', () => {
+    it('should have icon component', async () => {
       expect(serverMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{serverMetadata?.icon}</div>);
+      const {container} = await render(<div>{serverMetadata?.icon}</div>);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -123,9 +123,9 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
       expect(mobileMetadata?.value).toBe(PlatformApplicationTemplate.MOBILE);
     });
 
-    it('should have icon component', () => {
+    it('should have icon component', async () => {
       expect(mobileMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{mobileMetadata?.icon}</div>);
+      const {container} = await render(<div>{mobileMetadata?.icon}</div>);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -155,9 +155,9 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
       expect(backendMetadata?.value).toBe(PlatformApplicationTemplate.BACKEND);
     });
 
-    it('should have icon component', () => {
+    it('should have icon component', async () => {
       expect(backendMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{backendMetadata?.icon}</div>);
+      const {container} = await render(<div>{backendMetadata?.icon}</div>);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -209,11 +209,13 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
   });
 
   describe('Icons', () => {
-    it('should all have renderable icons', () => {
-      PlatformBasedApplicationTemplateMetadata.forEach((metadata) => {
-        const {container} = render(<div>{metadata.icon}</div>);
+    it('should all have renderable icons', async () => {
+      // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+      for (const metadata of PlatformBasedApplicationTemplateMetadata) {
+        // eslint-disable-next-line no-await-in-loop
+        const {container} = await render(<div>{metadata.icon}</div>);
         expect(container.querySelector('svg')).toBeInTheDocument();
-      });
+      }
     });
   });
 });

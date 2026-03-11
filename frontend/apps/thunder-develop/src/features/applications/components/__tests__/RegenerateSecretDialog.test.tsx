@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@thunder/test-utils';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {page, userEvent} from 'vitest/browser';
 import type {MutateOptions, MutationFunctionContext} from '@tanstack/react-query';
 import RegenerateSecretDialog from '../RegenerateSecretDialog';
 import type {RegenerateSecretDialogProps} from '../RegenerateSecretDialog';
@@ -50,26 +50,6 @@ vi.mock('../../api/useRegenerateClientSecret', () => ({
   default: () => mockRegenerateClientSecret,
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:regenerateSecret.dialog.title': 'Regenerate Client Secret',
-        'applications:regenerateSecret.dialog.message':
-          'Are you sure you want to regenerate the client secret for this application? This will regenerate the client secret.',
-        'applications:regenerateSecret.dialog.disclaimer':
-          'This action will regenerate the client secret. All existing access tokens will be invalidated and the application will stop working until the new client secret is updated in your application configuration.',
-        'applications:regenerateSecret.dialog.confirmButton': 'Regenerate',
-        'applications:regenerateSecret.dialog.regenerating': 'Regenerating...',
-        'applications:regenerateSecret.dialog.error': 'Failed to regenerate client secret. Please try again.',
-        'common:actions.cancel': 'Cancel',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
-
 describe('RegenerateSecretDialog', () => {
   const mockOnClose = vi.fn();
   const mockOnSuccess = vi.fn();
@@ -83,81 +63,69 @@ describe('RegenerateSecretDialog', () => {
     onError: mockOnError,
   };
 
-  const renderDialog = (props: RegenerateSecretDialogProps = defaultProps) =>
-    render(<RegenerateSecretDialog {...props} />);
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockRegenerateClientSecret.isPending = false;
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('Rendering', () => {
-    it('should render the dialog when open is true', () => {
-      renderDialog();
+    it('should render the dialog when open is true', async () => {
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Regenerate Client Secret')).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'Are you sure you want to regenerate the client secret for this application? This will regenerate the client secret.',
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByText('Regenerate Client Secret')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'Are you sure you want to regenerate the client secret for this application? This will immediately invalidate the current client secret and generate a new one.',
         ),
       ).toBeInTheDocument();
     });
 
-    it('should show warning disclaimer', () => {
-      renderDialog();
+    it('should show warning disclaimer', async () => {
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      expect(
-        screen.getByText(
-          'This action will regenerate the client secret. All existing access tokens will be invalidated and the application will stop working until the new client secret is updated in your application configuration.',
+      await expect.element(
+        page.getByText(
+          'Warning: Regenerating the client secret will invalidate the current secret and the application may stop working until the new client secret is updated in its configuration.',
         ),
       ).toBeInTheDocument();
     });
 
-    it('should not render dialog content when open is false', () => {
-      renderDialog({...defaultProps, open: false});
+    it('should not render dialog content when open is false', async () => {
+      await render(<RegenerateSecretDialog {...defaultProps} open={false} />);
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should render Cancel and Regenerate buttons', () => {
-      renderDialog();
+    it('should render Cancel and Regenerate buttons', async () => {
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Regenerate'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Regenerate'})).toBeInTheDocument();
     });
   });
 
   describe('User Interactions', () => {
     it('should call onClose when Cancel button is clicked', async () => {
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      await user.click(cancelButton);
+      await userEvent.click(page.getByRole('button', {name: 'Cancel'}));
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should call onClose when Escape key is pressed', async () => {
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      await user.keyboard('{Escape}');
+      await userEvent.keyboard('{Escape}');
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should call mutate when Regenerate button is clicked', async () => {
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      const regenerateButton = screen.getByRole('button', {name: 'Regenerate'});
-      await user.click(regenerateButton);
+      await userEvent.click(page.getByRole('button', {name: 'Regenerate'}));
 
       expect(mockMutate).toHaveBeenCalledWith(
         {applicationId: 'test-app-id'},
@@ -171,11 +139,10 @@ describe('RegenerateSecretDialog', () => {
     });
 
     it('should not initiate regeneration when applicationId is null', async () => {
-      renderDialog({...defaultProps, applicationId: null});
+      await render(<RegenerateSecretDialog {...defaultProps} applicationId={null} />);
 
-      const regenerateButton = screen.getByRole('button', {name: 'Regenerate'});
-
-      expect(regenerateButton).toBeDisabled();
+      const regenerateButton = page.getByRole('button', {name: 'Regenerate'});
+      expect(regenerateButton.element()).toBeDisabled();
     });
   });
 
@@ -189,13 +156,11 @@ describe('RegenerateSecretDialog', () => {
         },
       );
 
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      const regenerateButton = screen.getByRole('button', {name: 'Regenerate'});
-      await user.click(regenerateButton);
+      await userEvent.click(page.getByRole('button', {name: 'Regenerate'}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnClose).toHaveBeenCalled();
         expect(mockOnSuccess).toHaveBeenCalledWith('new-test-secret-123');
       });
@@ -212,14 +177,12 @@ describe('RegenerateSecretDialog', () => {
         },
       );
 
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      const regenerateButton = screen.getByRole('button', {name: 'Regenerate'});
-      await user.click(regenerateButton);
+      await userEvent.click(page.getByRole('button', {name: 'Regenerate'}));
 
-      await waitFor(() => {
-        expect(screen.getByText('Failed to regenerate client secret. Please try again.')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Failed to regenerate client secret. Please try again.')).toBeInTheDocument();
       });
     });
 
@@ -232,13 +195,11 @@ describe('RegenerateSecretDialog', () => {
         },
       );
 
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<RegenerateSecretDialog {...defaultProps} />);
 
-      const regenerateButton = screen.getByRole('button', {name: 'Regenerate'});
-      await user.click(regenerateButton);
+      await userEvent.click(page.getByRole('button', {name: 'Regenerate'}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnError).toHaveBeenCalledWith('Failed to regenerate client secret. Please try again.');
       });
     });

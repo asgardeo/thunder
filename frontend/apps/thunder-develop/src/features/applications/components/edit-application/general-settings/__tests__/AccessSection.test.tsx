@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, getByDisplayValue} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import AccessSection from '../AccessSection';
 import useGetUserTypes from '../../../../../user-types/api/useGetUserTypes';
 import type {Application} from '../../../../models/application';
@@ -76,50 +76,50 @@ describe('AccessSection', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the settings card with title and description', () => {
+    it('should render the settings card with title and description', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('Access');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('Access');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         "Configure who can access this application, where it's hosted, etc.",
       );
     });
 
-    it('should render allowed user types autocomplete', () => {
+    it('should render allowed user types autocomplete', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByLabelText('Allowed User Types')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Allowed User Types')).toBeInTheDocument();
     });
 
-    it('should render application URL field', () => {
+    it('should render application URL field', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByLabelText('Application URL')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Application URL')).toBeInTheDocument();
+      expect(getByDisplayValue('https://example.com')).toBeInTheDocument();
     });
 
-    it('should render redirect URIs section when OAuth2 config is provided', () => {
+    it('should render redirect URIs section when OAuth2 config is provided', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -128,66 +128,66 @@ describe('AccessSection', () => {
         />,
       );
 
-      expect(screen.getByText('Authorized redirect URIs')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('https://example.com/callback')).toBeInTheDocument();
+      await expect.element(page.getByText('Authorized redirect URIs')).toBeInTheDocument();
+      expect(getByDisplayValue('https://example.com/callback')).toBeInTheDocument();
     });
 
-    it('should not render redirect URIs section when OAuth2 config is not provided', () => {
+    it('should not render redirect URIs section when OAuth2 config is not provided', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.queryByLabelText('Redirect URIs')).not.toBeInTheDocument();
+      await expect.element(page.getByLabelText('Redirect URIs')).not.toBeInTheDocument();
     });
   });
 
   describe('Loading State', () => {
-    it('should show loading indicator while fetching user types', () => {
+    it('should show loading indicator while fetching user types', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should not show loading indicator when user types are loaded', () => {
+    it('should not show loading indicator when user types are loaded', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).not.toBeInTheDocument();
     });
   });
 
   describe('Allowed User Types', () => {
-    it('should display selected user types from application', () => {
+    it('should display selected user types from application', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('admin')).toBeInTheDocument();
-      expect(screen.getByText('user')).toBeInTheDocument();
+      await expect.element(page.getByText('admin', {exact: true})).toBeInTheDocument();
+      await expect.element(page.getByText('user', {exact: true})).toBeInTheDocument();
     });
 
-    it('should display selected user types from editedApp over application', () => {
+    it('should display selected user types from editedApp over application', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{allowed_user_types: ['guest']}}
@@ -195,49 +195,48 @@ describe('AccessSection', () => {
         />,
       );
 
-      expect(screen.getByText('guest')).toBeInTheDocument();
-      expect(screen.queryByText('admin')).not.toBeInTheDocument();
+      await expect.element(page.getByText('guest')).toBeInTheDocument();
+      await expect.element(page.getByText('admin')).not.toBeInTheDocument();
     });
 
     it('should display all available user types in dropdown', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const input = screen.getByLabelText('Allowed User Types');
-      await user.click(input);
+      const input = page.getByLabelText('Allowed User Types');
+      await userEvent.click(input);
 
-      await waitFor(() => {
-        expect(screen.getAllByText('admin').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('guest').length).toBeGreaterThan(0);
+      await vi.waitFor(() => {
+        expect(page.getByText('admin').length).toBeGreaterThan(0);
+        expect(page.getByText('guest').length).toBeGreaterThan(0);
       });
     });
   });
 
   describe('Application URL', () => {
-    it('should display URL from application', () => {
+    it('should display URL from application', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const urlInput = screen.getByLabelText('Application URL');
+      const urlInput = page.getByLabelText('Application URL');
       expect(urlInput).toHaveAttribute('value', 'https://example.com');
     });
 
-    it('should display URL from editedApp over application', () => {
+    it('should display URL from editedApp over application', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{url: 'https://edited.com'}}
@@ -245,50 +244,48 @@ describe('AccessSection', () => {
         />,
       );
 
-      const urlInput = screen.getByLabelText('Application URL');
+      const urlInput = page.getByLabelText('Application URL');
       expect(urlInput).toHaveAttribute('value', 'https://edited.com');
     });
 
     it('should show validation error for invalid URL', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const urlInput = screen.getByLabelText('Application URL');
-      await user.clear(urlInput);
-      await user.type(urlInput, 'invalid-url');
+      const urlInput = page.getByLabelText('Application URL');
+      await userEvent.clear(urlInput);
+      await userEvent.type(urlInput, 'invalid-url');
 
-      await waitFor(() => {
-        expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).toBeInTheDocument();
       });
     });
 
     it('should accept valid URL without error', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection application={{...mockApplication, url: ''}} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      const urlInput = screen.getByLabelText('Application URL');
-      await user.type(urlInput, 'https://newurl.com');
+      const urlInput = page.getByLabelText('Application URL');
+      await userEvent.type(urlInput, 'https://newurl.com');
 
-      await waitFor(() => {
-        expect(screen.queryByText('Please enter a valid URL')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Please enter a valid URL')).not.toBeInTheDocument();
       });
     });
   });
 
   describe('Redirect URIs', () => {
-    it('should display existing redirect URIs', () => {
+    it('should display existing redirect URIs', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
@@ -299,7 +296,7 @@ describe('AccessSection', () => {
         redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -308,18 +305,17 @@ describe('AccessSection', () => {
         />,
       );
 
-      expect(screen.getByDisplayValue('https://example.com/callback1')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('https://example.com/callback2')).toBeInTheDocument();
+      expect(getByDisplayValue('https://example.com/callback1')).toBeInTheDocument();
+      expect(getByDisplayValue('https://example.com/callback2')).toBeInTheDocument();
     });
 
     it('should add new redirect URI when add button is clicked', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -328,16 +324,15 @@ describe('AccessSection', () => {
         />,
       );
 
-      const addButton = screen.getByRole('button', {name: /Add URI/i});
-      await user.click(addButton);
+      const addButton = page.getByRole('button', {name: /Add URI/i});
+      await userEvent.click(addButton);
 
-      const inputs = screen.getAllByPlaceholderText('https://example.com/callback');
+      const inputs = page.getByPlaceholder('https://example.com/callback').all();
       expect(inputs).toHaveLength(2);
     });
 
     it('should remove redirect URI when delete button is clicked', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -347,7 +342,7 @@ describe('AccessSection', () => {
         redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -356,31 +351,32 @@ describe('AccessSection', () => {
         />,
       );
 
-      const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-      await user.click(deleteButtons[0]);
+      const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+      await userEvent.click(deleteButtons[0]);
 
-      expect(screen.queryByDisplayValue('https://example.com/callback1')).not.toBeInTheDocument();
-      expect(screen.getByDisplayValue('https://example.com/callback2')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(document.querySelector('input[value="https://example.com/callback1"]')).toBeNull();
+      });
+      expect(getByDisplayValue('https://example.com/callback2')).toBeInTheDocument();
     });
   });
 
   describe('Field Change Callbacks', () => {
     it('should call onFieldChange when user types are changed', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const input = screen.getByLabelText('Allowed User Types');
-      await user.click(input);
+      const input = page.getByLabelText('Allowed User Types');
+      await userEvent.click(input);
 
-      const guestOption = await screen.findByRole('option', {name: 'guest'});
-      await user.click(guestOption);
+      const guestOption = page.getByRole('option', {name: 'guest'});
+      await userEvent.click(guestOption);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnFieldChange).toHaveBeenCalled();
         const {calls} = mockOnFieldChange.mock;
         const userTypesCall = calls.find((call) => call[0] === 'allowed_user_types');
@@ -407,13 +403,12 @@ describe('AccessSection', () => {
     } as Application;
 
     it('should show error when invalid URI is entered and blurred', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplicationWithAuth}
           editedApp={{}}
@@ -423,28 +418,27 @@ describe('AccessSection', () => {
       );
 
       // Find the existing URI input and enter invalid URI
-      const uriInput = screen.getByDisplayValue('https://example.com/callback');
-      await user.clear(uriInput);
-      await user.type(uriInput, 'not-a-valid-url');
+      const uriInput = getByDisplayValue('https://example.com/callback');
+      await userEvent.clear(uriInput);
+      await userEvent.type(uriInput, 'not-a-valid-url');
 
       // Blur the input to trigger validation
-      await user.tab();
+      await userEvent.tab();
 
       // Should show error and not call onFieldChange for inbound_auth_config
-      await waitFor(() => {
+      await vi.waitFor(() => {
         const errorCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
         expect(errorCalls).toHaveLength(0);
       });
     });
 
     it('should show error when URI is empty and blurred', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplicationWithAuth}
           editedApp={{}}
@@ -454,27 +448,26 @@ describe('AccessSection', () => {
       );
 
       // Find the existing URI input and clear it
-      const uriInput = screen.getByDisplayValue('https://example.com/callback');
-      await user.clear(uriInput);
+      const uriInput = getByDisplayValue('https://example.com/callback');
+      await userEvent.clear(uriInput);
 
       // Blur the input to trigger validation
-      await user.tab();
+      await userEvent.tab();
 
       // Should not call onFieldChange for empty URI
-      await waitFor(() => {
+      await vi.waitFor(() => {
         const errorCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
         expect(errorCalls).toHaveLength(0);
       });
     });
 
     it('should validate URI on blur', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplicationWithAuth}
           editedApp={{}}
@@ -484,33 +477,33 @@ describe('AccessSection', () => {
       );
 
       // Find the existing URI input
-      const uriInput = screen.getByDisplayValue('https://example.com/callback');
+      const uriInput = getByDisplayValue('https://example.com/callback');
 
       // Focus and blur to trigger validation flow
-      await user.click(uriInput);
-      await user.tab();
+      await userEvent.click(uriInput);
+      await userEvent.tab();
 
       // The onBlur handler should have been called
       // Since URI is valid and non-empty, it should call updateRedirectUris
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnFieldChange).toHaveBeenCalledWith('inbound_auth_config', expect.any(Array));
       });
     });
   });
 
   describe('Handle empty user types data', () => {
-    it('should handle undefined user types data gracefully', () => {
+    it('should handle undefined user types data gracefully', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: undefined,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByLabelText('Allowed User Types')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Allowed User Types')).toBeInTheDocument();
     });
 
-    it('should handle null application allowed_user_types', () => {
+    it('should handle null application allowed_user_types', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
@@ -521,7 +514,7 @@ describe('AccessSection', () => {
         allowed_user_types: undefined,
       };
 
-      render(
+      await render(
         <AccessSection
           application={appWithNullTypes as unknown as Application}
           editedApp={{}}
@@ -529,19 +522,18 @@ describe('AccessSection', () => {
         />,
       );
 
-      expect(screen.getByLabelText('Allowed User Types')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Allowed User Types')).toBeInTheDocument();
     });
   });
 
   describe('URI Error Handling', () => {
     it('should clear error when typing non-empty value in URI field', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -550,24 +542,23 @@ describe('AccessSection', () => {
         />,
       );
 
-      const uriInput = screen.getByDisplayValue('https://example.com/callback');
+      const uriInput = getByDisplayValue('https://example.com/callback');
 
       // Clear and blur to trigger empty error
-      await user.clear(uriInput);
-      fireEvent.blur(uriInput);
+      await userEvent.clear(uriInput);
+      (uriInput.element() as HTMLElement).blur();
 
       // Now type something to clear the error
-      await user.type(uriInput, 'https://new-uri.com');
+      await userEvent.type(uriInput, 'https://new-uri.com');
 
       // Error should be cleared when typing non-empty value
-      await waitFor(() => {
-        expect(screen.queryByText('URI cannot be empty')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Invalid Redirect: URI must not be empty.')).not.toBeInTheDocument();
       });
     });
 
     it('should reindex errors when removing a URI with errors on subsequent URIs', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -577,7 +568,7 @@ describe('AccessSection', () => {
         redirect_uris: ['https://example.com/callback1', 'invalid-uri', 'https://example.com/callback3'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -587,21 +578,22 @@ describe('AccessSection', () => {
       );
 
       // First, trigger validation error on the second URI by blurring it
-      const secondUriInput = screen.getByDisplayValue('invalid-uri');
-      await user.click(secondUriInput);
-      await user.tab();
+      const secondUriInput = getByDisplayValue('invalid-uri');
+      await userEvent.click(secondUriInput);
+      await userEvent.tab();
 
       // Now remove the first URI - this should trigger reindexing of errors
-      const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-      await user.click(deleteButtons[0]);
+      const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+      await userEvent.click(deleteButtons[0]);
 
       // The first URI should be removed
-      expect(screen.queryByDisplayValue('https://example.com/callback1')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(document.querySelector('input[value="https://example.com/callback1"]')).toBeNull();
+      });
     });
 
     it('should preserve errors on URIs before the removed index', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -611,7 +603,7 @@ describe('AccessSection', () => {
         redirect_uris: ['invalid-first', 'https://example.com/callback2', 'https://example.com/callback3'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -621,25 +613,26 @@ describe('AccessSection', () => {
       );
 
       // Trigger validation error on the first URI
-      const firstUriInput = screen.getByDisplayValue('invalid-first');
-      await user.click(firstUriInput);
-      await user.tab();
+      const firstUriInput = getByDisplayValue('invalid-first');
+      await userEvent.click(firstUriInput);
+      await userEvent.tab();
 
       // Remove the last URI (index 2) - error on index 0 should be preserved
-      const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-      await user.click(deleteButtons[2]);
+      const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+      await userEvent.click(deleteButtons[2]);
 
       // The last URI should be removed
-      expect(screen.queryByDisplayValue('https://example.com/callback3')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(document.querySelector('input[value="https://example.com/callback3"]')).toBeNull();
+      });
       // First URI should still be present
-      expect(screen.getByDisplayValue('invalid-first')).toBeInTheDocument();
+      expect(getByDisplayValue('invalid-first')).toBeInTheDocument();
     });
   });
 
   describe('Mixed Inbound Auth Config', () => {
     it('should preserve non-oauth2 config when updating redirect URIs', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -661,7 +654,7 @@ describe('AccessSection', () => {
         ],
       } as Application;
 
-      render(
+      await render(
         <AccessSection
           application={appWithMixedConfig}
           editedApp={{}}
@@ -671,11 +664,11 @@ describe('AccessSection', () => {
       );
 
       // Blur the URI input to trigger updateRedirectUris
-      const uriInput = screen.getByDisplayValue('https://example.com/callback');
-      await user.click(uriInput);
-      await user.tab();
+      const uriInput = getByDisplayValue('https://example.com/callback');
+      await userEvent.click(uriInput);
+      await userEvent.tab();
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnFieldChange).toHaveBeenCalledWith('inbound_auth_config', expect.any(Array));
         const call = mockOnFieldChange.mock.calls.find((c) => c[0] === 'inbound_auth_config');
         if (call) {
@@ -689,13 +682,13 @@ describe('AccessSection', () => {
   });
 
   describe('URL Field Sync Effect', () => {
-    it('should display editedApp URL over application URL', () => {
+    it('should display editedApp URL over application URL', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{url: 'https://edited-url.com'}}
@@ -703,30 +696,30 @@ describe('AccessSection', () => {
         />,
       );
 
-      const urlInput = screen.getByLabelText('Application URL');
+      const urlInput = page.getByLabelText('Application URL');
       expect(urlInput).toHaveValue('https://edited-url.com');
     });
 
-    it('should display application URL when editedApp URL is not provided', () => {
+    it('should display application URL when editedApp URL is not provided', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const urlInput = screen.getByLabelText('Application URL');
+      const urlInput = page.getByLabelText('Application URL');
       expect(urlInput).toHaveValue('https://example.com');
     });
 
-    it('should display empty string when neither editedApp nor application have URL', () => {
+    it('should display empty string when neither editedApp nor application have URL', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
       const appWithoutUrl = {...mockApplication, url: undefined};
-      render(
+      await render(
         <AccessSection
           application={appWithoutUrl as unknown as Application}
           editedApp={{}}
@@ -734,22 +727,22 @@ describe('AccessSection', () => {
         />,
       );
 
-      const urlInput = screen.getByLabelText('Application URL');
+      const urlInput = page.getByLabelText('Application URL');
       expect(urlInput).toHaveValue('');
     });
   });
 
   describe('Redirect URI Updates', () => {
-    it('should not update redirect URIs when oauth2Config is undefined', () => {
+    it('should not update redirect URIs when oauth2Config is undefined', async () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
 
-      render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<AccessSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       // Without oauth2Config, redirect URI section should not be rendered
-      expect(screen.queryByText('Authorized redirect URIs')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Authorized redirect URIs')).not.toBeInTheDocument();
 
       // No inbound_auth_config calls should be made
       const inboundAuthCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
@@ -757,8 +750,7 @@ describe('AccessSection', () => {
     });
 
     it('should filter out empty URIs when updating redirect URIs', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -768,7 +760,7 @@ describe('AccessSection', () => {
         redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -778,11 +770,11 @@ describe('AccessSection', () => {
       );
 
       // Focus on first valid URI and blur to trigger update
-      const uriInput = screen.getByDisplayValue('https://example.com/callback1');
-      await user.click(uriInput);
-      await user.tab();
+      const uriInput = getByDisplayValue('https://example.com/callback1');
+      await userEvent.click(uriInput);
+      await userEvent.tab();
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         const inboundAuthCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
         expect(inboundAuthCalls.length).toBeGreaterThan(0);
       });
@@ -791,8 +783,7 @@ describe('AccessSection', () => {
 
   describe('Error Reindexing on URI Removal', () => {
     it('should reindex errors when removing URI from the middle of the list', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -802,7 +793,7 @@ describe('AccessSection', () => {
         redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2', 'invalid-uri-3'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -812,24 +803,25 @@ describe('AccessSection', () => {
       );
 
       // Trigger validation error on the third URI
-      const thirdUriInput = screen.getByDisplayValue('invalid-uri-3');
-      await user.click(thirdUriInput);
-      await user.tab();
+      const thirdUriInput = getByDisplayValue('invalid-uri-3');
+      await userEvent.click(thirdUriInput);
+      await userEvent.tab();
 
       // Remove the second URI
-      const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-      await user.click(deleteButtons[1]);
+      const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+      await userEvent.click(deleteButtons[1]);
 
       // Verify the second URI was removed
-      expect(screen.queryByDisplayValue('https://example.com/callback2')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(document.querySelector('input[value="https://example.com/callback2"]')).toBeNull();
+      });
       // First and third (now second) should still be present
-      expect(screen.getByDisplayValue('https://example.com/callback1')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('invalid-uri-3')).toBeInTheDocument();
+      expect(getByDisplayValue('https://example.com/callback1')).toBeInTheDocument();
+      expect(getByDisplayValue('invalid-uri-3')).toBeInTheDocument();
     });
 
     it('should preserve error for URI at index before removed URI', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -839,7 +831,7 @@ describe('AccessSection', () => {
         redirect_uris: ['invalid-first', 'https://example.com/callback2', 'https://example.com/callback3'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -849,21 +841,20 @@ describe('AccessSection', () => {
       );
 
       // Trigger validation error on the first URI
-      const firstUriInput = screen.getByDisplayValue('invalid-first');
-      await user.click(firstUriInput);
-      await user.tab();
+      const firstUriInput = getByDisplayValue('invalid-first');
+      await userEvent.click(firstUriInput);
+      await userEvent.tab();
 
       // Remove the third URI
-      const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-      await user.click(deleteButtons[2]);
+      const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+      await userEvent.click(deleteButtons[2]);
 
       // First URI should still be present with its error state preserved
-      expect(screen.getByDisplayValue('invalid-first')).toBeInTheDocument();
+      expect(getByDisplayValue('invalid-first')).toBeInTheDocument();
     });
 
     it('should shift error indices down when removing URI before errored URI', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetUserTypes).mockReturnValue({
+            vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
       } as unknown as MockedUseGetUserTypes);
@@ -873,7 +864,7 @@ describe('AccessSection', () => {
         redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2', 'invalid-third'],
       };
 
-      render(
+      await render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -883,18 +874,20 @@ describe('AccessSection', () => {
       );
 
       // Trigger validation error on the third URI
-      const thirdUriInput = screen.getByDisplayValue('invalid-third');
-      await user.click(thirdUriInput);
-      await user.tab();
+      const thirdUriInput = getByDisplayValue('invalid-third');
+      await userEvent.click(thirdUriInput);
+      await userEvent.tab();
 
       // Remove the first URI - this should cause error index to shift from 2 to 1
-      const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-      await user.click(deleteButtons[0]);
+      const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+      await userEvent.click(deleteButtons[0]);
 
       // First URI should be removed
-      expect(screen.queryByDisplayValue('https://example.com/callback1')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(document.querySelector('input[value="https://example.com/callback1"]')).toBeNull();
+      });
       // Third URI (now second) should still be present
-      expect(screen.getByDisplayValue('invalid-third')).toBeInTheDocument();
+      expect(getByDisplayValue('invalid-third')).toBeInTheDocument();
     });
   });
 
@@ -910,7 +903,8 @@ describe('AccessSection', () => {
         redirect_uris: ['https://initial.com/callback'],
       };
 
-      const {rerender} = render(
+      const {rerender} = await render(
+
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -919,14 +913,14 @@ describe('AccessSection', () => {
         />,
       );
 
-      expect(screen.getByDisplayValue('https://initial.com/callback')).toBeInTheDocument();
+      expect(getByDisplayValue('https://initial.com/callback')).toBeInTheDocument();
 
       const updatedConfig = {
         ...mockOAuth2Config,
         redirect_uris: ['https://updated.com/callback'],
       };
 
-      rerender(
+      await rerender(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -935,8 +929,8 @@ describe('AccessSection', () => {
         />,
       );
 
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('https://updated.com/callback')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(getByDisplayValue('https://updated.com/callback')).toBeInTheDocument();
       });
     });
   });

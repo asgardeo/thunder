@@ -17,19 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import DefaultInputAdapter from '../DefaultInputAdapter';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
 }));
@@ -59,60 +53,62 @@ describe('DefaultInputAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render TextField component', () => {
+    it('should render TextField component', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
     });
 
-    it('should render input element', () => {
+    it('should render input element', async () => {
       const resource = createMockElement();
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should render label text', () => {
+    it('should render label via PlaceholderComponent', async () => {
       const resource = createMockElement({label: 'Email Address'});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(container.querySelector('.MuiInputLabel-root')).toHaveTextContent('Email Address');
+      // MUI TextField renders label in two places (label and legend), so we use getAllByTestId
+      const placeholders = page.getByTestId('placeholder').all();
+      expect(placeholders[0]).toHaveTextContent('Email Address');
     });
 
-    it('should render with full width', () => {
+    it('should render with full width', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormControl-fullWidth')).toBeInTheDocument();
     });
   });
 
   describe('Input Types', () => {
-    it('should render text input type', () => {
+    it('should render text input type', async () => {
       const resource = createMockElement({inputType: 'text'});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('type', 'text');
+      await expect.element(page.getByRole('textbox')).toHaveAttribute('type', 'text');
     });
 
-    it('should render email input type', () => {
+    it('should render email input type', async () => {
       const resource = createMockElement({inputType: 'email'});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('type', 'email');
+      await expect.element(page.getByRole('textbox')).toHaveAttribute('type', 'email');
     });
 
-    it('should render password input type with autocomplete off', () => {
+    it('should render password input type with autocomplete off', async () => {
       const resource = createMockElement({inputType: 'password'});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       const input = container.querySelector('input');
       expect(input).toHaveAttribute('type', 'password');
@@ -121,118 +117,118 @@ describe('DefaultInputAdapter', () => {
   });
 
   describe('Placeholder', () => {
-    it('should render placeholder when provided', () => {
+    it('should render placeholder when provided', async () => {
       const resource = createMockElement({placeholder: 'Enter your username'});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Enter your username');
+      await expect.element(page.getByRole('textbox')).toHaveAttribute('placeholder', 'Enter your username');
     });
 
-    it('should render empty placeholder when not provided', () => {
+    it('should render empty placeholder when not provided', async () => {
       const resource = createMockElement({placeholder: undefined});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '');
+      await expect.element(page.getByRole('textbox')).toHaveAttribute('placeholder', '');
     });
   });
 
   describe('Default Value', () => {
-    it('should render with default value when provided', () => {
+    it('should render with default value when provided', async () => {
       const resource = createMockElement({defaultValue: 'default text'});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveValue('default text');
+      await expect.element(page.getByRole('textbox')).toHaveValue('default text');
     });
   });
 
   describe('Required Field', () => {
-    it('should show required indicator when required is true', () => {
+    it('should show required indicator when required is true', async () => {
       const resource = createMockElement({required: true});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormLabel-asterisk')).toBeInTheDocument();
     });
 
-    it('should not show required indicator when required is false', () => {
+    it('should not show required indicator when required is false', async () => {
       const resource = createMockElement({required: false});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormLabel-asterisk')).not.toBeInTheDocument();
     });
   });
 
   describe('Hint Text', () => {
-    it('should render hint when provided', () => {
+    it('should render hint when provided', async () => {
       const resource = createMockElement({hint: 'Enter a valid email'});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByTestId('hint')).toHaveTextContent('Enter a valid email');
+      await expect.element(page.getByTestId('hint')).toHaveTextContent('Enter a valid email');
     });
 
-    it('should not render hint when not provided', () => {
+    it('should not render hint when not provided', async () => {
       const resource = createMockElement({hint: undefined});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
   });
 
   describe('Input Constraints', () => {
-    it('should set minLength when provided', () => {
+    it('should set minLength when provided', async () => {
       const resource = createMockElement({minLength: 5});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('minlength', '5');
+      await expect.element(page.getByRole('textbox')).toHaveAttribute('minlength', '5');
     });
 
-    it('should set maxLength when provided', () => {
+    it('should set maxLength when provided', async () => {
       const resource = createMockElement({maxLength: 100});
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('textbox')).toHaveAttribute('maxlength', '100');
+      await expect.element(page.getByRole('textbox')).toHaveAttribute('maxlength', '100');
     });
   });
 
   describe('Multiline', () => {
-    it('should render as multiline when multiline is true', () => {
+    it('should render as multiline when multiline is true', async () => {
       const resource = createMockElement({multiline: true});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('textarea')).toBeInTheDocument();
     });
 
-    it('should render as single line when multiline is false', () => {
+    it('should render as single line when multiline is false', async () => {
       const resource = createMockElement({multiline: false});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('textarea')).not.toBeInTheDocument();
     });
   });
 
   describe('Custom Styling', () => {
-    it('should apply className when provided', () => {
+    it('should apply className when provided', async () => {
       const resource = createMockElement({className: 'custom-input'});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       expect(container.querySelector('.custom-input')).toBeInTheDocument();
     });
 
-    it('should apply styles when provided', () => {
+    it('should apply styles when provided', async () => {
       const resource = createMockElement({styles: {marginTop: '10px'}});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      const {container} = await render(<DefaultInputAdapter resource={resource} />);
 
       const textField = container.querySelector('.MuiTextField-root');
       expect(textField).toHaveStyle({marginTop: '10px'});
@@ -240,20 +236,24 @@ describe('DefaultInputAdapter', () => {
   });
 
   describe('Empty Label', () => {
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
+      // MUI TextField renders label in two places (label and legend), so we use getAllByTestId
+      const placeholders = page.getByTestId('placeholder').all();
+      expect(placeholders[0]).toHaveTextContent('');
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      const {container} = render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
-      expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
+      // MUI TextField renders label in two places (label and legend), so we use getAllByTestId
+      const placeholders = page.getByTestId('placeholder').all();
+      expect(placeholders[0]).toHaveTextContent('');
     });
   });
 
@@ -264,7 +264,7 @@ describe('DefaultInputAdapter', () => {
 
       const resource = createMockElement();
 
-      render(<DefaultInputAdapter resource={resource} />);
+      await render(<DefaultInputAdapter resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalled();
     });

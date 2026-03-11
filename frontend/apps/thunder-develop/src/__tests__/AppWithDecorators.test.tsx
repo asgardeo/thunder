@@ -17,9 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
-import AppWithDecorators from '../AppWithDecorators';
+import AppWithConfig from '../AppWithConfig';
 
 const mockGetClientId = vi.fn();
 const mockGetServerUrl = vi.fn();
@@ -63,33 +64,11 @@ vi.mock('@asgardeo/react', () => ({
       {children}
     </div>
   ),
-}));
-
-// Mock OxygenUI (used by withTheme)
-vi.mock('@wso2/oxygen-ui', () => ({
-  AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
-  OxygenUIThemeProvider: ({children}: {children: ReactNode}) => <div data-testid="theme-provider">{children}</div>,
-}));
-
-// Mock i18next top-level await in withI18n
-vi.mock('i18next', () => ({
-  default: {
-    use: vi.fn().mockReturnThis(),
-    init: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-vi.mock('react-i18next', () => ({
-  initReactI18next: {},
-}));
-
-vi.mock('@thunder/i18n/locales/en-US', () => ({
-  default: {common: {}, navigation: {}},
-}));
-
-// Mock I18nProvider (used by withI18n)
-vi.mock('../i18n/I18nProvider', () => ({
-  default: ({children}: {children: ReactNode}) => <div data-testid="i18n-provider">{children}</div>,
+  useAsgardeo: () => ({
+    http: {
+      request: vi.fn().mockResolvedValue({data: {language: 'en-US', translations: {}}}),
+    },
+  }),
 }));
 
 // Mock App component
@@ -97,7 +76,19 @@ vi.mock('../App', () => ({
   default: () => <div data-testid="app">App Component</div>,
 }));
 
-describe('AppWithDecorators', () => {
+// Mock theme
+vi.mock('@thunder/ui', () => ({
+  theme: {
+    palette: {
+      mode: 'light',
+    },
+    typography: {
+      fontWeightBold: 700,
+    },
+  },
+}));
+
+describe('AppWithConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up default environment variables
@@ -108,166 +99,166 @@ describe('AppWithDecorators', () => {
     mockGetScopes.mockReturnValue([]);
   });
 
-  it('renders AsgardeoProvider with config values', () => {
+  it('renders AsgardeoProvider with config values', async () => {
     mockGetClientId.mockReturnValue('test-client-id');
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://test-server.example.com');
-    expect(provider).toHaveAttribute('data-client-id', 'test-client-id');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://test-client.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://test-server.example.com');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'test-client-id');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://test-client.example.com');
   });
 
-  it('falls back to environment variables when config returns null', () => {
+  it('falls back to environment variables when config returns null', async () => {
     mockGetClientId.mockReturnValue(null);
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
-    expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'default-client-id');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
   });
 
-  it('renders App component', () => {
+  it('renders App component', async () => {
     mockGetClientId.mockReturnValue('test-client-id');
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    expect(screen.getByTestId('app')).toBeInTheDocument();
+    await expect.element(page.getByTestId('app')).toBeInTheDocument();
   });
 
-  it('uses config value for baseUrl when available', () => {
+  it('uses config value for baseUrl when available', async () => {
     mockGetServerUrl.mockReturnValue('https://config-server.example.com');
     mockGetClientId.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
   });
 
-  it('uses config value for clientId when available', () => {
+  it('uses config value for clientId when available', async () => {
     mockGetClientId.mockReturnValue('config-client-id');
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-client-id', 'config-client-id');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'config-client-id');
   });
 
-  it('uses config value for afterSignInUrl when available', () => {
+  it('uses config value for afterSignInUrl when available', async () => {
     mockGetClientUrl.mockReturnValue('https://config-client.example.com');
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientId.mockReturnValue(null);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
   });
 
-  it('falls back to environment variables when config returns undefined', () => {
+  it('falls back to environment variables when config returns undefined', async () => {
     mockGetClientId.mockReturnValue(undefined);
     mockGetServerUrl.mockReturnValue(undefined);
     mockGetClientUrl.mockReturnValue(undefined);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
-    expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'default-client-id');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
   });
 
-  it('handles mixed config values and fallbacks - scenario 1', () => {
+  it('handles mixed config values and fallbacks - scenario 1', async () => {
     mockGetServerUrl.mockReturnValue('https://config-server.example.com');
     mockGetClientId.mockReturnValue(undefined);
     mockGetClientUrl.mockReturnValue('https://config-client.example.com');
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
-    expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'default-client-id');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
   });
 
-  it('handles mixed config values and fallbacks - scenario 2', () => {
+  it('handles mixed config values and fallbacks - scenario 2', async () => {
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientId.mockReturnValue('config-client-id');
     mockGetClientUrl.mockReturnValue(null);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
-    expect(provider).toHaveAttribute('data-client-id', 'config-client-id');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'config-client-id');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
   });
 
-  it('uses config value for scopes when available', () => {
+  it('uses config value for scopes when available', async () => {
     mockGetClientId.mockReturnValue('test-client-id');
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
     mockGetScopes.mockReturnValue(['openid', 'profile', 'email', 'system']);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-scopes', '["openid","profile","email","system"]');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-scopes', '["openid","profile","email","system"]');
   });
 
-  it('does not pass scopes prop when config returns empty array', () => {
+  it('does not pass scopes prop when config returns empty array', async () => {
     mockGetClientId.mockReturnValue('test-client-id');
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
     mockGetScopes.mockReturnValue([]);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).not.toHaveAttribute('data-scopes');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).not.toHaveAttribute('data-scopes');
   });
 
-  it('passes scopes when config has scopes', () => {
+  it('passes scopes when config has scopes', async () => {
     mockGetClientId.mockReturnValue('test-client-id');
     mockGetServerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
     mockGetScopes.mockReturnValue(['openid', 'profile']);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-scopes', '["openid","profile"]');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-scopes', '["openid","profile"]');
   });
 
-  it('handles scopes from config with other fallbacks', () => {
+  it('handles scopes from config with other fallbacks', async () => {
     mockGetClientId.mockReturnValue(null);
     mockGetServerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
     mockGetScopes.mockReturnValue(['openid', 'profile', 'email']);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
-    expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
-    expect(provider).toHaveAttribute('data-scopes', '["openid","profile","email"]');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'default-client-id');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
+    await expect.element(provider).toHaveAttribute('data-scopes', '["openid","profile","email"]');
   });
 
-  it('properly evaluates falsy values for config options', () => {
+  it('properly evaluates falsy values for config options', async () => {
     // Test that falsy values (null, undefined, empty string, etc.) are properly handled
     // Empty strings are truthy in JavaScript, so they will be used as-is
     mockGetClientId.mockReturnValue('');
@@ -275,28 +266,28 @@ describe('AppWithDecorators', () => {
     mockGetClientUrl.mockReturnValue('');
     mockGetScopes.mockReturnValue([]);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = page.getByTestId('asgardeo-provider');
     // Empty strings are truthy, so they will be passed through (not fallback to env vars)
-    expect(provider).toHaveAttribute('data-base-url', '');
-    expect(provider).toHaveAttribute('data-client-id', '');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', '');
-    expect(provider).not.toHaveAttribute('data-scopes');
+    await expect.element(provider).toHaveAttribute('data-base-url', '');
+    await expect.element(provider).toHaveAttribute('data-client-id', '');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', '');
+    await expect.element(provider).not.toHaveAttribute('data-scopes');
   });
 
-  it('handles all config values as truthy strings', () => {
+  it('handles all config values as truthy strings', async () => {
     mockGetClientId.mockReturnValue('client-123');
     mockGetServerUrl.mockReturnValue('https://server.test');
     mockGetClientUrl.mockReturnValue('https://client.test');
     mockGetScopes.mockReturnValue(['scope1', 'scope2', 'scope3']);
 
-    render(<AppWithDecorators />);
+    await render(<AppWithConfig />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
-    expect(provider).toHaveAttribute('data-base-url', 'https://server.test');
-    expect(provider).toHaveAttribute('data-client-id', 'client-123');
-    expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://client.test');
-    expect(provider).toHaveAttribute('data-scopes', '["scope1","scope2","scope3"]');
+    const provider = page.getByTestId('asgardeo-provider');
+    await expect.element(provider).toHaveAttribute('data-base-url', 'https://server.test');
+    await expect.element(provider).toHaveAttribute('data-client-id', 'client-123');
+    await expect.element(provider).toHaveAttribute('data-after-sign-in-url', 'https://client.test');
+    await expect.element(provider).toHaveAttribute('data-scopes', '["scope1","scope2","scope3"]');
   });
 });

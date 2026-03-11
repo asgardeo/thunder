@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetUserSchemas from '../useGetUserSchemas';
 import type {UserSchemaListResponse} from '../../types/users';
 import UserQueryKeys from '../../constants/user-query-keys';
@@ -71,10 +71,10 @@ describe('useGetUserSchemas', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with loading state', () => {
+  it('should initialize with loading state', async () => {
     mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -86,9 +86,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -103,9 +103,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    renderHook(() => useGetUserSchemas());
+    await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -120,9 +120,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    renderHook(() => useGetUserSchemas({limit: 10, offset: 5}));
+    await renderHook(() => useGetUserSchemas({limit: 10, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -139,9 +139,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    renderHook(() => useGetUserSchemas({limit: 20}));
+    await renderHook(() => useGetUserSchemas({limit: 20}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -155,9 +155,9 @@ describe('useGetUserSchemas', () => {
     const apiError = new Error('Failed to fetch user schemas');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -169,9 +169,9 @@ describe('useGetUserSchemas', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -183,9 +183,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    renderHook(() => useGetUserSchemas());
+    await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
 
@@ -200,9 +200,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    renderHook(() => useGetUserSchemas());
+    await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -219,9 +219,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    const {result, queryClient} = renderHook(() => useGetUserSchemas({limit: 20, offset: 10}));
+    const {result, queryClient} = await renderHook(() => useGetUserSchemas({limit: 20, offset: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -239,9 +239,9 @@ describe('useGetUserSchemas', () => {
     });
 
     // First call - get the queryClient from the render result
-    const {result: result1, queryClient} = renderHook(() => useGetUserSchemas({limit: 10, offset: 0}));
+    const {result: result1, queryClient} = await renderHook(() => useGetUserSchemas({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -251,11 +251,11 @@ describe('useGetUserSchemas', () => {
     });
 
     // Second call with same queryClient should use cache
-    const {result: result2} = renderHook(() => useGetUserSchemas({limit: 10, offset: 0}), {
+    const {result: result2} = await renderHook(() => useGetUserSchemas({limit: 10, offset: 0}), {
       queryClient,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.data).toEqual(mockSchemasResponse);
     });
     expect(mockHttpRequest).toHaveBeenCalledTimes(1); // Should not make another request
@@ -266,16 +266,16 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    const {result: result1} = renderHook(() => useGetUserSchemas({limit: 10, offset: 0}));
+    const {result: result1} = await renderHook(() => useGetUserSchemas({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
     // Second call with different parameters should make new request
-    const {result: result2} = renderHook(() => useGetUserSchemas({limit: 20, offset: 5}));
+    const {result: result2} = await renderHook(() => useGetUserSchemas({limit: 20, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -287,9 +287,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -313,9 +313,9 @@ describe('useGetUserSchemas', () => {
       data: emptyResponse,
     });
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -329,9 +329,9 @@ describe('useGetUserSchemas', () => {
       data: mockSchemasResponse,
     });
 
-    renderHook(() => useGetUserSchemas({limit: 50, offset: 100}));
+    await renderHook(() => useGetUserSchemas({limit: 50, offset: 100}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -352,7 +352,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockReturnValueOnce(requestPromise);
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = await renderHook(() => useGetUserSchemas());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isFetching).toBe(true);
@@ -360,7 +360,7 @@ describe('useGetUserSchemas', () => {
 
     resolveRequest!({data: mockSchemasResponse});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

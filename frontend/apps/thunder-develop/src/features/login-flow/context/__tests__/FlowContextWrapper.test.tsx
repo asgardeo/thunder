@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {useContext} from 'react';
 import FlowContextWrapper from '../FlowContextWrapper';
 import LoginFlowBuilderContext from '../LoginFlowBuilderContext';
@@ -34,50 +35,50 @@ function TestConsumer() {
 
 describe('FlowContextWrapper', () => {
   describe('Provider Setup', () => {
-    it('should render children', () => {
-      render(
+    it('should render children', async () => {
+      await render(
         <FlowContextWrapper>
           <div data-testid="child">Child Content</div>
         </FlowContextWrapper>,
       );
 
-      expect(screen.getByTestId('child')).toHaveTextContent('Child Content');
+      await expect.element(page.getByTestId('child')).toHaveTextContent('Child Content');
     });
 
-    it('should provide LoginFlowBuilderContext', () => {
-      render(
+    it('should provide LoginFlowBuilderContext', async () => {
+      await render(
         <FlowContextWrapper>
           <TestConsumer />
         </FlowContextWrapper>,
       );
 
-      expect(screen.getByTestId('context-consumer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('context-consumer')).toBeInTheDocument();
     });
 
-    it('should provide null context value', () => {
-      render(
+    it('should provide null context value', async () => {
+      await render(
         <FlowContextWrapper>
           <TestConsumer />
         </FlowContextWrapper>,
       );
 
-      expect(screen.getByTestId('context-consumer')).toHaveAttribute('data-context-value', 'null');
+      await expect.element(page.getByTestId('context-consumer')).toHaveAttribute('data-context-value', 'null');
     });
   });
 
   describe('Children Rendering', () => {
-    it('should render single child', () => {
-      render(
+    it('should render single child', async () => {
+      await render(
         <FlowContextWrapper>
           <span data-testid="single-child">Single Child</span>
         </FlowContextWrapper>,
       );
 
-      expect(screen.getByTestId('single-child')).toBeInTheDocument();
+      await expect.element(page.getByTestId('single-child')).toBeInTheDocument();
     });
 
-    it('should render multiple children', () => {
-      render(
+    it('should render multiple children', async () => {
+      await render(
         <FlowContextWrapper>
           <div data-testid="child-1">First</div>
           <div data-testid="child-2">Second</div>
@@ -85,13 +86,13 @@ describe('FlowContextWrapper', () => {
         </FlowContextWrapper>,
       );
 
-      expect(screen.getByTestId('child-1')).toBeInTheDocument();
-      expect(screen.getByTestId('child-2')).toBeInTheDocument();
-      expect(screen.getByTestId('child-3')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-3')).toBeInTheDocument();
     });
 
-    it('should render nested components', () => {
-      render(
+    it('should render nested components', async () => {
+      await render(
         <FlowContextWrapper>
           <div data-testid="parent">
             <div data-testid="nested-child">Nested Content</div>
@@ -99,10 +100,10 @@ describe('FlowContextWrapper', () => {
         </FlowContextWrapper>,
       );
 
-      const parent = screen.getByTestId('parent');
-      const nestedChild = screen.getByTestId('nested-child');
+      const parent = page.getByTestId('parent');
+      const nestedChild = page.getByTestId('nested-child');
 
-      expect(parent).toContainElement(nestedChild);
+      expect(parent.element()).toContainElement(nestedChild.element());
     });
   });
 });

@@ -19,7 +19,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {QueryClient} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
@@ -84,8 +84,8 @@ describe('useIdentityProviders', () => {
   });
 
   describe('Initialization', () => {
-    it('should initialize with loading state', () => {
-      const {result} = renderHook(() => useIdentityProviders());
+    it('should initialize with loading state', async () => {
+      const {result} = await renderHook(() => useIdentityProviders());
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
@@ -95,9 +95,9 @@ describe('useIdentityProviders', () => {
 
   describe('Successful Fetch', () => {
     it('should fetch identity providers successfully', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -106,9 +106,9 @@ describe('useIdentityProviders', () => {
     });
 
     it('should call API with correct parameters', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -124,9 +124,9 @@ describe('useIdentityProviders', () => {
     });
 
     it('should return array of identity providers', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -135,9 +135,9 @@ describe('useIdentityProviders', () => {
     });
 
     it('should return identity providers with correct structure', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -150,9 +150,9 @@ describe('useIdentityProviders', () => {
     it('should handle empty list response', async () => {
       mockHttpRequest.mockResolvedValue({data: []});
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -166,9 +166,9 @@ describe('useIdentityProviders', () => {
       const mockError = new Error('Failed to fetch identity providers');
       mockHttpRequest.mockRejectedValue(mockError);
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isError).toBe(true);
       });
 
@@ -180,9 +180,9 @@ describe('useIdentityProviders', () => {
       const notFoundError = new Error('Not found');
       mockHttpRequest.mockRejectedValue(notFoundError);
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isError).toBe(true);
       });
 
@@ -193,9 +193,9 @@ describe('useIdentityProviders', () => {
       const networkError = new Error('Network error');
       mockHttpRequest.mockRejectedValue(networkError);
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isError).toBe(true);
       });
 
@@ -207,9 +207,9 @@ describe('useIdentityProviders', () => {
       const mockError = new Error('Server error');
       mockHttpRequest.mockRejectedValue(mockError);
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isError).toBe(true);
       });
 
@@ -227,12 +227,12 @@ describe('useIdentityProviders', () => {
         }),
       );
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -243,25 +243,23 @@ describe('useIdentityProviders', () => {
 
   describe('Refetching', () => {
     it('should refetch identity providers on demand', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
 
-      await act(async () => {
-        await result.current.refetch();
-      });
+      await result.current.refetch();
 
       expect(mockHttpRequest).toHaveBeenCalledTimes(2);
     });
 
     it('should fetch fresh data on refetch', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -278,11 +276,9 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: updatedProviders});
 
-      await act(async () => {
-        await result.current.refetch();
-      });
+      await result.current.refetch();
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.data).toHaveLength(4);
       });
 
@@ -292,9 +288,9 @@ describe('useIdentityProviders', () => {
 
   describe('Query Keys', () => {
     it('should use correct query key structure', async () => {
-      const {result, queryClient} = renderHook(() => useIdentityProviders());
+      const {result, queryClient} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -322,24 +318,24 @@ describe('useIdentityProviders', () => {
         },
       });
 
-      const {result: result1, unmount: unmount1} = renderHook(() => useIdentityProviders(), {
+      const {result: result1, unmount: unmount1} = await renderHook(() => useIdentityProviders(), {
         queryClient: cacheQueryClient,
       });
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result1.current.isSuccess).toBe(true);
       });
 
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
 
       // Unmount first hook
-      unmount1();
+      await unmount1();
 
-      const {result: result2} = renderHook(() => useIdentityProviders(), {
+      const {result: result2} = await renderHook(() => useIdentityProviders(), {
         queryClient: cacheQueryClient,
       });
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result2.current.isSuccess).toBe(true);
       });
 
@@ -351,9 +347,9 @@ describe('useIdentityProviders', () => {
 
   describe('Multiple Provider Types', () => {
     it('should handle different identity provider types', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -364,9 +360,9 @@ describe('useIdentityProviders', () => {
     });
 
     it('should include provider with optional description', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -385,9 +381,9 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: providersWithoutDesc});
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -399,9 +395,9 @@ describe('useIdentityProviders', () => {
     it('should handle malformed response gracefully', async () => {
       mockHttpRequest.mockResolvedValue({data: null});
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -419,9 +415,9 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: singleProvider});
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -438,9 +434,9 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: largeList});
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
@@ -456,44 +452,40 @@ describe('useIdentityProviders', () => {
         }),
       );
 
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
       expect(result.current.isLoading).toBe(true);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
     });
 
     it('should support isFetching flag', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.isFetching).toBe(false);
 
-      await act(async () => {
-        await result.current.refetch();
-      });
+      await result.current.refetch();
 
       expect(result.current.isFetching).toBe(false);
     });
 
     it('should complete refetch successfully', async () => {
-      const {result} = renderHook(() => useIdentityProviders());
+      const {result} = await renderHook(() => useIdentityProviders());
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       const initialData = result.current.data;
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
 
-      await act(async () => {
-        await result.current.refetch();
-      });
+      await result.current.refetch();
 
       expect(mockHttpRequest).toHaveBeenCalledTimes(2);
       expect(result.current.isSuccess).toBe(true);

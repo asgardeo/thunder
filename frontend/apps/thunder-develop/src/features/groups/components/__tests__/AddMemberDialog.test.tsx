@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import AddMemberDialog from '../edit-group/members-settings/AddMemberDialog';
 
@@ -90,96 +89,91 @@ describe('AddMemberDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('should render dialog when open', () => {
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+  it('should render dialog when open', async () => {
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByText('Add Member')).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Add Member'})).toBeInTheDocument();
   });
 
-  it('should not render when closed', () => {
-    renderWithProviders(<AddMemberDialog {...defaultProps} open={false} />);
+  it('should not render when closed', async () => {
+    await renderWithProviders(<AddMemberDialog {...defaultProps} open={false} />);
 
-    expect(screen.queryByText('Add Member')).not.toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Add Member'})).not.toBeInTheDocument();
   });
 
-  it('should render users in the grid', () => {
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+  it('should render users in the grid', async () => {
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByTestId('user-u1')).toBeInTheDocument();
-    expect(screen.getByTestId('user-u2')).toBeInTheDocument();
+    await expect.element(page.getByTestId('user-u1')).toBeInTheDocument();
+    await expect.element(page.getByTestId('user-u2')).toBeInTheDocument();
   });
 
-  it('should show loading state', () => {
+  it('should show loading state', async () => {
     mockUseGetUsers.mockReturnValue({
       data: null,
       isLoading: true,
     });
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByTestId('users-grid')).toHaveAttribute('data-loading', 'true');
+    await expect.element(page.getByTestId('users-grid')).toHaveAttribute('data-loading', 'true');
   });
 
-  it('should show no results alert when no users', () => {
+  it('should show no results alert when no users', async () => {
     mockUseGetUsers.mockReturnValue({
       data: {totalResults: 0, startIndex: 0, count: 0, users: []},
       isLoading: false,
     });
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByText('No users found')).toBeInTheDocument();
+    await expect.element(page.getByText('No users found')).toBeInTheDocument();
   });
 
-  it('should disable add button when no selection', () => {
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+  it('should disable add button when no selection', async () => {
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    const addButton = screen.getByText('Add Selected').closest('button');
-    expect(addButton).toBeDisabled();
+    await expect.element(page.getByRole('button', {name: 'Add Selected'})).toBeDisabled();
   });
 
   it('should enable add button after selecting a user', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    await user.click(screen.getByTestId('checkbox-u1'));
+    await userEvent.click(page.getByTestId('checkbox-u1'));
 
-    const addButton = screen.getByText('Add Selected').closest('button');
-    expect(addButton).not.toBeDisabled();
+    await expect.element(page.getByRole('button', {name: 'Add Selected'})).not.toBeDisabled();
   });
 
   it('should call onAdd with selected members', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    await user.click(screen.getByTestId('checkbox-u1'));
-    await user.click(screen.getByText('Add Selected'));
+    await userEvent.click(page.getByTestId('checkbox-u1'));
+    await userEvent.click(page.getByText('Add Selected'));
 
     expect(defaultProps.onAdd).toHaveBeenCalledWith([{id: 'u1', type: 'user'}]);
   });
 
   it('should call onClose when cancel is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    await user.click(screen.getByText('Cancel'));
+    await userEvent.click(page.getByText('Cancel'));
 
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
-  it('should call useGetUsers with pagination params', () => {
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+  it('should call useGetUsers with pagination params', async () => {
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
     expect(mockUseGetUsers).toHaveBeenCalledWith({limit: 10, offset: 0});
   });
 
-  it('should show error alert when users fetch fails', () => {
+  it('should show error alert when users fetch fails', async () => {
     mockUseGetUsers.mockReturnValue({
       data: null,
       isLoading: false,
       error: new Error('Network error'),
     });
-    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+    await renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByText('Network error')).toBeInTheDocument();
-    expect(screen.queryByText('No users found')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Network error')).toBeInTheDocument();
+    await expect.element(page.getByText('No users found')).not.toBeInTheDocument();
   });
 });

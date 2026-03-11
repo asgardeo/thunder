@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, getByDisplayValue} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import QuickCopySection from '../QuickCopySection';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -52,28 +52,28 @@ describe('QuickCopySection', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the settings card with title and description', () => {
-      render(
+    it('should render the settings card with title and description', async () => {
+      await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('Quick Copy');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('Quick Copy');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Copy application identifiers for use in your code.',
       );
     });
 
-    it('should render application ID field', () => {
-      render(
+    it('should render application ID field', async () => {
+      await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      expect(screen.getByLabelText('Application ID')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('app-123')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Application ID')).toBeInTheDocument();
+      expect(getByDisplayValue('app-123')).toBeInTheDocument();
     });
 
-    it('should render client ID field when OAuth2 config is provided', () => {
-      render(
+    it('should render client ID field when OAuth2 config is provided', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -82,21 +82,21 @@ describe('QuickCopySection', () => {
         />,
       );
 
-      expect(screen.getByLabelText('Client ID')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('client-123')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Client ID')).toBeInTheDocument();
+      expect(getByDisplayValue('client-123')).toBeInTheDocument();
     });
 
-    it('should render empty client ID field when OAuth2 config is not provided', () => {
-      render(
+    it('should render empty client ID field when OAuth2 config is not provided', async () => {
+      await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      const clientIdInput = screen.getByLabelText('Client ID');
+      const clientIdInput = page.getByLabelText('Client ID');
       expect(clientIdInput).toHaveAttribute('value', '');
     });
 
-    it('should render both copy buttons', () => {
-      render(
+    it('should render both copy buttons', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -105,27 +105,25 @@ describe('QuickCopySection', () => {
         />,
       );
 
-      const copyButtons = screen.getAllByRole('button');
+      const copyButtons = page.getByRole('button');
       expect(copyButtons).toHaveLength(2);
     });
   });
 
   describe('Copy Functionality', () => {
     it('should call onCopyToClipboard when application ID copy button is clicked', async () => {
-      const user = userEvent.setup();
-      render(
+            await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[0]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[0]);
 
       expect(mockOnCopyToClipboard).toHaveBeenCalledWith('app-123', 'app_id');
     });
 
     it('should call onCopyToClipboard when client ID copy button is clicked', async () => {
-      const user = userEvent.setup();
-      render(
+            await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -134,42 +132,40 @@ describe('QuickCopySection', () => {
         />,
       );
 
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[1]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[1]);
 
       expect(mockOnCopyToClipboard).toHaveBeenCalledWith('client-123', 'client_id');
     });
 
     it('should not call onCopyToClipboard when client ID is not available', async () => {
-      const user = userEvent.setup();
-      render(
+            await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[1]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[1]);
 
       expect(mockOnCopyToClipboard).not.toHaveBeenCalled();
     });
 
     it('should handle copy errors gracefully', async () => {
-      const user = userEvent.setup();
-      mockOnCopyToClipboard.mockRejectedValue(new Error('Copy failed'));
+            mockOnCopyToClipboard.mockRejectedValue(new Error('Copy failed'));
 
-      render(
+      await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[0]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[0]);
 
       expect(mockOnCopyToClipboard).toHaveBeenCalledWith('app-123', 'app_id');
     });
   });
 
   describe('Visual Feedback', () => {
-    it('should show check icon for application ID when it is copied', () => {
-      render(
+    it('should show check icon for application ID when it is copied', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           copiedField="app_id"
@@ -178,11 +174,11 @@ describe('QuickCopySection', () => {
       );
 
       // Should show "Copied!" tooltip for app_id field
-      expect(screen.getByLabelText('Copied!')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Copied!')).toBeInTheDocument();
     });
 
-    it('should show check icon for client ID when it is copied', () => {
-      render(
+    it('should show check icon for client ID when it is copied', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -192,11 +188,11 @@ describe('QuickCopySection', () => {
       );
 
       // Should show "Copied!" tooltip for client_id field
-      expect(screen.getByLabelText('Copied!')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Copied!')).toBeInTheDocument();
     });
 
-    it('should show copy icon when nothing is copied', () => {
-      render(
+    it('should show copy icon when nothing is copied', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -206,12 +202,12 @@ describe('QuickCopySection', () => {
       );
 
       // Both fields should show "Copy" tooltip
-      const copyButtons = screen.getAllByLabelText('Copy');
+      const copyButtons = page.getByLabelText('Copy').all();
       expect(copyButtons).toHaveLength(2);
     });
 
-    it('should show copy icon for application ID when client ID is copied', () => {
-      render(
+    it('should show copy icon for application ID when client ID is copied', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -221,14 +217,14 @@ describe('QuickCopySection', () => {
       );
 
       // Should have one "Copy" button and one "Copied!" button
-      expect(screen.getByLabelText('Copy')).toBeInTheDocument();
-      expect(screen.getByLabelText('Copied!')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Copy')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Copied!')).toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should have proper labels for form controls', () => {
-      render(
+    it('should have proper labels for form controls', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -237,12 +233,12 @@ describe('QuickCopySection', () => {
         />,
       );
 
-      expect(screen.getByLabelText('Application ID')).toBeInTheDocument();
-      expect(screen.getByLabelText('Client ID')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Application ID')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Client ID')).toBeInTheDocument();
     });
 
-    it('should have input IDs for accessibility', () => {
-      render(
+    it('should have input IDs for accessibility', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -255,8 +251,8 @@ describe('QuickCopySection', () => {
       expect(document.getElementById('client-id-input')).toBeInTheDocument();
     });
 
-    it('should display helper text for inputs', () => {
-      render(
+    it('should display helper text for inputs', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -265,23 +261,23 @@ describe('QuickCopySection', () => {
         />,
       );
 
-      expect(screen.getByText('Unique identifier for your application')).toBeInTheDocument();
-      expect(screen.getByText('OAuth2 client identifier used for authentication')).toBeInTheDocument();
+      await expect.element(page.getByText('Unique identifier for your application')).toBeInTheDocument();
+      await expect.element(page.getByText('OAuth2 client identifier used for authentication')).toBeInTheDocument();
     });
   });
 
   describe('Read-only Behavior', () => {
-    it('should render application ID field as read-only', () => {
-      render(
+    it('should render application ID field as read-only', async () => {
+      await render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      const appIdInput = screen.getByDisplayValue('app-123');
+      const appIdInput = getByDisplayValue('app-123');
       expect(appIdInput).toHaveAttribute('readonly');
     });
 
-    it('should render client ID field as read-only', () => {
-      render(
+    it('should render client ID field as read-only', async () => {
+      await render(
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -290,7 +286,7 @@ describe('QuickCopySection', () => {
         />,
       );
 
-      const clientIdInput = screen.getByDisplayValue('client-123');
+      const clientIdInput = getByDisplayValue('client-123');
       expect(clientIdInput).toHaveAttribute('readonly');
     });
   });

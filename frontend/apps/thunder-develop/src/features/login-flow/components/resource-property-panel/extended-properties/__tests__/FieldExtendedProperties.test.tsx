@@ -17,18 +17,11 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {ElementTypes} from '@/features/flows/models/elements';
 import type {Resource} from '@/features/flows/models/resources';
 import FieldExtendedProperties from '../FieldExtendedProperties';
-
-// Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 const mockHasResourceFieldNotification = vi.fn().mockReturnValue(false);
 const mockGetResourceFieldNotification = vi.fn().mockReturnValue('');
@@ -59,46 +52,45 @@ describe('FieldExtendedProperties', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the component for text input', () => {
+    it('should render the component for text input', async () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('flows:core.fieldExtendedProperties.attribute')).toBeInTheDocument();
+      await expect.element(page.getByText('Attribute')).toBeInTheDocument();
     });
 
-    it('should render Autocomplete component', () => {
+    it('should render Autocomplete component', async () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
-      const {container} = render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      const {container} = await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
       expect(container.querySelector('.MuiAutocomplete-root')).toBeInTheDocument();
     });
 
-    it('should render with placeholder text', () => {
+    it('should render with placeholder text', async () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByPlaceholderText('flows:core.fieldExtendedProperties.selectAttribute')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Select an attribute')).toBeInTheDocument();
     });
   });
 
   describe('Password Input Handling', () => {
     it('should render with credential attributes for PasswordInput type', async () => {
-      const user = userEvent.setup();
-      const resource = createMockResource(ElementTypes.PasswordInput);
+            const resource = createMockResource(ElementTypes.PasswordInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const input = screen.getByRole('combobox');
+      const input = page.getByRole('combobox');
       expect(input).toBeInTheDocument();
 
-      await user.click(input);
+      await userEvent.click(input);
 
-      expect(await screen.findByRole('option', {name: 'password'})).toBeInTheDocument();
-      expect(screen.getByRole('option', {name: 'pin'})).toBeInTheDocument();
-      expect(screen.getByRole('option', {name: 'secret'})).toBeInTheDocument();
+      expect(page.getByRole('option', {name: 'password'})).toBeInTheDocument();
+      await expect.element(page.getByRole('option', {name: 'pin'})).toBeInTheDocument();
+      await expect.element(page.getByRole('option', {name: 'secret'})).toBeInTheDocument();
     });
   });
 
@@ -106,115 +98,113 @@ describe('FieldExtendedProperties', () => {
     it('should have email, username, firstName as options', async () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const input = screen.getByPlaceholderText('flows:core.fieldExtendedProperties.selectAttribute');
-      fireEvent.focus(input);
-      fireEvent.click(input);
+      const input = page.getByPlaceholder('Select an attribute');
+      await userEvent.click(input);
 
       // Check for dropdown options (may be in listbox)
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
 
-    it('should display current ref value', () => {
+    it('should display current ref value', async () => {
       const resource = createMockResource(ElementTypes.TextInput, {ref: 'email'} as Partial<Resource>);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const input = screen.getByRole('combobox');
+      const input = page.getByRole('combobox');
       expect(input).toHaveValue('email');
     });
   });
 
   describe('Resource Change Handling', () => {
-    it('should sync value when resource changes', () => {
+    it('should sync value when resource changes', async () => {
       const resource1 = createMockResource(ElementTypes.TextInput, {id: 'field-1', ref: 'email'} as Partial<Resource>);
       const resource2 = createMockResource(ElementTypes.TextInput, {
         id: 'field-2',
         ref: 'username',
       } as Partial<Resource>);
 
-      const {rerender} = render(<FieldExtendedProperties resource={resource1} onChange={mockOnChange} />);
+      const {rerender} = await render(<FieldExtendedProperties resource={resource1} onChange={mockOnChange} />);
 
-      let input = screen.getByRole('combobox');
+      let input = page.getByRole('combobox');
       expect(input).toHaveValue('email');
 
-      rerender(<FieldExtendedProperties resource={resource2} onChange={mockOnChange} />);
+      await rerender(<FieldExtendedProperties resource={resource2} onChange={mockOnChange} />);
 
-      input = screen.getByRole('combobox');
+      input = page.getByRole('combobox');
       expect(input).toHaveValue('username');
     });
 
-    it('should sync to empty when resource ref changes to undefined (same id)', () => {
+    it('should sync to empty when resource ref changes to undefined (same id)', async () => {
       const resourceWithRef = createMockResource(ElementTypes.TextInput, {
         id: 'field-1',
         ref: 'email',
       } as Partial<Resource>);
       const resourceWithoutRef = createMockResource(ElementTypes.TextInput, {id: 'field-1'} as Partial<Resource>);
 
-      const {rerender} = render(<FieldExtendedProperties resource={resourceWithRef} onChange={mockOnChange} />);
+      const {rerender} = await render(<FieldExtendedProperties resource={resourceWithRef} onChange={mockOnChange} />);
 
-      let input = screen.getByRole('combobox');
+      let input = page.getByRole('combobox');
       expect(input).toHaveValue('email');
 
-      rerender(<FieldExtendedProperties resource={resourceWithoutRef} onChange={mockOnChange} />);
+      await rerender(<FieldExtendedProperties resource={resourceWithoutRef} onChange={mockOnChange} />);
 
-      input = screen.getByRole('combobox');
+      input = page.getByRole('combobox');
       expect(input).toHaveValue('email');
     });
   });
 
   describe('onChange Handling', () => {
     it('should call onChange when selecting an attribute from dropdown', async () => {
-      const user = userEvent.setup();
-      const resource = createMockResource(ElementTypes.TextInput);
+            const resource = createMockResource(ElementTypes.TextInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const input = screen.getByRole('combobox');
-      await user.click(input);
+      const input = page.getByRole('combobox');
+      await userEvent.click(input);
 
       // Wait for dropdown to open and select an option
-      const option = await screen.findByRole('option', {name: 'email'});
-      await user.click(option);
+      const option = page.getByRole('option', {name: 'email'});
+      await userEvent.click(option);
 
       expect(mockOnChange).toHaveBeenCalledWith('ref', 'email', resource);
     });
 
-    it('should call onChange with empty string when clearing selection', () => {
+    it('should call onChange with empty string when clearing selection', async () => {
       const resource = createMockResource(ElementTypes.TextInput, {ref: 'email'} as Partial<Resource>);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
       // Clear the input by clicking the clear button
-      const clearButton = screen.getByTitle('Clear');
-      fireEvent.click(clearButton);
+      const clearButton = page.getByRole('button', {name: 'Clear'});
+      await userEvent.click(clearButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('ref', '', resource);
     });
 
-    it('should call onChange when typing a custom value (free-solo)', () => {
+    it('should call onChange when typing a custom value (free-solo)', async () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const input = screen.getByRole('combobox');
-      fireEvent.change(input, {target: {value: 'customAttribute'}});
+      const input = page.getByRole('combobox');
+      await userEvent.fill(input, 'customAttribute');
 
       expect(mockOnChange).toHaveBeenCalledWith('ref', 'customAttribute', resource);
     });
   });
 
   describe('Error Message Handling', () => {
-    it('should display error message when validation error exists', () => {
+    it('should display error message when validation error exists', async () => {
       mockHasResourceFieldNotification.mockReturnValue(true);
       mockGetResourceFieldNotification.mockReturnValue('This field is required');
 
       const resource = createMockResource(ElementTypes.TextInput);
 
-      render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('This field is required')).toBeInTheDocument();
+      await expect.element(page.getByText('This field is required')).toBeInTheDocument();
     });
   });
 });

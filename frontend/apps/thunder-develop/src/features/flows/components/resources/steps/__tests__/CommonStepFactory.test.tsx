@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import CommonStepFactory from '../CommonStepFactory';
@@ -96,33 +97,33 @@ describe('CommonStepFactory', () => {
   };
 
   describe('View Step', () => {
-    it('should render View component for VIEW step type', () => {
+    it('should render View component for VIEW step type', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[viewStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
 
-    it('should pass resources array to View component', () => {
+    it('should pass resources array to View component', async () => {
       const viewStep1 = createMockStep({id: 'step-1', type: StepTypes.View});
       const viewStep2 = createMockStep({id: 'step-2', type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[viewStep1, viewStep2]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toHaveAttribute('data-resource-count', '2');
+      await expect.element(page.getByTestId('view-step')).toHaveAttribute('data-resource-count', '2');
     });
 
-    it('should pass data to View component', () => {
+    it('should pass data to View component', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -132,10 +133,10 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toHaveAttribute('data-has-data', 'true');
+      await expect.element(page.getByTestId('view-step')).toHaveAttribute('data-has-data', 'true');
     });
 
-    it('should pass availableElements from allResources', () => {
+    it('should pass availableElements from allResources', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
       const allResources: Resources = {
         steps: [],
@@ -145,7 +146,7 @@ describe('CommonStepFactory', () => {
         executors: [],
       };
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -155,14 +156,14 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
 
-    it('should pass onAddElement callback', () => {
+    it('should pass onAddElement callback', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
       const onAddElement = vi.fn();
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -172,14 +173,14 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
 
-    it('should pass onAddElementToForm callback', () => {
+    it('should pass onAddElementToForm callback', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
       const onAddElementToForm = vi.fn();
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -189,37 +190,37 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
   });
 
   describe('Rule Step', () => {
-    it('should render Rule component for RULE step type', () => {
+    it('should render Rule component for RULE step type', async () => {
       const ruleStep = createMockStep({type: StepTypes.Rule});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[ruleStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rule-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rule-step')).toBeInTheDocument();
     });
 
-    it('should pass resources to Rule component', () => {
+    it('should pass resources to Rule component', async () => {
       const ruleStep = createMockStep({type: StepTypes.Rule});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[ruleStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rule-step')).toHaveAttribute('data-resource-count', '1');
+      await expect.element(page.getByTestId('rule-step')).toHaveAttribute('data-resource-count', '1');
     });
 
-    it('should pass data to Rule component', () => {
+    it('should pass data to Rule component', async () => {
       const ruleStep = createMockStep({type: StepTypes.Rule});
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -229,37 +230,37 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rule-step')).toHaveAttribute('data-has-data', 'true');
+      await expect.element(page.getByTestId('rule-step')).toHaveAttribute('data-has-data', 'true');
     });
   });
 
   describe('Execution Step', () => {
-    it('should render Execution component for EXECUTION step type', () => {
+    it('should render Execution component for EXECUTION step type', async () => {
       const executionStep = createMockStep({type: StepTypes.Execution});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[executionStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('execution-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('execution-step')).toBeInTheDocument();
     });
 
-    it('should pass resources to Execution component', () => {
+    it('should pass resources to Execution component', async () => {
       const executionStep = createMockStep({type: StepTypes.Execution});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[executionStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('execution-step')).toHaveAttribute('data-resource-count', '1');
+      await expect.element(page.getByTestId('execution-step')).toHaveAttribute('data-resource-count', '1');
     });
 
-    it('should pass data to Execution component', () => {
+    it('should pass data to Execution component', async () => {
       const executionStep = createMockStep({type: StepTypes.Execution});
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -269,37 +270,37 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('execution-step')).toHaveAttribute('data-has-data', 'true');
+      await expect.element(page.getByTestId('execution-step')).toHaveAttribute('data-has-data', 'true');
     });
   });
 
   describe('End Step', () => {
-    it('should render End component for END step type', () => {
+    it('should render End component for END step type', async () => {
       const endStep = createMockStep({type: StepTypes.End});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[endStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('end-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('end-step')).toBeInTheDocument();
     });
 
-    it('should pass resources to End component', () => {
+    it('should pass resources to End component', async () => {
       const endStep = createMockStep({type: StepTypes.End});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[endStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('end-step')).toHaveAttribute('data-resource-count', '1');
+      await expect.element(page.getByTestId('end-step')).toHaveAttribute('data-resource-count', '1');
     });
 
-    it('should pass data to End component', () => {
+    it('should pass data to End component', async () => {
       const endStep = createMockStep({type: StepTypes.End});
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -309,15 +310,15 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('end-step')).toHaveAttribute('data-has-data', 'true');
+      await expect.element(page.getByTestId('end-step')).toHaveAttribute('data-has-data', 'true');
     });
   });
 
   describe('Unknown Step Type', () => {
-    it('should return null for unknown step type', () => {
+    it('should return null for unknown step type', async () => {
       const unknownStep = createMockStep({type: 'UNKNOWN' as StepTypes});
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[unknownStep]} />,
         {wrapper: createWrapper()},
       );
@@ -327,10 +328,10 @@ describe('CommonStepFactory', () => {
   });
 
   describe('Start Step', () => {
-    it('should return null for START step type (not handled in factory)', () => {
+    it('should return null for START step type (not handled in factory)', async () => {
       const startStep = createMockStep({type: StaticStepTypes.Start as unknown as StepTypes});
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[startStep]} />,
         {wrapper: createWrapper()},
       );
@@ -340,45 +341,45 @@ describe('CommonStepFactory', () => {
   });
 
   describe('Default Props', () => {
-    it('should work with undefined allResources', () => {
+    it('should work with undefined allResources', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[viewStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
 
-    it('should work with undefined onAddElement', () => {
+    it('should work with undefined onAddElement', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[viewStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
 
-    it('should work with undefined onAddElementToForm', () => {
+    it('should work with undefined onAddElementToForm', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[viewStep]} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
   });
 
   describe('Rest Props Spreading', () => {
-    it('should spread additional props to step components', () => {
+    it('should spread additional props to step components', async () => {
       const viewStep = createMockStep({type: StepTypes.View});
 
-      render(
+      await render(
         <CommonStepFactory
           {...defaultNodeProps}
           resourceId="resource-1"
@@ -388,7 +389,7 @@ describe('CommonStepFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('view-step')).toBeInTheDocument();
+      await expect.element(page.getByTestId('view-step')).toBeInTheDocument();
     });
   });
 });

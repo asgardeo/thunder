@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import EditUserSettings from '../EditUserSettings';
 
 // Mock child component
@@ -32,25 +33,25 @@ describe('EditUserSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('should render ManageUsersSection', () => {
-    renderWithProviders(<EditUserSettings organizationUnitId="ou-123" />);
+  it('should render ManageUsersSection', async () => {
+    await renderWithProviders(<EditUserSettings organizationUnitId="ou-123" />);
 
-    expect(screen.getByTestId('manage-users-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('manage-users-section')).toBeInTheDocument();
   });
 
-  it('should pass organizationUnitId to ManageUsersSection', () => {
-    renderWithProviders(<EditUserSettings organizationUnitId="ou-456" />);
+  it('should pass organizationUnitId to ManageUsersSection', async () => {
+    await renderWithProviders(<EditUserSettings organizationUnitId="ou-456" />);
 
-    expect(screen.getByText('ManageUsersSection - ou-456')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageUsersSection - ou-456')).toBeInTheDocument();
   });
 
-  it('should handle different organization unit IDs', () => {
-    const {rerender} = renderWithProviders(<EditUserSettings organizationUnitId="ou-123" />);
+  it('should handle different organization unit IDs', async () => {
+    const {rerender} = await renderWithProviders(<EditUserSettings organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('ManageUsersSection - ou-123')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageUsersSection - ou-123')).toBeInTheDocument();
 
-    rerender(<EditUserSettings organizationUnitId="ou-789" />);
+    await rerender(<EditUserSettings organizationUnitId="ou-789" />);
 
-    expect(screen.getByText('ManageUsersSection - ou-789')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageUsersSection - ou-789')).toBeInTheDocument();
   });
 });

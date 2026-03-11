@@ -19,7 +19,8 @@
 /* eslint-disable react/require-default-props */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {renderWithProviders} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import FullScreenLayout from '../FullScreenLayout';
 
 // Mock Outlet
@@ -63,52 +64,53 @@ vi.mock('@wso2/oxygen-ui', async () => {
 });
 
 describe('FullScreenLayout', () => {
-  it('renders Layout component with minHeight 100vh', () => {
-    render(<FullScreenLayout />);
+  it('renders Layout component with minHeight 100vh', async () => {
+    await renderWithProviders(<FullScreenLayout />);
 
-    const layout = screen.getByTestId('layout-root');
-    expect(layout).toBeInTheDocument();
-    expect(layout).toHaveAttribute('data-sx', JSON.stringify({minHeight: '100vh'}));
+    const layout = page.getByTestId('layout-root');
+    await expect.element(layout).toBeInTheDocument();
+    await expect.element(layout).toHaveAttribute('data-sx', JSON.stringify({minHeight: '100vh'}));
   });
 
-  it('renders Layout.Content', () => {
-    render(<FullScreenLayout />);
+  it('renders Layout.Content', async () => {
+    await renderWithProviders(<FullScreenLayout />);
 
-    expect(screen.getByTestId('layout-content')).toBeInTheDocument();
+    await expect.element(page.getByTestId('layout-content')).toBeInTheDocument();
   });
 
-  it('renders Box with minHeight 100vh', () => {
-    render(<FullScreenLayout />);
+  it('renders Box with minHeight 100vh', async () => {
+    await renderWithProviders(<FullScreenLayout />);
 
-    const box = screen.getByTestId('box');
-    expect(box).toBeInTheDocument();
-    expect(box).toHaveAttribute('data-sx', JSON.stringify({minHeight: '100vh'}));
+    const box = page.getByTestId('box');
+    await expect.element(box).toBeInTheDocument();
+    await expect.element(box).toHaveAttribute('data-sx', JSON.stringify({minHeight: '100vh'}));
   });
 
-  it('renders Outlet for nested routes', () => {
-    render(<FullScreenLayout />);
+  it('renders Outlet for nested routes', async () => {
+    await renderWithProviders(<FullScreenLayout />);
 
-    expect(screen.getByTestId('outlet')).toBeInTheDocument();
-    expect(screen.getByTestId('outlet')).toHaveTextContent('Outlet Content');
+    await expect.element(page.getByTestId('outlet')).toBeInTheDocument();
+    await expect.element(page.getByTestId('outlet')).toHaveTextContent('Outlet Content');
   });
 
-  it('renders complete layout structure in correct hierarchy', () => {
-    render(<FullScreenLayout />);
+  it('renders complete layout structure in correct hierarchy', async () => {
+    await renderWithProviders(<FullScreenLayout />);
 
     // Verify all components are rendered
-    const layout = screen.getByTestId('layout-root');
-    const content = screen.getByTestId('layout-content');
-    const box = screen.getByTestId('box');
-    const outlet = screen.getByTestId('outlet');
+    const layout = page.getByTestId('layout-root');
+    const content = page.getByTestId('layout-content');
+    const box = page.getByTestId('box');
+    const outlet = page.getByTestId('outlet');
 
-    expect(layout).toBeInTheDocument();
-    expect(content).toBeInTheDocument();
-    expect(box).toBeInTheDocument();
-    expect(outlet).toBeInTheDocument();
+    await expect.element(layout).toBeInTheDocument();
+    await expect.element(content).toBeInTheDocument();
+    await expect.element(box).toBeInTheDocument();
+    await expect.element(outlet).toBeInTheDocument();
 
     // Verify hierarchy: Layout > Layout.Content > Box > Outlet
-    expect(layout).toContainElement(content);
-    expect(content).toContainElement(box);
-    expect(box).toContainElement(outlet);
+    // Use scoped locators to verify containment
+    await expect.element(layout.getByTestId('layout-content')).toBeInTheDocument();
+    await expect.element(content.getByTestId('box')).toBeInTheDocument();
+    await expect.element(box.getByTestId('outlet')).toBeInTheDocument();
   });
 });

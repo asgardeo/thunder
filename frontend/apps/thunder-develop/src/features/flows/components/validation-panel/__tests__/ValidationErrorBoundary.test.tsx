@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import ValidationErrorBoundary from '../ValidationErrorBoundary';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
@@ -70,20 +71,20 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Rendering Without Notifications', () => {
-    it('should render children without error boundary styling when no notifications exist', () => {
-      render(
+    it('should render children without error boundary styling when no notifications exist', async () => {
+      await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div data-testid="child-content">Child Content</div>
         </ValidationErrorBoundary>,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('child-content')).toBeInTheDocument();
-      expect(screen.getByTestId('child-content').textContent).toBe('Child Content');
+      await expect.element(page.getByTestId('child-content')).toBeInTheDocument();
+      expect(page.getByTestId('child-content').element().textContent).toBe('Child Content');
     });
 
-    it('should not show alert icon when no notifications exist', () => {
-      render(
+    it('should not show alert icon when no notifications exist', async () => {
+      await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -96,7 +97,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Error Notifications', () => {
-    it('should show error styling when error notification exists for resource', () => {
+    it('should show error styling when error notification exists for resource', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -109,7 +110,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -120,7 +121,7 @@ describe('ValidationErrorBoundary', () => {
       expect(container.querySelector('.error')).toBeInTheDocument();
     });
 
-    it('should show alert icon for error notification', () => {
+    it('should show alert icon for error notification', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -133,7 +134,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      render(
+      await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -145,7 +146,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Warning Notifications', () => {
-    it('should show warning styling when warning notification exists for resource', () => {
+    it('should show warning styling when warning notification exists for resource', async () => {
       const warningNotification = createNotificationWithResource(
         'notification-1',
         'Warning Message',
@@ -158,7 +159,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [warningNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -171,7 +172,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Info Notifications', () => {
-    it('should show info styling when info notification exists for resource', () => {
+    it('should show info styling when info notification exists for resource', async () => {
       const infoNotification = createNotificationWithResource(
         'notification-1',
         'Info Message',
@@ -184,7 +185,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [infoNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -197,7 +198,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Notification Priority', () => {
-    it('should prioritize error over warning notification', () => {
+    it('should prioritize error over warning notification', async () => {
       const errorNotification = createNotificationWithResource(
         'error-1',
         'Error Message',
@@ -217,7 +218,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [warningNotification, errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -228,7 +229,7 @@ describe('ValidationErrorBoundary', () => {
       expect(container.querySelector('.warning')).not.toBeInTheDocument();
     });
 
-    it('should prioritize warning over info notification', () => {
+    it('should prioritize warning over info notification', async () => {
       const warningNotification = createNotificationWithResource(
         'warning-1',
         'Warning Message',
@@ -248,7 +249,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [infoNotification, warningNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -261,7 +262,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Hover Behavior', () => {
-    it('should hide error boundary on hover when disableErrorBoundaryOnHover is true', () => {
+    it('should hide error boundary on hover when disableErrorBoundaryOnHover is true', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -274,7 +275,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -287,13 +288,13 @@ describe('ValidationErrorBoundary', () => {
       expect(boundaryDiv).not.toHaveClass('active');
 
       // Simulate mouse over
-      fireEvent.mouseOver(boundaryDiv);
+      await userEvent.hover(boundaryDiv);
 
       // Should now have 'active' class
       expect(boundaryDiv).toHaveClass('active');
     });
 
-    it('should restore error boundary when mouse leaves after hover', () => {
+    it('should restore error boundary when mouse leaves after hover', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -306,7 +307,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -316,15 +317,15 @@ describe('ValidationErrorBoundary', () => {
       const boundaryDiv = container.firstChild as HTMLElement;
 
       // Mouse over
-      fireEvent.mouseOver(boundaryDiv);
+      await userEvent.hover(boundaryDiv);
       expect(boundaryDiv).toHaveClass('active');
 
       // Mouse out
-      fireEvent.mouseOut(boundaryDiv);
+      await userEvent.unhover(boundaryDiv);
       expect(boundaryDiv).not.toHaveClass('active');
     });
 
-    it('should handle focus/blur events for accessibility', () => {
+    it('should handle focus/blur events for accessibility', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -337,7 +338,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -347,15 +348,15 @@ describe('ValidationErrorBoundary', () => {
       const boundaryDiv = container.firstChild as HTMLElement;
 
       // Focus
-      fireEvent.focus(boundaryDiv);
+      await userEvent.click(boundaryDiv);
       expect(boundaryDiv).toHaveClass('active');
 
       // Blur
-      fireEvent.blur(boundaryDiv);
+      await userEvent.tab();
       expect(boundaryDiv).not.toHaveClass('active');
     });
 
-    it('should not activate on hover when disableErrorBoundaryOnHover is false', () => {
+    it('should not activate on hover when disableErrorBoundaryOnHover is false', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -368,7 +369,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover={false}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -377,13 +378,13 @@ describe('ValidationErrorBoundary', () => {
 
       const boundaryDiv = container.firstChild as HTMLElement;
 
-      fireEvent.mouseOver(boundaryDiv);
+      await userEvent.hover(boundaryDiv);
       expect(boundaryDiv).not.toHaveClass('active');
     });
   });
 
   describe('Alert Icon Visibility', () => {
-    it('should hide alert icon when active and disableErrorBoundaryOnHover is true', () => {
+    it('should hide alert icon when active and disableErrorBoundaryOnHover is true', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -396,7 +397,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -408,7 +409,7 @@ describe('ValidationErrorBoundary', () => {
 
       // Mouse over
       const boundaryDiv = container.firstChild as HTMLElement;
-      fireEvent.mouseOver(boundaryDiv);
+      await userEvent.hover(boundaryDiv);
 
       // Alert icon should be hidden
       expect(document.querySelector('.circle-alert-icon')).not.toBeInTheDocument();
@@ -416,7 +417,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Padded Class', () => {
-    it('should add padded class when notification exists and disableErrorBoundaryOnHover is false', () => {
+    it('should add padded class when notification exists and disableErrorBoundaryOnHover is false', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -429,7 +430,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover={false}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -439,7 +440,7 @@ describe('ValidationErrorBoundary', () => {
       expect(container.querySelector('.padded')).toBeInTheDocument();
     });
 
-    it('should not add padded class when disableErrorBoundaryOnHover is true', () => {
+    it('should not add padded class when disableErrorBoundaryOnHover is true', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -452,7 +453,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource} disableErrorBoundaryOnHover>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -464,7 +465,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Different Resources', () => {
-    it('should not show error boundary for notifications targeting different resource', () => {
+    it('should not show error boundary for notifications targeting different resource', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -477,7 +478,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -489,7 +490,7 @@ describe('ValidationErrorBoundary', () => {
   });
 
   describe('Default Props', () => {
-    it('should default disableErrorBoundaryOnHover to false', () => {
+    it('should default disableErrorBoundaryOnHover to false', async () => {
       const errorNotification = createNotificationWithResource(
         'notification-1',
         'Error Message',
@@ -502,7 +503,7 @@ describe('ValidationErrorBoundary', () => {
         notifications: [errorNotification],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <ValidationErrorBoundary resource={mockResource}>
           <div>Content</div>
         </ValidationErrorBoundary>,
@@ -513,8 +514,8 @@ describe('ValidationErrorBoundary', () => {
       expect(container.querySelector('.padded')).toBeInTheDocument();
     });
 
-    it('should render with null children by default', () => {
-      const {container} = render(<ValidationErrorBoundary resource={mockResource} />, {wrapper: createWrapper()});
+    it('should render with null children by default', async () => {
+      const {container} = await render(<ValidationErrorBoundary resource={mockResource} />, {wrapper: createWrapper()});
 
       expect(container.firstChild).toBeInTheDocument();
     });

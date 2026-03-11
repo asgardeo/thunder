@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetChildOrganizationUnits from '../useGetChildOrganizationUnits';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 
@@ -65,9 +65,9 @@ describe('useGetChildOrganizationUnits', () => {
   it('should fetch child organization units on mount', async () => {
     mockHttpRequest.mockResolvedValue({data: mockChildOUList});
 
-    const {result} = renderHook(() => useGetChildOrganizationUnits('parent-ou'));
+    const {result} = await renderHook(() => useGetChildOrganizationUnits('parent-ou'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockChildOUList);
       expect(result.current.error).toBeNull();
       expect(result.current.isLoading).toBe(false);
@@ -82,7 +82,7 @@ describe('useGetChildOrganizationUnits', () => {
   });
 
   it('should not fetch when parentId is undefined', async () => {
-    const {result} = renderHook(() => useGetChildOrganizationUnits(undefined));
+    const {result} = await renderHook(() => useGetChildOrganizationUnits(undefined));
 
     // Wait a bit to ensure query doesn't execute
     await new Promise((resolve) => {
@@ -97,9 +97,9 @@ describe('useGetChildOrganizationUnits', () => {
   it('should fetch with default pagination params', async () => {
     mockHttpRequest.mockResolvedValue({data: mockChildOUList});
 
-    renderHook(() => useGetChildOrganizationUnits('parent-ou'));
+    await renderHook(() => useGetChildOrganizationUnits('parent-ou'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringMatching(/limit=30.*offset=0|offset=0.*limit=30/) as unknown,
@@ -111,9 +111,9 @@ describe('useGetChildOrganizationUnits', () => {
   it('should fetch with custom limit parameter', async () => {
     mockHttpRequest.mockResolvedValue({data: mockChildOUList});
 
-    renderHook(() => useGetChildOrganizationUnits('parent-ou', {limit: 10}));
+    await renderHook(() => useGetChildOrganizationUnits('parent-ou', {limit: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('limit=10') as unknown,
@@ -125,9 +125,9 @@ describe('useGetChildOrganizationUnits', () => {
   it('should fetch with custom offset parameter', async () => {
     mockHttpRequest.mockResolvedValue({data: mockChildOUList});
 
-    renderHook(() => useGetChildOrganizationUnits('parent-ou', {offset: 20}));
+    await renderHook(() => useGetChildOrganizationUnits('parent-ou', {offset: 20}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('offset=20') as unknown,
@@ -139,9 +139,9 @@ describe('useGetChildOrganizationUnits', () => {
   it('should fetch with both limit and offset parameters', async () => {
     mockHttpRequest.mockResolvedValue({data: mockChildOUList});
 
-    renderHook(() => useGetChildOrganizationUnits('parent-ou', {limit: 15, offset: 30}));
+    await renderHook(() => useGetChildOrganizationUnits('parent-ou', {limit: 15, offset: 30}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringMatching(/limit=15.*offset=30|offset=30.*limit=15/) as unknown,
@@ -158,19 +158,19 @@ describe('useGetChildOrganizationUnits', () => {
         }),
     );
 
-    const {result, unmount} = renderHook(() => useGetChildOrganizationUnits('parent-ou'));
+    const {result, unmount} = await renderHook(() => useGetChildOrganizationUnits('parent-ou'));
 
     expect(result.current.isLoading).toBe(true);
 
-    unmount();
+    await unmount();
   });
 
   it('should handle API error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Failed to fetch child organization units'));
 
-    const {result} = renderHook(() => useGetChildOrganizationUnits('parent-ou'));
+    const {result} = await renderHook(() => useGetChildOrganizationUnits('parent-ou'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).not.toBeNull();
       expect(result.current.data).toBeUndefined();
       expect(result.current.isLoading).toBe(false);
@@ -186,9 +186,9 @@ describe('useGetChildOrganizationUnits', () => {
     };
     mockHttpRequest.mockResolvedValue({data: emptyList});
 
-    const {result} = renderHook(() => useGetChildOrganizationUnits('parent-ou'));
+    const {result} = await renderHook(() => useGetChildOrganizationUnits('parent-ou'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.organizationUnits).toHaveLength(0);
       expect(result.current.data?.totalResults).toBe(0);
     });
@@ -197,9 +197,9 @@ describe('useGetChildOrganizationUnits', () => {
   it('should refetch when refetch is called', async () => {
     mockHttpRequest.mockResolvedValue({data: mockChildOUList});
 
-    const {result} = renderHook(() => useGetChildOrganizationUnits('parent-ou'));
+    const {result} = await renderHook(() => useGetChildOrganizationUnits('parent-ou'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockChildOUList);
     });
 
@@ -209,7 +209,7 @@ describe('useGetChildOrganizationUnits', () => {
 
     await result.current.refetch();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
     });
   });

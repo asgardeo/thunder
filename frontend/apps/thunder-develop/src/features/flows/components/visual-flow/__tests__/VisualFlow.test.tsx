@@ -19,7 +19,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, react/button-has-type, react/require-default-props, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import VisualFlow from '../VisualFlow';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
@@ -53,30 +54,12 @@ vi.mock('@xyflow/react', () => ({
   ),
 }));
 
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:core.headerPanel.autoLayout': 'Auto Layout',
-        'flows:core.headerPanel.edgeStyleTooltip': 'Edge Style',
-        'flows:core.headerPanel.save': 'Save',
-        'flows:core.headerPanel.edgeStyles.bezier': 'Bezier',
-        'flows:core.headerPanel.edgeStyles.smoothStep': 'Smooth Step',
-        'flows:core.headerPanel.edgeStyles.step': 'Step',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
-
 // Mock color scheme - allow modification for tests
 let mockColorSchemeMode = 'light';
 let mockColorSchemeSystemMode = 'light';
 
 // Mock @wso2/oxygen-ui
 vi.mock('@wso2/oxygen-ui', () => ({
-  Box: ({children, sx}: any) => <div style={sx}>{children}</div>,
   Button: ({children, onClick, startIcon, variant}: any) => (
     <button data-testid="save-button" onClick={onClick} data-variant={variant}>
       {startIcon}
@@ -214,272 +197,280 @@ describe('VisualFlow', () => {
   });
 
   describe('Rendering', () => {
-    it('should render ReactFlow component', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should render ReactFlow component', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('react-flow')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow')).toBeInTheDocument();
     });
 
-    it('should render Background component', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should render Background component', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const background = screen.getByTestId('react-flow-background');
+      const background = page.getByTestId('react-flow-background');
       expect(background).toBeInTheDocument();
       expect(background).toHaveAttribute('data-gap', '20');
     });
 
-    it('should render Controls component', () => {
-      render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
+    it('should render Controls component', async () => {
+      await render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
         wrapper: createWrapper(),
       });
 
-      const controls = screen.getByTestId('react-flow-controls');
+      const controls = page.getByTestId('react-flow-controls');
       expect(controls).toBeInTheDocument();
       expect(controls).toHaveAttribute('data-position', 'top-center');
       expect(controls).toHaveAttribute('data-orientation', 'horizontal');
     });
 
-    it('should render CanvasValidationIndicator', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should render CanvasValidationIndicator', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('canvas-validation-indicator')).toBeInTheDocument();
+      await expect.element(page.getByTestId('canvas-validation-indicator')).toBeInTheDocument();
     });
 
-    it('should render EdgeStyleMenu', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should render EdgeStyleMenu', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('edge-style-menu')).toBeInTheDocument();
+      await expect.element(page.getByTestId('edge-style-menu')).toBeInTheDocument();
     });
   });
 
   describe('Auto Layout Button', () => {
-    it('should render auto-layout button when handleAutoLayout is provided', () => {
-      render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
+    it('should render auto-layout button when handleAutoLayout is provided', async () => {
+      await render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByLabelText('Auto Layout')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Auto Layout')).toBeInTheDocument();
     });
 
-    it('should not render auto-layout button when handleAutoLayout is not provided', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should not render auto-layout button when handleAutoLayout is not provided', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.queryByLabelText('Auto Layout')).not.toBeInTheDocument();
+      await expect.element(page.getByLabelText('Auto Layout')).not.toBeInTheDocument();
     });
 
-    it('should call handleAutoLayout when auto-layout button is clicked', () => {
-      render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
+    it('should call handleAutoLayout when auto-layout button is clicked', async () => {
+      await render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
         wrapper: createWrapper(),
       });
 
-      const autoLayoutButton = screen.getByLabelText('Auto Layout');
-      fireEvent.click(autoLayoutButton);
+      const autoLayoutButton = page.getByLabelText('Auto Layout');
+      await userEvent.click(autoLayoutButton);
 
       expect(mockHandleAutoLayout).toHaveBeenCalledTimes(1);
     });
 
-    it('should render LayoutGrid icon in auto-layout button', () => {
-      render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
+    it('should render LayoutGrid icon in auto-layout button', async () => {
+      await render(<VisualFlow {...defaultProps} handleAutoLayout={mockHandleAutoLayout} />, {
         wrapper: createWrapper(),
       });
 
-      const icon = screen.getByTestId('layout-grid-icon');
+      const icon = page.getByTestId('layout-grid-icon');
       expect(icon).toBeInTheDocument();
       expect(icon).toHaveAttribute('data-size', '20');
     });
   });
 
   describe('Edge Style Button', () => {
-    it('should render edge style button', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should render edge style button', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByLabelText('Edge Style')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Edge Style')).toBeInTheDocument();
     });
 
-    it('should display current edge style icon', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should display current edge style icon', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const icon = screen.getByTestId('edge-style-icon');
+      const icon = page.getByTestId('edge-style-icon');
       expect(icon).toBeInTheDocument();
     });
   });
 
   describe('Save Button', () => {
-    it('should render save button', () => {
-      render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
+    it('should render save button', async () => {
+      await render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('save-button')).toBeInTheDocument();
+      await expect.element(page.getByTestId('save-button')).toBeInTheDocument();
     });
 
-    it('should call onSave when save button is clicked', () => {
-      render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
+    it('should render save card container', async () => {
+      await render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
         wrapper: createWrapper(),
       });
 
-      const saveButton = screen.getByTestId('save-button');
-      fireEvent.click(saveButton);
+      await expect.element(page.getByTestId('save-card')).toBeInTheDocument();
+    });
+
+    it('should call onSave when save button is clicked', async () => {
+      await render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
+        wrapper: createWrapper(),
+      });
+
+      const saveButton = page.getByTestId('save-button');
+      await userEvent.click(saveButton);
 
       expect(mockOnSave).toHaveBeenCalledTimes(1);
     });
 
-    it('should render Save icon in save button', () => {
-      render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
+    it('should render Save icon in save button', async () => {
+      await render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
         wrapper: createWrapper(),
       });
 
-      const icon = screen.getByTestId('save-icon');
+      const icon = page.getByTestId('save-icon');
       expect(icon).toBeInTheDocument();
       expect(icon).toHaveAttribute('data-size', '18');
     });
 
-    it('should render save button with contained variant', () => {
-      render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
+    it('should render save button with contained variant', async () => {
+      await render(<VisualFlow {...defaultProps} onSave={mockOnSave} />, {
         wrapper: createWrapper(),
       });
 
-      const saveButton = screen.getByTestId('save-button');
+      const saveButton = page.getByTestId('save-button');
       expect(saveButton).toHaveAttribute('data-variant', 'contained');
     });
   });
 
   describe('Nodes and Edges', () => {
-    it('should pass nodes to ReactFlow', () => {
+    it('should pass nodes to ReactFlow', async () => {
       const nodes = [
         {id: 'node-1', position: {x: 0, y: 0}, data: {label: 'Node 1'}},
         {id: 'node-2', position: {x: 100, y: 100}, data: {label: 'Node 2'}},
       ];
 
-      render(<VisualFlow {...defaultProps} nodes={nodes} />, {
+      await render(<VisualFlow {...defaultProps} nodes={nodes} />, {
         wrapper: createWrapper(),
       });
 
-      const reactFlow = screen.getByTestId('react-flow');
+      const reactFlow = page.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-nodes', JSON.stringify(nodes));
     });
 
-    it('should pass edges to ReactFlow', () => {
+    it('should pass edges to ReactFlow', async () => {
       const edges = [{id: 'edge-1', source: 'node-1', target: 'node-2'}];
 
-      render(<VisualFlow {...defaultProps} edges={edges} />, {
+      await render(<VisualFlow {...defaultProps} edges={edges} />, {
         wrapper: createWrapper(),
       });
 
-      const reactFlow = screen.getByTestId('react-flow');
+      const reactFlow = page.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-edges', JSON.stringify(edges));
     });
 
-    it('should handle empty nodes and edges', () => {
-      render(<VisualFlow {...defaultProps} nodes={[]} edges={[]} />, {
+    it('should handle empty nodes and edges', async () => {
+      await render(<VisualFlow {...defaultProps} nodes={[]} edges={[]} />, {
         wrapper: createWrapper(),
       });
 
-      const reactFlow = screen.getByTestId('react-flow');
+      const reactFlow = page.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-nodes', '[]');
       expect(reactFlow).toHaveAttribute('data-edges', '[]');
     });
   });
 
   describe('Color Mode', () => {
-    it('should pass color mode to ReactFlow', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should pass color mode to ReactFlow', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const reactFlow = screen.getByTestId('react-flow');
+      const reactFlow = page.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-color-mode', 'light');
     });
 
-    it('should use systemMode when mode is system', () => {
+    it('should use systemMode when mode is system', async () => {
       mockColorSchemeMode = 'system';
       mockColorSchemeSystemMode = 'dark';
 
-      render(<VisualFlow {...defaultProps} />, {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const reactFlow = screen.getByTestId('react-flow');
+      const reactFlow = page.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-color-mode', 'dark');
     });
 
-    it('should use mode directly when mode is dark', () => {
+    it('should use mode directly when mode is dark', async () => {
       mockColorSchemeMode = 'dark';
       mockColorSchemeSystemMode = 'light';
 
-      render(<VisualFlow {...defaultProps} />, {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const reactFlow = screen.getByTestId('react-flow');
+      const reactFlow = page.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-color-mode', 'dark');
     });
   });
 
   describe('Custom Node and Edge Types', () => {
-    it('should accept custom nodeTypes', () => {
+    it('should accept custom nodeTypes', async () => {
       const customNodeTypes = {
         customNode: () => <div>Custom Node</div>,
       };
 
-      render(<VisualFlow {...defaultProps} nodeTypes={customNodeTypes} />, {
+      await render(<VisualFlow {...defaultProps} nodeTypes={customNodeTypes} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('react-flow')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow')).toBeInTheDocument();
     });
 
-    it('should accept custom edgeTypes', () => {
+    it('should accept custom edgeTypes', async () => {
       const customEdgeTypes = {
         customEdge: () => <div>Custom Edge</div>,
       };
 
-      render(<VisualFlow {...defaultProps} edgeTypes={customEdgeTypes} />, {
+      await render(<VisualFlow {...defaultProps} edgeTypes={customEdgeTypes} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('react-flow')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow')).toBeInTheDocument();
     });
 
-    it('should default to empty objects for node and edge types', () => {
-      render(<VisualFlow {...defaultProps} />, {
+    it('should default to empty objects for node and edge types', async () => {
+      await render(<VisualFlow {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('react-flow')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow')).toBeInTheDocument();
     });
   });
 
   describe('Callback Stability', () => {
-    it('should handle onSave being undefined', () => {
-      render(<VisualFlow {...defaultProps} onSave={undefined} />, {
+    it('should handle onSave being undefined', async () => {
+      await render(<VisualFlow {...defaultProps} onSave={undefined} />, {
         wrapper: createWrapper(),
       });
 
       // Should not throw even if save button exists
-      expect(screen.getByTestId('react-flow')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow')).toBeInTheDocument();
     });
 
-    it('should handle handleAutoLayout being undefined', () => {
-      render(<VisualFlow {...defaultProps} handleAutoLayout={undefined} />, {
+    it('should handle handleAutoLayout being undefined', async () => {
+      await render(<VisualFlow {...defaultProps} handleAutoLayout={undefined} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.queryByLabelText('Auto Layout')).not.toBeInTheDocument();
+      await expect.element(page.getByLabelText('Auto Layout')).not.toBeInTheDocument();
     });
   });
 });

@@ -17,38 +17,12 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {ExecutionTypes} from '@/features/flows/models/steps';
 import type {Resource} from '@/features/flows/models/resources';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 import ExecutionExtendedProperties from '../ExecutionExtendedProperties';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'common:loading': 'Loading...',
-        'flows:core.executions.smsOtp.description': 'Configure SMS OTP settings',
-        'flows:core.executions.smsOtp.mode.label': 'Mode',
-        'flows:core.executions.smsOtp.mode.placeholder': 'Select mode',
-        'flows:core.executions.smsOtp.mode.send': 'Send SMS OTP',
-        'flows:core.executions.smsOtp.mode.verify': 'Verify SMS OTP',
-        'flows:core.executions.smsOtp.sender.label': 'Sender',
-        'flows:core.executions.smsOtp.sender.placeholder': 'Select sender',
-        'flows:core.executions.smsOtp.sender.required': 'Sender is required',
-        'flows:core.executions.smsOtp.sender.noSenders': 'No SMS senders configured',
-        'flows:core.executions.passkey.description': 'Configure Passkey settings',
-        'flows:core.executions.passkey.mode.label': 'Mode',
-        'flows:core.executions.passkey.mode.placeholder': 'Select mode',
-        'flows:core.executions.passkey.mode.challenge': 'Passkey Challenge',
-        'flows:core.executions.passkey.mode.verify': 'Passkey Verify',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 // Mock useValidationStatus
 const mockSelectedNotification = {
@@ -106,7 +80,7 @@ describe('ExecutionExtendedProperties', () => {
       },
     } as unknown as Resource;
 
-    it('should render connection selector for Google executor', () => {
+    it('should render connection selector for Google executor', async () => {
       mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'google-idp-1', name: 'Google IDP', type: IdentityProviderTypes.GOOGLE},
@@ -114,15 +88,14 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Connection')).toBeInTheDocument();
-      expect(screen.getByText('Select a connection from the following list to link it with the login flow.')).toBeInTheDocument();
+      await expect.element(page.getByText('Connection')).toBeInTheDocument();
+      await expect.element(page.getByText('Select a connection from the following list to link it with the login flow.')).toBeInTheDocument();
     });
 
     it('should show available Google connections in dropdown', async () => {
-      const user = userEvent.setup();
-      mockIdentityProviders.mockReturnValue({
+            mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
           {id: 'google-idp-2', name: 'Another Google IDP', type: IdentityProviderTypes.GOOGLE},
@@ -130,34 +103,33 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      const select = screen.getByRole('combobox');
-      await user.click(select);
+      const select = page.getByRole('combobox');
+      await userEvent.click(select);
 
-      expect(screen.getByText('My Google IDP')).toBeInTheDocument();
-      expect(screen.getByText('Another Google IDP')).toBeInTheDocument();
+      await expect.element(page.getByText('My Google IDP')).toBeInTheDocument();
+      await expect.element(page.getByText('Another Google IDP')).toBeInTheDocument();
     });
 
     it('should call onChange when connection is selected', async () => {
-      const user = userEvent.setup();
-      mockIdentityProviders.mockReturnValue({
+            mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
         ],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      const select = screen.getByRole('combobox');
-      await user.click(select);
-      await user.click(screen.getByText('My Google IDP'));
+      const select = page.getByRole('combobox');
+      await userEvent.click(select);
+      await userEvent.click(page.getByText('My Google IDP'));
 
       expect(mockOnChange).toHaveBeenCalledWith('data.properties.idpId', 'google-idp-1', googleResource);
     });
 
-    it('should show error when connection is placeholder', () => {
+    it('should show error when connection is placeholder', async () => {
       mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
@@ -173,12 +145,12 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithPlaceholder} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithPlaceholder} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Connection is required and must be selected.')).toBeInTheDocument();
+      await expect.element(page.getByText('Connection is required and must be selected.')).toBeInTheDocument();
     });
 
-    it('should show validation error from notification', () => {
+    it('should show validation error from notification', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(true);
       mockSelectedNotification.getResourceFieldNotification.mockReturnValue('Custom validation error');
 
@@ -189,50 +161,49 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Custom validation error')).toBeInTheDocument();
+      await expect.element(page.getByText('Custom validation error')).toBeInTheDocument();
     });
 
-    it('should show warning when no connections are available', () => {
+    it('should show warning when no connections are available', async () => {
       mockIdentityProviders.mockReturnValue({
         data: [],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('No connections available. Please create a connection to link with the login flow.')).toBeInTheDocument();
+      await expect.element(page.getByText('No connections available. Please create a connection to link with the login flow.')).toBeInTheDocument();
     });
 
-    it('should disable dropdown while loading', () => {
+    it('should disable dropdown while loading', async () => {
       mockIdentityProviders.mockReturnValue({
         data: [],
         isLoading: true,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      const select = screen.getByRole('combobox');
+      const select = page.getByRole('combobox');
       expect(select).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('should show loading text in dropdown while loading', async () => {
-      const user = userEvent.setup();
-      mockIdentityProviders.mockReturnValue({
+            mockIdentityProviders.mockReturnValue({
         data: [],
         isLoading: true,
       });
 
-      render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      const select = screen.getByRole('combobox');
-      await user.click(select);
+      const select = page.getByRole('combobox');
+      await userEvent.click(select);
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      await expect.element(page.getByText('Loading...')).toBeInTheDocument();
     });
 
-    it('should show selected connection value', () => {
+    it('should show selected connection value', async () => {
       mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
@@ -248,9 +219,9 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithSelection} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithSelection} onChange={mockOnChange} />);
 
-      expect(screen.getByRole('combobox')).toHaveTextContent('My Google IDP');
+      await expect.element(page.getByRole('combobox')).toHaveTextContent('My Google IDP');
     });
   });
 
@@ -269,7 +240,7 @@ describe('ExecutionExtendedProperties', () => {
       },
     } as unknown as Resource;
 
-    it('should render connection selector for GitHub executor', () => {
+    it('should render connection selector for GitHub executor', async () => {
       mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'github-idp-1', name: 'GitHub IDP', type: IdentityProviderTypes.GITHUB},
@@ -277,14 +248,13 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={githubResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={githubResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Connection')).toBeInTheDocument();
+      await expect.element(page.getByText('Connection')).toBeInTheDocument();
     });
 
     it('should filter to only show GitHub connections', async () => {
-      const user = userEvent.setup();
-      mockIdentityProviders.mockReturnValue({
+            mockIdentityProviders.mockReturnValue({
         data: [
           {id: 'google-idp-1', name: 'Google IDP', type: IdentityProviderTypes.GOOGLE},
           {id: 'github-idp-1', name: 'GitHub IDP', type: IdentityProviderTypes.GITHUB},
@@ -292,13 +262,13 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={githubResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={githubResource} onChange={mockOnChange} />);
 
-      const select = screen.getByRole('combobox');
-      await user.click(select);
+      const select = page.getByRole('combobox');
+      await userEvent.click(select);
 
-      expect(screen.getByText('GitHub IDP')).toBeInTheDocument();
-      expect(screen.queryByText('Google IDP')).not.toBeInTheDocument();
+      await expect.element(page.getByText('GitHub IDP')).toBeInTheDocument();
+      await expect.element(page.getByText('Google IDP')).not.toBeInTheDocument();
     });
   });
 
@@ -321,49 +291,47 @@ describe('ExecutionExtendedProperties', () => {
       },
     } as unknown as Resource;
 
-    it('should render SMS OTP configuration UI', () => {
+    it('should render SMS OTP configuration UI', async () => {
       mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Configure SMS OTP settings')).toBeInTheDocument();
-      expect(screen.getByText('Mode')).toBeInTheDocument();
-      expect(screen.getByText('Sender')).toBeInTheDocument();
+      await expect.element(page.getByText('Configure SMS OTP settings')).toBeInTheDocument();
+      await expect.element(page.getByText('Mode')).toBeInTheDocument();
+      await expect.element(page.getByText('Sender')).toBeInTheDocument();
     });
 
     it('should show mode options', async () => {
-      const user = userEvent.setup();
-      mockNotificationSenders.mockReturnValue({
+            mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const modeSelect = comboboxes[0];
-      await user.click(modeSelect);
+      await userEvent.click(modeSelect);
 
-      expect(screen.getByText('Send SMS OTP')).toBeInTheDocument();
-      expect(screen.getByText('Verify SMS OTP')).toBeInTheDocument();
+      await expect.element(page.getByText('Send SMS OTP')).toBeInTheDocument();
+      await expect.element(page.getByText('Verify SMS OTP')).toBeInTheDocument();
     });
 
     it('should call onChange with updated data when mode is selected', async () => {
-      const user = userEvent.setup();
-      mockNotificationSenders.mockReturnValue({
+            mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const modeSelect = comboboxes[0];
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Send SMS OTP'));
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Send SMS OTP'));
 
       expect(mockOnChange).toHaveBeenCalledWith(
         'data',
@@ -382,8 +350,7 @@ describe('ExecutionExtendedProperties', () => {
     });
 
     it('should show sender options', async () => {
-      const user = userEvent.setup();
-      mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
+            mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [
           {id: 'sender-1', name: 'Twilio Sender'},
@@ -392,35 +359,34 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const senderSelect = comboboxes[1]; // Second combobox is sender
-      await user.click(senderSelect);
+      await userEvent.click(senderSelect);
 
-      expect(screen.getByText('Twilio Sender')).toBeInTheDocument();
-      expect(screen.getByText('Vonage Sender')).toBeInTheDocument();
+      await expect.element(page.getByText('Twilio Sender')).toBeInTheDocument();
+      await expect.element(page.getByText('Vonage Sender')).toBeInTheDocument();
     });
 
     it('should call onChange when sender is selected', async () => {
-      const user = userEvent.setup();
-      mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
+            mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const senderSelect = comboboxes[1];
-      await user.click(senderSelect);
-      await user.click(screen.getByText('Twilio Sender'));
+      await userEvent.click(senderSelect);
+      await userEvent.click(page.getByText('Twilio Sender'));
 
       expect(mockOnChange).toHaveBeenCalledWith('data.properties.senderId', 'sender-1', smsOtpResource);
     });
 
-    it('should show error when sender is placeholder', () => {
+    it('should show error when sender is placeholder', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
@@ -435,52 +401,52 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithPlaceholder} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithPlaceholder} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Sender is required')).toBeInTheDocument();
+      await expect.element(page.getByText('Sender is required')).toBeInTheDocument();
     });
 
-    it('should show warning when no senders are configured', () => {
+    it('should show warning when no senders are configured', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('No SMS senders configured')).toBeInTheDocument();
+      await expect.element(page.getByText('No SMS senders configured')).toBeInTheDocument();
     });
 
-    it('should disable sender dropdown while loading', () => {
+    it('should disable sender dropdown while loading', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [],
         isLoading: true,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const senderSelect = comboboxes[1];
       expect(senderSelect).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('should disable sender dropdown when no senders available', () => {
+    it('should disable sender dropdown when no senders available', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const senderSelect = comboboxes[1];
       expect(senderSelect).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('should show selected sender value', () => {
+    it('should show selected sender value', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
@@ -495,14 +461,14 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithSender} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithSender} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const senderSelect = comboboxes[1];
       expect(senderSelect).toHaveTextContent('Twilio Sender');
     });
 
-    it('should show selected mode value', () => {
+    it('should show selected mode value', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
@@ -522,26 +488,25 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithMode} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithMode} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const modeSelect = comboboxes[0];
       expect(modeSelect).toHaveTextContent('Verify SMS OTP');
     });
 
     it('should update display label when mode changes to verify', async () => {
-      const user = userEvent.setup();
-      mockNotificationSenders.mockReturnValue({
+            mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const modeSelect = comboboxes[0];
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Verify SMS OTP'));
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Verify SMS OTP'));
 
       expect(mockOnChange).toHaveBeenCalledWith(
         'data',
@@ -555,8 +520,7 @@ describe('ExecutionExtendedProperties', () => {
     });
 
     it('should preserve existing data properties when mode changes', async () => {
-      const user = userEvent.setup();
-      mockNotificationSenders.mockReturnValue({
+            mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
@@ -570,12 +534,12 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithExistingData} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithExistingData} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const modeSelect = comboboxes[0];
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Send SMS OTP'));
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Send SMS OTP'));
 
       expect(mockOnChange).toHaveBeenCalledWith(
         'data',
@@ -594,8 +558,7 @@ describe('ExecutionExtendedProperties', () => {
     });
 
     it('should preserve display properties when mode changes', async () => {
-      const user = userEvent.setup();
-      mockNotificationSenders.mockReturnValue({
+            mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
         isLoading: false,
       });
@@ -608,12 +571,12 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithDisplay} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithDisplay} onChange={mockOnChange} />);
 
-      const comboboxes = screen.getAllByRole('combobox');
+      const comboboxes = page.getByRole('combobox').all();
       const modeSelect = comboboxes[0];
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Send SMS OTP'));
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Send SMS OTP'));
 
       // Should preserve existing display properties while updating label
       expect(mockOnChange).toHaveBeenCalledWith(
@@ -628,7 +591,7 @@ describe('ExecutionExtendedProperties', () => {
       );
     });
 
-    it('should show validation error for sender field', () => {
+    it('should show validation error for sender field', async () => {
       (mockSelectedNotification.hasResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation((key: string) =>
         key === 'sms-otp-executor-1_data.properties.senderId'
       );
@@ -640,21 +603,21 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Sender ID is invalid')).toBeInTheDocument();
+      await expect.element(page.getByText('Sender ID is invalid')).toBeInTheDocument();
     });
 
-    it('should not show warning when senders are still loading', () => {
+    it('should not show warning when senders are still loading', async () => {
       mockSelectedNotification.hasResourceFieldNotification.mockReturnValue(false);
       mockNotificationSenders.mockReturnValue({
         data: [],
         isLoading: true,
       });
 
-      render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
-      expect(screen.queryByText('No SMS senders configured')).not.toBeInTheDocument();
+      await expect.element(page.getByText('No SMS senders configured')).not.toBeInTheDocument();
     });
   });
 
@@ -674,33 +637,31 @@ describe('ExecutionExtendedProperties', () => {
       },
     } as unknown as Resource;
 
-    it('should render Passkey configuration UI', () => {
-      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+    it('should render Passkey configuration UI', async () => {
+      await render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Configure Passkey settings')).toBeInTheDocument();
-      expect(screen.getByText('Mode')).toBeInTheDocument();
+      await expect.element(page.getByText('Configure Passkey settings')).toBeInTheDocument();
+      await expect.element(page.getByText('Mode')).toBeInTheDocument();
     });
 
     it('should show mode options', async () => {
-      const user = userEvent.setup();
+      
+      await render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
 
-      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+      const modeSelect = page.getByRole('combobox');
+      await userEvent.click(modeSelect);
 
-      const modeSelect = screen.getByRole('combobox');
-      await user.click(modeSelect);
-
-      expect(screen.getByText('Passkey Challenge')).toBeInTheDocument();
-      expect(screen.getByText('Passkey Verify')).toBeInTheDocument();
+      await expect.element(page.getByText('Passkey Challenge')).toBeInTheDocument();
+      await expect.element(page.getByText('Passkey Verify')).toBeInTheDocument();
     });
 
     it('should call onChange with updated data when mode is selected', async () => {
-      const user = userEvent.setup();
+      
+      await render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
 
-      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
-
-      const modeSelect = screen.getByRole('combobox');
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Passkey Challenge'));
+      const modeSelect = page.getByRole('combobox');
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Passkey Challenge'));
 
       expect(mockOnChange).toHaveBeenCalledWith(
         'data',
@@ -718,7 +679,7 @@ describe('ExecutionExtendedProperties', () => {
       );
     });
 
-    it('should show selected mode value', () => {
+    it('should show selected mode value', async () => {
       const resourceWithMode = {
         ...passkeyResource,
         data: {
@@ -732,20 +693,19 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithMode} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithMode} onChange={mockOnChange} />);
 
-      const modeSelect = screen.getByRole('combobox');
+      const modeSelect = page.getByRole('combobox');
       expect(modeSelect).toHaveTextContent('Passkey Verify');
     });
 
     it('should update display label when mode changes to verify', async () => {
-      const user = userEvent.setup();
+      
+      await render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
 
-      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
-
-      const modeSelect = screen.getByRole('combobox');
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Passkey Verify'));
+      const modeSelect = page.getByRole('combobox');
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Passkey Verify'));
 
       expect(mockOnChange).toHaveBeenCalledWith(
         'data',
@@ -759,8 +719,7 @@ describe('ExecutionExtendedProperties', () => {
     });
 
     it('should preserve existing data properties when mode changes', async () => {
-      const user = userEvent.setup();
-
+      
       const resourceWithExistingData = {
         ...passkeyResource,
         data: {
@@ -770,11 +729,11 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      render(<ExecutionExtendedProperties resource={resourceWithExistingData} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithExistingData} onChange={mockOnChange} />);
 
-      const modeSelect = screen.getByRole('combobox');
-      await user.click(modeSelect);
-      await user.click(screen.getByText('Passkey Challenge'));
+      const modeSelect = page.getByRole('combobox');
+      await userEvent.click(modeSelect);
+      await userEvent.click(page.getByText('Passkey Challenge'));
 
       expect(mockOnChange).toHaveBeenCalledWith(
         'data',
@@ -794,20 +753,20 @@ describe('ExecutionExtendedProperties', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should return null when executor name is not defined', () => {
+    it('should return null when executor name is not defined', async () => {
       const resourceWithoutExecutor = {
         id: 'resource-1',
         data: {},
       } as unknown as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <ExecutionExtendedProperties resource={resourceWithoutExecutor} onChange={mockOnChange} />,
       );
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null when executor type is not mapped', () => {
+    it('should return null when executor type is not mapped', async () => {
       const resourceWithUnmappedExecutor = {
         id: 'resource-1',
         data: {
@@ -819,22 +778,22 @@ describe('ExecutionExtendedProperties', () => {
         },
       } as unknown as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <ExecutionExtendedProperties resource={resourceWithUnmappedExecutor} onChange={mockOnChange} />,
       );
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should handle undefined resource gracefully', () => {
-      const {container} = render(
+    it('should handle undefined resource gracefully', async () => {
+      const {container} = await render(
         <ExecutionExtendedProperties resource={undefined as unknown as Resource} onChange={mockOnChange} />,
       );
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should handle null properties gracefully', () => {
+    it('should handle null properties gracefully', async () => {
       const resourceWithNullProperties = {
         id: 'google-executor-1',
         data: {
@@ -854,9 +813,9 @@ describe('ExecutionExtendedProperties', () => {
         isLoading: false,
       });
 
-      render(<ExecutionExtendedProperties resource={resourceWithNullProperties} onChange={mockOnChange} />);
+      await render(<ExecutionExtendedProperties resource={resourceWithNullProperties} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Connection')).toBeInTheDocument();
+      await expect.element(page.getByText('Connection')).toBeInTheDocument();
     });
   });
 });

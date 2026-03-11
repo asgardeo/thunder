@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import ManageMembersSection from '../edit-group/members-settings/ManageMembersSection';
 
@@ -89,51 +88,52 @@ describe('ManageMembersSection', () => {
     vi.clearAllMocks();
   });
 
-  it('should render the section title', () => {
-    renderWithProviders(<ManageMembersSection {...defaultProps} />);
+  it('should render the section title', async () => {
+    await renderWithProviders(<ManageMembersSection {...defaultProps} />);
 
-    expect(screen.getByText('Members')).toBeInTheDocument();
+    // Use getByRole to find the heading with accessible name "Members"
+    // SettingsCard renders the title as Typography h5 which has role "heading"
+    await expect.element(page.getByRole('heading', {name: 'Members', level: 5})).toBeInTheDocument();
   });
 
-  it('should render members in the data grid', () => {
-    renderWithProviders(<ManageMembersSection {...defaultProps} />);
+  it('should render members in the data grid', async () => {
+    await renderWithProviders(<ManageMembersSection {...defaultProps} />);
 
-    expect(screen.getByTestId('member-u1')).toBeInTheDocument();
-    expect(screen.getByTestId('member-g2')).toBeInTheDocument();
+    await expect.element(page.getByTestId('member-u1')).toBeInTheDocument();
+    await expect.element(page.getByTestId('member-g2')).toBeInTheDocument();
   });
 
-  it('should show loading state', () => {
+  it('should show loading state', async () => {
     mockUseGetGroupMembers.mockReturnValue({
       data: null,
       isLoading: true,
     });
-    renderWithProviders(<ManageMembersSection {...defaultProps} />);
+    await renderWithProviders(<ManageMembersSection {...defaultProps} />);
 
-    expect(screen.getByTestId('members-grid')).toHaveAttribute('data-loading', 'true');
+    await expect.element(page.getByTestId('members-grid')).toHaveAttribute('data-loading', 'true');
   });
 
-  it('should render header action when provided', () => {
-    renderWithProviders(
-      <ManageMembersSection {...defaultProps} headerAction={<button type="button">Add</button>} />,
+  it('should render header action when provided', async () => {
+    await renderWithProviders(
+      <ManageMembersSection {...defaultProps} headerAction={<button type="button">Add Member Action</button>} />,
     );
 
-    expect(screen.getByText('Add')).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Add Member Action'})).toBeInTheDocument();
   });
 
-  it('should call useGetGroupMembers with groupId and pagination params', () => {
-    renderWithProviders(<ManageMembersSection {...defaultProps} />);
+  it('should call useGetGroupMembers with groupId and pagination params', async () => {
+    await renderWithProviders(<ManageMembersSection {...defaultProps} />);
 
     expect(mockUseGetGroupMembers).toHaveBeenCalledWith('g1', {limit: 10, offset: 0});
   });
 
   it('should call onRemoveMember when remove button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<ManageMembersSection {...defaultProps} />);
+    await renderWithProviders(<ManageMembersSection {...defaultProps} />);
 
     // The actions column renderCell creates an IconButton with aria-label "Remove"
-    const removeButtons = screen.getAllByRole('button', {name: /remove/i});
+    const removeButtons = page.getByRole('button', {name: /remove/i}).all();
     expect(removeButtons.length).toBeGreaterThan(0);
-    await user.click(removeButtons[0]);
+    await removeButtons[0].click();
 
     expect(defaultProps.onRemoveMember).toHaveBeenCalledWith({id: 'u1', type: 'user'});
   });

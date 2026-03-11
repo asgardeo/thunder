@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import End from '../End';
 import type {CommonStepFactoryPropsInterface} from '../../CommonStepFactory';
 
@@ -59,87 +60,87 @@ const createMockProps = (overrides: Partial<CommonStepFactoryPropsInterface> = {
 
 describe('End', () => {
   describe('Rendering', () => {
-    it('should render the End node', () => {
-      render(<End {...createMockProps()} />);
+    it('should render the End node', async () => {
+      await render(<End {...createMockProps()} />);
 
-      expect(screen.getByText('End')).toBeInTheDocument();
+      await expect.element(page.getByText('End')).toBeInTheDocument();
     });
 
-    it('should render a Fab button with end label', () => {
-      render(<End {...createMockProps()} />);
+    it('should render a Fab button with end label', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const fab = screen.getByRole('button', {name: 'end'});
+      const fab = page.getByRole('button', {name: 'end'});
       expect(fab).toBeInTheDocument();
     });
 
-    it('should render with end class on Fab', () => {
-      render(<End {...createMockProps()} />);
+    it('should render with end class on Fab', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const fab = screen.getByRole('button');
+      const fab = page.getByRole('button');
       expect(fab).toHaveClass('end');
     });
   });
 
   describe('React Flow Handle', () => {
-    it('should render a target handle', () => {
-      render(<End {...createMockProps()} />);
+    it('should render a target handle', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const handle = screen.getByTestId('handle-target');
+      const handle = page.getByTestId('handle-target');
       expect(handle).toBeInTheDocument();
     });
 
-    it('should position handle on the left', () => {
-      render(<End {...createMockProps()} />);
+    it('should position handle on the left', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const handle = screen.getByTestId('handle-target');
+      const handle = page.getByTestId('handle-target');
       expect(handle).toHaveAttribute('data-position', 'left');
     });
 
-    it('should have correct handle id with previous suffix', () => {
-      render(<End {...createMockProps()} />);
+    it('should have correct handle id with previous suffix', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const handle = screen.getByTestId('handle-target');
+      const handle = page.getByTestId('handle-target');
       // Handle id should contain 'end' and '_PREVIOUS' suffix
-      expect(handle.getAttribute('data-handle-id')).toContain('end');
-      expect(handle.getAttribute('data-handle-id')).toContain('_PREVIOUS');
+      expect(handle.element().getAttribute('data-handle-id')).toContain('end');
+      expect(handle.element().getAttribute('data-handle-id')).toContain('_PREVIOUS');
     });
 
-    it('should have hidden-handle class', () => {
+    it('should have hidden-handle class', async () => {
       // Note: Since we're mocking Handle, we can't directly test the class
       // but the component should pass the className prop
-      render(<End {...createMockProps()} />);
+      await render(<End {...createMockProps()} />);
 
-      const handle = screen.getByTestId('handle-target');
+      const handle = page.getByTestId('handle-target');
       expect(handle).toBeInTheDocument();
     });
   });
 
   describe('Fab Properties', () => {
-    it('should render extended variant Fab', () => {
-      render(<End {...createMockProps()} />);
+    it('should render extended variant Fab', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const fab = screen.getByRole('button');
+      const fab = page.getByRole('button');
       // Extended variant Fab will be rendered
       expect(fab).toBeInTheDocument();
     });
 
-    it('should render small size Fab', () => {
-      render(<End {...createMockProps()} />);
+    it('should render small size Fab', async () => {
+      await render(<End {...createMockProps()} />);
 
-      const fab = screen.getByRole('button');
+      const fab = page.getByRole('button');
       expect(fab).toBeInTheDocument();
     });
   });
 
   describe('Structure', () => {
-    it('should be wrapped in a div', () => {
-      const {container} = render(<End {...createMockProps()} />);
+    it('should be wrapped in a div', async () => {
+      const {container} = await render(<End {...createMockProps()} />);
 
       expect(container.firstChild?.nodeName).toBe('DIV');
     });
 
-    it('should contain Handle before Fab (target comes first)', () => {
-      const {container} = render(<End {...createMockProps()} />);
+    it('should contain Handle before Fab (target comes first)', async () => {
+      const {container} = await render(<End {...createMockProps()} />);
 
       const children = container.firstChild?.childNodes;
       expect(children).toBeDefined();
@@ -151,11 +152,11 @@ describe('End', () => {
   });
 
   describe('Props', () => {
-    it('should accept props without error', () => {
+    it('should accept props without error', async () => {
       // End component accepts CommonStepFactoryPropsInterface but doesn't use them
-      render(<End {...createMockProps({data: {}, id: 'end-node-1'})} />);
+      await render(<End {...createMockProps({data: {}, id: 'end-node-1'})} />);
 
-      expect(screen.getByText('End')).toBeInTheDocument();
+      await expect.element(page.getByText('End')).toBeInTheDocument();
     });
   });
 });

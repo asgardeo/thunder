@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Step} from '@/features/flows/models/steps';
 import SmsOtpExecution from '../SmsOtpExecution';
 
@@ -28,16 +29,6 @@ const {mockUseColorScheme, mockUseRequiredFields} = vi.hoisted(() => ({
     systemMode: 'light',
   })),
   mockUseRequiredFields: vi.fn(),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({i18nKey, children = null}: {i18nKey: string; children?: React.ReactNode}) => (
-    <span data-i18n-key={i18nKey}>{children}</span>
-  ),
 }));
 
 // Mock useColorScheme
@@ -95,14 +86,14 @@ describe('SmsOtpExecution', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the SMS OTP execution component with label', () => {
+    it('should render the SMS OTP execution component with label', async () => {
       const resource = createMockResource();
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('SMS OTP')).toBeInTheDocument();
+      await expect.element(page.getByText('SMS OTP')).toBeInTheDocument();
     });
 
-    it('should render image when display.image is provided', () => {
+    it('should render image when display.image is provided', async () => {
       const resource = createMockResource({
         display: {
           label: 'SMS OTP',
@@ -110,15 +101,15 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('src', '/static/assets/images/icons/sms-otp.svg');
       expect(img).toHaveAttribute('alt', 'SMS OTP-icon');
       expect(img).toHaveAttribute('height', '20');
     });
 
-    it('should not render image when display.image is not provided', () => {
+    it('should not render image when display.image is not provided', async () => {
       const resource = createMockResource({
         display: {
           label: 'SMS OTP',
@@ -126,20 +117,20 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('img')).not.toBeInTheDocument();
     });
 
-    it('should have the correct CSS class', () => {
+    it('should have the correct CSS class', async () => {
       const resource = createMockResource();
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const container = screen.getByText('SMS OTP').parentElement;
+      const container = page.getByText('SMS OTP').element().parentElement;
       expect(container).toHaveClass('flow-builder-execution');
     });
 
-    it('should use default alt text when displayLabel is undefined', () => {
+    it('should use default alt text when displayLabel is undefined', async () => {
       const resource = createMockResource({
         display: {
           label: undefined as unknown as string,
@@ -147,15 +138,15 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('alt', 'sms-otp-icon');
     });
   });
 
   describe('Display Label', () => {
-    it('should use display.label when provided', () => {
+    it('should use display.label when provided', async () => {
       const resource = createMockResource({
         display: {
           label: 'Custom SMS Label',
@@ -163,12 +154,12 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('Custom SMS Label')).toBeInTheDocument();
+      await expect.element(page.getByText('Custom SMS Label')).toBeInTheDocument();
     });
 
-    it('should use translation key for default label when displayLabel is undefined', () => {
+    it('should use translation key for default label when displayLabel is undefined', async () => {
       const resource = createMockResource({
         display: {
           label: undefined as unknown as string,
@@ -176,23 +167,23 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
 
-    it('should use translation key when display is undefined', () => {
+    it('should use translation key when display is undefined', async () => {
       const resource = createMockResource({
         display: undefined,
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
   });
 
   describe('Dark Mode', () => {
-    it('should apply dark mode filter when in dark mode', () => {
+    it('should apply dark mode filter when in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'dark',
         systemMode: 'dark',
@@ -205,13 +196,13 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'brightness(0.9) invert(1)'});
     });
 
-    it('should not apply filter in light mode', () => {
+    it('should not apply filter in light mode', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'light',
         systemMode: 'light',
@@ -224,13 +215,13 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'none'});
     });
 
-    it('should use systemMode when mode is set to system', () => {
+    it('should use systemMode when mode is set to system', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'system',
         systemMode: 'dark',
@@ -243,13 +234,13 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'brightness(0.9) invert(1)'});
     });
 
-    it('should use systemMode light when mode is system and systemMode is light', () => {
+    it('should use systemMode light when mode is system and systemMode is light', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'system',
         systemMode: 'light',
@@ -262,17 +253,17 @@ describe('SmsOtpExecution', () => {
           showOnResourcePanel: true,
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'none'});
     });
   });
 
   describe('Required Fields Validation', () => {
-    it('should call useRequiredFields with resource and senderId field', () => {
+    it('should call useRequiredFields with resource and senderId field', async () => {
       const resource = createMockResource();
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalledWith(
         resource,
@@ -280,15 +271,15 @@ describe('SmsOtpExecution', () => {
         expect.arrayContaining([
           expect.objectContaining({
             name: 'data.properties.senderId',
-            errorMessage: 'flows:core.validation.fields.input.senderId',
+            errorMessage: 'Notification sender is required',
           }),
         ]),
       );
     });
 
-    it('should pass generalMessage as ReactElement to useRequiredFields', () => {
+    it('should pass generalMessage as ReactElement to useRequiredFields', async () => {
       const resource = createMockResource({id: 'test-sms-id'});
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalledWith(
         resource,
@@ -301,13 +292,13 @@ describe('SmsOtpExecution', () => {
       );
     });
 
-    it('should memoize fields array', () => {
+    it('should memoize fields array', async () => {
       const resource = createMockResource();
-      const {rerender} = render(<SmsOtpExecution resource={resource} />);
+      const {rerender} = await render(<SmsOtpExecution resource={resource} />);
 
       const firstCallFields = mockUseRequiredFields.mock.calls[0][2] as unknown[];
 
-      rerender(<SmsOtpExecution resource={resource} />);
+      await rerender(<SmsOtpExecution resource={resource} />);
 
       const secondCallFields = mockUseRequiredFields.mock.calls[1][2] as unknown[];
 
@@ -317,7 +308,7 @@ describe('SmsOtpExecution', () => {
   });
 
   describe('Resource Handling', () => {
-    it('should handle resource with senderId configured', () => {
+    it('should handle resource with senderId configured', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -330,12 +321,12 @@ describe('SmsOtpExecution', () => {
           },
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('SMS OTP')).toBeInTheDocument();
+      await expect.element(page.getByText('SMS OTP')).toBeInTheDocument();
     });
 
-    it('should handle resource without senderId', () => {
+    it('should handle resource without senderId', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -346,12 +337,12 @@ describe('SmsOtpExecution', () => {
           properties: {},
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('SMS OTP')).toBeInTheDocument();
+      await expect.element(page.getByText('SMS OTP')).toBeInTheDocument();
     });
 
-    it('should handle resource with undefined properties', () => {
+    it('should handle resource with undefined properties', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -361,20 +352,20 @@ describe('SmsOtpExecution', () => {
           },
         },
       });
-      render(<SmsOtpExecution resource={resource} />);
+      await render(<SmsOtpExecution resource={resource} />);
 
-      expect(screen.getByText('SMS OTP')).toBeInTheDocument();
+      await expect.element(page.getByText('SMS OTP')).toBeInTheDocument();
     });
   });
 
   describe('Memoization', () => {
-    it('should memoize generalMessage based on resource.id', () => {
+    it('should memoize generalMessage based on resource.id', async () => {
       const resource = createMockResource({id: 'sms-1'});
-      const {rerender} = render(<SmsOtpExecution resource={resource} />);
+      const {rerender} = await render(<SmsOtpExecution resource={resource} />);
 
       const firstCallMessage = mockUseRequiredFields.mock.calls[0][1] as unknown;
 
-      rerender(<SmsOtpExecution resource={resource} />);
+      await rerender(<SmsOtpExecution resource={resource} />);
 
       const secondCallMessage = mockUseRequiredFields.mock.calls[1][1] as unknown;
 
@@ -382,15 +373,15 @@ describe('SmsOtpExecution', () => {
       expect(firstCallMessage).toBe(secondCallMessage);
     });
 
-    it('should update generalMessage when resource.id changes', () => {
+    it('should update generalMessage when resource.id changes', async () => {
       const resource1 = createMockResource({id: 'sms-1'});
       const resource2 = createMockResource({id: 'sms-2'});
 
-      const {rerender} = render(<SmsOtpExecution resource={resource1} />);
+      const {rerender} = await render(<SmsOtpExecution resource={resource1} />);
 
       const firstCallMessage = mockUseRequiredFields.mock.calls[0][1] as unknown;
 
-      rerender(<SmsOtpExecution resource={resource2} />);
+      await rerender(<SmsOtpExecution resource={resource2} />);
 
       const secondCallMessage = mockUseRequiredFields.mock.calls[1][1] as unknown;
 

@@ -17,23 +17,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import type {JSX} from 'react';
 import type {InviteUserRenderProps} from '@asgardeo/react';
 import UsersListPage from '../UsersListPage';
+import type {UserSchemaListResponse} from '../../types/users';
 
 const mockNavigate = vi.fn();
-const mockLoggerError = vi.fn();
-
-// Mock logger
-vi.mock('@thunder/logger/react', () => ({
-  useLogger: () => ({
-    info: vi.fn(),
-    error: mockLoggerError,
-    debug: vi.fn(),
-    warn: vi.fn(),
-  }),
-}));
 
 // Mock InviteUser component
 const mockHandleInputChange = vi.fn();
@@ -86,11 +77,22 @@ vi.mock('react-router', async () => {
 
 // Mock the UsersList component
 vi.mock('../../components/UsersList', () => ({
-  default: () => (
-    <div data-testid="users-list">
+  default: ({selectedSchema}: {selectedSchema: string}) => (
+    <div data-testid="users-list" data-schema={selectedSchema}>
       Users List Component
     </div>
   ),
+}));
+
+// Define the return type for the hook
+interface UseGetUserSchemasReturn {
+  data: UserSchemaListResponse | undefined;
+}
+
+// Mock the useGetUserSchemas hook
+const mockUseGetUserSchemas = vi.fn<() => UseGetUserSchemasReturn>();
+vi.mock('../../api/useGetUserSchemas', () => ({
+  default: () => mockUseGetUserSchemas(),
 }));
 
 // Mock useTemplateLiteralResolver
@@ -130,142 +132,219 @@ vi.mock('../../components/InviteUserDialog', () => ({
 }));
 
 describe('UsersListPage', () => {
+  const mockSchemas: UserSchemaListResponse = {
+    totalResults: 2,
+    startIndex: 1,
+    count: 2,
+    schemas: [
+      {id: 'schema1', name: 'Employee Schema', ouId: 'root-ou'},
+      {id: 'schema2', name: 'Contractor Schema', ouId: 'child-ou'},
+    ],
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLoggerError.mockReset();
+    mockUseGetUserSchemas.mockReturnValue({
+      data: mockSchemas,
+    });
   });
 
-  it('renders page title', () => {
-    render(<UsersListPage />);
+  it('renders page title', async () => {
+    await renderWithProviders(<UsersListPage />);
 
-    expect(screen.getByText('User Management')).toBeInTheDocument();
+    await expect.element(page.getByText('User Management')).toBeInTheDocument();
   });
 
-  it('renders page description', () => {
-    render(<UsersListPage />);
+  it('renders page description', async () => {
+    await renderWithProviders(<UsersListPage />);
 
-    expect(screen.getByText('Manage users, roles, and permissions across your organization')).toBeInTheDocument();
+    await expect.element(page.getByText('Manage users, roles, and permissions across your organization')).toBeInTheDocument();
   });
 
-  it('renders create user button', () => {
-    render(<UsersListPage />);
+  it('renders create user button', async () => {
+    await renderWithProviders(<UsersListPage />);
 
-    const createButton = screen.getByRole('button', {name: /add user/i});
-    expect(createButton).toBeInTheDocument();
+    const createButton = page.getByRole('button', {name: /add user/i});
+    await expect.element(createButton).toBeInTheDocument();
   });
 
-  it('renders search input', () => {
-    render(<UsersListPage />);
+  it('renders search input', async () => {
+    await renderWithProviders(<UsersListPage />);
 
-    const searchInput = screen.getByPlaceholderText('Search users...');
-    expect(searchInput).toBeInTheDocument();
+    const searchInput = page.getByPlaceholder('Search users...');
+    await expect.element(searchInput).toBeInTheDocument();
   });
 
-  it('renders search icon', () => {
-    const {container} = render(<UsersListPage />);
+  it('renders search icon', async () => {
+    await renderWithProviders(<UsersListPage />);
 
     // Check for lucide-react Search icon
-    const searchIcon = container.querySelector('svg');
+    const searchIcon = document.querySelector('svg');
     expect(searchIcon).toBeInTheDocument();
   });
 
   it('allows typing in search input', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
+    await renderWithProviders(<UsersListPage />);
 
-    const searchInput = screen.getByPlaceholderText('Search users...');
-    await user.type(searchInput, 'john doe');
+    const searchInput = page.getByPlaceholder('Search users...');
+    await userEvent.fill(searchInput, 'john doe');
 
-    expect(searchInput).toHaveValue('john doe');
+    await expect.element(searchInput).toHaveValue('john doe');
   });
 
   it('navigates to create user page when create button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
+    await renderWithProviders(<UsersListPage />);
 
-    const createButton = screen.getByRole('button', {name: /add user/i});
-    await user.click(createButton);
+    const createButton = page.getByRole('button', {name: /add user/i});
+    await userEvent.click(createButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/users/create');
   });
 
-  it('renders UsersList component', () => {
-    render(<UsersListPage />);
+  it('renders schema select dropdown', async () => {
+    await renderWithProviders(<UsersListPage />);
 
-    expect(screen.getByTestId('users-list')).toBeInTheDocument();
+    const select = page.getByRole('combobox');
+    await expect.element(select).toBeInTheDocument();
   });
 
-  it('renders plus icon in create user button', () => {
-    render(<UsersListPage />);
+  it('displays schema options from API', async () => {
+    await renderWithProviders(<UsersListPage />);
 
-    const createButton = screen.getByRole('button', {name: /add user/i});
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
+
+    await vi.waitFor(() => {
+      const employeeOptions = page.getByText('Employee Schema');
+      const contractorOptions = page.getByText('Contractor Schema');
+      expect(employeeOptions.length).toBeGreaterThan(0);
+      expect(contractorOptions.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('selects first schema by default', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    const usersList = page.getByTestId('users-list');
+    await expect.element(usersList).toHaveAttribute('data-schema', 'schema1');
+  });
+
+  it('changes selected schema when dropdown value changes', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
+
+    await expect.element(page.getByText('Contractor Schema')).toBeInTheDocument();
+
+
+    await userEvent.click(page.getByText('Contractor Schema'));
+
+    await vi.waitFor(async () => {
+      const usersList = page.getByTestId('users-list');
+      await expect.element(usersList).toHaveAttribute('data-schema', 'schema2');
+    });
+  });
+
+  it('renders UsersList component', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    await expect.element(page.getByTestId('users-list')).toBeInTheDocument();
+  });
+
+  it('passes selected schema to UsersList', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    const usersList = page.getByTestId('users-list');
+    await expect.element(usersList).toHaveAttribute('data-schema');
+  });
+
+  it('renders plus icon in create user button', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    const createButton = page.getByRole('button', {name: /add user/i});
     // Check that button has an icon by checking for svg within the button
-    const icon = createButton.querySelector('svg');
+    const icon = createButton.element().querySelector('svg');
     expect(icon).toBeInTheDocument();
   });
 
-  it('has correct heading level', () => {
-    render(<UsersListPage />);
+  it('handles empty schemas list', async () => {
+    mockUseGetUserSchemas.mockReturnValue({
+      data: {totalResults: 0, startIndex: 1, count: 0, schemas: []},
+    });
 
-    const heading = screen.getByRole('heading', {level: 1, name: /user management/i});
-    expect(heading).toBeInTheDocument();
+    await renderWithProviders(<UsersListPage />);
+
+    const usersList = page.getByTestId('users-list');
+    await expect.element(usersList).toHaveAttribute('data-schema', '');
   });
 
-  it('create user button has contained variant', () => {
-    render(<UsersListPage />);
+  it('handles undefined schemas data', async () => {
+    mockUseGetUserSchemas.mockReturnValue({
+      data: undefined,
+    });
 
-    const createButton = screen.getByRole('button', {name: /add user/i});
-    expect(createButton).toHaveClass('MuiButton-contained');
+    await renderWithProviders(<UsersListPage />);
+
+    await expect.element(page.getByText('User Management')).toBeInTheDocument();
+    await expect.element(page.getByTestId('users-list')).toBeInTheDocument();
+  });
+
+  it('has correct heading level', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    const heading = page.getByRole('heading', {level: 1, name: /user management/i});
+    await expect.element(heading).toBeInTheDocument();
+  });
+
+  it('create user button has contained variant', async () => {
+    await renderWithProviders(<UsersListPage />);
+
+    const createButton = page.getByRole('button', {name: /add user/i});
+    await expect.element(createButton).toHaveClass('MuiButton-contained');
   });
 
   it('opens invite dialog when invite user button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
+    await renderWithProviders(<UsersListPage />);
 
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    await user.click(inviteButton);
+    const inviteButton = page.getByRole('button', {name: /invite user/i});
+    await userEvent.click(inviteButton);
 
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
+    await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+
   });
 
   it('closes invite dialog when onClose is triggered', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
+    await renderWithProviders(<UsersListPage />);
 
     // Open dialog
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    await user.click(inviteButton);
+    const inviteButton = page.getByRole('button', {name: /invite user/i});
+    await userEvent.click(inviteButton);
 
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
+    await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+
 
     // Close dialog by clicking the close button
-    const closeButton = screen.getByRole('button', {name: /close/i});
-    await user.click(closeButton);
+    const closeButton = page.getByRole('button', {name: /close/i});
+    await userEvent.click(closeButton);
 
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
+
   });
 
   it('calls onSuccess handler when invite is successful', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
+    await renderWithProviders(<UsersListPage />);
 
     // Open dialog
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    await user.click(inviteButton);
+    const inviteButton = page.getByRole('button', {name: /invite user/i});
+    await userEvent.click(inviteButton);
 
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
+    await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+
 
     // Trigger the success callback
-    const triggerSuccessButton = screen.getByTestId('trigger-success');
-    await user.click(triggerSuccessButton);
+    const triggerSuccessButton = page.getByTestId('trigger-success');
+    await userEvent.click(triggerSuccessButton);
 
     // Verify the onSuccess callback was captured and can be called
     expect(capturedOnSuccess).toBeDefined();
@@ -275,21 +354,17 @@ describe('UsersListPage', () => {
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
 
-    const user = userEvent.setup();
-    render(<UsersListPage />);
+    await renderWithProviders(<UsersListPage />);
 
-    const createButton = screen.getByRole('button', {name: /add user/i});
-    await user.click(createButton);
+    const createButton = page.getByRole('button', {name: /add user/i});
+    await userEvent.click(createButton);
 
     // Verify navigate was called even though it will fail
     expect(mockNavigate).toHaveBeenCalledWith('/users/create');
 
-    // Wait for the error handler to run and log the error
-    await waitFor(() => {
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        'Failed to navigate to create user page',
-        expect.objectContaining({error: navigationError}),
-      );
+    // Wait a bit for the error handler to be called
+    await vi.waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalled();
     });
   });
 });

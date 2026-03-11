@@ -17,16 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Resource} from '@/features/flows/models/resources';
 import RichText from '../RichText';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 // Mock the lexical plugins and components
 vi.mock('@lexical/react/LexicalComposer', () => ({
@@ -115,71 +109,71 @@ describe('RichText', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the LexicalComposer wrapper', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the LexicalComposer wrapper', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('lexical-composer')).toBeInTheDocument();
     });
 
-    it('should render the ToolbarPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the ToolbarPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('toolbar-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('toolbar-plugin')).toBeInTheDocument();
     });
 
-    it('should render the RichTextPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the RichTextPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('rich-text-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-plugin')).toBeInTheDocument();
     });
 
-    it('should render the ContentEditable', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the ContentEditable', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('content-editable')).toBeInTheDocument();
+      await expect.element(page.getByTestId('content-editable')).toBeInTheDocument();
     });
 
-    it('should render the HistoryPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the HistoryPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('history-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('history-plugin')).toBeInTheDocument();
     });
 
-    it('should render the AutoFocusPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the AutoFocusPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('auto-focus-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('auto-focus-plugin')).toBeInTheDocument();
     });
 
-    it('should render the LinkPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the LinkPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('link-plugin')).toBeInTheDocument();
     });
 
-    it('should render the CustomLinkPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the CustomLinkPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('custom-link-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('custom-link-plugin')).toBeInTheDocument();
     });
 
-    it('should render the HTMLPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should render the HTMLPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('html-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('html-plugin')).toBeInTheDocument();
     });
 
-    it('should pass resource to HTMLPlugin', () => {
+    it('should pass resource to HTMLPlugin', async () => {
       const resource = createMockResource({id: 'test-resource-id'});
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      expect(screen.getByTestId('html-plugin')).toHaveAttribute('data-resource-id', 'test-resource-id');
+      await expect.element(page.getByTestId('html-plugin')).toHaveAttribute('data-resource-id', 'test-resource-id');
     });
   });
 
   describe('Props', () => {
-    it('should apply custom className', () => {
-      const {container} = render(
+    it('should apply custom className', async () => {
+      const {container} = await render(
         <RichText onChange={mockOnChange} resource={createMockResource()} className="custom-class" />,
       );
 
@@ -187,20 +181,20 @@ describe('RichText', () => {
       expect(composerChild).toBeInTheDocument();
     });
 
-    it('should pass disabled prop to ToolbarPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} disabled />);
+    it('should pass disabled prop to ToolbarPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} disabled />);
 
-      expect(screen.getByTestId('toolbar-plugin')).toHaveAttribute('data-disabled', 'true');
+      await expect.element(page.getByTestId('toolbar-plugin')).toHaveAttribute('data-disabled', 'true');
     });
 
-    it('should pass disabled prop to HTMLPlugin', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} disabled />);
+    it('should pass disabled prop to HTMLPlugin', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} disabled />);
 
-      expect(screen.getByTestId('html-plugin')).toHaveAttribute('data-disabled', 'true');
+      await expect.element(page.getByTestId('html-plugin')).toHaveAttribute('data-disabled', 'true');
     });
 
-    it('should pass ToolbarProps to ToolbarPlugin', () => {
-      render(
+    it('should pass ToolbarProps to ToolbarPlugin', async () => {
+      await render(
         <RichText
           onChange={mockOnChange}
           resource={createMockResource()}
@@ -208,79 +202,80 @@ describe('RichText', () => {
         />,
       );
 
-      expect(screen.getByTestId('toolbar-plugin')).toBeInTheDocument();
+      await expect.element(page.getByTestId('toolbar-plugin')).toBeInTheDocument();
     });
 
-    it('should default disabled to false', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should default disabled to false', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('toolbar-plugin')).toHaveAttribute('data-disabled', 'false');
-      expect(screen.getByTestId('html-plugin')).toHaveAttribute('data-disabled', 'false');
+      await expect.element(page.getByTestId('toolbar-plugin')).toHaveAttribute('data-disabled', 'false');
+      await expect.element(page.getByTestId('html-plugin')).toHaveAttribute('data-disabled', 'false');
     });
   });
 
   describe('I18n Pattern Detection', () => {
-    it('should not show resolved i18n value field when label is not an i18n pattern', () => {
+    it('should not show resolved i18n value field when label is not an i18n pattern', async () => {
       const resource = createMockResource({label: 'Regular text'});
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      expect(screen.queryByText('flows:core.elements.richText.resolvedI18nValue')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Resolved i18n value')).not.toBeInTheDocument();
     });
 
-    it('should show resolved i18n value field when label is an i18n pattern', () => {
+    it('should show resolved i18n value field when label is an i18n pattern', async () => {
       const resource = createMockResource({label: '{{t(hello.world)}}'});
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      expect(screen.getByText('flows:core.elements.richText.resolvedI18nValue')).toBeInTheDocument();
+      await expect.element(page.getByText('Resolved i18n value')).toBeInTheDocument();
     });
 
-    it('should display resolved i18n value in text field', () => {
+    it('should display resolved i18n value in text field', async () => {
       const resource = createMockResource({label: '{{t(test.key)}}'});
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      const textField = screen.getByDisplayValue('test.key');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeInTheDocument();
+      expect(textField).toHaveValue('test.key');
       expect(textField).toBeDisabled();
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle resource without label', () => {
+    it('should handle resource without label', async () => {
       const resource = createMockResource();
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('lexical-composer')).toBeInTheDocument();
     });
 
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockResource({label: ''});
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('lexical-composer')).toBeInTheDocument();
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockResource({label: undefined});
-      render(<RichText onChange={mockOnChange} resource={resource} />);
+      await render(<RichText onChange={mockOnChange} resource={resource} />);
 
-      expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('lexical-composer')).toBeInTheDocument();
     });
   });
 
   describe('Editor Config', () => {
-    it('should have correct editor namespace', () => {
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+    it('should have correct editor namespace', async () => {
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
       // The editor config is passed to LexicalComposer
-      expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('lexical-composer')).toBeInTheDocument();
     });
 
-    it('should rethrow errors in onError callback', () => {
+    it('should rethrow errors in onError callback', async () => {
       // The onError callback in editorConfig throws errors
       // This is verified by the component's behavior when rendering
-      render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
+      await render(<RichText onChange={mockOnChange} resource={createMockResource()} />);
 
-      expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('lexical-composer')).toBeInTheDocument();
     });
   });
 });

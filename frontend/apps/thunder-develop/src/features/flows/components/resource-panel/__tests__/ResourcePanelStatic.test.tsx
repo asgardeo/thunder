@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ResourcePanelStatic from '../ResourcePanelStatic';
 import type {Resource} from '../../../models/resources';
 
@@ -49,23 +50,23 @@ const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
 
 describe('ResourcePanelStatic', () => {
   describe('Rendering', () => {
-    it('should render resource label', () => {
+    it('should render resource label', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelStatic id="test-static-1" resource={resource} />);
+      await render(<ResourcePanelStatic id="test-static-1" resource={resource} />);
 
-      expect(screen.getByText('Static Template')).toBeInTheDocument();
+      await expect.element(page.getByText('Static Template')).toBeInTheDocument();
     });
 
-    it('should render resource description', () => {
+    it('should render resource description', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelStatic id="test-static-1" resource={resource} />);
+      await render(<ResourcePanelStatic id="test-static-1" resource={resource} />);
 
-      expect(screen.getByText('A static template description')).toBeInTheDocument();
+      await expect.element(page.getByText('A static template description')).toBeInTheDocument();
     });
 
-    it('should pass id to ResourcePanelItem', () => {
+    it('should pass id to ResourcePanelItem', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelStatic id="unique-id-123" resource={resource} />);
+      const {container} = await render(<ResourcePanelStatic id="unique-id-123" resource={resource} />);
 
       // ID should be passed through - component renders successfully
       expect(container.firstChild).toBeInTheDocument();
@@ -73,9 +74,9 @@ describe('ResourcePanelStatic', () => {
   });
 
   describe('Type Default', () => {
-    it('should have static as default type', () => {
+    it('should have static as default type', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelStatic id="test-id" resource={resource} />);
+      const {container} = await render(<ResourcePanelStatic id="test-id" resource={resource} />);
 
       // Static type card renders with default cursor behavior
       const card = container.querySelector('.MuiCard-root');
@@ -84,42 +85,42 @@ describe('ResourcePanelStatic', () => {
   });
 
   describe('Disabled State', () => {
-    it('should pass disabled state to ResourcePanelItem', () => {
+    it('should pass disabled state to ResourcePanelItem', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelStatic id="test-id" resource={resource} onAdd={onAdd} disabled />);
+      await render(<ResourcePanelStatic id="test-id" resource={resource} onAdd={onAdd} disabled />);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeDisabled();
     });
 
-    it('should not disable by default', () => {
+    it('should not disable by default', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelStatic id="test-id" resource={resource} onAdd={onAdd} />);
+      await render(<ResourcePanelStatic id="test-id" resource={resource} onAdd={onAdd} />);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).not.toBeDisabled();
     });
   });
 
   describe('onAdd Callback', () => {
-    it('should pass onAdd to ResourcePanelItem', () => {
+    it('should pass onAdd to ResourcePanelItem', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelStatic id="test-id" resource={resource} onAdd={onAdd} />);
+      await render(<ResourcePanelStatic id="test-id" resource={resource} onAdd={onAdd} />);
 
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
+      const button = page.getByRole('button');
+      await userEvent.click(button);
 
       expect(onAdd).toHaveBeenCalledWith(resource);
     });
   });
 
   describe('Additional Props', () => {
-    it('should render with additional className', () => {
+    it('should render with additional className', async () => {
       const resource = createMockResource();
-      const {container} = render(
+      const {container} = await render(
         <ResourcePanelStatic id="test-id" resource={resource} className="custom-class" />,
       );
 
@@ -129,18 +130,18 @@ describe('ResourcePanelStatic', () => {
   });
 
   describe('Type Prop', () => {
-    it('should accept custom type prop', () => {
+    it('should accept custom type prop', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelStatic id="test-id" resource={resource} type="draggable" />);
+      const {container} = await render(<ResourcePanelStatic id="test-id" resource={resource} type="draggable" />);
 
       // Component renders with custom type
       const card = container.querySelector('.MuiCard-root');
       expect(card).toBeInTheDocument();
     });
 
-    it('should use static type by default when type is not provided', () => {
+    it('should use static type by default when type is not provided', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelStatic id="test-id" resource={resource} />);
+      const {container} = await render(<ResourcePanelStatic id="test-id" resource={resource} />);
 
       // Component renders with default static type
       const card = container.querySelector('.MuiCard-root');

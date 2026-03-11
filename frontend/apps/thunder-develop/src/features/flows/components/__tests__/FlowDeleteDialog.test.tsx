@@ -17,26 +17,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import FlowDeleteDialog from '../FlowDeleteDialog';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:delete.title': 'Delete Flow',
-        'flows:delete.message': 'Are you sure you want to delete this flow?',
-        'flows:delete.disclaimer': 'This action cannot be undone.',
-        'flows:delete.error': 'Failed to delete flow',
-        'common:actions.cancel': 'Cancel',
-        'common:actions.delete': 'Delete',
-        'common:status.deleting': 'Deleting...',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 // Mock useDeleteFlow hook
 const mockMutate = vi.fn();
@@ -59,103 +42,103 @@ describe('FlowDeleteDialog', () => {
   });
 
   describe('Dialog Visibility', () => {
-    it('should render dialog when open is true', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should render dialog when open is true', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('should not render dialog when open is false', () => {
-      render(<FlowDeleteDialog open={false} flowId="flow-123" onClose={mockOnClose} />);
+    it('should not render dialog when open is false', async () => {
+      await render(<FlowDeleteDialog open={false} flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
     });
   });
 
   describe('Dialog Content', () => {
-    it('should display title', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should display title', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByText('Delete Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('Delete Flow')).toBeInTheDocument();
     });
 
-    it('should display confirmation message', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should display confirmation message', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByText('Are you sure you want to delete this flow?')).toBeInTheDocument();
+      await expect.element(page.getByText('Are you sure you want to delete this flow?')).toBeInTheDocument();
     });
 
-    it('should display warning disclaimer', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should display warning disclaimer', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+      await expect.element(page.getByText('This action cannot be undone.')).toBeInTheDocument();
     });
 
-    it('should display warning alert', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should display warning alert', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      const alert = screen.getByRole('alert');
+      const alert = page.getByRole('alert');
       expect(alert).toBeInTheDocument();
     });
   });
 
   describe('Cancel Button', () => {
-    it('should render cancel button', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should render cancel button', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
     });
 
-    it('should call onClose when cancel button is clicked', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should call onClose when cancel button is clicked', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      fireEvent.click(cancelButton);
+      const cancelButton = page.getByRole('button', {name: 'Cancel'});
+      await userEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Delete Button', () => {
-    it('should render delete button', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should render delete button', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
     });
 
-    it('should call mutate with flowId when delete button is clicked', () => {
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+    it('should call mutate with flowId when delete button is clicked', async () => {
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
       expect(mockMutate).toHaveBeenCalledWith('flow-123', expect.any(Object));
     });
 
-    it('should not call mutate when flowId is null', () => {
-      render(<FlowDeleteDialog open flowId={null} onClose={mockOnClose} />);
+    it('should not call mutate when flowId is null', async () => {
+      await render(<FlowDeleteDialog open flowId={null} onClose={mockOnClose} />);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
-    it('should show deleting text when isPending is true', () => {
+    it('should show deleting text when isPending is true', async () => {
       mockDeleteFlow.isPending = true;
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByRole('button', {name: 'Deleting...'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Deleting...'})).toBeInTheDocument();
     });
 
-    it('should disable buttons when isPending is true', () => {
+    it('should disable buttons when isPending is true', async () => {
       mockDeleteFlow.isPending = true;
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
-      expect(screen.getByRole('button', {name: 'Deleting...'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Deleting...'})).toBeDisabled();
     });
   });
 
@@ -165,12 +148,12 @@ describe('FlowDeleteDialog', () => {
         options.onSuccess();
       });
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} onSuccess={mockOnSuccess} />);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnClose).toHaveBeenCalled();
         expect(mockOnSuccess).toHaveBeenCalled();
       });
@@ -181,12 +164,12 @@ describe('FlowDeleteDialog', () => {
         options.onSuccess();
       });
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnClose).toHaveBeenCalled();
       });
     });
@@ -198,13 +181,13 @@ describe('FlowDeleteDialog', () => {
         options.onError(new Error('Network error'));
       });
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Network error')).toBeInTheDocument();
       });
     });
 
@@ -213,13 +196,13 @@ describe('FlowDeleteDialog', () => {
         options.onError({});
       });
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Failed to delete flow')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Failed to delete flow')).toBeInTheDocument();
       });
     });
 
@@ -228,19 +211,19 @@ describe('FlowDeleteDialog', () => {
         options.onError(new Error('Network error'));
       });
 
-      render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
+      await render(<FlowDeleteDialog open flowId="flow-123" onClose={mockOnClose} />);
 
       // Trigger error
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Network error')).toBeInTheDocument();
       });
 
       // Cancel should clear error
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      fireEvent.click(cancelButton);
+      const cancelButton = page.getByRole('button', {name: 'Cancel'});
+      await userEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalled();
     });

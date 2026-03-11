@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders, act} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import EditGeneralSettings from '../EditGeneralSettings';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 
@@ -74,39 +75,38 @@ describe('EditGeneralSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('should render all three sections', () => {
-    renderWithProviders(
+  it('should render all three sections', async () => {
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    expect(screen.getByTestId('quick-copy-section')).toBeInTheDocument();
-    expect(screen.getByTestId('parent-settings-section')).toBeInTheDocument();
-    expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('quick-copy-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('parent-settings-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('danger-zone-section')).toBeInTheDocument();
   });
 
-  it('should pass organizationUnit to QuickCopySection', () => {
-    renderWithProviders(
+  it('should pass organizationUnit to QuickCopySection', async () => {
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    expect(screen.getByText(/QuickCopySection - engineering/)).toBeInTheDocument();
+    await expect.element(page.getByText(/QuickCopySection - engineering/)).toBeInTheDocument();
   });
 
-  it('should pass organizationUnit to ParentSettingsSection', () => {
-    renderWithProviders(
+  it('should pass organizationUnit to ParentSettingsSection', async () => {
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    expect(screen.getByText(/ParentSettingsSection - Engineering/)).toBeInTheDocument();
+    await expect.element(page.getByText(/ParentSettingsSection - Engineering/)).toBeInTheDocument();
   });
 
-  it('should pass onDeleteClick to DangerZoneSection', () => {
-    renderWithProviders(
+  it('should pass onDeleteClick to DangerZoneSection', async () => {
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    const deleteButton = screen.getByText('Delete');
-    fireEvent.click(deleteButton);
+    await userEvent.click(page.getByText('Delete'));
 
     expect(mockOnDeleteClick).toHaveBeenCalledTimes(1);
   });
@@ -114,60 +114,52 @@ describe('EditGeneralSettings', () => {
   it('should handle clipboard copy and show copied state', async () => {
     // Mock clipboard API
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: writeTextMock,
-      },
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: writeTextMock},
+      configurable: true,
+      writable: true,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    const copyButton = screen.getByText('Copy Handle');
-    fireEvent.click(copyButton);
+    await userEvent.click(page.getByText('Copy Handle'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(writeTextMock).toHaveBeenCalledWith('test');
     });
 
-    expect(screen.getByText('Copied: handle')).toBeInTheDocument();
+    await expect.element(page.getByText('Copied: handle')).toBeInTheDocument();
   });
 
   it('should clear copied state after 2 seconds', async () => {
     vi.useRealTimers();
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
     // Mock clipboard API
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: vi.fn().mockResolvedValue(undefined),
-      },
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: vi.fn().mockResolvedValue(undefined)},
+      configurable: true,
+      writable: true,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    const copyButton = screen.getByText('Copy Handle');
-    fireEvent.click(copyButton);
+    await userEvent.click(page.getByText('Copy Handle'));
 
-    await waitFor(() => {
-      expect(screen.getByText('Copied: handle')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Copied: handle')).toBeInTheDocument();
 
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 2000);
 
     // Manually trigger the timeout callback
     const timeoutCallback = setTimeoutSpy.mock.calls.find((call) => call[1] === 2000)?.[0] as (this: void) => void;
     if (typeof timeoutCallback === 'function') {
-      act(() => {
-        timeoutCallback();
-      });
+      timeoutCallback();
     }
 
-    await waitFor(() => {
-      expect(screen.queryByText('Copied: handle')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Copied: handle')).not.toBeInTheDocument();
     setTimeoutSpy.mockRestore();
   });
 
@@ -177,31 +169,29 @@ describe('EditGeneralSettings', () => {
     const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
     // Mock clipboard API
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: vi.fn().mockResolvedValue(undefined),
-      },
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: vi.fn().mockResolvedValue(undefined)},
+      configurable: true,
+      writable: true,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 
-    const copyButton = screen.getByText('Copy Handle');
+    const copyButton = page.getByText('Copy Handle');
 
     // First copy
-    fireEvent.click(copyButton);
-    await waitFor(() => {
-      expect(screen.getByText('Copied: handle')).toBeInTheDocument();
-    });
+    await userEvent.click(copyButton);
+    await expect.element(page.getByText('Copied: handle')).toBeInTheDocument();
 
     // Capture the first timeout ID (mocked returns are usually numbers in jsdom)
     // But we just need to verify clearTimeout was called
 
     // Second copy (should reset the timer)
-    fireEvent.click(copyButton);
+    await userEvent.click(copyButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(clearTimeoutSpy).toHaveBeenCalled();
     });
 
@@ -209,14 +199,14 @@ describe('EditGeneralSettings', () => {
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 2000);
 
     // Ensure the state is still copied
-    expect(screen.getByText('Copied: handle')).toBeInTheDocument();
+    await expect.element(page.getByText('Copied: handle')).toBeInTheDocument();
 
     setTimeoutSpy.mockRestore();
     clearTimeoutSpy.mockRestore();
   });
 
-  it('should cleanup timeout on unmount', () => {
-    const {unmount} = renderWithProviders(
+  it('should cleanup timeout on unmount', async () => {
+    const {unmount} = await renderWithProviders(
       <EditGeneralSettings organizationUnit={mockOrganizationUnit} onDeleteClick={mockOnDeleteClick} />,
     );
 

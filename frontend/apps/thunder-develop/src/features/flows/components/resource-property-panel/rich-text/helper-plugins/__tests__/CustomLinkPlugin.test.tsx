@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent, type Locator} from 'vitest/browser';
 import CustomLinkPlugin from '../CustomLinkPlugin';
 
 // Use vi.hoisted for mock functions
@@ -49,13 +50,6 @@ const {
     setRel: vi.fn(),
     type: 'text',
   })),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
 }));
 
 // Mock the lexical composer context
@@ -138,60 +132,60 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the link editor card', () => {
-      render(<CustomLinkPlugin />);
+    it('should render the link editor card', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
 
-    it('should render view link title by default', () => {
-      render(<CustomLinkPlugin />);
+    it('should render view link title by default', async () => {
+      await render(<CustomLinkPlugin />);
 
-      expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
     });
 
-    it('should render close button', () => {
-      render(<CustomLinkPlugin />);
+    it('should render close button', async () => {
+      await render(<CustomLinkPlugin />);
 
       // Find the close button (IconButton with X icon)
-      const closeButtons = screen.getAllByRole('button');
+      const closeButtons = page.getByRole('button');
       expect(closeButtons.length).toBeGreaterThan(0);
     });
 
-    it('should render edit button in view mode', () => {
-      render(<CustomLinkPlugin />);
+    it('should render edit button in view mode', async () => {
+      await render(<CustomLinkPlugin />);
 
-      expect(screen.getByText('common:edit')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Edit'})).toBeInTheDocument();
     });
   });
 
   describe('Command Registration', () => {
-    it('should register CLICK_COMMAND on mount', () => {
-      render(<CustomLinkPlugin />);
+    it('should register CLICK_COMMAND on mount', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should register update listener on mount', () => {
-      render(<CustomLinkPlugin />);
+    it('should register update listener on mount', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should register SELECTION_CHANGE_COMMAND', () => {
-      render(<CustomLinkPlugin />);
+    it('should register SELECTION_CHANGE_COMMAND', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should register KEY_ESCAPE_COMMAND', () => {
-      render(<CustomLinkPlugin />);
+    it('should register KEY_ESCAPE_COMMAND', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should register TOGGLE_SAFE_LINK_COMMAND', () => {
-      render(<CustomLinkPlugin />);
+    it('should register TOGGLE_SAFE_LINK_COMMAND', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
@@ -199,93 +193,93 @@ describe('CustomLinkPlugin', () => {
 
   describe('Edit Mode', () => {
     it('should switch to edit mode when edit button is clicked', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
       // After clicking edit, the component should show edit mode title
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
     });
 
     it('should show save button in edit mode', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('button', {name: 'Save'})).toBeInTheDocument();
       });
     });
 
     it('should show text field in edit mode', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         const textField = document.querySelector('.MuiTextField-root');
         expect(textField).toBeInTheDocument();
       });
     });
 
     it('should exit edit mode when escape key is pressed in text field', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Press escape in the text field
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.keyDown(textField, {key: 'Escape'});
-        });
+        
+        await userEvent.keyboard('{Escape}');
+      
       }
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
 
     it('should handle enter key press in text field', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Type a URL and press enter
       const textField = document.querySelector('input');
       expect(textField).toBeInTheDocument();
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test.com'}});
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
+        
+        await userEvent.fill(textField, 'https://test.com');
+        await userEvent.keyboard('{Enter}');
+      
 
         // Verify the input value was updated
         expect(textField).toHaveValue('https://test.com');
@@ -293,49 +287,49 @@ describe('CustomLinkPlugin', () => {
     });
 
     it('should save link when save button is clicked', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('button', {name: 'Save'})).toBeInTheDocument();
       });
 
       // Type a URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://test.com');
+      
       }
 
       // Click save
-      const saveButton = screen.getByText('common:save');
-      await act(async () => {
-        fireEvent.click(saveButton);
-      });
+      const saveButton = page.getByRole('button', {name: 'Save'});
+      
+      await userEvent.click(saveButton);
+    
 
       // Should exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
   });
 
   describe('URL Display', () => {
-    it('should display link in view mode', () => {
-      render(<CustomLinkPlugin />);
+    it('should display link in view mode', async () => {
+      await render(<CustomLinkPlugin />);
 
       const link = document.querySelector('.MuiLink-root');
       expect(link).toBeInTheDocument();
     });
 
-    it('should open link in new tab with security attributes', () => {
-      render(<CustomLinkPlugin />);
+    it('should open link in new tab with security attributes', async () => {
+      await render(<CustomLinkPlugin />);
 
       const link = document.querySelector('.MuiLink-root');
       expect(link).toHaveAttribute('target', '_blank');
@@ -345,55 +339,55 @@ describe('CustomLinkPlugin', () => {
 
   describe('Close Functionality', () => {
     it('should reset state when close button is clicked', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode first
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Find and click close button (the IconButton with X icon)
-      const closeButtons = screen.getAllByRole('button');
-      const closeButton = closeButtons.find(btn => btn.querySelector('svg.lucide-x'));
+      const closeButtons = page.getByRole('button');
+      const closeButton = closeButtons.all().find((btn: Locator) => btn.element().querySelector('svg.lucide-x'));
       if (closeButton) {
-        await act(async () => {
-          fireEvent.click(closeButton);
-        });
+        
+        await userEvent.click(closeButton);
+      
       }
 
       // Should reset to view mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
   });
 
   describe('Event Listeners', () => {
-    it('should add window resize listener on mount', () => {
-      render(<CustomLinkPlugin />);
+    it('should add window resize listener on mount', async () => {
+      await render(<CustomLinkPlugin />);
 
       expect(window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
     });
 
-    it('should add body scroll listener on mount', () => {
+    it('should add body scroll listener on mount', async () => {
       const addEventListenerSpy = vi.spyOn(document.body, 'addEventListener');
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(addEventListenerSpy).toHaveBeenCalledWith('scroll', expect.any(Function));
 
       addEventListenerSpy.mockRestore();
     });
 
-    it('should remove event listeners on unmount', () => {
-      const {unmount} = render(<CustomLinkPlugin />);
+    it('should remove event listeners on unmount', async () => {
+      const {unmount} = await render(<CustomLinkPlugin />);
 
-      unmount();
+      await unmount();
 
       expect(window.removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
     });
@@ -401,63 +395,63 @@ describe('CustomLinkPlugin', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty URL', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('button', {name: 'Save'})).toBeInTheDocument();
       });
 
       // Clear the URL field
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
-        });
+        
+        await userEvent.fill(textField, '');
+      
       }
 
       // Click save
-      const saveButton = screen.getByText('common:save');
-      await act(async () => {
-        fireEvent.click(saveButton);
-      });
+      const saveButton = page.getByRole('button', {name: 'Save'});
+      
+      await userEvent.click(saveButton);
+    
 
       // Should not dispatch command with empty URL
       // The component checks for empty URL before dispatching
     });
 
     it('should handle text field input changes', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         const textField = document.querySelector('input');
         expect(textField).toBeInTheDocument();
       });
 
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://new-url.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://new-url.com');
+      
         expect(textField).toHaveValue('https://new-url.com');
       }
     });
   });
 
   describe('Positioning', () => {
-    it('should have absolute positioning', () => {
-      render(<CustomLinkPlugin />);
+    it('should have absolute positioning', async () => {
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root');
       expect(card).toHaveStyle({position: 'absolute'});
@@ -472,7 +466,7 @@ describe('CustomLinkPlugin', () => {
         $isLinkNode as ReturnType<typeof vi.fn>
       ).mockImplementation((node: {type?: string} | null) => node && node.type === 'link');
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
@@ -483,22 +477,22 @@ describe('CustomLinkPlugin', () => {
         $isLinkNode as ReturnType<typeof vi.fn>
       ).mockImplementation((node: {type?: string} | null) => node && node.type === 'link');
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
   });
 
   describe('TOGGLE_SAFE_LINK_COMMAND', () => {
-    it('should register TOGGLE_SAFE_LINK_COMMAND handler', () => {
-      render(<CustomLinkPlugin />);
+    it('should register TOGGLE_SAFE_LINK_COMMAND handler', async () => {
+      await render(<CustomLinkPlugin />);
 
       // Verify commands were registered
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should handle empty URL in TOGGLE_SAFE_LINK_COMMAND', () => {
-      render(<CustomLinkPlugin />);
+    it('should handle empty URL in TOGGLE_SAFE_LINK_COMMAND', async () => {
+      await render(<CustomLinkPlugin />);
 
       // The component registers the TOGGLE_SAFE_LINK_COMMAND which handles empty URLs
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -506,8 +500,8 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Click Command Handler', () => {
-    it('should register click command for opening links', () => {
-      render(<CustomLinkPlugin />);
+    it('should register click command for opening links', async () => {
+      await render(<CustomLinkPlugin />);
 
       // CLICK_COMMAND is registered to handle ctrl/meta+click on links
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -516,7 +510,7 @@ describe('CustomLinkPlugin', () => {
     it('should handle click with meta key on link', async () => {
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The CLICK_COMMAND handler checks for metaKey or ctrlKey
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -527,7 +521,7 @@ describe('CustomLinkPlugin', () => {
     it('should handle click with ctrl key on link', async () => {
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The CLICK_COMMAND handler checks for ctrlKey
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -537,46 +531,46 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Position Editor Element', () => {
-    it('should position editor when rect is provided', () => {
-      render(<CustomLinkPlugin />);
+    it('should position editor when rect is provided', async () => {
+      await render(<CustomLinkPlugin />);
 
       // The positionEditorElement function is called during updateLinkEditor
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should hide editor when rect is null', () => {
-      render(<CustomLinkPlugin />);
+    it('should hide editor when rect is null', async () => {
+      await render(<CustomLinkPlugin />);
 
       // When there's no selection, the editor is hidden
       const card = document.querySelector('.MuiCard-root');
       expect(card).toBeInTheDocument();
     });
 
-    it('should handle viewport edge cases for horizontal positioning', () => {
+    it('should handle viewport edge cases for horizontal positioning', async () => {
       // Test that the editor stays within viewport bounds
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle viewport edge cases for vertical positioning', () => {
+    it('should handle viewport edge cases for vertical positioning', async () => {
       // Test that the editor positions above selection when near bottom
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('URL Type Handling', () => {
-    it('should determine CUSTOM URL type for regular URLs', () => {
-      render(<CustomLinkPlugin />);
+    it('should determine CUSTOM URL type for regular URLs', async () => {
+      await render(<CustomLinkPlugin />);
 
       // The determineUrlType function returns 'CUSTOM' for non-predefined URLs
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should get placeholder URL for custom URLs', () => {
-      render(<CustomLinkPlugin />);
+    it('should get placeholder URL for custom URLs', async () => {
+      await render(<CustomLinkPlugin />);
 
       // The getPlaceholderUrl function returns the URL itself for custom URLs
       expect(mockGetEditorState).toHaveBeenCalled();
@@ -585,16 +579,16 @@ describe('CustomLinkPlugin', () => {
 
   describe('URL Type Change Handler', () => {
     it('should handle URL type change to CUSTOM', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode first
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // The handleUrlTypeChange function sets the URL to 'https://' for CUSTOM type
@@ -603,32 +597,32 @@ describe('CustomLinkPlugin', () => {
 
   describe('getCurrentUrl Function', () => {
     it('should return linkUrl for CUSTOM type', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Type a custom URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://custom-url.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://custom-url.com');
+      
         expect(textField).toHaveValue('https://custom-url.com');
       }
     });
   });
 
   describe('Selection Change Handling', () => {
-    it('should update on selection change', () => {
-      render(<CustomLinkPlugin />);
+    it('should update on selection change', async () => {
+      await render(<CustomLinkPlugin />);
 
       // SELECTION_CHANGE_COMMAND triggers updateLinkEditor
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -637,33 +631,33 @@ describe('CustomLinkPlugin', () => {
 
   describe('Escape Key Handling', () => {
     it('should handle KEY_ESCAPE_COMMAND in edit mode', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // KEY_ESCAPE_COMMAND is registered and should exit edit mode
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should not handle KEY_ESCAPE_COMMAND in view mode', () => {
-      render(<CustomLinkPlugin />);
+    it('should not handle KEY_ESCAPE_COMMAND in view mode', async () => {
+      await render(<CustomLinkPlugin />);
 
       // In view mode, KEY_ESCAPE_COMMAND returns false
-      expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
     });
   });
 
   describe('Update Listener', () => {
-    it('should update link editor on editor state change', () => {
-      render(<CustomLinkPlugin />);
+    it('should update link editor on editor state change', async () => {
+      await render(<CustomLinkPlugin />);
 
       // registerUpdateListener is called to listen for editor state changes
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
@@ -671,37 +665,37 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Root Element Handling', () => {
-    it('should handle null root element', () => {
+    it('should handle null root element', async () => {
       mockGetRootElement.mockReturnValueOnce(null as unknown as HTMLDivElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Component should handle null root element gracefully
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle root element with nested children', () => {
+    it('should handle root element with nested children', async () => {
       const rootElement = document.createElement('div');
       const child = document.createElement('span');
       rootElement.appendChild(child);
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('Native Selection Handling', () => {
-    it('should handle collapsed native selection', () => {
-      render(<CustomLinkPlugin />);
+    it('should handle collapsed native selection', async () => {
+      await render(<CustomLinkPlugin />);
 
       // When nativeSelection.isCollapsed is true, editor is hidden
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle non-collapsed native selection', () => {
-      render(<CustomLinkPlugin />);
+    it('should handle non-collapsed native selection', async () => {
+      await render(<CustomLinkPlugin />);
 
       // When selection is not collapsed, editor is positioned
       expect(mockGetEditorState).toHaveBeenCalled();
@@ -710,15 +704,15 @@ describe('CustomLinkPlugin', () => {
 
   describe('Focus Handling', () => {
     it('should focus input when entering edit mode', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         const textField = document.querySelector('input');
         expect(textField).toBeInTheDocument();
       });
@@ -727,38 +721,38 @@ describe('CustomLinkPlugin', () => {
 
   describe('Save Link with Last Selection', () => {
     it('should not dispatch command when lastSelection is null', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('button', {name: 'Save'})).toBeInTheDocument();
       });
 
       // Type a URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://test.com');
+      
       }
 
       // Press Enter (lastSelection may be null in this test setup)
       if (textField) {
-        await act(async () => {
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
+        
+        await userEvent.keyboard('{Enter}');
+      
       }
     });
   });
 
   describe('Link Attributes', () => {
-    it('should set target and rel attributes on link', () => {
-      render(<CustomLinkPlugin />);
+    it('should set target and rel attributes on link', async () => {
+      await render(<CustomLinkPlugin />);
 
       const link = document.querySelector('.MuiLink-root');
       expect(link).toHaveAttribute('target', '_blank');
@@ -767,7 +761,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Command Callbacks Execution', () => {
-    it('should execute CLICK_COMMAND callback with link node and meta key', () => {
+    it('should execute CLICK_COMMAND callback with link node and meta key', async () => {
       // Setup mocks for link node scenario
       const mockLinkNode = {
         type: 'link',
@@ -791,7 +785,7 @@ describe('CustomLinkPlugin', () => {
 
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Execute the click callback with metaKey
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
@@ -805,7 +799,7 @@ describe('CustomLinkPlugin', () => {
       mockOpen.mockRestore();
     });
 
-    it('should execute CLICK_COMMAND callback with link node and ctrl key', () => {
+    it('should execute CLICK_COMMAND callback with link node and ctrl key', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => null,
@@ -827,7 +821,7 @@ describe('CustomLinkPlugin', () => {
 
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
       if (clickCallback) {
@@ -840,7 +834,7 @@ describe('CustomLinkPlugin', () => {
       mockOpen.mockRestore();
     });
 
-    it('should return false from CLICK_COMMAND when no meta/ctrl key', () => {
+    it('should return false from CLICK_COMMAND when no meta/ctrl key', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => null,
@@ -860,7 +854,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
       if (clickCallback) {
@@ -870,7 +864,7 @@ describe('CustomLinkPlugin', () => {
       }
     });
 
-    it('should return false from CLICK_COMMAND when not a link node', () => {
+    it('should return false from CLICK_COMMAND when not a link node', async () => {
       const mockTextNode = {
         type: 'text',
         getParent: () => null,
@@ -890,7 +884,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
       if (clickCallback) {
@@ -900,7 +894,7 @@ describe('CustomLinkPlugin', () => {
       }
     });
 
-    it('should return false from CLICK_COMMAND when linkNode is null', () => {
+    it('should return false from CLICK_COMMAND when linkNode is null', async () => {
       const mockTextNode = {
         type: 'text',
         getParent: () => null,
@@ -920,7 +914,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
       if (clickCallback) {
@@ -930,7 +924,7 @@ describe('CustomLinkPlugin', () => {
       }
     });
 
-    it('should execute TOGGLE_SAFE_LINK_COMMAND with URL', () => {
+    it('should execute TOGGLE_SAFE_LINK_COMMAND with URL', async () => {
       const mockSetTarget = vi.fn();
       const mockSetRel = vi.fn();
       const mockLinkNode = {
@@ -952,7 +946,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
       if (toggleSafeLinkCallback) {
@@ -964,7 +958,7 @@ describe('CustomLinkPlugin', () => {
       }
     });
 
-    it('should execute TOGGLE_SAFE_LINK_COMMAND with empty URL to remove link', () => {
+    it('should execute TOGGLE_SAFE_LINK_COMMAND with empty URL to remove link', async () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
@@ -975,7 +969,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
       if (toggleSafeLinkCallback) {
@@ -985,7 +979,7 @@ describe('CustomLinkPlugin', () => {
       }
     });
 
-    it('should return false from TOGGLE_SAFE_LINK_COMMAND when linkNode is null', () => {
+    it('should return false from TOGGLE_SAFE_LINK_COMMAND when linkNode is null', async () => {
       const mockTextNode = {
         type: 'text',
         getParent: () => null,
@@ -1005,7 +999,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
       if (toggleSafeLinkCallback) {
@@ -1023,23 +1017,23 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode first
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Verify escapeCallback was captured
       expect(callbacks.KEY_ESCAPE_COMMAND).toBeDefined();
     });
 
-    it('should execute KEY_ESCAPE_COMMAND in view mode and return false', () => {
+    it('should execute KEY_ESCAPE_COMMAND in view mode and return false', async () => {
       const callbacks: Record<string, unknown> = {};
       (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
         (command: unknown, callback: unknown) => {
@@ -1048,7 +1042,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // In view mode, escape should return false
       const escapeCallback = callbacks.KEY_ESCAPE_COMMAND as (() => boolean) | undefined;
@@ -1058,7 +1052,7 @@ describe('CustomLinkPlugin', () => {
       }
     });
 
-    it('should execute SELECTION_CHANGE_COMMAND callback', () => {
+    it('should execute SELECTION_CHANGE_COMMAND callback', async () => {
       const callbacks: Record<string, unknown> = {};
       (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
         (command: unknown, callback: unknown) => {
@@ -1067,7 +1061,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const selectionChangeCallback = callbacks.SELECTION_CHANGE_COMMAND as (() => boolean) | undefined;
       if (selectionChangeCallback) {
@@ -1078,7 +1072,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('updateLinkEditor Function Coverage', () => {
-    it('should handle link node parent', () => {
+    it('should handle link node parent', async () => {
       const mockParentLinkNode = {
         type: 'link',
         getURL: () => 'https://parent-link.com',
@@ -1096,12 +1090,12 @@ describe('CustomLinkPlugin', () => {
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockParentLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should handle node being a link node directly', () => {
+    it('should handle node being a link node directly', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -1113,12 +1107,12 @@ describe('CustomLinkPlugin', () => {
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should handle non-link node without parent', () => {
+    it('should handle non-link node without parent', async () => {
       const mockTextNode = {
         type: 'text',
         getParent: () => null,
@@ -1130,32 +1124,32 @@ describe('CustomLinkPlugin', () => {
       mockIsLinkNode.mockReturnValue(false);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should handle non-range selection', () => {
+    it('should handle non-range selection', async () => {
       mockIsRangeSelection.mockReturnValue(false);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('positionEditorElement Function Coverage', () => {
-    it('should handle rect being null', () => {
+    it('should handle rect being null', async () => {
       mockIsRangeSelection.mockReturnValue(false);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       // When rect is null, editor should be hidden (opacity: 0)
       expect(card).toBeInTheDocument();
     });
 
-    it('should position editor when rect is provided and left edge adjustment needed', () => {
+    it('should position editor when rect is provided and left edge adjustment needed', async () => {
       // Mock window dimensions
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
@@ -1183,12 +1177,12 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should position editor when rect is provided and right edge adjustment needed', () => {
+    it('should position editor when rect is provided and right edge adjustment needed', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
 
@@ -1211,12 +1205,12 @@ describe('CustomLinkPlugin', () => {
       mockGetRootElement.mockReturnValue(rootElement);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should position editor above selection when near bottom', () => {
+    it('should position editor above selection when near bottom', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
       Object.defineProperty(window, 'pageYOffset', {value: 0, writable: true});
@@ -1240,12 +1234,12 @@ describe('CustomLinkPlugin', () => {
       mockGetRootElement.mockReturnValue(rootElement);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle anchorNode being root element', () => {
+    it('should handle anchorNode being root element', async () => {
       const rootElement = document.createElement('div');
       const innerChild = document.createElement('span');
       rootElement.appendChild(innerChild);
@@ -1267,19 +1261,19 @@ describe('CustomLinkPlugin', () => {
       mockGetRootElement.mockReturnValue(rootElement);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('Event Listener Cleanup', () => {
-    it('should remove scroll listener on unmount', () => {
+    it('should remove scroll listener on unmount', async () => {
       const removeEventListenerSpy = vi.spyOn(document.body, 'removeEventListener');
 
-      const {unmount} = render(<CustomLinkPlugin />);
+      const {unmount} = await render(<CustomLinkPlugin />);
 
-      unmount();
+      await unmount();
 
       expect(removeEventListenerSpy).toHaveBeenCalledWith('scroll', expect.any(Function));
 
@@ -1288,7 +1282,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('updateLinkEditor Edge Cases', () => {
-    it('should return early when editorElem is null', () => {
+    it('should return early when editorElem is null', async () => {
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelectedNode.mockReturnValue({
         getParent: () => ({type: 'paragraph'}),
@@ -1296,22 +1290,22 @@ describe('CustomLinkPlugin', () => {
       });
       mockIsLinkNode.mockReturnValue(false);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The component should handle null editor ref gracefully
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should return early when rootElement is null', () => {
+    it('should return early when rootElement is null', async () => {
       mockGetRootElement.mockReturnValue(null as unknown as HTMLElement);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle anchorNode being the root element with nested children', () => {
+    it('should handle anchorNode being the root element with nested children', async () => {
       const rootElement = document.createElement('div');
       const child1 = document.createElement('p');
       const child2 = document.createElement('span');
@@ -1336,12 +1330,12 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should position editor using domRange rect when anchorNode is not root', () => {
+    it('should position editor using domRange rect when anchorNode is not root', async () => {
       const rootElement = document.createElement('div');
       const textNode = document.createTextNode('test');
       rootElement.appendChild(textNode);
@@ -1364,12 +1358,12 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should hide editor when active element has link-input class', () => {
+    it('should hide editor when active element has link-input class', async () => {
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
 
@@ -1378,7 +1372,7 @@ describe('CustomLinkPlugin', () => {
       document.body.appendChild(mockInput);
       mockInput.focus();
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
 
@@ -1396,16 +1390,16 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // The handleUrlTypeChange is triggered via Select component
@@ -1415,89 +1409,89 @@ describe('CustomLinkPlugin', () => {
 
   describe('getCurrentUrl', () => {
     it('should return linkUrl for CUSTOM selectedUrlType', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Type a URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://custom.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://custom.com');
+      
 
         // Press Enter to trigger getCurrentUrl
-        await act(async () => {
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
+        
+        await userEvent.keyboard('{Enter}');
+      
       }
     });
   });
 
   describe('Save Button Click with Empty URL', () => {
     it('should not dispatch command when URL is empty on save button click', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('button', {name: 'Save'})).toBeInTheDocument();
       });
 
       // Clear URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
-        });
+        
+        await userEvent.fill(textField, '');
+      
       }
 
       // Click save
-      const saveButton = screen.getByText('common:save');
-      await act(async () => {
-        fireEvent.click(saveButton);
-      });
+      const saveButton = page.getByRole('button', {name: 'Save'});
+      
+      await userEvent.click(saveButton);
+    
 
       // Component should exit edit mode without dispatching command
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
   });
 
   describe('Enter Key Press with Empty URL', () => {
     it('should not dispatch command when URL is empty on Enter key', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Clear URL and press Enter
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
+        
+        await userEvent.fill(textField, '');
+        await userEvent.keyboard('{Enter}');
+      
       }
 
       // The component should handle the Enter key press with empty URL
@@ -1507,7 +1501,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Update Listener Callback', () => {
-    it('should execute update listener callback', () => {
+    it('should execute update listener callback', async () => {
       type UpdateCallback = (state: {editorState: {read: (cb: () => void) => void}}) => void;
       const capturedCallbacks: UpdateCallback[] = [];
       (mockRegisterUpdateListener as ReturnType<typeof vi.fn>).mockImplementation(
@@ -1517,7 +1511,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const updateListenerCallback = capturedCallbacks[0];
       if (updateListenerCallback) {
@@ -1532,16 +1526,16 @@ describe('CustomLinkPlugin', () => {
 
   describe('Handle Close with Editor Ref', () => {
     it('should call positionEditorElement with null on close', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Find the close button
-      const buttons = screen.getAllByRole('button');
-      const closeButton = buttons.find(btn => btn.querySelector('svg'));
+      const buttons = page.getByRole('button');
+      const closeButton = buttons.all().find((btn: Locator) => btn.element().querySelector('svg'));
 
       if (closeButton) {
-        await act(async () => {
-          fireEvent.click(closeButton);
-        });
+        
+        await userEvent.click(closeButton);
+      
       }
 
       // The card should still be in the document (just repositioned)
@@ -1550,7 +1544,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('updateLinkEditor when parent is null', () => {
-    it('should return early when parent node is null', () => {
+    it('should return early when parent node is null', async () => {
       mockGetSelectedNode.mockReturnValue({
         getParent: () => null,
         getURL: () => '',
@@ -1560,7 +1554,7 @@ describe('CustomLinkPlugin', () => {
       });
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
@@ -1568,16 +1562,16 @@ describe('CustomLinkPlugin', () => {
 
   describe('handleUrlTypeChange with predefined URL', () => {
     it('should handle URL type change when selectedOption is found', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Since PREDEFINED_URLS is empty, the Select won't be rendered
@@ -1585,16 +1579,16 @@ describe('CustomLinkPlugin', () => {
     });
 
     it('should set linkUrl to https:// when switching to CUSTOM type', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // The default type is CUSTOM, and URL should be set appropriately
@@ -1605,49 +1599,49 @@ describe('CustomLinkPlugin', () => {
 
   describe('getCurrentUrl for predefined URLs', () => {
     it('should return linkUrl when selectedUrlType is CUSTOM', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Type a URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://myurl.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://myurl.com');
+      
 
         // Click save - this triggers getCurrentUrl()
-        const saveButton = screen.getByText('common:save');
-        await act(async () => {
-          fireEvent.click(saveButton);
-        });
+        const saveButton = page.getByRole('button', {name: 'Save'});
+        
+        await userEvent.click(saveButton);
+      
       }
 
       // Should exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
 
     it('should return selectedOption.value when selectedUrlType is not CUSTOM but option not found', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Since PREDEFINED_URLS is empty, even if we had a non-CUSTOM type,
@@ -1689,35 +1683,35 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Type a URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://newurl.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://newurl.com');
+      
       }
 
       // Click save
-      const saveButton = screen.getByText('common:save');
-      await act(async () => {
-        fireEvent.click(saveButton);
-      });
+      const saveButton = page.getByRole('button', {name: 'Save'});
+      
+      await userEvent.click(saveButton);
+    
 
       // Should dispatch command and exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
   });
@@ -1756,36 +1750,36 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByRole('button', {name: 'Edit'});
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Edit Link$/})).toBeInTheDocument();
       });
 
       // Type a URL and press Enter
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://enterkey.com'}});
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
+        
+        await userEvent.fill(textField, 'https://enterkey.com');
+        await userEvent.keyboard('{Enter}');
+      
       }
 
       // Should exit edit mode after Enter
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.locator('span').filter({hasText: /^Link$/})).toBeInTheDocument();
       });
     });
   });
 
   describe('positionEditorElement edge cases', () => {
-    it('should position editor when top position would be negative', () => {
+    it('should position editor when top position would be negative', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 200, writable: true});
       Object.defineProperty(window, 'pageYOffset', {value: 100, writable: true});
@@ -1810,12 +1804,12 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should position editor to the right when left would be negative', () => {
+    it('should position editor to the right when left would be negative', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
 
@@ -1838,12 +1832,12 @@ describe('CustomLinkPlugin', () => {
       mockGetRootElement.mockReturnValue(rootElement);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should position editor when it would overflow right edge', () => {
+    it('should position editor when it would overflow right edge', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 400, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
 
@@ -1866,14 +1860,14 @@ describe('CustomLinkPlugin', () => {
       mockGetRootElement.mockReturnValue(rootElement);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('updateLinkEditor with link-input active element', () => {
-    it('should not reposition when active element has link-input class', () => {
+    it('should not reposition when active element has link-input class', async () => {
       const mockInput = document.createElement('input');
       mockInput.className = 'link-input';
       document.body.appendChild(mockInput);
@@ -1892,7 +1886,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
 
@@ -1901,7 +1895,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('updateLinkEditor inner element traversal', () => {
-    it('should traverse nested elements when anchorNode is rootElement', () => {
+    it('should traverse nested elements when anchorNode is rootElement', async () => {
       const rootElement = document.createElement('div');
       const level1 = document.createElement('p');
       const level2 = document.createElement('span');
@@ -1938,7 +1932,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The while loop should traverse through level1 -> level2 -> level3
       expect(mockGetEditorState).toHaveBeenCalled();
@@ -1946,7 +1940,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('positionEditorElement boundary adjustments', () => {
-    it('should adjust left position when editor would be cut off on the left', () => {
+    it('should adjust left position when editor would be cut off on the left', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
@@ -1987,13 +1981,13 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
     });
 
-    it('should adjust left position when editor would overflow right edge', () => {
+    it('should adjust left position when editor would overflow right edge', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 500, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
@@ -2032,13 +2026,13 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
     });
 
-    it('should position editor above selection when near bottom of viewport', () => {
+    it('should position editor above selection when near bottom of viewport', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 300, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
@@ -2077,13 +2071,13 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
     });
 
-    it('should ensure top position is not negative after bottom adjustment', () => {
+    it('should ensure top position is not negative after bottom adjustment', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 100, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
@@ -2122,7 +2116,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
@@ -2131,7 +2125,7 @@ describe('CustomLinkPlugin', () => {
 
   describe('resize and scroll event handlers', () => {
     it('should trigger update on window resize', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Get the resize handler that was registered
       const resizeCall = (window.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -2141,9 +2135,9 @@ describe('CustomLinkPlugin', () => {
 
       // Execute the resize handler
       const resizeHandler = resizeCall![1] as () => void;
-      await act(async () => {
-        resizeHandler();
-      });
+      
+      resizeHandler();
+    
 
       // Verify getEditorState was called (which happens in the update function)
       expect(mockGetEditorState).toHaveBeenCalled();
@@ -2152,7 +2146,7 @@ describe('CustomLinkPlugin', () => {
     it('should trigger update on body scroll', async () => {
       const addEventListenerSpy = vi.spyOn(document.body, 'addEventListener');
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Get the scroll handler that was registered
       const scrollCall = addEventListenerSpy.mock.calls.find((call) => call[0] === 'scroll');
@@ -2160,9 +2154,9 @@ describe('CustomLinkPlugin', () => {
 
       // Execute the scroll handler
       const scrollHandler = scrollCall![1] as () => void;
-      await act(async () => {
-        scrollHandler();
-      });
+      
+      scrollHandler();
+    
 
       expect(mockGetEditorState).toHaveBeenCalled();
 
@@ -2171,7 +2165,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('TOGGLE_SAFE_LINK_COMMAND with parent link node', () => {
-    it('should set target and rel on parent link node when node itself is not a link', () => {
+    it('should set target and rel on parent link node when node itself is not a link', async () => {
       const mockSetTarget = vi.fn();
       const mockSetRel = vi.fn();
       const mockParentLinkNode = {
@@ -2201,7 +2195,7 @@ describe('CustomLinkPlugin', () => {
         },
       );
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
       if (toggleSafeLinkCallback) {
@@ -2214,7 +2208,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('updateLinkEditor with link node detection', () => {
-    it('should set URL and type when parent is a link node', () => {
+    it('should set URL and type when parent is a link node', async () => {
       const mockParentLinkNode = {
         type: 'link',
         getURL: () => 'https://parent-url.com',
@@ -2254,14 +2248,14 @@ describe('CustomLinkPlugin', () => {
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The link URL from parent should be set
       const link = document.querySelector('.MuiLink-root');
       expect(link).toBeInTheDocument();
     });
 
-    it('should set URL and type when node itself is a link node', () => {
+    it('should set URL and type when node itself is a link node', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -2295,13 +2289,13 @@ describe('CustomLinkPlugin', () => {
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const link = document.querySelector('.MuiLink-root');
       expect(link).toBeInTheDocument();
     });
 
-    it('should reset URL and hide editor when neither node nor parent is a link', () => {
+    it('should reset URL and hide editor when neither node nor parent is a link', async () => {
       const mockTextNode = {
         type: 'text',
         getParent: () => ({type: 'paragraph'}),
@@ -2318,7 +2312,7 @@ describe('CustomLinkPlugin', () => {
       const rootElement = document.createElement('div');
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Editor should be hidden (positioned off-screen)
       const card = document.querySelector('.MuiCard-root')!;
@@ -2327,7 +2321,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Native selection edge cases', () => {
-    it('should handle when nativeSelection is collapsed', () => {
+    it('should handle when nativeSelection is collapsed', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -2359,12 +2353,12 @@ describe('CustomLinkPlugin', () => {
       };
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle when nativeSelection anchorNode is null', () => {
+    it('should handle when nativeSelection anchorNode is null', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -2396,12 +2390,12 @@ describe('CustomLinkPlugin', () => {
       };
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle when anchorNode is not contained in rootElement', () => {
+    it('should handle when anchorNode is not contained in rootElement', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -2434,12 +2428,12 @@ describe('CustomLinkPlugin', () => {
       };
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle when window.getSelection returns null', () => {
+    it('should handle when window.getSelection returns null', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -2459,14 +2453,14 @@ describe('CustomLinkPlugin', () => {
       // window.getSelection returns null
       vi.spyOn(window, 'getSelection').mockReturnValue(null);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('CLICK_COMMAND with parent link node', () => {
-    it('should open link when parent is a link node and meta key is pressed', () => {
+    it('should open link when parent is a link node and meta key is pressed', async () => {
       const mockParentLinkNode = {
         type: 'link',
         getURL: () => 'https://parent-link-to-open.com',
@@ -2495,7 +2489,7 @@ describe('CustomLinkPlugin', () => {
 
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
       if (clickCallback) {
@@ -2510,18 +2504,18 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Lexical selection edge cases', () => {
-    it('should handle when $getSelection returns null', () => {
+    it('should handle when $getSelection returns null', async () => {
       mockGetSelection.mockReturnValue(null);
       mockIsRangeSelection.mockReturnValue(false);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('positionEditorElement additional boundary adjustments', () => {
-    it('should set left to 10 when calculated left position is negative', () => {
+    it('should set left to 10 when calculated left position is negative', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
@@ -2562,13 +2556,13 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
     });
 
-    it('should ensure top is not less than pageYOffset after bottom adjustment', () => {
+    it('should ensure top is not less than pageYOffset after bottom adjustment', async () => {
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 50, writable: true}); // Very small viewport
       Object.defineProperty(window, 'pageXOffset', {value: 0, writable: true});
@@ -2610,7 +2604,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
@@ -2618,7 +2612,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('editorElem null check in updateLinkEditor', () => {
-    it('should return early when editorRef.current is null during update', () => {
+    it('should return early when editorRef.current is null during update', async () => {
       // This test verifies the early return when editorElem is null
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
@@ -2634,14 +2628,14 @@ describe('CustomLinkPlugin', () => {
       mockIsLinkNode.mockReturnValue(false);
 
       // When no link is found, updateLinkEditor exits early after checking editorElem
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('rootElement null check in updateLinkEditor', () => {
-    it('should return early when getRootElement returns null after editorElem check', () => {
+    it('should return early when getRootElement returns null after editorElem check', async () => {
       // This test verifies the early return when rootElement is null
       mockGetRootElement.mockReturnValue(null as unknown as HTMLElement);
       mockIsRangeSelection.mockReturnValue(true);
@@ -2657,14 +2651,14 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('positionEditorElement right edge overflow', () => {
-    it('should adjust left position to right edge when editor would overflow right side of viewport', () => {
+    it('should adjust left position to right edge when editor would overflow right side of viewport', async () => {
       // This test verifies the adjustment when editor would overflow right edge
       Object.defineProperty(window, 'innerWidth', {value: 400, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
@@ -2707,7 +2701,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
@@ -2715,7 +2709,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('positionEditorElement negative top adjustment', () => {
-    it('should ensure top is at least pageYOffset + 10 when calculated top is negative', () => {
+    it('should ensure top is at least pageYOffset + 10 when calculated top is negative', async () => {
       // This test verifies the adjustment when top is less than pageYOffset
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 100, writable: true}); // Small viewport height
@@ -2758,7 +2752,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
@@ -2766,7 +2760,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('editorElem null handling in updateLinkEditor', () => {
-    it('should return early from updateLinkEditor when editorElem is null and not a link node', () => {
+    it('should return early from updateLinkEditor when editorElem is null and not a link node', async () => {
       // This verifies early return with valid range selection but null editorRef
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
@@ -2784,14 +2778,14 @@ describe('CustomLinkPlugin', () => {
       // Don't set up root element to simulate editorRef being null at certain point
       mockGetRootElement.mockReturnValue(null as unknown as HTMLElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('positionEditorElement right edge overflow (line 87)', () => {
-    it('should set left to viewportWidth - editorWidth - 10 when editor would overflow right', () => {
+    it('should set left to viewportWidth - editorWidth - 10 when editor would overflow right', async () => {
       // Create scenario where left + editorWidth > viewportWidth
       Object.defineProperty(window, 'innerWidth', {value: 400, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 800, writable: true});
@@ -2834,7 +2828,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
@@ -2842,7 +2836,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('positionEditorElement top below pageYOffset (line 98)', () => {
-    it('should set top to pageYOffset + 10 when calculated top is below scroll offset', () => {
+    it('should set top to pageYOffset + 10 when calculated top is below scroll offset', async () => {
       // Create scenario where top < pageYOffset after adjustments
       Object.defineProperty(window, 'innerWidth', {value: 1000, writable: true});
       Object.defineProperty(window, 'innerHeight', {value: 50, writable: true}); // Tiny viewport
@@ -2883,7 +2877,7 @@ describe('CustomLinkPlugin', () => {
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       const card = document.querySelector('.MuiCard-root')!;
       expect(card).toBeInTheDocument();
@@ -2891,7 +2885,7 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('updateLinkEditor editorElem null at line 192', () => {
-    it('should return early when editorElem is null after link URL is set', () => {
+    it('should return early when editorElem is null after link URL is set', async () => {
       // Test early return at line 192 when editorElem is null
       mockIsRangeSelection.mockReturnValue(true);
       mockGetSelection.mockReturnValue({type: 'range'});
@@ -2909,7 +2903,7 @@ describe('CustomLinkPlugin', () => {
       const rootElement = document.createElement('div');
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The component should handle the editorElem null check gracefully
       expect(mockGetEditorState).toHaveBeenCalled();

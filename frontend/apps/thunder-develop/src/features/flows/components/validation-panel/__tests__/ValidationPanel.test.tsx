@@ -19,27 +19,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ValidationPanel from '../ValidationPanel';
 import Notification, {NotificationType} from '../../../models/notification';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:core.notificationPanel.header': 'Notifications',
-        'flows:core.notificationPanel.tabs.errors': 'Errors',
-        'flows:core.notificationPanel.tabs.warnings': 'Warnings',
-        'flows:core.notificationPanel.tabs.info': 'Info',
-        'flows:core.notificationPanel.emptyMessages.errors': 'No errors found',
-        'flows:core.notificationPanel.emptyMessages.warnings': 'No warnings found',
-        'flows:core.notificationPanel.emptyMessages.info': 'No info messages found',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 // Mock ValidationNotificationsList
 vi.mock('../ValidationNotificationsList', () => ({
@@ -117,52 +100,52 @@ describe('ValidationPanel', () => {
   });
 
   describe('Rendering', () => {
-    it('should render panel header', () => {
-      render(<ValidationPanel />);
+    it('should render panel header', async () => {
+      await render(<ValidationPanel />);
 
-      expect(screen.getByText('Notifications')).toBeInTheDocument();
+      await expect.element(page.getByText('Notifications')).toBeInTheDocument();
     });
 
-    it('should render tabs for errors, warnings, and info', () => {
-      render(<ValidationPanel />);
+    it('should render tabs for errors, warnings, and info', async () => {
+      await render(<ValidationPanel />);
 
-      expect(screen.getByRole('tab', {name: /Errors/i})).toBeInTheDocument();
-      expect(screen.getByRole('tab', {name: /Warnings/i})).toBeInTheDocument();
-      expect(screen.getByRole('tab', {name: /Info/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('tab', {name: /Errors/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('tab', {name: /Warnings/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('tab', {name: /Info/i})).toBeInTheDocument();
     });
 
-    it('should render close button', () => {
-      render(<ValidationPanel />);
+    it('should render close button', async () => {
+      await render(<ValidationPanel />);
 
       // Close button is an IconButton
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       expect(buttons.length).toBeGreaterThan(0);
     });
   });
 
   describe('Tab Navigation', () => {
-    it('should show errors tab content by default', () => {
+    it('should show errors tab content by default', async () => {
       mockCurrentActiveTab = 0;
       mockNotifications = [createNotification('1', 'Error message', NotificationType.ERROR)];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
-      const visibleList = screen.getByTestId('notifications-list');
+      const visibleList = page.getByTestId('notifications-list');
       expect(visibleList).toHaveAttribute('data-empty-message', 'No errors found');
     });
 
-    it('should call setCurrentActiveTab when switching tabs', () => {
-      render(<ValidationPanel />);
+    it('should call setCurrentActiveTab when switching tabs', async () => {
+      await render(<ValidationPanel />);
 
-      const warningsTab = screen.getByRole('tab', {name: /Warnings/i});
-      fireEvent.click(warningsTab);
+      const warningsTab = page.getByRole('tab', {name: /Warnings/i});
+      await userEvent.click(warningsTab);
 
       expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(1);
     });
   });
 
   describe('Notification Filtering', () => {
-    it('should filter error notifications for errors tab', () => {
+    it('should filter error notifications for errors tab', async () => {
       mockCurrentActiveTab = 0;
       mockNotifications = [
         createNotification('1', 'Error', NotificationType.ERROR),
@@ -170,20 +153,20 @@ describe('ValidationPanel', () => {
         createNotification('3', 'Info', NotificationType.INFO),
       ];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
       const errorTabPanel = document.getElementById('validation-tabpanel-0');
       expect(errorTabPanel).not.toHaveAttribute('hidden');
     });
 
-    it('should filter warning notifications for warnings tab', () => {
+    it('should filter warning notifications for warnings tab', async () => {
       mockCurrentActiveTab = 1;
       mockNotifications = [
         createNotification('1', 'Error', NotificationType.ERROR),
         createNotification('2', 'Warning', NotificationType.WARNING),
       ];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
       const warningTabPanel = document.getElementById('validation-tabpanel-1');
       expect(warningTabPanel).not.toHaveAttribute('hidden');
@@ -191,66 +174,66 @@ describe('ValidationPanel', () => {
   });
 
   describe('Close Functionality', () => {
-    it('should call setOpenValidationPanel(false) when close button clicked', () => {
-      render(<ValidationPanel />);
+    it('should call setOpenValidationPanel(false) when close button clicked', async () => {
+      await render(<ValidationPanel />);
 
       // Find the close button (IconButton with X icon)
-      const closeButtons = screen.getAllByRole('button');
-      const closeButton = closeButtons.find((btn) => btn.querySelector('svg'));
+      const closeButtons = page.getByRole('button');
+      const closeButton = closeButtons.all().find((btn) => btn.element().querySelector('svg'));
 
       if (closeButton) {
-        fireEvent.click(closeButton);
+        await userEvent.click(closeButton);
         expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
       }
     });
   });
 
   describe('Notification Click Handling', () => {
-    it('should set selected notification when notification is clicked', () => {
+    it('should set selected notification when notification is clicked', async () => {
       mockCurrentActiveTab = 0;
       const notification = createNotification('1', 'Error', NotificationType.ERROR);
       mockNotifications = [notification];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
-      const notificationButton = screen.getByTestId('notification-1');
-      fireEvent.click(notificationButton);
+      const notificationButton = page.getByTestId('notification-1');
+      await userEvent.click(notificationButton);
 
       expect(mockSetSelectedNotification).toHaveBeenCalledWith(notification);
     });
 
-    it('should close panel when notification is clicked', () => {
+    it('should close panel when notification is clicked', async () => {
       mockCurrentActiveTab = 0;
       const notification = createNotification('1', 'Error', NotificationType.ERROR);
       mockNotifications = [notification];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
-      const notificationButton = screen.getByTestId('notification-1');
-      fireEvent.click(notificationButton);
+      const notificationButton = page.getByTestId('notification-1');
+      await userEvent.click(notificationButton);
 
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
     });
 
-    it('should set last interacted resource when notification has single resource', () => {
+    it('should set last interacted resource when notification has single resource', async () => {
       mockCurrentActiveTab = 0;
       const notification = createNotification('1', 'Error', NotificationType.ERROR);
       const resource = {id: 'resource-1', type: 'TEST', category: 'TEST'} as any;
       notification.addResource(resource);
       mockNotifications = [notification];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
-      const notificationButton = screen.getByTestId('notification-1');
-      fireEvent.click(notificationButton);
+      const notificationButton = page.getByTestId('notification-1');
+      await userEvent.click(notificationButton);
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(resource);
     });
   });
 
   describe('Tab Panel Accessibility', () => {
-    it('should have correct aria attributes on tab panels', () => {
-      render(<ValidationPanel />);
+    it('should have correct aria attributes on tab panels', async () => {
+      await render(<ValidationPanel />);
 
       const tabPanel0 = document.getElementById('validation-tabpanel-0');
       expect(tabPanel0).toHaveAttribute('role', 'tabpanel');
@@ -259,7 +242,7 @@ describe('ValidationPanel', () => {
   });
 
   describe('Notification with Multiple Resources', () => {
-    it('should not set last interacted resource when notification has multiple resources', () => {
+    it('should not set last interacted resource when notification has multiple resources', async () => {
       mockCurrentActiveTab = 0;
       const notification = createNotification('1', 'Error', NotificationType.ERROR);
       const resource1 = {id: 'resource-1', type: 'TEST', category: 'TEST'} as any;
@@ -268,36 +251,36 @@ describe('ValidationPanel', () => {
       notification.addResource(resource2);
       mockNotifications = [notification];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
-      const notificationButton = screen.getByTestId('notification-1');
-      fireEvent.click(notificationButton);
+      const notificationButton = page.getByTestId('notification-1');
+      await userEvent.click(notificationButton);
 
       expect(mockSetLastInteractedResource).not.toHaveBeenCalled();
     });
 
-    it('should not set last interacted resource when notification has no resources', () => {
+    it('should not set last interacted resource when notification has no resources', async () => {
       mockCurrentActiveTab = 0;
       const notification = createNotification('1', 'Error', NotificationType.ERROR);
       mockNotifications = [notification];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
-      const notificationButton = screen.getByTestId('notification-1');
-      fireEvent.click(notificationButton);
+      const notificationButton = page.getByTestId('notification-1');
+      await userEvent.click(notificationButton);
 
       expect(mockSetLastInteractedResource).not.toHaveBeenCalled();
     });
   });
 
   describe('Tab Content Display', () => {
-    it('should display info notifications in info tab', () => {
+    it('should display info notifications in info tab', async () => {
       mockCurrentActiveTab = 2;
       mockNotifications = [
         createNotification('1', 'Info message', NotificationType.INFO),
       ];
 
-      render(<ValidationPanel />);
+      await render(<ValidationPanel />);
 
       const infoTabPanel = document.getElementById('validation-tabpanel-2');
       expect(infoTabPanel).not.toHaveAttribute('hidden');

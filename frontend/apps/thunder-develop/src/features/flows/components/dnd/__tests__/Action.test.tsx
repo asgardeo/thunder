@@ -17,188 +17,190 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {createRef} from 'react';
 import Action from '../Action';
 
 describe('Action', () => {
   describe('Rendering', () => {
-    it('should render as a button element', () => {
-      render(<Action>Click me</Action>);
+    it('should render as a button element', async () => {
+      await render(<Action>Click me</Action>);
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await expect.element(page.getByRole('button')).toBeInTheDocument();
     });
 
-    it('should render children content', () => {
-      render(<Action>Action Content</Action>);
+    it('should render children content', async () => {
+      await render(<Action>Action Content</Action>);
 
-      expect(screen.getByText('Action Content')).toBeInTheDocument();
+      await expect.element(page.getByText('Action Content')).toBeInTheDocument();
     });
 
-    it('should have type="button" attribute', () => {
-      render(<Action>Button</Action>);
+    it('should have type="button" attribute', async () => {
+      await render(<Action>Button</Action>);
 
-      expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
+      await expect.element(page.getByRole('button')).toHaveAttribute('type', 'button');
     });
   });
 
   describe('Ref Forwarding', () => {
-    it('should forward ref to button element', () => {
+    it('should forward ref to button element', async () => {
       const ref = createRef<HTMLButtonElement>();
 
-      render(<Action ref={ref}>With Ref</Action>);
+      await render(<Action ref={ref}>With Ref</Action>);
 
-      expect(ref.current).toBe(screen.getByRole('button'));
+      expect(ref.current).toBe(page.getByRole('button'));
     });
   });
 
   describe('Cursor Styles', () => {
-    it('should have pointer cursor by default', () => {
-      render(<Action>Default Cursor</Action>);
+    it('should have pointer cursor by default', async () => {
+      await render(<Action>Default Cursor</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toHaveStyle({cursor: 'pointer'});
     });
 
-    it('should accept custom cursor style', () => {
-      render(<Action cursor="grab">Grab Cursor</Action>);
+    it('should accept custom cursor style', async () => {
+      await render(<Action cursor="grab">Grab Cursor</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toHaveStyle({cursor: 'grab'});
     });
 
-    it('should accept move cursor', () => {
-      render(<Action cursor="move">Move Cursor</Action>);
+    it('should accept move cursor', async () => {
+      await render(<Action cursor="move">Move Cursor</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toHaveStyle({cursor: 'move'});
     });
   });
 
   describe('Base Styles', () => {
-    it('should render button element with base styles', () => {
-      render(<Action>Styled</Action>);
+    it('should render button element with base styles', async () => {
+      await render(<Action>Styled</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
       // The button renders with inline styles applied
       expect(button).toHaveAttribute('type', 'button');
     });
 
-    it('should have full height', () => {
-      render(<Action>Styled</Action>);
+    it('should have full height', async () => {
+      await render(<Action>Styled</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toHaveStyle({height: '100%'});
     });
 
-    it('should have fixed width', () => {
-      render(<Action>Styled</Action>);
+    it('should have fixed width', async () => {
+      await render(<Action>Styled</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toHaveStyle({width: '50px'});
     });
   });
 
   describe('Custom Styles', () => {
-    it('should accept additional style prop', () => {
-      render(<Action style={{padding: '10px', color: 'red'}}>Custom Style</Action>);
+    it('should accept additional style prop', async () => {
+      await render(<Action style={{padding: '10px', color: 'red'}}>Custom Style</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       // Note: testing-library converts color names to rgb format
       expect(button).toHaveStyle({padding: '10px'});
     });
 
-    it('should merge custom styles with default styles', () => {
-      render(<Action style={{margin: '5px'}}>Merged</Action>);
+    it('should merge custom styles with default styles', async () => {
+      await render(<Action style={{margin: '5px'}}>Merged</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       // Should have both custom and default styles
       expect(button).toHaveStyle({margin: '5px'});
     });
   });
 
   describe('ClassName', () => {
-    it('should accept className prop', () => {
-      render(<Action className="custom-action-class">Class</Action>);
+    it('should accept className prop', async () => {
+      await render(<Action className="custom-action-class">Class</Action>);
 
-      expect(screen.getByRole('button')).toHaveClass('custom-action-class');
+      expect(page.getByRole('button')).toHaveClass('custom-action-class');
     });
   });
 
   describe('Hover Effects', () => {
-    it('should handle mouse enter event', () => {
-      render(<Action>Hover Me</Action>);
+    it('should handle mouse enter event', async () => {
+      await render(<Action>Hover Me</Action>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       // Mouse events should not throw errors
-      fireEvent.mouseEnter(button);
+      await userEvent.hover(button);
 
       expect(button).toBeInTheDocument();
     });
 
-    it('should handle mouse leave event', () => {
-      render(<Action>Hover Me</Action>);
+    it('should handle mouse leave event', async () => {
+      await render(<Action>Hover Me</Action>);
 
-      const button = screen.getByRole('button');
-      fireEvent.mouseEnter(button);
-      fireEvent.mouseLeave(button);
+      const button = page.getByRole('button');
+      await userEvent.hover(button);
+      await userEvent.unhover(button);
 
       expect(button).toBeInTheDocument();
     });
   });
 
   describe('Event Handlers', () => {
-    it('should call onClick handler', () => {
+    it('should call onClick handler', async () => {
       const onClick = vi.fn();
-      render(<Action onClick={onClick}>Click</Action>);
+      await render(<Action onClick={onClick}>Click</Action>);
 
-      fireEvent.click(screen.getByRole('button'));
+      await userEvent.click(page.getByRole('button'));
 
       expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onFocus handler', () => {
+    it('should call onFocus handler', async () => {
       const onFocus = vi.fn();
-      render(<Action onFocus={onFocus}>Focus</Action>);
+      await render(<Action onFocus={onFocus}>Focus</Action>);
 
-      fireEvent.focus(screen.getByRole('button'));
+      await userEvent.click(page.getByRole('button'));
 
       expect(onFocus).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onBlur handler', () => {
+    it('should call onBlur handler', async () => {
       const onBlur = vi.fn();
-      render(<Action onBlur={onBlur}>Blur</Action>);
+      await render(<Action onBlur={onBlur}>Blur</Action>);
 
-      const button = screen.getByRole('button');
-      fireEvent.focus(button);
-      fireEvent.blur(button);
+      const button = page.getByRole('button');
+      await userEvent.click(button);
+      await userEvent.tab();
 
       expect(onBlur).toHaveBeenCalledTimes(1);
     });
 
-    it('should pass event handlers through ...rest', () => {
+    it('should pass event handlers through ...rest', async () => {
       const onKeyDown = vi.fn();
-      render(<Action onKeyDown={onKeyDown}>Key</Action>);
+      await render(<Action onKeyDown={onKeyDown}>Key</Action>);
 
-      fireEvent.keyDown(screen.getByRole('button'), {key: 'Enter'});
+      await userEvent.click(page.getByRole('button'));
+      await userEvent.keyboard('{Enter}');
 
       expect(onKeyDown).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Additional Props', () => {
-    it('should pass data attributes', () => {
-      render(<Action data-testid="action-button">Data</Action>);
+    it('should pass data attributes', async () => {
+      await render(<Action data-testid="action-button">Data</Action>);
 
-      expect(screen.getByTestId('action-button')).toBeInTheDocument();
+      await expect.element(page.getByTestId('action-button')).toBeInTheDocument();
     });
 
-    it('should pass aria attributes', () => {
-      render(<Action aria-label="Action button">Aria</Action>);
+    it('should pass aria attributes', async () => {
+      await render(<Action aria-label="Action button">Aria</Action>);
 
-      expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Action button');
+      await expect.element(page.getByRole('button')).toHaveAttribute('aria-label', 'Action button');
     });
   });
 });

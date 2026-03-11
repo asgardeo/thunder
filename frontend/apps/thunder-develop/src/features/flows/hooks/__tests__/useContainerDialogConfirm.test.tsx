@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node, Edge} from '@xyflow/react';
@@ -148,21 +148,21 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('Hook Initialization', () => {
-    it('should return a stable handler function', () => {
+    it('should return a stable handler function', async () => {
       const props = createDefaultProps('form-on-canvas');
-      const {result, rerender} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result, rerender} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
       const initialHandler = result.current;
-      rerender();
+      await rerender();
 
       expect(result.current).toBe(initialHandler);
     });
 
-    it('should return a function', () => {
+    it('should return a function', async () => {
       const props = createDefaultProps('form-on-canvas');
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
@@ -171,15 +171,13 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('No Pending Data', () => {
-    it('should close dialog when no pending data exists', () => {
+    it('should close dialog when no pending data exists', async () => {
       const props = createDefaultProps('form-on-canvas', {current: null});
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockHandleContainerDialogClose).toHaveBeenCalled();
       expect(mockSetNodes).not.toHaveBeenCalled();
@@ -187,22 +185,20 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('Invalid Event Data', () => {
-    it('should close dialog when dropped resource is missing', () => {
+    it('should close dialog when dropped resource is missing', async () => {
       const pendingDropRef = createPendingDropRef(100, 200, undefined);
       const props = createDefaultProps('form-on-canvas', pendingDropRef);
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockHandleContainerDialogClose).toHaveBeenCalled();
       expect(mockSetNodes).not.toHaveBeenCalled();
     });
 
-    it('should close dialog when native event is missing', () => {
+    it('should close dialog when native event is missing', async () => {
       const pendingDropRef: React.MutableRefObject<{
         event: DragEventWithNative;
         sourceData: DragSourceData;
@@ -215,19 +211,17 @@ describe('useContainerDialogConfirm', () => {
         },
       };
       const props = createDefaultProps('form-on-canvas', pendingDropRef);
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockHandleContainerDialogClose).toHaveBeenCalled();
       expect(mockSetNodes).not.toHaveBeenCalled();
     });
 
-    it('should close dialog when native event lacks clientX/clientY', () => {
+    it('should close dialog when native event lacks clientX/clientY', async () => {
       const pendingDropRef: React.MutableRefObject<{
         event: DragEventWithNative;
         sourceData: DragSourceData;
@@ -240,13 +234,11 @@ describe('useContainerDialogConfirm', () => {
         },
       };
       const props = createDefaultProps('form-on-canvas', pendingDropRef);
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockHandleContainerDialogClose).toHaveBeenCalled();
       expect(mockSetNodes).not.toHaveBeenCalled();
@@ -254,7 +246,7 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('form-on-canvas scenario', () => {
-    it('should create a View step with the Form inside', () => {
+    it('should create a View step with the Form inside', async () => {
       const formResource = createMockResource({
         type: BlockTypes.Form,
         category: ElementCategories.Block,
@@ -262,13 +254,11 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, formResource);
       const props = createDefaultProps('form-on-canvas', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockOnStepLoad).toHaveBeenCalled();
       expect(mockSetNodes).toHaveBeenCalled();
@@ -283,7 +273,7 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('input-on-canvas scenario', () => {
-    it('should create a View step with Form containing the Input', () => {
+    it('should create a View step with Form containing the Input', async () => {
       const inputResource = createMockResource({
         type: 'TEXT_INPUT',
         category: ElementCategories.Field,
@@ -291,13 +281,11 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, inputResource);
       const props = createDefaultProps('input-on-canvas', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockOnStepLoad).toHaveBeenCalled();
       expect(mockSetNodes).toHaveBeenCalled();
@@ -314,7 +302,7 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('input-on-view scenario', () => {
-    it('should add a Form containing the Input to existing View', () => {
+    it('should add a Form containing the Input to existing View', async () => {
       const inputResource = createMockResource({
         type: 'TEXT_INPUT',
         category: ElementCategories.Field,
@@ -322,20 +310,18 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, inputResource, 'existing-step-id');
       const props = createDefaultProps('input-on-view', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('existing-step-id', expect.any(Function));
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
       expect(mockHandleContainerDialogClose).toHaveBeenCalled();
     });
 
-    it('should execute updateNodeData callback correctly to add form to existing components', () => {
+    it('should execute updateNodeData callback correctly to add form to existing components', async () => {
       const inputResource = createMockResource({
         type: 'TEXT_INPUT',
         category: ElementCategories.Field,
@@ -351,13 +337,11 @@ describe('useContainerDialogConfirm', () => {
         },
       );
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(capturedCallback).not.toBeNull();
 
@@ -379,7 +363,7 @@ describe('useContainerDialogConfirm', () => {
       expect(callbackResult.components[1].type).toBe(BlockTypes.Form);
     });
 
-    it('should handle updateNodeData callback with node having no existing components', () => {
+    it('should handle updateNodeData callback with node having no existing components', async () => {
       const inputResource = createMockResource({
         type: 'TEXT_INPUT',
         category: ElementCategories.Field,
@@ -394,13 +378,11 @@ describe('useContainerDialogConfirm', () => {
         },
       );
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       // Test with a node that has no components (undefined)
       const mockNodeNoComponents: Node = {
@@ -417,7 +399,7 @@ describe('useContainerDialogConfirm', () => {
       expect(callbackResult.components[0].type).toBe(BlockTypes.Form);
     });
 
-    it('should not update node when target step id is missing', () => {
+    it('should not update node when target step id is missing', async () => {
       const inputResource = createMockResource({
         type: 'TEXT_INPUT',
         category: ElementCategories.Field,
@@ -425,13 +407,11 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, inputResource, undefined);
       const props = createDefaultProps('input-on-view', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
       expect(mockHandleContainerDialogClose).toHaveBeenCalled();
@@ -439,7 +419,7 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('widget-on-canvas scenario', () => {
-    it('should create a View step and load widget', () => {
+    it('should create a View step and load widget', async () => {
       const widgetResource = createMockResource({
         resourceType: ResourceTypes.Widget,
         type: 'IDENTIFIER_PASSWORD',
@@ -452,13 +432,11 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, widgetResource);
       const props = createDefaultProps('widget-on-canvas', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockOnWidgetLoad).toHaveBeenCalledWith(
         expect.objectContaining({type: 'IDENTIFIER_PASSWORD'}),
@@ -500,18 +478,16 @@ describe('useContainerDialogConfirm', () => {
         },
       };
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(autoAssignConnections).toHaveBeenCalledWith(mockNodes, props.metadata?.executorConnections);
     });
 
-    it('should use default property selector when onWidgetLoad returns null', () => {
+    it('should use default property selector when onWidgetLoad returns null', async () => {
       const widgetResource = createMockResource({
         resourceType: ResourceTypes.Widget,
         type: 'IDENTIFIER_PASSWORD',
@@ -523,13 +499,11 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, widgetResource);
       const props = createDefaultProps('widget-on-canvas', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalledWith(
         expect.objectContaining({type: 'IDENTIFIER_PASSWORD'}),
@@ -537,7 +511,7 @@ describe('useContainerDialogConfirm', () => {
       );
     });
 
-    it('should use defaultPropertySectorStepId from onWidgetLoad when available', () => {
+    it('should use defaultPropertySectorStepId from onWidgetLoad when available', async () => {
       const widgetResource = createMockResource({
         resourceType: ResourceTypes.Widget,
         type: 'IDENTIFIER_PASSWORD',
@@ -557,13 +531,11 @@ describe('useContainerDialogConfirm', () => {
       const pendingDropRef = createPendingDropRef(100, 200, widgetResource);
       const props = createDefaultProps('widget-on-canvas', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       // Should use the customStepId from onWidgetLoad, not generatedViewStep.id
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalledWith(
@@ -574,17 +546,15 @@ describe('useContainerDialogConfirm', () => {
   });
 
   describe('Position Calculation', () => {
-    it('should use screenToFlowPosition to calculate drop position', () => {
+    it('should use screenToFlowPosition to calculate drop position', async () => {
       const pendingDropRef = createPendingDropRef(150, 250, createMockResource());
       const props = createDefaultProps('form-on-canvas', pendingDropRef);
 
-      const {result} = renderHook(() => useContainerDialogConfirm(props), {
+      const {result} = await renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
       });
 
-      act(() => {
-        result.current();
-      });
+      result.current();
 
       expect(mockScreenToFlowPosition).toHaveBeenCalledWith({x: 150, y: 250});
     });

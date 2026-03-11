@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetFlowBuilderCoreResources from '../useGetFlowBuilderCoreResources';
 import elements from '../../data/elements.json';
 import steps from '../../data/steps.json';
@@ -26,8 +26,8 @@ import widgets from '../../data/widgets.json';
 
 describe('useGetFlowBuilderCoreResources', () => {
   describe('Return Structure', () => {
-    it('should return an object with data, error, isLoading, isValidating, and mutate', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return an object with data, error, isLoading, isValidating, and mutate', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       expect(result.current).toHaveProperty('data');
       expect(result.current).toHaveProperty('error');
@@ -36,26 +36,26 @@ describe('useGetFlowBuilderCoreResources', () => {
       expect(result.current).toHaveProperty('mutate');
     });
 
-    it('should return error as null', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return error as null', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       expect(result.current.error).toBeNull();
     });
 
-    it('should return isLoading as false', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return isLoading as false', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       expect(result.current.isLoading).toBe(false);
     });
 
-    it('should return isValidating as false', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return isValidating as false', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       expect(result.current.isValidating).toBe(false);
     });
 
-    it('should return mutate as a function that returns null', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return mutate as a function that returns null', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       expect(typeof result.current.mutate).toBe('function');
       expect(result.current.mutate()).toBeNull();
@@ -63,36 +63,36 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Data Content', () => {
-    it('should return data containing elements from JSON file', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return data containing elements from JSON file', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(data.elements).toEqual(elements);
     });
 
-    it('should return data containing steps from JSON file', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return data containing steps from JSON file', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(data.steps).toEqual(steps);
     });
 
-    it('should return data containing templates from JSON file', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return data containing templates from JSON file', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(data.templates).toEqual(templates);
     });
 
-    it('should return data containing widgets from JSON file', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return data containing widgets from JSON file', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(data.widgets).toEqual(widgets);
     });
 
-    it('should return all resource types in data object', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return all resource types in data object', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(data).toHaveProperty('elements');
@@ -103,19 +103,19 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Generic Type Support', () => {
-    it('should support custom generic type', () => {
+    it('should support custom generic type', async () => {
       interface CustomResourceType {
         customField: string;
       }
 
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources<CustomResourceType>());
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources<CustomResourceType>());
 
       // The data is cast to the generic type
       expect(result.current.data).toBeDefined();
     });
 
-    it('should default to Resources type when no generic is provided', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should default to Resources type when no generic is provided', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       // Verify data matches expected Resources structure
       const {data} = result.current;
@@ -127,23 +127,23 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Memoization', () => {
-    it('should return memoized data on subsequent renders', () => {
-      const {result, rerender} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return memoized data on subsequent renders', async () => {
+      const {result, rerender} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const initialData = result.current.data;
-      rerender();
+      await rerender();
 
       // Due to useMemo, the data reference should be stable
       expect(result.current.data).toBe(initialData);
     });
 
-    it('should maintain stable data reference across multiple rerenders', () => {
-      const {result, rerender} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should maintain stable data reference across multiple rerenders', async () => {
+      const {result, rerender} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const firstData = result.current.data;
-      rerender();
+      await rerender();
       const secondData = result.current.data;
-      rerender();
+      await rerender();
       const thirdData = result.current.data;
 
       expect(firstData).toBe(secondData);
@@ -152,29 +152,29 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Data Arrays', () => {
-    it('should return elements as an array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return elements as an array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(Array.isArray(data.elements)).toBe(true);
     });
 
-    it('should return steps as an array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return steps as an array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(Array.isArray(data.steps)).toBe(true);
     });
 
-    it('should return templates as an array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return templates as an array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(Array.isArray(data.templates)).toBe(true);
     });
 
-    it('should return widgets as an array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return widgets as an array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       expect(Array.isArray(data.widgets)).toBe(true);
@@ -182,8 +182,8 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Element Resource Types', () => {
-    it('should contain ELEMENT resource type items in elements array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should contain ELEMENT resource type items in elements array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       if (data.elements.length > 0) {
@@ -192,8 +192,8 @@ describe('useGetFlowBuilderCoreResources', () => {
       }
     });
 
-    it('should contain elements with display property', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should contain elements with display property', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       if (data.elements.length > 0) {
@@ -204,8 +204,8 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Step Resource Types', () => {
-    it('should contain STEP resource type items in steps array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should contain STEP resource type items in steps array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       if (data.steps.length > 0) {
@@ -214,8 +214,8 @@ describe('useGetFlowBuilderCoreResources', () => {
       }
     });
 
-    it('should contain steps with type property', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should contain steps with type property', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
       if (data.steps.length > 0) {
@@ -226,9 +226,9 @@ describe('useGetFlowBuilderCoreResources', () => {
   });
 
   describe('Consistency', () => {
-    it('should return consistent data across multiple hook instances', () => {
-      const {result: result1} = renderHook(() => useGetFlowBuilderCoreResources());
-      const {result: result2} = renderHook(() => useGetFlowBuilderCoreResources());
+    it('should return consistent data across multiple hook instances', async () => {
+      const {result: result1} = await renderHook(() => useGetFlowBuilderCoreResources());
+      const {result: result2} = await renderHook(() => useGetFlowBuilderCoreResources());
 
       // Data content should be equal (though not necessarily the same reference across different hook instances)
       expect(result1.current.data).toEqual(result2.current.data);

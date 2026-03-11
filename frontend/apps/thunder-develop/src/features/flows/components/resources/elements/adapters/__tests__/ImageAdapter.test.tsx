@@ -17,19 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import ImageAdapter from '../ImageAdapter';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
 }));
@@ -51,80 +45,80 @@ describe('ImageAdapter', () => {
   });
 
   describe('Image Rendering', () => {
-    it('should render an image when src is provided', () => {
+    it('should render an image when src is provided', async () => {
       const resource = createMockElement({src: 'https://example.com/test.png'});
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toBeInTheDocument();
       expect(img).toHaveAttribute('src', 'https://example.com/test.png');
     });
 
-    it('should render image with alt text', () => {
+    it('should render image with alt text', async () => {
       const resource = createMockElement({
         src: 'https://example.com/test.png',
         alt: 'My Image Alt',
       });
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('alt', 'My Image Alt');
     });
 
-    it('should render image with full width', () => {
+    it('should render image with full width', async () => {
       const resource = createMockElement({src: 'https://example.com/test.png'});
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('width', '100%');
     });
 
-    it('should apply custom styles to image', () => {
+    it('should apply custom styles to image', async () => {
       const resource = createMockElement({
         src: 'https://example.com/test.png',
         styles: {borderRadius: '10px'},
       });
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({borderRadius: '10px'});
     });
   });
 
   describe('Placeholder Rendering', () => {
-    it('should render placeholder when src is empty', () => {
+    it('should render placeholder when src is empty', async () => {
       const resource = createMockElement({src: ''});
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      expect(screen.getByText('flows:core.placeholders.image')).toBeInTheDocument();
-      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      await expect.element(page.getByText('No image source')).toBeInTheDocument();
+      await expect.element(page.getByRole('img')).not.toBeInTheDocument();
     });
 
-    it('should render placeholder when src is undefined', () => {
+    it('should render placeholder when src is undefined', async () => {
       const resource = createMockElement({src: undefined});
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      expect(screen.getByText('flows:core.placeholders.image')).toBeInTheDocument();
+      await expect.element(page.getByText('No image source')).toBeInTheDocument();
     });
 
-    it('should render placeholder when src is whitespace only', () => {
+    it('should render placeholder when src is whitespace only', async () => {
       const resource = createMockElement({src: '   '});
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      expect(screen.getByText('flows:core.placeholders.image')).toBeInTheDocument();
+      await expect.element(page.getByText('No image source')).toBeInTheDocument();
     });
 
-    it('should render ImageIcon in placeholder', () => {
+    it('should render ImageIcon in placeholder', async () => {
       const resource = createMockElement({src: ''});
 
-      const {container} = render(<ImageAdapter resource={resource} />);
+      const {container} = await render(<ImageAdapter resource={resource} />);
 
       // The placeholder should have the ImageIcon
       expect(container.querySelector('svg')).toBeInTheDocument();
@@ -132,15 +126,15 @@ describe('ImageAdapter', () => {
   });
 
   describe('Error Handling', () => {
-    it('should show placeholder on image load error', () => {
+    it('should show placeholder on image load error', async () => {
       const resource = createMockElement({src: 'https://example.com/broken.png'});
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      const img = screen.getByRole('img');
-      fireEvent.error(img);
+      const img = page.getByRole('img');
+      img.element().dispatchEvent(new Event('error'));
 
-      expect(screen.getByText('flows:core.placeholders.image')).toBeInTheDocument();
+      await expect.element(page.getByText('No image source')).toBeInTheDocument();
     });
   });
 
@@ -151,7 +145,7 @@ describe('ImageAdapter', () => {
 
       const resource = createMockElement();
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalled();
     });
@@ -186,10 +180,10 @@ describe('ImageAdapter', () => {
   });
 
   describe('Centering', () => {
-    it('should center the image in a flex container', () => {
+    it('should center the image in a flex container', async () => {
       const resource = createMockElement({src: 'https://example.com/test.png'});
 
-      const {container} = render(<ImageAdapter resource={resource} />);
+      const {container} = await render(<ImageAdapter resource={resource} />);
 
       const box = container.firstChild;
       expect(box).toBeInTheDocument();
@@ -197,25 +191,25 @@ describe('ImageAdapter', () => {
   });
 
   describe('Alt Text', () => {
-    it('should handle undefined alt text', () => {
+    it('should handle undefined alt text', async () => {
       const resource = createMockElement({
         src: 'https://example.com/test.png',
         alt: undefined,
       });
 
-      render(<ImageAdapter resource={resource} />);
+      await render(<ImageAdapter resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toBeInTheDocument();
     });
 
-    it('should handle empty alt text', () => {
+    it('should handle empty alt text', async () => {
       const resource = createMockElement({
         src: 'https://example.com/test.png',
         alt: '',
       });
 
-      const {container} = render(<ImageAdapter resource={resource} />);
+      const {container} = await render(<ImageAdapter resource={resource} />);
 
       // Images with empty alt don't have img role (they're presentational)
       const img = container.querySelector('img');

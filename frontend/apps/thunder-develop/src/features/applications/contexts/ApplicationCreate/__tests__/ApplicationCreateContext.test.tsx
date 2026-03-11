@@ -17,7 +17,8 @@
  */
 
 import {describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {page} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import {useContext, useMemo} from 'react';
 import ApplicationCreateContext, {type ApplicationCreateContextType} from '../ApplicationCreateContext';
 
@@ -94,28 +95,28 @@ function TestWithMockValue() {
 }
 
 describe('ApplicationCreateContext', () => {
-  it('provides undefined value when used without provider', () => {
-    render(<TestConsumer />);
+  it('provides undefined value when used without provider', async () => {
+    await render(<TestConsumer />);
 
-    expect(screen.getByTestId('context')).toHaveTextContent('undefined');
+    await expect.element(page.getByTestId('context')).toHaveTextContent('undefined');
   });
 
-  it('provides context value when used with provider', () => {
-    render(<TestWithMockValue />);
+  it('provides context value when used with provider', async () => {
+    await render(<TestWithMockValue />);
 
-    expect(screen.getByTestId('context')).toHaveTextContent('defined');
-    expect(screen.getByTestId('context-type')).toHaveTextContent('object');
+    await expect.element(page.getByTestId('context')).toHaveTextContent('defined');
+    await expect.element(page.getByTestId('context-type')).toHaveTextContent('object');
   });
 
-  it('provides correct context properties when used with provider', () => {
-    render(<TestWithMockValue />);
+  it('provides correct context properties when used with provider', async () => {
+    await render(<TestWithMockValue />);
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent('DESIGN');
-    expect(screen.getByTestId('app-name')).toHaveTextContent('Test App');
-    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent('DESIGN');
+    await expect.element(page.getByTestId('app-name')).toHaveTextContent('Test App');
+    await expect.element(page.getByTestId('selected-theme')).toHaveTextContent('null');
   });
 
-  it('has correct TypeScript interface definition', () => {
+  it('has correct TypeScript interface definition', async () => {
     // This test ensures the interface matches expected shape
     const mockContext: ApplicationCreateContextType = {
       relyingPartyId: '',
@@ -170,7 +171,7 @@ describe('ApplicationCreateContext', () => {
     expect(typeof mockContext.reset).toBe('function');
   });
 
-  it('allows null values for optional properties', () => {
+  it('allows null values for optional properties', async () => {
     const mockContext: ApplicationCreateContextType = {
       relyingPartyId: '',
       setRelyingPartyId: () => {},
@@ -220,7 +221,7 @@ describe('ApplicationCreateContext', () => {
     expect(mockContext.error).toBeNull();
   });
 
-  it('creates context with expected default value (undefined)', () => {
+  it('creates context with expected default value (undefined)', async () => {
     // Testing the default export creates context with undefined default value
     // React Context doesn't expose _currentValue property in newer versions
     expect(ApplicationCreateContext).toBeDefined();

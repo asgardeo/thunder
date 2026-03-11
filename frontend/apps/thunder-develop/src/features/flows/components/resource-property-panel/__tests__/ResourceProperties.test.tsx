@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import ResourceProperties from '../ResourceProperties';
@@ -158,31 +159,31 @@ describe('ResourceProperties', () => {
   });
 
   describe('Rendering', () => {
-    it('should render ResourcePropertiesComponent when resource is available', () => {
-      render(<ResourceProperties />, {wrapper: createWrapper()});
+    it('should render ResourcePropertiesComponent when resource is available', async () => {
+      await render(<ResourceProperties />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
 
-    it('should display resource id', () => {
-      render(<ResourceProperties />, {wrapper: createWrapper()});
+    it('should display resource id', async () => {
+      await render(<ResourceProperties />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('resource-id')).toHaveTextContent('resource-1');
+      await expect.element(page.getByTestId('resource-id')).toHaveTextContent('resource-1');
     });
 
-    it('should show "No properties available" when lastInteractedResource is null', () => {
+    it('should show "No properties available" when lastInteractedResource is null', async () => {
       const contextWithNoResource = createContextValue({
         lastInteractedResource: null as unknown as Base,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNoResource)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithNoResource)});
 
-      expect(screen.getByText('No properties available.')).toBeInTheDocument();
+      await expect.element(page.getByText('No properties available.')).toBeInTheDocument();
     });
   });
 
   describe('Properties Filtering', () => {
-    it('should filter out excluded properties from config', () => {
+    it('should filter out excluded properties from config', async () => {
       const resourceWithConfig: Base = {
         ...mockBaseResource,
         config: {
@@ -196,12 +197,12 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithConfig,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithConfig)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithConfig)});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
 
-    it('should extract top-level editable properties', () => {
+    it('should extract top-level editable properties', async () => {
       const resourceWithTopLevelProps: Base = {
         ...mockBaseResource,
         label: 'Test Label',
@@ -214,10 +215,10 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithTopLevelProps,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithTopLevelProps)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithTopLevelProps)});
 
-      const propertiesDiv = screen.getByTestId('properties');
-      const properties = JSON.parse(propertiesDiv.textContent ?? '{}') as Record<string, unknown>;
+      const propertiesDiv = page.getByTestId('properties');
+      const properties = JSON.parse(propertiesDiv.element().textContent ?? '{}') as Record<string, unknown>;
 
       expect(properties.label).toBe('Test Label');
       expect(properties.hint).toBe('Test Hint');
@@ -227,7 +228,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Variant Change', () => {
-    it('should have variant change callback available', () => {
+    it('should have variant change callback available', async () => {
       const resourceWithVariants: Base = {
         ...mockBaseResource,
         variants: [
@@ -245,14 +246,14 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithVariants,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
 
-      expect(screen.getByText('Change Variant')).toBeInTheDocument();
+      await expect.element(page.getByText('Change Variant')).toBeInTheDocument();
     });
   });
 
   describe('Resource Without Config', () => {
-    it('should handle resource without config gracefully', () => {
+    it('should handle resource without config gracefully', async () => {
       const resourceWithoutConfig: Base = {
         ...mockBaseResource,
         config: undefined as unknown as BaseConfig,
@@ -262,27 +263,27 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithoutConfig,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithoutConfig)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithoutConfig)});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
   });
 
   describe('Memoization', () => {
-    it('should use memoized component', () => {
-      const {rerender} = render(<ResourceProperties />, {wrapper: createWrapper()});
+    it('should use memoized component', async () => {
+      const {rerender} = await render(<ResourceProperties />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
 
       // Re-render with same props should not cause issues
-      rerender(<ResourceProperties />);
+      await rerender(<ResourceProperties />);
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
   });
 
   describe('Empty Resource', () => {
-    it('should handle empty config object', () => {
+    it('should handle empty config object', async () => {
       const resourceWithEmptyConfig: Base = {
         ...mockBaseResource,
         config: {...mockBaseResource.config},
@@ -292,25 +293,25 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithEmptyConfig,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithEmptyConfig)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithEmptyConfig)});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
   });
 
   describe('Property Change Handler', () => {
     it('should trigger onChange callback when property changes', async () => {
-      render(<ResourceProperties />, {wrapper: createWrapper()});
+      await render(<ResourceProperties />, {wrapper: createWrapper()});
 
-      const changeLabelButton = screen.getByText('Change Label');
-      changeLabelButton.click();
+      const changeLabelButton = page.getByText('Change Label');
+      await changeLabelButton.click();
 
       // The onChange callback should be passed to MockResourcePropertiesComponent
       expect(MockResourcePropertiesComponent).toHaveBeenCalled();
     });
 
-    it('should pass resource to onChange callback', () => {
-      render(<ResourceProperties />, {wrapper: createWrapper()});
+    it('should pass resource to onChange callback', async () => {
+      await render(<ResourceProperties />, {wrapper: createWrapper()});
 
       // Verify the MockResourcePropertiesComponent receives the resource
       const {calls} = MockResourcePropertiesComponent.mock;
@@ -321,7 +322,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Variant Change Handler', () => {
-    it('should trigger onVariantChange callback', () => {
+    it('should trigger onVariantChange callback', async () => {
       const resourceWithVariants: Base = {
         ...mockBaseResource,
         variants: [
@@ -339,10 +340,10 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithVariants,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       // Verify onVariantChange was passed to the component
       const {calls} = MockResourcePropertiesComponent.mock;
@@ -351,7 +352,7 @@ describe('ResourceProperties', () => {
       expect(typeof props.onVariantChange).toBe('function');
     });
 
-    it('should handle variant change for resource with label', () => {
+    it('should handle variant change for resource with label', async () => {
       const resourceWithVariantsAndLabel: Base = {
         ...mockBaseResource,
         label: 'Current Label',
@@ -370,12 +371,12 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithVariantsAndLabel,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariantsAndLabel)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariantsAndLabel)});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
 
-    it('should handle variant change for resource with text config', () => {
+    it('should handle variant change for resource with text config', async () => {
       const resourceWithVariantsAndText: Base = {
         ...mockBaseResource,
         config: {
@@ -397,12 +398,12 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithVariantsAndText,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariantsAndText)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariantsAndText)});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
 
-    it('should not change variant when variant is not found', () => {
+    it('should not change variant when variant is not found', async () => {
       const resourceWithVariants: Base = {
         ...mockBaseResource,
         variants: [
@@ -420,15 +421,15 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithVariants,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
 
       // The component should render without issues
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
   });
 
   describe('Top-Level Properties', () => {
-    it('should extract src property', () => {
+    it('should extract src property', async () => {
       const resourceWithSrc: Base = {
         ...mockBaseResource,
         src: 'https://example.com/image.png',
@@ -438,15 +439,15 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithSrc,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithSrc)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithSrc)});
 
-      const propertiesDiv = screen.getByTestId('properties');
-      const properties = JSON.parse(propertiesDiv.textContent ?? '{}') as Record<string, unknown>;
+      const propertiesDiv = page.getByTestId('properties');
+      const properties = JSON.parse(propertiesDiv.element().textContent ?? '{}') as Record<string, unknown>;
 
       expect(properties.src).toBe('https://example.com/image.png');
     });
 
-    it('should extract alt property', () => {
+    it('should extract alt property', async () => {
       const resourceWithAlt: Base = {
         ...mockBaseResource,
         alt: 'Alternative text',
@@ -456,17 +457,17 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithAlt,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithAlt)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithAlt)});
 
-      const propertiesDiv = screen.getByTestId('properties');
-      const properties = JSON.parse(propertiesDiv.textContent ?? '{}') as Record<string, unknown>;
+      const propertiesDiv = page.getByTestId('properties');
+      const properties = JSON.parse(propertiesDiv.element().textContent ?? '{}') as Record<string, unknown>;
 
       expect(properties.alt).toBe('Alternative text');
     });
   });
 
   describe('Nested Components', () => {
-    it('should handle resource with nested components', () => {
+    it('should handle resource with nested components', async () => {
       const resourceWithNestedComponents: Base = {
         ...mockBaseResource,
         components: [
@@ -481,14 +482,14 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithNestedComponents,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNestedComponents)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithNestedComponents)});
 
-      expect(screen.getByTestId('mock-resource-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('mock-resource-properties')).toBeInTheDocument();
     });
   });
 
   describe('Variant Not Found', () => {
-    it('should return early when selected variant is not found', () => {
+    it('should return early when selected variant is not found', async () => {
       const resourceWithVariants: Base = {
         ...mockBaseResource,
         variants: [
@@ -529,10 +530,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithNonExistentVariant,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
 
-      const changeVariantButton = screen.getByText('Change to Non-Existent Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change to Non-Existent Variant');
+      await changeVariantButton.click();
 
       // updateNodeData should not be called when variant is not found
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
@@ -540,7 +541,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Preserve Label on Variant Change', () => {
-    it('should preserve current label value when changing variants', () => {
+    it('should preserve current label value when changing variants', async () => {
       const resourceWithLabelAndVariants: Base = {
         ...mockBaseResource,
         label: 'My Custom Label',
@@ -560,10 +561,10 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithLabelAndVariants,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithLabelAndVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithLabelAndVariants)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       // Verify updateNodeData was called (variant change should preserve the label)
       expect(mockUpdateNodeData).toHaveBeenCalled();
@@ -571,7 +572,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Preserve Text on Variant Change', () => {
-    it('should preserve current text value when changing variants with selectedVariant.config', () => {
+    it('should preserve current text value when changing variants with selectedVariant.config', async () => {
       const resourceWithTextAndVariants: Base = {
         ...mockBaseResource,
         config: {
@@ -593,10 +594,10 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithTextAndVariants,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithTextAndVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithTextAndVariants)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       // Verify updateNodeData was called
       expect(mockUpdateNodeData).toHaveBeenCalled();
@@ -604,7 +605,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Update Component Recursive Mapping', () => {
-    it('should update component when id matches', () => {
+    it('should update component when id matches', async () => {
       const resourceWithComponents: Base = {
         ...mockBaseResource,
         variants: [
@@ -622,15 +623,15 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithComponents,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithComponents)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithComponents)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should recursively update nested components', () => {
+    it('should recursively update nested components', async () => {
       const nestedResource = {
         ...mockBaseResource,
         id: 'nested-resource',
@@ -661,10 +662,10 @@ describe('ResourceProperties', () => {
         lastInteractedResource: nestedResource,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNestedComponents)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithNestedComponents)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
@@ -698,10 +699,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeDataButton = screen.getByText('Change Data');
-      changeDataButton.click();
+      const changeDataButton = page.getByText('Change Data');
+      await changeDataButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -739,10 +740,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithConfigChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Config Style');
-      changeButton.click();
+      const changeButton = page.getByText('Change Config Style');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -778,10 +779,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataPrefixChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Data Field');
-      changeButton.click();
+      const changeButton = page.getByText('Change Data Field');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -819,10 +820,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithActionChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Action');
-      changeButton.click();
+      const changeButton = page.getByText('Change Action');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -862,10 +863,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithCustomProperty,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Custom Property');
-      changeButton.click();
+      const changeButton = page.getByText('Change Custom Property');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -877,7 +878,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Variant Change with Element Partial Override', () => {
-    it('should merge element partial when provided to variant change', () => {
+    it('should merge element partial when provided to variant change', async () => {
       const resourceWithVariants: Base = {
         ...mockBaseResource,
         variants: [
@@ -917,10 +918,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithElementOverride,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
 
-      const changeVariantButton = screen.getByText('Change Variant with Override');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant with Override');
+      await changeVariantButton.click();
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
@@ -958,10 +959,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithPropertyChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeLabelButton = screen.getByText('Change Label');
-      changeLabelButton.click();
+      const changeLabelButton = page.getByText('Change Label');
+      await changeLabelButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -1004,10 +1005,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDifferentResource,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Different Resource');
-      changeButton.click();
+      const changeButton = page.getByText('Change Different Resource');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -1049,10 +1050,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataPrefix,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Data Prefixed Field');
-      changeButton.click();
+      const changeButton = page.getByText('Change Data Prefixed Field');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -1064,7 +1065,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('changeSelectedVariant updateComponent recursive mapping', () => {
-    it('should update component when id matches in updateComponent', () => {
+    it('should update component when id matches in updateComponent', async () => {
       const resourceWithMatchingId: Base = {
         ...mockBaseResource,
         id: 'resource-1',
@@ -1083,16 +1084,16 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithMatchingId,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithMatchingId)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithMatchingId)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       // Verify updateNodeData was called with the correct structure
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should recursively process nested components in updateComponent', () => {
+    it('should recursively process nested components in updateComponent', async () => {
       const resourceWithNestedComponents: Base = {
         ...mockBaseResource,
         id: 'nested-parent',
@@ -1140,15 +1141,15 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithNestedComponents,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNestedComponents)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithNestedComponents)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
 
-    it('should return component unchanged when id does not match and no nested components', () => {
+    it('should return component unchanged when id does not match and no nested components', async () => {
       const resourceWithNoMatch: Base = {
         ...mockBaseResource,
         id: 'different-id',
@@ -1178,17 +1179,17 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithNoMatch,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNoMatch)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithNoMatch)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
   });
 
   describe('changeSelectedVariant setLastInteractedResource', () => {
-    it('should call setLastInteractedResource with merged variant', () => {
+    it('should call setLastInteractedResource with merged variant', async () => {
       const resourceWithVariants: Base = {
         ...mockBaseResource,
         variants: [
@@ -1215,10 +1216,10 @@ describe('ResourceProperties', () => {
         lastInteractedResource: resourceWithVariants,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithVariants)});
 
-      const changeVariantButton = screen.getByText('Change Variant');
-      changeVariantButton.click();
+      const changeVariantButton = page.getByText('Change Variant');
+      await changeVariantButton.click();
 
       // Verify updateNodeData was called
       expect(mockUpdateNodeData).toHaveBeenCalled();
@@ -1226,7 +1227,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('handlePropertyChange updateComponent', () => {
-    it('should pass onChange callback that can be triggered', () => {
+    it('should pass onChange callback that can be triggered', async () => {
       const MockComponentWithPropertyChange = vi.fn(
         ({
           resource,
@@ -1252,7 +1253,7 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithPropertyChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
       // Verify onChange callback is provided
       const {calls} = MockComponentWithPropertyChange.mock;
@@ -1261,7 +1262,7 @@ describe('ResourceProperties', () => {
       expect(typeof props.onChange).toBe('function');
     });
 
-    it('should provide onChange that accepts nested component updates', () => {
+    it('should provide onChange that accepts nested component updates', async () => {
       const MockComponentWithNestedChange = vi.fn(
         ({
           resource,
@@ -1287,13 +1288,13 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithNestedChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
       // Verify the component renders and onChange is available
-      expect(screen.getByText('Change Nested Label')).toBeInTheDocument();
+      await expect.element(page.getByText('Change Nested Label')).toBeInTheDocument();
     });
 
-    it('should render component with onChange callback for different ids', () => {
+    it('should render component with onChange callback for different ids', async () => {
       const MockComponentWithDifferentId = vi.fn(
         ({
           resource,
@@ -1319,21 +1320,21 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDifferentId,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Change Label')).toBeInTheDocument();
+      await expect.element(page.getByText('Change Label')).toBeInTheDocument();
     });
   });
 
   describe('handlePropertyChange updateNodeData callback', () => {
-    it('should render component with onChange for node updates', () => {
-      render(<ResourceProperties />, {wrapper: createWrapper()});
+    it('should render component with onChange for node updates', async () => {
+      await render(<ResourceProperties />, {wrapper: createWrapper()});
 
-      const changeButton = screen.getByText('Change Label');
+      const changeButton = page.getByText('Change Label');
       expect(changeButton).toBeInTheDocument();
     });
 
-    it('should provide onChange that can handle data replacement', () => {
+    it('should provide onChange that can handle data replacement', async () => {
       const MockComponentWithDataReplace = vi.fn(
         ({
           resource,
@@ -1359,12 +1360,12 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataReplace,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Replace Data')).toBeInTheDocument();
+      await expect.element(page.getByText('Replace Data')).toBeInTheDocument();
     });
 
-    it('should provide onChange that accepts data prefixed properties', () => {
+    it('should provide onChange that accepts data prefixed properties', async () => {
       const MockComponentWithDataPrefixStrip = vi.fn(
         ({
           resource,
@@ -1390,14 +1391,14 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataPrefixStrip,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Set Data Field')).toBeInTheDocument();
+      await expect.element(page.getByText('Set Data Field')).toBeInTheDocument();
     });
   });
 
   describe('handlePropertyChange lastInteractedResource update', () => {
-    it('should provide onChange for top-level editable properties', () => {
+    it('should provide onChange for top-level editable properties', async () => {
       const MockComponentWithTopLevelProp = vi.fn(
         ({
           resource,
@@ -1423,12 +1424,12 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithTopLevelProp,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Change Hint')).toBeInTheDocument();
+      await expect.element(page.getByText('Change Hint')).toBeInTheDocument();
     });
 
-    it('should provide onChange that accepts data property', () => {
+    it('should provide onChange that accepts data property', async () => {
       const MockComponentWithDataProperty = vi.fn(
         ({
           resource,
@@ -1454,12 +1455,12 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataProperty,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Set Data Object')).toBeInTheDocument();
+      await expect.element(page.getByText('Set Data Object')).toBeInTheDocument();
     });
 
-    it('should provide onChange that accepts config prefixed properties', () => {
+    it('should provide onChange that accepts config prefixed properties', async () => {
       const MockComponentWithConfigPrefix = vi.fn(
         ({
           resource,
@@ -1485,12 +1486,12 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithConfigPrefix,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Set Config Option')).toBeInTheDocument();
+      await expect.element(page.getByText('Set Config Option')).toBeInTheDocument();
     });
 
-    it('should provide onChange for non-top-level properties', () => {
+    it('should provide onChange for non-top-level properties', async () => {
       const MockComponentWithCustomProperty = vi.fn(
         ({
           resource,
@@ -1516,9 +1517,9 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithCustomProperty,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      expect(screen.getByText('Set Custom Property')).toBeInTheDocument();
+      await expect.element(page.getByText('Set Custom Property')).toBeInTheDocument();
     });
   });
 
@@ -1550,10 +1551,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Label (Plugin Handles)');
-      changeButton.click();
+      const changeButton = page.getByText('Change Label (Plugin Handles)');
+      await changeButton.click();
 
       // Wait for debounced function to execute
       await new Promise(resolve => {
@@ -1597,10 +1598,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDifferentElement,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Change Different Element');
-      changeButton.click();
+      const changeButton = page.getByText('Change Different Element');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1652,10 +1653,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithLabelChange,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Update Component Label');
-      changeButton.click();
+      const changeButton = page.getByText('Update Component Label');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1708,10 +1709,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithNestedUpdate,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Update Nested Component');
-      changeButton.click();
+      const changeButton = page.getByText('Update Nested Component');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1758,10 +1759,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentNoMatch,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Update No Match');
-      changeButton.click();
+      const changeButton = page.getByText('Update No Match');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1772,7 +1773,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('changeSelectedVariant early return when no resource', () => {
-    it('should return early when currentResource is null (line 135)', () => {
+    it('should return early when currentResource is null (line 135)', async () => {
       // Create a mock that triggers variant change after the resource becomes null
       const MockComponentWithVariantChange = vi.fn(
         ({
@@ -1798,10 +1799,10 @@ describe('ResourceProperties', () => {
       });
 
       // This will render the "No properties available" message instead of the component
-      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNullResource)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(contextWithNullResource)});
 
       // Since lastInteractedResource is null, the component renders the fallback message
-      expect(screen.getByText('No properties available.')).toBeInTheDocument();
+      await expect.element(page.getByText('No properties available.')).toBeInTheDocument();
       // updateNodeData should not be called
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
@@ -1844,10 +1845,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataReplace,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Replace Entire Data');
-      changeButton.click();
+      const changeButton = page.getByText('Replace Entire Data');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1893,10 +1894,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDataPrefix,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Set Data Prefixed Property');
-      changeButton.click();
+      const changeButton = page.getByText('Set Data Prefixed Property');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1942,10 +1943,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithDirectProperty,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Set Direct Property');
-      changeButton.click();
+      const changeButton = page.getByText('Set Direct Property');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -1994,10 +1995,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithComponents,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Update With Components');
-      changeButton.click();
+      const changeButton = page.getByText('Update With Components');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);
@@ -2043,10 +2044,10 @@ describe('ResourceProperties', () => {
         ResourceProperties: MockComponentWithUndefinedData,
       });
 
-      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+      await render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
-      const changeButton = screen.getByText('Update With Undefined Data');
-      changeButton.click();
+      const changeButton = page.getByText('Update With Undefined Data');
+      await changeButton.click();
 
       await new Promise(resolve => {
         setTimeout(resolve, 400);

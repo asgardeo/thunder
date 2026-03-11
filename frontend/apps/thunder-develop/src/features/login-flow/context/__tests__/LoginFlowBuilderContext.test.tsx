@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {useContext} from 'react';
 import LoginFlowBuilderContext from '../LoginFlowBuilderContext';
 
@@ -42,45 +43,45 @@ describe('LoginFlowBuilderContext', () => {
   });
 
   describe('Default Value', () => {
-    it('should provide null as default value when used outside provider', () => {
-      render(<TestConsumer />);
+    it('should provide null as default value when used outside provider', async () => {
+      await render(<TestConsumer />);
 
-      expect(screen.getByTestId('context-consumer')).toHaveAttribute('data-is-null', 'true');
+      await expect.element(page.getByTestId('context-consumer')).toHaveAttribute('data-is-null', 'true');
     });
 
-    it('should display null context value text', () => {
-      render(<TestConsumer />);
+    it('should display null context value text', async () => {
+      await render(<TestConsumer />);
 
-      expect(screen.getByTestId('context-consumer')).toHaveTextContent('Context Value: null');
+      await expect.element(page.getByTestId('context-consumer')).toHaveTextContent('Context Value: null');
     });
   });
 
   describe('Provider Usage', () => {
-    it('should allow providing custom value through Provider', () => {
+    it('should allow providing custom value through Provider', async () => {
       const customValue = {};
 
-      render(
+      await render(
         <LoginFlowBuilderContext.Provider value={customValue}>
           <TestConsumer />
         </LoginFlowBuilderContext.Provider>,
       );
 
-      expect(screen.getByTestId('context-consumer')).toHaveAttribute('data-is-null', 'false');
+      await expect.element(page.getByTestId('context-consumer')).toHaveAttribute('data-is-null', 'false');
     });
 
-    it('should allow providing null through Provider', () => {
-      render(
+    it('should allow providing null through Provider', async () => {
+      await render(
         <LoginFlowBuilderContext.Provider value={null}>
           <TestConsumer />
         </LoginFlowBuilderContext.Provider>,
       );
 
-      expect(screen.getByTestId('context-consumer')).toHaveAttribute('data-is-null', 'true');
+      await expect.element(page.getByTestId('context-consumer')).toHaveAttribute('data-is-null', 'true');
     });
   });
 
   describe('Nested Providers', () => {
-    it('should use closest provider value', () => {
+    it('should use closest provider value', async () => {
       const outerValue = {};
       const innerValue = null;
 
@@ -93,7 +94,7 @@ describe('LoginFlowBuilderContext', () => {
         );
       }
 
-      render(
+      await render(
         <LoginFlowBuilderContext.Provider value={outerValue}>
           <LoginFlowBuilderContext.Provider value={innerValue}>
             <InnerConsumer />
@@ -101,7 +102,7 @@ describe('LoginFlowBuilderContext', () => {
         </LoginFlowBuilderContext.Provider>,
       );
 
-      expect(screen.getByTestId('inner-consumer')).toHaveAttribute('data-is-null', 'true');
+      await expect.element(page.getByTestId('inner-consumer')).toHaveAttribute('data-is-null', 'true');
     });
   });
 });

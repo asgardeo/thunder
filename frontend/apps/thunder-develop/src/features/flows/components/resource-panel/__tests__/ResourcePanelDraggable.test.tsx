@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ResourcePanelDraggable from '../ResourcePanelDraggable';
 import type {Resource} from '../../../models/resources';
 
@@ -79,66 +80,66 @@ const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
 
 describe('ResourcePanelDraggable', () => {
   describe('Draggable Wrapper', () => {
-    it('should wrap content in Draggable component', () => {
+    it('should wrap content in Draggable component', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      expect(screen.getByTestId('draggable-wrapper')).toBeInTheDocument();
+      await expect.element(page.getByTestId('draggable-wrapper')).toBeInTheDocument();
     });
 
-    it('should pass id to Draggable', () => {
+    it('should pass id to Draggable', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="unique-step-id" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="unique-step-id" resource={resource} onAdd={vi.fn()} />);
 
-      expect(screen.getByTestId('draggable-wrapper')).toHaveAttribute('data-id', 'unique-step-id');
+      await expect.element(page.getByTestId('draggable-wrapper')).toHaveAttribute('data-id', 'unique-step-id');
     });
 
-    it('should pass resource type to Draggable', () => {
+    it('should pass resource type to Draggable', async () => {
       const resource = createMockResource({type: 'CUSTOM_STEP'} as Partial<Resource>);
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      expect(screen.getByTestId('draggable-wrapper')).toHaveAttribute('data-type', 'CUSTOM_STEP');
+      await expect.element(page.getByTestId('draggable-wrapper')).toHaveAttribute('data-type', 'CUSTOM_STEP');
     });
 
-    it('should set accept to match resource type', () => {
+    it('should set accept to match resource type', async () => {
       const resource = createMockResource({type: 'CUSTOM_STEP'} as Partial<Resource>);
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      const wrapper = screen.getByTestId('draggable-wrapper');
-      const accept = JSON.parse(wrapper.getAttribute('data-accept') ?? '[]') as string[];
+      const wrapper = page.getByTestId('draggable-wrapper');
+      const accept = JSON.parse(wrapper.element().getAttribute('data-accept') ?? '[]') as string[];
       expect(accept).toContain('CUSTOM_STEP');
     });
 
-    it('should pass dragged resource in data prop', () => {
+    it('should pass dragged resource in data prop', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      const wrapper = screen.getByTestId('draggable-wrapper');
-      const data = JSON.parse(wrapper.getAttribute('data-dragged') ?? '{}') as {dragged: Resource};
+      const wrapper = page.getByTestId('draggable-wrapper');
+      const data = JSON.parse(wrapper.element().getAttribute('data-dragged') ?? '{}') as {dragged: Resource};
       expect(data.dragged).toEqual(resource);
     });
   });
 
   describe('ResourcePanelItem Integration', () => {
-    it('should render resource label', () => {
+    it('should render resource label', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      expect(screen.getByText('Draggable Step')).toBeInTheDocument();
+      await expect.element(page.getByText('Draggable Step')).toBeInTheDocument();
     });
 
-    it('should render resource description', () => {
+    it('should render resource description', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      expect(screen.getByText('A draggable step description')).toBeInTheDocument();
+      await expect.element(page.getByText('A draggable step description')).toBeInTheDocument();
     });
   });
 
   describe('Type Default', () => {
-    it('should have draggable as default type', () => {
+    it('should have draggable as default type', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      const {container} = await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
       // Draggable type card renders
       const card = container.querySelector('.MuiCard-root');
@@ -147,58 +148,58 @@ describe('ResourcePanelDraggable', () => {
   });
 
   describe('Disabled State', () => {
-    it('should pass disabled=true to Draggable', () => {
+    it('should pass disabled=true to Draggable', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} disabled />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} disabled />);
 
-      expect(screen.getByTestId('draggable-wrapper')).toHaveAttribute('data-disabled', 'true');
+      await expect.element(page.getByTestId('draggable-wrapper')).toHaveAttribute('data-disabled', 'true');
     });
 
-    it('should pass disabled=false by default', () => {
+    it('should pass disabled=false by default', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
-      expect(screen.getByTestId('draggable-wrapper')).toHaveAttribute('data-disabled', 'false');
+      await expect.element(page.getByTestId('draggable-wrapper')).toHaveAttribute('data-disabled', 'false');
     });
 
-    it('should disable add button when disabled', () => {
+    it('should disable add button when disabled', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={onAdd} disabled />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={onAdd} disabled />);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeDisabled();
     });
   });
 
   describe('onAdd Callback', () => {
-    it('should pass onAdd to ResourcePanelItem', () => {
+    it('should pass onAdd to ResourcePanelItem', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={onAdd} />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={onAdd} />);
 
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
+      const button = page.getByRole('button');
+      await userEvent.click(button);
 
       expect(onAdd).toHaveBeenCalledWith(resource);
     });
 
-    it('should not call onAdd when disabled', () => {
+    it('should not call onAdd when disabled', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={onAdd} disabled />);
+      await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={onAdd} disabled />);
 
-      const button = screen.getByRole('button');
-      fireEvent.click(button);
+      const button = page.getByRole('button');
+      await userEvent.click(button);
 
       expect(onAdd).not.toHaveBeenCalled();
     });
   });
 
   describe('Additional Props', () => {
-    it('should pass additional HTML attributes', () => {
+    it('should pass additional HTML attributes', async () => {
       const resource = createMockResource();
-      render(
+      await render(
         <ResourcePanelDraggable
           id="step-1"
           resource={resource}
@@ -209,14 +210,14 @@ describe('ResourcePanelDraggable', () => {
       );
 
       // The Draggable wrapper receives the data-testid through rest props
-      expect(screen.getByTestId('draggable-wrapper')).toBeInTheDocument();
+      await expect.element(page.getByTestId('draggable-wrapper')).toBeInTheDocument();
     });
   });
 
   describe('Type Prop', () => {
-    it('should accept custom type prop', () => {
+    it('should accept custom type prop', async () => {
       const resource = createMockResource();
-      const {container} = render(
+      const {container} = await render(
         <ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} type="static" />,
       );
 
@@ -225,9 +226,9 @@ describe('ResourcePanelDraggable', () => {
       expect(card).toBeInTheDocument();
     });
 
-    it('should use draggable type by default when type is not provided', () => {
+    it('should use draggable type by default when type is not provided', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+      const {container} = await render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
 
       // Component renders with default draggable type
       const card = container.querySelector('.MuiCard-root');

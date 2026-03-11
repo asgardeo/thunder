@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import EditTokenSettings from '../EditTokenSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -103,36 +104,36 @@ describe('EditTokenSettings', () => {
   });
 
   describe.skip('Native Mode (No OAuth2 Config) - SKIPPED: Component hangs due to async operations', () => {
-    it('should render without crashing', () => {
-      const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+    it('should render without crashing', async () => {
+      const {container} = await render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
     });
 
-    it('should render shared token user attributes section', () => {
-      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+    it('should render shared token user attributes section', async () => {
+      await render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
     });
 
-    it('should render shared token validation section', () => {
-      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+    it('should render shared token validation section', async () => {
+      await render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-shared')).toBeInTheDocument();
     });
 
-    it('should not render access token sections in native mode', () => {
-      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+    it('should not render access token sections in native mode', async () => {
+      await render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.queryByTestId('token-user-attributes-section-access')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('token-validation-section-access')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-access')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-access')).not.toBeInTheDocument();
     });
 
-    it('should not render ID token sections in native mode', () => {
-      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+    it('should not render ID token sections in native mode', async () => {
+      await render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.queryByTestId('token-user-attributes-section-id')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('token-validation-section-id')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-id')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-id')).not.toBeInTheDocument();
     });
   });
 
@@ -150,8 +151,8 @@ describe('EditTokenSettings', () => {
       },
     } as OAuth2Config;
 
-    it('should render access token user attributes section', () => {
-      render(
+    it('should render access token user attributes section', async () => {
+      await render(
         <EditTokenSettings
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -159,11 +160,11 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
     });
 
-    it('should render ID token user attributes section', () => {
-      render(
+    it('should render ID token user attributes section', async () => {
+      await render(
         <EditTokenSettings
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -171,11 +172,11 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
     });
 
-    it('should render access token validation section', () => {
-      render(
+    it('should render access token validation section', async () => {
+      await render(
         <EditTokenSettings
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -183,11 +184,11 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-access')).toBeInTheDocument();
     });
 
-    it('should render ID token validation section', () => {
-      render(
+    it('should render ID token validation section', async () => {
+      await render(
         <EditTokenSettings
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -195,11 +196,11 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-id')).toBeInTheDocument();
     });
 
-    it('should not render shared token sections in OAuth mode', () => {
-      render(
+    it('should not render shared token sections in OAuth mode', async () => {
+      await render(
         <EditTokenSettings
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -207,39 +208,39 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(screen.queryByTestId('token-user-attributes-section-shared')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('token-validation-section-shared')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-shared')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-shared')).not.toBeInTheDocument();
     });
   });
 
   describe.skip('Props Validation - SKIPPED: Component hangs due to async operations', () => {
-    it('should handle undefined oauth2Config gracefully', () => {
-      const {container} = render(
+    it('should handle undefined oauth2Config gracefully', async () => {
+      const {container} = await render(
         <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} oauth2Config={undefined} />,
       );
 
       expect(container).toBeTruthy();
-      expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
     });
 
-    it('should handle application without token config', () => {
+    it('should handle application without token config', async () => {
       const appWithoutToken = {
         ...mockApplication,
         token: undefined,
       };
 
-      const {container} = render(<EditTokenSettings application={appWithoutToken} onFieldChange={mockOnFieldChange} />);
+      const {container} = await render(<EditTokenSettings application={appWithoutToken} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
     });
 
-    it('should handle empty allowed_user_types array', () => {
+    it('should handle empty allowed_user_types array', async () => {
       const appWithoutUserTypes = {
         ...mockApplication,
         allowed_user_types: [],
       };
 
-      const {container} = render(
+      const {container} = await render(
         <EditTokenSettings application={appWithoutUserTypes} onFieldChange={mockOnFieldChange} />,
       );
 
@@ -248,7 +249,7 @@ describe('EditTokenSettings', () => {
   });
 
   describe.skip('Section Rendering Order - SKIPPED: Component hangs due to async operations', () => {
-    it('should render all sections for OAuth mode', () => {
+    it('should render all sections for OAuth mode', async () => {
       const mockOAuth2Config: OAuth2Config = {
         token: {
           access_token: {validity_period: 1800, user_attributes: []},
@@ -256,7 +257,7 @@ describe('EditTokenSettings', () => {
         },
       } as unknown as OAuth2Config;
 
-      const {container} = render(
+      const {container} = await render(
         <EditTokenSettings
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
@@ -264,40 +265,40 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(container).toBeTruthy();      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
-      expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
-      expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
-      expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
+      expect(container).toBeTruthy();      await expect.element(page.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-access')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-id')).toBeInTheDocument();
     });
 
-    it('should render all sections for native mode', () => {
-      const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+    it('should render all sections for native mode', async () => {
+      const {container} = await render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
-      expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
-      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();    });
+      await expect.element(page.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
+      await expect.element(page.getByTestId('token-validation-section-shared')).toBeInTheDocument();    });
   });
 
   describe.skip('User Info Configuration Logic - SKIPPED: Component hangs due to async operations', () => {
     const idTokenAttrs = ['sub', 'email'];
     const mockApp = {...mockApplication};
 
-    it('should render User Info section with Inherit checkbox checked by default (No UserInfo Config)', () => {
+    it('should render User Info section with Inherit checkbox checked by default (No UserInfo Config)', async () => {
       const mockConfig = {
         token: {
           id_token: {user_attributes: idTokenAttrs},
         },
       } as OAuth2Config;
 
-      render(<EditTokenSettings application={mockApp} oauth2Config={mockConfig} onFieldChange={mockOnFieldChange} />);
+      await render(<EditTokenSettings application={mockApp} oauth2Config={mockConfig} onFieldChange={mockOnFieldChange} />);
 
       // Check for the checkbox presence
-      const checkbox = screen.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
+      const checkbox = page.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
       expect(checkbox).toBeInTheDocument();
       expect(checkbox).toBeChecked();
     });
 
-    it('should verify "Inherited" state (Checked) when explicit UserInfo attributes MATCH ID Token attributes', () => {
+    it('should verify "Inherited" state (Checked) when explicit UserInfo attributes MATCH ID Token attributes', async () => {
       const mockConfig = {
         token: {
           id_token: {user_attributes: idTokenAttrs},
@@ -307,13 +308,13 @@ describe('EditTokenSettings', () => {
         },
       } as OAuth2Config;
 
-      render(<EditTokenSettings application={mockApp} oauth2Config={mockConfig} onFieldChange={mockOnFieldChange} />);
+      await render(<EditTokenSettings application={mockApp} oauth2Config={mockConfig} onFieldChange={mockOnFieldChange} />);
 
-      const checkbox = screen.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
+      const checkbox = page.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
       expect(checkbox).toBeChecked(); // Should be inherited because attributes are identical
     });
 
-    it('should verify "Custom" state (Unchecked) when UserInfo attributes DIFFER from ID Token attributes', () => {
+    it('should verify "Custom" state (Unchecked) when UserInfo attributes DIFFER from ID Token attributes', async () => {
       const mockConfig = {
         token: {
           id_token: {user_attributes: idTokenAttrs},
@@ -323,9 +324,9 @@ describe('EditTokenSettings', () => {
         },
       } as OAuth2Config;
 
-      render(<EditTokenSettings application={mockApp} oauth2Config={mockConfig} onFieldChange={mockOnFieldChange} />);
+      await render(<EditTokenSettings application={mockApp} oauth2Config={mockConfig} onFieldChange={mockOnFieldChange} />);
 
-      const checkbox = screen.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
+      const checkbox = page.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
       expect(checkbox).not.toBeChecked();
     });
   });

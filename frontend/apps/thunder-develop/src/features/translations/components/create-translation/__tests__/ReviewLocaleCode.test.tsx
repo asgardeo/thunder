@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import ReviewLocaleCode from '../ReviewLocaleCode';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 vi.mock('@thunder/i18n', () => ({
   getDisplayNameForCode: (code: string) => (code ? `Name(${code})` : null),
@@ -49,67 +40,77 @@ describe('ReviewLocaleCode', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the step title and subtitle', () => {
-      render(<ReviewLocaleCode {...defaultProps} />);
+    it('renders the step title and subtitle', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} />);
 
-      expect(screen.getByText('language.create.localeCode.title')).toBeInTheDocument();
-      expect(screen.getByText('language.create.localeCode.subtitle')).toBeInTheDocument();
+      await expect.element(page.getByText('Review Locale Code')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'The locale code was derived from your selection. Override it here if you need a different tag.',
+        ),
+      ).toBeInTheDocument();
     });
 
-    it('renders the locale code input with the derived locale as placeholder', () => {
-      render(<ReviewLocaleCode {...defaultProps} />);
+    it('renders the locale code input with the derived locale as placeholder', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} />);
 
-      expect(screen.getByPlaceholderText('fr-FR')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('fr-FR')).toBeInTheDocument();
     });
 
-    it('renders the BCP 47 helper tip', () => {
-      render(<ReviewLocaleCode {...defaultProps} />);
+    it('renders the BCP 47 helper tip', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} />);
 
-      expect(screen.getByText('language.add.code.helperText')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'If you are manually modifying the generated code, use BCP 47 format (e.g. fr-FR for French, de-DE for German, etc.).',
+        ),
+      ).toBeInTheDocument();
     });
   });
 
   describe('Preview', () => {
-    it('shows the derived locale code in the chip when localeCode is empty', () => {
-      render(<ReviewLocaleCode {...defaultProps} localeCode="" />);
+    it('shows the derived locale code in the chip when localeCode is empty', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} localeCode="" />);
 
-      expect(screen.getByText('fr-FR')).toBeInTheDocument();
+      await expect.element(page.getByText('fr-FR')).toBeInTheDocument();
     });
 
-    it('shows the override code in the chip when localeCode is set', () => {
-      render(<ReviewLocaleCode {...defaultProps} localeCode="fr-CA" />);
+    it('shows the override code in the chip when localeCode is set', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} localeCode="fr-CA" />);
 
-      expect(screen.getByText('fr-CA')).toBeInTheDocument();
+      await expect.element(page.getByText('fr-CA')).toBeInTheDocument();
     });
 
-    it('shows the resolved display name from the effective code', () => {
-      render(<ReviewLocaleCode {...defaultProps} localeCode="" />);
+    it('shows the resolved display name from the effective code', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} localeCode="" />);
 
       // effectiveCode = 'fr-FR' → getDisplayNameForCode('fr-FR') = 'Name(fr-FR)'
-      expect(screen.getByText('Name(fr-FR)')).toBeInTheDocument();
+      await expect.element(page.getByText('Name(fr-FR)')).toBeInTheDocument();
     });
 
-    it('shows the display name for the override code when set', () => {
-      render(<ReviewLocaleCode {...defaultProps} localeCode="fr-CA" />);
+    it('shows the display name for the override code when set', async () => {
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} localeCode="fr-CA" />);
 
-      expect(screen.getByText('Name(fr-CA)')).toBeInTheDocument();
+      await expect.element(page.getByText('Name(fr-CA)')).toBeInTheDocument();
     });
   });
 
   describe('onReadyChange', () => {
-    it('calls onReadyChange(true) on mount when derivedLocale.code is non-empty', () => {
+    it('calls onReadyChange(true) on mount when derivedLocale.code is non-empty', async () => {
       const onReadyChange = vi.fn();
 
-      render(<ReviewLocaleCode {...defaultProps} onReadyChange={onReadyChange} localeCode="" />);
+      await renderWithProviders(<ReviewLocaleCode {...defaultProps} onReadyChange={onReadyChange} localeCode="" />);
 
       // effectiveCode falls back to derivedLocale.code = 'fr-FR', so ready
       expect(onReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('calls onReadyChange(true) when an override code is provided', () => {
+    it('calls onReadyChange(true) when an override code is provided', async () => {
       const onReadyChange = vi.fn();
 
-      render(<ReviewLocaleCode {...defaultProps} onReadyChange={onReadyChange} localeCode="en-AU" />);
+      await renderWithProviders(
+        <ReviewLocaleCode {...defaultProps} onReadyChange={onReadyChange} localeCode="en-AU" />,
+      );
 
       expect(onReadyChange).toHaveBeenCalledWith(true);
     });
@@ -118,14 +119,15 @@ describe('ReviewLocaleCode', () => {
   describe('Interaction', () => {
     it('calls onLocaleCodeChange when the user types in the input', async () => {
       const onLocaleCodeChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(<ReviewLocaleCode {...defaultProps} onLocaleCodeChange={onLocaleCodeChange} localeCode="" />);
+      await renderWithProviders(
+        <ReviewLocaleCode {...defaultProps} onLocaleCodeChange={onLocaleCodeChange} localeCode="" />,
+      );
 
       // The input is controlled (value={localeCode}) so onChange fires once per
       // keystroke with just that character. Type a single character to keep the
       // assertion simple and deterministic.
-      await user.type(screen.getByPlaceholderText('fr-FR'), 'f');
+      await userEvent.type(page.getByPlaceholder('fr-FR'), 'f');
 
       expect(onLocaleCodeChange).toHaveBeenCalledWith('f');
     });

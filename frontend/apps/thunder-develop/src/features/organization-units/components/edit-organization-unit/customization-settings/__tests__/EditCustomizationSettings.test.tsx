@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import EditCustomizationSettings from '../EditCustomizationSettings';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 
@@ -58,8 +59,8 @@ describe('EditCustomizationSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('should render AppearanceSection', () => {
-    renderWithProviders(
+  it('should render AppearanceSection', async () => {
+    await renderWithProviders(
       <EditCustomizationSettings
         organizationUnit={mockOrganizationUnit}
         editedOU={mockEditedOU}
@@ -67,11 +68,11 @@ describe('EditCustomizationSettings', () => {
       />,
     );
 
-    expect(screen.getByTestId('appearance-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('appearance-section')).toBeInTheDocument();
   });
 
-  it('should pass organizationUnit to AppearanceSection', () => {
-    renderWithProviders(
+  it('should pass organizationUnit to AppearanceSection', async () => {
+    await renderWithProviders(
       <EditCustomizationSettings
         organizationUnit={mockOrganizationUnit}
         editedOU={mockEditedOU}
@@ -79,15 +80,15 @@ describe('EditCustomizationSettings', () => {
       />,
     );
 
-    expect(screen.getByText(/AppearanceSection - Engineering/)).toBeInTheDocument();
+    await expect.element(page.getByText(/AppearanceSection - Engineering/)).toBeInTheDocument();
   });
 
-  it('should pass editedOU to AppearanceSection', () => {
+  it('should pass editedOU to AppearanceSection', async () => {
     const editedOU: Partial<OrganizationUnit> = {
       theme_id: 'custom-theme',
     };
 
-    renderWithProviders(
+    await renderWithProviders(
       <EditCustomizationSettings
         organizationUnit={mockOrganizationUnit}
         editedOU={editedOU}
@@ -95,11 +96,11 @@ describe('EditCustomizationSettings', () => {
       />,
     );
 
-    expect(screen.getByText('Edited Theme: custom-theme')).toBeInTheDocument();
+    await expect.element(page.getByText('Edited Theme: custom-theme')).toBeInTheDocument();
   });
 
-  it('should pass onFieldChange to AppearanceSection', () => {
-    renderWithProviders(
+  it('should pass onFieldChange to AppearanceSection', async () => {
+    await renderWithProviders(
       <EditCustomizationSettings
         organizationUnit={mockOrganizationUnit}
         editedOU={mockEditedOU}
@@ -107,14 +108,13 @@ describe('EditCustomizationSettings', () => {
       />,
     );
 
-    const changeButton = screen.getByText('Change Theme');
-    changeButton.click();
+    await userEvent.click(page.getByText('Change Theme'));
 
     expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', 'new-theme');
   });
 
-  it('should handle empty editedOU', () => {
-    renderWithProviders(
+  it('should handle empty editedOU', async () => {
+    await renderWithProviders(
       <EditCustomizationSettings
         organizationUnit={mockOrganizationUnit}
         editedOU={{}}
@@ -122,6 +122,6 @@ describe('EditCustomizationSettings', () => {
       />,
     );
 
-    expect(screen.getByText('Edited Theme: none')).toBeInTheDocument();
+    await expect.element(page.getByText('Edited Theme: none')).toBeInTheDocument();
   });
 });

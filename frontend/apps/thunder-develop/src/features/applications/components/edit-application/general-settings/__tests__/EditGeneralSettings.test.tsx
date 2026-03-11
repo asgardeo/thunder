@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import EditGeneralSettings from '../EditGeneralSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -57,51 +58,6 @@ vi.mock('../AccessSection', () => ({
   ),
 }));
 
-vi.mock('../DangerZoneSection', () => ({
-  default: ({onRegenerateClick}: {onRegenerateClick: () => void}) => (
-    <div data-testid="danger-zone-section">
-      <button type="button" onClick={onRegenerateClick} data-testid="regenerate-button">
-        Regenerate Client Secret
-      </button>
-    </div>
-  ),
-}));
-
-vi.mock('../../../RegenerateSecretDialog', () => ({
-  default: ({
-    open,
-    applicationId,
-    onClose,
-    onSuccess,
-  }: {
-    open: boolean;
-    applicationId: string | null;
-    onClose: () => void;
-    onSuccess?: (clientSecret: string) => void;
-  }) =>
-    open ? (
-      <div data-testid="regenerate-dialog" data-application-id={applicationId}>
-        <button type="button" onClick={onClose} data-testid="dialog-close">
-          Close
-        </button>
-        <button type="button" onClick={() => onSuccess?.('new-test-secret')} data-testid="dialog-success">
-          Trigger Success
-        </button>
-      </div>
-    ) : null,
-}));
-
-vi.mock('../../../ClientSecretSuccessDialog', () => ({
-  default: ({open, clientSecret, onClose}: {open: boolean; clientSecret: string; onClose: () => void}) =>
-    open ? (
-      <div data-testid="secret-dialog" data-client-secret={clientSecret}>
-        <button type="button" onClick={onClose} data-testid="secret-dialog-close">
-          Close Secret Dialog
-        </button>
-      </div>
-    ) : null,
-}));
-
 describe('EditGeneralSettings', () => {
   const mockOnFieldChange = vi.fn();
   const mockOnCopyToClipboard = vi.fn();
@@ -121,8 +77,8 @@ describe('EditGeneralSettings', () => {
   });
 
   describe('Rendering', () => {
-    it('should render both QuickCopySection and AccessSection', () => {
-      render(
+    it('should render both QuickCopySection and AccessSection', async () => {
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -132,12 +88,12 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toBeInTheDocument();
-      expect(screen.getByTestId('access-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('quick-copy-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('access-section')).toBeInTheDocument();
     });
 
-    it('should pass application to child components', () => {
-      render(
+    it('should pass application to child components', async () => {
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -147,14 +103,14 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toHaveTextContent('App: app-123');
-      expect(screen.getByTestId('access-section')).toHaveTextContent('App: app-123');
+      await expect.element(page.getByTestId('quick-copy-section')).toHaveTextContent('App: app-123');
+      await expect.element(page.getByTestId('access-section')).toHaveTextContent('App: app-123');
     });
 
-    it('should pass editedApp to AccessSection', () => {
+    it('should pass editedApp to AccessSection', async () => {
       const editedApp = {url: 'https://edited.com'};
 
-      render(
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={editedApp}
@@ -164,11 +120,11 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('access-section')).toHaveTextContent('Edited URL: https://edited.com');
+      await expect.element(page.getByTestId('access-section')).toHaveTextContent('Edited URL: https://edited.com');
     });
 
-    it('should pass oauth2Config to child components when provided', () => {
-      render(
+    it('should pass oauth2Config to child components when provided', async () => {
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -179,12 +135,12 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toHaveTextContent('OAuth: client-123');
-      expect(screen.getByTestId('access-section')).toHaveTextContent('OAuth: client-123');
+      await expect.element(page.getByTestId('quick-copy-section')).toHaveTextContent('OAuth: client-123');
+      await expect.element(page.getByTestId('access-section')).toHaveTextContent('OAuth: client-123');
     });
 
-    it('should handle missing oauth2Config', () => {
-      render(
+    it('should handle missing oauth2Config', async () => {
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -194,12 +150,12 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toHaveTextContent('OAuth: None');
-      expect(screen.getByTestId('access-section')).toHaveTextContent('OAuth: None');
+      await expect.element(page.getByTestId('quick-copy-section')).toHaveTextContent('OAuth: None');
+      await expect.element(page.getByTestId('access-section')).toHaveTextContent('OAuth: None');
     });
 
-    it('should pass copiedField to QuickCopySection', () => {
-      render(
+    it('should pass copiedField to QuickCopySection', async () => {
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -209,11 +165,11 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toHaveTextContent('Copied: app_id');
+      await expect.element(page.getByTestId('quick-copy-section')).toHaveTextContent('Copied: app_id');
     });
 
-    it('should handle null copiedField', () => {
-      render(
+    it('should handle null copiedField', async () => {
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -223,13 +179,13 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toHaveTextContent('Copied: None');
+      await expect.element(page.getByTestId('quick-copy-section')).toHaveTextContent('Copied: None');
     });
   });
 
   describe('Props Propagation', () => {
-    it('should pass onFieldChange to AccessSection', () => {
-      const {container} = render(
+    it('should pass onFieldChange to AccessSection', async () => {
+      const {container} = await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -242,8 +198,8 @@ describe('EditGeneralSettings', () => {
       expect(container.querySelector('[data-testid="access-section"]')).toBeInTheDocument();
     });
 
-    it('should pass onCopyToClipboard to QuickCopySection', () => {
-      const {container} = render(
+    it('should pass onCopyToClipboard to QuickCopySection', async () => {
+      const {container} = await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -256,10 +212,10 @@ describe('EditGeneralSettings', () => {
       expect(container.querySelector('[data-testid="quick-copy-section"]')).toBeInTheDocument();
     });
 
-    it('should pass all required props to both child components', () => {
+    it('should pass all required props to both child components', async () => {
       const editedApp = {url: 'https://new.com'};
 
-      render(
+      await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={editedApp}
@@ -270,14 +226,14 @@ describe('EditGeneralSettings', () => {
         />,
       );
 
-      expect(screen.getByTestId('quick-copy-section')).toBeInTheDocument();
-      expect(screen.getByTestId('access-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('quick-copy-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('access-section')).toBeInTheDocument();
     });
   });
 
   describe('Layout', () => {
-    it('should render sections in correct order', () => {
-      const {container} = render(
+    it('should render sections in correct order', async () => {
+      const {container} = await render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
@@ -290,127 +246,6 @@ describe('EditGeneralSettings', () => {
       const sections = container.querySelectorAll('[data-testid]');
       expect(sections[0]).toHaveAttribute('data-testid', 'quick-copy-section');
       expect(sections[1]).toHaveAttribute('data-testid', 'access-section');
-      expect(sections[2]).toHaveAttribute('data-testid', 'danger-zone-section');
-    });
-
-    it('should render DangerZoneSection', () => {
-      render(
-        <EditGeneralSettings
-          application={mockApplication}
-          editedApp={{}}
-          onFieldChange={mockOnFieldChange}
-          copiedField={null}
-          onCopyToClipboard={mockOnCopyToClipboard}
-        />,
-      );
-
-      expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
-    });
-  });
-
-  describe('Regenerate Secret Flow', () => {
-    it('should open regenerate dialog when regenerate button is clicked', () => {
-      render(
-        <EditGeneralSettings
-          application={mockApplication}
-          editedApp={{}}
-          onFieldChange={mockOnFieldChange}
-          copiedField={null}
-          onCopyToClipboard={mockOnCopyToClipboard}
-        />,
-      );
-
-      const regenerateButton = screen.getByTestId('regenerate-button');
-      fireEvent.click(regenerateButton);
-
-      expect(screen.getByTestId('regenerate-dialog')).toBeInTheDocument();
-    });
-
-    it('should pass application id to regenerate dialog', () => {
-      render(
-        <EditGeneralSettings
-          application={mockApplication}
-          editedApp={{}}
-          onFieldChange={mockOnFieldChange}
-          copiedField={null}
-          onCopyToClipboard={mockOnCopyToClipboard}
-        />,
-      );
-
-      const regenerateButton = screen.getByTestId('regenerate-button');
-      fireEvent.click(regenerateButton);
-
-      expect(screen.getByTestId('regenerate-dialog')).toHaveAttribute('data-application-id', 'app-123');
-    });
-
-    it('should close regenerate dialog when close is triggered', () => {
-      render(
-        <EditGeneralSettings
-          application={mockApplication}
-          editedApp={{}}
-          onFieldChange={mockOnFieldChange}
-          copiedField={null}
-          onCopyToClipboard={mockOnCopyToClipboard}
-        />,
-      );
-
-      const regenerateButton = screen.getByTestId('regenerate-button');
-      fireEvent.click(regenerateButton);
-
-      expect(screen.getByTestId('regenerate-dialog')).toBeInTheDocument();
-
-      const closeButton = screen.getByTestId('dialog-close');
-      fireEvent.click(closeButton);
-
-      expect(screen.queryByTestId('regenerate-dialog')).not.toBeInTheDocument();
-    });
-
-    it('should open secret dialog when regeneration is successful', () => {
-      render(
-        <EditGeneralSettings
-          application={mockApplication}
-          editedApp={{}}
-          onFieldChange={mockOnFieldChange}
-          copiedField={null}
-          onCopyToClipboard={mockOnCopyToClipboard}
-        />,
-      );
-
-      const regenerateButton = screen.getByTestId('regenerate-button');
-      fireEvent.click(regenerateButton);
-
-      const successButton = screen.getByTestId('dialog-success');
-      fireEvent.click(successButton);
-
-      expect(screen.getByTestId('secret-dialog')).toBeInTheDocument();
-      expect(screen.getByTestId('secret-dialog')).toHaveAttribute('data-client-secret', 'new-test-secret');
-    });
-
-    it('should close secret dialog when close is triggered', () => {
-      render(
-        <EditGeneralSettings
-          application={mockApplication}
-          editedApp={{}}
-          onFieldChange={mockOnFieldChange}
-          copiedField={null}
-          onCopyToClipboard={mockOnCopyToClipboard}
-        />,
-      );
-
-      // Open regenerate dialog and trigger success
-      const regenerateButton = screen.getByTestId('regenerate-button');
-      fireEvent.click(regenerateButton);
-
-      const successButton = screen.getByTestId('dialog-success');
-      fireEvent.click(successButton);
-
-      expect(screen.getByTestId('secret-dialog')).toBeInTheDocument();
-
-      // Close secret dialog
-      const closeSecretButton = screen.getByTestId('secret-dialog-close');
-      fireEvent.click(closeSecretButton);
-
-      expect(screen.queryByTestId('secret-dialog')).not.toBeInTheDocument();
     });
   });
 });

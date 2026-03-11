@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useUpdateOrganizationUnit from '../useUpdateOrganizationUnit';
 import type {OrganizationUnit} from '../../models/organization-unit';
 import type {UpdateOrganizationUnitRequest} from '../../models/requests';
@@ -67,8 +67,8 @@ describe('useUpdateOrganizationUnit', () => {
     vi.clearAllMocks();
   });
 
-  it('should be idle initially', () => {
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+  it('should be idle initially', async () => {
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     expect(result.current.isPending).toBe(false);
     expect(result.current.isSuccess).toBe(false);
@@ -79,11 +79,11 @@ describe('useUpdateOrganizationUnit', () => {
   it('should update organization unit successfully', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUpdatedOU});
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: 'ou-123', data: updateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(mockUpdatedOU);
     });
@@ -106,18 +106,18 @@ describe('useUpdateOrganizationUnit', () => {
         }),
     );
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: 'ou-123', data: updateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
     // Resolve to clean up
     resolvePromise!({data: mockUpdatedOU});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
   });
@@ -126,11 +126,11 @@ describe('useUpdateOrganizationUnit', () => {
     const errorMessage = 'Failed to update organization unit';
     mockHttpRequest.mockRejectedValue(new Error(errorMessage));
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: 'ou-123', data: updateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
       expect(result.current.error?.message).toBe(errorMessage);
     });
@@ -140,12 +140,12 @@ describe('useUpdateOrganizationUnit', () => {
     mockHttpRequest.mockResolvedValue({data: mockUpdatedOU});
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     const variables = {id: 'ou-123', data: updateRequest};
     result.current.mutate(variables, {onSuccess});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
       expect(onSuccess.mock.calls[0][0]).toEqual(mockUpdatedOU);
       expect(onSuccess.mock.calls[0][1]).toEqual(variables);
@@ -157,11 +157,11 @@ describe('useUpdateOrganizationUnit', () => {
     mockHttpRequest.mockRejectedValue(error);
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: 'ou-123', data: updateRequest}, {onError});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalled();
     });
   });
@@ -179,11 +179,11 @@ describe('useUpdateOrganizationUnit', () => {
     };
     mockHttpRequest.mockResolvedValue({data: updatedOU});
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: 'ou-123', data: partialUpdate});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.name).toBe('New Name Only');
     });
   });
@@ -201,11 +201,11 @@ describe('useUpdateOrganizationUnit', () => {
     };
     mockHttpRequest.mockResolvedValue({data: updatedOU});
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: 'ou-123', data: updateWithNullDescription});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.description).toBeNull();
     });
   });
@@ -213,7 +213,7 @@ describe('useUpdateOrganizationUnit', () => {
   it('should use mutateAsync for promise-based mutation', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUpdatedOU});
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     const response = await result.current.mutateAsync({id: 'ou-123', data: updateRequest});
 
@@ -224,11 +224,11 @@ describe('useUpdateOrganizationUnit', () => {
     const differentId = 'ou-456';
     mockHttpRequest.mockResolvedValue({data: {...mockUpdatedOU, id: differentId}});
 
-    const {result} = renderHook(() => useUpdateOrganizationUnit());
+    const {result} = await renderHook(() => useUpdateOrganizationUnit());
 
     result.current.mutate({id: differentId, data: updateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

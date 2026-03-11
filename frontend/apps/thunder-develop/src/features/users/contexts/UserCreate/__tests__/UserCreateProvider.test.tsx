@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import UserCreateProvider from '../UserCreateProvider';
 import useUserCreate from '../useUserCreate';
 import {UserCreateFlowStep} from '../../../models/user-create-flow';
@@ -61,106 +61,96 @@ describe('UserCreateProvider', () => {
     vi.clearAllMocks();
   });
 
-  it('provides initial state values', () => {
-    render(
+  it('provides initial state values', async () => {
+    await renderWithProviders(
       <UserCreateProvider>
         <TestConsumer />
       </UserCreateProvider>,
     );
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_TYPE);
-    expect(screen.getByTestId('selected-schema')).toHaveTextContent('null');
-    expect(screen.getByTestId('form-values')).toHaveTextContent('{}');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_TYPE);
+    await expect.element(page.getByTestId('selected-schema')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('form-values')).toHaveTextContent('{}');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
   it('updates current step when setCurrentStep is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <UserCreateProvider>
         <TestConsumer />
       </UserCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Details Step'));
+    await userEvent.click(page.getByText('Set Details Step'));
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_DETAILS);
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_DETAILS);
   });
 
   it('updates selected schema when setSelectedSchema is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <UserCreateProvider>
         <TestConsumer />
       </UserCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Schema'));
+    await userEvent.click(page.getByText('Set Schema'));
 
-    expect(screen.getByTestId('selected-schema')).toHaveTextContent('Employee');
+    await expect.element(page.getByTestId('selected-schema')).toHaveTextContent('Employee');
   });
 
   it('updates form values when setFormValues is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <UserCreateProvider>
         <TestConsumer />
       </UserCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Form Values'));
+    await userEvent.click(page.getByText('Set Form Values'));
 
-    expect(screen.getByTestId('form-values')).toHaveTextContent(JSON.stringify({username: 'john'}));
+    await expect.element(page.getByTestId('form-values')).toHaveTextContent(JSON.stringify({username: 'john'}));
   });
 
   it('updates error when setError is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <UserCreateProvider>
         <TestConsumer />
       </UserCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set Error'));
 
-    expect(screen.getByTestId('error')).toHaveTextContent('Test error');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Test error');
   });
 
   it('resets all state when reset is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <UserCreateProvider>
         <TestConsumer />
       </UserCreateProvider>,
     );
 
     // Set some values
-    await user.click(screen.getByText('Set Details Step'));
-    await user.click(screen.getByText('Set Schema'));
-    await user.click(screen.getByText('Set Form Values'));
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set Details Step'));
+    await userEvent.click(page.getByText('Set Schema'));
+    await userEvent.click(page.getByText('Set Form Values'));
+    await userEvent.click(page.getByText('Set Error'));
 
     // Verify values are set
-    expect(screen.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_DETAILS);
-    expect(screen.getByTestId('selected-schema')).toHaveTextContent('Employee');
-    expect(screen.getByTestId('error')).toHaveTextContent('Test error');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_DETAILS);
+    await expect.element(page.getByTestId('selected-schema')).toHaveTextContent('Employee');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Test error');
 
     // Reset
-    await user.click(screen.getByText('Reset'));
+    await userEvent.click(page.getByText('Reset'));
 
     // Verify back to initial state
-    expect(screen.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_TYPE);
-    expect(screen.getByTestId('selected-schema')).toHaveTextContent('null');
-    expect(screen.getByTestId('form-values')).toHaveTextContent('{}');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(UserCreateFlowStep.USER_TYPE);
+    await expect.element(page.getByTestId('selected-schema')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('form-values')).toHaveTextContent('{}');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
-  it('memoizes context value to prevent unnecessary re-renders', () => {
+  it('memoizes context value to prevent unnecessary re-renders', async () => {
     const renderSpy = vi.fn();
 
     function TestRenderer() {
@@ -168,7 +158,7 @@ describe('UserCreateProvider', () => {
       return <TestConsumer />;
     }
 
-    const {rerender} = render(
+    const {rerender} = await renderWithProviders(
       <UserCreateProvider>
         <TestRenderer />
       </UserCreateProvider>,
@@ -177,7 +167,7 @@ describe('UserCreateProvider', () => {
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
     // Re-render with same props
-    rerender(
+    await rerender(
       <UserCreateProvider>
         <TestRenderer />
       </UserCreateProvider>,
@@ -187,13 +177,13 @@ describe('UserCreateProvider', () => {
     expect(renderSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('throws error when useUserCreate is used outside provider', () => {
+  it('throws error when useUserCreate is used outside provider', async () => {
     // Suppress console.error for this test since React will log the error
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    expect(() => {
-      render(<TestConsumer />);
-    }).toThrow('useUserCreate must be used within a UserCreateProvider');
+    await expect(
+      renderWithProviders(<TestConsumer />),
+    ).rejects.toThrow('useUserCreate must be used within a UserCreateProvider');
 
     consoleSpy.mockRestore();
   });

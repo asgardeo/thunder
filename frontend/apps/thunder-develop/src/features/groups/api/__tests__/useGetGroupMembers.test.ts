@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {MemberListResponse} from '../../models/group';
 
 const mockHttpRequest = vi.fn();
@@ -61,9 +60,9 @@ describe('useGetGroupMembers', () => {
 
   it('should fetch group members', async () => {
     mockHttpRequest.mockResolvedValue({data: mockMembersData});
-    const {result} = renderHook(() => useGetGroupMembers('g1'));
+    const {result} = await renderHook(() => useGetGroupMembers('g1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockMembersData);
     });
 
@@ -77,9 +76,9 @@ describe('useGetGroupMembers', () => {
 
   it('should fetch with custom pagination', async () => {
     mockHttpRequest.mockResolvedValue({data: mockMembersData});
-    renderHook(() => useGetGroupMembers('g1', {limit: 10, offset: 5}));
+    await renderHook(() => useGetGroupMembers('g1', {limit: 10, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'https://localhost:8090/groups/g1/members?limit=10&offset=5&include=display',
@@ -88,8 +87,8 @@ describe('useGetGroupMembers', () => {
     });
   });
 
-  it('should not fetch when groupId is undefined', () => {
-    const {result} = renderHook(() => useGetGroupMembers(undefined));
+  it('should not fetch when groupId is undefined', async () => {
+    const {result} = await renderHook(() => useGetGroupMembers(undefined));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -97,9 +96,9 @@ describe('useGetGroupMembers', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Failed'));
-    const {result} = renderHook(() => useGetGroupMembers('g1'));
+    const {result} = await renderHook(() => useGetGroupMembers('g1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).toBeTruthy();
     });
   });

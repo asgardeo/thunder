@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationsList from '../TranslationsList';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -123,55 +114,56 @@ describe('TranslationsList', () => {
     vi.clearAllMocks();
   });
 
-  it('renders rows for each language', () => {
-    render(<TranslationsList />);
+  it('renders rows for each language', async () => {
+    await renderWithProviders(<TranslationsList />);
 
-    expect(screen.getByTestId('row-fr-FR')).toBeInTheDocument();
-    expect(screen.getByTestId('row-de-DE')).toBeInTheDocument();
+    await expect.element(page.getByTestId('row-fr-FR')).toBeInTheDocument();
+    await expect.element(page.getByTestId('row-de-DE')).toBeInTheDocument();
   });
 
-  it('navigates to the edit page when a row is clicked', () => {
-    render(<TranslationsList />);
+  it('navigates to the edit page when a row is clicked', async () => {
+    await renderWithProviders(<TranslationsList />);
 
-    fireEvent.click(screen.getByTestId('row-fr-FR'));
+    await userEvent.click(page.getByTestId('row-fr-FR'));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/translations/fr-FR');
+    await vi.waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/translations/fr-FR');
+    });
   });
 
   it('navigates to the edit page when the edit button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<TranslationsList />);
+    await renderWithProviders(<TranslationsList />);
 
-    const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
-    await user.click(editButtons[0]);
+    const editButtons = page.getByRole('button', {name: 'Edit'}).all();
+    await editButtons[0].click();
 
-    expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));
+    await vi.waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));
+    });
   });
 
   it('opens the delete dialog when the delete button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<TranslationsList />);
+    await renderWithProviders(<TranslationsList />);
 
-    const deleteButtons = screen.getAllByRole('button', {name: /common:actions.delete/i});
-    await user.click(deleteButtons[0]);
+    const deleteButtons = page.getByRole('button', {name: 'Delete'}).all();
+    await deleteButtons[0].click();
 
-    expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
-    expect(screen.getByTestId('delete-language')).toHaveTextContent('fr-FR');
+    await expect.element(page.getByTestId('delete-dialog')).toBeInTheDocument();
+    await expect.element(page.getByTestId('delete-language')).toHaveTextContent('fr-FR');
   });
 
   it('closes the delete dialog and clears the language when dialog onClose is called', async () => {
-    const user = userEvent.setup();
-    render(<TranslationsList />);
+    await renderWithProviders(<TranslationsList />);
 
     // Open dialog
-    const deleteButtons = screen.getAllByRole('button', {name: /common:actions.delete/i});
-    await user.click(deleteButtons[0]);
+    const deleteButtons = page.getByRole('button', {name: 'Delete'}).all();
+    await deleteButtons[0].click();
 
-    expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
+    await expect.element(page.getByTestId('delete-dialog')).toBeInTheDocument();
 
     // Close dialog
-    await user.click(screen.getByText('close-dialog'));
+    await userEvent.click(page.getByText('close-dialog'));
 
-    expect(screen.queryByTestId('delete-dialog')).not.toBeInTheDocument();
+    await expect.element(page.getByTestId('delete-dialog')).not.toBeInTheDocument();
   });
 });

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useUpdateFlow from '../useUpdateFlow';
@@ -82,8 +82,8 @@ describe('useUpdateFlow', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useUpdateFlow());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useUpdateFlow());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -94,11 +94,11 @@ describe('useUpdateFlow', () => {
   it('should successfully update a flow', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -120,19 +120,19 @@ describe('useUpdateFlow', () => {
       }),
     );
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await act(async () => {
-      resolveRequest({data: mockFlowResponse});
-    });
+    
+    resolveRequest({data: mockFlowResponse});
+  
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
 
@@ -143,11 +143,11 @@ describe('useUpdateFlow', () => {
     const apiError = new Error('Failed to update flow');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -157,12 +157,12 @@ describe('useUpdateFlow', () => {
   it('should invalidate flows list query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result, queryClient} = renderHook(() => useUpdateFlow());
+    const {result, queryClient} = await renderHook(() => useUpdateFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -174,12 +174,12 @@ describe('useUpdateFlow', () => {
   it('should invalidate specific flow query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result, queryClient} = renderHook(() => useUpdateFlow());
+    const {result, queryClient} = await renderHook(() => useUpdateFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -191,7 +191,7 @@ describe('useUpdateFlow', () => {
   it('should support mutateAsync for promise-based workflows', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     const promise = result.current.mutateAsync({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -203,11 +203,11 @@ describe('useUpdateFlow', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest}, {onSuccess});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
     });
   });
@@ -218,11 +218,11 @@ describe('useUpdateFlow', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest}, {onError});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalled();
     });
   });
@@ -230,19 +230,17 @@ describe('useUpdateFlow', () => {
   it('should reset mutation state', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    result.current.reset();;
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toBeUndefined();
     });
     expect(result.current.isIdle).toBe(true);
@@ -257,11 +255,11 @@ describe('useUpdateFlow', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow());
+    const {result} = await renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

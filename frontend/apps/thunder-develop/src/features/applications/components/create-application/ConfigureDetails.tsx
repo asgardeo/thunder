@@ -35,7 +35,7 @@ import type {JSX} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useForm, Controller, useWatch} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver} from '@/hooks/useZodResolver';
 import {z} from 'zod';
 import {useLogger} from '@thunder/logger/react';
 import getConfigurationTypeFromTemplate from '../../utils/getConfigurationTypeFromTemplate';

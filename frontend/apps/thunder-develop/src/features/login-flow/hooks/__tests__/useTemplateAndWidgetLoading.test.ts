@@ -18,7 +18,7 @@
 
 import type React from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {Edge, Node} from '@xyflow/react';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
@@ -189,7 +189,7 @@ describe('useTemplateAndWidgetLoading', () => {
     mockGetBlankTemplateComponents = vi.fn().mockReturnValue([{id: 'blank-comp', type: 'TEXT'}]);
   });
 
-  const renderUseTemplateAndWidgetLoading = (overrides = {}) => {
+  const renderUseTemplateAndWidgetLoading = async (overrides = {}) => {
     const defaultProps = {
       resources: createMockResources(),
       generateSteps: mockGenerateSteps as unknown as (steps: Node[]) => Node[],
@@ -205,30 +205,30 @@ describe('useTemplateAndWidgetLoading', () => {
   };
 
   describe('Hook Interface', () => {
-    it('should return handleStepLoad function', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should return handleStepLoad function', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
       expect(typeof result.current.handleStepLoad).toBe('function');
     });
 
-    it('should return handleTemplateLoad function', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should return handleTemplateLoad function', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
       expect(typeof result.current.handleTemplateLoad).toBe('function');
     });
 
-    it('should return handleWidgetLoad function', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should return handleWidgetLoad function', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
       expect(typeof result.current.handleWidgetLoad).toBe('function');
     });
 
-    it('should return handleResourceAdd function', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should return handleResourceAdd function', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
       expect(typeof result.current.handleResourceAdd).toBe('function');
     });
   });
 
   describe('handleStepLoad', () => {
-    it('should add blank template components to VIEW step without components', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should add blank template components to VIEW step without components', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const step = createMockStep({
         type: StepTypes.View,
@@ -241,8 +241,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(loadedStep.data?.components).toBeDefined();
     });
 
-    it('should preserve existing components in VIEW step', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should preserve existing components in VIEW step', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const existingComponents = [createMockElement({id: 'existing-comp', type: ElementTypes.Text})];
       const step = createMockStep({
@@ -256,8 +256,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(loadedStep.data?.components).toEqual(existingComponents);
     });
 
-    it('should process non-VIEW steps without adding blank components', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should process non-VIEW steps without adding blank components', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const step = createMockStep({
         type: StepTypes.End,
@@ -272,8 +272,8 @@ describe('useTemplateAndWidgetLoading', () => {
   });
 
   describe('handleTemplateLoad', () => {
-    it('should return empty arrays when template has no steps', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should return empty arrays when template has no steps', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const template = {
         id: 'template-1',
@@ -287,8 +287,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(edges).toEqual([]);
     });
 
-    it('should call setFlowCompletionConfigs for End steps with config', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should call setFlowCompletionConfigs for End steps with config', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const template = {
         id: 'template-1',
@@ -311,13 +311,13 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(mockSetFlowCompletionConfigs).toHaveBeenCalledWith({completionType: 'success'});
     });
 
-    it('should return execution step for BasicFederated template', () => {
+    it('should return execution step for BasicFederated template', async () => {
       mockGenerateSteps.mockReturnValue([
         createMockNode({id: 'view-1', type: StepTypes.View}),
         createMockNode({id: 'execution-1', type: StepTypes.Execution}),
       ]);
 
-      const {result} = renderUseTemplateAndWidgetLoading();
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const template = {
         id: 'template-1',
@@ -339,11 +339,11 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(stepId).toBe('execution-1');
     });
 
-    it('should apply edge style to generated edges', () => {
+    it('should apply edge style to generated edges', async () => {
       mockGenerateEdges.mockReturnValue([createMockEdge()]);
       mockValidateEdges.mockReturnValue([createMockEdge()]);
 
-      const {result} = renderUseTemplateAndWidgetLoading();
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const template = {
         id: 'template-1',
@@ -360,8 +360,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(edges[0].type).toBe('default');
     });
 
-    it('should process template with replacers', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should process template with replacers', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const template = {
         id: 'template-1',
@@ -383,8 +383,8 @@ describe('useTemplateAndWidgetLoading', () => {
   });
 
   describe('handleWidgetLoad', () => {
-    it('should return unchanged nodes and edges when widget has no steps', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should return unchanged nodes and edges when widget has no steps', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -407,8 +407,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(stepId).toBeNull();
     });
 
-    it('should merge widget step with target resource when strategy is MERGE_WITH_DROP_POINT', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should merge widget step with target resource when strategy is MERGE_WITH_DROP_POINT', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -437,8 +437,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(nodes).toBeDefined();
     });
 
-    it('should add widget step as new node when no merge strategy', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should add widget step as new node when no merge strategy', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -468,8 +468,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(nodes.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should find default property selector at node level', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should find default property selector at node level', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -502,8 +502,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(stepId).toBe('selector-node');
     });
 
-    it('should find default property selector in component', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should find default property selector in component', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -542,8 +542,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(stepId).toBe('node-1');
     });
 
-    it('should find default property selector in nested component', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should find default property selector in nested component', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -587,8 +587,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(selector).toBeDefined();
     });
 
-    it('should find default property selector when component has nested children and matches selector id', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should find default property selector when component has nested children and matches selector id', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       // Test the case where we search through component.components (lines 275-280)
       // The selector is a component that HAS nested components (not empty)
@@ -639,8 +639,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(stepId).toBe('node-1');
     });
 
-    it('should handle widget with nested component structure', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should handle widget with nested component structure', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       // Test processing a widget with nested component structure
       const widget = {
@@ -685,8 +685,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(edges).toBeDefined();
     });
 
-    it('should iterate through component.components when searching for selector', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should iterate through component.components when searching for selector', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       // This tests the branch at lines 275-280 where we check if component has nested components
       const widget = {
@@ -732,7 +732,7 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(selector).toBeDefined();
     });
 
-    it('should handle placeholder replacement for selector id', () => {
+    it('should handle placeholder replacement for selector id', async () => {
       // Create a custom mock for updateTemplatePlaceholderReferences
       vi.doMock('@/features/flows/utils/updateTemplatePlaceholderReferences', () => ({
         default: (nodes: Node[]) => {
@@ -742,7 +742,7 @@ describe('useTemplateAndWidgetLoading', () => {
         },
       }));
 
-      const {result} = renderUseTemplateAndWidgetLoading();
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -776,8 +776,8 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(nodes).toBeDefined();
     });
 
-    it('should not modify node when it does not match target resource', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should not modify node when it does not match target resource', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const widget = {
         id: 'widget-1',
@@ -809,22 +809,20 @@ describe('useTemplateAndWidgetLoading', () => {
   });
 
   describe('handleResourceAdd', () => {
-    it('should do nothing for non-Element resources', () => {
-      const {result} = renderUseTemplateAndWidgetLoading();
+    it('should do nothing for non-Element resources', async () => {
+      const {result} = await renderUseTemplateAndWidgetLoading();
 
       const resource = {
         id: 'step-1',
         resourceType: ResourceTypes.Step,
       } as Resource;
 
-      act(() => {
-        result.current.handleResourceAdd(resource);
-      });
+      result.current.handleResourceAdd(resource);
 
       expect(mockSetNodes).not.toHaveBeenCalled();
     });
 
-    it('should add element to existing View step', () => {
+    it('should add element to existing View step', async () => {
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
           const nodes = [createMockNode({id: 'view-1', type: StepTypes.View, data: {components: []}})];
@@ -832,7 +830,7 @@ describe('useTemplateAndWidgetLoading', () => {
         }
       }) as unknown as SetNodesFn;
 
-      const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
+      const {result} = await renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
       const resource = createMockElement({
         id: 'button-1',
@@ -840,15 +838,13 @@ describe('useTemplateAndWidgetLoading', () => {
         resourceType: ResourceTypes.Element,
       });
 
-      act(() => {
-        result.current.handleResourceAdd(resource as Resource);
-      });
+      result.current.handleResourceAdd(resource as Resource);
 
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockGenerateStepElement).toHaveBeenCalled();
     });
 
-    it('should replace existing Form when adding a Form element', () => {
+    it('should replace existing Form when adding a Form element', async () => {
       const existingForm = createMockElement({
         id: 'existing-form',
         type: BlockTypes.Form,
@@ -875,7 +871,7 @@ describe('useTemplateAndWidgetLoading', () => {
         category: ElementCategories.Block,
       }));
 
-      const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
+      const {result} = await renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
       const newForm = createMockElement({
         id: 'new-form',
@@ -884,9 +880,7 @@ describe('useTemplateAndWidgetLoading', () => {
         resourceType: ResourceTypes.Element,
       });
 
-      act(() => {
-        result.current.handleResourceAdd(newForm as Resource);
-      });
+      result.current.handleResourceAdd(newForm as Resource);
 
       expect(capturedNodes).toHaveLength(1);
       const viewNode = capturedNodes[0];
@@ -898,7 +892,7 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(forms[0].id).toBe('generated-new-form');
     });
 
-    it('should do nothing when no View step exists', () => {
+    it('should do nothing when no View step exists', async () => {
       let resultNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -907,7 +901,7 @@ describe('useTemplateAndWidgetLoading', () => {
         }
       }) as unknown as SetNodesFn;
 
-      const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
+      const {result} = await renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
       const resource = createMockElement({
         id: 'button-1',
@@ -915,9 +909,7 @@ describe('useTemplateAndWidgetLoading', () => {
         resourceType: ResourceTypes.Element,
       });
 
-      act(() => {
-        result.current.handleResourceAdd(resource as Resource);
-      });
+      result.current.handleResourceAdd(resource as Resource);
 
       // Should return unchanged nodes
       expect(resultNodes).toHaveLength(1);
@@ -939,7 +931,7 @@ describe('useTemplateAndWidgetLoading', () => {
         return undefined;
       }) as unknown as SetNodesFn;
 
-      const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
+      const {result} = await renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
       const resource = createMockElement({
         id: 'button-1',
@@ -947,9 +939,7 @@ describe('useTemplateAndWidgetLoading', () => {
         resourceType: ResourceTypes.Element,
       });
 
-      act(() => {
-        result.current.handleResourceAdd(resource as Resource);
-      });
+      result.current.handleResourceAdd(resource as Resource);
 
       // Wait for queueMicrotask
       await new Promise((resolve) => {
@@ -960,7 +950,7 @@ describe('useTemplateAndWidgetLoading', () => {
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('generated-button-1');
     });
 
-    it('should not modify other nodes when adding to View', () => {
+    it('should not modify other nodes when adding to View', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -972,16 +962,14 @@ describe('useTemplateAndWidgetLoading', () => {
         }
       }) as unknown as SetNodesFn;
 
-      const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
+      const {result} = await renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
       const resource = createMockElement({
         id: 'button-1',
         resourceType: ResourceTypes.Element,
       });
 
-      act(() => {
-        result.current.handleResourceAdd(resource as Resource);
-      });
+      result.current.handleResourceAdd(resource as Resource);
 
       expect(capturedNodes).toHaveLength(2);
       const endNode = capturedNodes.find((n) => n.id === 'end-1');

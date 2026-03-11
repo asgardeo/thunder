@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
@@ -62,28 +63,28 @@ describe('BlockAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the adapter with correct class names', () => {
+    it('should render the adapter with correct class names', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
       expect(container.querySelector('.adapter')).toBeInTheDocument();
       expect(container.querySelector('.block-adapter')).toBeInTheDocument();
     });
 
-    it('should render empty when resource has no components', () => {
+    it('should render empty when resource has no components', async () => {
       const resource = createMockElement({components: undefined});
 
-      const {container} = render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
       expect(container.querySelector('.block-adapter')).toBeInTheDocument();
       expect(container.querySelectorAll('[data-testid^="reorderable-element"]')).toHaveLength(0);
     });
 
-    it('should render empty array when components is empty', () => {
+    it('should render empty array when components is empty', async () => {
       const resource = createMockElement({components: []});
 
-      const {container} = render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
       expect(container.querySelector('.block-adapter')).toBeInTheDocument();
       expect(container.querySelectorAll('[data-testid^="reorderable-element"]')).toHaveLength(0);
@@ -91,7 +92,7 @@ describe('BlockAdapter', () => {
   });
 
   describe('Components Rendering', () => {
-    it('should render ReorderableElement for each component', () => {
+    it('should render ReorderableElement for each component', async () => {
       const components = [
         createMockElement({id: 'comp-1'}),
         createMockElement({id: 'comp-2'}),
@@ -99,65 +100,65 @@ describe('BlockAdapter', () => {
       ];
       const resource = createMockElement({components});
 
-      render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
-      expect(screen.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
-      expect(screen.getByTestId('reorderable-element-comp-3')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-3')).toBeInTheDocument();
     });
 
-    it('should pass availableElements to ReorderableElement', () => {
+    it('should pass availableElements to ReorderableElement', async () => {
       const components = [createMockElement({id: 'comp-1'})];
       const resource = createMockElement({components});
       const availableElements = [createMockElement({id: 'available-1'})];
 
-      render(<BlockAdapter resource={resource} availableElements={availableElements} />, {wrapper: createWrapper()});
+      await render(<BlockAdapter resource={resource} availableElements={availableElements} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
     });
 
-    it('should pass onAddElementToForm callback to ReorderableElement', () => {
+    it('should pass onAddElementToForm callback to ReorderableElement', async () => {
       const components = [createMockElement({id: 'comp-1'})];
       const resource = createMockElement({components});
       const onAddElementToForm = vi.fn();
 
-      render(<BlockAdapter resource={resource} onAddElementToForm={onAddElementToForm} />, {wrapper: createWrapper()});
+      await render(<BlockAdapter resource={resource} onAddElementToForm={onAddElementToForm} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
     });
   });
 
   describe('Default Props', () => {
-    it('should work with undefined availableElements', () => {
+    it('should work with undefined availableElements', async () => {
       const resource = createMockElement({components: [createMockElement({id: 'comp-1'})]});
 
-      const {container} = render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
       expect(container.querySelector('.block-adapter')).toBeInTheDocument();
     });
 
-    it('should work with undefined onAddElementToForm', () => {
+    it('should work with undefined onAddElementToForm', async () => {
       const resource = createMockElement({components: [createMockElement({id: 'comp-1'})]});
 
-      const {container} = render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
       expect(container.querySelector('.block-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Filtering', () => {
-    it('should filter components through PluginRegistry', () => {
+    it('should filter components through PluginRegistry', async () => {
       const components = [
         createMockElement({id: 'comp-1'}),
         createMockElement({id: 'comp-2'}),
       ];
       const resource = createMockElement({components});
 
-      render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});
 
       // All components should render since our mock returns true
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
-      expect(screen.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
     });
   });
 });

@@ -18,7 +18,8 @@
 
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ViewUserPage from '../ViewUserPage';
 import type {ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
 
@@ -225,46 +226,45 @@ describe('ViewUserPage', () => {
   });
 
   describe('Loading and Error States', () => {
-    it('displays loading spinner when user data is loading', () => {
+    it('displays loading spinner when user data is loading', async () => {
       mockUseGetUser.mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('displays loading spinner when schema is loading', () => {
+    it('displays loading spinner when schema is loading', async () => {
       mockUseGetUserSchema.mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('displays error alert when user fails to load', () => {
+    it('displays error alert when user fails to load', async () => {
       mockUseGetUser.mockReturnValue({
         data: undefined,
         isLoading: false,
         error: new Error('User not found'),
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('alert')).toHaveTextContent('User not found');
-      expect(screen.getByRole('button', {name: /back to users/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toHaveTextContent('User not found');
+      await expect.element(page.getByRole('button', {name: /back to users/i})).toBeInTheDocument();
     });
 
     it('handles navigation error when clicking back button in error state', async () => {
-      const user = userEvent.setup();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       mockUseGetUser.mockReturnValue({
         data: undefined,
@@ -274,58 +274,57 @@ describe('ViewUserPage', () => {
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /back to users/i});
-      await user.click(backButton);
+      const backButton = page.getByRole('button', {name: /back to users/i});
+      await userEvent.click(backButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
 
       consoleSpy.mockRestore();
     });
 
-    it('displays error alert when schema fails to load', () => {
+    it('displays error alert when schema fails to load', async () => {
       mockUseGetUserSchema.mockReturnValue({
         data: undefined,
         isLoading: false,
         error: new Error('Schema not found'),
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('alert')).toHaveTextContent('Schema not found');
+      await expect.element(page.getByRole('alert')).toHaveTextContent('Schema not found');
     });
 
-    it('displays generic error message when error message is empty', () => {
+    it('displays generic error message when error message is empty', async () => {
       mockUseGetUser.mockReturnValue({
         data: undefined,
         isLoading: false,
         error: new Error(''),
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
       // Should display the fallback message since error.message is empty
-      expect(screen.getByRole('alert')).toHaveTextContent('');
+      await expect.element(page.getByRole('alert')).toHaveTextContent('');
     });
 
-    it('displays warning when user is null but no error', () => {
+    it('displays warning when user is null but no error', async () => {
       mockUseGetUser.mockReturnValue({
         data: undefined,
         isLoading: false,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('alert')).toHaveTextContent('User not found');
+      await expect.element(page.getByRole('alert')).toHaveTextContent('User not found');
     });
 
     it('handles navigation error when clicking back button in user not found state', async () => {
-      const user = userEvent.setup();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       mockUseGetUser.mockReturnValue({
         data: undefined,
@@ -335,12 +334,12 @@ describe('ViewUserPage', () => {
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /back to users/i});
-      await user.click(backButton);
+      const backButton = page.getByRole('button', {name: /back to users/i});
+      await userEvent.click(backButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
 
@@ -349,108 +348,106 @@ describe('ViewUserPage', () => {
   });
 
   describe('View Mode', () => {
-    it('renders user profile page with title', () => {
-      render(<ViewUserPage />);
+    it('renders user profile page with title', async () => {
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('heading', {name: 'Manage User'})).toBeInTheDocument();
-      expect(screen.getByText('View and manage user information')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Manage User'})).toBeInTheDocument();
+      await expect.element(page.getByText('View and manage user information')).toBeInTheDocument();
     });
 
-    it('displays basic user information', () => {
-      render(<ViewUserPage />);
+    it('displays basic user information', async () => {
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('User ID')).toBeInTheDocument();
-      expect(screen.getByText('user123')).toBeInTheDocument();
+      await expect.element(page.getByText('User ID')).toBeInTheDocument();
+      await expect.element(page.getByText('user123')).toBeInTheDocument();
 
-      expect(screen.getByText('Organization Unit')).toBeInTheDocument();
-      expect(screen.getByText('test-ou')).toBeInTheDocument();
+      await expect.element(page.getByText('Organization Unit')).toBeInTheDocument();
+      await expect.element(page.getByText('test-ou')).toBeInTheDocument();
 
-      expect(screen.getByText('User Type')).toBeInTheDocument();
-      expect(screen.getByText('Employee')).toBeInTheDocument();
+      await expect.element(page.getByText('User Type')).toBeInTheDocument();
+      await expect.element(page.getByText('Employee')).toBeInTheDocument();
     });
 
-    it('displays user attributes in view mode', () => {
-      render(<ViewUserPage />);
+    it('displays user attributes in view mode', async () => {
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('username')).toBeInTheDocument();
-      expect(screen.getByText('john_doe')).toBeInTheDocument();
+      await expect.element(page.getByText('username')).toBeInTheDocument();
+      await expect.element(page.getByText('john_doe')).toBeInTheDocument();
 
-      expect(screen.getByText('email')).toBeInTheDocument();
-      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+      await expect.element(page.getByText('email')).toBeInTheDocument();
+      await expect.element(page.getByText('john@example.com')).toBeInTheDocument();
 
-      expect(screen.getByText('age')).toBeInTheDocument();
-      expect(screen.getByText('30')).toBeInTheDocument();
+      await expect.element(page.getByText('age')).toBeInTheDocument();
+      await expect.element(page.getByText('30')).toBeInTheDocument();
 
-      expect(screen.getByText('active')).toBeInTheDocument();
-      expect(screen.getByText('Yes')).toBeInTheDocument();
+      await expect.element(page.getByText('active')).toBeInTheDocument();
+      await expect.element(page.getByText('Yes')).toBeInTheDocument();
     });
 
-    it('displays "No" for false boolean values', () => {
+    it('displays "No" for false boolean values', async () => {
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, attributes: {active: false}},
         isLoading: false,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('No')).toBeInTheDocument();
+      await expect.element(page.getByText('No')).toBeInTheDocument();
     });
 
-    it('displays array values as comma-separated list', () => {
+    it('displays array values as comma-separated list', async () => {
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, attributes: {tags: ['admin', 'developer', 'manager']}},
         isLoading: false,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('admin, developer, manager')).toBeInTheDocument();
+      await expect.element(page.getByText('admin, developer, manager')).toBeInTheDocument();
     });
 
-    it('displays "No attributes available" when user has no attributes', () => {
+    it('displays "No attributes available" when user has no attributes', async () => {
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, attributes: {}},
         isLoading: false,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('No attributes available')).toBeInTheDocument();
+      await expect.element(page.getByText('No attributes available')).toBeInTheDocument();
     });
 
-    it('renders Edit and Delete buttons in view mode', () => {
-      render(<ViewUserPage />);
+    it('renders Edit and Delete buttons in view mode', async () => {
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /delete/i})).toBeInTheDocument();
     });
 
     it('navigates back when Back button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /^back$/i});
-      await user.click(backButton);
+      const backButton = page.getByRole('button', {name: /^back$/i});
+      await userEvent.click(backButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
     });
 
     it('handles navigation error when back button is clicked', async () => {
-      const user = userEvent.setup();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /^back$/i});
-      await user.click(backButton);
+      const backButton = page.getByRole('button', {name: /^back$/i});
+      await userEvent.click(backButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
 
@@ -460,25 +457,22 @@ describe('ViewUserPage', () => {
 
   describe('Edit Mode', () => {
     it('enters edit mode when Edit button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const editButton = screen.getByRole('button', {name: /edit/i});
-      await user.click(editButton);
+      const editButton = page.getByRole('button', {name: /edit/i});
+      await userEvent.click(editButton);
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-      });
+      await expect.element(page.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
+        await expect.element(page.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
+
 
       // Edit and Delete buttons should not be visible in edit mode
-      expect(screen.queryByRole('button', {name: /^edit$/i})).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: /^delete$/i})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /^edit$/i})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /^delete$/i})).not.toBeInTheDocument();
     });
 
     it('does not submit if userId is missing from params', async () => {
-      const user = userEvent.setup();
-      // When userId is undefined, useGetUser will be called with undefined
+        // When userId is undefined, useGetUser will be called with undefined
       // Let's test the guard clause by simulating missing required fields instead
       mockUseGetUser.mockReturnValue({
         data: {...mockUserData, organizationUnit: '', type: ''},
@@ -486,20 +480,19 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
       // Should not call mutateAsync when organizationUnit or type is empty
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
     it('does not submit if user organizationUnit is missing', async () => {
-      const user = userEvent.setup();
-      mockUseGetUser.mockReturnValue({
+        mockUseGetUser.mockReturnValue({
         data: {...mockUserData, organizationUnit: undefined as unknown as string},
         isLoading: false,
         error: null,
@@ -513,51 +506,47 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
     it('does not submit if user type is missing', async () => {
-      const user = userEvent.setup();
-      mockUseGetUser.mockReturnValue({
+        mockUseGetUser.mockReturnValue({
         data: {...mockUserData, type: undefined as unknown as string},
         isLoading: false,
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
     it('displays form fields in edit mode', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/Enter email/i)).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/Enter age/i)).toBeInTheDocument();
-        expect(screen.getByRole('checkbox')).toBeInTheDocument();
-      });
+      await expect.element(page.getByPlaceholder(/Enter username/i)).toBeInTheDocument();
+        await expect.element(page.getByPlaceholder(/Enter email/i)).toBeInTheDocument();
+        await expect.element(page.getByPlaceholder(/Enter age/i)).toBeInTheDocument();
+        await expect.element(page.getByRole('checkbox')).toBeInTheDocument();
+
     });
 
     it('filters out password field from schema in edit mode', async () => {
-      const user = userEvent.setup();
-      const schemaWithPassword: ApiUserSchema = {
+        const schemaWithPassword: ApiUserSchema = {
         id: 'employee',
         name: 'Employee',
         schema: {
@@ -583,21 +572,18 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/Enter email/i)).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder(/Enter username/i)).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder(/Enter email/i)).toBeInTheDocument();
         // Password field should not be present
-        expect(screen.queryByPlaceholderText(/Enter password/i)).not.toBeInTheDocument();
-      });
+      await expect.element(page.getByPlaceholder(/Enter password/i)).not.toBeInTheDocument();
     });
 
     it('filters out all credential fields from schema in edit mode', async () => {
-      const user = userEvent.setup();
-      const schemaWithMultipleCredentials: ApiUserSchema = {
+        const schemaWithMultipleCredentials: ApiUserSchema = {
         id: 'employee',
         name: 'Employee',
         schema: {
@@ -627,22 +613,19 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/Enter email/i)).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder(/Enter username/i)).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder(/Enter email/i)).toBeInTheDocument();
         // All credential fields should be filtered out
-        expect(screen.queryByPlaceholderText(/Enter password/i)).not.toBeInTheDocument();
-        expect(screen.queryByPlaceholderText(/Enter pin/i)).not.toBeInTheDocument();
-      });
+      await expect.element(page.getByPlaceholder(/Enter password/i)).not.toBeInTheDocument();
+      await expect.element(page.getByPlaceholder(/Enter pin/i)).not.toBeInTheDocument();
     });
 
     it('does not filter non-credential fields with similar names', async () => {
-      const user = userEvent.setup();
-      const schemaWithoutCredential: ApiUserSchema = {
+        const schemaWithoutCredential: ApiUserSchema = {
         id: 'employee',
         name: 'Employee',
         schema: {
@@ -663,64 +646,58 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      await waitFor(() => {
         // A field named "password" without credential: true should still appear
-        expect(screen.getByPlaceholderText(/Enter password/i)).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
-      });
+      await expect.element(page.getByPlaceholder(/Enter password/i)).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder(/Enter username/i)).toBeInTheDocument();
     });
 
     it('populates form fields with current user data', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Enter username/i)).toHaveValue('john_doe');
-        expect(screen.getByPlaceholderText(/Enter email/i)).toHaveValue('john@example.com');
-        expect(screen.getByPlaceholderText(/Enter age/i)).toHaveValue(30);
-        expect(screen.getByRole('checkbox')).toBeChecked();
-      });
+      await expect.element(page.getByPlaceholder(/Enter username/i)).toHaveValue('john_doe');
+        await expect.element(page.getByPlaceholder(/Enter email/i)).toHaveValue('john@example.com');
+        await expect.element(page.getByPlaceholder(/Enter age/i)).toHaveValue(30);
+        await expect.element(page.getByRole('checkbox')).toBeChecked();
+
     });
 
     it('allows editing form fields', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      const emailInput = await screen.findByPlaceholderText(/Enter email/i);
-      await user.clear(emailInput);
-      await user.type(emailInput, 'newemail@example.com');
+      const emailInput = page.getByPlaceholder(/Enter email/i);
+      await userEvent.clear(emailInput);
+      await userEvent.fill(emailInput, 'newemail@example.com');
 
-      expect(emailInput).toHaveValue('newemail@example.com');
+      await expect.element(emailInput).toHaveValue('newemail@example.com');
     });
 
     it('successfully updates user', async () => {
-      const user = userEvent.setup();
-      const updatedUser: ApiUser = {
+        const updatedUser: ApiUser = {
         ...mockUserData,
         attributes: {...mockUserData.attributes, email: 'updated@example.com'},
       };
       mockUpdateMutateAsync.mockResolvedValue(updatedUser);
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      const emailInput = await screen.findByPlaceholderText(/Enter email/i);
-      await user.clear(emailInput);
-      await user.type(emailInput, 'updated@example.com');
+      const emailInput = page.getByPlaceholder(/Enter email/i);
+      await userEvent.clear(emailInput);
+      await userEvent.fill(emailInput, 'updated@example.com');
 
-      const saveButton = screen.getByRole('button', {name: /save changes/i});
-      await user.click(saveButton);
+      const saveButton = page.getByRole('button', {name: /save changes/i});
+      await userEvent.click(saveButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
           userId: 'user123',
           data: {
@@ -738,8 +715,7 @@ describe('ViewUserPage', () => {
     });
 
     it('uses schema organization unit when updating user', async () => {
-      const user = userEvent.setup();
-      mockUseGetUser.mockReturnValue({
+        mockUseGetUser.mockReturnValue({
         data: {...mockUserData, organizationUnit: 'stale-ou'},
         isLoading: false,
         error: null,
@@ -753,12 +729,12 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalled();
         const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {organizationUnit: string}};
         expect(callArgs.data.organizationUnit).toBe('schema-ou');
@@ -766,8 +742,7 @@ describe('ViewUserPage', () => {
     });
 
     it('falls back to user organization unit when schema does not provide one', async () => {
-      const user = userEvent.setup();
-      mockUseGetUserSchemas.mockReturnValue({
+        mockUseGetUserSchemas.mockReturnValue({
         data: {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
@@ -776,12 +751,12 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalled();
         const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {organizationUnit: string}};
         expect(callArgs.data.organizationUnit).toBe('test-ou');
@@ -789,23 +764,20 @@ describe('ViewUserPage', () => {
     });
 
     it('exits edit mode after successful save', async () => {
-      const user = userEvent.setup();
-      mockUpdateMutateAsync.mockResolvedValue(mockUserData);
+        mockUpdateMutateAsync.mockResolvedValue(mockUserData);
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /save changes/i})).not.toBeInTheDocument();
-      });
+      await expect.element(page.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+        await expect.element(page.getByRole('button', {name: /save changes/i})).not.toBeInTheDocument();
+
     });
 
     it('displays update error when save fails', async () => {
-      const user = userEvent.setup();
-      mockUpdateMutateAsync.mockRejectedValue(new Error('Failed to update user'));
+        mockUpdateMutateAsync.mockRejectedValue(new Error('Failed to update user'));
       mockUseUpdateUser.mockReturnValue({
         ...defaultUpdateReturn,
         error: new Error('Failed to update user'),
@@ -813,59 +785,54 @@ describe('ViewUserPage', () => {
         isIdle: false,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent('Failed to update user');
-      });
+      await expect.element(page.getByRole('alert')).toHaveTextContent('Failed to update user');
+
     });
 
     it('cancels edit mode and resets form', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      const emailInput = await screen.findByPlaceholderText(/Enter email/i);
-      await user.clear(emailInput);
-      await user.type(emailInput, 'changed@example.com');
+      const emailInput = page.getByPlaceholder(/Enter email/i);
+      await userEvent.clear(emailInput);
+      await userEvent.fill(emailInput, 'changed@example.com');
 
-      const cancelButton = screen.getByRole('button', {name: /cancel/i});
-      await user.click(cancelButton);
+      const cancelButton = page.getByRole('button', {name: /cancel/i});
+      await userEvent.click(cancelButton);
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('button', {name: /edit/i})).toBeInTheDocument();
         expect(mockResetUpdateError).toHaveBeenCalled();
       });
     });
 
     it('disables buttons during submission', async () => {
-      const user = userEvent.setup();
-      const neverResolvingUpdate = vi.fn().mockImplementation(() => new Promise(() => {})); // Never resolves
+        const neverResolvingUpdate = vi.fn().mockImplementation(() => new Promise(() => {})); // Never resolves
       mockUseUpdateUser.mockReturnValue({
         ...defaultUpdateReturn,
         mutateAsync: neverResolvingUpdate,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      const saveButton = screen.getByRole('button', {name: /save changes/i});
-      await user.click(saveButton);
+      const saveButton = page.getByRole('button', {name: /save changes/i});
+      await userEvent.click(saveButton);
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: /saving.../i})).toBeDisabled();
-        expect(screen.getByRole('button', {name: /cancel/i})).toBeDisabled();
-      });
+      await expect.element(page.getByRole('button', {name: /saving.../i})).toBeDisabled();
+        await expect.element(page.getByRole('button', {name: /cancel/i})).toBeDisabled();
+
     });
 
     it('logs error when update fails', async () => {
-      const user = userEvent.setup();
-      const error = new Error('Update failed');
+        const error = new Error('Update failed');
 
       const failingUpdateMutateAsync = vi.fn().mockRejectedValue(error);
       mockUseUpdateUser.mockReturnValue({
@@ -873,12 +840,12 @@ describe('ViewUserPage', () => {
         mutateAsync: failingUpdateMutateAsync,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /save changes/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockLoggerError).toHaveBeenCalledWith('Failed to update user', {error});
       });
     });
@@ -886,105 +853,96 @@ describe('ViewUserPage', () => {
 
   describe('Delete Functionality', () => {
     it('opens delete confirmation dialog when Delete button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const deleteButton = screen.getByRole('button', {name: /^delete$/i});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: /^delete$/i});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Delete User')).toBeInTheDocument();
-        expect(screen.getByText(/Are you sure you want to delete this user/i)).toBeInTheDocument();
-      });
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+        await expect.element(page.getByText('Delete User')).toBeInTheDocument();
+        await expect.element(page.getByText(/Are you sure you want to delete this user/i)).toBeInTheDocument();
+
     });
 
     it('calls mutateAsync with correct userId when delete is confirmed', async () => {
-      const user = userEvent.setup();
+  
+      await renderWithProviders(<ViewUserPage />);
 
-      render(<ViewUserPage />);
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
-
-      const dialog = screen.getByRole('dialog');
-      const confirmButton = within(dialog).getByRole('button', {name: /^delete$/i});
-      await user.click(confirmButton);
+      const dialog = page.getByRole('dialog');
+      const confirmButton = dialog.getByRole('button', {name: /^delete$/i});
+      await userEvent.click(confirmButton);
 
       // Verify userId is passed correctly
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user123');
       });
     });
 
     it('closes delete dialog when Cancel is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      const dialog = screen.getByRole('dialog');
-      const cancelButton = within(dialog).getByRole('button', {name: /cancel/i});
-      await user.click(cancelButton);
+      const dialog = page.getByRole('dialog');
+      const cancelButton = dialog.getByRole('button', {name: /cancel/i});
+      await userEvent.click(cancelButton);
 
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      });
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
+
     });
 
     it('successfully deletes user and navigates to users list', async () => {
-      const user = userEvent.setup();
+  
+      await renderWithProviders(<ViewUserPage />);
 
-      render(<ViewUserPage />);
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+      const dialog = page.getByRole('dialog');
+      const confirmButton = dialog.getByRole('button', {name: /^delete$/i});
+      await userEvent.click(confirmButton);
 
-      const dialog = screen.getByRole('dialog');
-      const confirmButton = within(dialog).getByRole('button', {name: /^delete$/i});
-      await user.click(confirmButton);
-
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user123');
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
     });
 
     it('displays delete error in dialog', async () => {
-      const user = userEvent.setup();
-      mockUseDeleteUser.mockReturnValue({
+        mockUseDeleteUser.mockReturnValue({
         ...defaultDeleteReturn,
         error: new Error('Failed to delete user'),
         isError: true,
         isIdle: false,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      const dialog = screen.getByRole('dialog');
-      expect(within(dialog).getByText('Failed to delete user')).toBeInTheDocument();
+      const dialog = page.getByRole('dialog');
+      expect(dialog.getByText('Failed to delete user')).toBeInTheDocument();
     });
 
     it('disables buttons during deletion', async () => {
-      const user = userEvent.setup();
-      mockUseDeleteUser.mockReturnValue({
+        mockUseDeleteUser.mockReturnValue({
         ...defaultDeleteReturn,
         isPending: true,
         isIdle: false,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      const dialog = screen.getByRole('dialog');
-      expect(within(dialog).getByRole('button', {name: /deleting.../i})).toBeDisabled();
-      expect(within(dialog).getByRole('button', {name: /cancel/i})).toBeDisabled();
+      const dialog = page.getByRole('dialog');
+      expect(dialog.getByRole('button', {name: /deleting.../i})).toBeDisabled();
+      expect(dialog.getByRole('button', {name: /cancel/i})).toBeDisabled();
     });
 
     it('logs error when delete fails', async () => {
-      const user = userEvent.setup();
-      const error = new Error('Delete failed');
+        const error = new Error('Delete failed');
 
       const failingDeleteMutateAsync = vi.fn().mockRejectedValue(error);
       mockUseDeleteUser.mockReturnValue({
@@ -992,43 +950,41 @@ describe('ViewUserPage', () => {
         mutateAsync: failingDeleteMutateAsync,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      const dialog = screen.getByRole('dialog');
-      const confirmButton = within(dialog).getByRole('button', {name: /^delete$/i});
-      await user.click(confirmButton);
+      const dialog = page.getByRole('dialog');
+      const confirmButton = dialog.getByRole('button', {name: /^delete$/i});
+      await userEvent.click(confirmButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockLoggerError).toHaveBeenCalledWith('Failed to delete user', {error});
       });
     });
 
     it('closes dialog after delete error', async () => {
-      const user = userEvent.setup();
-      const failingDeleteMutateAsync = vi.fn().mockRejectedValue(new Error('Delete failed'));
+        const failingDeleteMutateAsync = vi.fn().mockRejectedValue(new Error('Delete failed'));
       mockUseDeleteUser.mockReturnValue({
         ...defaultDeleteReturn,
         mutateAsync: failingDeleteMutateAsync,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+      await userEvent.click(page.getByRole('button', {name: /^delete$/i}));
 
-      const dialog = screen.getByRole('dialog');
-      const confirmButton = within(dialog).getByRole('button', {name: /^delete$/i});
-      await user.click(confirmButton);
+      const dialog = page.getByRole('dialog');
+      const confirmButton = dialog.getByRole('button', {name: /^delete$/i});
+      await userEvent.click(confirmButton);
 
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      });
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
+
     });
   });
 
   describe('Attribute Display Edge Cases', () => {
-    it('displays dash for null attribute values', () => {
+    it('displays dash for null attribute values', async () => {
       const userWithNullAttr: ApiUser = {
         id: 'user123',
         organizationUnit: 'test-ou',
@@ -1045,13 +1001,13 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const middleNameSection = screen.getByText('middleName').parentElement;
+      const middleNameSection = page.getByText('middleName').element().parentElement;
       expect(middleNameSection).toHaveTextContent('-');
     });
 
-    it('displays dash for undefined attribute values', () => {
+    it('displays dash for undefined attribute values', async () => {
       const userWithUndefinedAttr: ApiUser = {
         id: 'user123',
         organizationUnit: 'test-ou',
@@ -1068,13 +1024,13 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const nicknameSection = screen.getByText('nickname').parentElement;
+      const nicknameSection = page.getByText('nickname').element().parentElement;
       expect(nicknameSection).toHaveTextContent('-');
     });
 
-    it('displays comma-separated values for array attributes', () => {
+    it('displays comma-separated values for array attributes', async () => {
       const userWithArrayAttr: ApiUser = {
         id: 'user123',
         organizationUnit: 'test-ou',
@@ -1091,13 +1047,13 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('tags')).toBeInTheDocument();
-      expect(screen.getByText('developer, senior, fullstack')).toBeInTheDocument();
+      await expect.element(page.getByText('tags')).toBeInTheDocument();
+      await expect.element(page.getByText('developer, senior, fullstack')).toBeInTheDocument();
     });
 
-    it('displays JSON string for object attributes', () => {
+    it('displays JSON string for object attributes', async () => {
       const userWithObjectAttr: ApiUser = {
         id: 'user123',
         organizationUnit: 'test-ou',
@@ -1114,13 +1070,13 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      expect(screen.getByText('address')).toBeInTheDocument();
-      expect(screen.getByText('{"city":"New York","country":"USA"}')).toBeInTheDocument();
+      await expect.element(page.getByText('address')).toBeInTheDocument();
+      await expect.element(page.getByText('{"city":"New York","country":"USA"}')).toBeInTheDocument();
     });
 
-    it('displays dash for unknown attribute types', () => {
+    it('displays dash for unknown attribute types', async () => {
       const userWithUnknownType: ApiUser = {
         id: 'user123',
         organizationUnit: 'test-ou',
@@ -1138,15 +1094,15 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const unknownTypeSection = screen.getByText('unknownType').parentElement;
+      const unknownTypeSection = page.getByText('unknownType').element().parentElement;
       expect(unknownTypeSection).toHaveTextContent('-');
     });
   });
 
   describe('Edge Cases', () => {
-    it('displays fallback error message when error messages are undefined', () => {
+    it('displays fallback error message when error messages are undefined', async () => {
       mockUseGetUser.mockReturnValue({
         data: undefined,
         isLoading: false,
@@ -1159,15 +1115,14 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      const alert = screen.getByRole('alert');
-      expect(alert).toBeInTheDocument();
+      const alert = page.getByRole('alert');
+      await expect.element(alert).toBeInTheDocument();
     });
 
     it('displays "No schema available for editing" when schema is null in edit mode', async () => {
-      const user = userEvent.setup();
-      mockUseGetUserSchema.mockReturnValue({
+        mockUseGetUserSchema.mockReturnValue({
         data: {
           id: 'employee',
           name: 'Employee',
@@ -1177,13 +1132,12 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      await renderWithProviders(<ViewUserPage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await userEvent.click(page.getByRole('button', {name: /edit/i}));
 
-      await waitFor(() => {
-        expect(screen.getByText('No schema available for editing')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('No schema available for editing')).toBeInTheDocument();
+
     });
   });
 });

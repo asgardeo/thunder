@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import CheckboxPropertyField from '../CheckboxPropertyField';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
@@ -56,8 +57,8 @@ describe('CheckboxPropertyField', () => {
   });
 
   describe('Rendering', () => {
-    it('should render checkbox with label', () => {
-      render(
+    it('should render checkbox with label', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="isEnabled"
@@ -67,11 +68,11 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByLabelText('Is Enabled')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Is Enabled')).toBeInTheDocument();
     });
 
-    it('should convert camelCase propertyKey to Start Case label', () => {
-      render(
+    it('should convert camelCase propertyKey to Start Case label', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="myPropertyName"
@@ -81,11 +82,11 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByLabelText('My Property Name')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('My Property Name')).toBeInTheDocument();
     });
 
-    it('should render checkbox as checked when propertyValue is true', () => {
-      render(
+    it('should render checkbox as checked when propertyValue is true', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -95,12 +96,12 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const checkbox = screen.getByRole('checkbox');
+      const checkbox = page.getByRole('checkbox');
       expect(checkbox).toBeChecked();
     });
 
-    it('should render checkbox as unchecked when propertyValue is false', () => {
-      render(
+    it('should render checkbox as unchecked when propertyValue is false', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -110,14 +111,14 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const checkbox = screen.getByRole('checkbox');
+      const checkbox = page.getByRole('checkbox');
       expect(checkbox).not.toBeChecked();
     });
   });
 
   describe('onChange Handler', () => {
-    it('should call onChange with checked=true when checkbox is clicked', () => {
-      render(
+    it('should call onChange with checked=true when checkbox is clicked', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -127,14 +128,14 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const checkbox = screen.getByRole('checkbox');
-      fireEvent.click(checkbox);
+      const checkbox = page.getByRole('checkbox');
+      await userEvent.click(checkbox);
 
       expect(mockOnChange).toHaveBeenCalledWith('enabled', true, mockResource);
     });
 
-    it('should call onChange with checked=false when checkbox is unchecked', () => {
-      render(
+    it('should call onChange with checked=false when checkbox is unchecked', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -144,15 +145,15 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const checkbox = screen.getByRole('checkbox');
-      fireEvent.click(checkbox);
+      const checkbox = page.getByRole('checkbox');
+      await userEvent.click(checkbox);
 
       expect(mockOnChange).toHaveBeenCalledWith('enabled', false, mockResource);
     });
 
-    it('should pass the correct resource to onChange', () => {
+    it('should pass the correct resource to onChange', async () => {
       const specificResource = {...mockResource, id: 'specific-resource'};
-      render(
+      await render(
         <CheckboxPropertyField
           resource={specificResource}
           propertyKey="active"
@@ -162,15 +163,15 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const checkbox = screen.getByRole('checkbox');
-      fireEvent.click(checkbox);
+      const checkbox = page.getByRole('checkbox');
+      await userEvent.click(checkbox);
 
       expect(mockOnChange).toHaveBeenCalledWith('active', true, specificResource);
     });
   });
 
   describe('Error State', () => {
-    it('should display error message when notification exists', () => {
+    it('should display error message when notification exists', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       notification.addResourceFieldNotification('resource-1_isRequired', 'This field is required');
 
@@ -179,7 +180,7 @@ describe('CheckboxPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="isRequired"
@@ -189,11 +190,11 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper(contextWithError)},
       );
 
-      expect(screen.getByText('This field is required')).toBeInTheDocument();
+      await expect.element(page.getByText('This field is required')).toBeInTheDocument();
     });
 
-    it('should not display error message when no notification exists', () => {
-      render(
+    it('should not display error message when no notification exists', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -203,10 +204,10 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('should not display error message for different property', () => {
+    it('should not display error message for different property', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       notification.addResourceFieldNotification('resource-1_otherProperty', 'Other error');
 
@@ -215,7 +216,7 @@ describe('CheckboxPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -225,13 +226,13 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper(contextWithError)},
       );
 
-      expect(screen.queryByText('Other error')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Other error')).not.toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should have accessible checkbox element', () => {
-      render(
+    it('should have accessible checkbox element', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -241,13 +242,13 @@ describe('CheckboxPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const checkbox = screen.getByRole('checkbox');
+      const checkbox = page.getByRole('checkbox');
       expect(checkbox).toBeInTheDocument();
     });
   });
 
   describe('Error Color State', () => {
-    it('should render checkbox with error color when there is an error', () => {
+    it('should render checkbox with error color when there is an error', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       notification.addResourceFieldNotification('resource-1_hasError', 'Field has an error');
 
@@ -256,7 +257,7 @@ describe('CheckboxPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="hasError"
@@ -267,11 +268,11 @@ describe('CheckboxPropertyField', () => {
       );
 
       // The error message should be displayed
-      expect(screen.getByText('Field has an error')).toBeInTheDocument();
+      await expect.element(page.getByText('Field has an error')).toBeInTheDocument();
     });
 
-    it('should render checkbox with primary color when no error', () => {
-      render(
+    it('should render checkbox with primary color when no error', async () => {
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="noError"
@@ -282,12 +283,12 @@ describe('CheckboxPropertyField', () => {
       );
 
       // No error helper text should be present
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
   });
 
   describe('Notification without matching field', () => {
-    it('should return empty string when notification exists but has no matching field', () => {
+    it('should return empty string when notification exists but has no matching field', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       // Add a notification for a different field
       notification.addResourceFieldNotification('resource-1_differentField', 'Different error');
@@ -297,7 +298,7 @@ describe('CheckboxPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <CheckboxPropertyField
           resource={mockResource}
           propertyKey="enabled"
@@ -308,7 +309,7 @@ describe('CheckboxPropertyField', () => {
       );
 
       // No error message for this field
-      expect(screen.queryByText('Different error')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Different error')).not.toBeInTheDocument();
     });
   });
 });

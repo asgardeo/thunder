@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import ConfigureName, {type ConfigureNameProps} from '../ConfigureName';
 
 // Mock the utility library
@@ -40,237 +40,234 @@ describe('ConfigureName', () => {
     vi.mocked(generateRandomHumanReadableIdentifiers).mockReturnValue(mockSuggestions);
   });
 
-  const renderComponent = (props: Partial<ConfigureNameProps> = {}) =>
+  const renderComponent = async (props: Partial<ConfigureNameProps> = {}) =>
     render(<ConfigureName {...defaultProps} {...props} />);
 
-  it('should render the component with title', () => {
-    renderComponent();
+  it('should render the component with title', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
   });
 
-  it('should render the text field with correct label', () => {
-    renderComponent();
+  it('should render the text field with correct label', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('Application Name')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    await expect.element(page.getByText('Application Name')).toBeInTheDocument();
+    await expect.element(page.getByRole('textbox')).toBeInTheDocument();
   });
 
-  it('should display the current app name value', () => {
-    renderComponent({appName: 'My Test App'});
+  it('should display the current app name value', async () => {
+    await renderComponent({appName: 'My Test App'});
 
-    const input = screen.getByRole('textbox');
+    const input = page.getByRole('textbox');
     expect(input).toHaveValue('My Test App');
   });
 
   it('should call onAppNameChange when typing in the input', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'New App Name');
+    const input = page.getByRole('textbox');
+    await userEvent.fill(input, 'New App Name');
 
-    expect(mockOnAppNameChange).toHaveBeenCalledTimes(12); // Once per character
-    expect(mockOnAppNameChange).toHaveBeenLastCalledWith('e'); // Last character typed
+    // In browser mode, fill fires one change event with the full text value
+    expect(mockOnAppNameChange).toHaveBeenCalled();
+    expect(mockOnAppNameChange).toHaveBeenCalledWith('New App Name');
   });
 
-  it('should render name suggestions', () => {
-    renderComponent();
+  it('should render name suggestions', async () => {
+    await renderComponent();
 
-    mockSuggestions.forEach((suggestion) => {
-      expect(screen.getByText(suggestion)).toBeInTheDocument();
-    });
+    // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+    for (const suggestion of mockSuggestions) {
+      // eslint-disable-next-line no-await-in-loop
+      await expect.element(page.getByText(suggestion)).toBeInTheDocument();
+    }
   });
 
-  it('should display suggestions label with icon', () => {
-    renderComponent();
+  it('should display suggestions label with icon', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('In a hurry? Pick a random name:')).toBeInTheDocument();
+    await expect.element(page.getByText('In a hurry? Pick a random name:')).toBeInTheDocument();
   });
 
   it('should call onAppNameChange when clicking a suggestion chip', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const suggestionChip = screen.getByText('My Web App');
-    await user.click(suggestionChip);
+    const suggestionChip = page.getByText('My Web App');
+    await userEvent.click(suggestionChip);
 
     expect(mockOnAppNameChange).toHaveBeenCalledWith('My Web App');
   });
 
-  it('should render all suggestion chips as clickable', () => {
-    renderComponent();
+  it('should render all suggestion chips as clickable', async () => {
+    await renderComponent();
 
-    mockSuggestions.forEach((suggestion) => {
-      const chip = screen.getByText(suggestion);
-      expect(chip.closest('div[role="button"]')).toBeInTheDocument();
-    });
+    // eslint-disable-next-line no-restricted-syntax
+    for (const suggestion of mockSuggestions) {
+      const chip = page.getByText(suggestion);
+      expect(chip.element().closest('div[role="button"]')).toBeInTheDocument();
+    }
   });
 
-  it('should generate suggestions only once on mount', () => {
-    const {rerender} = renderComponent();
+  it('should generate suggestions only once on mount', async () => {
+    const {rerender} = await renderComponent();
 
     expect(generateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
 
-    rerender(<ConfigureName {...defaultProps} appName="Updated Name" />);
+    await rerender(<ConfigureName {...defaultProps} appName="Updated Name" />);
 
     // Should still be called only once due to useMemo
     expect(generateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle empty app name', () => {
-    renderComponent({appName: ''});
+  it('should handle empty app name', async () => {
+    await renderComponent({appName: ''});
 
-    const input = screen.getByRole('textbox');
+    const input = page.getByRole('textbox');
     expect(input).toHaveValue('');
   });
 
-  it('should display placeholder text', () => {
-    renderComponent();
+  it('should display placeholder text', async () => {
+    await renderComponent();
 
-    const input = screen.getByRole('textbox');
+    const input = page.getByRole('textbox');
     expect(input).toHaveAttribute('placeholder');
   });
 
-  it('should render required field indicator', () => {
-    renderComponent();
+  it('should render required field indicator', async () => {
+    await renderComponent();
 
     // FormControl with required prop should render asterisk or required indicator
-    const label = screen.getByText('Application Name');
+    const label = page.getByText('Application Name');
     expect(label).toBeInTheDocument();
     // Check for the asterisk in the label's parent (which should be a <label> element)
-    const labelElement = label.closest('label');
+    const labelElement = label.element().closest('label');
     expect(labelElement).toHaveClass('Mui-required');
   });
 
   it('should handle special characters in app name', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const input = screen.getByRole('textbox');
+    const input = page.getByRole('textbox');
     const specialName = 'App @#$ 123!';
-    await user.type(input, specialName);
+    await userEvent.fill(input, specialName);
 
-    // Each character is typed individually, so check that special characters triggered the callback
-    expect(mockOnAppNameChange).toHaveBeenCalledWith('@');
-    expect(mockOnAppNameChange).toHaveBeenCalledWith('#');
-    expect(mockOnAppNameChange).toHaveBeenCalledWith('$');
-    expect(mockOnAppNameChange).toHaveBeenCalledWith('!');
+    // In browser mode, fill fires one change event with the full text value
+    expect(mockOnAppNameChange).toHaveBeenCalled();
+    expect(mockOnAppNameChange).toHaveBeenCalledWith(specialName);
   });
 
-  it('should update input value when appName prop changes', () => {
-    const {rerender} = renderComponent({appName: 'Initial Name'});
+  it('should update input value when appName prop changes', async () => {
+    const {rerender} = await renderComponent({appName: 'Initial Name'});
 
-    let input = screen.getByRole('textbox');
+    let input = page.getByRole('textbox');
     expect(input).toHaveValue('Initial Name');
 
-    rerender(<ConfigureName appName="Updated Name" onAppNameChange={mockOnAppNameChange} />);
+    await rerender(<ConfigureName appName="Updated Name" onAppNameChange={mockOnAppNameChange} />);
 
-    input = screen.getByRole('textbox');
+    input = page.getByRole('textbox');
     expect(input).toHaveValue('Updated Name');
   });
 
   it('should allow clearing the input', async () => {
-    const user = userEvent.setup();
-    renderComponent({appName: 'Some App'});
+    await renderComponent({appName: 'Some App'});
 
-    const input = screen.getByRole('textbox');
-    await user.clear(input);
+    const input = page.getByRole('textbox');
+    await userEvent.clear(input);
 
     expect(mockOnAppNameChange).toHaveBeenCalledWith('');
   });
 
   it('should handle rapid suggestion clicks', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const firstSuggestion = screen.getByText('My Web App');
-    const secondSuggestion = screen.getByText('Customer Portal');
+    const firstSuggestion = page.getByText('My Web App');
+    const secondSuggestion = page.getByText('Customer Portal');
 
-    await user.click(firstSuggestion);
-    await user.click(secondSuggestion);
+    await userEvent.click(firstSuggestion);
+    await userEvent.click(secondSuggestion);
 
     expect(mockOnAppNameChange).toHaveBeenCalledWith('My Web App');
     expect(mockOnAppNameChange).toHaveBeenCalledWith('Customer Portal');
     expect(mockOnAppNameChange).toHaveBeenCalledTimes(2);
   });
 
-  it('should display lightbulb icon for suggestions', () => {
-    renderComponent();
+  it('should display lightbulb icon for suggestions', async () => {
+    await renderComponent();
 
     // Check that the Lightbulb component is rendered (it's from lucide-react)
-    const suggestionsSection = screen.getByText('In a hurry? Pick a random name:').closest('div');
+    const suggestionsSection = page.getByText('In a hurry? Pick a random name:').element().closest('div');
     expect(suggestionsSection).toBeInTheDocument();
   });
 
   it('should handle long app names', async () => {
-    const user = userEvent.setup();
     const longName = 'A'.repeat(100);
-    renderComponent();
+    await renderComponent();
 
-    const input = screen.getByRole('textbox');
-    await user.type(input, longName);
+    const input = page.getByRole('textbox');
+    await userEvent.fill(input, longName);
 
-    // Each character is typed individually
-    expect(mockOnAppNameChange).toHaveBeenCalledTimes(100);
-    expect(mockOnAppNameChange).toHaveBeenCalledWith('A');
+    // In browser mode, fill fires one change event with the full text value
+    expect(mockOnAppNameChange).toHaveBeenCalled();
+    expect(mockOnAppNameChange).toHaveBeenCalledWith(longName);
   });
 
   describe('onReadyChange callback', () => {
-    it('should call onReadyChange with true when appName is not empty', () => {
+    it('should call onReadyChange with true when appName is not empty', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({appName: 'My App', onReadyChange: mockOnReadyChange});
+      await renderComponent({appName: 'My App', onReadyChange: mockOnReadyChange});
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange with false when appName is empty', () => {
+    it('should call onReadyChange with false when appName is empty', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({appName: '', onReadyChange: mockOnReadyChange});
+      await renderComponent({appName: '', onReadyChange: mockOnReadyChange});
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('should call onReadyChange with false when appName contains only whitespace', () => {
+    it('should call onReadyChange with false when appName contains only whitespace', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({appName: '   ', onReadyChange: mockOnReadyChange});
+      await renderComponent({appName: '   ', onReadyChange: mockOnReadyChange});
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('should not crash when onReadyChange is undefined', () => {
-      // This test ensures the component handles undefined onReadyChange gracefully
-      expect(() => {
-        renderComponent({appName: 'Test App', onReadyChange: undefined});
-      }).not.toThrow();
+    it('should not crash when onReadyChange is undefined', async () => {
+      await expect(
+        (async () => {
+          await renderComponent({appName: 'Test App', onReadyChange: undefined});
+        })(),
+      ).resolves.not.toThrow();
     });
 
-    it('should call onReadyChange when appName transitions from empty to non-empty', () => {
+    it('should call onReadyChange when appName transitions from empty to non-empty', async () => {
       const mockOnReadyChange = vi.fn();
-      const {rerender} = render(
+      const {rerender} = await render(
         <ConfigureName appName="" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
       mockOnReadyChange.mockClear();
 
-      rerender(
+      await rerender(
         <ConfigureName appName="New App" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange when appName transitions from non-empty to empty', () => {
+    it('should call onReadyChange when appName transitions from non-empty to empty', async () => {
       const mockOnReadyChange = vi.fn();
-      const {rerender} = render(
+      const {rerender} = await render(
         <ConfigureName appName="My App" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
       mockOnReadyChange.mockClear();
 
-      rerender(<ConfigureName appName="" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />);
+      await rerender(<ConfigureName appName="" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });

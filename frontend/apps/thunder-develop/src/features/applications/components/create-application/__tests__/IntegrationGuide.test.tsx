@@ -17,20 +17,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {BrowserRouter} from 'react-router';
+import {page, userEvent} from 'vitest/browser';
+import {render, getByDisplayValue} from '@thunder/test-utils/browser';
 import IntegrationGuide from '../IntegrationGuide';
 
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
+// Use vi.hoisted() so mockNavigate is available inside the vi.mock factory
+const {mockNavigate} = vi.hoisted(() => ({mockNavigate: vi.fn()}));
 
 // Mock navigate function
-const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router');
   return {
@@ -52,8 +46,6 @@ describe('IntegrationGuide', () => {
     hasOAuthConfig: false,
     applicationId: 'app-123',
   };
-
-  const renderWithRouter = (ui: React.ReactElement) => render(<BrowserRouter>{ui}</BrowserRouter>);
 
   // Store mock at module level so tests can access it
   let clipboardWriteTextMock: ReturnType<typeof vi.fn>;
@@ -84,25 +76,25 @@ describe('IntegrationGuide', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the component', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+    it('should render the component', async () => {
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      expect(screen.getByText('applications:onboarding.summary.title')).toBeInTheDocument();
+      await expect.element(page.getByText('Application Created Successfully!')).toBeInTheDocument();
     });
 
-    it('should display app name', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+    it('should display app name', async () => {
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      expect(screen.getByText(defaultProps.appName)).toBeInTheDocument();
+      await expect.element(page.getByText(defaultProps.appName)).toBeInTheDocument();
     });
 
-    it('should display success message when OAuth not configured', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} hasOAuthConfig={false} />);
+    it('should display success message when OAuth not configured', async () => {
+      await render(<IntegrationGuide {...defaultProps} hasOAuthConfig={false} />);
 
-      expect(screen.getByText('applications:onboarding.summary.subtitle')).toBeInTheDocument();
+      await expect.element(page.getByText('Your application is ready to use')).toBeInTheDocument();
     });
 
-    it('should display guides subtitle when integrationGuides are provided', () => {
+    it('should display guides subtitle when integrationGuides are provided', async () => {
       const props = {
         ...defaultProps,
         integrationGuides: {
@@ -122,32 +114,32 @@ describe('IntegrationGuide', () => {
         },
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.getByText('applications:onboarding.summary.guides.subtitle')).toBeInTheDocument();
+      await expect.element(page.getByText('Choose how you want to integrate sign-in to your application')).toBeInTheDocument();
     });
 
-    it('should render success icon', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+    it('should render success icon', async () => {
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      expect(screen.getByRole('img', {name: 'Success'})).toBeInTheDocument();
+      await expect.element(page.getByRole('img', {name: 'Success'})).toBeInTheDocument();
     });
   });
 
   describe('OAuth Configuration', () => {
-    it('should display client ID when hasOAuthConfig is true', () => {
+    it('should display client ID when hasOAuthConfig is true', async () => {
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.getByDisplayValue('test_client_id')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('test_client_id')).toBeInTheDocument();
     });
 
-    it('should display client secret when provided', () => {
+    it('should display client secret when provided', async () => {
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
@@ -155,20 +147,20 @@ describe('IntegrationGuide', () => {
         clientSecret: 'test_secret',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Secret should be hidden by default
-      const secretInput = screen.getByDisplayValue('test_secret');
+      const secretInput = getByDisplayValue('test_secret');
       expect(secretInput).toHaveAttribute('type', 'password');
     });
 
-    it('should not display OAuth credentials when hasOAuthConfig is false', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} hasOAuthConfig={false} />);
+    it('should not display OAuth credentials when hasOAuthConfig is false', async () => {
+      await render(<IntegrationGuide {...defaultProps} hasOAuthConfig={false} />);
 
-      expect(screen.queryByText('applications:create.integrationGuide.clientId')).not.toBeInTheDocument();
+      await expect.element(page.getByText('applications:create.integrationGuide.clientId')).not.toBeInTheDocument();
     });
 
-    it('should display warning alert when client secret is present', () => {
+    it('should display warning alert when client secret is present', async () => {
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
@@ -176,12 +168,12 @@ describe('IntegrationGuide', () => {
         clientSecret: 'test_secret',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.getByText('applications:clientSecret.warning')).toBeInTheDocument();
+      await expect.element(page.getByText("Make sure to copy your client secret now. You won't be able to see it again for security reasons.")).toBeInTheDocument();
     });
 
-    it('should not display warning alert for public clients (no secret)', () => {
+    it('should not display warning alert for public clients (no secret)', async () => {
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
@@ -189,13 +181,12 @@ describe('IntegrationGuide', () => {
         clientSecret: '',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.queryByText('applications:clientSecret.warning')).not.toBeInTheDocument();
+      await expect.element(page.getByText("Make sure to copy your client secret now. You won't be able to see it again for security reasons.")).not.toBeInTheDocument();
     });
 
     it('should toggle client secret visibility', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
@@ -203,64 +194,62 @@ describe('IntegrationGuide', () => {
         clientSecret: 'test_secret',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      const secretInput = screen.getByDisplayValue('test_secret');
+      const secretInput = getByDisplayValue('test_secret');
       expect(secretInput).toHaveAttribute('type', 'password');
 
       // Find the visibility toggle button - it's in the client secret field
       // The buttons are: app card, client ID copy, visibility toggle, client secret copy
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       // Visibility toggle is the second-to-last button (before client secret copy)
       const visibilityButton = buttons[buttons.length - 2];
 
-      await user.click(visibilityButton);
-      await waitFor(() => {
+      await userEvent.click(visibilityButton);
+      await vi.waitFor(() => {
         expect(secretInput).toHaveAttribute('type', 'text');
       });
 
-      await user.click(visibilityButton);
-      await waitFor(() => {
+      await userEvent.click(visibilityButton);
+      await vi.waitFor(() => {
         expect(secretInput).toHaveAttribute('type', 'password');
       });
     });
 
     it('should copy client ID to clipboard and show copied message', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Find the copy button for client ID
       // Buttons are: app card (button role), client ID copy button
-      const copyButtons = screen.getAllByRole('button');
+      const copyButtons = page.getByRole('button').all();
       // The client ID copy button is the second button (index 1) - after app card
       const clientIdCopyButton = copyButtons[1];
 
-      await user.click(clientIdCopyButton);
+      await userEvent.click(clientIdCopyButton);
 
       // Check copied message appears (indicates copy was successful)
-      await waitFor(() => {
-        expect(screen.getByText('applications:clientSecret.copied')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(
+page.getByText('Copied to clipboard')).toBeInTheDocument();
       });
 
       // Advance timers to clear the copied state
-      act(() => {
-        vi.advanceTimersByTime(2500);
-      });
+      vi.advanceTimersByTime(2500);
 
       // After timeout, copied message should disappear
-      await waitFor(() => {
-        expect(screen.queryByText('applications:clientSecret.copied')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(
+page.getByText('Copied to clipboard')).not.toBeInTheDocument();
       });
     });
 
     it('should copy client secret to clipboard and show copied message', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
@@ -268,25 +257,24 @@ describe('IntegrationGuide', () => {
         clientSecret: 'test_secret',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Find all copy buttons - the last one should be for client secret
-      const copyButtons = screen.getAllByRole('button');
+      const copyButtons = page.getByRole('button').all();
       // Get the last copy button (for client secret)
       const secretCopyButton = copyButtons[copyButtons.length - 1];
 
-      await user.click(secretCopyButton);
+      await userEvent.click(secretCopyButton);
 
       // Check copied message appears (indicates copy was successful)
-      await waitFor(() => {
+      await vi.waitFor(() => {
         // There may be two copied messages (one for client ID area, one for secret)
-        const copiedMessages = screen.getAllByText('applications:clientSecret.copied');
+        const copiedMessages = page.getByText('Copied to clipboard').all();
         expect(copiedMessages.length).toBeGreaterThan(0);
       });
     });
 
     it('should use fallback copy method when clipboard API fails', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
 
       // Mock clipboard to fail using defineProperty
       Object.defineProperty(navigator, 'clipboard', {
@@ -307,19 +295,18 @@ describe('IntegrationGuide', () => {
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Buttons are: app card, client ID copy button
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[1]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[1]);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(execCommandMock).toHaveBeenCalledWith('copy');
       });
     });
 
     it('should handle fallback copy failure gracefully when execCommand throws', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
 
       // Mock clipboard to fail
       Object.defineProperty(navigator, 'clipboard', {
@@ -342,20 +329,19 @@ describe('IntegrationGuide', () => {
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Buttons are: app card, client ID copy button
-      const copyButtons = screen.getAllByRole('button');
+      const copyButtons = page.getByRole('button').all();
 
       // Should not throw even when both copy methods fail
-      await expect(user.click(copyButtons[1])).resolves.not.toThrow();
+      await expect(userEvent.click(copyButtons[1])).resolves.not.toThrow();
 
       // execCommand should have been called
       expect(execCommandMock).toHaveBeenCalledWith('copy');
     });
 
     it('should handle fallback copy failure gracefully when execCommand returns false', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
 
       // Mock clipboard to fail
       Object.defineProperty(navigator, 'clipboard', {
@@ -376,16 +362,15 @@ describe('IntegrationGuide', () => {
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      const copyButtons = screen.getAllByRole('button');
+      const copyButtons = page.getByRole('button').all();
 
       // Should not throw
-      await expect(user.click(copyButtons[1])).resolves.not.toThrow();
+      await expect(userEvent.click(copyButtons[1])).resolves.not.toThrow();
     });
 
     it('should show copied state on successful fallback copy', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
 
       // Mock clipboard to fail
       Object.defineProperty(navigator, 'clipboard', {
@@ -405,28 +390,27 @@ describe('IntegrationGuide', () => {
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[1]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[1]);
 
       // Should show copied message after fallback copy succeeds
-      await waitFor(() => {
-        expect(screen.getByText('applications:clientSecret.copied')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(
+page.getByText('Copied to clipboard')).toBeInTheDocument();
       });
 
       // Advance timers to clear copied state
-      act(() => {
-        vi.advanceTimersByTime(2500);
-      });
+      vi.advanceTimersByTime(2500);
 
-      await waitFor(() => {
-        expect(screen.queryByText('applications:clientSecret.copied')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(
+page.getByText('Copied to clipboard')).not.toBeInTheDocument();
       });
     });
 
     it('should clear existing timeout before setting new one in fallback copy', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
 
       // Mock clipboard to fail
       Object.defineProperty(navigator, 'clipboard', {
@@ -446,23 +430,24 @@ describe('IntegrationGuide', () => {
         clientId: 'test_client_id',
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      const copyButtons = screen.getAllByRole('button');
+      const copyButtons = page.getByRole('button').all();
 
       // Click twice rapidly to trigger timeout clearing logic
-      await user.click(copyButtons[1]);
-      await user.click(copyButtons[1]);
+      await userEvent.click(copyButtons[1]);
+      await userEvent.click(copyButtons[1]);
 
       // Should still show copied message
-      await waitFor(() => {
-        expect(screen.getByText('applications:clientSecret.copied')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(
+page.getByText('Copied to clipboard')).toBeInTheDocument();
       });
     });
   });
 
   describe('Integration Guides', () => {
-    it('should render TechnologyGuide when integrationGuides are provided', () => {
+    it('should render TechnologyGuide when integrationGuides are provided', async () => {
       const props = {
         ...defaultProps,
         integrationGuides: {
@@ -482,29 +467,29 @@ describe('IntegrationGuide', () => {
         },
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.getByTestId('technology-guide')).toBeInTheDocument();
+      await expect.element(page.getByTestId('technology-guide')).toBeInTheDocument();
     });
 
-    it('should not render TechnologyGuide when integrationGuides are null', () => {
+    it('should not render TechnologyGuide when integrationGuides are null', async () => {
       const props = {
         ...defaultProps,
         integrationGuides: null,
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.queryByTestId('technology-guide')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('technology-guide')).not.toBeInTheDocument();
     });
 
-    it('should not render TechnologyGuide when integrationGuides are undefined', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+    it('should not render TechnologyGuide when integrationGuides are undefined', async () => {
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      expect(screen.queryByTestId('technology-guide')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('technology-guide')).not.toBeInTheDocument();
     });
 
-    it('should not render app details section when integrationGuides are provided', () => {
+    it('should not render app details section when integrationGuides are provided', async () => {
       const props = {
         ...defaultProps,
         integrationGuides: {
@@ -524,56 +509,55 @@ describe('IntegrationGuide', () => {
         },
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
-      expect(screen.queryByText('applications:onboarding.summary.appDetails')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Application successfully created')).not.toBeInTheDocument();
     });
   });
 
   describe('App Logo', () => {
-    it('should display app logo when provided', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+    it('should display app logo when provided', async () => {
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      const logo = screen.getByAltText('Test Application logo');
+      const logo = page.getByAltText('Test Application logo');
       expect(logo).toHaveAttribute('src', defaultProps.appLogo);
     });
 
-    it('should handle null logo gracefully', () => {
+    it('should handle null logo gracefully', async () => {
       const props = {
         ...defaultProps,
         appLogo: null,
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Should still render without crashing
-      expect(screen.getByText(defaultProps.appName)).toBeInTheDocument();
+      await expect.element(page.getByText(defaultProps.appName)).toBeInTheDocument();
     });
 
-    it('should display first letter avatar when logo is null', () => {
+    it('should display first letter avatar when logo is null', async () => {
       const props = {
         ...defaultProps,
         appLogo: null,
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Should display 'T' for 'Test Application'
-      expect(screen.getByText('T')).toBeInTheDocument();
+      await expect.element(page.getByText('T')).toBeInTheDocument();
     });
   });
 
   describe('Navigation', () => {
     it('should navigate to application details on click when applicationId is provided', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
       mockNavigate.mockResolvedValue(undefined);
 
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      const appCard = screen.getByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'});
-      await user.click(appCard);
+      const appCard = page.getByRole('button', {name: 'Click to view application details'});
+      await userEvent.click(appCard);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
       });
     });
@@ -581,12 +565,13 @@ describe('IntegrationGuide', () => {
     it('should navigate on Enter key press', async () => {
       mockNavigate.mockResolvedValue(undefined);
 
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      const appCard = screen.getByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'});
-      fireEvent.keyDown(appCard, {key: 'Enter'});
+      const appCard = page.getByRole('button', {name: 'Click to view application details'});
+      await appCard.focus();
+      await userEvent.keyboard('{Enter}');
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
       });
     });
@@ -594,47 +579,48 @@ describe('IntegrationGuide', () => {
     it('should navigate on Space key press', async () => {
       mockNavigate.mockResolvedValue(undefined);
 
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      const appCard = screen.getByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'});
-      fireEvent.keyDown(appCard, {key: ' '});
+      const appCard = page.getByRole('button', {name: 'Click to view application details'});
+      await appCard.focus();
+      await userEvent.keyboard(' ');
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
       });
     });
 
-    it('should not navigate on other key press', () => {
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+    it('should not navigate on other key press', async () => {
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      const appCard = screen.getByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'});
-      fireEvent.keyDown(appCard, {key: 'Tab'});
+      const appCard = page.getByRole('button', {name: 'Click to view application details'});
+      await appCard.focus();
+      await userEvent.keyboard('{Escape}');
 
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('should not be clickable when applicationId is null', () => {
+    it('should not be clickable when applicationId is null', async () => {
       const props = {
         ...defaultProps,
         applicationId: null,
       };
 
-      renderWithRouter(<IntegrationGuide {...props} />);
+      await render(<IntegrationGuide {...props} />);
 
       // Should not have button role when applicationId is null
-      expect(screen.queryByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Click to view application details'})).not.toBeInTheDocument();
     });
 
     it('should handle navigation errors gracefully', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
       mockNavigate.mockRejectedValue(new Error('Navigation failed'));
 
-      renderWithRouter(<IntegrationGuide {...defaultProps} />);
+      await render(<IntegrationGuide {...defaultProps} />);
 
-      const appCard = screen.getByRole('button', {name: 'applications:onboarding.summary.viewAppAriaLabel'});
+      const appCard = page.getByRole('button', {name: 'Click to view application details'});
 
       // Should not throw
-      await user.click(appCard);
+      await userEvent.click(appCard);
 
       expect(mockNavigate).toHaveBeenCalled();
     });
@@ -642,25 +628,22 @@ describe('IntegrationGuide', () => {
 
   describe('Cleanup', () => {
     it('should clean up copy timeouts on unmount', async () => {
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
       const props = {
         ...defaultProps,
         hasOAuthConfig: true,
         clientId: 'test_client_id',
       };
 
-      const {unmount} = renderWithRouter(<IntegrationGuide {...props} />);
+      const {unmount} = await render(<IntegrationGuide {...props} />);
 
-      const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[0]);
+      const copyButtons = page.getByRole('button').all();
+      await userEvent.click(copyButtons[0]);
 
       // Unmount before timeout completes
-      unmount();
+      await unmount();
 
       // Advance timers - should not cause errors
-      act(() => {
-        vi.advanceTimersByTime(3000);
-      });
+      vi.advanceTimersByTime(3000);
     });
   });
 });

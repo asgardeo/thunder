@@ -16,8 +16,11 @@
  * under the License.
  */
 
+/* eslint-disable react/require-default-props */
+
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, userEvent, waitFor} from '@thunder/test-utils';
+import {renderWithProviders} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import DashboardLayout from '../DashboardLayout';
 
 const mockSignIn = vi.fn();
@@ -33,13 +36,6 @@ vi.mock('@asgardeo/react', () => ({
   User: ({children}: {children: (user: unknown) => React.ReactNode}) => children(mockUserData()),
   SignOutButton: ({children}: {children: (props: {signOut: () => void}) => React.ReactNode}) =>
     children({signOut: mockSignOut}),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
 }));
 
 // Mock @thunder/logger/react
@@ -66,107 +62,197 @@ vi.mock('react-router', async () => {
   };
 });
 
+// Mock @wso2/oxygen-ui to avoid infinite re-render loops in browser mode.
+// AppShell, Sidebar, Header, etc. use ResizeObserver/media queries that cause
+// "Maximum update depth exceeded" in real browser rendering.
+vi.mock('@wso2/oxygen-ui', () => {
+  function MockChildren({children}: {children?: React.ReactNode}) {
+    return <div>{children}</div>;
+  }
+
+  function Shell({children}: {children?: React.ReactNode}) {
+    return <div data-testid="app-shell">{children}</div>;
+  }
+  Shell.Navbar = MockChildren;
+  Shell.Sidebar = MockChildren;
+  Shell.Main = function MockMain({children}: {children?: React.ReactNode}) {
+    return <main data-testid="main">{children}</main>;
+  };
+  Shell.Footer = MockChildren;
+
+  function HeaderComp({children}: {children?: React.ReactNode}) {
+    return <header data-testid="header">{children}</header>;
+  }
+  HeaderComp.Toggle = function MockToggle() {
+    return <button data-testid="header-toggle" type="button">Toggle</button>;
+  };
+  HeaderComp.Brand = MockChildren;
+  HeaderComp.BrandLogo = MockChildren;
+  HeaderComp.BrandTitle = MockChildren;
+  HeaderComp.Spacer = function MockSpacer() {
+    return <div data-testid="header-spacer" />;
+  };
+  HeaderComp.Actions = MockChildren;
+
+  function SidebarComp({children}: {children?: React.ReactNode}) {
+    return <div data-testid="sidebar">{children}</div>;
+  }
+  SidebarComp.Nav = MockChildren;
+  SidebarComp.Category = MockChildren;
+  SidebarComp.CategoryLabel = MockChildren;
+  SidebarComp.Item = MockChildren;
+  SidebarComp.ItemIcon = MockChildren;
+  SidebarComp.ItemLabel = MockChildren;
+
+  function UMenu({children}: {children?: React.ReactNode}) {
+    return <div data-testid="user-menu">{children}</div>;
+  }
+  UMenu.Trigger = function MockTrigger({name}: {name?: string}) {
+    return <button type="button" aria-label={name}>{name}</button>;
+  };
+  UMenu.Header = function MockHeader({name, email}: {name?: string; email?: string}) {
+    return <div data-testid="user-menu-header">{name} {email}</div>;
+  };
+  UMenu.Divider = function MockDivider() {
+    return <hr />;
+  };
+  UMenu.Logout = function MockLogout({label, onClick}: {label?: string; onClick?: () => void}) {
+    return <button type="button" onClick={onClick}>{label}</button>;
+  };
+
+  function FooterComp({children}: {children?: React.ReactNode}) {
+    return <div data-testid="footer">{children}</div>;
+  }
+  FooterComp.Copyright = MockChildren;
+  FooterComp.Divider = function MockFooterDivider() {
+    return <hr />;
+  };
+  FooterComp.Version = MockChildren;
+
+  function MockColorSchemeImage() {
+    return <img data-testid="color-scheme-image" alt="logo" />;
+  }
+
+  function MockColorSchemeToggle() {
+    return <button data-testid="color-scheme-toggle" type="button">Theme</button>;
+  }
+
+  function MockDividerComp({orientation}: {orientation?: string}) {
+    return <hr data-orientation={orientation} />;
+  }
+
+  function MockThemeProvider({children}: {children?: React.ReactNode}) {
+    return children;
+  }
+
+  return {
+    AppShell: Shell,
+    Header: HeaderComp,
+    Sidebar: SidebarComp,
+    UserMenu: UMenu,
+    Footer: FooterComp,
+    ColorSchemeImage: MockColorSchemeImage,
+    ColorSchemeToggle: MockColorSchemeToggle,
+    Divider: MockDividerComp,
+    OxygenUIThemeProvider: MockThemeProvider,
+  };
+});
+
 describe('DashboardLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUserData.mockReturnValue({name: 'Test User', email: 'test@example.com'});
   });
 
-  it('renders AppShell layout', () => {
-    render(<DashboardLayout />);
+  it('renders AppShell layout', async () => {
+    await renderWithProviders(<DashboardLayout />);
 
     // Check that the outlet is rendered
-    expect(screen.getByTestId('outlet')).toBeInTheDocument();
+    await expect.element(page.getByTestId('outlet')).toBeInTheDocument();
   });
 
-  it('renders Outlet for nested routes', () => {
-    render(<DashboardLayout />);
+  it('renders Outlet for nested routes', async () => {
+    await renderWithProviders(<DashboardLayout />);
 
-    expect(screen.getByTestId('outlet')).toBeInTheDocument();
-    expect(screen.getByTestId('outlet')).toHaveTextContent('Outlet Content');
+    await expect.element(page.getByTestId('outlet')).toBeInTheDocument();
+    await expect.element(page.getByTestId('outlet')).toHaveTextContent('Outlet Content');
   });
 
-  it('renders navigation categories', () => {
-    render(<DashboardLayout />);
+  it('renders navigation categories', async () => {
+    await renderWithProviders(<DashboardLayout />);
 
     // Check for category labels
-    expect(screen.getByText('navigation:categories.identities')).toBeInTheDocument();
-    expect(screen.getByText('navigation:categories.resources')).toBeInTheDocument();
+    await expect.element(page.getByText('Identities')).toBeInTheDocument();
+    await expect.element(page.getByText('Resources')).toBeInTheDocument();
   });
 
-  it('renders navigation items', () => {
-    render(<DashboardLayout />);
+  it('renders navigation items', async () => {
+    await renderWithProviders(<DashboardLayout />);
 
     // Check for navigation items using translation keys
-    expect(screen.getByText('navigation:pages.users')).toBeInTheDocument();
-    expect(screen.getByText('navigation:pages.userTypes')).toBeInTheDocument();
-    expect(screen.getByText('navigation:pages.applications')).toBeInTheDocument();
-    expect(screen.getByText('navigation:pages.integrations')).toBeInTheDocument();
-    expect(screen.getByText('navigation:pages.flows')).toBeInTheDocument();
+    await expect.element(page.getByText('Users')).toBeInTheDocument();
+    await expect.element(page.getByText('User Types')).toBeInTheDocument();
+    await expect.element(page.getByText('Applications')).toBeInTheDocument();
+    await expect.element(page.getByText('Integrations')).toBeInTheDocument();
+    await expect.element(page.getByText('Flows')).toBeInTheDocument();
   });
 
-  it('renders footer', () => {
-    render(<DashboardLayout />);
+  it('renders footer', async () => {
+    await renderWithProviders(<DashboardLayout />);
 
     const currentYear = new Date().getFullYear();
-    expect(screen.getByText(new RegExp(currentYear.toString()))).toBeInTheDocument();
+    await expect.element(page.getByText(new RegExp(currentYear.toString()))).toBeInTheDocument();
   });
 
   it('calls signIn after successful signOut when sign out is clicked', async () => {
-    const user = userEvent.setup();
     mockSignOut.mockResolvedValue(undefined);
     mockSignIn.mockResolvedValue(undefined);
 
-    render(<DashboardLayout />);
+    await renderWithProviders(<DashboardLayout />);
 
     // Open the user menu first
-    const userMenuTrigger = screen.getByLabelText('Test User');
-    await user.click(userMenuTrigger);
+    await userEvent.click(page.getByLabelText('Test User'));
 
     // Click sign out menu item
-    const signOutButton = await screen.findByText('common:userMenu.signOut');
-    await user.click(signOutButton);
+    await userEvent.click(page.getByText('Sign Out'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSignOut).toHaveBeenCalled();
       expect(mockSignIn).toHaveBeenCalled();
     });
   });
 
   it('logs error when signOut fails', async () => {
-    const user = userEvent.setup();
     const signOutError = new Error('Sign out failed');
     mockSignOut.mockRejectedValue(signOutError);
 
-    render(<DashboardLayout />);
+    await renderWithProviders(<DashboardLayout />);
 
     // Open the user menu first
-    const userMenuTrigger = screen.getByLabelText('Test User');
-    await user.click(userMenuTrigger);
+    await userEvent.click(page.getByLabelText('Test User'));
 
     // Click sign out menu item
-    const signOutButton = await screen.findByText('common:userMenu.signOut');
-    await user.click(signOutButton);
+    await userEvent.click(page.getByText('Sign Out'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSignOut).toHaveBeenCalled();
       expect(mockLoggerError).toHaveBeenCalledWith('Sign out/in failed', {error: signOutError});
     });
   });
 
-  it('renders with fallback values when user data is missing', () => {
+  it('renders with fallback values when user data is missing', async () => {
     mockUserData.mockReturnValue(null);
 
-    render(<DashboardLayout />);
+    await renderWithProviders(<DashboardLayout />);
 
-    expect(screen.getByTestId('outlet')).toBeInTheDocument();
+    await expect.element(page.getByTestId('outlet')).toBeInTheDocument();
   });
 
-  it('renders with undefined user name and email', () => {
+  it('renders with undefined user name and email', async () => {
     mockUserData.mockReturnValue({name: undefined, email: undefined});
 
-    render(<DashboardLayout />);
+    await renderWithProviders(<DashboardLayout />);
 
-    expect(screen.getByTestId('outlet')).toBeInTheDocument();
+    await expect.element(page.getByTestId('outlet')).toBeInTheDocument();
   });
 });

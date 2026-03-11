@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import EditGroupSettings from '../EditGroupSettings';
 
 // Mock child component
@@ -32,25 +33,25 @@ describe('EditGroupSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('should render ManageGroupsSection', () => {
-    renderWithProviders(<EditGroupSettings organizationUnitId="ou-123" />);
+  it('should render ManageGroupsSection', async () => {
+    await renderWithProviders(<EditGroupSettings organizationUnitId="ou-123" />);
 
-    expect(screen.getByTestId('manage-groups-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('manage-groups-section')).toBeInTheDocument();
   });
 
-  it('should pass organizationUnitId to ManageGroupsSection', () => {
-    renderWithProviders(<EditGroupSettings organizationUnitId="ou-456" />);
+  it('should pass organizationUnitId to ManageGroupsSection', async () => {
+    await renderWithProviders(<EditGroupSettings organizationUnitId="ou-456" />);
 
-    expect(screen.getByText('ManageGroupsSection - ou-456')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageGroupsSection - ou-456')).toBeInTheDocument();
   });
 
-  it('should handle different organization unit IDs', () => {
-    const {rerender} = renderWithProviders(<EditGroupSettings organizationUnitId="ou-123" />);
+  it('should handle different organization unit IDs', async () => {
+    const {rerender} = await renderWithProviders(<EditGroupSettings organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('ManageGroupsSection - ou-123')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageGroupsSection - ou-123')).toBeInTheDocument();
 
-    rerender(<EditGroupSettings organizationUnitId="ou-789" />);
+    await rerender(<EditGroupSettings organizationUnitId="ou-789" />);
 
-    expect(screen.getByText('ManageGroupsSection - ou-789')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageGroupsSection - ou-789')).toBeInTheDocument();
   });
 });

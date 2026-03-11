@@ -17,41 +17,41 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
 import LayoutPresetThumbnail from '../LayoutPresetThumbnail';
 
 describe('LayoutPresetThumbnail', () => {
   describe('Rendering without crashing', () => {
-    it('renders the centered variant', () => {
+    it('renders the centered variant', async () => {
       const {container} = render(<LayoutPresetThumbnail variant="centered" />);
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('renders the split variant', () => {
+    it('renders the split variant', async () => {
       const {container} = render(<LayoutPresetThumbnail variant="split" />);
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('renders the fullscreen variant', () => {
+    it('renders the fullscreen variant', async () => {
       const {container} = render(<LayoutPresetThumbnail variant="fullscreen" />);
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('renders the popup variant', () => {
+    it('renders the popup variant', async () => {
       const {container} = render(<LayoutPresetThumbnail variant="popup" />);
       expect(container.firstChild).toBeInTheDocument();
     });
   });
 
   describe('Distinct rendering per variant', () => {
-    it('renders different DOM for "centered" vs "split"', () => {
+    it('renders different DOM for "centered" vs "split"', async () => {
       const {container: a} = render(<LayoutPresetThumbnail variant="centered" />);
       const {container: b} = render(<LayoutPresetThumbnail variant="split" />);
       // The inner HTML may differ as each variant has a unique layout
       expect(a.innerHTML).not.toBe(b.innerHTML);
     });
 
-    it('renders different DOM for "fullscreen" vs "popup"', () => {
+    it('renders different DOM for "fullscreen" vs "popup"', async () => {
       const {container: a} = render(<LayoutPresetThumbnail variant="fullscreen" />);
       const {container: b} = render(<LayoutPresetThumbnail variant="popup" />);
       expect(a.innerHTML).not.toBe(b.innerHTML);
@@ -59,12 +59,12 @@ describe('LayoutPresetThumbnail', () => {
   });
 
   describe('Accessibility', () => {
-    it('centered variant renders a container element', () => {
-      render(<LayoutPresetThumbnail variant="centered" />);
-      expect(document.body.firstChild).toBeInTheDocument();
+    it('centered variant renders a container element', async () => {
+      const {container} = render(<LayoutPresetThumbnail variant="centered" />);
+      expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('split variant renders visual content (no missing elements)', () => {
+    it('split variant renders visual content (no missing elements)', async () => {
       const {container} = render(<LayoutPresetThumbnail variant="split" />);
       expect(container.childElementCount).toBeGreaterThan(0);
     });

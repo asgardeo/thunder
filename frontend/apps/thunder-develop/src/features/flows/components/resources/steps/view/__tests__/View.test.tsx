@@ -17,23 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {Element} from '@/features/flows/models/elements';
 import View from '../View';
-
-// Mock i18next
-const translations: Record<string, string> = {
-  'flows:core.steps.view.addComponent': 'Add Component',
-  'flows:core.steps.view.configure': 'Configure',
-  'flows:core.steps.view.remove': 'Remove',
-  'flows:core.steps.view.noComponentsAvailable': 'No components available',
-};
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => translations[key] || key,
-  }),
-}));
 
 // Mock @xyflow/react
 const mockDeleteElements = vi.fn();
@@ -100,80 +87,80 @@ describe('View', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the View component', () => {
-      render(<View />);
+    it('should render the View component', async () => {
+      await render(<View />);
 
-      expect(screen.getByText('View')).toBeInTheDocument();
+      await expect.element(page.getByText('View')).toBeInTheDocument();
     });
 
-    it('should render with custom heading', () => {
-      render(<View heading="Login Form" />);
+    it('should render with custom heading', async () => {
+      await render(<View heading="Login Form" />);
 
-      expect(screen.getByText('Login Form')).toBeInTheDocument();
+      await expect.element(page.getByText('Login Form')).toBeInTheDocument();
     });
 
-    it('should render with flow-builder-step class', () => {
-      const {container} = render(<View />);
+    it('should render with flow-builder-step class', async () => {
+      const {container} = await render(<View />);
 
       expect(container.querySelector('.flow-builder-step')).toBeInTheDocument();
     });
 
-    it('should accept custom className', () => {
-      const {container} = render(<View className="custom-view" />);
+    it('should accept custom className', async () => {
+      const {container} = await render(<View className="custom-view" />);
 
       expect(container.querySelector('.custom-view')).toBeInTheDocument();
     });
   });
 
   describe('React Flow Handles', () => {
-    it('should render a target handle on the left', () => {
-      render(<View />);
+    it('should render a target handle on the left', async () => {
+      await render(<View />);
 
-      const handle = screen.getByTestId('handle-target');
+      const handle = page.getByTestId('handle-target');
       expect(handle).toBeInTheDocument();
       expect(handle).toHaveAttribute('data-position', 'left');
     });
 
-    it('should render source handle when enableSourceHandle is true', () => {
-      render(<View enableSourceHandle />);
+    it('should render source handle when enableSourceHandle is true', async () => {
+      await render(<View enableSourceHandle />);
 
-      const handles = screen.getAllByTestId(/handle-/);
-      const sourceHandle = handles.find((h) => h.getAttribute('data-testid') === 'handle-source');
+      const handles = page.getByTestId(/handle-/).all();
+      const sourceHandle = handles.find((h) => h.element().getAttribute('data-testid') === 'handle-source');
       expect(sourceHandle).toBeInTheDocument();
     });
 
-    it('should not render source handle by default', () => {
-      render(<View />);
+    it('should not render source handle by default', async () => {
+      await render(<View />);
 
-      const sourceHandle = screen.queryByTestId('handle-source');
+      const sourceHandle = page.getByTestId('handle-source');
       expect(sourceHandle).not.toBeInTheDocument();
     });
   });
 
   describe('Delete Button', () => {
-    it('should render delete button when deletable is true', () => {
-      render(<View deletable />);
+    it('should render delete button when deletable is true', async () => {
+      await render(<View deletable />);
 
       // Delete button should be present
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('should not render delete button when deletable is false', () => {
-      render(<View deletable={false} />);
+    it('should not render delete button when deletable is false', async () => {
+      await render(<View deletable={false} />);
 
       // When no components or configure, and not deletable, there may be no buttons
       // The tooltip text won't be visible unless hovered
-      expect(screen.queryByText('Remove')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Remove')).not.toBeInTheDocument();
     });
 
-    it('should call deleteElements when delete button is clicked', () => {
-      render(<View deletable />);
+    it('should call deleteElements when delete button is clicked', async () => {
+      await render(<View deletable />);
 
       // Find the delete button (last button in the action panel)
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       const deleteButton = buttons[buttons.length - 1];
-      fireEvent.click(deleteButton);
+      await userEvent.click(deleteButton);
 
       expect(mockDeleteElements).toHaveBeenCalledWith({
         nodes: [{id: 'view-node-id'}],
@@ -182,29 +169,29 @@ describe('View', () => {
   });
 
   describe('Configure Button', () => {
-    it('should render configure button when configurable is true', () => {
+    it('should render configure button when configurable is true', async () => {
       const onConfigure = vi.fn();
-      render(<View configurable onConfigure={onConfigure} />);
+      await render(<View configurable onConfigure={onConfigure} />);
 
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('should call onConfigure when configure button is clicked', () => {
+    it('should call onConfigure when configure button is clicked', async () => {
       const onConfigure = vi.fn();
-      render(<View configurable onConfigure={onConfigure} deletable={false} />);
+      await render(<View configurable onConfigure={onConfigure} deletable={false} />);
 
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       // When only configurable, the configure button should be the only one
-      fireEvent.click(buttons[0]);
+      await userEvent.click(buttons[0]);
 
       expect(onConfigure).toHaveBeenCalled();
     });
 
-    it('should not render configure button by default', () => {
-      render(<View deletable={false} />);
+    it('should not render configure button by default', async () => {
+      await render(<View deletable={false} />);
 
-      const buttons = screen.queryAllByRole('button');
+      const buttons = page.getByRole('button').all();
       expect(buttons.length).toBe(0);
     });
   });
@@ -227,55 +214,54 @@ describe('View', () => {
       },
     ] as Element[];
 
-    it('should render add button when availableElements is provided', () => {
-      render(<View availableElements={mockElements} deletable={false} />);
+    it('should render add button when availableElements is provided', async () => {
+      await render(<View availableElements={mockElements} deletable={false} />);
 
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('should open menu when add button is clicked', () => {
-      render(<View availableElements={mockElements} deletable={false} />);
+    it('should open menu when add button is clicked', async () => {
+      await render(<View availableElements={mockElements} deletable={false} />);
 
-      const addButton = screen.getAllByRole('button')[0];
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button').all()[0];
+      await userEvent.click(addButton);
 
       // Menu items should appear
-      expect(screen.getByText('Text Input')).toBeInTheDocument();
-      expect(screen.getByText('Button')).toBeInTheDocument();
+      await expect.element(page.getByText('Text Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Button')).toBeInTheDocument();
     });
 
-    it('should call onAddElement when menu item is clicked', () => {
+    it('should call onAddElement when menu item is clicked', async () => {
       const onAddElement = vi.fn();
-      render(<View availableElements={mockElements} onAddElement={onAddElement} deletable={false} />);
+      await render(<View availableElements={mockElements} onAddElement={onAddElement} deletable={false} />);
 
-      const addButton = screen.getAllByRole('button')[0];
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button').all()[0];
+      await userEvent.click(addButton);
 
-      const menuItem = screen.getByText('Text Input');
-      fireEvent.click(menuItem);
+      const menuItem = page.getByText('Text Input');
+      await userEvent.click(menuItem);
 
       expect(onAddElement).toHaveBeenCalledWith(mockElements[0], 'view-node-id');
     });
 
-    it('should close menu when clicking outside', () => {
-      render(<View availableElements={mockElements} deletable={false} />);
+    it('should close menu when clicking outside', async () => {
+      await render(<View availableElements={mockElements} deletable={false} />);
 
-      const addButton = screen.getAllByRole('button')[0];
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button').all()[0];
+      await userEvent.click(addButton);
 
       // Menu should be open
-      expect(screen.getByText('Text Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Text Input')).toBeInTheDocument();
 
-      // Find the menu backdrop/overlay and click it to close
-      const menu = screen.getByRole('menu');
-      fireEvent.keyDown(menu, {key: 'Escape'});
+      // Close the menu by pressing Escape
+      await userEvent.keyboard('{Escape}');
 
       // Menu should be closed after escape
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('should filter out elements with showOnResourcePanel=false', () => {
+    it('should filter out elements with showOnResourcePanel=false', async () => {
       const elementsWithHidden: Element[] = [
         ...mockElements,
         {
@@ -287,17 +273,17 @@ describe('View', () => {
         },
       ] as Element[];
 
-      render(<View availableElements={elementsWithHidden} deletable={false} />);
+      await render(<View availableElements={elementsWithHidden} deletable={false} />);
 
-      const addButton = screen.getAllByRole('button')[0];
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button').all()[0];
+      await userEvent.click(addButton);
 
-      expect(screen.queryByText('Hidden Element')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Hidden Element')).not.toBeInTheDocument();
     });
   });
 
   describe('Components Rendering', () => {
-    it('should render components in form group', () => {
+    it('should render components in form group', async () => {
       const components: Element[] = [
         {
           id: 'comp-1',
@@ -315,58 +301,58 @@ describe('View', () => {
         },
       ] as Element[];
 
-      render(<View data={{components}} />);
+      await render(<View data={{components}} />);
 
       // Components are rendered inside the form group
-      expect(screen.getByTestId('reorderable-element-0')).toBeInTheDocument();
-      expect(screen.getByTestId('reorderable-element-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-0')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-1')).toBeInTheDocument();
     });
 
-    it('should render empty form when no components', () => {
-      render(<View data={{components: []}} />);
+    it('should render empty form when no components', async () => {
+      await render(<View data={{components: []}} />);
 
       // Form group should still be rendered even with no components
       const formGroup = document.querySelector('.MuiFormGroup-root');
       expect(formGroup).toBeInTheDocument();
-      expect(screen.queryByTestId('reorderable-element-0')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-0')).not.toBeInTheDocument();
     });
   });
 
   describe('Action Panel Double Click', () => {
-    it('should call onActionPanelDoubleClick when action panel is double clicked', () => {
+    it('should call onActionPanelDoubleClick when action panel is double clicked', async () => {
       const onDoubleClick = vi.fn();
-      render(<View onActionPanelDoubleClick={onDoubleClick} />);
+      await render(<View onActionPanelDoubleClick={onDoubleClick} />);
 
-      const actionPanel = screen.getByText('View').closest('.flow-builder-step-action-panel');
+      const actionPanel = page.getByText('View').element().closest('.flow-builder-step-action-panel');
       if (actionPanel) {
-        fireEvent.doubleClick(actionPanel);
+        await userEvent.dblClick(actionPanel);
         expect(onDoubleClick).toHaveBeenCalled();
       }
     });
   });
 
   describe('Droppable Configuration', () => {
-    it('should accept custom droppableAllowedTypes prop', () => {
+    it('should accept custom droppableAllowedTypes prop', async () => {
       // View component accepts droppableAllowedTypes prop
-      render(<View droppableAllowedTypes={['CUSTOM_TYPE']} />);
+      await render(<View droppableAllowedTypes={['CUSTOM_TYPE']} />);
 
       // Component should render without errors
-      expect(screen.getByText('View')).toBeInTheDocument();
+      await expect.element(page.getByText('View')).toBeInTheDocument();
     });
   });
 
   describe('Memoization', () => {
-    it('should render correctly on rerender with same props', () => {
-      const {rerender} = render(<View heading="Test View" />);
+    it('should render correctly on rerender with same props', async () => {
+      const {rerender} = await render(<View heading="Test View" />);
 
-      expect(screen.getByText('Test View')).toBeInTheDocument();
+      await expect.element(page.getByText('Test View')).toBeInTheDocument();
 
-      rerender(<View heading="Test View" />);
+      await rerender(<View heading="Test View" />);
 
-      expect(screen.getByText('Test View')).toBeInTheDocument();
+      await expect.element(page.getByText('Test View')).toBeInTheDocument();
     });
 
-    it('should re-render when data prop changes', () => {
+    it('should re-render when data prop changes', async () => {
       const data1 = {components: []};
       const data2 = {
         components: [
@@ -374,57 +360,57 @@ describe('View', () => {
         ],
       };
 
-      const {rerender} = render(<View data={data1} />);
-      expect(screen.queryByTestId('reorderable-element-0')).not.toBeInTheDocument();
+      const {rerender} = await render(<View data={data1} />);
+      await expect.element(page.getByTestId('reorderable-element-0')).not.toBeInTheDocument();
 
-      rerender(<View data={data2 as {components: Element[]}} />);
-      expect(screen.getByTestId('reorderable-element-0')).toBeInTheDocument();
+      await rerender(<View data={data2 as {components: Element[]}} />);
+      await expect.element(page.getByTestId('reorderable-element-0')).toBeInTheDocument();
     });
 
-    it('should re-render when heading prop changes', () => {
-      const {rerender} = render(<View heading="Initial Heading" />);
-      expect(screen.getByText('Initial Heading')).toBeInTheDocument();
+    it('should re-render when heading prop changes', async () => {
+      const {rerender} = await render(<View heading="Initial Heading" />);
+      await expect.element(page.getByText('Initial Heading')).toBeInTheDocument();
 
-      rerender(<View heading="Updated Heading" />);
-      expect(screen.getByText('Updated Heading')).toBeInTheDocument();
+      await rerender(<View heading="Updated Heading" />);
+      await expect.element(page.getByText('Updated Heading')).toBeInTheDocument();
     });
 
-    it('should re-render when deletable prop changes', () => {
-      const {rerender} = render(<View deletable={false} configurable={false} />);
-      expect(screen.queryAllByRole('button')).toHaveLength(0);
+    it('should re-render when deletable prop changes', async () => {
+      const {rerender} = await render(<View deletable={false} configurable={false} />);
+      expect(page.getByRole('button').all()).toHaveLength(0);
 
-      rerender(<View deletable configurable={false} />);
+      await rerender(<View deletable configurable={false} />);
       // Delete button should now be visible
-      expect(screen.queryAllByRole('button').length).toBeGreaterThan(0);
+      expect(page.getByRole('button').all().length).toBeGreaterThan(0);
     });
 
-    it('should re-render when configurable prop changes', () => {
-      const {rerender} = render(<View deletable={false} configurable={false} />);
-      expect(screen.queryAllByRole('button')).toHaveLength(0);
+    it('should re-render when configurable prop changes', async () => {
+      const {rerender} = await render(<View deletable={false} configurable={false} />);
+      expect(page.getByRole('button').all()).toHaveLength(0);
 
-      rerender(<View deletable={false} configurable />);
+      await rerender(<View deletable={false} configurable />);
       // Configure button should now be visible
-      expect(screen.queryAllByRole('button').length).toBeGreaterThan(0);
+      expect(page.getByRole('button').all().length).toBeGreaterThan(0);
     });
 
-    it('should re-render when enableSourceHandle prop changes', () => {
-      const {rerender} = render(<View enableSourceHandle={false} />);
-      expect(screen.queryByTestId('handle-source')).not.toBeInTheDocument();
+    it('should re-render when enableSourceHandle prop changes', async () => {
+      const {rerender} = await render(<View enableSourceHandle={false} />);
+      await expect.element(page.getByTestId('handle-source')).not.toBeInTheDocument();
 
-      rerender(<View enableSourceHandle />);
-      expect(screen.getByTestId('handle-source')).toBeInTheDocument();
+      await rerender(<View enableSourceHandle />);
+      await expect.element(page.getByTestId('handle-source')).toBeInTheDocument();
     });
 
-    it('should not re-render when only callback props change', () => {
+    it('should not re-render when only callback props change', async () => {
       const onAddElement1 = vi.fn();
       const onAddElement2 = vi.fn();
 
-      const {rerender} = render(<View heading="Same Heading" onAddElement={onAddElement1} />);
-      expect(screen.getByText('Same Heading')).toBeInTheDocument();
+      const {rerender} = await render(<View heading="Same Heading" onAddElement={onAddElement1} />);
+      await expect.element(page.getByText('Same Heading')).toBeInTheDocument();
 
       // Changing only the callback should not cause visual changes (memoized)
-      rerender(<View heading="Same Heading" onAddElement={onAddElement2} />);
-      expect(screen.getByText('Same Heading')).toBeInTheDocument();
+      await rerender(<View heading="Same Heading" onAddElement={onAddElement2} />);
+      await expect.element(page.getByText('Same Heading')).toBeInTheDocument();
     });
   });
 });

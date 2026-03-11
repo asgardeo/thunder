@@ -17,49 +17,49 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render, page} from '@thunder/test-utils/browser';
 import SliderRow from '../SliderRow';
 
 describe('SliderRow', () => {
   describe('Rendering', () => {
-    it('renders the label', () => {
+    it('renders the label', async () => {
       render(<SliderRow label="Border Radius" value={8} min={0} max={24} onChange={vi.fn()} />);
-      expect(screen.getByText('Border Radius')).toBeInTheDocument();
+      await expect.element(page.getByText('Border Radius')).toBeInTheDocument();
     });
 
-    it('renders the current value with default unit "px"', () => {
+    it('renders the current value with default unit "px"', async () => {
       render(<SliderRow label="Spacing" value={16} min={0} max={48} onChange={vi.fn()} />);
-      expect(screen.getByText('16px')).toBeInTheDocument();
+      await expect.element(page.getByText('16px')).toBeInTheDocument();
     });
 
-    it('renders the current value with a custom unit', () => {
+    it('renders the current value with a custom unit', async () => {
       render(<SliderRow label="Opacity" value={50} min={0} max={100} unit="%" onChange={vi.fn()} />);
-      expect(screen.getByText('50%')).toBeInTheDocument();
+      await expect.element(page.getByText('50%')).toBeInTheDocument();
     });
 
-    it('renders the value 0 correctly', () => {
+    it('renders the value 0 correctly', async () => {
       render(<SliderRow label="Radius" value={0} min={0} max={24} onChange={vi.fn()} />);
-      expect(screen.getByText('0px')).toBeInTheDocument();
+      await expect.element(page.getByText('0px')).toBeInTheDocument();
     });
 
-    it('renders a slider input element', () => {
+    it('renders a slider input element', async () => {
       render(<SliderRow label="Radius" value={8} min={0} max={24} onChange={vi.fn()} />);
-      expect(screen.getByRole('slider')).toBeInTheDocument();
+      await expect.element(page.getByRole('slider')).toBeInTheDocument();
     });
 
-    it('slider reflects the min attribute', () => {
+    it('slider reflects the min attribute', async () => {
       render(<SliderRow label="Radius" value={4} min={2} max={24} onChange={vi.fn()} />);
-      expect(screen.getByRole('slider')).toHaveAttribute('aria-valuemin', '2');
+      await expect.element(page.getByRole('slider')).toHaveAttribute('aria-valuemin', '2');
     });
 
-    it('slider reflects the max attribute', () => {
+    it('slider reflects the max attribute', async () => {
       render(<SliderRow label="Radius" value={4} min={0} max={32} onChange={vi.fn()} />);
-      expect(screen.getByRole('slider')).toHaveAttribute('aria-valuemax', '32');
+      await expect.element(page.getByRole('slider')).toHaveAttribute('aria-valuemax', '32');
     });
 
-    it('slider reflects the current value', () => {
+    it('slider reflects the current value', async () => {
       render(<SliderRow label="Radius" value={12} min={0} max={24} onChange={vi.fn()} />);
-      expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '12');
+      await expect.element(page.getByRole('slider')).toHaveAttribute('aria-valuenow', '12');
     });
   });
 });

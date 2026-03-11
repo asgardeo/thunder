@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import ApplicationCreateContext, {
   type ApplicationCreateContextType,
@@ -74,8 +74,8 @@ describe('useApplicationCreateContext', () => {
     return Wrapper;
   };
 
-  it('should return context values when used within provider', () => {
-    const {result} = renderHook(() => useApplicationCreateContext(), {
+  it('should return context values when used within provider', async () => {
+    const {result} = await renderHook(() => useApplicationCreateContext(), {
       wrapper: createWrapper(mockContextValue),
     });
 
@@ -85,16 +85,21 @@ describe('useApplicationCreateContext', () => {
     expect(result.current.signInApproach).toBe(ApplicationCreateFlowSignInApproach.INBUILT);
   });
 
-  it('should throw an error when used outside of ApplicationCreateProvider', () => {
-    expect(() => {
+  it('should throw an error when used outside of ApplicationCreateProvider', async () => {
+    // Suppress console.error from React's error boundary
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
       renderHook(() => useApplicationCreateContext(), {
         wrapper: createWrapper(undefined),
-      });
-    }).toThrow('useApplicationCreateContext must be used within an ApplicationCreateProvider');
+      }),
+    ).rejects.toThrow('useApplicationCreateContext must be used within an ApplicationCreateProvider');
+
+    consoleSpy.mockRestore();
   });
 
-  it('should return setter functions', () => {
-    const {result} = renderHook(() => useApplicationCreateContext(), {
+  it('should return setter functions', async () => {
+    const {result} = await renderHook(() => useApplicationCreateContext(), {
       wrapper: createWrapper(mockContextValue),
     });
 
@@ -108,7 +113,7 @@ describe('useApplicationCreateContext', () => {
     expect(typeof result.current.reset).toBe('function');
   });
 
-  it('should return app configuration values', () => {
+  it('should return app configuration values', async () => {
     const contextWithValues: ApplicationCreateContextType = {
       ...mockContextValue,
       appName: 'My Application',
@@ -119,7 +124,7 @@ describe('useApplicationCreateContext', () => {
       callbackUrlFromConfig: 'https://myapp.com/callback',
     };
 
-    const {result} = renderHook(() => useApplicationCreateContext(), {
+    const {result} = await renderHook(() => useApplicationCreateContext(), {
       wrapper: createWrapper(contextWithValues),
     });
 
@@ -131,7 +136,7 @@ describe('useApplicationCreateContext', () => {
     expect(result.current.callbackUrlFromConfig).toBe('https://myapp.com/callback');
   });
 
-  it('should return integrations state', () => {
+  it('should return integrations state', async () => {
     const contextWithIntegrations: ApplicationCreateContextType = {
       ...mockContextValue,
       integrations: {
@@ -141,7 +146,7 @@ describe('useApplicationCreateContext', () => {
       },
     };
 
-    const {result} = renderHook(() => useApplicationCreateContext(), {
+    const {result} = await renderHook(() => useApplicationCreateContext(), {
       wrapper: createWrapper(contextWithIntegrations),
     });
 
@@ -150,33 +155,33 @@ describe('useApplicationCreateContext', () => {
     expect(result.current.integrations.microsoft).toBe(true);
   });
 
-  it('should return onboarding state', () => {
+  it('should return onboarding state', async () => {
     const contextWithOnboarding: ApplicationCreateContextType = {
       ...mockContextValue,
       hasCompletedOnboarding: true,
     };
 
-    const {result} = renderHook(() => useApplicationCreateContext(), {
+    const {result} = await renderHook(() => useApplicationCreateContext(), {
       wrapper: createWrapper(contextWithOnboarding),
     });
 
     expect(result.current.hasCompletedOnboarding).toBe(true);
   });
 
-  it('should return error state', () => {
+  it('should return error state', async () => {
     const contextWithError: ApplicationCreateContextType = {
       ...mockContextValue,
       error: 'Something went wrong',
     };
 
-    const {result} = renderHook(() => useApplicationCreateContext(), {
+    const {result} = await renderHook(() => useApplicationCreateContext(), {
       wrapper: createWrapper(contextWithError),
     });
 
     expect(result.current.error).toBe('Something went wrong');
   });
 
-  it('should return different flow steps', () => {
+  it('should return different flow steps', async () => {
     const steps = [
       ApplicationCreateFlowStep.NAME,
       ApplicationCreateFlowStep.DESIGN,
@@ -186,34 +191,38 @@ describe('useApplicationCreateContext', () => {
       ApplicationCreateFlowStep.CONFIGURE,
     ];
 
-    steps.forEach((step) => {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const step of steps) {
       const contextWithStep: ApplicationCreateContextType = {
         ...mockContextValue,
         currentStep: step,
       };
 
-      const {result} = renderHook(() => useApplicationCreateContext(), {
+      // eslint-disable-next-line no-await-in-loop
+      const {result} = await renderHook(() => useApplicationCreateContext(), {
         wrapper: createWrapper(contextWithStep),
       });
 
       expect(result.current.currentStep).toBe(step);
-    });
+    }
   });
 
-  it('should return sign-in approach values', () => {
+  it('should return sign-in approach values', async () => {
     const approaches = [ApplicationCreateFlowSignInApproach.INBUILT, ApplicationCreateFlowSignInApproach.EMBEDDED];
 
-    approaches.forEach((approach) => {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const approach of approaches) {
       const contextWithApproach: ApplicationCreateContextType = {
         ...mockContextValue,
         signInApproach: approach,
       };
 
-      const {result} = renderHook(() => useApplicationCreateContext(), {
+      // eslint-disable-next-line no-await-in-loop
+      const {result} = await renderHook(() => useApplicationCreateContext(), {
         wrapper: createWrapper(contextWithApproach),
       });
 
       expect(result.current.signInApproach).toBe(approach);
-    });
+    }
   });
 });

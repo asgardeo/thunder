@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationEditorCard from '../TranslationEditorCard';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 vi.mock('../TranslationFieldsView', () => ({
   default: () => <div data-testid="fields-view" />,
@@ -59,99 +50,99 @@ describe('TranslationEditorCard', () => {
   });
 
   describe('Loading state', () => {
-    it('shows a loading spinner and message while data is loading', () => {
-      render(<TranslationEditorCard {...defaultProps} isLoading />);
+    it('shows a loading spinner and message while data is loading', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} isLoading />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
-      expect(screen.getByText('editor.loading')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByText('Loading translations...')).toBeInTheDocument();
     });
 
-    it('hides the spinner once loading is complete', () => {
-      render(<TranslationEditorCard {...defaultProps} isLoading={false} />);
+    it('hides the spinner once loading is complete', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} isLoading={false} />);
 
-      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).not.toBeInTheDocument();
     });
   });
 
   describe('Tabs', () => {
-    it('renders the Fields and Raw JSON tabs', () => {
-      render(<TranslationEditorCard {...defaultProps} />);
+    it('renders the Fields and Raw JSON tabs', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} />);
 
-      expect(screen.getByRole('tab', {name: 'editor.textFields'})).toBeInTheDocument();
-      expect(screen.getByRole('tab', {name: 'editor.rawJson'})).toBeInTheDocument();
+      await expect.element(page.getByRole('tab', {name: 'Fields'})).toBeInTheDocument();
+      await expect.element(page.getByRole('tab', {name: 'Raw JSON'})).toBeInTheDocument();
     });
 
     it('calls onTabChange when a tab is clicked', async () => {
       const onTabChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(<TranslationEditorCard {...defaultProps} onTabChange={onTabChange} />);
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} onTabChange={onTabChange} />);
 
-      await user.click(screen.getByRole('tab', {name: 'editor.rawJson'}));
+      await userEvent.click(page.getByRole('tab', {name: 'Raw JSON'}));
 
       expect(onTabChange).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Fields view', () => {
-    it('renders the fields view when editView is "fields"', () => {
-      render(<TranslationEditorCard {...defaultProps} editView="fields" />);
+    it('renders the fields view when editView is "fields"', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} editView="fields" />);
 
-      expect(screen.getByTestId('fields-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('fields-view')).toBeInTheDocument();
     });
 
-    it('renders the search input in fields view', () => {
-      render(<TranslationEditorCard {...defaultProps} editView="fields" />);
+    it('renders the search input in fields view', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} editView="fields" />);
 
-      expect(screen.getByPlaceholderText('editor.searchPlaceholder')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Search by key or value...')).toBeInTheDocument();
     });
 
     it('calls onSearchChange when text is typed in the search input', async () => {
       const onSearchChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(<TranslationEditorCard {...defaultProps} editView="fields" onSearchChange={onSearchChange} />);
+      await renderWithProviders(
+        <TranslationEditorCard {...defaultProps} editView="fields" onSearchChange={onSearchChange} />,
+      );
 
       // The search input is controlled (value={search} prop stays ''), so
       // each keystroke fires onSearchChange with just that character.
-      await user.type(screen.getByPlaceholderText('editor.searchPlaceholder'), 's');
+      await userEvent.type(page.getByPlaceholder('Search by key or value...'), 's');
 
       expect(onSearchChange).toHaveBeenCalledWith('s');
     });
 
-    it('does not render the JSON editor when editView is "fields"', () => {
-      render(<TranslationEditorCard {...defaultProps} editView="fields" />);
+    it('does not render the JSON editor when editView is "fields"', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} editView="fields" />);
 
-      expect(screen.queryByTestId('json-editor')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('json-editor')).not.toBeInTheDocument();
     });
   });
 
   describe('JSON view', () => {
-    it('renders the JSON editor when editView is "json"', () => {
-      render(<TranslationEditorCard {...defaultProps} editView="json" />);
+    it('renders the JSON editor when editView is "json"', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} editView="json" />);
 
-      expect(screen.getByTestId('json-editor')).toBeInTheDocument();
+      await expect.element(page.getByTestId('json-editor')).toBeInTheDocument();
     });
 
-    it('does not render the fields view when editView is "json"', () => {
-      render(<TranslationEditorCard {...defaultProps} editView="json" />);
+    it('does not render the fields view when editView is "json"', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} editView="json" />);
 
-      expect(screen.queryByTestId('fields-view')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('fields-view')).not.toBeInTheDocument();
     });
 
-    it('does not render the search input in JSON view', () => {
-      render(<TranslationEditorCard {...defaultProps} editView="json" />);
+    it('does not render the search input in JSON view', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} editView="json" />);
 
-      expect(screen.queryByPlaceholderText('editor.searchPlaceholder')).not.toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Search by key or value...')).not.toBeInTheDocument();
     });
   });
 
   describe('No language selected', () => {
-    it('does not render editor views when selectedLanguage is null', () => {
-      render(<TranslationEditorCard {...defaultProps} selectedLanguage={null} editView="fields" />);
+    it('does not render editor views when selectedLanguage is null', async () => {
+      await renderWithProviders(<TranslationEditorCard {...defaultProps} selectedLanguage={null} editView="fields" />);
 
-      expect(screen.queryByTestId('fields-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('json-editor')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('fields-view')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('json-editor')).not.toBeInTheDocument();
     });
   });
 });

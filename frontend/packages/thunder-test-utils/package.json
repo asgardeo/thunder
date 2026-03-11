@@ -7,7 +7,7 @@
     "testing",
     "vitest",
     "react",
-    "testing-library",
+    "vitest-browser-react",
     "wso2"
   ],
   "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-test-utils#readme",
@@ -25,10 +25,20 @@
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.cjs"
     },
+    "./browser": {
+      "types": "./dist/index-browser.d.ts",
+      "import": "./dist/index-browser.js",
+      "require": "./dist/cjs/index-browser.cjs"
+    },
     "./setup": {
       "types": "./dist/setup.d.ts",
       "import": "./dist/setup.js",
       "require": "./dist/cjs/setup.cjs"
+    },
+    "./setup-browser": {
+      "types": "./dist/setup-browser.d.ts",
+      "import": "./dist/setup-browser.js",
+      "require": "./dist/cjs/setup-browser.cjs"
     },
     "./mocks": {
       "types": "./dist/mocks/index.d.ts",
@@ -63,6 +73,7 @@
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
+    "vitest-browser-react": "catalog:",
     "tslib": "catalog:"
   },
   "devDependencies": {
@@ -75,9 +86,11 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "@wso2/oxygen-ui": "catalog:",
     "eslint": "catalog:",
     "i18next": "catalog:",
+    "playwright": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

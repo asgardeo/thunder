@@ -19,7 +19,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, act} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider, Position} from '@xyflow/react';
 import NodeHandle from '../NodeHandle';
@@ -67,32 +67,32 @@ describe('NodeHandle', () => {
   });
 
   describe('Rendering', () => {
-    it('should render Handle component', () => {
-      const {getByTestId} = render(<NodeHandle id="handle-1" type="source" position={Position.Right} />, {
+    it('should render Handle component', async () => {
+      const {getByTestId} = await render(<NodeHandle id="handle-1" type="source" position={Position.Right} />, {
         wrapper: createWrapper(),
       });
 
       expect(getByTestId('handle')).toBeInTheDocument();
     });
 
-    it('should pass id to Handle', () => {
-      const {getByTestId} = render(<NodeHandle id="my-handle" type="source" position={Position.Right} />, {
+    it('should pass id to Handle', async () => {
+      const {getByTestId} = await render(<NodeHandle id="my-handle" type="source" position={Position.Right} />, {
         wrapper: createWrapper(),
       });
 
       expect(getByTestId('handle')).toHaveAttribute('data-id', 'my-handle');
     });
 
-    it('should pass type to Handle', () => {
-      const {getByTestId} = render(<NodeHandle id="handle-1" type="target" position={Position.Left} />, {
+    it('should pass type to Handle', async () => {
+      const {getByTestId} = await render(<NodeHandle id="handle-1" type="target" position={Position.Left} />, {
         wrapper: createWrapper(),
       });
 
       expect(getByTestId('handle')).toHaveAttribute('data-type', 'target');
     });
 
-    it('should pass position to Handle', () => {
-      const {getByTestId} = render(<NodeHandle id="handle-1" type="source" position={Position.Bottom} />, {
+    it('should pass position to Handle', async () => {
+      const {getByTestId} = await render(<NodeHandle id="handle-1" type="source" position={Position.Bottom} />, {
         wrapper: createWrapper(),
       });
 
@@ -101,8 +101,8 @@ describe('NodeHandle', () => {
   });
 
   describe('Position Key Updates', () => {
-    it('should not update node internals on initial mount', () => {
-      render(<NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={0} />, {
+    it('should not update node internals on initial mount', async () => {
+      await render(<NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={0} />, {
         wrapper: createWrapper(),
       });
 
@@ -112,7 +112,7 @@ describe('NodeHandle', () => {
     it('should update node internals when positionKey changes', async () => {
       // Use a wrapper that's consistent across rerenders
       const Wrapper = createWrapper();
-      const {rerender} = render(
+      const {rerender} = await render(
         <Wrapper>
           <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={0} />
         </Wrapper>,
@@ -122,25 +122,25 @@ describe('NodeHandle', () => {
       mockUpdateNodeInternals.mockClear();
       mockRequestAnimationFrame.mockClear();
 
-      await act(async () => {
-        rerender(
-          <Wrapper>
-            <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={1} />
-          </Wrapper>,
-        );
-      });
+      
+      await rerender(
+        <Wrapper>
+          <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={1} />
+        </Wrapper>,
+      );
+    
 
       // The RAF mock executes callback synchronously, so check immediately
       expect(mockRequestAnimationFrame).toHaveBeenCalled();
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
     });
 
-    it('should not update when positionKey stays the same', () => {
-      const {rerender} = render(<NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={5} />, {
+    it('should not update when positionKey stays the same', async () => {
+      const {rerender} = await render(<NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={5} />, {
         wrapper: createWrapper(),
       });
 
-      rerender(
+      await rerender(
         <ReactFlowProvider>
           <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={5} />
         </ReactFlowProvider>,
@@ -151,7 +151,7 @@ describe('NodeHandle', () => {
 
     it('should handle string positionKey', async () => {
       const Wrapper = createWrapper();
-      const {rerender} = render(
+      const {rerender} = await render(
         <Wrapper>
           <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey="key-1" />
         </Wrapper>,
@@ -160,27 +160,27 @@ describe('NodeHandle', () => {
       // Clear mocks after initial render to isolate the rerender behavior
       mockUpdateNodeInternals.mockClear();
 
-      await act(async () => {
-        rerender(
-          <Wrapper>
-            <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey="key-2" />
-          </Wrapper>,
-        );
-      });
+      
+      await rerender(
+        <Wrapper>
+          <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey="key-2" />
+        </Wrapper>,
+      );
+    
 
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
     });
   });
 
   describe('No Node ID', () => {
-    it('should not update when nodeId is null', () => {
+    it('should not update when nodeId is null', async () => {
       mockUseNodeId.mockReturnValue(null as unknown as string);
 
-      const {rerender} = render(<NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={0} />, {
+      const {rerender} = await render(<NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={0} />, {
         wrapper: createWrapper(),
       });
 
-      rerender(
+      await rerender(
         <ReactFlowProvider>
           <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={1} />
         </ReactFlowProvider>,
@@ -191,8 +191,8 @@ describe('NodeHandle', () => {
   });
 
   describe('Default Props', () => {
-    it('should work without positionKey', () => {
-      const {getByTestId} = render(<NodeHandle id="handle-1" type="source" position={Position.Right} />, {
+    it('should work without positionKey', async () => {
+      const {getByTestId} = await render(<NodeHandle id="handle-1" type="source" position={Position.Right} />, {
         wrapper: createWrapper(),
       });
 
@@ -201,8 +201,8 @@ describe('NodeHandle', () => {
   });
 
   describe('Handle Props Spreading', () => {
-    it('should spread additional handle props', () => {
-      const {getByTestId} = render(<NodeHandle id="handle-1" type="source" position={Position.Right} />, {
+    it('should spread additional handle props', async () => {
+      const {getByTestId} = await render(<NodeHandle id="handle-1" type="source" position={Position.Right} />, {
         wrapper: createWrapper(),
       });
 

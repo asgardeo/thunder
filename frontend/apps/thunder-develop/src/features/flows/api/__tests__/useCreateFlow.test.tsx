@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useCreateFlow from '../useCreateFlow';
@@ -80,8 +80,8 @@ describe('useCreateFlow', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateFlow());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useCreateFlow());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -94,11 +94,11 @@ describe('useCreateFlow', () => {
   it('should successfully create a flow', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -118,15 +118,15 @@ describe('useCreateFlow', () => {
       }),
     );
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
 
@@ -137,11 +137,11 @@ describe('useCreateFlow', () => {
     const apiError = new Error('Failed to create flow');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -152,12 +152,12 @@ describe('useCreateFlow', () => {
   it('should invalidate flows query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result, queryClient} = renderHook(() => useCreateFlow());
+    const {result, queryClient} = await renderHook(() => useCreateFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -169,7 +169,7 @@ describe('useCreateFlow', () => {
   it('should support mutateAsync for promise-based workflows', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     const promise = result.current.mutateAsync(mockCreateRequest);
 
@@ -181,11 +181,11 @@ describe('useCreateFlow', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest, {onSuccess});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
     });
   });
@@ -196,11 +196,11 @@ describe('useCreateFlow', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest, {onError});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledWith(apiError, mockCreateRequest, undefined, expect.anything());
     });
   });
@@ -208,19 +208,17 @@ describe('useCreateFlow', () => {
   it('should reset mutation state', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    result.current.reset();;
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toBeUndefined();
     });
     expect(result.current.isIdle).toBe(true);
@@ -235,11 +233,11 @@ describe('useCreateFlow', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -253,11 +251,11 @@ describe('useCreateFlow', () => {
   it('should properly serialize request data as JSON', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow());
+    const {result} = await renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

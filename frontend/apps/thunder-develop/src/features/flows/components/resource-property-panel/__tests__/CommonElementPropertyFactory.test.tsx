@@ -17,36 +17,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import CommonElementPropertyFactory from '../CommonElementPropertyFactory';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
 import type {Resource} from '../../../models/resources';
 import {ElementTypes} from '../../../models/elements';
 import FlowBuilderElementConstants from '../../../constants/FlowBuilderElementConstants';
-
-vi.mock('@thunder/logger/react', () => ({
-  useLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-    withComponent: vi.fn().mockReturnThis(),
-  }),
-}));
-
-// Mock icons package so ICON_NAMES is predictable and icon rendering works
-vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
-  const MockUserIcon = Object.assign(({size}: {size?: number}) => <svg data-testid="icon-user" data-size={size} />, {
-    displayName: 'User',
-    $$typeof: Symbol.for('react.forward_ref'),
-  });
-  return {
-    ...actual,
-    User: MockUserIcon,
-  };
-});
 
 // Mock child components
 vi.mock('../rich-text/RichTextWithTranslation', () => ({
@@ -131,14 +109,14 @@ describe('CommonElementPropertyFactory', () => {
   });
 
   describe('RichText Element', () => {
-    it('should render RichTextWithTranslation for label property when resource is RichText', () => {
+    it('should render RichTextWithTranslation for label property when resource is RichText', async () => {
       const richTextResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.RichText,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={richTextResource}
           propertyKey="label"
@@ -148,17 +126,17 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-with-translation')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-with-translation')).toBeInTheDocument();
     });
 
-    it('should not render RichTextWithTranslation for non-label properties on RichText', () => {
+    it('should not render RichTextWithTranslation for non-label properties on RichText', async () => {
       const richTextResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.RichText,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={richTextResource}
           propertyKey="other"
@@ -168,20 +146,20 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByTestId('rich-text-with-translation')).not.toBeInTheDocument();
-      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-with-translation')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field')).toBeInTheDocument();
     });
   });
 
   describe('Boolean Properties', () => {
-    it('should render CheckboxPropertyField for boolean property values', () => {
+    it('should render CheckboxPropertyField for boolean property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="required"
@@ -191,17 +169,17 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('checkbox-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('checkbox-property-field')).toBeInTheDocument();
     });
 
-    it('should render CheckboxPropertyField for false boolean values', () => {
+    it('should render CheckboxPropertyField for false boolean values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="disabled"
@@ -211,19 +189,19 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('checkbox-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('checkbox-property-field')).toBeInTheDocument();
     });
   });
 
   describe('String Properties', () => {
-    it('should render TextPropertyField for string property values', () => {
+    it('should render TextPropertyField for string property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="placeholder"
@@ -233,17 +211,17 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field')).toBeInTheDocument();
     });
 
-    it('should render TextPropertyField for empty string values', () => {
+    it('should render TextPropertyField for empty string values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="hint"
@@ -253,19 +231,19 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field')).toBeInTheDocument();
     });
   });
 
   describe('Captcha Element', () => {
-    it('should render TextField with default provider for Captcha resource', () => {
+    it('should render TextField with default provider for Captcha resource', async () => {
       const captchaResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.Captcha,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={captchaResource}
           propertyKey="provider"
@@ -275,19 +253,19 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeInTheDocument();
       expect(textField).toHaveValue(FlowBuilderElementConstants.DEFAULT_CAPTCHA_PROVIDER);
     });
 
-    it('should render disabled TextField for Captcha provider', () => {
+    it('should render disabled TextField for Captcha provider', async () => {
       const captchaResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.Captcha,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={captchaResource}
           propertyKey="provider"
@@ -297,20 +275,20 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeDisabled();
     });
   });
 
   describe('Null Cases', () => {
-    it('should return null for unsupported property types', () => {
+    it('should return null for unsupported property types', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="complexProp"
@@ -323,14 +301,14 @@ describe('CommonElementPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should render a text field for number property values', () => {
+    it('should return null for number property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      const {getByTestId} = render(
+      const {container} = await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="count"
@@ -340,17 +318,17 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(getByTestId('text-property-field')).toBeDefined();
+      expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for array property values', () => {
+    it('should return null for array property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="items"
@@ -365,14 +343,14 @@ describe('CommonElementPropertyFactory', () => {
   });
 
   describe('Additional Props', () => {
-    it('should pass additional props to child components', () => {
+    it('should pass additional props to child components', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="label"
@@ -383,101 +361,19 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
-    });
-  });
-
-  describe('Icon Element', () => {
-    it('should render Autocomplete for Icon element with name property', () => {
-      const iconResource: Resource = {
-        id: 'resource-1',
-        type: ElementTypes.Icon,
-        config: {},
-      } as Resource;
-
-      render(
-        <CommonElementPropertyFactory
-          resource={iconResource}
-          propertyKey="name"
-          propertyValue="User"
-          onChange={mockOnChange}
-        />,
-        {wrapper: createWrapper()},
-      );
-
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-
-    it('should render Autocomplete for Icon element with empty propertyValue', () => {
-      const iconResource: Resource = {
-        id: 'resource-1',
-        type: ElementTypes.Icon,
-        config: {},
-      } as Resource;
-
-      render(
-        <CommonElementPropertyFactory
-          resource={iconResource}
-          propertyKey="name"
-          propertyValue=""
-          onChange={mockOnChange}
-        />,
-        {wrapper: createWrapper()},
-      );
-
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-
-    it('should render Autocomplete for Icon element with null propertyValue', () => {
-      const iconResource: Resource = {
-        id: 'resource-1',
-        type: ElementTypes.Icon,
-        config: {},
-      } as Resource;
-
-      render(
-        <CommonElementPropertyFactory
-          resource={iconResource}
-          propertyKey="name"
-          propertyValue={null}
-          onChange={mockOnChange}
-        />,
-        {wrapper: createWrapper()},
-      );
-
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-
-    it('should render TextPropertyField for non-name property on Icon element', () => {
-      const iconResource: Resource = {
-        id: 'resource-1',
-        type: ElementTypes.Icon,
-        config: {},
-      } as Resource;
-
-      render(
-        <CommonElementPropertyFactory
-          resource={iconResource}
-          propertyKey="size"
-          propertyValue={24}
-          onChange={mockOnChange}
-        />,
-        {wrapper: createWrapper()},
-      );
-
-      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field')).toBeInTheDocument();
     });
   });
 
   describe('Label Property for Non-RichText', () => {
-    it('should render TextPropertyField for label property on non-RichText elements', () => {
+    it('should render TextPropertyField for label property on non-RichText elements', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="label"
@@ -487,7 +383,7 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('text-property-field')).toBeInTheDocument();
     });
   });
 });

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent, type Locator} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import I18nConfigurationCard from '../I18nConfigurationCard';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
@@ -26,17 +27,6 @@ import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
 import type {Base} from '../../../models/base';
 
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      if (params) {
-        return `${key} ${JSON.stringify(params)}`;
-      }
-      return key;
-    },
-  }),
-}));
 
 // Mock @thunder/shared-contexts
 vi.mock('@thunder/shared-contexts', () => ({
@@ -48,7 +38,6 @@ vi.mock('@thunder/shared-contexts', () => ({
 // Mock the API hooks from @thunder/i18n
 const mockMutate = vi.fn();
 vi.mock('@thunder/i18n', () => ({
-  NamespaceConstants: {CUSTOM_NAMESPACE: 'custom'},
   useUpdateTranslation: () => ({
     mutate: mockMutate,
     isPending: false,
@@ -60,7 +49,7 @@ vi.mock('@thunder/i18n', () => ({
     data: {
       language: 'en-US',
       translations: {
-        custom: {
+        flowI18n: {
           'login.title': 'Sign In',
           'login.description': 'Enter your credentials',
           'login.button.submit': 'Submit',
@@ -166,8 +155,8 @@ describe('I18nConfigurationCard', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the popover when open is true', () => {
-      render(
+    it('should render the popover when open is true', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -179,11 +168,11 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByRole('presentation')).toBeInTheDocument();
+      await expect.element(page.getByRole('presentation')).toBeInTheDocument();
     });
 
-    it('should not render content when open is false', () => {
-      render(
+    it('should not render content when open is false', async () => {
+      await render(
         <I18nConfigurationCard
           open={false}
           anchorEl={anchorEl}
@@ -195,11 +184,11 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByText('flows:core.elements.textPropertyField.i18nCard.i18nKey')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Translation Key')).not.toBeInTheDocument();
     });
 
-    it('should render the card title with formatted property key', () => {
-      render(
+    it('should render the card title with formatted property key', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -212,12 +201,12 @@ describe('I18nConfigurationCard', () => {
       );
 
       expect(
-        screen.getByText('flows:core.elements.textPropertyField.i18nCard.title {"field":"Button Label"}'),
+        page.getByText('Translation for Button Label'),
       ).toBeInTheDocument();
     });
 
-    it('should render the i18n key label', () => {
-      render(
+    it('should render the i18n key label', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -229,13 +218,13 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByText('flows:core.elements.textPropertyField.i18nCard.i18nKey')).toBeInTheDocument();
+      await expect.element(page.getByText('Translation Key')).toBeInTheDocument();
     });
 
-    it('should render loading state when i18nTextLoading is true', () => {
+    it('should render loading state when i18nTextLoading is true', async () => {
       const loadingContext = createContextValue({i18nTextLoading: true});
 
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -247,13 +236,13 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper(loadingContext)},
       );
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
   });
 
   describe('Close Functionality', () => {
-    it('should call onClose when close button is clicked', () => {
-      render(
+    it('should call onClose when close button is clicked', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -265,8 +254,8 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      const closeButton = screen.getByLabelText('common:close');
-      fireEvent.click(closeButton);
+      const closeButton = page.getByLabelText('Close');
+      await userEvent.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
@@ -274,7 +263,7 @@ describe('I18nConfigurationCard', () => {
 
   describe('Autocomplete Options', () => {
     it('should display available i18n keys in autocomplete', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -287,21 +276,21 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Open the autocomplete dropdown by clicking the Open button
-      const openButton = screen.getByTitle('Open');
-      fireEvent.click(openButton);
+      const openButton = page.getByTitle('Open');
+      await userEvent.click(openButton);
 
-      // Keys are now prefixed with the namespace (custom:)
-      await waitFor(() => {
-        expect(screen.getByText('custom:login.title')).toBeInTheDocument();
-        expect(screen.getByText('custom:login.description')).toBeInTheDocument();
-        expect(screen.getByText('custom:common.continue')).toBeInTheDocument();
+      // Keys are now prefixed with the namespace (flowI18n:)
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('flowI18n:login.title')).toBeInTheDocument();
+        await expect.element(page.getByText('flowI18n:login.description')).toBeInTheDocument();
+        await expect.element(page.getByText('flowI18n:common.continue')).toBeInTheDocument();
       });
     });
 
-    it('should handle empty i18nText gracefully', () => {
+    it('should handle empty i18nText gracefully', async () => {
       const emptyContext = createContextValue({i18nText: undefined});
 
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -313,13 +302,13 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper(emptyContext)},
       );
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
   describe('Selection and onChange', () => {
     it('should call onChange with selected i18n key', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -332,21 +321,21 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Open the autocomplete dropdown by clicking the Open button
-      const openButton = screen.getByTitle('Open');
-      fireEvent.click(openButton);
+      const openButton = page.getByTitle('Open');
+      await userEvent.click(openButton);
 
-      // Keys are now prefixed with the namespace (custom:)
-      await waitFor(() => {
-        expect(screen.getByText('custom:login.title')).toBeInTheDocument();
+      // Keys are now prefixed with the namespace (flowI18n:)
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('flowI18n:login.title')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('custom:login.title'));
+      await userEvent.click(page.getByText('flowI18n:login.title'));
 
-      expect(mockOnChange).toHaveBeenCalledWith('custom:login.title');
+      expect(mockOnChange).toHaveBeenCalledWith('flowI18n:login.title');
     });
 
     it('should call onChange with empty string when selection is cleared', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -358,16 +347,16 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      const clearButton = screen.getByLabelText('Clear');
-      fireEvent.click(clearButton);
+      const clearButton = page.getByLabelText('Clear');
+      await userEvent.click(clearButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('');
     });
   });
 
   describe('Resolved Value Display', () => {
-    it('should display resolved value when i18n key is selected', () => {
-      render(
+    it('should display resolved value when i18n key is selected', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -379,12 +368,12 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByText('flows:core.elements.textPropertyField.resolvedValue')).toBeInTheDocument();
-      expect(screen.getByText('Sign In')).toBeInTheDocument();
+      await expect.element(page.getByText('Resolved Value')).toBeInTheDocument();
+      await expect.element(page.getByText('Sign In')).toBeInTheDocument();
     });
 
-    it('should not display resolved value box when no i18n key is selected', () => {
-      render(
+    it('should not display resolved value box when no i18n key is selected', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -396,11 +385,11 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByText('flows:core.elements.textPropertyField.resolvedValue')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Resolved Value')).not.toBeInTheDocument();
     });
 
-    it('should not display resolved value box when key has no matching value', () => {
-      render(
+    it('should not display resolved value box when key has no matching value', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -412,11 +401,11 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByText('flows:core.elements.textPropertyField.resolvedValue')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Resolved Value')).not.toBeInTheDocument();
     });
 
-    it('should display resolved value from common screen', () => {
-      render(
+    it('should display resolved value from common screen', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -428,13 +417,13 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByText('Continue')).toBeInTheDocument();
+      await expect.element(page.getByText('Continue')).toBeInTheDocument();
     });
   });
 
   describe('Selected Value Display', () => {
-    it('should show selected i18n key in autocomplete', () => {
-      render(
+    it('should show selected i18n key in autocomplete', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -446,12 +435,12 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      const input: HTMLInputElement = screen.getByRole('combobox');
+      const input: HTMLInputElement = page.getByRole('combobox').element() as HTMLInputElement;
       expect(input.value).toBe('login.title');
     });
 
-    it('should show empty autocomplete when i18nKey is empty string', () => {
-      render(
+    it('should show empty autocomplete when i18nKey is empty string', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -463,14 +452,14 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      const input: HTMLInputElement = screen.getByRole('combobox');
+      const input: HTMLInputElement = page.getByRole('combobox').element() as HTMLInputElement;
       expect(input.value).toBe('');
     });
   });
 
   describe('Create Translation Mode', () => {
-    it('should show create translation button', () => {
-      render(
+    it('should show create translation button', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -482,11 +471,11 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle')).toBeInTheDocument();
+      await expect.element(page.getByText('Create Translation')).toBeInTheDocument();
     });
 
-    it('should enter create mode when create button is clicked', () => {
-      render(
+    it('should enter create mode when create button is clicked', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -498,16 +487,16 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      const createButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createButton);
+      const createButton = page.getByText('Create Translation');
+      await userEvent.click(createButton);
 
       // Should show language selector in create mode
-      expect(screen.getByText('flows:core.elements.textPropertyField.i18nCard.language')).toBeInTheDocument();
-      expect(screen.getByText('flows:core.elements.textPropertyField.i18nCard.languageText')).toBeInTheDocument();
+      await expect.element(page.getByText('Language')).toBeInTheDocument();
+      await expect.element(page.getByText('Translation Text')).toBeInTheDocument();
     });
 
-    it('should show cancel button in create mode', () => {
-      render(
+    it('should show cancel button in create mode', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -519,14 +508,14 @@ describe('I18nConfigurationCard', () => {
         {wrapper: createWrapper()},
       );
 
-      const createButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createButton);
+      const createButton = page.getByText('Create Translation');
+      await userEvent.click(createButton);
 
-      expect(screen.getByText('common:cancel')).toBeInTheDocument();
+      await expect.element(page.getByText('Cancel')).toBeInTheDocument();
     });
 
-    it('should exit create mode when cancel is clicked', () => {
-      render(
+    it('should exit create mode when cancel is clicked', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -539,21 +528,19 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createButton);
+      const createButton = page.getByText('Create Translation');
+      await userEvent.click(createButton);
 
       // Click cancel
-      const cancelButton = screen.getByText('common:cancel');
-      fireEvent.click(cancelButton);
+      const cancelButton = page.getByText('Cancel');
+      await userEvent.click(cancelButton);
 
       // Should be back in select mode - the placeholder text indicates we're in select mode
-      expect(
-        screen.getByPlaceholderText('flows:core.elements.textPropertyField.i18nCard.selectI18nKey'),
-      ).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Select an existing key')).toBeInTheDocument();
     });
 
-    it('should have disabled create button when key or value is empty', () => {
-      render(
+    it('should have disabled create button when key or value is empty', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -566,16 +553,16 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // The create button should be disabled when fields are empty
-      const submitButton = screen.getByText('common:create');
+      const submitButton = page.getByText('Create');
       expect(submitButton).toBeDisabled();
     });
 
-    it('should show validation error when key is empty and create is clicked', () => {
-      render(
+    it('should show validation error when key is empty and create is clicked', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -588,24 +575,24 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in translation value only, leave key empty
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'Some translation'}});
+      await userEvent.fill(translationValueInput, 'Some translation');
 
       // Submit button should be enabled because we check trim() - but if we click it empty, validation kicks in
       // Let's click the create button
-      const submitButton = screen.getByText('common:create');
+      const submitButton = page.getByText('Create');
       // Button is disabled because key is empty (after trim)
       expect(submitButton).toBeDisabled();
     });
 
-    it('should show validation error for invalid key format', () => {
-      render(
+    it('should show validation error for invalid key format', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -618,32 +605,32 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in key with invalid characters
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'invalid key with spaces!'}});
+      await userEvent.fill(keyInput, 'invalid key with spaces!');
 
       // Fill in translation value
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'Some translation'}});
+      await userEvent.fill(translationValueInput, 'Some translation');
 
       // Click create
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
       // Should show error for invalid key format
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(screen.getByText('flows:core.elements.textPropertyField.i18nCard.invalidKeyFormat')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByText('Invalid key format. Use only letters, numbers, dots, underscores, and hyphens.')).toBeInTheDocument();
     });
 
-    it('should call mutate when form is valid', () => {
-      render(
+    it('should call mutate when form is valid', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -656,30 +643,30 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in valid key
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'my.new.key'}});
+      await userEvent.fill(keyInput, 'my.new.key');
 
       // Fill in translation value
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'My translation value'}});
+      await userEvent.fill(translationValueInput, 'My translation value');
 
       // Click create
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
       // Should call mutate with correct params
       expect(mockMutate).toHaveBeenCalledWith(
         {
           language: 'en-US',
-          namespace: 'custom',
+          namespace: 'flowI18n',
           key: 'my.new.key',
           value: 'My translation value',
         },
@@ -694,7 +681,7 @@ describe('I18nConfigurationCard', () => {
     });
 
     it('should call onChange and exit create mode on successful creation', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -707,23 +694,23 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in form
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'my.new.key'}});
+      await userEvent.fill(keyInput, 'my.new.key');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'My translation value'}});
+      await userEvent.fill(translationValueInput, 'My translation value');
 
       // Click create
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
       // Get the onSuccess callback and call it
       const mutateCall = mockMutate.mock.calls[0] as [unknown, {onSuccess: () => void; onError: (err: Error) => void}];
@@ -731,18 +718,18 @@ describe('I18nConfigurationCard', () => {
       callbacks.onSuccess();
 
       // Should have called onChange with the new key
-      expect(mockOnChange).toHaveBeenCalledWith('custom:my.new.key');
+      expect(mockOnChange).toHaveBeenCalledWith('flowI18n:my.new.key');
 
       // Should be back in select mode - check for the title change instead of placeholder
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(
-          screen.getByText('flows:core.elements.textPropertyField.i18nCard.title {"field":"Label"}'),
+          page.getByText('Translation for Label'),
         ).toBeInTheDocument();
       });
     });
 
     it('should show error on failed creation', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -755,23 +742,23 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in form
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'my.new.key'}});
+      await userEvent.fill(keyInput, 'my.new.key');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'My translation value'}});
+      await userEvent.fill(translationValueInput, 'My translation value');
 
       // Click create
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
       // Get the onError callback and call it
       const mutateCall = mockMutate.mock.calls[0] as [unknown, {onSuccess: () => void; onError: (err: Error) => void}];
@@ -779,14 +766,14 @@ describe('I18nConfigurationCard', () => {
       callbacks.onError(new Error('API Error'));
 
       // Should show error alert
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-        expect(screen.getByText('API Error')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('alert')).toBeInTheDocument();
+        await expect.element(page.getByText('API Error')).toBeInTheDocument();
       });
     });
 
-    it('should clear error when typing in key field', () => {
-      render(
+    it('should clear error when typing in key field', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -799,35 +786,35 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in invalid key to trigger error
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'invalid key!'}});
+      await userEvent.fill(keyInput, 'invalid key!');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'Some translation'}});
+      await userEvent.fill(translationValueInput, 'Some translation');
 
       // Click create to trigger error
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
 
       // Type in key field to clear error
-      fireEvent.change(keyInput, {target: {value: 'valid.key'}});
+      await userEvent.fill(keyInput, 'valid.key');
 
       // Error should be cleared
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('should clear error when typing in value field', () => {
-      render(
+    it('should clear error when typing in value field', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -840,35 +827,35 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in invalid key to trigger error
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'invalid key!'}});
+      await userEvent.fill(keyInput, 'invalid key!');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'Some translation'}});
+      await userEvent.fill(translationValueInput, 'Some translation');
 
       // Click create to trigger error
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
 
       // Type in value field to clear error
-      fireEvent.change(translationValueInput, {target: {value: 'Updated translation'}});
+      await userEvent.fill(translationValueInput, 'Updated translation');
 
       // Error should be cleared
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('should close error alert when close button is clicked', () => {
-      render(
+    it('should close error alert when close button is clicked', async () => {
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -881,39 +868,39 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in invalid key to trigger error
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'invalid key!'}});
+      await userEvent.fill(keyInput, 'invalid key!');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'Some translation'}});
+      await userEvent.fill(translationValueInput, 'Some translation');
 
       // Click create to trigger error
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
-      const alert = screen.getByRole('alert');
+      const alert = page.getByRole('alert');
       expect(alert).toBeInTheDocument();
 
       // Close the alert
-      const closeAlertButton = alert.querySelector('button');
+      const closeAlertButton = alert.element().querySelector('button');
       if (closeAlertButton) {
-        fireEvent.click(closeAlertButton);
+        await userEvent.click(closeAlertButton);
       }
 
       // Error should be cleared
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
 
     it('should allow selecting a different language', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -926,44 +913,44 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Find the language autocomplete - it's the first combobox in create mode
-      const languageCombobox = screen.getAllByRole('combobox')[0];
+      const languageCombobox = page.getByRole('combobox').all()[0];
 
       // Open the dropdown by clicking the Open button within the autocomplete
-      const openButtons = screen.getAllByTitle('Open');
-      fireEvent.click(openButtons[0]);
+      const openButtons = page.getByTitle('Open');
+      await userEvent.click(openButtons.all()[0]);
 
       // Wait for dropdown and select Spanish
-      await waitFor(() => {
-        expect(screen.getByRole('listbox')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('listbox')).toBeInTheDocument();
       });
 
       // Find and click the Spanish option
-      const options = screen.getAllByRole('option');
-      const esOption = options.find((opt) => opt.textContent === 'es');
+      const options = page.getByRole('option');
+      const esOption = options.all().find((opt: Locator) => opt.element().textContent === 'es');
       expect(esOption).toBeDefined();
-      fireEvent.click(esOption!);
+      await userEvent.click(esOption!);
 
       // Verify the language was selected
       expect(languageCombobox).toHaveValue('es');
 
       // Fill in form
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'my.key'}});
+      await userEvent.fill(keyInput, 'my.key');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'Mi traducción'}});
+      await userEvent.fill(translationValueInput, 'Mi traducción');
 
       // Click create
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
       // Should call mutate with selected language
       expect(mockMutate).toHaveBeenCalledWith(
@@ -977,7 +964,7 @@ describe('I18nConfigurationCard', () => {
 
   describe('Edge Cases', () => {
     it('should handle error without message', async () => {
-      render(
+      await render(
         <I18nConfigurationCard
           open
           anchorEl={anchorEl}
@@ -990,23 +977,23 @@ describe('I18nConfigurationCard', () => {
       );
 
       // Enter create mode
-      const createModeButton = screen.getByText('flows:core.elements.textPropertyField.i18nCard.createTitle');
-      fireEvent.click(createModeButton);
+      const createModeButton = page.getByText('Create Translation');
+      await userEvent.click(createModeButton);
 
       // Fill in form
-      const keyInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder',
+      const keyInput = page.getByPlaceholder(
+        'Enter a unique translation key',
       );
-      fireEvent.change(keyInput, {target: {value: 'my.new.key'}});
+      await userEvent.fill(keyInput, 'my.new.key');
 
-      const translationValueInput = screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.i18nCard.languageTextPlaceholder',
+      const translationValueInput = page.getByPlaceholder(
+        'Enter translation text',
       );
-      fireEvent.change(translationValueInput, {target: {value: 'My translation value'}});
+      await userEvent.fill(translationValueInput, 'My translation value');
 
       // Click create
-      const submitButton = screen.getByText('common:create');
-      fireEvent.click(submitButton);
+      const submitButton = page.getByText('Create');
+      await userEvent.click(submitButton);
 
       // Get the onError callback and call it with error without message
       const mutateCall = mockMutate.mock.calls[0] as [unknown, {onSuccess: () => void; onError: (err: Error) => void}];
@@ -1014,9 +1001,9 @@ describe('I18nConfigurationCard', () => {
       callbacks.onError({} as Error);
 
       // Should show fallback error message
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-        expect(screen.getByText('common:errors.unknown')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('alert')).toBeInTheDocument();
+        await expect.element(page.getByText('errors.unknown')).toBeInTheDocument();
       });
     });
   });

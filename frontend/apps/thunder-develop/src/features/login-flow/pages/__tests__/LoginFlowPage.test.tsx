@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import LoginFlowBuilderPage from '../LoginFlowPage';
 
 // Mock ReactFlowProvider
@@ -41,58 +42,58 @@ vi.mock('../../context/LoginFlowBuilderProvider', () => ({
 
 describe('LoginFlowBuilderPage', () => {
   describe('Rendering', () => {
-    it('should render the LoginFlowBuilderProvider', () => {
-      render(<LoginFlowBuilderPage />);
+    it('should render the LoginFlowBuilderProvider', async () => {
+      await render(<LoginFlowBuilderPage />);
 
-      expect(screen.getByTestId('login-flow-builder-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('login-flow-builder-provider')).toBeInTheDocument();
     });
 
-    it('should render the ReactFlowProvider inside LoginFlowBuilderProvider', () => {
-      render(<LoginFlowBuilderPage />);
+    it('should render the ReactFlowProvider inside LoginFlowBuilderProvider', async () => {
+      await render(<LoginFlowBuilderPage />);
 
-      const provider = screen.getByTestId('login-flow-builder-provider');
-      const reactFlowProvider = screen.getByTestId('react-flow-provider');
+      const provider = page.getByTestId('login-flow-builder-provider');
+      const reactFlowProvider = page.getByTestId('react-flow-provider');
 
-      expect(provider).toContainElement(reactFlowProvider);
+      expect(provider.element()).toContainElement(reactFlowProvider.element());
     });
 
-    it('should render the LoginFlowBuilder inside ReactFlowProvider', () => {
-      render(<LoginFlowBuilderPage />);
+    it('should render the LoginFlowBuilder inside ReactFlowProvider', async () => {
+      await render(<LoginFlowBuilderPage />);
 
-      const reactFlowProvider = screen.getByTestId('react-flow-provider');
-      const loginFlowBuilder = screen.getByTestId('login-flow-builder');
+      const reactFlowProvider = page.getByTestId('react-flow-provider');
+      const loginFlowBuilder = page.getByTestId('login-flow-builder');
 
-      expect(reactFlowProvider).toContainElement(loginFlowBuilder);
+      expect(reactFlowProvider.element()).toContainElement(loginFlowBuilder.element());
     });
 
-    it('should render components in correct nesting order', () => {
-      render(<LoginFlowBuilderPage />);
+    it('should render components in correct nesting order', async () => {
+      await render(<LoginFlowBuilderPage />);
 
-      const provider = screen.getByTestId('login-flow-builder-provider');
-      const reactFlowProvider = screen.getByTestId('react-flow-provider');
-      const loginFlowBuilder = screen.getByTestId('login-flow-builder');
+      const provider = page.getByTestId('login-flow-builder-provider');
+      const reactFlowProvider = page.getByTestId('react-flow-provider');
+      const loginFlowBuilder = page.getByTestId('login-flow-builder');
 
       // Verify proper nesting: LoginFlowBuilderProvider > ReactFlowProvider > LoginFlowBuilder
-      expect(provider).toContainElement(reactFlowProvider);
-      expect(reactFlowProvider).toContainElement(loginFlowBuilder);
+      expect(provider.element()).toContainElement(reactFlowProvider.element());
+      expect(reactFlowProvider.element()).toContainElement(loginFlowBuilder.element());
     });
   });
 
   describe('Component Integration', () => {
-    it('should render LoginFlowBuilder content', () => {
-      render(<LoginFlowBuilderPage />);
+    it('should render LoginFlowBuilder content', async () => {
+      await render(<LoginFlowBuilderPage />);
 
-      expect(screen.getByText('Login Flow Builder')).toBeInTheDocument();
+      await expect.element(page.getByText('Login Flow Builder')).toBeInTheDocument();
     });
   });
 
   describe('Page Structure', () => {
-    it('should have all required provider wrappers', () => {
-      render(<LoginFlowBuilderPage />);
+    it('should have all required provider wrappers', async () => {
+      await render(<LoginFlowBuilderPage />);
 
-      expect(screen.getByTestId('login-flow-builder-provider')).toBeInTheDocument();
-      expect(screen.getByTestId('react-flow-provider')).toBeInTheDocument();
-      expect(screen.getByTestId('login-flow-builder')).toBeInTheDocument();
+      await expect.element(page.getByTestId('login-flow-builder-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('login-flow-builder')).toBeInTheDocument();
     });
 
     it('should render without crashing', () => {

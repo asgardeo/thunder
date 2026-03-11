@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, cleanup} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import I18nProvider from '../I18nProvider';
 import {invalidateI18nCache} from '../invalidate-i18n-cache';
 
@@ -95,24 +96,20 @@ describe('I18nProvider', () => {
     capturedQueryFn = null;
   });
 
-  afterEach(() => {
-    cleanup();
-  });
-
-  it('should render children', () => {
-    const {getByText} = render(
+  it('should render children', async () => {
+    await render(
       <I18nProvider>
         <div>Test Child</div>
       </I18nProvider>,
     );
 
-    expect(getByText('Test Child')).toBeInTheDocument();
+    await expect.element(page.getByText('Test Child')).toBeInTheDocument();
   });
 
-  it('should not add translations when apiTranslations is undefined', () => {
+  it('should not add translations when apiTranslations is undefined', async () => {
     mockQueryData = undefined;
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -122,13 +119,13 @@ describe('I18nProvider', () => {
     expect(mockEmit).not.toHaveBeenCalled();
   });
 
-  it('should not add translations when translations object is empty', () => {
+  it('should not add translations when translations object is empty', async () => {
     mockQueryData = {
       language: 'en-US',
       translations: {},
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -138,7 +135,7 @@ describe('I18nProvider', () => {
     expect(mockEmit).not.toHaveBeenCalled();
   });
 
-  it('should skip empty namespace translations', () => {
+  it('should skip empty namespace translations', async () => {
     mockQueryData = {
       language: 'en-US',
       translations: {
@@ -149,7 +146,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -166,7 +163,7 @@ describe('I18nProvider', () => {
     );
   });
 
-  it('should merge API translations with existing bundle', () => {
+  it('should merge API translations with existing bundle', async () => {
     mockGetResourceBundle.mockReturnValue({
       existingKey: 'existingValue',
       overriddenKey: 'oldValue',
@@ -182,7 +179,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -201,7 +198,7 @@ describe('I18nProvider', () => {
     );
   });
 
-  it('should emit added event when translations are added', () => {
+  it('should emit added event when translations are added', async () => {
     mockQueryData = {
       language: 'en-US',
       translations: {
@@ -210,7 +207,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -219,7 +216,7 @@ describe('I18nProvider', () => {
     expect(mockEmit).toHaveBeenCalledWith('added', 'en-US', ['namespace1', 'namespace2']);
   });
 
-  it('should not emit added event when no translations were added', () => {
+  it('should not emit added event when no translations were added', async () => {
     mockQueryData = {
       language: 'en-US',
       translations: {
@@ -227,7 +224,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -236,7 +233,7 @@ describe('I18nProvider', () => {
     expect(mockEmit).not.toHaveBeenCalled();
   });
 
-  it('should handle undefined existing bundle gracefully', () => {
+  it('should handle undefined existing bundle gracefully', async () => {
     mockGetResourceBundle.mockReturnValue(undefined);
 
     mockQueryData = {
@@ -248,7 +245,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -257,8 +254,8 @@ describe('I18nProvider', () => {
     expect(mockAddResourceBundle).toHaveBeenCalledWith('en-US', 'newNamespace', {key: 'value'}, true, true);
   });
 
-  it('should register cache invalidator on mount', () => {
-    render(
+  it('should register cache invalidator on mount', async () => {
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -272,8 +269,8 @@ describe('I18nProvider', () => {
     });
   });
 
-  it('should unregister cache invalidator on unmount', () => {
-    const {unmount} = render(
+  it('should unregister cache invalidator on unmount', async () => {
+    const {unmount} = await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -284,7 +281,7 @@ describe('I18nProvider', () => {
     expect(mockInvalidateQueries).toHaveBeenCalledTimes(1);
 
     // Unmount and verify invalidator is unregistered
-    unmount();
+    await unmount();
     mockInvalidateQueries.mockClear();
 
     invalidateI18nCache();
@@ -294,7 +291,7 @@ describe('I18nProvider', () => {
   it('should handle invalidateQueries rejection gracefully', async () => {
     mockInvalidateQueries.mockRejectedValueOnce(new Error('Query invalidation failed'));
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -304,7 +301,7 @@ describe('I18nProvider', () => {
     expect(() => invalidateI18nCache()).not.toThrow();
   });
 
-  it('should add multiple namespaces from API response', () => {
+  it('should add multiple namespaces from API response', async () => {
     mockQueryData = {
       language: 'en-US',
       translations: {
@@ -314,7 +311,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -326,7 +323,7 @@ describe('I18nProvider', () => {
     expect(mockAddResourceBundle).toHaveBeenCalledWith('en-US', 'buttons', expect.any(Object), true, true);
   });
 
-  it('should skip null namespace translations', () => {
+  it('should skip null namespace translations', async () => {
     mockQueryData = {
       language: 'en-US',
       translations: {
@@ -336,7 +333,7 @@ describe('I18nProvider', () => {
       },
     };
 
-    render(
+    await render(
       <I18nProvider>
         <div>Test</div>
       </I18nProvider>,
@@ -362,7 +359,7 @@ describe('I18nProvider', () => {
       };
       mockHttpRequest.mockResolvedValueOnce({data: expectedResponse});
 
-      render(
+      await render(
         <I18nProvider>
           <div>Test</div>
         </I18nProvider>,
@@ -392,7 +389,7 @@ describe('I18nProvider', () => {
       };
       mockHttpRequest.mockResolvedValueOnce({data: translationsData});
 
-      render(
+      await render(
         <I18nProvider>
           <div>Test</div>
         </I18nProvider>,

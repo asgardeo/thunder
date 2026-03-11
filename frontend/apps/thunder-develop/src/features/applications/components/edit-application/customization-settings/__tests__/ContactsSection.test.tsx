@@ -17,16 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ContactsSection from '../ContactsSection';
 import type {Application} from '../../../../models/application';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 describe('ContactsSection', () => {
   const mockApplication: Application = {
@@ -44,111 +38,108 @@ describe('ContactsSection', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the contacts section', () => {
-      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should render the contacts section', async () => {
+      await render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.general.sections.contacts')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.general.sections.contacts.description')).toBeInTheDocument();
+      await expect.element(page.getByText('Contacts')).toBeInTheDocument();
+      await expect.element(page.getByText('Contact email addresses for application administrators.')).toBeInTheDocument();
     });
 
-    it('should render multiline text field', () => {
-      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should render multiline text field', async () => {
+      await render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toBeInTheDocument();
       expect(textField).toHaveAttribute('rows', '2');
     });
 
-    it('should display helper text', () => {
-      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should display helper text', async () => {
+      await render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.general.contacts.hint')).toBeInTheDocument();
+      await expect.element(page.getByText('Enter email addresses separated by commas')).toBeInTheDocument();
     });
   });
 
   describe('Initial Values', () => {
-    it('should display contacts from application as comma-separated string', () => {
-      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should display contacts from application as comma-separated string', async () => {
+      await render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('contact1@example.com, contact2@example.com');
     });
 
-    it('should prioritize editedApp contacts over application', () => {
+    it('should prioritize editedApp contacts over application', async () => {
       const editedApp = {
         contacts: ['edited1@example.com', 'edited2@example.com'],
       };
 
-      render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('edited1@example.com, edited2@example.com');
     });
 
-    it('should display empty string when no contacts are provided', () => {
+    it('should display empty string when no contacts are provided', async () => {
       const appWithoutContacts = {...mockApplication, contacts: []};
 
-      render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('');
     });
   });
 
   describe('User Input', () => {
     it('should render text field that accepts user input', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutContacts = {...mockApplication, contacts: []};
+            const appWithoutContacts = {...mockApplication, contacts: []};
 
-      render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
-      await user.type(textField, 'test@example.com');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
+      await userEvent.type(textField, 'test@example.com');
 
       // Verify the field accepts input
       expect(textField).toHaveValue('test@example.com');
     });
 
     it('should handle multiple comma-separated email addresses', async () => {
-      const user = userEvent.setup({delay: null});
-      const appWithoutContacts = {...mockApplication, contacts: []};
+            const appWithoutContacts = {...mockApplication, contacts: []};
 
-      render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
-      await user.type(textField, 'test1@example.com, test2@example.com');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
+      await userEvent.type(textField, 'test1@example.com, test2@example.com');
 
       expect(textField).toHaveValue('test1@example.com, test2@example.com');
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing contacts in application', () => {
+    it('should handle missing contacts in application', async () => {
       const appWithoutContacts = {...mockApplication};
       delete (appWithoutContacts as Partial<Application>).contacts;
 
-      render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('');
     });
 
-    it('should handle single email address', () => {
+    it('should handle single email address', async () => {
       const appWithOneContact = {...mockApplication, contacts: ['single@example.com']};
 
-      render(<ContactsSection application={appWithOneContact} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={appWithOneContact} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('single@example.com');
     });
 
     it('should handle clearing all contacts', async () => {
-      const user = userEvent.setup({delay: null});
+      
+      await render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
-
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
-      await user.clear(textField);
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
+      await userEvent.clear(textField);
 
       // Verify field is cleared
       expect(textField).toHaveValue('');
@@ -156,43 +147,43 @@ describe('ContactsSection', () => {
   });
 
   describe('Contacts Sync Effect', () => {
-    it('should not call onFieldChange when contacts match current value', () => {
+    it('should not call onFieldChange when contacts match current value', async () => {
       // When the form value matches the current contacts, no update should be triggered
       const editedApp = {
         contacts: ['contact1@example.com', 'contact2@example.com'],
       };
 
-      render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
 
       // Initial render should not trigger onFieldChange since values match
       expect(mockOnFieldChange).not.toHaveBeenCalled();
     });
 
-    it('should use editedApp contacts when provided', () => {
+    it('should use editedApp contacts when provided', async () => {
       const editedApp = {
         contacts: ['edited@example.com'],
       };
 
-      render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('edited@example.com');
     });
 
-    it('should fall back to application contacts when editedApp contacts not provided', () => {
-      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should fall back to application contacts when editedApp contacts not provided', async () => {
+      await render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('contact1@example.com, contact2@example.com');
     });
 
-    it('should handle undefined contacts in both editedApp and application gracefully', () => {
+    it('should handle undefined contacts in both editedApp and application gracefully', async () => {
       const appWithoutContacts = {...mockApplication};
       delete (appWithoutContacts as Partial<Application>).contacts;
 
-      render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const textField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(textField).toHaveValue('');
     });
   });

@@ -17,20 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import TextPropertyField from '../TextPropertyField';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
 import type {Resource} from '../../../models/resources';
 import Notification from '../../../models/notification';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: {propertyName?: string}) =>
-      options?.propertyName ? `Enter ${options.propertyName}` : key,
-  }),
-}));
 
 // Mock @thunder/shared-contexts
 vi.mock('@thunder/shared-contexts', () => ({
@@ -41,7 +34,6 @@ vi.mock('@thunder/shared-contexts', () => ({
 
 // Mock the API hooks used by I18nConfigurationCard from @thunder/i18n
 vi.mock('@thunder/i18n', () => ({
-  NamespaceConstants: {CUSTOM_NAMESPACE: 'custom'},
   useUpdateTranslation: () => ({
     mutate: vi.fn(),
     isPending: false,
@@ -53,7 +45,7 @@ vi.mock('@thunder/i18n', () => ({
     data: {
       language: 'en-US',
       translations: {
-        custom: {
+        flowI18n: {
           'common.submit': 'Submit',
           'common.button': 'Button',
           'common.label': 'Label',
@@ -98,8 +90,8 @@ describe('TextPropertyField', () => {
   });
 
   describe('Rendering', () => {
-    it('should render text field with label', () => {
-      render(
+    it('should render text field with label', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="userName"
@@ -110,12 +102,12 @@ describe('TextPropertyField', () => {
       );
 
       // Check the label text is rendered
-      expect(screen.getByText('User Name')).toBeInTheDocument();
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await expect.element(page.getByText('User Name')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should convert camelCase propertyKey to Start Case label', () => {
-      render(
+    it('should convert camelCase propertyKey to Start Case label', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="myPropertyName"
@@ -126,11 +118,11 @@ describe('TextPropertyField', () => {
       );
 
       // Check the label text is rendered in Start Case
-      expect(screen.getByText('My Property Name')).toBeInTheDocument();
+      await expect.element(page.getByText('My Property Name')).toBeInTheDocument();
     });
 
-    it('should render text field with default value', () => {
-      render(
+    it('should render text field with default value', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="title"
@@ -140,37 +132,37 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toHaveValue('Hello World');
     });
 
-    it('should render empty text field when value is empty', () => {
-      render(
+    it('should render empty text field when value is empty', async () => {
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toHaveValue('');
     });
   });
 
   describe('onChange Handler', () => {
-    it('should call onChange when text is entered', () => {
-      render(
+    it('should call onChange when text is entered', async () => {
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
-      fireEvent.change(textField, {target: {value: 'New Value'}});
+      const textField = page.getByRole('textbox');
+      await userEvent.fill(textField, 'New Value');
 
       expect(mockOnChange).toHaveBeenCalledWith('label', 'New Value', mockResource);
     });
 
-    it('should pass the correct resource to onChange', () => {
+    it('should pass the correct resource to onChange', async () => {
       const specificResource = {...mockResource, id: 'specific-resource'};
-      render(
+      await render(
         <TextPropertyField
           resource={specificResource}
           propertyKey="description"
@@ -180,15 +172,15 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
-      fireEvent.change(textField, {target: {value: 'Test'}});
+      const textField = page.getByRole('textbox');
+      await userEvent.fill(textField, 'Test');
 
       expect(mockOnChange).toHaveBeenCalledWith('description', 'Test', specificResource);
     });
   });
 
   describe('Error State', () => {
-    it('should display error message when notification exists', () => {
+    it('should display error message when notification exists', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       notification.addResourceFieldNotification('resource-1_title', 'Title is required');
 
@@ -197,24 +189,24 @@ describe('TextPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper(contextWithError)},
       );
 
-      expect(screen.getByText('Title is required')).toBeInTheDocument();
+      await expect.element(page.getByText('Title is required')).toBeInTheDocument();
     });
 
-    it('should not display error message when no notification exists', () => {
-      render(
+    it('should not display error message when no notification exists', async () => {
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('should not display error message for different property', () => {
+    it('should not display error message for different property', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       notification.addResourceFieldNotification('resource-1_otherProperty', 'Other error');
 
@@ -223,18 +215,18 @@ describe('TextPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper(contextWithError)},
       );
 
-      expect(screen.queryByText('Other error')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Other error')).not.toBeInTheDocument();
     });
   });
 
   describe('I18n Pattern', () => {
-    it('should display resolved value box when value matches i18n pattern', () => {
-      render(
+    it('should display resolved value box when value matches i18n pattern', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -245,15 +237,15 @@ describe('TextPropertyField', () => {
       );
 
       // The text field should have the i18n key
-      expect(screen.getByRole('textbox')).toHaveValue('{{t(common.submit)}}');
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t(common.submit)}}');
       // The resolved value label should be displayed
-      expect(screen.getByText('flows:core.elements.textPropertyField.resolvedValue')).toBeInTheDocument();
+      await expect.element(page.getByText('Resolved Value')).toBeInTheDocument();
       // The resolved value should be displayed (mock returns the key itself)
-      expect(screen.getByText('common.submit')).toBeInTheDocument();
+      await expect.element(page.getByText('common.submit')).toBeInTheDocument();
     });
 
-    it('should not display resolved value box for regular text', () => {
-      render(
+    it('should not display resolved value box for regular text', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -264,29 +256,39 @@ describe('TextPropertyField', () => {
       );
 
       // Should not have the resolved value label
-      expect(screen.queryByText('flows:core.elements.textPropertyField.resolvedValue')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Resolved Value')).not.toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should have accessible text input', () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="username" propertyValue="" onChange={mockOnChange} />,
+    it('should have accessible text input', async () => {
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="username"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeInTheDocument();
     });
 
-    it('should render label element with htmlFor attribute', () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="email" propertyValue="" onChange={mockOnChange} />,
+    it('should render label element with htmlFor attribute', async () => {
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="email"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
       // Check that the label is rendered with the correct text
-      const label = screen.getByText('Email');
+      const label = page.getByText('Email');
       expect(label).toBeInTheDocument();
       // Check that the label has a for attribute (htmlFor in React)
       expect(label).toHaveAttribute('for');
@@ -294,8 +296,8 @@ describe('TextPropertyField', () => {
   });
 
   describe('TextField Props', () => {
-    it('should keep i18n key in text field when i18n pattern is detected', () => {
-      render(
+    it('should keep i18n key in text field when i18n pattern is detected', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -305,24 +307,29 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       // When i18n pattern is detected, value is kept in the text field
       expect(textField).toHaveValue('{{t(common.button)}}');
     });
 
-    it('should render placeholder when not i18n pattern', () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
+    it('should render placeholder when not i18n pattern', async () => {
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="title"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       // The placeholder should be set based on the translation
       expect(textField).toHaveAttribute('placeholder', 'Enter Title');
     });
 
-    it('should render placeholder even when i18n pattern is detected', () => {
-      render(
+    it('should render placeholder even when i18n pattern is detected', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -332,15 +339,15 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       // The placeholder should still be shown for i18n patterns
       expect(textField).toHaveAttribute('placeholder', 'Enter Label');
     });
   });
 
   describe('Additional Props', () => {
-    it('should pass additional props to TextField', () => {
-      render(
+    it('should pass additional props to TextField', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="username"
@@ -351,12 +358,12 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeDisabled();
     });
 
-    it('should handle multiline prop', () => {
-      render(
+    it('should handle multiline prop', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="description"
@@ -369,14 +376,14 @@ describe('TextPropertyField', () => {
       );
 
       // Check if textarea is rendered (multiline makes TextField render as textarea)
-      const textArea = screen.getByRole('textbox');
+      const textArea = page.getByRole('textbox');
       expect(textArea).toBeInTheDocument();
     });
   });
 
   describe('I18n Key Extraction', () => {
-    it('should extract i18n key from pattern with simple key', () => {
-      render(
+    it('should extract i18n key from pattern with simple key', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="buttonLabel"
@@ -387,13 +394,13 @@ describe('TextPropertyField', () => {
       );
 
       // The i18n key should be kept in the input field
-      expect(screen.getByRole('textbox')).toHaveValue('{{t(login.submit)}}');
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t(login.submit)}}');
       // The resolved value should be displayed below
-      expect(screen.getByText('login.submit')).toBeInTheDocument();
+      await expect.element(page.getByText('login.submit')).toBeInTheDocument();
     });
 
-    it('should extract i18n key from pattern with nested key', () => {
-      render(
+    it('should extract i18n key from pattern with nested key', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="message"
@@ -404,14 +411,14 @@ describe('TextPropertyField', () => {
       );
 
       // The i18n key should be kept in the input field
-      expect(screen.getByRole('textbox')).toHaveValue('{{t(flows.login.welcome.message)}}');
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t(flows.login.welcome.message)}}');
       // The resolved value should be displayed below
-      expect(screen.getByText('flows.login.welcome.message')).toBeInTheDocument();
+      await expect.element(page.getByText('flows.login.welcome.message')).toBeInTheDocument();
     });
   });
 
   describe('Error State with TextField', () => {
-    it('should set error prop on TextField when error message exists', () => {
+    it('should set error prop on TextField when error message exists', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       notification.addResourceFieldNotification('resource-1_name', 'Name is required');
 
@@ -420,23 +427,23 @@ describe('TextPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="name" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper(contextWithError)},
       );
 
       // Check that error styling is applied
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeInTheDocument();
-      expect(screen.getByText('Name is required')).toBeInTheDocument();
+      await expect.element(page.getByText('Name is required')).toBeInTheDocument();
     });
   });
 
   describe('Resource ID Edge Cases', () => {
-    it('should handle resource with undefined id', () => {
+    it('should handle resource with undefined id', async () => {
       const resourceWithUndefinedId = {...mockResource, id: undefined} as unknown as Resource;
 
-      render(
+      await render(
         <TextPropertyField
           resource={resourceWithUndefinedId}
           propertyKey="label"
@@ -446,13 +453,13 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should handle resource with empty id', () => {
+    it('should handle resource with empty id', async () => {
       const resourceWithEmptyId = {...mockResource, id: ''};
 
-      render(
+      await render(
         <TextPropertyField
           resource={resourceWithEmptyId}
           propertyKey="label"
@@ -462,18 +469,18 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toBeInTheDocument();
     });
   });
 
   describe('Notification Edge Cases', () => {
-    it('should return empty string when selectedNotification is undefined', () => {
+    it('should return empty string when selectedNotification is undefined', async () => {
       const contextWithNoNotification: ValidationContextProps = {
         ...defaultContextValue,
         selectedNotification: undefined,
       };
 
-      render(
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper(contextWithNoNotification)},
       );
@@ -483,7 +490,7 @@ describe('TextPropertyField', () => {
       expect(formHelperTexts.length).toBe(0);
     });
 
-    it('should handle notification without matching field notification', () => {
+    it('should handle notification without matching field notification', async () => {
       const notification = new Notification('notification-1', 'Error', 'error');
       // No resource field notification added
 
@@ -492,23 +499,23 @@ describe('TextPropertyField', () => {
         selectedNotification: notification,
       };
 
-      render(
+      await render(
         <TextPropertyField resource={mockResource} propertyKey="title" propertyValue="" onChange={mockOnChange} />,
         {wrapper: createWrapper(contextWithNotification)},
       );
 
       // Should not display error message
-      expect(screen.queryByText('Title is required')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Title is required')).not.toBeInTheDocument();
     });
   });
 
   describe('I18n Configuration Card', () => {
-    it('should render component with i18n pattern value', () => {
+    it('should render component with i18n pattern value', async () => {
       // The I18nConfigurationCard is conditionally rendered based on isI18nCardOpen state
       // which is currently not toggleable (toggle is commented out in the component)
       // This test verifies the component still works correctly with i18n patterns
 
-      render(
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -519,12 +526,12 @@ describe('TextPropertyField', () => {
       );
 
       // Verify the component renders with i18n pattern
-      expect(screen.getByRole('textbox')).toHaveValue('{{t(common.test)}}');
-      expect(screen.getByText('flows:core.elements.textPropertyField.resolvedValue')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t(common.test)}}');
+      await expect.element(page.getByText('Resolved Value')).toBeInTheDocument();
     });
 
-    it('should not render i18n resolved value box when pattern has empty key', () => {
-      render(
+    it('should not render i18n resolved value box when pattern has empty key', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -536,13 +543,13 @@ describe('TextPropertyField', () => {
 
       // When the pattern {{t()}} has no key inside, resolved value should be empty
       // so the resolved value box should not render
-      expect(screen.getByRole('textbox')).toHaveValue('{{t()}}');
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t()}}');
       // The resolved value box should not be displayed since there's no resolved value
-      expect(screen.queryByText('flows:core.elements.textPropertyField.resolvedValue')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Resolved Value')).not.toBeInTheDocument();
     });
 
-    it('should not render i18n card when isI18nCardOpen is false (default)', () => {
-      render(
+    it('should not render i18n card when isI18nCardOpen is false (default)', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -554,90 +561,110 @@ describe('TextPropertyField', () => {
 
       // The I18nConfigurationCard should not be rendered as isI18nCardOpen is false by default
       // and there's no UI element to toggle it (toggle is commented out)
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should open i18n card when language button is clicked', () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
+    it('should open i18n card when language button is clicked', async () => {
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
       // Find and click the language icon button
-      const languageButton = screen.getByRole('button');
-      fireEvent.click(languageButton);
+      const languageButton = page.getByRole('button');
+      await userEvent.click(languageButton);
 
       // The I18nConfigurationCard should now be open
-      expect(screen.getByRole('presentation')).toBeInTheDocument();
+      await expect.element(page.getByRole('presentation')).toBeInTheDocument();
     });
 
-    it('should close i18n card when close button is clicked', () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
+    it('should close i18n card when close button is clicked', async () => {
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
       // Open the card
-      const languageButton = screen.getByRole('button');
-      fireEvent.click(languageButton);
+      const languageButton = page.getByRole('button');
+      await userEvent.click(languageButton);
 
       // Verify card is open
-      expect(screen.getByRole('presentation')).toBeInTheDocument();
+      await expect.element(page.getByRole('presentation')).toBeInTheDocument();
 
       // Find and click the close button in the card
-      const closeButton = screen.getByLabelText('common:close');
-      fireEvent.click(closeButton);
+      const closeButton = page.getByLabelText('Close');
+      await userEvent.click(closeButton);
 
       // The card should be closed
-      expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('presentation')).not.toBeInTheDocument();
     });
 
-    it('should toggle i18n card open and closed', () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
+    it('should toggle i18n card open and closed', async () => {
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
       // Get the language button
-      const languageButtons = screen.getAllByRole('button');
-      const languageButton = languageButtons[0];
+      const languageButtons = page.getByRole('button');
+      const languageButton = languageButtons.all()[0];
 
       // Open the card
-      fireEvent.click(languageButton);
-      expect(screen.getByRole('presentation')).toBeInTheDocument();
+      await userEvent.click(languageButton);
+      await expect.element(page.getByRole('presentation')).toBeInTheDocument();
 
       // Click again to toggle close (via close button since popover blocks the toggle button)
-      const closeButton = screen.getByLabelText('common:close');
-      fireEvent.click(closeButton);
-      expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+      const closeButton = page.getByLabelText('Close');
+      await userEvent.click(closeButton);
+      await expect.element(page.getByRole('presentation')).not.toBeInTheDocument();
     });
 
     it('should call onChange with formatted i18n value when i18n key is selected', async () => {
-      render(
-        <TextPropertyField resource={mockResource} propertyKey="label" propertyValue="" onChange={mockOnChange} />,
+      await render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
         {wrapper: createWrapper()},
       );
 
       // Open the card
-      const languageButton = screen.getByRole('button');
-      fireEvent.click(languageButton);
+      const languageButton = page.getByRole('button');
+      await userEvent.click(languageButton);
 
       // Open the autocomplete dropdown
-      const openButton = screen.getByTitle('Open');
-      fireEvent.click(openButton);
+      const openButton = page.getByTitle('Open');
+      await userEvent.click(openButton);
 
       // Wait for options and select one
-      await waitFor(() => {
-        expect(screen.getByText('custom:common.submit')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('flowI18n:common.submit')).toBeInTheDocument();
       });
-      fireEvent.click(screen.getByText('custom:common.submit'));
+      await userEvent.click(page.getByText('flowI18n:common.submit'));
 
       // Verify onChange was called with the formatted i18n pattern
-      expect(mockOnChange).toHaveBeenCalledWith('label', '{{t(custom:common.submit)}}', mockResource);
+      expect(mockOnChange).toHaveBeenCalledWith('label', '{{t(flowI18n:common.submit)}}', mockResource);
     });
 
     it('should call onChange with empty string when i18n key is cleared', async () => {
-      render(
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="label"
@@ -648,12 +675,12 @@ describe('TextPropertyField', () => {
       );
 
       // Open the card
-      const languageButton = screen.getAllByRole('button')[0];
-      fireEvent.click(languageButton);
+      const languageButton = page.getByRole('button').all()[0];
+      await userEvent.click(languageButton);
 
       // Clear the selection
-      const clearButton = screen.getByLabelText('Clear');
-      fireEvent.click(clearButton);
+      const clearButton = page.getByLabelText('Clear');
+      await userEvent.click(clearButton);
 
       // Verify onChange was called with empty string
       expect(mockOnChange).toHaveBeenCalledWith('label', '', mockResource);
@@ -661,8 +688,8 @@ describe('TextPropertyField', () => {
   });
 
   describe('I18n Pattern Edge Cases', () => {
-    it('should handle i18n pattern with special characters in key', () => {
-      render(
+    it('should handle i18n pattern with special characters in key', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="message"
@@ -672,12 +699,12 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByRole('textbox')).toHaveValue('{{t(auth.login.error_message)}}');
-      expect(screen.getByText('auth.login.error_message')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t(auth.login.error_message)}}');
+      await expect.element(page.getByText('auth.login.error_message')).toBeInTheDocument();
     });
 
-    it('should handle i18n pattern with deeply nested key', () => {
-      render(
+    it('should handle i18n pattern with deeply nested key', async () => {
+      await render(
         <TextPropertyField
           resource={mockResource}
           propertyKey="title"
@@ -687,8 +714,8 @@ describe('TextPropertyField', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByRole('textbox')).toHaveValue('{{t(app.module.feature.component.label)}}');
-      expect(screen.getByText('app.module.feature.component.label')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toHaveValue('{{t(app.module.feature.component.label)}}');
+      await expect.element(page.getByText('app.module.feature.component.label')).toBeInTheDocument();
     });
   });
 });

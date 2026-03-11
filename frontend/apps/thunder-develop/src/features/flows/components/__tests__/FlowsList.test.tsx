@@ -18,15 +18,21 @@
 
 /* eslint-disable react/require-default-props */
 
+import React from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {MemoryRouter} from 'react-router';
 import {DataGrid} from '@wso2/oxygen-ui';
 import FlowsList from '../FlowsList';
 import type {BasicFlowDefinition} from '../../models/responses';
 
+// Use vi.hoisted so mockLoggerError is available inside vi.mock factories
+const {mockLoggerError} = vi.hoisted(() => ({
+  mockLoggerError: vi.fn(),
+}));
+
 // Mock @thunder/logger/react with accessible mock functions
-const mockLoggerError = vi.fn();
 vi.mock('@thunder/logger/react', () => ({
   useLogger: () => ({
     debug: vi.fn(),
@@ -39,26 +45,6 @@ vi.mock('@thunder/logger/react', () => ({
       warn: vi.fn(),
       error: mockLoggerError,
     })),
-  }),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:listing.columns.name': 'Name',
-        'flows:listing.columns.flowType': 'Type',
-        'flows:listing.columns.version': 'Version',
-        'flows:listing.columns.updatedAt': 'Updated At',
-        'flows:listing.columns.actions': 'Actions',
-        'flows:listing.error.title': 'Error loading flows',
-        'flows:listing.error.unknown': 'Unknown error occurred',
-        'common:actions.view': 'View',
-        'common:actions.delete': 'Delete',
-      };
-      return translations[key] || key;
-    },
   }),
 }));
 
@@ -227,118 +213,118 @@ describe('FlowsList', () => {
   });
 
   describe('Rendering', () => {
-    it('should render DataGrid component', () => {
-      render(
+    it('should render DataGrid component', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('data-grid')).toBeInTheDocument();
+      await expect.element(page.getByTestId('data-grid')).toBeInTheDocument();
     });
 
-    it('should render column headers', () => {
-      render(
+    it('should render column headers', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Type')).toBeInTheDocument();
-      expect(screen.getByText('Version')).toBeInTheDocument();
-      expect(screen.getByText('Updated At')).toBeInTheDocument();
+      await expect.element(page.getByText('Name')).toBeInTheDocument();
+      await expect.element(page.getByText('Type')).toBeInTheDocument();
+      await expect.element(page.getByText('Version')).toBeInTheDocument();
+      await expect.element(page.getByText('Last Updated')).toBeInTheDocument();
       // Actions appears multiple times (header + rows), use getAllByText
-      expect(screen.getAllByText('Actions').length).toBeGreaterThanOrEqual(1);
+      expect(page.getByText('Actions').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should render flow data in rows', () => {
-      render(
+    it('should render flow data in rows', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
       // Only AUTHENTICATION flows are shown (HIDE_NON_EDITABLE_FLOWS = true)
-      expect(screen.getByText('Login Flow')).toBeInTheDocument();
-      expect(screen.getByText('AUTHENTICATION')).toBeInTheDocument();
+      await expect.element(page.getByText('Login Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('AUTHENTICATION')).toBeInTheDocument();
       // REGISTRATION flows are filtered out
-      expect(screen.queryByText('Registration Flow')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Registration Flow')).not.toBeInTheDocument();
     });
   });
 
   describe('Loading State', () => {
-    it('should pass loading state to DataGrid', () => {
+    it('should pass loading state to DataGrid', async () => {
       mockUseGetFlowsReturn = {
         data: null as unknown as {flows: BasicFlowDefinition[]},
         isLoading: true,
         error: null,
       };
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('listing-table-provider')).toHaveAttribute('data-loading', 'true');
+      await expect.element(page.getByTestId('listing-table-provider')).toHaveAttribute('data-loading', 'true');
     });
   });
 
   describe('Error State', () => {
-    it('should display error message when error occurs', () => {
+    it('should display error message when error occurs', async () => {
       mockUseGetFlowsReturn = {
         data: null as unknown as {flows: BasicFlowDefinition[]},
         isLoading: false,
         error: new Error('Failed to fetch flows'),
       };
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByText('Error loading flows')).toBeInTheDocument();
-      expect(screen.getByText('Failed to fetch flows')).toBeInTheDocument();
+      await expect.element(page.getByText('Failed to load flows')).toBeInTheDocument();
+      await expect.element(page.getByText('Failed to fetch flows')).toBeInTheDocument();
     });
 
-    it('should display unknown error message when error has no message', () => {
+    it('should display unknown error message when error has no message', async () => {
       mockUseGetFlowsReturn = {
         data: null as unknown as {flows: BasicFlowDefinition[]},
         isLoading: false,
         error: {} as Error,
       };
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByText('Error loading flows')).toBeInTheDocument();
-      expect(screen.getByText('Unknown error occurred')).toBeInTheDocument();
+      await expect.element(page.getByText('Failed to load flows')).toBeInTheDocument();
+      await expect.element(page.getByText('An unknown error occurred')).toBeInTheDocument();
     });
   });
 
   describe('Row Click Navigation', () => {
     it('should navigate to flow page when authentication flow row is clicked', async () => {
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      const authFlowRow = screen.getByTestId('row-flow-1');
-      fireEvent.click(authFlowRow);
+      const authFlowRow = page.getByTestId('row-flow-1');
+      await userEvent.click(authFlowRow);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-1');
       });
     });
 
-    it('should not navigate when non-authentication flow row is clicked', () => {
-      render(
+    it('should not navigate when non-authentication flow row is clicked', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -346,51 +332,51 @@ describe('FlowsList', () => {
 
       // REGISTRATION flows are filtered from the table (HIDE_NON_EDITABLE_FLOWS = true)
       // Only AUTHENTICATION flow row is rendered
-      expect(screen.queryByTestId('row-flow-2')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('row-flow-2')).not.toBeInTheDocument();
       // Verify only authentication row is present and no navigation has occurred
-      expect(screen.getByTestId('row-flow-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('row-flow-1')).toBeInTheDocument();
       expect(mockNavigate).not.toHaveBeenCalled();
     });
   });
 
   describe('Empty State', () => {
-    it('should render empty table when no flows exist', () => {
+    it('should render empty table when no flows exist', async () => {
       mockUseGetFlowsReturn = {
         data: {flows: []},
         isLoading: false,
         error: null,
       };
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('data-grid')).toBeInTheDocument();
-      expect(screen.queryByTestId('row-flow-1')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('data-grid')).toBeInTheDocument();
+      await expect.element(page.getByTestId('row-flow-1')).not.toBeInTheDocument();
     });
 
-    it('should handle undefined data gracefully', () => {
+    it('should handle undefined data gracefully', async () => {
       mockUseGetFlowsReturn = {
         data: undefined as unknown as {flows: BasicFlowDefinition[]},
         isLoading: false,
         error: null,
       };
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('data-grid')).toBeInTheDocument();
+      await expect.element(page.getByTestId('data-grid')).toBeInTheDocument();
     });
   });
 
   describe('Actions Menu', () => {
-    it('should have actions renderCell for authentication rows', () => {
-      render(
+    it('should have actions renderCell for authentication rows', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -401,8 +387,8 @@ describe('FlowsList', () => {
 
       if (actionsColumn?.renderCell) {
         // AUTHENTICATION flow should render buttons
-        const {container: authContainer} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container: authContainer} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
         expect(authContainer.querySelectorAll('button').length).toBeGreaterThan(0);
 
@@ -416,8 +402,8 @@ describe('FlowsList', () => {
   });
 
   describe('Navigation Error Handling', () => {
-    it('should not navigate when a non-AUTHENTICATION flow row is clicked', () => {
-      render(
+    it('should not navigate when a non-AUTHENTICATION flow row is clicked', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -434,17 +420,17 @@ describe('FlowsList', () => {
     it('should handle navigation errors gracefully', async () => {
       mockNavigate.mockRejectedValue(new Error('Navigation failed'));
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      const authFlowRow = screen.getByTestId('row-flow-1');
-      fireEvent.click(authFlowRow);
+      const authFlowRow = page.getByTestId('row-flow-1');
+      await userEvent.click(authFlowRow);
 
       // Verify navigation was attempted and error was logged
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalled();
         expect(mockLoggerError).toHaveBeenCalledWith(
           'Failed to navigate to flow builder',
@@ -461,39 +447,39 @@ describe('FlowsList', () => {
   });
 
   describe('Row Styling', () => {
-    it('should apply different cursor style based on flow type', () => {
-      render(
+    it('should apply different cursor style based on flow type', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
-      const authFlowRow = screen.getByTestId('row-flow-1');
+      const authFlowRow = page.getByTestId('row-flow-1');
       // Authentication flows should have pointer cursor
       expect(authFlowRow).toHaveStyle({cursor: 'pointer'});
       // REGISTRATION flow row is not rendered (HIDE_NON_EDITABLE_FLOWS = true)
-      expect(screen.queryByTestId('row-flow-2')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('row-flow-2')).not.toBeInTheDocument();
     });
   });
 
   describe('Version Display', () => {
-    it('should display version numbers with v prefix', () => {
-      render(
+    it('should display version numbers with v prefix', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
       // Only AUTHENTICATION flow is shown (HIDE_NON_EDITABLE_FLOWS = true)
-      expect(screen.getByText('v1')).toBeInTheDocument();
+      await expect.element(page.getByText('v1')).toBeInTheDocument();
       // flow-2 (REGISTRATION) is filtered out so v2 is not in the DOM
-      expect(screen.queryByText('v2')).not.toBeInTheDocument();
+      await expect.element(page.getByText('v2')).not.toBeInTheDocument();
     });
   });
 
   describe('Column RenderCell Functions', () => {
-    it('should capture column definitions', () => {
-      render(
+    it('should capture column definitions', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -516,8 +502,8 @@ describe('FlowsList', () => {
       expect(actionsColumn).toBeDefined();
     });
 
-    it('should have renderCell functions defined for columns', () => {
-      render(
+    it('should have renderCell functions defined for columns', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -534,8 +520,8 @@ describe('FlowsList', () => {
       expect(actionsColumn?.renderCell).toBeDefined();
     });
 
-    it('should have valueGetter for updatedAt column', () => {
-      render(
+    it('should have valueGetter for updatedAt column', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -557,8 +543,8 @@ describe('FlowsList', () => {
   });
 
   describe('Menu Interactions', () => {
-    it('should have actions column with renderCell defined', () => {
-      render(
+    it('should have actions column with renderCell defined', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -571,21 +557,21 @@ describe('FlowsList', () => {
   });
 
   describe('Delete Dialog Integration', () => {
-    it('should render delete dialog component', () => {
-      render(
+    it('should render delete dialog component', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
       );
 
       // Delete dialog is rendered but not visible initially
-      expect(screen.queryByTestId('flow-delete-dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('flow-delete-dialog')).not.toBeInTheDocument();
     });
   });
 
   describe('Column RenderCell Execution', () => {
-    it('should render name cell with GitBranch icon', () => {
-      render(
+    it('should render name cell with GitBranch icon', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -595,15 +581,15 @@ describe('FlowsList', () => {
       expect(nameColumn?.renderCell).toBeDefined();
 
       if (nameColumn?.renderCell) {
-        const {container} = render(
-          nameColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          nameColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
         expect(container.querySelector('[class*="MuiAvatar"]')).toBeInTheDocument();
       }
     });
 
-    it('should render actions cell with IconButton', () => {
-      render(
+    it('should render actions cell with IconButton', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -613,8 +599,8 @@ describe('FlowsList', () => {
       expect(actionsColumn?.renderCell).toBeDefined();
 
       if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
         // Authentication flows should render action buttons (Pencil + Trash2)
         const buttons = container.querySelectorAll('button');
@@ -622,8 +608,8 @@ describe('FlowsList', () => {
       }
     });
 
-    it('should not throw when action button is clicked in renderCell', () => {
-      render(
+    it('should not throw when action button is clicked in renderCell', async () => {
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -632,21 +618,21 @@ describe('FlowsList', () => {
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
 
       if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
         const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThan(0);
 
         // Click should not throw
-        expect(() => fireEvent.click(buttons[0])).not.toThrow();
+        expect(async () => userEvent.click(buttons[0])).not.toThrow();
       }
     });
   });
 
   describe('Menu Handler Functions', () => {
     it('should open delete dialog when Trash2 button is clicked', async () => {
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -654,24 +640,24 @@ describe('FlowsList', () => {
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
       if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
 
         // Find the error (delete) button - Trash2
         const deleteButton = container.querySelector('button.MuiIconButton-colorError');
         expect(deleteButton).toBeInTheDocument();
-        fireEvent.click(deleteButton!);
+        await userEvent.click(deleteButton!);
 
-        await waitFor(() => {
-          expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
-          expect(screen.getByTestId('flow-delete-dialog')).toHaveAttribute('data-flow-id', 'flow-1');
+        await vi.waitFor(async () => {
+          await expect.element(page.getByTestId('flow-delete-dialog')).toBeInTheDocument();
+          await expect.element(page.getByTestId('flow-delete-dialog')).toHaveAttribute('data-flow-id', 'flow-1');
         });
       }
     });
 
     it('should close delete dialog and reset selected flow', async () => {
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -679,22 +665,22 @@ describe('FlowsList', () => {
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
       if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
 
         const deleteButton = container.querySelector('button.MuiIconButton-colorError');
         expect(deleteButton).toBeInTheDocument();
-        fireEvent.click(deleteButton!);
+        await userEvent.click(deleteButton!);
 
-        await waitFor(() => {
-          expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
+        await vi.waitFor(async () => {
+          await expect.element(page.getByTestId('flow-delete-dialog')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Close'));
+        await userEvent.click(page.getByText('Close'));
 
-        await waitFor(() => {
-          expect(screen.queryByTestId('flow-delete-dialog')).not.toBeInTheDocument();
+        await vi.waitFor(async () => {
+          await expect.element(page.getByTestId('flow-delete-dialog')).not.toBeInTheDocument();
         });
       }
     });
@@ -702,7 +688,7 @@ describe('FlowsList', () => {
     it('should navigate to flow builder when Pencil button is clicked for authentication flow', async () => {
       mockNavigate.mockResolvedValue(undefined);
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -710,16 +696,16 @@ describe('FlowsList', () => {
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
       if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
 
         // First button is Pencil (edit)
         const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThanOrEqual(1);
-        fireEvent.click(buttons[0]);
+        await userEvent.click(buttons[0]);
 
-        await waitFor(() => {
+        await vi.waitFor(() => {
           expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-1');
         });
       }
@@ -728,7 +714,7 @@ describe('FlowsList', () => {
     it('should log error when navigation fails', async () => {
       mockNavigate.mockRejectedValue(new Error('Navigation failed'));
 
-      render(
+      await render(
         <MemoryRouter>
           <FlowsList />
         </MemoryRouter>,
@@ -736,14 +722,14 @@ describe('FlowsList', () => {
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
       if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        const {container} = await render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>) as React.ReactElement,
         );
 
         const buttons = container.querySelectorAll('button');
-        fireEvent.click(buttons[0]);
+        await userEvent.click(buttons[0]);
 
-        await waitFor(() => {
+        await vi.waitFor(() => {
           expect(mockLoggerError).toHaveBeenCalledWith(
             'Failed to navigate to flow builder',
             expect.objectContaining({

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {Hint} from '../hint';
 
 // Mock the PlaceholderComponent
@@ -39,42 +40,45 @@ vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
 });
 
 describe('Hint', () => {
-  it('should render hint text', () => {
-    render(<Hint hint="This is a helpful hint" />);
+  it('should render hint text', async () => {
+    await render(<Hint hint="This is a helpful hint" />);
 
-    expect(screen.getByText('This is a helpful hint')).toBeInTheDocument();
+    await expect.element(page.getByText('This is a helpful hint')).toBeInTheDocument();
   });
 
-  it('should render the InfoIcon', () => {
-    render(<Hint hint="Test hint" />);
+  it('should render the InfoIcon', async () => {
+    await render(<Hint hint="Test hint" />);
 
-    expect(screen.getByTestId('info-icon')).toBeInTheDocument();
+    await expect.element(page.getByTestId('info-icon')).toBeInTheDocument();
   });
 
-  it('should render the hint value as text', () => {
-    render(<Hint hint="Placeholder hint" />);
+  it('should render the PlaceholderComponent with the hint value', async () => {
+    await render(<Hint hint="Placeholder hint" />);
 
-    expect(screen.getByText('Placeholder hint')).toBeInTheDocument();
+    const placeholder = page.getByTestId('placeholder-component');
+    expect(placeholder).toBeInTheDocument();
+    expect(placeholder).toHaveAttribute('data-value', 'Placeholder hint');
   });
 
-  it('should render with empty hint', () => {
-    render(<Hint hint="" />);
+  it('should render empty hint when hint prop is empty string', async () => {
+    await render(<Hint hint="" />);
 
-    expect(screen.getByTestId('info-icon')).toBeInTheDocument();
+    const placeholder = page.getByTestId('placeholder-component');
+    expect(placeholder).toHaveAttribute('data-value', '');
   });
 
-  it('should render hint with special characters', () => {
+  it('should render hint with special characters', async () => {
     const specialCharsHint = 'Use special characters: &, "test"';
-    render(<Hint hint={specialCharsHint} />);
+    await render(<Hint hint={specialCharsHint} />);
 
-    expect(screen.getByText(specialCharsHint)).toBeInTheDocument();
+    await expect.element(page.getByText(specialCharsHint)).toBeInTheDocument();
   });
 
-  it('should render hint with long text', () => {
+  it('should render hint with long text', async () => {
     const longHint =
       'This is a very long hint text that provides detailed information about the input field and its expected format for the user to understand.';
-    render(<Hint hint={longHint} />);
+    await render(<Hint hint={longHint} />);
 
-    expect(screen.getByText(longHint)).toBeInTheDocument();
+    await expect.element(page.getByText(longHint)).toBeInTheDocument();
   });
 });

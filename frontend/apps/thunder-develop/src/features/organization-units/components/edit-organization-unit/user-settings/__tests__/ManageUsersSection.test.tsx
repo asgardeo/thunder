@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ManageUsersSection from '../ManageUsersSection';
 import type {ApiUser} from '../../../../../users/types/users';
 
@@ -32,21 +33,6 @@ vi.mock('../../../../../../hooks/useDataGridLocaleText', () => ({
   default: () => ({}),
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.users.sections.manage.title': 'Manage Users',
-        'organizationUnits:edit.users.sections.manage.description': 'View and manage users in this organization unit',
-        'organizationUnits:edit.users.sections.manage.listing.columns.id': 'User ID',
-        'organizationUnits:edit.users.sections.manage.listing.columns.type': 'Type',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('ManageUsersSection', () => {
   const mockUsers: ApiUser[] = [
     {id: 'user-1', type: 'internal', organizationUnit: 'ou-123'},
@@ -58,103 +44,99 @@ describe('ManageUsersSection', () => {
     vi.clearAllMocks();
   });
 
-  it('should render the manage users section', () => {
+  it('should render the manage users section', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: mockUsers},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Manage Users')).toBeInTheDocument();
-    expect(screen.getByText('View and manage users in this organization unit')).toBeInTheDocument();
+    await expect.element(page.getByText('Users')).toBeInTheDocument();
+    await expect.element(page.getByText('View users belonging to this organization unit')).toBeInTheDocument();
   });
 
-  it('should render data grid with users', () => {
+  it('should render data grid with users', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: mockUsers},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
-    expect(screen.getByText('user-1')).toBeInTheDocument();
-    expect(screen.getByText('user-2')).toBeInTheDocument();
-    expect(screen.getByText('user-3')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByText('user-1')).toBeInTheDocument();
+    await expect.element(page.getByText('user-2')).toBeInTheDocument();
+    await expect.element(page.getByText('user-3')).toBeInTheDocument();
   });
 
-  it('should render column headers', () => {
+  it('should render column headers', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: mockUsers},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('User ID')).toBeInTheDocument();
-    expect(screen.getByText('Type')).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'User ID'})).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'User Type'})).toBeInTheDocument();
   });
 
-  it('should show loading state', () => {
+  it('should show loading state', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: null,
       isLoading: true,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    const grid = screen.getByRole('grid');
-    expect(grid).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
     // DataGrid shows loading overlay when isLoading is true
   });
 
-  it('should handle empty users list', () => {
+  it('should handle empty users list', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: []},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
     // Grid should show "No rows" message
   });
 
-  it('should handle null users data', () => {
+  it('should handle null users data', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: null,
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
   });
 
-  it('should call useGetOrganizationUnitUsers with correct ID', () => {
+  it('should call useGetOrganizationUnitUsers with correct ID', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: mockUsers},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-456" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-456" />);
 
     expect(mockUseGetOrganizationUnitUsers).toHaveBeenCalledWith('ou-456');
   });
 
-  it('should render user type correctly', () => {
+  it('should render user type correctly', async () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: mockUsers},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
-    const internalCells = screen.getAllByText('internal');
-    const externalCells = screen.getAllByText('external');
-
-    expect(internalCells.length).toBeGreaterThan(0);
-    expect(externalCells.length).toBeGreaterThan(0);
+    expect((page.getByText('internal').all()).length).toBeGreaterThan(0);
+    expect((page.getByText('external').all()).length).toBeGreaterThan(0);
   });
 });

@@ -45,7 +45,7 @@ import {X, Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver} from '@/hooks/useZodResolver';
 import {
   EmbeddedFlowComponentType,
   EmbeddedFlowEventType,

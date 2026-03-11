@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render, getByDisplayValue} from '@thunder/test-utils/browser';
 import ShowClientSecret, {type ShowClientSecretProps} from '../ShowClientSecret';
 
 // Mock the useCopyToClipboard hook
@@ -48,79 +48,78 @@ describe('ShowClientSecret', () => {
     });
   });
 
-  const renderComponent = (props: Partial<ShowClientSecretProps> = {}) =>
+  const renderComponent = async (props: Partial<ShowClientSecretProps> = {}) =>
     render(<ShowClientSecret {...defaultProps} {...props} />);
 
   describe('rendering', () => {
-    it('should render the component with warning icon', () => {
-      renderComponent();
+    it('should render the component with warning icon', async () => {
+      await renderComponent();
 
       // Warning icon should be present - just check component renders without error
-      expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
     });
 
-    it('should render the title and subtitle', () => {
-      renderComponent();
+    it('should render the title and subtitle', async () => {
+      await renderComponent();
 
-      expect(screen.getByRole('heading', {level: 1, name: /save your client secret/i})).toBeInTheDocument();
-      expect(screen.getByText(/store it somewhere safe/i)).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {level: 1, name: /save your client secret/i})).toBeInTheDocument();
+      await expect.element(page.getByText(/store it somewhere safe/i)).toBeInTheDocument();
     });
 
-    it('should display the application name', () => {
-      renderComponent();
+    it('should display the application name', async () => {
+      await renderComponent();
 
-      expect(screen.getByText('App Name')).toBeInTheDocument();
-      expect(screen.getByText('Test Application')).toBeInTheDocument();
+      await expect.element(page.getByText('App Name')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Application')).toBeInTheDocument();
     });
 
-    it('should render the client secret field', () => {
-      renderComponent();
+    it('should render the client secret field', async () => {
+      await renderComponent();
 
-      expect(screen.getByText('Client Secret')).toBeInTheDocument();
-      const input = screen.getByDisplayValue('test_secret_12345');
+      await expect.element(page.getByText('Client Secret')).toBeInTheDocument();
+      const input = getByDisplayValue('test_secret_12345');
       expect(input).toBeInTheDocument();
       expect(input).toHaveAttribute('type', 'password');
       expect(input).toHaveAttribute('readonly');
     });
 
-    it('should render security reminder alert', () => {
-      renderComponent();
+    it('should render security reminder alert', async () => {
+      await renderComponent();
 
-      expect(screen.getByText(/security reminder/i)).toBeInTheDocument();
-      expect(screen.getByText(/should be treated with the same level of security/i)).toBeInTheDocument();
+      await expect.element(page.getByText(/security reminder/i)).toBeInTheDocument();
+      await expect.element(page.getByText(/should be treated with the same level of security/i)).toBeInTheDocument();
     });
 
-    it('should render action buttons', () => {
-      renderComponent();
+    it('should render action buttons', async () => {
+      await renderComponent();
 
-      expect(screen.getByRole('button', {name: /copy secret/i})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /continue/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /copy secret/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /continue/i})).toBeInTheDocument();
     });
   });
 
   describe('visibility toggle', () => {
     it('should toggle client secret visibility when eye icon is clicked', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const input = screen.getByDisplayValue('test_secret_12345');
+      const input = getByDisplayValue('test_secret_12345');
       expect(input).toHaveAttribute('type', 'password');
 
       // Get all icon buttons - the first one in the input should be the visibility toggle
-      const allButtons = screen.getAllByRole('button');
+      const allButtons = page.getByRole('button').all();
       // Filter to get only icon buttons (small buttons without text content)
-      const iconButtons = allButtons.filter(btn => btn.querySelector('svg'));
+      const iconButtons = allButtons.filter(btn => btn.element().querySelector('svg'));
       // The first icon button should be the visibility toggle
       const visibilityButton = iconButtons[0];
       expect(visibilityButton).toBeInTheDocument();
 
-      await user.click(visibilityButton);
+      await userEvent.click(visibilityButton);
 
       // Should now show as text
       expect(input).toHaveAttribute('type', 'text');
 
       // Click again to hide (same button, just state changed)
-      await user.click(visibilityButton);
+      await userEvent.click(visibilityButton);
 
       // Should be back to password
       expect(input).toHaveAttribute('type', 'password');
@@ -129,60 +128,58 @@ describe('ShowClientSecret', () => {
 
   describe('copy functionality', () => {
     it('should call copy function when copy button in input is clicked', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
       // Get all icon buttons - the second one in the input should be the copy button
-      const allButtons = screen.getAllByRole('button');
-      const iconButtons = allButtons.filter(btn => btn.querySelector('svg'));
+      const allButtons = page.getByRole('button').all();
+      const iconButtons = allButtons.filter(btn => btn.element().querySelector('svg'));
       // The second icon button should be the copy button (first is visibility toggle)
       const copyButton = iconButtons[1];
       expect(copyButton).toBeInTheDocument();
 
-      await user.click(copyButton);
+      await userEvent.click(copyButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockCopy).toHaveBeenCalledWith('test_secret_12345');
       });
     });
 
     it('should call copy function when main copy button is clicked', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const mainCopyButton = screen.getByRole('button', {name: /copy secret/i});
-      await user.click(mainCopyButton);
+      const mainCopyButton = page.getByRole('button', {name: /copy secret/i});
+      await userEvent.click(mainCopyButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockCopy).toHaveBeenCalledWith('test_secret_12345');
       });
     });
 
-    it('should show copied state when copy succeeds', () => {
+    it('should show copied state when copy succeeds', async () => {
       vi.mocked(useCopyToClipboard).mockReturnValue({
         copied: true,
         copy: mockCopy,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('button', {name: /copied/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /copied/i})).toBeInTheDocument();
     });
 
-    it('should disable copy button when in copied state', () => {
+    it('should disable copy button when in copied state', async () => {
       vi.mocked(useCopyToClipboard).mockReturnValue({
         copied: true,
         copy: mockCopy,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      const mainCopyButton = screen.getByRole('button', {name: /copied/i});
+      const mainCopyButton = page.getByRole('button', {name: /copied/i});
       expect(mainCopyButton).toBeDisabled();
     });
 
-    it('should call onCopySecret callback through useCopyToClipboard', () => {
-      renderComponent();
+    it('should call onCopySecret callback through useCopyToClipboard', async () => {
+      await renderComponent();
 
       // Get the config passed to useCopyToClipboard
       const hookCall = vi.mocked(useCopyToClipboard).mock.calls[0][0];
@@ -193,53 +190,52 @@ describe('ShowClientSecret', () => {
 
   describe('continue action', () => {
     it('should call onContinue when continue button is clicked', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const continueButton = screen.getByRole('button', {name: /continue/i});
-      await user.click(continueButton);
+      const continueButton = page.getByRole('button', {name: /continue/i});
+      await userEvent.click(continueButton);
 
       expect(mockOnContinue).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('props variations', () => {
-    it('should render with different app name', () => {
-      renderComponent({appName: 'Another App'});
+    it('should render with different app name', async () => {
+      await renderComponent({appName: 'Another App'});
 
-      expect(screen.getByText('Another App')).toBeInTheDocument();
+      await expect.element(page.getByText('Another App')).toBeInTheDocument();
     });
 
-    it('should render with different client secret', () => {
-      renderComponent({clientSecret: 'different_secret_abc'});
+    it('should render with different client secret', async () => {
+      await renderComponent({clientSecret: 'different_secret_abc'});
 
-      const input = screen.getByDisplayValue('different_secret_abc');
+      const input = getByDisplayValue('different_secret_abc');
       expect(input).toBeInTheDocument();
     });
   });
 
   describe('accessibility', () => {
-    it('should have proper heading structure', () => {
-      renderComponent();
+    it('should have proper heading structure', async () => {
+      await renderComponent();
 
-      const heading = screen.getByRole('heading', {level: 1});
+      const heading = page.getByRole('heading', {level: 1});
       expect(heading).toBeInTheDocument();
     });
 
-    it('should have accessible buttons', () => {
-      renderComponent();
+    it('should have accessible buttons', async () => {
+      await renderComponent();
 
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       expect(buttons.length).toBeGreaterThan(0);
       buttons.forEach((button) => {
         expect(button).toBeVisible();
       });
     });
 
-    it('should have readonly input for security', () => {
-      renderComponent();
+    it('should have readonly input for security', async () => {
+      await renderComponent();
 
-      const input = screen.getByDisplayValue('test_secret_12345');
+      const input = getByDisplayValue('test_secret_12345');
       expect(input).toHaveAttribute('readonly');
     });
   });

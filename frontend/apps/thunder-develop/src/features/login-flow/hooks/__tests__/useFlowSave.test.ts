@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {CanvasData} from '../useFlowSave';
 import useFlowSave from '../useFlowSave';
 
@@ -25,12 +25,6 @@ import useFlowSave from '../useFlowSave';
 const mockNavigate = vi.fn();
 vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
 }));
 
 const mockCreateFlowMutate = vi.fn();
@@ -90,7 +84,7 @@ describe('useFlowSave', () => {
     vi.useRealTimers();
   });
 
-  const renderUseFlowSave = (overrides = {}) => {
+  const renderUseFlowSave = async (overrides = {}) => {
     const defaultProps = {
       flowId: undefined,
       isEditingExistingFlow: false,
@@ -107,40 +101,36 @@ describe('useFlowSave', () => {
   };
 
   describe('Hook Interface', () => {
-    it('should return handleSave function', () => {
-      const {result} = renderUseFlowSave();
+    it('should return handleSave function', async () => {
+      const {result} = await renderUseFlowSave();
       expect(typeof result.current.handleSave).toBe('function');
     });
 
-    it('should return isSaving boolean', () => {
-      const {result} = renderUseFlowSave();
+    it('should return isSaving boolean', async () => {
+      const {result} = await renderUseFlowSave();
       expect(typeof result.current.isSaving).toBe('boolean');
     });
   });
 
   describe('handleSave - validation', () => {
-    it('should show error and open validation panel when flow is invalid', () => {
-      const {result} = renderUseFlowSave({isFlowValid: false});
+    it('should show error and open validation panel when flow is invalid', async () => {
+      const {result} = await renderUseFlowSave({isFlowValid: false});
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
-      expect(mockShowError).toHaveBeenCalledWith('flows:core.loginFlowBuilder.errors.validationRequired');
+      expect(mockShowError).toHaveBeenCalledWith('Please fix all validation errors before saving.');
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
       expect(mockUpdateFlowMutate).not.toHaveBeenCalled();
     });
 
-    it('should not open validation panel when setOpenValidationPanel is not provided', () => {
-      const {result} = renderUseFlowSave({
+    it('should not open validation panel when setOpenValidationPanel is not provided', async () => {
+      const {result} = await renderUseFlowSave({
         isFlowValid: false,
         setOpenValidationPanel: undefined,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
       expect(mockShowError).toHaveBeenCalled();
       // Should not throw even when setOpenValidationPanel is undefined
@@ -150,102 +140,88 @@ describe('useFlowSave', () => {
       const {validateFlowGraph} = await import('@/features/flows/utils/reactFlowTransformer');
       (validateFlowGraph as ReturnType<typeof vi.fn>).mockReturnValueOnce(['Disconnected node found']);
 
-      const {result} = renderUseFlowSave({isFlowValid: true});
+      const {result} = await renderUseFlowSave({isFlowValid: true});
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
       expect(mockShowError).toHaveBeenCalledWith(
-        expect.stringContaining('flows:core.loginFlowBuilder.errors.structureValidationFailed'),
+        expect.stringContaining('Flow structure validation failed'),
       );
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
     });
   });
 
   describe('handleSave - create new flow', () => {
-    it('should call createFlow.mutate when creating a new flow', () => {
-      const {result} = renderUseFlowSave({
+    it('should call createFlow.mutate when creating a new flow', async () => {
+      const {result} = await renderUseFlowSave({
         isEditingExistingFlow: false,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
       expect(mockCreateFlowMutate).toHaveBeenCalled();
       expect(mockUpdateFlowMutate).not.toHaveBeenCalled();
     });
 
-    it('should show success message and navigate on create success', () => {
+    it('should show success message and navigate on create success', async () => {
       mockCreateFlowMutate.mockImplementation((_, options: {onSuccess: () => void}) => {
         options.onSuccess();
       });
 
-      const {result} = renderUseFlowSave({
+      const {result} = await renderUseFlowSave({
         isEditingExistingFlow: false,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
-      expect(mockShowSuccess).toHaveBeenCalledWith('flows:core.loginFlowBuilder.success.flowCreated');
+      expect(mockShowSuccess).toHaveBeenCalledWith('Flow created successfully.');
 
       // Advance timers to trigger navigation
-      act(() => {
-        vi.advanceTimersByTime(1500);
-      });
+      vi.advanceTimersByTime(1500);
 
       expect(mockNavigate).toHaveBeenCalledWith('/flows');
     });
 
-    it('should show error message on create failure', () => {
+    it('should show error message on create failure', async () => {
       mockCreateFlowMutate.mockImplementation((_, options: {onError: () => void}) => {
         options.onError();
       });
 
-      const {result} = renderUseFlowSave({
+      const {result} = await renderUseFlowSave({
         isEditingExistingFlow: false,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
-      expect(mockShowError).toHaveBeenCalledWith('flows:core.loginFlowBuilder.errors.saveFailed');
+      expect(mockShowError).toHaveBeenCalledWith('Failed to save flow. Please try again.');
     });
   });
 
   describe('handleSave - update existing flow', () => {
-    it('should call updateFlow.mutate when updating an existing flow', () => {
-      const {result} = renderUseFlowSave({
+    it('should call updateFlow.mutate when updating an existing flow', async () => {
+      const {result} = await renderUseFlowSave({
         flowId: 'flow-123',
         isEditingExistingFlow: true,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
     });
 
-    it('should pass flowId to updateFlow.mutate', () => {
-      const {result} = renderUseFlowSave({
+    it('should pass flowId to updateFlow.mutate', async () => {
+      const {result} = await renderUseFlowSave({
         flowId: 'flow-456',
         isEditingExistingFlow: true,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
       expect(mockUpdateFlowMutate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -255,59 +231,51 @@ describe('useFlowSave', () => {
       );
     });
 
-    it('should show success message and navigate on update success', () => {
+    it('should show success message and navigate on update success', async () => {
       mockUpdateFlowMutate.mockImplementation((_, options: {onSuccess: () => void}) => {
         options.onSuccess();
       });
 
-      const {result} = renderUseFlowSave({
+      const {result} = await renderUseFlowSave({
         flowId: 'flow-123',
         isEditingExistingFlow: true,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
-      expect(mockShowSuccess).toHaveBeenCalledWith('flows:core.loginFlowBuilder.success.flowUpdated');
+      expect(mockShowSuccess).toHaveBeenCalledWith('Flow updated successfully.');
 
       // Advance timers to trigger navigation
-      act(() => {
-        vi.advanceTimersByTime(1500);
-      });
+      vi.advanceTimersByTime(1500);
 
       expect(mockNavigate).toHaveBeenCalledWith('/flows');
     });
 
-    it('should show error message on update failure', () => {
+    it('should show error message on update failure', async () => {
       mockUpdateFlowMutate.mockImplementation((_, options: {onError: () => void}) => {
         options.onError();
       });
 
-      const {result} = renderUseFlowSave({
+      const {result} = await renderUseFlowSave({
         flowId: 'flow-123',
         isEditingExistingFlow: true,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
-      expect(mockShowError).toHaveBeenCalledWith('flows:core.loginFlowBuilder.errors.saveFailed');
+      expect(mockShowError).toHaveBeenCalledWith('Failed to save flow. Please try again.');
     });
 
-    it('should call createFlow when flowId is missing even if isEditingExistingFlow is true', () => {
-      const {result} = renderUseFlowSave({
+    it('should call createFlow when flowId is missing even if isEditingExistingFlow is true', async () => {
+      const {result} = await renderUseFlowSave({
         flowId: undefined,
         isEditingExistingFlow: true,
         isFlowValid: true,
       });
 
-      act(() => {
-        result.current.handleSave(createMockCanvasData());
-      });
+      result.current.handleSave(createMockCanvasData());
 
       // The condition is (isEditingExistingFlow && flowId), so without flowId
       // it goes to the else branch and calls createFlow
@@ -317,12 +285,12 @@ describe('useFlowSave', () => {
   });
 
   describe('isSaving state', () => {
-    it('should return false when not saving', () => {
-      const {result} = renderUseFlowSave();
+    it('should return false when not saving', async () => {
+      const {result} = await renderUseFlowSave();
       expect(result.current.isSaving).toBe(false);
     });
 
-    it('should return true when createFlow is pending', () => {
+    it('should return true when createFlow is pending', async () => {
       vi.doMock('@/features/flows/api/useCreateFlow', () => ({
         default: () => ({
           mutate: mockCreateFlowMutate,
@@ -335,14 +303,14 @@ describe('useFlowSave', () => {
 
       // Since we can't easily re-import the hook, we test this indirectly
       // The hook returns isSaving: createFlow.isPending || updateFlow.isPending
-      const {result} = renderUseFlowSave();
+      const {result} = await renderUseFlowSave();
 
       // With default mocks, isSaving should be false
       expect(typeof result.current.isSaving).toBe('boolean');
     });
 
-    it('should reflect the combined pending state of create and update', () => {
-      const {result} = renderUseFlowSave();
+    it('should reflect the combined pending state of create and update', async () => {
+      const {result} = await renderUseFlowSave();
 
       // isSaving is createFlow.isPending || updateFlow.isPending
       // With our mocks, both are false, so isSaving should be false
@@ -354,7 +322,7 @@ describe('useFlowSave', () => {
     it('should pass correct parameters to createFlowConfiguration', async () => {
       const {createFlowConfiguration} = await import('@/features/flows/utils/reactFlowTransformer');
 
-      const {result} = renderUseFlowSave({
+      const {result} = await renderUseFlowSave({
         flowName: 'My Custom Flow',
         flowHandle: 'my-custom-flow',
         isFlowValid: true,
@@ -362,9 +330,7 @@ describe('useFlowSave', () => {
 
       const canvasData = createMockCanvasData();
 
-      act(() => {
-        result.current.handleSave(canvasData);
-      });
+      result.current.handleSave(canvasData);
 
       expect(createFlowConfiguration).toHaveBeenCalledWith(
         canvasData,
@@ -376,12 +342,12 @@ describe('useFlowSave', () => {
   });
 
   describe('handleSave callback stability', () => {
-    it('should return handleSave as a function after rerender', () => {
-      const {result, rerender} = renderUseFlowSave();
+    it('should return handleSave as a function after rerender', async () => {
+      const {result, rerender} = await renderUseFlowSave();
 
       expect(typeof result.current.handleSave).toBe('function');
 
-      rerender();
+      await rerender();
 
       // After rerender, handleSave should still be a function
       expect(typeof result.current.handleSave).toBe('function');

@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationDeleteDialog from '../TranslationDeleteDialog';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockMutate = vi.fn();
 vi.mock('@thunder/i18n', () => ({
@@ -48,39 +39,34 @@ describe('TranslationDeleteDialog', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the dialog title', () => {
-      render(<TranslationDeleteDialog {...defaultProps} />);
+    it('renders the dialog title', async () => {
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} />);
 
-      expect(screen.getByText('delete.title')).toBeInTheDocument();
+      await expect.element(page.getByText('Delete Language')).toBeInTheDocument();
     });
 
-    it('renders the confirmation message', () => {
-      render(<TranslationDeleteDialog {...defaultProps} />);
+    it('renders the warning disclaimer', async () => {
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} />);
 
-      expect(screen.getByText('delete.message')).toBeInTheDocument();
+      await expect.element(
+        page.getByText('All custom translations for this language will be permanently removed and reset to defaults.'),
+      ).toBeInTheDocument();
     });
 
-    it('renders the warning disclaimer', () => {
-      render(<TranslationDeleteDialog {...defaultProps} />);
+    it('renders cancel and delete buttons', async () => {
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} />);
 
-      expect(screen.getByText('delete.disclaimer')).toBeInTheDocument();
-    });
-
-    it('renders cancel and delete buttons', () => {
-      render(<TranslationDeleteDialog {...defaultProps} />);
-
-      expect(screen.getByText('common:actions.cancel')).toBeInTheDocument();
-      expect(screen.getByText('common:actions.delete')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
     });
   });
 
   describe('Cancel', () => {
     it('calls onClose when cancel is clicked', async () => {
       const onClose = vi.fn();
-      const user = userEvent.setup();
-      render(<TranslationDeleteDialog {...defaultProps} onClose={onClose} />);
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByText('common:actions.cancel'));
+      await userEvent.click(page.getByRole('button', {name: 'Cancel'}));
 
       expect(onClose).toHaveBeenCalled();
     });
@@ -88,10 +74,9 @@ describe('TranslationDeleteDialog', () => {
 
   describe('Delete', () => {
     it('calls deleteTranslations.mutate with the language when delete is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationDeleteDialog {...defaultProps} />);
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
       expect(mockMutate).toHaveBeenCalledWith(
         'fr-FR',
@@ -103,10 +88,9 @@ describe('TranslationDeleteDialog', () => {
     });
 
     it('does not call mutate when language is null', async () => {
-      const user = userEvent.setup();
-      render(<TranslationDeleteDialog {...defaultProps} language={null} />);
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} language={null} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
@@ -117,10 +101,9 @@ describe('TranslationDeleteDialog', () => {
       mockMutate.mockImplementation((_lang: string, opts: {onSuccess: () => void}) => {
         opts.onSuccess();
       });
-      const user = userEvent.setup();
-      render(<TranslationDeleteDialog {...defaultProps} onClose={onClose} onSuccess={onSuccess} />);
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} onClose={onClose} onSuccess={onSuccess} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
       expect(onClose).toHaveBeenCalled();
       expect(onSuccess).toHaveBeenCalled();
@@ -130,12 +113,11 @@ describe('TranslationDeleteDialog', () => {
       mockMutate.mockImplementation((_lang: string, opts: {onError: () => void}) => {
         opts.onError();
       });
-      const user = userEvent.setup();
-      render(<TranslationDeleteDialog {...defaultProps} />);
+      await renderWithProviders(<TranslationDeleteDialog {...defaultProps} />);
 
-      await user.click(screen.getByText('common:actions.delete'));
+      await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-      expect(screen.getByText('delete.error')).toBeInTheDocument();
+      await expect.element(page.getByText('Failed to delete translations. Please try again.')).toBeInTheDocument();
     });
   });
 });

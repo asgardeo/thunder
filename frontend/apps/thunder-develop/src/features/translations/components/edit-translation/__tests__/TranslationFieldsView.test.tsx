@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders, getByDisplayValue} from '@thunder/test-utils/browser';
 import TranslationFieldsView from '../TranslationFieldsView';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const sampleValues = {
   'actions.save': 'Save',
@@ -50,77 +41,77 @@ describe('TranslationFieldsView', () => {
   });
 
   describe('Rendering', () => {
-    it('renders a text field for each translation key', () => {
-      render(<TranslationFieldsView {...defaultProps} />);
+    it('renders a text field for each translation key', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} />);
 
-      expect(screen.getByDisplayValue('Save')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Cancel')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('My Page')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('Save')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('Cancel')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('My Page')).toBeInTheDocument();
     });
 
-    it('renders the translation key as a label above each field', () => {
-      render(<TranslationFieldsView {...defaultProps} />);
+    it('renders the translation key as a label above each field', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} />);
 
-      expect(screen.getByText('actions.save')).toBeInTheDocument();
-      expect(screen.getByText('actions.cancel')).toBeInTheDocument();
+      await expect.element(page.getByText('actions.save')).toBeInTheDocument();
+      await expect.element(page.getByText('actions.cancel')).toBeInTheDocument();
     });
 
-    it('shows no-keys message when localValues is empty', () => {
-      render(<TranslationFieldsView {...defaultProps} localValues={{}} serverValues={{}} />);
+    it('shows no-keys message when localValues is empty', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} localValues={{}} serverValues={{}} />);
 
-      expect(screen.getByText('editor.noKeys')).toBeInTheDocument();
+      await expect.element(page.getByText('No translatable keys in this namespace.')).toBeInTheDocument();
     });
   });
 
   describe('Search filtering', () => {
-    it('shows only keys matching the search query', () => {
-      render(<TranslationFieldsView {...defaultProps} search="save" />);
+    it('shows only keys matching the search query', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} search="save" />);
 
-      expect(screen.getByDisplayValue('Save')).toBeInTheDocument();
-      expect(screen.queryByDisplayValue('Cancel')).not.toBeInTheDocument();
+      await expect.element(getByDisplayValue('Save')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('Cancel')).not.toBeInTheDocument();
     });
 
-    it('matches search against key names (case-insensitive)', () => {
-      render(<TranslationFieldsView {...defaultProps} search="PAGE" />);
+    it('matches search against key names (case-insensitive)', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} search="PAGE" />);
 
-      expect(screen.getByDisplayValue('My Page')).toBeInTheDocument();
-      expect(screen.queryByDisplayValue('Save')).not.toBeInTheDocument();
+      await expect.element(getByDisplayValue('My Page')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('Save')).not.toBeInTheDocument();
     });
 
-    it('matches search against field values', () => {
-      render(<TranslationFieldsView {...defaultProps} search="Cancel" />);
+    it('matches search against field values', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} search="Cancel" />);
 
-      expect(screen.getByDisplayValue('Cancel')).toBeInTheDocument();
-      expect(screen.queryByDisplayValue('Save')).not.toBeInTheDocument();
+      await expect.element(getByDisplayValue('Cancel')).toBeInTheDocument();
+      await expect.element(getByDisplayValue('Save')).not.toBeInTheDocument();
     });
 
-    it('shows no-results message when search matches nothing', () => {
-      render(<TranslationFieldsView {...defaultProps} search="nonexistent" />);
+    it('shows no-results message when search matches nothing', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} search="nonexistent" />);
 
-      expect(screen.getByText('editor.noResults')).toBeInTheDocument();
+      await expect.element(page.getByText('No matching translations.')).toBeInTheDocument();
     });
   });
 
   describe('Dirty field state', () => {
-    it('does not show reset button for a clean field', () => {
-      render(<TranslationFieldsView {...defaultProps} />);
+    it('does not show reset button for a clean field', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} />);
 
-      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button')).not.toBeInTheDocument();
     });
 
-    it('shows a reset button when a field has a local change', () => {
-      render(
+    it('shows a reset button when a field has a local change', async () => {
+      await renderWithProviders(
         <TranslationFieldsView
           {...defaultProps}
           localValues={{'actions.save': 'Enregistrer', 'actions.cancel': 'Cancel', 'page.title': 'My Page'}}
         />,
       );
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await expect.element(page.getByRole('button')).toBeInTheDocument();
     });
 
-    it('shows reset buttons only for dirty fields', () => {
-      render(
+    it('shows reset buttons only for dirty fields', async () => {
+      await renderWithProviders(
         <TranslationFieldsView
           {...defaultProps}
           localValues={{
@@ -132,29 +123,27 @@ describe('TranslationFieldsView', () => {
       );
 
       // Two fields are dirty (save, cancel), page.title is clean
-      expect(screen.getAllByRole('button')).toHaveLength(2);
+      expect(page.getByRole('button').all()).toHaveLength(2);
     });
   });
 
   describe('Interaction', () => {
-    it('calls onChange with the key and new value when a field is edited', () => {
+    it('calls onChange with the key and new value when a field is edited', async () => {
       const onChange = vi.fn();
 
-      render(<TranslationFieldsView {...defaultProps} onChange={onChange} />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} onChange={onChange} />);
 
-      // The field is a controlled input (value driven by localValues prop), so
-      // userEvent.type accumulates against the re-rendered prop value on each
-      // keystroke. Use fireEvent.change to set an exact target value instead.
-      fireEvent.change(screen.getByDisplayValue('Save'), {target: {value: 'Enregistrer'}});
+      // Use userEvent.fill to replace the value of the controlled "Save" input
+      const saveInput = getByDisplayValue('Save');
+      await userEvent.fill(saveInput, 'Enregistrer');
 
       expect(onChange).toHaveBeenCalledWith('actions.save', 'Enregistrer');
     });
 
     it('calls onResetField with the key when the reset button is clicked', async () => {
       const onResetField = vi.fn();
-      const user = userEvent.setup();
 
-      render(
+      await renderWithProviders(
         <TranslationFieldsView
           {...defaultProps}
           localValues={{'actions.save': 'Enregistrer', 'actions.cancel': 'Cancel', 'page.title': 'My Page'}}
@@ -162,107 +151,92 @@ describe('TranslationFieldsView', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button'));
+      await userEvent.click(page.getByRole('button'));
 
       expect(onResetField).toHaveBeenCalledWith('actions.save');
     });
   });
 
   describe('Add Key (custom namespace)', () => {
-    it('shows the Add Key button when isCustomNamespace is true', () => {
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+    it('shows the Add Key button when isCustomNamespace is true', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
 
-      expect(screen.getByText('editor.addKey')).toBeInTheDocument();
+      await expect.element(page.getByText('Add Key')).toBeInTheDocument();
     });
 
-    it('does not show the Add Key button when isCustomNamespace is false', () => {
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace={false} />);
+    it('does not show the Add Key button when isCustomNamespace is false', async () => {
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace={false} />);
 
-      expect(screen.queryByText('editor.addKey')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Add Key')).not.toBeInTheDocument();
     });
 
     it('shows the add key form when the Add Key button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
 
-      await user.click(screen.getByText('editor.addKey'));
+      await userEvent.click(page.getByText('Add Key'));
 
-      expect(screen.getByLabelText('editor.addKey.keyLabel')).toBeInTheDocument();
-      expect(screen.getByLabelText('editor.addKey.valueLabel')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Key')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Value')).toBeInTheDocument();
     });
 
     it('calls onChange and closes the form when a new key is submitted', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace onChange={onChange} />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace onChange={onChange} />);
 
-      await user.click(screen.getByText('editor.addKey'));
+      await userEvent.click(page.getByText('Add Key'));
 
-      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
-        target: {value: 'new.key'},
-      });
-      fireEvent.change(screen.getByPlaceholderText('editor.addKey.valuePlaceholder'), {
-        target: {value: 'New Value'},
-      });
+      const keyInput = page.getByPlaceholder('e.g. my.translation.key');
+      const valueInput = page.getByPlaceholder('Translation value');
 
-      await user.click(screen.getByText('editor.addKey.submit'));
+      await userEvent.type(keyInput, 'new.key');
+      await userEvent.type(valueInput, 'New Value');
+
+      await userEvent.click(page.getByRole('button', {name: 'Add'}));
 
       expect(onChange).toHaveBeenCalledWith('new.key', 'New Value');
       // Form should be closed, Add Key button visible again
-      expect(screen.getByText('editor.addKey')).toBeInTheDocument();
+      await expect.element(page.getByText('Add Key')).toBeInTheDocument();
     });
 
     it('closes the form and clears inputs when Cancel is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
 
-      await user.click(screen.getByText('editor.addKey'));
+      await userEvent.click(page.getByText('Add Key'));
 
-      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
-        target: {value: 'some.key'},
-      });
+      await userEvent.type(page.getByPlaceholder('e.g. my.translation.key'), 'some.key');
 
-      await user.click(screen.getByText('editor.addKey.cancel'));
+      await userEvent.click(page.getByRole('button', {name: 'Cancel'}));
 
       // Form should be closed, Add Key button visible again
-      expect(screen.getByText('editor.addKey')).toBeInTheDocument();
+      await expect.element(page.getByText('Add Key')).toBeInTheDocument();
     });
 
     it('shows a duplicate key error when the entered key already exists', async () => {
-      const user = userEvent.setup();
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
 
-      await user.click(screen.getByText('editor.addKey'));
+      await userEvent.click(page.getByText('Add Key'));
 
-      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
-        target: {value: 'actions.save'},
-      });
+      await userEvent.type(page.getByPlaceholder('e.g. my.translation.key'), 'actions.save');
 
-      expect(screen.getByText('editor.addKey.duplicateKey')).toBeInTheDocument();
+      await expect.element(page.getByText('This key already exists.')).toBeInTheDocument();
     });
 
     it('disables the submit button when the key is empty', async () => {
-      const user = userEvent.setup();
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
 
-      await user.click(screen.getByText('editor.addKey'));
+      await userEvent.click(page.getByText('Add Key'));
 
-      const submitButton = screen.getByText('editor.addKey.submit').closest('button');
-      expect(submitButton).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Add'})).toBeDisabled();
     });
 
     it('disables the submit button when the key is a duplicate', async () => {
-      const user = userEvent.setup();
-      render(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
+      await renderWithProviders(<TranslationFieldsView {...defaultProps} isCustomNamespace />);
 
-      await user.click(screen.getByText('editor.addKey'));
+      await userEvent.click(page.getByText('Add Key'));
 
-      fireEvent.change(screen.getByPlaceholderText('editor.addKey.keyPlaceholder'), {
-        target: {value: 'actions.save'},
-      });
+      await userEvent.type(page.getByPlaceholder('e.g. my.translation.key'), 'actions.save');
 
-      const submitButton = screen.getByText('editor.addKey.submit').closest('button');
-      expect(submitButton).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Add'})).toBeDisabled();
     });
   });
 });

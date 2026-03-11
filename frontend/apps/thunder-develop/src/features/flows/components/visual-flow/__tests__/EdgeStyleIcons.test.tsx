@@ -17,35 +17,35 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
 import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from '../EdgeStyleIcons';
 
 describe('EdgeStyleIcons', () => {
   describe('BezierEdgeIcon', () => {
-    it('should render an SVG element', () => {
-      const {container} = render(<BezierEdgeIcon />);
+    it('should render an SVG element', async () => {
+      const {container} = await render(<BezierEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
     });
 
-    it('should have correct dimensions', () => {
-      const {container} = render(<BezierEdgeIcon />);
+    it('should have correct dimensions', async () => {
+      const {container} = await render(<BezierEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('width', '20');
       expect(svg).toHaveAttribute('height', '20');
     });
 
-    it('should have correct viewBox', () => {
-      const {container} = render(<BezierEdgeIcon />);
+    it('should have correct viewBox', async () => {
+      const {container} = await render(<BezierEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('viewBox', '0 0 24 24');
     });
 
-    it('should have correct stroke properties', () => {
-      const {container} = render(<BezierEdgeIcon />);
+    it('should have correct stroke properties', async () => {
+      const {container} = await render(<BezierEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('stroke', 'currentColor');
@@ -53,8 +53,8 @@ describe('EdgeStyleIcons', () => {
       expect(svg).toHaveAttribute('fill', 'none');
     });
 
-    it('should contain a path element with bezier curve', () => {
-      const {container} = render(<BezierEdgeIcon />);
+    it('should contain a path element with bezier curve', async () => {
+      const {container} = await render(<BezierEdgeIcon />);
 
       const path = container.querySelector('path');
       expect(path).toBeInTheDocument();
@@ -64,30 +64,30 @@ describe('EdgeStyleIcons', () => {
   });
 
   describe('SmoothStepEdgeIcon', () => {
-    it('should render an SVG element', () => {
-      const {container} = render(<SmoothStepEdgeIcon />);
+    it('should render an SVG element', async () => {
+      const {container} = await render(<SmoothStepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
     });
 
-    it('should have correct dimensions', () => {
-      const {container} = render(<SmoothStepEdgeIcon />);
+    it('should have correct dimensions', async () => {
+      const {container} = await render(<SmoothStepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('width', '20');
       expect(svg).toHaveAttribute('height', '20');
     });
 
-    it('should have correct viewBox', () => {
-      const {container} = render(<SmoothStepEdgeIcon />);
+    it('should have correct viewBox', async () => {
+      const {container} = await render(<SmoothStepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('viewBox', '0 0 24 24');
     });
 
-    it('should have correct stroke properties', () => {
-      const {container} = render(<SmoothStepEdgeIcon />);
+    it('should have correct stroke properties', async () => {
+      const {container} = await render(<SmoothStepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('stroke', 'currentColor');
@@ -95,8 +95,8 @@ describe('EdgeStyleIcons', () => {
       expect(svg).toHaveAttribute('fill', 'none');
     });
 
-    it('should contain a path element with smooth step curve', () => {
-      const {container} = render(<SmoothStepEdgeIcon />);
+    it('should contain a path element with smooth step curve', async () => {
+      const {container} = await render(<SmoothStepEdgeIcon />);
 
       const path = container.querySelector('path');
       expect(path).toBeInTheDocument();
@@ -106,30 +106,30 @@ describe('EdgeStyleIcons', () => {
   });
 
   describe('StepEdgeIcon', () => {
-    it('should render an SVG element', () => {
-      const {container} = render(<StepEdgeIcon />);
+    it('should render an SVG element', async () => {
+      const {container} = await render(<StepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
     });
 
-    it('should have correct dimensions', () => {
-      const {container} = render(<StepEdgeIcon />);
+    it('should have correct dimensions', async () => {
+      const {container} = await render(<StepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('width', '20');
       expect(svg).toHaveAttribute('height', '20');
     });
 
-    it('should have correct viewBox', () => {
-      const {container} = render(<StepEdgeIcon />);
+    it('should have correct viewBox', async () => {
+      const {container} = await render(<StepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('viewBox', '0 0 24 24');
     });
 
-    it('should have correct stroke properties', () => {
-      const {container} = render(<StepEdgeIcon />);
+    it('should have correct stroke properties', async () => {
+      const {container} = await render(<StepEdgeIcon />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('stroke', 'currentColor');
@@ -137,8 +137,8 @@ describe('EdgeStyleIcons', () => {
       expect(svg).toHaveAttribute('fill', 'none');
     });
 
-    it('should contain a path element with step curve', () => {
-      const {container} = render(<StepEdgeIcon />);
+    it('should contain a path element with step curve', async () => {
+      const {container} = await render(<StepEdgeIcon />);
 
       const path = container.querySelector('path');
       expect(path).toBeInTheDocument();
@@ -149,10 +149,10 @@ describe('EdgeStyleIcons', () => {
   });
 
   describe('Icon Consistency', () => {
-    it('all icons should have the same dimensions', () => {
-      const {container: bezierContainer} = render(<BezierEdgeIcon />);
-      const {container: smoothStepContainer} = render(<SmoothStepEdgeIcon />);
-      const {container: stepContainer} = render(<StepEdgeIcon />);
+    it('all icons should have the same dimensions', async () => {
+      const {container: bezierContainer} = await render(<BezierEdgeIcon />);
+      const {container: smoothStepContainer} = await render(<SmoothStepEdgeIcon />);
+      const {container: stepContainer} = await render(<StepEdgeIcon />);
 
       const bezierSvg = bezierContainer.querySelector('svg');
       const smoothStepSvg = smoothStepContainer.querySelector('svg');
@@ -164,10 +164,10 @@ describe('EdgeStyleIcons', () => {
       expect(smoothStepSvg?.getAttribute('height')).toBe(stepSvg?.getAttribute('height'));
     });
 
-    it('all icons should have the same stroke width', () => {
-      const {container: bezierContainer} = render(<BezierEdgeIcon />);
-      const {container: smoothStepContainer} = render(<SmoothStepEdgeIcon />);
-      const {container: stepContainer} = render(<StepEdgeIcon />);
+    it('all icons should have the same stroke width', async () => {
+      const {container: bezierContainer} = await render(<BezierEdgeIcon />);
+      const {container: smoothStepContainer} = await render(<SmoothStepEdgeIcon />);
+      const {container: stepContainer} = await render(<StepEdgeIcon />);
 
       const bezierSvg = bezierContainer.querySelector('svg');
       const smoothStepSvg = smoothStepContainer.querySelector('svg');
@@ -177,10 +177,10 @@ describe('EdgeStyleIcons', () => {
       expect(smoothStepSvg?.getAttribute('stroke-width')).toBe(stepSvg?.getAttribute('stroke-width'));
     });
 
-    it('all icons should use currentColor for stroke', () => {
-      const {container: bezierContainer} = render(<BezierEdgeIcon />);
-      const {container: smoothStepContainer} = render(<SmoothStepEdgeIcon />);
-      const {container: stepContainer} = render(<StepEdgeIcon />);
+    it('all icons should use currentColor for stroke', async () => {
+      const {container: bezierContainer} = await render(<BezierEdgeIcon />);
+      const {container: smoothStepContainer} = await render(<SmoothStepEdgeIcon />);
+      const {container: stepContainer} = await render(<StepEdgeIcon />);
 
       const bezierSvg = bezierContainer.querySelector('svg');
       const smoothStepSvg = smoothStepContainer.querySelector('svg');

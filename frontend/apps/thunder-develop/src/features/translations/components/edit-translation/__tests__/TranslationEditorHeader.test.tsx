@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationEditorHeader from '../TranslationEditorHeader';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 vi.mock('@thunder/i18n', () => ({
   getDisplayNameForCode: (code: string) => `Language(${code})`,
@@ -53,139 +44,148 @@ describe('TranslationEditorHeader', () => {
   });
 
   describe('Rendering', () => {
-    it('shows page title key when no language is selected', () => {
-      render(<TranslationEditorHeader {...defaultProps} selectedLanguage={null} />);
+    it('shows page title when no language is selected', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} selectedLanguage={null} />);
 
-      expect(screen.getByText('page.title')).toBeInTheDocument();
+      await expect.element(page.getByText('Translations')).toBeInTheDocument();
     });
 
-    it('shows flag and display name when a language is selected', () => {
-      render(<TranslationEditorHeader {...defaultProps} selectedLanguage="fr-FR" />);
+    it('shows flag and display name when a language is selected', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} selectedLanguage="fr-FR" />);
 
-      expect(screen.getByText('Flag(fr-FR)')).toBeInTheDocument();
-      expect(screen.getByText('Language(fr-FR)')).toBeInTheDocument();
+      await expect.element(page.getByText('Flag(fr-FR)')).toBeInTheDocument();
+      await expect.element(page.getByText('Language(fr-FR)')).toBeInTheDocument();
     });
 
-    it('renders discard, save, and reset-to-default action buttons', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} />);
+    it('renders discard, save, and reset-to-default action buttons', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} isEnglish={false} />);
 
-      expect(screen.getByText('actions.discardChanges')).toBeInTheDocument();
-      expect(screen.getByText('actions.resetToDefault')).toBeInTheDocument();
-      expect(screen.getByText('actions.saveChanges')).toBeInTheDocument();
+      await expect.element(page.getByText('Discard Changes')).toBeInTheDocument();
+      await expect.element(page.getByText('Reset to Default')).toBeInTheDocument();
+      await expect.element(page.getByText('Save Changes')).toBeInTheDocument();
     });
 
-    it('hides Reset to Default button when isEnglish is true', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish />);
+    it('hides Reset to Default button when isEnglish is true', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} isEnglish />);
 
-      expect(screen.queryByText('actions.resetToDefault')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Reset to Default')).not.toBeInTheDocument();
     });
 
-    it('shows Reset to Default button when isEnglish is false', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} />);
+    it('shows Reset to Default button when isEnglish is false', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} isEnglish={false} />);
 
-      expect(screen.getByText('actions.resetToDefault')).toBeInTheDocument();
+      await expect.element(page.getByText('Reset to Default')).toBeInTheDocument();
     });
   });
 
   describe('Dirty-changes indicator', () => {
-    it('does not show unsaved count when there are no dirty changes', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges={false} dirtyCount={0} />);
+    it('does not show unsaved count when there are no dirty changes', async () => {
+      await renderWithProviders(
+        <TranslationEditorHeader {...defaultProps} hasDirtyChanges={false} dirtyCount={0} />,
+      );
 
-      expect(screen.queryByText('editor.unsavedCount')).not.toBeInTheDocument();
+      // The unsaved count uses interpolation: '{{count}} unsaved change'
+      await expect.element(page.getByText(/unsaved change/)).not.toBeInTheDocument();
     });
 
-    it('shows unsaved count label when there are dirty changes', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={3} />);
+    it('shows unsaved count label when there are dirty changes', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={3} />);
 
-      expect(screen.getByText('editor.unsavedCount')).toBeInTheDocument();
+      await expect.element(page.getByText(/unsaved change/)).toBeInTheDocument();
     });
   });
 
   describe('Button disabled states', () => {
-    it('disables Discard when no dirty changes', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges={false} />);
+    it('disables Discard when no dirty changes', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} hasDirtyChanges={false} />);
 
-      expect(screen.getByText('actions.discardChanges').closest('button')).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Discard Changes'})).toBeDisabled();
     });
 
-    it('enables Discard when dirty changes exist', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} />);
+    it('enables Discard when dirty changes exist', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} />);
 
-      expect(screen.getByText('actions.discardChanges').closest('button')).not.toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Discard Changes'})).not.toBeDisabled();
     });
 
-    it('disables Save when no dirty changes', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges={false} />);
+    it('disables Save when no dirty changes', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} hasDirtyChanges={false} />);
 
-      expect(screen.getByText('actions.saveChanges').closest('button')).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Save Changes'})).toBeDisabled();
     });
 
-    it('enables Save when dirty changes exist', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={2} />);
+    it('enables Save when dirty changes exist', async () => {
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={2} />);
 
-      expect(screen.getByText('actions.saveChanges').closest('button')).not.toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Save Changes'})).not.toBeDisabled();
     });
 
-    it('disables all action buttons while saving', () => {
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} isSaving />);
+    it('disables all action buttons while saving', async () => {
+      await renderWithProviders(
+        <TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} isSaving />,
+      );
 
-      expect(screen.getByText('actions.discardChanges').closest('button')).toBeDisabled();
-      expect(screen.getByText('actions.saveChanges').closest('button')).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Discard Changes'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Save Changes'})).toBeDisabled();
     });
 
-    it('disables Reset to Default when hasNamespace is false', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} hasNamespace={false} />);
+    it('disables Reset to Default when hasNamespace is false', async () => {
+      await renderWithProviders(
+        <TranslationEditorHeader {...defaultProps} isEnglish={false} hasNamespace={false} />,
+      );
 
-      expect(screen.getByText('actions.resetToDefault').closest('button')).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Reset to Default'})).toBeDisabled();
     });
 
-    it('enables Reset to Default when hasNamespace is true and not saving', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} hasNamespace isSaving={false} />);
+    it('enables Reset to Default when hasNamespace is true and not saving', async () => {
+      await renderWithProviders(
+        <TranslationEditorHeader {...defaultProps} isEnglish={false} hasNamespace isSaving={false} />,
+      );
 
-      expect(screen.getByText('actions.resetToDefault').closest('button')).not.toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Reset to Default'})).not.toBeDisabled();
     });
   });
 
   describe('Callbacks', () => {
     it('calls onBack when the back button is clicked', async () => {
       const onBack = vi.fn();
-      const user = userEvent.setup();
 
-      render(<TranslationEditorHeader {...defaultProps} onBack={onBack} />);
+      await renderWithProviders(<TranslationEditorHeader {...defaultProps} onBack={onBack} />);
 
       // The back button is an IconButton (first button rendered)
-      await user.click(screen.getAllByRole('button')[0]);
+      await userEvent.click(page.getByRole('button').all()[0]);
 
       expect(onBack).toHaveBeenCalledTimes(1);
     });
 
     it('calls onDiscard when Discard button is clicked', async () => {
       const onDiscard = vi.fn();
-      const user = userEvent.setup();
 
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} onDiscard={onDiscard} />);
+      await renderWithProviders(
+        <TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} onDiscard={onDiscard} />,
+      );
 
-      await user.click(screen.getByText('actions.discardChanges'));
+      await userEvent.click(page.getByRole('button', {name: 'Discard Changes'}));
 
       expect(onDiscard).toHaveBeenCalledTimes(1);
     });
 
     it('calls onSave when Save button is clicked', async () => {
       const onSave = vi.fn();
-      const user = userEvent.setup();
 
-      render(<TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} onSave={onSave} />);
+      await renderWithProviders(
+        <TranslationEditorHeader {...defaultProps} hasDirtyChanges dirtyCount={1} onSave={onSave} />,
+      );
 
-      await user.click(screen.getByText('actions.saveChanges'));
+      await userEvent.click(page.getByRole('button', {name: 'Save Changes'}));
 
       expect(onSave).toHaveBeenCalledTimes(1);
     });
 
     it('calls onResetToDefault when Reset to Default button is clicked', async () => {
       const onResetToDefault = vi.fn();
-      const user = userEvent.setup();
 
-      render(
+      await renderWithProviders(
         <TranslationEditorHeader
           {...defaultProps}
           isEnglish={false}
@@ -194,7 +194,7 @@ describe('TranslationEditorHeader', () => {
         />,
       );
 
-      await user.click(screen.getByText('actions.resetToDefault'));
+      await userEvent.click(page.getByRole('button', {name: 'Reset to Default'}));
 
       expect(onResetToDefault).toHaveBeenCalledTimes(1);
     });

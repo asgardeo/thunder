@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ParentSettingsSection from '../ParentSettingsSection';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 
@@ -25,21 +26,6 @@ import type {OrganizationUnit} from '../../../../models/organization-unit';
 const mockUseGetOrganizationUnit = vi.fn();
 vi.mock('../../../../api/useGetOrganizationUnit', () => ({
   default: (id?: string, enabled?: boolean): unknown => mockUseGetOrganizationUnit(id, enabled),
-}));
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.general.sections.parentOUSettings.title': 'Parent Organization Unit',
-        'organizationUnits:edit.general.sections.parentOUSettings.description': 'The parent of this organization unit',
-        'organizationUnits:edit.general.ou.parent.label': 'Parent',
-        'organizationUnits:edit.general.ou.noParent.label': 'Root Organization Unit',
-      };
-      return translations[key] ?? key;
-    },
-  }),
 }));
 
 // Mock navigate function
@@ -73,19 +59,19 @@ describe('ParentSettingsSection', () => {
     vi.clearAllMocks();
   });
 
-  it('should render the parent settings section', () => {
+  it('should render the parent settings section', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: mockParentOU,
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    expect(screen.getByText('Parent Organization Unit')).toBeInTheDocument();
-    expect(screen.getByText('The parent of this organization unit')).toBeInTheDocument();
+    await expect.element(page.getByText('Parent Organization Unit').first()).toBeInTheDocument();
+    await expect.element(page.getByText('The parent organization unit in the hierarchy.')).toBeInTheDocument();
   });
 
-  it('should show "Root Organization Unit" when no parent exists', () => {
+  it('should show "Root Organization Unit" when no parent exists', async () => {
     const rootOU: OrganizationUnit = {
       ...mockOrganizationUnit,
       parent: null,
@@ -96,100 +82,95 @@ describe('ParentSettingsSection', () => {
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={rootOU} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={rootOU} />);
 
-    const input = screen.getByDisplayValue('Root Organization Unit');
-    expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute('readonly');
+    await expect.element(page.getByRole('textbox')).toHaveValue('Root Organization Unit');
+    await expect.element(page.getByRole('textbox')).toHaveAttribute('readonly');
   });
 
-  it('should show loading spinner while fetching parent', () => {
+  it('should show loading spinner while fetching parent', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: null,
       isLoading: true,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should render parent name as link when parent is loaded', () => {
+  it('should render parent name as link when parent is loaded', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: mockParentOU,
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    const link = screen.getByText('Engineering');
-    expect(link).toBeInTheDocument();
-    expect(link.tagName).toBe('A');
-    expect(link).toHaveAttribute('href', '/organization-units/ou-parent-123');
+    const link = page.getByText('Engineering');
+    await expect.element(link).toBeInTheDocument();
+    await expect.element(link).toHaveAttribute('href', '/organization-units/ou-parent-123');
   });
 
-  it('should render parent ID alongside parent name', () => {
+  it('should render parent ID alongside parent name', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: mockParentOU,
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    expect(screen.getByText('Engineering')).toBeInTheDocument();
-    expect(screen.getByText('(ou-parent-123)')).toBeInTheDocument();
+    await expect.element(page.getByText('Engineering')).toBeInTheDocument();
+    await expect.element(page.getByText('(ou-parent-123)')).toBeInTheDocument();
   });
 
-  it('should include navigation state in parent link', () => {
+  it('should include navigation state in parent link', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: mockParentOU,
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    const link = screen.getByText('Engineering');
-    const stateAttr = link.getAttribute('data-state') ?? '{}';
-    const state: unknown = JSON.parse(stateAttr);
-    expect(state).toEqual({
+    const link = page.getByText('Engineering');
+    await expect.element(link).toHaveAttribute('data-state', JSON.stringify({
       fromOU: {
         id: 'ou-child-123',
         name: 'Frontend Engineering',
       },
-    });
+    }));
   });
 
-  it('should show raw parent ID when parent cannot be loaded', () => {
+  it('should show raw parent ID when parent cannot be loaded', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: null,
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
-    const input = screen.getByDisplayValue('ou-parent-123');
-    expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute('readonly');
+    await expect.element(page.getByRole('textbox')).toHaveValue('ou-parent-123');
+    await expect.element(page.getByRole('textbox')).toHaveAttribute('readonly');
   });
 
-  it('should not fetch parent when parent is null', () => {
+  it('should not fetch parent when parent is null', async () => {
     const rootOU: OrganizationUnit = {
       ...mockOrganizationUnit,
       parent: null,
     };
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={rootOU} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={rootOU} />);
 
     expect(mockUseGetOrganizationUnit).toHaveBeenCalledWith(undefined, false);
   });
 
-  it('should fetch parent when parent ID exists', () => {
+  it('should fetch parent when parent ID exists', async () => {
     mockUseGetOrganizationUnit.mockReturnValue({
       data: mockParentOU,
       isLoading: false,
     });
 
-    renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
+    await renderWithProviders(<ParentSettingsSection organizationUnit={mockOrganizationUnit} />);
 
     expect(mockUseGetOrganizationUnit).toHaveBeenCalledWith('ou-parent-123', true);
   });

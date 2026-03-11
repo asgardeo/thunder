@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {within} from '@testing-library/react';
 
 // Mock i18next top-level await before importing withI18n
 vi.mock('i18next', () => ({
@@ -48,7 +49,7 @@ describe('withI18n (thunder-develop)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    const {container} = render(<WithI18nComponent />);
+    const {container} = await render(<WithI18nComponent />);
     expect(container).toBeInTheDocument();
   });
 
@@ -59,8 +60,8 @@ describe('withI18n (thunder-develop)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    render(<WithI18nComponent />);
-    expect(screen.getByTestId('mock-child')).toBeInTheDocument();
+    const {container} = await render(<WithI18nComponent />);
+    expect(within(container).getByTestId('mock-child')).toBeInTheDocument();
   });
 
   it('wraps with I18nProvider', async () => {
@@ -70,8 +71,8 @@ describe('withI18n (thunder-develop)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    render(<WithI18nComponent />);
-    expect(screen.getByTestId('i18n-provider')).toBeInTheDocument();
+    const {container} = await render(<WithI18nComponent />);
+    expect(within(container).getByTestId('i18n-provider')).toBeInTheDocument();
   });
 
   it('places the wrapped component inside I18nProvider', async () => {
@@ -81,9 +82,9 @@ describe('withI18n (thunder-develop)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    render(<WithI18nComponent />);
-    const provider = screen.getByTestId('i18n-provider');
-    const child = screen.getByTestId('mock-child');
+    const {container} = await render(<WithI18nComponent />);
+    const provider = within(container).getByTestId('i18n-provider');
+    const child = within(container).getByTestId('mock-child');
     expect(provider).toContainElement(child);
   });
 
@@ -94,8 +95,8 @@ describe('withI18n (thunder-develop)', () => {
     }
     const AnotherWrapped = withI18n(AnotherChild);
 
-    render(<AnotherWrapped />);
-    expect(screen.getByTestId('another-child')).toBeInTheDocument();
-    expect(screen.getByTestId('i18n-provider')).toBeInTheDocument();
+    const {container} = await render(<AnotherWrapped />);
+    expect(within(container).getByTestId('another-child')).toBeInTheDocument();
+    expect(within(container).getByTestId('i18n-provider')).toBeInTheDocument();
   });
 });

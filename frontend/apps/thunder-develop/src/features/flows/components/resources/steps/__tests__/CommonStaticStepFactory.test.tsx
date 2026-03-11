@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {CommonStaticStepFactory} from '../CommonStaticStepFactory';
 import {StaticStepTypes} from '../../../../models/steps';
 
@@ -27,29 +28,29 @@ vi.mock('../start/Start', () => ({
 }));
 
 describe('CommonStaticStepFactory', () => {
-  it('should render Start component when type is StaticStepTypes.Start', () => {
-    render(<CommonStaticStepFactory type={StaticStepTypes.Start} />);
+  it('should render Start component when type is StaticStepTypes.Start', async () => {
+    await render(<CommonStaticStepFactory type={StaticStepTypes.Start} />);
 
-    expect(screen.getByTestId('start-component')).toBeInTheDocument();
-    expect(screen.getByText('Start Component')).toBeInTheDocument();
+    await expect.element(page.getByTestId('start-component')).toBeInTheDocument();
+    await expect.element(page.getByText('Start Component')).toBeInTheDocument();
   });
 
-  it('should return null when type is StaticStepTypes.UserOnboard', () => {
-    const {container} = render(<CommonStaticStepFactory type={StaticStepTypes.UserOnboard} />);
+  it('should return null when type is StaticStepTypes.UserOnboard', async () => {
+    const {container} = await render(<CommonStaticStepFactory type={StaticStepTypes.UserOnboard} />);
 
     expect(container.firstChild).toBeNull();
   });
 
-  it('should return null for unknown static step type', () => {
-    const {container} = render(<CommonStaticStepFactory type={'UNKNOWN_TYPE' as StaticStepTypes} />);
+  it('should return null for unknown static step type', async () => {
+    const {container} = await render(<CommonStaticStepFactory type={'UNKNOWN_TYPE' as StaticStepTypes} />);
 
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render Start component with correct data-testid', () => {
-    render(<CommonStaticStepFactory type={StaticStepTypes.Start} />);
+  it('should render Start component with correct data-testid', async () => {
+    await render(<CommonStaticStepFactory type={StaticStepTypes.Start} />);
 
-    const startComponent = screen.getByTestId('start-component');
+    const startComponent = page.getByTestId('start-component');
     expect(startComponent).toBeInTheDocument();
   });
 

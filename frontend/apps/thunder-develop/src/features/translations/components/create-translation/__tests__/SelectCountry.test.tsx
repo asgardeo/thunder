@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import SelectCountry from '../SelectCountry';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockCountries = [
   {name: 'France', regionCode: 'FR', flag: '🇫🇷'},
@@ -51,92 +42,90 @@ describe('SelectCountry', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the step title and subtitle', () => {
-      render(<SelectCountry {...defaultProps} />);
+    it('renders the step title and subtitle', async () => {
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      expect(screen.getByText('language.create.country.title')).toBeInTheDocument();
-      expect(screen.getByText('language.create.country.subtitle')).toBeInTheDocument();
+      await expect.element(page.getByText('Choose a Country')).toBeInTheDocument();
+      await expect.element(
+        page.getByText('Select the country for the language you want to add.'),
+      ).toBeInTheDocument();
     });
 
-    it('renders the country autocomplete label', () => {
-      render(<SelectCountry {...defaultProps} />);
+    it('renders the country autocomplete label', async () => {
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      expect(screen.getByText('language.create.countryLabel')).toBeInTheDocument();
+      await expect.element(page.getByText('Country')).toBeInTheDocument();
     });
 
-    it('renders the helper tip', () => {
-      render(<SelectCountry {...defaultProps} />);
+    it('renders the helper tip', async () => {
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      expect(screen.getByText('language.create.country.helperText')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'Country name will be used to derive a BCP 47 compliant locale code for the language.',
+        ),
+      ).toBeInTheDocument();
     });
 
-    it('renders the autocomplete combobox', () => {
-      render(<SelectCountry {...defaultProps} />);
+    it('renders the autocomplete combobox', async () => {
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
   describe('Options', () => {
     it('shows all country options when the dropdown is opened', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      render(<SelectCountry {...defaultProps} />);
+      await userEvent.click(page.getByRole('combobox'));
 
-      await user.click(screen.getByRole('combobox'));
-
-      expect(screen.getByText('France')).toBeInTheDocument();
-      expect(screen.getByText('Germany')).toBeInTheDocument();
-      expect(screen.getByText('Japan')).toBeInTheDocument();
+      await expect.element(page.getByText('France')).toBeInTheDocument();
+      await expect.element(page.getByText('Germany')).toBeInTheDocument();
+      await expect.element(page.getByText('Japan')).toBeInTheDocument();
     });
 
     it('shows the region code chip for each option', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      render(<SelectCountry {...defaultProps} />);
+      await userEvent.click(page.getByRole('combobox'));
 
-      await user.click(screen.getByRole('combobox'));
-
-      expect(screen.getByText('FR')).toBeInTheDocument();
-      expect(screen.getByText('DE')).toBeInTheDocument();
+      await expect.element(page.getByText('FR')).toBeInTheDocument();
+      await expect.element(page.getByText('DE')).toBeInTheDocument();
     });
 
     it('filters options by country name', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      render(<SelectCountry {...defaultProps} />);
+      await userEvent.type(page.getByRole('combobox'), 'Ger');
 
-      await user.type(screen.getByRole('combobox'), 'Ger');
-
-      expect(screen.getByText('Germany')).toBeInTheDocument();
-      expect(screen.queryByText('France')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Germany')).toBeInTheDocument();
+      await expect.element(page.getByText('France')).not.toBeInTheDocument();
     });
 
     it('filters options by region code', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<SelectCountry {...defaultProps} />);
 
-      render(<SelectCountry {...defaultProps} />);
+      await userEvent.type(page.getByRole('combobox'), 'JP');
 
-      await user.type(screen.getByRole('combobox'), 'JP');
-
-      expect(screen.getByText('Japan')).toBeInTheDocument();
-      expect(screen.queryByText('France')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Japan')).toBeInTheDocument();
+      await expect.element(page.getByText('France')).not.toBeInTheDocument();
     });
   });
 
   describe('onReadyChange', () => {
-    it('calls onReadyChange(false) on mount when no country is selected', () => {
+    it('calls onReadyChange(false) on mount when no country is selected', async () => {
       const onReadyChange = vi.fn();
 
-      render(<SelectCountry {...defaultProps} onReadyChange={onReadyChange} selectedCountry={null} />);
+      await renderWithProviders(<SelectCountry {...defaultProps} onReadyChange={onReadyChange} selectedCountry={null} />);
 
       expect(onReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('calls onReadyChange(true) on mount when a country is already selected', () => {
+    it('calls onReadyChange(true) on mount when a country is already selected', async () => {
       const onReadyChange = vi.fn();
 
-      render(
+      await renderWithProviders(
         <SelectCountry {...defaultProps} onReadyChange={onReadyChange} selectedCountry={mockCountries[0]} />,
       );
 
@@ -147,21 +136,19 @@ describe('SelectCountry', () => {
   describe('Interaction', () => {
     it('calls onCountryChange with the selected country when an option is clicked', async () => {
       const onCountryChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(<SelectCountry {...defaultProps} onCountryChange={onCountryChange} />);
+      await renderWithProviders(<SelectCountry {...defaultProps} onCountryChange={onCountryChange} />);
 
-      await user.click(screen.getByRole('combobox'));
-      await user.click(screen.getByText('France'));
+      await userEvent.click(page.getByRole('combobox'));
+      await userEvent.click(page.getByText('France'));
 
       expect(onCountryChange).toHaveBeenCalledWith(mockCountries[0]);
     });
 
     it('calls onCountryChange(null) when the selection is cleared', async () => {
       const onCountryChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(
+      await renderWithProviders(
         <SelectCountry
           {...defaultProps}
           selectedCountry={mockCountries[0]}
@@ -169,7 +156,7 @@ describe('SelectCountry', () => {
         />,
       );
 
-      await user.clear(screen.getByRole('combobox'));
+      await userEvent.clear(page.getByRole('combobox'));
 
       expect(onCountryChange).toHaveBeenCalledWith(null);
     });

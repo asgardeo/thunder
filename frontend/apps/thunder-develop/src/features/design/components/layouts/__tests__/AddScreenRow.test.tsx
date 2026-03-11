@@ -17,70 +17,61 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import AddScreenRow from '../AddScreenRow';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const baseScreens = ['auth', 'login'];
 
 describe('AddScreenRow', () => {
   describe('Initial state', () => {
-    it('renders the "Add screen" trigger button', () => {
+    it('renders the "Add screen" trigger button', async () => {
       render(<AddScreenRow baseScreens={baseScreens} onAdd={vi.fn()} />);
       // The add trigger is visible (i18n key returned as-is)
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await expect.element(page.getByRole('button')).toBeInTheDocument();
     });
 
-    it('does not show the text field before activation', () => {
+    it('does not show the text field before activation', async () => {
       render(<AddScreenRow baseScreens={baseScreens} onAdd={vi.fn()} />);
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).not.toBeInTheDocument();
     });
   });
 
   describe('Expanded state', () => {
     it('shows the text input after clicking the add button', async () => {
-      const user = userEvent.setup();
       render(<AddScreenRow baseScreens={baseScreens} onAdd={vi.fn()} />);
 
-      await user.click(screen.getByRole('button'));
+      await userEvent.click(page.getByRole('button'));
 
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toBeInTheDocument();
     });
 
     it('shows a cancel button after expansion', async () => {
-      const user = userEvent.setup();
       render(<AddScreenRow baseScreens={baseScreens} onAdd={vi.fn()} />);
 
-      await user.click(screen.getByRole('button'));
+      await userEvent.click(page.getByRole('button'));
 
       // Expanded form should have at least 2 buttons (add + cancel)
-      expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
+      expect(page.getByRole('button').all().length).toBeGreaterThanOrEqual(2);
     });
   });
 
   describe('Adding a screen', () => {
     it('calls onAdd with the typed name and first baseScreen when confirmed', async () => {
       const onAdd = vi.fn();
-      const user = userEvent.setup();
       render(<AddScreenRow baseScreens={baseScreens} onAdd={onAdd} />);
 
-      await user.click(screen.getByRole('button'));
-      await user.type(screen.getByRole('textbox'), 'my-screen');
+      await userEvent.click(page.getByRole('button'));
+      await userEvent.type(page.getByRole('textbox'), 'my-screen');
 
       // Click the confirm/add button (find by looking for non-cancel buttons)
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       // The add/confirm button triggers onAdd — find the first non-cancel button
-      const confirmBtn = buttons.find((btn) => btn.textContent && !btn.textContent.includes('cancel'));
+      const confirmBtn = buttons.find(async (btn) => {
+        const text = (await btn.element()).textContent ?? '';
+        return !text.includes('cancel');
+      });
       if (confirmBtn) {
-        await user.click(confirmBtn);
+        await userEvent.click(confirmBtn);
       }
 
       expect(onAdd).toHaveBeenCalledWith('my-screen', baseScreens[0]);
@@ -88,22 +79,20 @@ describe('AddScreenRow', () => {
 
     it('calls onAdd on Enter key press', async () => {
       const onAdd = vi.fn();
-      const user = userEvent.setup();
       render(<AddScreenRow baseScreens={baseScreens} onAdd={onAdd} />);
 
-      await user.click(screen.getByRole('button'));
-      await user.type(screen.getByRole('textbox'), 'custom-screen{Enter}');
+      await userEvent.click(page.getByRole('button'));
+      await userEvent.type(page.getByRole('textbox'), 'custom-screen{Enter}');
 
       expect(onAdd).toHaveBeenCalledWith('custom-screen', baseScreens[0]);
     });
 
     it('does NOT call onAdd when name is empty', async () => {
       const onAdd = vi.fn();
-      const user = userEvent.setup();
       render(<AddScreenRow baseScreens={baseScreens} onAdd={onAdd} />);
 
-      await user.click(screen.getByRole('button'));
-      await user.keyboard('{Enter}');
+      await userEvent.click(page.getByRole('button'));
+      await userEvent.keyboard('{Enter}');
 
       expect(onAdd).not.toHaveBeenCalled();
     });
@@ -111,13 +100,12 @@ describe('AddScreenRow', () => {
 
   describe('Cancellation', () => {
     it('hides the input after pressing Escape', async () => {
-      const user = userEvent.setup();
       render(<AddScreenRow baseScreens={baseScreens} onAdd={vi.fn()} />);
 
-      await user.click(screen.getByRole('button'));
-      await user.keyboard('{Escape}');
+      await userEvent.click(page.getByRole('button'));
+      await userEvent.keyboard('{Escape}');
 
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).not.toBeInTheDocument();
     });
   });
 });

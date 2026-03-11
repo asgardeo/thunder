@@ -17,19 +17,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
 import FormAdapter from '../FormAdapter';
 
 // Mock dependencies
 vi.mock('../FormAdapter.scss', () => ({}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 vi.mock('@/features/flows/plugins/PluginRegistry', () => ({
   default: {
@@ -72,147 +67,147 @@ describe('FormAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the form adapter with Badge', () => {
+    it('should render the form adapter with Badge', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<FormAdapter resource={resource} stepId="step-1" />);
+      const {container} = await render(<FormAdapter resource={resource} stepId="step-1" />);
 
       expect(container.querySelector('.form-adapter')).toBeInTheDocument();
     });
 
-    it('should render Badge with form label', () => {
+    it('should render Badge with form label', async () => {
       const resource = createMockElement();
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByText('flows:core.adapters.form.badgeLabel')).toBeInTheDocument();
+      await expect.element(page.getByText('Form')).toBeInTheDocument();
     });
 
-    it('should render Droppable component', () => {
+    it('should render Droppable component', async () => {
       const resource = createMockElement();
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('droppable')).toBeInTheDocument();
+      await expect.element(page.getByTestId('droppable')).toBeInTheDocument();
     });
   });
 
   describe('Placeholder Display', () => {
-    it('should show placeholder when no FIELD components exist', () => {
+    it('should show placeholder when no FIELD components exist', async () => {
       const resource = createMockElement({components: []});
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByText('flows:core.adapters.form.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByText('DROP FORM COMPONENTS HERE')).toBeInTheDocument();
     });
 
-    it('should show placeholder when components is undefined', () => {
+    it('should show placeholder when components is undefined', async () => {
       const resource = createMockElement({components: undefined});
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByText('flows:core.adapters.form.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByText('DROP FORM COMPONENTS HERE')).toBeInTheDocument();
     });
 
-    it('should show placeholder when only non-FIELD components exist', () => {
+    it('should show placeholder when only non-FIELD components exist', async () => {
       const components = [
         createMockElement({id: 'comp-1', category: ElementCategories.Action}),
         createMockElement({id: 'comp-2', category: ElementCategories.Display}),
       ];
       const resource = createMockElement({components});
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByText('flows:core.adapters.form.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByText('DROP FORM COMPONENTS HERE')).toBeInTheDocument();
     });
 
-    it('should not show placeholder when FIELD components exist', () => {
+    it('should not show placeholder when FIELD components exist', async () => {
       const components = [createMockElement({id: 'comp-1', category: ElementCategories.Field})];
       const resource = createMockElement({components});
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.queryByText('flows:core.adapters.form.placeholder')).not.toBeInTheDocument();
+      await expect.element(page.getByText('DROP FORM COMPONENTS HERE')).not.toBeInTheDocument();
     });
   });
 
   describe('Components Rendering', () => {
-    it('should render ReorderableFlowElement for each component', () => {
+    it('should render ReorderableFlowElement for each component', async () => {
       const components = [
         createMockElement({id: 'comp-1', category: ElementCategories.Field}),
         createMockElement({id: 'comp-2', category: ElementCategories.Field}),
       ];
       const resource = createMockElement({components});
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
-      expect(screen.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
     });
 
-    it('should pass availableElements to ReorderableFlowElement', () => {
+    it('should pass availableElements to ReorderableFlowElement', async () => {
       const components = [createMockElement({id: 'comp-1', category: ElementCategories.Field})];
       const resource = createMockElement({components});
       const availableElements = [createMockElement({id: 'available-1'})];
 
-      render(<FormAdapter resource={resource} stepId="step-1" availableElements={availableElements} />);
+      await render(<FormAdapter resource={resource} stepId="step-1" availableElements={availableElements} />);
 
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
     });
 
-    it('should pass onAddElementToForm callback', () => {
+    it('should pass onAddElementToForm callback', async () => {
       const components = [createMockElement({id: 'comp-1', category: ElementCategories.Field})];
       const resource = createMockElement({components});
       const onAddElementToForm = vi.fn();
 
-      render(<FormAdapter resource={resource} stepId="step-1" onAddElementToForm={onAddElementToForm} />);
+      await render(<FormAdapter resource={resource} stepId="step-1" onAddElementToForm={onAddElementToForm} />);
 
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
     });
   });
 
   describe('Droppable Configuration', () => {
-    it('should have unique droppable ID based on stepId', () => {
+    it('should have unique droppable ID based on stepId', async () => {
       const resource = createMockElement();
 
-      render(<FormAdapter resource={resource} stepId="step-123" />);
+      await render(<FormAdapter resource={resource} stepId="step-123" />);
 
-      const droppable = screen.getByTestId('droppable');
-      expect(droppable.getAttribute('data-droppable-id')).toContain('step-123');
+      const droppable = page.getByTestId('droppable');
+      expect(droppable.element().getAttribute('data-droppable-id')).toContain('step-123');
     });
   });
 
   describe('Default Props', () => {
-    it('should work with undefined availableElements', () => {
+    it('should work with undefined availableElements', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<FormAdapter resource={resource} stepId="step-1" />);
+      const {container} = await render(<FormAdapter resource={resource} stepId="step-1" />);
 
       expect(container.querySelector('.form-adapter')).toBeInTheDocument();
     });
 
-    it('should work with undefined onAddElementToForm', () => {
+    it('should work with undefined onAddElementToForm', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<FormAdapter resource={resource} stepId="step-1" />);
+      const {container} = await render(<FormAdapter resource={resource} stepId="step-1" />);
 
       expect(container.querySelector('.form-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Filtering', () => {
-    it('should filter components through PluginRegistry', () => {
+    it('should filter components through PluginRegistry', async () => {
       const components = [
         createMockElement({id: 'comp-1', category: ElementCategories.Field}),
         createMockElement({id: 'comp-2', category: ElementCategories.Field}),
       ];
       const resource = createMockElement({components});
 
-      render(<FormAdapter resource={resource} stepId="step-1" />);
+      await render(<FormAdapter resource={resource} stepId="step-1" />);
 
       // All components should render since our mock returns true
-      expect(screen.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
-      expect(screen.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('reorderable-element-comp-2')).toBeInTheDocument();
     });
   });
 });

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {ResourceTypes, type Resource} from '@/features/flows/models/resources';
 import ResourcePropertyFactory from '../ResourcePropertyFactory';
 
@@ -59,10 +60,10 @@ describe('ResourcePropertyFactory', () => {
     }) as Resource;
 
   describe('Element Resource Type', () => {
-    it('should render ElementPropertyFactory for Element resources', () => {
+    it('should render ElementPropertyFactory for Element resources', async () => {
       const resource = createMockResource(ResourceTypes.Element);
 
-      render(
+      await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="label"
@@ -71,13 +72,13 @@ describe('ResourcePropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('element-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('element-property-factory')).toBeInTheDocument();
     });
 
-    it('should pass props to ElementPropertyFactory', () => {
+    it('should pass props to ElementPropertyFactory', async () => {
       const resource = createMockResource(ResourceTypes.Element, {id: 'element-123'});
 
-      render(
+      await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="placeholder"
@@ -86,17 +87,17 @@ describe('ResourcePropertyFactory', () => {
         />,
       );
 
-      const factory = screen.getByTestId('element-property-factory');
-      expect(factory).toHaveAttribute('data-resource-id', 'element-123');
-      expect(factory).toHaveAttribute('data-property-key', 'placeholder');
+      const factory = page.getByTestId('element-property-factory');
+      await expect.element(factory).toHaveAttribute('data-resource-id', 'element-123');
+      await expect.element(factory).toHaveAttribute('data-property-key', 'placeholder');
     });
   });
 
   describe('Step Resource Type', () => {
-    it('should render StepPropertyFactory for Step resources', () => {
+    it('should render StepPropertyFactory for Step resources', async () => {
       const resource = createMockResource(ResourceTypes.Step);
 
-      render(
+      await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="name"
@@ -105,13 +106,13 @@ describe('ResourcePropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('step-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('step-property-factory')).toBeInTheDocument();
     });
 
-    it('should pass props to StepPropertyFactory', () => {
+    it('should pass props to StepPropertyFactory', async () => {
       const resource = createMockResource(ResourceTypes.Step, {id: 'step-456'});
 
-      render(
+      await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="description"
@@ -120,17 +121,17 @@ describe('ResourcePropertyFactory', () => {
         />,
       );
 
-      const factory = screen.getByTestId('step-property-factory');
-      expect(factory).toHaveAttribute('data-resource-id', 'step-456');
-      expect(factory).toHaveAttribute('data-property-key', 'description');
+      const factory = page.getByTestId('step-property-factory');
+      await expect.element(factory).toHaveAttribute('data-resource-id', 'step-456');
+      await expect.element(factory).toHaveAttribute('data-property-key', 'description');
     });
   });
 
   describe('Widget Resource Type', () => {
-    it('should render WidgetPropertyFactory for Widget resources', () => {
+    it('should render WidgetPropertyFactory for Widget resources', async () => {
       const resource = createMockResource(ResourceTypes.Widget);
 
-      render(
+      await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="title"
@@ -139,13 +140,13 @@ describe('ResourcePropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('widget-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('widget-property-factory')).toBeInTheDocument();
     });
 
-    it('should pass props to WidgetPropertyFactory', () => {
+    it('should pass props to WidgetPropertyFactory', async () => {
       const resource = createMockResource(ResourceTypes.Widget, {id: 'widget-789'});
 
-      render(
+      await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="config"
@@ -154,17 +155,17 @@ describe('ResourcePropertyFactory', () => {
         />,
       );
 
-      const factory = screen.getByTestId('widget-property-factory');
-      expect(factory).toHaveAttribute('data-resource-id', 'widget-789');
-      expect(factory).toHaveAttribute('data-property-key', 'config');
+      const factory = page.getByTestId('widget-property-factory');
+      await expect.element(factory).toHaveAttribute('data-resource-id', 'widget-789');
+      await expect.element(factory).toHaveAttribute('data-property-key', 'config');
     });
   });
 
   describe('Unknown Resource Type', () => {
-    it('should return null for unknown resource types', () => {
+    it('should return null for unknown resource types', async () => {
       const resource = createMockResource('UNKNOWN_TYPE');
 
-      const {container} = render(
+      const {container} = await render(
         <ResourcePropertyFactory
           resource={resource}
           propertyKey="label"

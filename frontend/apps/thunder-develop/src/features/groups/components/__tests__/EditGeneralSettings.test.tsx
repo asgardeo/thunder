@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen, waitFor, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders, getByDisplayValue} from '@thunder/test-utils/browser';
 import EditGeneralSettings from '../edit-group/general-settings/EditGeneralSettings';
 import type {Group} from '../../models/group';
 
@@ -58,51 +57,48 @@ describe('EditGeneralSettings', () => {
     });
   });
 
-  it('should render organization unit section', () => {
-    renderWithProviders(<EditGeneralSettings {...defaultProps} />);
+  it('should render organization unit section', async () => {
+    await renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(screen.getAllByText('Organization Unit').length).toBeGreaterThan(0);
-    expect(screen.getByDisplayValue('ou-123')).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Organization Unit'})).toBeInTheDocument();
+    await expect.element(getByDisplayValue('ou-123')).toBeInTheDocument();
   });
 
-  it('should render danger zone section', () => {
-    renderWithProviders(<EditGeneralSettings {...defaultProps} />);
+  it('should render danger zone section', async () => {
+    await renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
-    expect(screen.getByText('Delete this group')).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Danger Zone'})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Delete this group'})).toBeInTheDocument();
   });
 
   it('should call onDeleteClick when delete button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<EditGeneralSettings {...defaultProps} />);
+    await renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    await user.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
     expect(defaultProps.onDeleteClick).toHaveBeenCalled();
   });
 
-  it('should have read-only organization unit field', () => {
-    renderWithProviders(<EditGeneralSettings {...defaultProps} />);
+  it('should have read-only organization unit field', async () => {
+    await renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    const ouInput = screen.getByDisplayValue('ou-123');
-    expect(ouInput).toHaveAttribute('readonly');
+    await expect.element(getByDisplayValue('ou-123')).toHaveAttribute('readonly');
   });
 
-  it('should render copy button for organization unit ID', () => {
-    renderWithProviders(<EditGeneralSettings {...defaultProps} />);
+  it('should render copy button for organization unit ID', async () => {
+    await renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(
-      screen.getByLabelText('Copy organization unit ID'),
+    await expect.element(
+      page.getByLabelText('Copy organization unit ID'),
     ).toBeInTheDocument();
   });
 
   it('should copy organization unit ID to clipboard when copy button is clicked', async () => {
-    renderWithProviders(<EditGeneralSettings {...defaultProps} />);
+    await renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    const copyButton = screen.getByLabelText('Copy organization unit ID');
-    fireEvent.click(copyButton);
+    await userEvent.click(page.getByLabelText('Copy organization unit ID'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockWriteText).toHaveBeenCalledWith('ou-123');
     });
   });

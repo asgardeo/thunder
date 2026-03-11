@@ -18,7 +18,8 @@
 
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import CreateUserPage from '../CreateUserPage';
 import UserCreateProvider from '../../contexts/UserCreate/UserCreateProvider';
 import type {UserSchemaListResponse, ApiUserSchema, SchemaInterface} from '../../types/users';
@@ -270,7 +271,7 @@ const mockSchemaData: ApiUserSchema = {
  * Helper to render the wizard page wrapped in provider.
  */
 function renderPage() {
-  return render(
+  return renderWithProviders(
     <UserCreateProvider>
       <CreateUserPage />
     </UserCreateProvider>,
@@ -281,12 +282,11 @@ function renderPage() {
  * Helper to navigate from step 1 (User Type) to step 2 (User Details)
  * by selecting a schema and clicking Continue.
  */
-async function goToDetailsStep(user: ReturnType<typeof userEvent.setup>, schemaName = 'Employee') {
-  await user.click(screen.getByTestId(`select-schema-${schemaName}`));
-  await user.click(screen.getByRole('button', {name: /continue/i}));
-  await waitFor(() => {
-    expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
-  });
+async function goToDetailsStep(schemaName = 'Employee') {
+  await userEvent.click(page.getByTestId(`select-schema-${schemaName}`));
+  await userEvent.click(page.getByRole('button', {name: /continue/i}));
+  await expect.element(page.getByTestId('configure-user-details')).toBeInTheDocument();
+
 }
 
 describe('CreateUserPage', () => {
@@ -336,50 +336,48 @@ describe('CreateUserPage', () => {
   // Step 1: User Type
   // ============================================================================
 
-  it('renders the wizard with User Type step initially', () => {
-    renderPage();
+  it('renders the wizard with User Type step initially', async () => {
+    await renderPage();
 
-    expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
   });
 
-  it('shows progress bar', () => {
-    renderPage();
+  it('shows progress bar', async () => {
+    await renderPage();
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('shows breadcrumb navigation', () => {
-    renderPage();
+  it('shows breadcrumb navigation', async () => {
+    await renderPage();
 
-    expect(screen.getByLabelText('breadcrumb')).toBeInTheDocument();
+    await expect.element(page.getByLabelText('breadcrumb')).toBeInTheDocument();
   });
 
-  it('disables Continue button when no schema is selected', () => {
-    renderPage();
+  it('disables Continue button when no schema is selected', async () => {
+    await renderPage();
 
-    const continueButton = screen.getByRole('button', {name: /continue/i});
-    expect(continueButton).toBeDisabled();
+    const continueButton = page.getByRole('button', {name: /continue/i});
+    await expect.element(continueButton).toBeDisabled();
   });
 
   it('enables Continue button when a schema is selected', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    await user.click(screen.getByTestId('select-schema-Employee'));
+    await userEvent.click(page.getByTestId('select-schema-Employee'));
 
-    const continueButton = screen.getByRole('button', {name: /continue/i});
-    expect(continueButton).not.toBeDisabled();
+    const continueButton = page.getByRole('button', {name: /continue/i});
+    await expect.element(continueButton).not.toBeDisabled();
   });
 
   it('closes wizard when X button is clicked', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    const closeButtons = screen.getAllByRole('button');
+    const closeButtons = page.getByRole('button').all();
     const closeButton = closeButtons[0];
-    await user.click(closeButton);
+    await userEvent.click(closeButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users');
     });
   });
@@ -397,12 +395,11 @@ describe('CreateUserPage', () => {
       reset: mockReset,
     });
 
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    const closeButtons = screen.getAllByRole('button');
+    const closeButtons = page.getByRole('button').all();
     const closeButton = closeButtons[0];
-    await user.click(closeButton);
+    await userEvent.click(closeButton);
 
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -412,12 +409,11 @@ describe('CreateUserPage', () => {
   // ============================================================================
 
   it('navigates to User Details step when Continue is clicked', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
+    await goToDetailsStep();
 
-    expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-details')).toBeInTheDocument();
   });
 
   it('shows loading state when schema is loading on step 2', async () => {
@@ -427,79 +423,70 @@ describe('CreateUserPage', () => {
       error: null,
     });
 
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
     // Select schema and navigate to step 2 manually (can't use goToDetailsStep
     // because it waits for configure-user-details which won't render during loading)
-    await user.click(screen.getByTestId('select-schema-Employee'));
-    await user.click(screen.getByRole('button', {name: /continue/i}));
+    await userEvent.click(page.getByTestId('select-schema-Employee'));
+    await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-    await waitFor(() => {
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Loading...')).toBeInTheDocument();
+
   });
 
   it('shows Back button on User Details step', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
+    await goToDetailsStep();
 
-    expect(screen.getByRole('button', {name: /back/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /back/i})).toBeInTheDocument();
   });
 
-  it('does not show Back button on User Type step', () => {
-    renderPage();
+  it('does not show Back button on User Type step', async () => {
+    await renderPage();
 
-    expect(screen.queryByRole('button', {name: /back/i})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /back/i})).not.toBeInTheDocument();
   });
 
   it('navigates back to User Type step when Back is clicked', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
+    await goToDetailsStep();
 
-    await user.click(screen.getByRole('button', {name: /back/i}));
+    await userEvent.click(page.getByRole('button', {name: /back/i}));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
+
   });
 
   it('navigates to a step via breadcrumb keyboard interaction', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
     // Go to step 2 so the breadcrumb for step 1 becomes clickable
-    await goToDetailsStep(user);
+    await goToDetailsStep();
 
     // The first breadcrumb item (User Type) should be navigable via keyboard
-    const breadcrumbStep = screen.getByRole('button', {name: /user type/i});
-    breadcrumbStep.focus();
-    await user.keyboard('{Enter}');
+    const breadcrumbStep = page.getByRole('button', {name: /user type/i});
+    breadcrumbStep.element().focus();
+    await userEvent.keyboard('{Enter}');
 
-    await waitFor(() => {
-      expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
+
   });
 
   it('preserves selected schema when navigating back and forward', async () => {
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
+    await goToDetailsStep();
 
     // Go back
-    await user.click(screen.getByRole('button', {name: /back/i}));
+    await userEvent.click(page.getByRole('button', {name: /back/i}));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
+
 
     // Schema should still be selected
-    expect(screen.getByTestId('selected-schema-name')).toHaveTextContent('Employee');
+    await expect.element(page.getByTestId('selected-schema-name')).toHaveTextContent('Employee');
   });
 
   // ============================================================================
@@ -507,21 +494,19 @@ describe('CreateUserPage', () => {
   // ============================================================================
 
   it('submits the form with correct data', async () => {
-    const user = userEvent.setup();
 
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
-    await user.click(screen.getByTestId('fill-form'));
+    await goToDetailsStep();
+    await userEvent.click(page.getByTestId('fill-form'));
 
     // Wait for step ready state to update before clicking submit
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
-    });
+    await expect.element(page.getByRole('button', {name: /create user/i})).not.toBeDisabled();
 
-    await user.click(screen.getByRole('button', {name: /create user/i}));
 
-    await waitFor(() => {
+    await userEvent.click(page.getByRole('button', {name: /create user/i}));
+
+    await vi.waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
         organizationUnit: 'root-ou',
         type: 'Employee',
@@ -529,27 +514,25 @@ describe('CreateUserPage', () => {
       });
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users');
     });
   });
 
   it('filters empty attribute values before submission', async () => {
-    const user = userEvent.setup();
 
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
+    await goToDetailsStep();
     // Use the button that emits empty/null/undefined values alongside valid ones
-    await user.click(screen.getByTestId('fill-form-with-empty-values'));
+    await userEvent.click(page.getByTestId('fill-form-with-empty-values'));
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
-    });
+    await expect.element(page.getByRole('button', {name: /create user/i})).not.toBeDisabled();
 
-    await user.click(screen.getByRole('button', {name: /create user/i}));
 
-    await waitFor(() => {
+    await userEvent.click(page.getByRole('button', {name: /create user/i}));
+
+    await vi.waitFor(() => {
       const calledWith = mockMutateAsync.mock.calls[0][0] as {attributes: Record<string, unknown>};
       // Verify empty/null/undefined values were filtered out
       expect(calledWith.attributes).toEqual({username: 'john_doe', age: 30});
@@ -559,7 +542,7 @@ describe('CreateUserPage', () => {
     });
   });
 
-  it('shows saving state on submit button during loading', () => {
+  it('shows saving state on submit button during loading', async () => {
     mockUseCreateUser.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: mockMutateAsync,
@@ -572,18 +555,18 @@ describe('CreateUserPage', () => {
       reset: mockReset,
     });
 
-    renderPage();
+    await renderPage();
 
     // On step 1 with isPending=true, the continue button should be disabled
-    const continueButton = screen.getByRole('button', {name: /continue/i});
-    expect(continueButton).toBeDisabled();
+    const continueButton = page.getByRole('button', {name: /continue/i});
+    await expect.element(continueButton).toBeDisabled();
   });
 
   // ============================================================================
   // Error Handling
   // ============================================================================
 
-  it('displays API error from create user', () => {
+  it('displays API error from create user', async () => {
     mockUseCreateUser.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: mockMutateAsync,
@@ -596,13 +579,12 @@ describe('CreateUserPage', () => {
       reset: mockReset,
     });
 
-    renderPage();
+    await renderPage();
 
-    expect(screen.getByText('Failed to create user')).toBeInTheDocument();
+    await expect.element(page.getByText('Failed to create user')).toBeInTheDocument();
   });
 
   it('closes snackbar when dismissed', async () => {
-    const user = userEvent.setup();
 
     mockUseGetUserSchemas.mockReturnValue({
       data: {
@@ -613,30 +595,28 @@ describe('CreateUserPage', () => {
       error: null,
     });
 
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
-    await user.click(screen.getByTestId('fill-form'));
+    await goToDetailsStep();
+    await userEvent.click(page.getByTestId('fill-form'));
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
-    });
+    await expect.element(page.getByRole('button', {name: /create user/i})).not.toBeDisabled();
+
 
     // Trigger validation error to open snackbar
-    await user.click(screen.getByRole('button', {name: /create user/i}));
+    await userEvent.click(page.getByRole('button', {name: /create user/i}));
 
-    await waitFor(() => {
-      expect(screen.getByText('Organization unit ID is missing for the selected user type.')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Organization unit ID is missing for the selected user type.')).toBeInTheDocument();
+
 
     // Close the snackbar
-    const snackbarCloseButton = screen.getAllByRole('button', {name: /close/i});
+    const snackbarCloseButtons = page.getByRole('button', {name: /close/i}).all();
     // The snackbar close button is the last close button rendered
-    await user.click(snackbarCloseButton[snackbarCloseButton.length - 1]);
+    await userEvent.click(snackbarCloseButtons[snackbarCloseButtons.length - 1]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(
-        screen.queryByText('Organization unit ID is missing for the selected user type.'),
+        page.getByText('Organization unit ID is missing for the selected user type.'),
       ).not.toBeInTheDocument();
     });
   });
@@ -648,21 +628,18 @@ describe('CreateUserPage', () => {
       error: null,
     });
 
-    const user = userEvent.setup();
-    renderPage();
+    await renderPage();
 
-    await user.click(screen.getByTestId('select-schema-Employee'));
-    await user.click(screen.getByRole('button', {name: /continue/i}));
+    await userEvent.click(page.getByTestId('select-schema-Employee'));
+    await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
     // Should not render the details form or loading
-    await waitFor(() => {
-      expect(screen.queryByTestId('configure-user-details')).not.toBeInTheDocument();
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
+          await expect.element(page.getByTestId('configure-user-details')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Loading...')).not.toBeInTheDocument();
+
   });
 
   it('shows validation error when schema has missing ouId', async () => {
-    const user = userEvent.setup();
 
     mockUseGetUserSchemas.mockReturnValue({
       data: {
@@ -673,54 +650,51 @@ describe('CreateUserPage', () => {
       error: null,
     });
 
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
-    await user.click(screen.getByTestId('fill-form'));
+    await goToDetailsStep();
+    await userEvent.click(page.getByTestId('fill-form'));
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
-    });
+    await expect.element(page.getByRole('button', {name: /create user/i})).not.toBeDisabled();
 
-    await user.click(screen.getByRole('button', {name: /create user/i}));
 
-    await waitFor(() => {
+    await userEvent.click(page.getByRole('button', {name: /create user/i}));
+
+    await vi.waitFor(() => {
       expect(
-        screen.getByText('Organization unit ID is missing for the selected user type.'),
+        page.getByText('Organization unit ID is missing for the selected user type.'),
       ).toBeInTheDocument();
     });
 
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('handles null schemas data gracefully', () => {
+  it('handles null schemas data gracefully', async () => {
     mockUseGetUserSchemas.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
     });
 
-    renderPage();
+    await renderPage();
 
-    expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
   });
 
   it('handles create user rejection gracefully', async () => {
-    const user = userEvent.setup();
     mockMutateAsync.mockRejectedValue(new Error('Network error'));
 
-    renderPage();
+    await renderPage();
 
-    await goToDetailsStep(user);
-    await user.click(screen.getByTestId('fill-form'));
+    await goToDetailsStep();
+    await userEvent.click(page.getByTestId('fill-form'));
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
-    });
+    await expect.element(page.getByRole('button', {name: /create user/i})).not.toBeDisabled();
 
-    await user.click(screen.getByRole('button', {name: /create user/i}));
 
-    await waitFor(() => {
+    await userEvent.click(page.getByRole('button', {name: /create user/i}));
+
+    await vi.waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();
     });
   });

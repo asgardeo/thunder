@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import OrganizationUnitTreePicker from '../OrganizationUnitTreePicker';
 import type {OrganizationUnit} from '../../models/organization-unit';
 import type {OrganizationUnitListResponse} from '../../models/responses';
@@ -76,19 +77,6 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   };
 });
 
-// Mock translations — stable t function to avoid useCallback churn
-const translations: Record<string, string> = {
-  'organizationUnits:treePicker.empty': 'No organization units available',
-  'organizationUnits:listing.treeView.noChildren': 'No child organization units',
-  'organizationUnits:listing.treeView.loadMore': 'Load more',
-  'common:status.loading': 'Loading...',
-};
-const stableT = (key: string): string => translations[key] ?? key;
-const stableTranslation = {t: stableT};
-vi.mock('react-i18next', () => ({
-  useTranslation: () => stableTranslation,
-}));
-
 describe('OrganizationUnitTreePicker', () => {
   const mockOUData: OrganizationUnitListResponse = {
     totalResults: 2,
@@ -118,27 +106,26 @@ describe('OrganizationUnitTreePicker', () => {
   });
 
   it('should render tree with organization unit names', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-      expect(screen.getByText('Engineering')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
+    // Use exact match to distinguish 'Engineering' (name) from 'engineering' (handle)
+    await expect.element(page.getByText('Engineering', {exact: true}).first()).toBeInTheDocument();
   });
 
-  it('should show loading spinner when data is loading', () => {
+  it('should show loading spinner when data is loading', async () => {
     mockUseGetOrganizationUnits.mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
     });
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should show empty message when no organization units', () => {
+  it('should show empty message when no organization units', async () => {
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {
         totalResults: 0,
@@ -150,26 +137,23 @@ describe('OrganizationUnitTreePicker', () => {
       error: null,
     });
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    expect(screen.getByText('No organization units available')).toBeInTheDocument();
+    await expect.element(page.getByText('No organization units available')).toBeInTheDocument();
   });
 
   it('should display handles for tree items', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('root')).toBeInTheDocument();
-      expect(screen.getByText('engineering')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('root')).toBeInTheDocument();
+    // Use first() to handle potential multiple matches with case-insensitive text
+    await expect.element(page.getByText('engineering', {exact: true}).first()).toBeInTheDocument();
   });
 
   it('should render avatars for tree items', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     const avatars = document.querySelectorAll('.MuiAvatar-root');
     expect(avatars.length).toBeGreaterThan(0);
@@ -177,69 +161,56 @@ describe('OrganizationUnitTreePicker', () => {
 
   it('should call onChange when a tree item is selected', async () => {
     const onChange = vi.fn();
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} onChange={onChange} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} onChange={onChange} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Root Organization'));
+    await userEvent.click(page.getByText('Root Organization'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onChange).toHaveBeenCalledWith('ou-1');
     });
   });
 
   it('should not call onChange when clicking a placeholder item', async () => {
     const onChange = vi.fn();
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} onChange={onChange} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} onChange={onChange} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     // Placeholder items are not directly clickable via text, so verify no unexpected calls
     expect(onChange).not.toHaveBeenCalled();
   });
 
   it('should pass id prop to tree view', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} id="test-picker" />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} id="test-picker" />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     expect(document.getElementById('test-picker')).toBeInTheDocument();
   });
 
   it('should display helper text when provided', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} helperText="Select a parent" />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} helperText="Select a parent" />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Select a parent')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Select a parent')).toBeInTheDocument();
   });
 
   it('should display helper text with error styling when error is true', async () => {
-    renderWithProviders(
+    await renderWithProviders(
       <OrganizationUnitTreePicker {...defaultProps} helperText="This field is required" error />,
     );
 
-    await waitFor(() => {
-      const helperText = screen.getByText('This field is required');
-      expect(helperText).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('This field is required')).toBeInTheDocument();
   });
 
   it('should not display helper text when not provided', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     // No helper text element should be present
-    expect(screen.queryByText('Select a parent')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Select a parent')).not.toBeInTheDocument();
   });
 
   it('should fetch and display child OUs when a node is expanded', async () => {
@@ -254,24 +225,20 @@ describe('OrganizationUnitTreePicker', () => {
 
     mockHttpRequest.mockResolvedValue({data: childOUResponse});
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     // Click the expand icon on the first tree item
     const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
     expect(expandIcons.length).toBeGreaterThan(0);
-    fireEvent.click(expandIcons[0]);
+    await userEvent.click(expandIcons[0] as HTMLElement);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
     });
 
-    await waitFor(() => {
-      expect(screen.getByText('Fetched Child')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Fetched Child')).toBeInTheDocument();
   });
 
   it('should show "no children" placeholder when expanded node has no children', async () => {
@@ -284,33 +251,27 @@ describe('OrganizationUnitTreePicker', () => {
 
     mockHttpRequest.mockResolvedValue({data: emptyChildResponse});
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
-    fireEvent.click(expandIcons[0]);
+    await userEvent.click(expandIcons[0] as HTMLElement);
 
-    await waitFor(() => {
-      expect(screen.getByText('No child organization units')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('No child organization units')).toBeInTheDocument();
   });
 
   it('should log error when fetching child OUs fails', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Network failure'));
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
-    fireEvent.click(expandIcons[0]);
+    await userEvent.click(expandIcons[0] as HTMLElement);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith(
         'Failed to load child organization units',
         expect.objectContaining({parentId: 'ou-1'}),
@@ -335,15 +296,10 @@ describe('OrganizationUnitTreePicker', () => {
       error: null,
     });
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
+    await expect.element(page.getByText('Load more')).toBeInTheDocument();
   });
 
   it('should fetch more root items when load more button is clicked', async () => {
@@ -375,15 +331,13 @@ describe('OrganizationUnitTreePicker', () => {
 
     mockHttpRequest.mockResolvedValue({data: nextPageResponse});
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Load more')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Load more'));
+    await userEvent.click(page.getByText('Load more'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
     });
   });
@@ -416,16 +370,15 @@ describe('OrganizationUnitTreePicker', () => {
       },
     });
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Load more')).toBeInTheDocument();
 
-    const loadMoreButton = screen.getByText('Load more').closest('[role="button"]')!;
-    fireEvent.keyDown(loadMoreButton, {key: 'Enter'});
+    // Focus the load more button for keyboard interaction
+await userEvent.click(page.getByText('Load more'));
+    await userEvent.keyboard('{Enter}');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
     });
   });
@@ -458,16 +411,15 @@ describe('OrganizationUnitTreePicker', () => {
       },
     });
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Load more')).toBeInTheDocument();
 
-    const loadMoreButton = screen.getByText('Load more').closest('[role="button"]')!;
-    fireEvent.keyDown(loadMoreButton, {key: ' '});
+    // Focus the load more button for keyboard interaction
+await userEvent.click(page.getByText('Load more'));
+    await userEvent.keyboard(' ');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
     });
   });
@@ -484,19 +436,15 @@ describe('OrganizationUnitTreePicker', () => {
 
     mockHttpRequest.mockResolvedValue({data: childOUResponse});
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
-    fireEvent.click(expandIcons[0]);
+    await userEvent.click(expandIcons[0] as HTMLElement);
 
-    await waitFor(() => {
-      expect(screen.getByText('Fetched Child')).toBeInTheDocument();
-      expect(screen.getByText('Load more')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Fetched Child')).toBeInTheDocument();
+    await expect.element(page.getByText('Load more')).toBeInTheDocument();
   });
 
   it('should log error when root load more fails', async () => {
@@ -518,15 +466,13 @@ describe('OrganizationUnitTreePicker', () => {
 
     mockHttpRequest.mockRejectedValue(new Error('Network failure'));
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Load more')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Load more')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Load more'));
+    await userEvent.click(page.getByText('Load more'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalled();
     });
   });
@@ -543,42 +489,36 @@ describe('OrganizationUnitTreePicker', () => {
 
     mockHttpRequest.mockResolvedValue({data: childOUResponse});
 
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     // First expansion - triggers fetch
     const expandIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
-    fireEvent.click(expandIcons[0]);
+    await userEvent.click(expandIcons[0] as HTMLElement);
 
-    await waitFor(() => {
-      expect(screen.getByText('Fetched Child')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Fetched Child')).toBeInTheDocument();
 
     const callCount = mockHttpRequest.mock.calls.length;
 
     // Collapse
     const collapseIcons = document.querySelectorAll('.MuiTreeItem-iconContainer');
-    fireEvent.click(collapseIcons[0]);
+    await userEvent.click(collapseIcons[0] as HTMLElement);
 
     // Expand again - should not trigger another fetch
     const expandIcons2 = document.querySelectorAll('.MuiTreeItem-iconContainer');
-    fireEvent.click(expandIcons2[0]);
+    await userEvent.click(expandIcons2[0] as HTMLElement);
 
     // Wait a bit and verify no additional HTTP calls
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(callCount);
     });
   });
 
   it('should highlight selected item', async () => {
-    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} value="ou-1" />);
+    await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} value="ou-1" />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization')).toBeInTheDocument();
 
     // The Mui-selected class should be applied to the selected item
     const selectedElements = document.querySelectorAll('.Mui-selected');
@@ -610,48 +550,44 @@ describe('OrganizationUnitTreePicker', () => {
       mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: false, error: null});
     });
 
-    it('should show loading spinner when root OU is loading', () => {
+    it('should show loading spinner when root OU is loading', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: undefined, isLoading: true, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should show loading spinner when root OU children are loading', () => {
+    it('should show loading spinner when root OU children are loading', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: true, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('should render root OU as top-level node with children', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Root OU')).toBeInTheDocument();
-        expect(screen.getByText('Child One')).toBeInTheDocument();
-        expect(screen.getByText('Child Two')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Root OU')).toBeInTheDocument();
+      await expect.element(page.getByText('Child One')).toBeInTheDocument();
+      await expect.element(page.getByText('Child Two')).toBeInTheDocument();
     });
 
     it('should auto-expand root OU node', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
       // Children should be visible immediately (root is auto-expanded)
-      await waitFor(() => {
-        expect(screen.getByText('Child One')).toBeInTheDocument();
-        expect(screen.getByText('Child Two')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Child One')).toBeInTheDocument();
+      await expect.element(page.getByText('Child Two')).toBeInTheDocument();
     });
 
     it('should allow selecting the root OU', async () => {
@@ -659,15 +595,13 @@ describe('OrganizationUnitTreePicker', () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" onChange={onChange} />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" onChange={onChange} />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Root OU')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Root OU')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText('Root OU'));
+      await userEvent.click(page.getByText('Root OU'));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(onChange).toHaveBeenCalledWith('root-ou-1');
       });
     });
@@ -677,15 +611,13 @@ describe('OrganizationUnitTreePicker', () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" onChange={onChange} />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" onChange={onChange} />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Child One')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Child One')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText('Child One'));
+      await userEvent.click(page.getByText('Child One'));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(onChange).toHaveBeenCalledWith('child-1');
       });
     });
@@ -698,12 +630,10 @@ describe('OrganizationUnitTreePicker', () => {
         error: null,
       });
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Root OU')).toBeInTheDocument();
-        expect(screen.getByText('No child organization units')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Root OU')).toBeInTheDocument();
+      await expect.element(page.getByText('No child organization units')).toBeInTheDocument();
     });
 
     it('should not show empty message for global mode when in rooted mode', async () => {
@@ -715,27 +645,23 @@ describe('OrganizationUnitTreePicker', () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Root OU')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Root OU')).toBeInTheDocument();
 
       // The global empty message should NOT appear
-      expect(screen.queryByText('No organization units available')).not.toBeInTheDocument();
+      await expect.element(page.getByText('No organization units available')).not.toBeInTheDocument();
     });
 
     it('should display handles for root and child items in rooted mode', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      await waitFor(() => {
-        expect(screen.getByText('root-handle')).toBeInTheDocument();
-        expect(screen.getByText('child-1-handle')).toBeInTheDocument();
-        expect(screen.getByText('child-2-handle')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('root-handle')).toBeInTheDocument();
+      await expect.element(page.getByText('child-1-handle')).toBeInTheDocument();
+      await expect.element(page.getByText('child-2-handle')).toBeInTheDocument();
     });
 
     it('should show load more for children when there are more than returned', async () => {
@@ -752,26 +678,22 @@ describe('OrganizationUnitTreePicker', () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: paginatedChildrenResponse, isLoading: false, error: null});
 
-      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+      await renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Child One')).toBeInTheDocument();
-        expect(screen.getByText('Load more')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Child One')).toBeInTheDocument();
+      await expect.element(page.getByText('Load more')).toBeInTheDocument();
     });
 
     it('should render correctly with custom maxHeight prop', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(
+      await renderWithProviders(
         <OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" maxHeight={500} />,
       );
 
-      await waitFor(() => {
-        expect(screen.getByText('Root OU')).toBeInTheDocument();
-        expect(screen.getByText('Child One')).toBeInTheDocument();
-      });
+      await expect.element(page.getByText('Root OU')).toBeInTheDocument();
+      await expect.element(page.getByText('Child One')).toBeInTheDocument();
     });
   });
 });

@@ -17,22 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import ThemeDeleteDialog from '../ThemeDeleteDialog';
 
 const mockMutate = vi.fn();
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({
-      t: (key: string, opts?: string | Record<string, unknown>) =>
-        typeof opts === 'object' && opts !== null && 'name' in opts ? String(opts.name) : key,
-    }),
-  };
-});
 
 vi.mock('@thunder/shared-design', () => ({
   useDeleteTheme: vi.fn(() => ({
@@ -47,53 +35,51 @@ describe('ThemeDeleteDialog', () => {
   });
 
   describe('Rendering', () => {
-    it('renders Dialog when open is true', () => {
+    it('renders Dialog when open is true', async () => {
       render(<ThemeDeleteDialog themeName="Ocean Blue" open themeId="theme-1" onClose={vi.fn()} />);
       // Dialog is open — some content is visible
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('does not render dialog content when open is false', () => {
+    it('does not render dialog content when open is false', async () => {
       render(<ThemeDeleteDialog themeName="Ocean Blue" open={false} themeId="theme-1" onClose={vi.fn()} />);
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('renders the theme name in the dialog', () => {
+    it('renders the theme name in the dialog', async () => {
       render(<ThemeDeleteDialog themeName="Ocean Blue" open themeId="theme-1" onClose={vi.fn()} />);
-      expect(screen.getByText(/Ocean Blue/)).toBeInTheDocument();
+      await expect.element(page.getByText(/Ocean Blue/)).toBeInTheDocument();
     });
 
-    it('renders without crashing when themeName is undefined', () => {
+    it('renders without crashing when themeName is undefined', async () => {
       render(<ThemeDeleteDialog themeName={null} open themeId="theme-1" onClose={vi.fn()} />);
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('renders a delete button', () => {
+    it('renders a delete button', async () => {
       render(<ThemeDeleteDialog open themeId="theme-1" themeName="Test" onClose={vi.fn()} />);
       // Should contain a destructive/delete action button (label comes from i18n key)
-      expect(screen.getAllByRole('button').length).toBeGreaterThan(0);
+      expect(page.getByRole('button').all().length).toBeGreaterThan(0);
     });
   });
 
   describe('Cancel behaviour', () => {
     it('calls onClose when the cancel button is clicked', async () => {
       const onClose = vi.fn();
-      const user = userEvent.setup();
       render(<ThemeDeleteDialog open themeId="theme-1" themeName="My Theme" onClose={onClose} />);
 
       // Find cancel button by its translation key text
-      const cancelBtn = screen.getByText('common:actions.cancel');
-      await user.click(cancelBtn);
+      const cancelBtn = page.getByText('common:actions.cancel');
+      await userEvent.click(cancelBtn);
 
       expect(onClose).toHaveBeenCalledOnce();
     });
 
     it('does not call mutate when cancel is clicked', async () => {
-      const user = userEvent.setup();
       render(<ThemeDeleteDialog open themeId="theme-1" themeName="My Theme" onClose={vi.fn()} />);
 
-      const cancelBtn = screen.getByText('common:actions.cancel');
-      await user.click(cancelBtn);
+      const cancelBtn = page.getByText('common:actions.cancel');
+      await userEvent.click(cancelBtn);
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
@@ -101,21 +87,20 @@ describe('ThemeDeleteDialog', () => {
 
   describe('Delete behaviour', () => {
     it('calls mutate with the themeId when delete is confirmed', async () => {
-      const user = userEvent.setup();
       render(<ThemeDeleteDialog open themeId="theme-abc" themeName="My Theme" onClose={vi.fn()} />);
 
-      const deleteBtn = screen.getByText('common:actions.delete');
-      await user.click(deleteBtn);
+      const deleteBtn = page.getByText('common:actions.delete');
+      await userEvent.click(deleteBtn);
 
       expect(mockMutate).toHaveBeenCalledWith('theme-abc', expect.any(Object));
     });
 
-    it('does not call mutate when themeId is undefined', () => {
+    it('does not call mutate when themeId is undefined', async () => {
       render(<ThemeDeleteDialog themeId={null} themeName="My Theme" open onClose={vi.fn()} />);
 
       // When themeId is null the delete button is disabled, preventing any click
-      const deleteBtn = screen.getByRole('button', {name: 'common:actions.delete'});
-      expect(deleteBtn).toBeDisabled();
+      const deleteBtn = page.getByRole('button', {name: 'common:actions.delete'});
+      await expect.element(deleteBtn).toBeDisabled();
       expect(mockMutate).not.toHaveBeenCalled();
     });
   });
@@ -130,8 +115,14 @@ describe('ThemeDeleteDialog', () => {
 
       render(<ThemeDeleteDialog open themeId="theme-1" themeName="Test" onClose={vi.fn()} />);
 
-      const buttons = screen.getAllByRole('button');
-      const disabledButtons = buttons.filter((btn) => btn.hasAttribute('disabled'));
+      const buttons = page.getByRole('button').all();
+      const disabledButtons: typeof buttons = [];
+      for (const btn of buttons) {
+        const el = await btn.element();
+        if (el.hasAttribute('disabled')) {
+          disabledButtons.push(btn);
+        }
+      }
       expect(disabledButtons.length).toBeGreaterThan(0);
     });
   });
@@ -146,13 +137,12 @@ describe('ThemeDeleteDialog', () => {
         callbacks?.onSuccess?.();
       });
 
-      const user = userEvent.setup();
       render(<ThemeDeleteDialog open themeId="theme-1" themeName="My Theme" onClose={onClose} onSuccess={onSuccess} />);
 
-      const deleteBtn = screen.getByText('common:actions.delete');
-      await user.click(deleteBtn);
+      const deleteBtn = page.getByText('common:actions.delete');
+      await userEvent.click(deleteBtn);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(onSuccess).toHaveBeenCalledOnce();
         expect(onClose).toHaveBeenCalledOnce();
       });

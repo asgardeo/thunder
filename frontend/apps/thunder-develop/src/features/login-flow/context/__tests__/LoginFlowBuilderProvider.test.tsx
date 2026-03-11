@@ -19,7 +19,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unsafe-member-access */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import LoginFlowBuilderProvider from '../LoginFlowBuilderProvider';
 import {PreviewScreenType} from '../../../flows/models/custom-text-preference';
 
@@ -51,53 +52,53 @@ vi.mock('../../components/resources/elements/ElementFactory', () => ({
 
 describe('LoginFlowBuilderProvider', () => {
   describe('Component Structure', () => {
-    it('should render FlowBuilderCoreProvider', () => {
-      render(
+    it('should render FlowBuilderCoreProvider', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div data-testid="child">Child Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      expect(screen.getByTestId('flow-builder-core-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flow-builder-core-provider')).toBeInTheDocument();
     });
 
-    it('should render FlowContextWrapper inside FlowBuilderCoreProvider', () => {
-      render(
+    it('should render FlowContextWrapper inside FlowBuilderCoreProvider', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div data-testid="child">Child Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      const coreProvider = screen.getByTestId('flow-builder-core-provider');
-      const contextWrapper = screen.getByTestId('flow-context-wrapper');
+      const coreProvider = page.getByTestId('flow-builder-core-provider');
+      const contextWrapper = page.getByTestId('flow-context-wrapper');
 
-      expect(coreProvider).toContainElement(contextWrapper);
+      expect(coreProvider.element()).toContainElement(contextWrapper.element());
     });
 
-    it('should render children inside FlowContextWrapper', () => {
-      render(
+    it('should render children inside FlowContextWrapper', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div data-testid="child">Child Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      const contextWrapper = screen.getByTestId('flow-context-wrapper');
-      const child = screen.getByTestId('child');
+      const contextWrapper = page.getByTestId('flow-context-wrapper');
+      const child = page.getByTestId('child');
 
-      expect(contextWrapper).toContainElement(child);
+      expect(contextWrapper.element()).toContainElement(child.element());
     });
   });
 
   describe('Screen Types Configuration', () => {
-    it('should pass correct screen types to FlowBuilderCoreProvider', () => {
-      render(
+    it('should pass correct screen types to FlowBuilderCoreProvider', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div>Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      const coreProvider = screen.getByTestId('flow-builder-core-provider');
-      const screenTypes = JSON.parse(coreProvider.getAttribute('data-screen-types') || '[]');
+      const coreProvider = page.getByTestId('flow-builder-core-provider');
+      const screenTypes = JSON.parse(coreProvider.element().getAttribute('data-screen-types') || '[]');
 
       expect(screenTypes).toContain(PreviewScreenType.SIGN_UP);
       expect(screenTypes).toContain(PreviewScreenType.COMMON);
@@ -106,54 +107,54 @@ describe('LoginFlowBuilderProvider', () => {
       expect(screenTypes).toContain(PreviewScreenType.EMAIL_OTP);
     });
 
-    it('should have 5 screen types configured', () => {
-      render(
+    it('should have 5 screen types configured', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div>Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      const coreProvider = screen.getByTestId('flow-builder-core-provider');
-      const screenTypes = JSON.parse(coreProvider.getAttribute('data-screen-types') || '[]');
+      const coreProvider = page.getByTestId('flow-builder-core-provider');
+      const screenTypes = JSON.parse(coreProvider.element().getAttribute('data-screen-types') || '[]');
 
       expect(screenTypes).toHaveLength(5);
     });
 
-    it('should have SIGN_UP as the first screen type (primary)', () => {
-      render(
+    it('should have SIGN_UP as the first screen type (primary)', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div>Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      const coreProvider = screen.getByTestId('flow-builder-core-provider');
-      const screenTypes = JSON.parse(coreProvider.getAttribute('data-screen-types') || '[]');
+      const coreProvider = page.getByTestId('flow-builder-core-provider');
+      const screenTypes = JSON.parse(coreProvider.element().getAttribute('data-screen-types') || '[]');
 
       expect(screenTypes[0]).toBe(PreviewScreenType.SIGN_UP);
     });
   });
 
   describe('Children Rendering', () => {
-    it('should render children content', () => {
-      render(
+    it('should render children content', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div data-testid="child">Child Content</div>
         </LoginFlowBuilderProvider>,
       );
 
-      expect(screen.getByTestId('child')).toHaveTextContent('Child Content');
+      await expect.element(page.getByTestId('child')).toHaveTextContent('Child Content');
     });
 
-    it('should render multiple children', () => {
-      render(
+    it('should render multiple children', async () => {
+      await render(
         <LoginFlowBuilderProvider>
           <div data-testid="child-1">First Child</div>
           <div data-testid="child-2">Second Child</div>
         </LoginFlowBuilderProvider>,
       );
 
-      expect(screen.getByTestId('child-1')).toBeInTheDocument();
-      expect(screen.getByTestId('child-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-2')).toBeInTheDocument();
     });
   });
 });

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetLoginFlowBuilderActions from '../useGetLoginFlowBuilderActions';
 
 // Mock the core actions hook
@@ -37,45 +37,45 @@ vi.mock('../../data/actions.json', () => ({
 }));
 
 describe('useGetLoginFlowBuilderActions', () => {
-  it('should return combined actions from core and login-flow', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderActions());
+  it('should return combined actions from core and login-flow', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderActions());
 
     expect(result.current.data).toBeDefined();
     expect(Array.isArray(result.current.data)).toBe(true);
   });
 
-  it('should return loading state as false', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderActions());
+  it('should return loading state as false', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderActions());
 
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('should return error as null', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderActions());
+  it('should return error as null', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderActions());
 
     expect(result.current.error).toBeNull();
   });
 
-  it('should return isValidating as false', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderActions());
+  it('should return isValidating as false', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderActions());
 
     expect(result.current.isValidating).toBe(false);
   });
 
-  it('should return mutate function', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderActions());
+  it('should return mutate function', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderActions());
 
     expect(result.current.mutate).toBeDefined();
     expect(typeof result.current.mutate).toBe('function');
   });
 
-  it('should support generic type parameter', () => {
+  it('should support generic type parameter', async () => {
     interface CustomAction {
       id: string;
       customField: string;
     }
 
-    const {result} = renderHook(() => useGetLoginFlowBuilderActions<CustomAction[]>());
+    const {result} = await renderHook(() => useGetLoginFlowBuilderActions<CustomAction[]>());
 
     expect(result.current.data).toBeDefined();
   });

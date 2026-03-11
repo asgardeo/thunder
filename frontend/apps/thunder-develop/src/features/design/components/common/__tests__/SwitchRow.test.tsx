@@ -17,60 +17,56 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import SwitchRow from '../SwitchRow';
 
 describe('SwitchRow', () => {
   describe('Rendering', () => {
-    it('renders the label', () => {
+    it('renders the label', async () => {
       render(<SwitchRow label="Show Logo" value={false} onChange={vi.fn()} />);
-      expect(screen.getByText('Show Logo')).toBeInTheDocument();
+      await expect.element(page.getByText('Show Logo')).toBeInTheDocument();
     });
 
-    it('renders a switch input', () => {
+    it('renders a switch input', async () => {
       render(<SwitchRow label="Enable" value={false} onChange={vi.fn()} />);
-      expect(screen.getByRole('switch')).toBeInTheDocument();
+      await expect.element(page.getByRole('switch')).toBeInTheDocument();
     });
 
-    it('switch is checked when value is true', () => {
+    it('switch is checked when value is true', async () => {
       render(<SwitchRow label="Active" value onChange={vi.fn()} />);
-      expect(screen.getByRole('switch')).toBeChecked();
+      await expect.element(page.getByRole('switch')).toBeChecked();
     });
 
-    it('switch is unchecked when value is false', () => {
+    it('switch is unchecked when value is false', async () => {
       render(<SwitchRow label="Active" value={false} onChange={vi.fn()} />);
-      expect(screen.getByRole('switch')).not.toBeChecked();
+      await expect.element(page.getByRole('switch')).not.toBeChecked();
     });
   });
 
   describe('Interaction', () => {
     it('calls onChange with true when toggled on', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
       render(<SwitchRow label="Enabled" value={false} onChange={onChange} />);
 
-      await user.click(screen.getByRole('switch'));
+      await userEvent.click(page.getByRole('switch'));
 
       expect(onChange).toHaveBeenCalledWith(true);
     });
 
     it('calls onChange with false when toggled off', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
       render(<SwitchRow label="Enabled" value onChange={onChange} />);
 
-      await user.click(screen.getByRole('switch'));
+      await userEvent.click(page.getByRole('switch'));
 
       expect(onChange).toHaveBeenCalledWith(false);
     });
 
     it('calls onChange exactly once per click', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
       render(<SwitchRow label="Enabled" value={false} onChange={onChange} />);
 
-      await user.click(screen.getByRole('switch'));
+      await userEvent.click(page.getByRole('switch'));
 
       expect(onChange).toHaveBeenCalledOnce();
     });

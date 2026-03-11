@@ -17,8 +17,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import {MemoryRouter} from 'react-router';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
+
 import EditFlowsSettings from '../EditFlowsSettings';
 import type {Application} from '../../../../models/application';
 
@@ -54,100 +55,84 @@ describe('EditFlowsSettings', () => {
   });
 
   describe('Rendering', () => {
-    it('should render both flow sections', () => {
-      render(
-        <MemoryRouter>
+    it('should render both flow sections', async () => {
+      await render(
           <EditFlowsSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('auth-flow-section')).toBeInTheDocument();
-      expect(screen.getByTestId('registration-flow-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('auth-flow-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('registration-flow-section')).toBeInTheDocument();
     });
 
-    it('should pass application to child components', () => {
-      render(
-        <MemoryRouter>
+    it('should pass application to child components', async () => {
+      await render(
           <EditFlowsSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('auth-flow-section')).toHaveTextContent('App: app-123');
-      expect(screen.getByTestId('registration-flow-section')).toHaveTextContent('App: app-123');
+      await expect.element(page.getByTestId('auth-flow-section')).toHaveTextContent('App: app-123');
+      await expect.element(page.getByTestId('registration-flow-section')).toHaveTextContent('App: app-123');
     });
 
-    it('should pass editedApp to child components', () => {
+    it('should pass editedApp to child components', async () => {
       const editedApp = {
         auth_flow_id: 'edited-auth-flow',
         registration_flow_id: 'edited-reg-flow',
       };
 
-      render(
-        <MemoryRouter>
+      await render(
           <EditFlowsSettings application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('auth-flow-section')).toHaveTextContent('Edited Auth Flow: edited-auth-flow');
-      expect(screen.getByTestId('registration-flow-section')).toHaveTextContent('Edited Reg Flow: edited-reg-flow');
+      await expect.element(page.getByTestId('auth-flow-section')).toHaveTextContent('Edited Auth Flow: edited-auth-flow');
+      await expect.element(page.getByTestId('registration-flow-section')).toHaveTextContent('Edited Reg Flow: edited-reg-flow');
     });
 
-    it('should pass empty editedApp to child components', () => {
-      render(
-        <MemoryRouter>
+    it('should pass empty editedApp to child components', async () => {
+      await render(
           <EditFlowsSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('auth-flow-section')).toHaveTextContent('Edited Auth Flow: None');
-      expect(screen.getByTestId('registration-flow-section')).toHaveTextContent('Edited Reg Flow: None');
+      await expect.element(page.getByTestId('auth-flow-section')).toHaveTextContent('Edited Auth Flow: None');
+      await expect.element(page.getByTestId('registration-flow-section')).toHaveTextContent('Edited Reg Flow: None');
     });
   });
 
   describe('Props Propagation', () => {
-    it('should pass onFieldChange to AuthenticationFlowSection', () => {
-      const {container} = render(
-        <MemoryRouter>
+    it('should pass onFieldChange to AuthenticationFlowSection', async () => {
+      const {container} = await render(
           <EditFlowsSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
       // Verify the component is rendered (which means props were passed correctly)
       expect(container.querySelector('[data-testid="auth-flow-section"]')).toBeInTheDocument();
     });
 
-    it('should pass onFieldChange to RegistrationFlowSection', () => {
-      const {container} = render(
-        <MemoryRouter>
+    it('should pass onFieldChange to RegistrationFlowSection', async () => {
+      const {container} = await render(
           <EditFlowsSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
       // Verify the component is rendered (which means props were passed correctly)
       expect(container.querySelector('[data-testid="registration-flow-section"]')).toBeInTheDocument();
     });
 
-    it('should pass all required props to both child components', () => {
+    it('should pass all required props to both child components', async () => {
       const editedApp = {auth_flow_id: 'new-flow'};
 
-      render(
-        <MemoryRouter>
+      await render(
           <EditFlowsSettings application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
       // Both components should be present and have received their props
-      expect(screen.getByTestId('auth-flow-section')).toBeInTheDocument();
-      expect(screen.getByTestId('registration-flow-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('auth-flow-section')).toBeInTheDocument();
+      await expect.element(page.getByTestId('registration-flow-section')).toBeInTheDocument();
     });
   });
 
   describe('Layout', () => {
-    it('should render sections in correct order', () => {
-      const {container} = render(
-        <MemoryRouter>
+    it('should render sections in correct order', async () => {
+      const {container} = await render(
           <EditFlowsSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
       const sections = container.querySelectorAll('[data-testid]');

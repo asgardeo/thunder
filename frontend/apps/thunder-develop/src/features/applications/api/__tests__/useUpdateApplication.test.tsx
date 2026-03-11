@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useUpdateApplication from '../useUpdateApplication';
 import type {Application} from '../../models/application';
 import type {CreateApplicationRequest} from '../../models/requests';
@@ -134,8 +134,8 @@ describe('useUpdateApplication', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useUpdateApplication());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useUpdateApplication());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -153,11 +153,11 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -173,11 +173,11 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -207,15 +207,15 @@ describe('useUpdateApplication', () => {
     );
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
+    await vi.waitFor(
       () => {
         expect(result.current.isSuccess).toBe(true);
       },
@@ -230,11 +230,11 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -248,11 +248,11 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -265,11 +265,11 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(validationError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -282,7 +282,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result, queryClient} = renderHook(() => useUpdateApplication());
+    const {result, queryClient} = await renderHook(() => useUpdateApplication());
 
     // Pre-populate cache with original application
     const originalApp = {...mockApplication, name: 'Original Name'};
@@ -297,7 +297,7 @@ describe('useUpdateApplication', () => {
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -320,7 +320,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result, queryClient} = renderHook(() => useUpdateApplication());
+    const {result, queryClient} = await renderHook(() => useUpdateApplication());
 
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
@@ -328,7 +328,7 @@ describe('useUpdateApplication', () => {
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
     // The mutation should still succeed even if invalidateQueries fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -340,11 +340,11 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(notFoundError);
 
     const applicationId = 'non-existent-id';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -367,11 +367,11 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: partialUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -390,7 +390,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockResolvedValueOnce({data: app1}).mockResolvedValueOnce({data: app2});
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     // First update
     result.current.mutate({
@@ -398,7 +398,7 @@ describe('useUpdateApplication', () => {
       data: {...mockUpdateRequest, name: 'Update 1'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -410,7 +410,7 @@ describe('useUpdateApplication', () => {
       data: {...mockUpdateRequest, name: 'Update 2'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.name).toBe('Update 2');
     });
 
@@ -423,7 +423,7 @@ describe('useUpdateApplication', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: app1}).mockResolvedValueOnce({data: app2});
 
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     // Update first application
     result.current.mutate({
@@ -431,7 +431,7 @@ describe('useUpdateApplication', () => {
       data: {...mockUpdateRequest, name: 'App 1 Updated'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -443,7 +443,7 @@ describe('useUpdateApplication', () => {
       data: {...mockUpdateRequest, name: 'App 2 Updated'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.id).toBe('app-2');
     });
 
@@ -470,11 +470,11 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: minimalUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -489,13 +489,13 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     const updatePromise = result.current.mutateAsync({applicationId, data: mockUpdateRequest});
 
     await expect(updatePromise).resolves.toEqual(mockApplication);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
   });
@@ -505,13 +505,13 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     const updatePromise = result.current.mutateAsync({applicationId, data: mockUpdateRequest});
 
     await expect(updatePromise).rejects.toEqual(apiError);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
   });
@@ -527,11 +527,11 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication());
+    const {result} = await renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

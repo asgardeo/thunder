@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {Resource} from '@/features/flows/models/resources';
 import {BlockTypes} from '@/features/flows/models/elements';
 import {ReorderableElement} from '../ReorderableElement';
@@ -193,39 +194,39 @@ describe('ReorderableElement', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the element with ElementFactory', () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should render the element with ElementFactory', async () => {
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      expect(screen.getByTestId('element-factory')).toBeInTheDocument();
-      expect(screen.getByText('Username Field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('element-factory')).toBeInTheDocument();
+      await expect.element(page.getByText('Username Field')).toBeInTheDocument();
     });
 
-    it('should render with custom className', () => {
-      const {container} = render(
+    it('should render with custom className', async () => {
+      const {container} = await render(
         <ReorderableElement id="sortable-1" index={0} element={mockElement} className="custom-class" />,
       );
 
       expect(container.querySelector('.custom-class')).toBeInTheDocument();
     });
 
-    it('should render DnD action handles', () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should render DnD action handles', async () => {
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      expect(screen.getByTestId('handle-drag')).toBeInTheDocument();
-      expect(screen.getByTestId('handle-edit')).toBeInTheDocument();
-      expect(screen.getByTestId('handle-delete')).toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-drag')).toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-edit')).toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-delete')).toBeInTheDocument();
     });
 
-    it('should wrap content in ValidationErrorBoundary', () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should wrap content in ValidationErrorBoundary', async () => {
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      expect(screen.getByTestId('validation-boundary')).toBeInTheDocument();
+      await expect.element(page.getByTestId('validation-boundary')).toBeInTheDocument();
     });
   });
 
   describe('Form Element Handling', () => {
-    it('should render Add Field button for Form elements', () => {
-      render(
+    it('should render Add Field button for Form elements', async () => {
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -234,11 +235,11 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      expect(screen.getByTestId('handle-add field')).toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-add field')).toBeInTheDocument();
     });
 
-    it('should not render Add Field button for non-Form elements', () => {
-      render(
+    it('should not render Add Field button for non-Form elements', async () => {
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -247,17 +248,17 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      expect(screen.queryByTestId('handle-add field')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-add field')).not.toBeInTheDocument();
     });
 
-    it('should not render Add Field button when no available elements', () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockFormElement} availableElements={[]} />);
+    it('should not render Add Field button when no available elements', async () => {
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockFormElement} availableElements={[]} />);
 
-      expect(screen.queryByTestId('handle-add field')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-add field')).not.toBeInTheDocument();
     });
 
-    it('should open menu when Add Field button is clicked', () => {
-      render(
+    it('should open menu when Add Field button is clicked', async () => {
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -266,16 +267,16 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      const addButton = screen.getByTestId('handle-add field');
-      fireEvent.click(addButton);
+      const addButton = page.getByTestId('handle-add field');
+      await userEvent.click(addButton);
 
       // Menu should open with available elements (filtered by allowed types)
-      expect(screen.getByText('Text Input')).toBeInTheDocument();
-      expect(screen.getByText('Password Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Text Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Password Input')).toBeInTheDocument();
     });
 
-    it('should filter out elements not in allowed types or hidden from resource panel', () => {
-      render(
+    it('should filter out elements not in allowed types or hidden from resource panel', async () => {
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -284,17 +285,17 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      const addButton = screen.getByTestId('handle-add field');
-      fireEvent.click(addButton);
+      const addButton = page.getByTestId('handle-add field');
+      await userEvent.click(addButton);
 
       // Hidden element should not appear
-      expect(screen.queryByText('Hidden')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Hidden')).not.toBeInTheDocument();
     });
 
-    it('should call onAddElementToForm when menu item is clicked', () => {
+    it('should call onAddElementToForm when menu item is clicked', async () => {
       const onAddElementToForm = vi.fn();
 
-      render(
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -304,11 +305,11 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      const addButton = screen.getByTestId('handle-add field');
-      fireEvent.click(addButton);
+      const addButton = page.getByTestId('handle-add field');
+      await userEvent.click(addButton);
 
-      const menuItem = screen.getByText('Text Input');
-      fireEvent.click(menuItem);
+      const menuItem = page.getByText('Text Input');
+      await userEvent.click(menuItem);
 
       expect(onAddElementToForm).toHaveBeenCalledWith(mockAvailableElements[0], 'form-1');
     });
@@ -316,7 +317,7 @@ describe('ReorderableElement', () => {
     it('should close menu after selecting an item', async () => {
       const onAddElementToForm = vi.fn();
 
-      render(
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -326,27 +327,27 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      const addButton = screen.getByTestId('handle-add field');
-      fireEvent.click(addButton);
+      const addButton = page.getByTestId('handle-add field');
+      await userEvent.click(addButton);
 
-      const menuItem = screen.getByText('Text Input');
-      fireEvent.click(menuItem);
+      const menuItem = page.getByText('Text Input');
+      await userEvent.click(menuItem);
 
       // Menu should close - Text Input should no longer be visible in menu
-      await waitFor(() => {
-        const menuItems = screen.queryAllByRole('menuitem');
+      await vi.waitFor(() => {
+        const menuItems = page.getByRole('menuitem').all();
         expect(menuItems.length).toBe(0);
       });
     });
   });
 
   describe('Property Panel Interaction', () => {
-    it('should open property panel on double click', () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should open property panel on double click', async () => {
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      const content = screen.getByTestId('element-factory').parentElement;
+      const content = page.getByTestId('element-factory').element().parentElement;
       if (content) {
-        fireEvent.click(content);
+        await userEvent.click(content);
       }
 
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
@@ -355,11 +356,11 @@ describe('ReorderableElement', () => {
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(mockElement);
     });
 
-    it('should open property panel on Edit button click', () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should open property panel on Edit button click', async () => {
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      const editButton = screen.getByTestId('handle-edit');
-      fireEvent.click(editButton);
+      const editButton = page.getByTestId('handle-edit');
+      await userEvent.click(editButton);
 
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
       expect(mockSetSelectedNotification).toHaveBeenCalledWith(null);
@@ -367,12 +368,12 @@ describe('ReorderableElement', () => {
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(mockElement);
     });
 
-    it('should open property panel on content double click', () => {
-      const {container} = render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should open property panel on content double click', async () => {
+      const {container} = await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
       const contentDiv = container.querySelector('.flow-builder-step-content-form-field-content');
       if (contentDiv) {
-        fireEvent.doubleClick(contentDiv);
+        await userEvent.dblClick(contentDiv);
       }
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(mockElement);
@@ -381,12 +382,12 @@ describe('ReorderableElement', () => {
 
   describe('Delete Element', () => {
     it('should delete element when Delete button is clicked', async () => {
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      const deleteButton = screen.getByTestId('handle-delete');
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByTestId('handle-delete');
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockExecuteAsync).toHaveBeenCalled();
         expect(mockDeleteComponent).toHaveBeenCalledWith('test-step-id', mockElement);
         expect(mockSetIsOpenResourcePropertiesPanel).toHaveBeenCalledWith(false);
@@ -397,12 +398,12 @@ describe('ReorderableElement', () => {
       const error = new Error('Delete failed');
       mockExecuteAsync.mockRejectedValueOnce(error);
 
-      render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+      await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      const deleteButton = screen.getByTestId('handle-delete');
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByTestId('handle-delete');
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockAddNotification).toHaveBeenCalled();
       });
     });
@@ -410,7 +411,7 @@ describe('ReorderableElement', () => {
 
   describe('Menu Handling', () => {
     it('should close menu when onClose is triggered', async () => {
-      render(
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -420,20 +421,20 @@ describe('ReorderableElement', () => {
       );
 
       // Open menu
-      const addButton = screen.getByTestId('handle-add field');
-      fireEvent.click(addButton);
+      const addButton = page.getByTestId('handle-add field');
+      await userEvent.click(addButton);
 
-      expect(screen.getByText('Text Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Text Input')).toBeInTheDocument();
 
       // Close menu by pressing Escape
-      fireEvent.keyDown(document.activeElement ?? document.body, {key: 'Escape'});
+      await userEvent.keyboard('{Escape}');
 
-      await waitFor(() => {
-        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('menu')).not.toBeInTheDocument();
       });
     });
 
-    it('should show "No fields available" when form compatible elements are empty', () => {
+    it('should show "No fields available" when form compatible elements are empty', async () => {
       const noCompatibleElements: Resource[] = [
         {
           id: 'incompatible',
@@ -444,7 +445,7 @@ describe('ReorderableElement', () => {
         } as Resource,
       ];
 
-      render(
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -454,29 +455,29 @@ describe('ReorderableElement', () => {
       );
 
       // Add button won't be visible because there are no compatible elements
-      expect(screen.queryByTestId('handle-add field')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-add field')).not.toBeInTheDocument();
     });
   });
 
   describe('Memoization', () => {
-    it('should maintain stable handler references across rerenders', () => {
-      const {rerender} = render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should maintain stable handler references across rerenders', async () => {
+      const {rerender} = await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
       // First render - click edit
-      const editButton = screen.getByTestId('handle-edit');
-      fireEvent.click(editButton);
+      const editButton = page.getByTestId('handle-edit');
+      await userEvent.click(editButton);
       expect(mockSetLastInteractedResource).toHaveBeenCalledTimes(1);
 
       // Rerender with same props
-      rerender(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+      await rerender(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
       // Click edit again
-      const editButton2 = screen.getByTestId('handle-edit');
-      fireEvent.click(editButton2);
+      const editButton2 = page.getByTestId('handle-edit');
+      await userEvent.click(editButton2);
       expect(mockSetLastInteractedResource).toHaveBeenCalledTimes(2);
     });
 
-    it('should not re-render when only availableElements change', () => {
+    it('should not re-render when only availableElements change', async () => {
       const newAvailableElements: Resource[] = [
         {
           id: 'new-input',
@@ -487,7 +488,7 @@ describe('ReorderableElement', () => {
         } as Resource,
       ];
 
-      const {rerender} = render(
+      const {rerender} = await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -497,7 +498,7 @@ describe('ReorderableElement', () => {
       );
 
       // Rerender with different availableElements but same element
-      rerender(
+      await rerender(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -507,10 +508,10 @@ describe('ReorderableElement', () => {
       );
 
       // Component should still render correctly
-      expect(screen.getByTestId('element-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('element-factory')).toBeInTheDocument();
     });
 
-    it('should re-render when element changes', () => {
+    it('should re-render when element changes', async () => {
       const newElement: Resource = {
         id: 'element-2',
         type: 'PASSWORD_INPUT',
@@ -519,46 +520,46 @@ describe('ReorderableElement', () => {
         display: {label: 'Password Field', image: '', showOnResourcePanel: true},
       } as Resource;
 
-      const {rerender} = render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+      const {rerender} = await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      expect(screen.getByText('Username Field')).toBeInTheDocument();
+      await expect.element(page.getByText('Username Field')).toBeInTheDocument();
 
-      rerender(<ReorderableElement id="sortable-1" index={0} element={newElement} />);
+      await rerender(<ReorderableElement id="sortable-1" index={0} element={newElement} />);
 
-      expect(screen.getByText('Password Field')).toBeInTheDocument();
+      await expect.element(page.getByText('Password Field')).toBeInTheDocument();
     });
 
-    it('should re-render when id changes', () => {
-      const {rerender} = render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should re-render when id changes', async () => {
+      const {rerender} = await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      rerender(<ReorderableElement id="sortable-2" index={0} element={mockElement} />);
+      await rerender(<ReorderableElement id="sortable-2" index={0} element={mockElement} />);
 
-      expect(screen.getByTestId('element-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('element-factory')).toBeInTheDocument();
     });
 
-    it('should re-render when index changes', () => {
-      const {rerender} = render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
+    it('should re-render when index changes', async () => {
+      const {rerender} = await render(<ReorderableElement id="sortable-1" index={0} element={mockElement} />);
 
-      rerender(<ReorderableElement id="sortable-1" index={5} element={mockElement} />);
+      await rerender(<ReorderableElement id="sortable-1" index={5} element={mockElement} />);
 
-      expect(screen.getByTestId('element-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('element-factory')).toBeInTheDocument();
     });
 
-    it('should re-render when className changes', () => {
-      const {rerender, container} = render(
+    it('should re-render when className changes', async () => {
+      const {rerender, container} = await render(
         <ReorderableElement id="sortable-1" index={0} element={mockElement} className="class-a" />,
       );
 
       expect(container.querySelector('.class-a')).toBeInTheDocument();
 
-      rerender(<ReorderableElement id="sortable-1" index={0} element={mockElement} className="class-b" />);
+      await rerender(<ReorderableElement id="sortable-1" index={0} element={mockElement} className="class-b" />);
 
       expect(container.querySelector('.class-b')).toBeInTheDocument();
     });
   });
 
   describe('Element Display', () => {
-    it('should use element type when display label is not available', () => {
+    it('should use element type when display label is not available', async () => {
       const elementWithoutLabel = {
         id: 'no-label',
         type: 'TEXT_INPUT',
@@ -566,13 +567,13 @@ describe('ReorderableElement', () => {
         resourceType: 'ELEMENT',
       } as Resource;
 
-      render(<ReorderableElement id="sortable-1" index={0} element={elementWithoutLabel} />);
+      await render(<ReorderableElement id="sortable-1" index={0} element={elementWithoutLabel} />);
 
-      expect(screen.getByText('TEXT_INPUT')).toBeInTheDocument();
+      await expect.element(page.getByText('TEXT_INPUT')).toBeInTheDocument();
     });
 
-    it('should render menu item with element display label', () => {
-      render(
+    it('should render menu item with element display label', async () => {
+      await render(
         <ReorderableElement
           id="sortable-1"
           index={0}
@@ -581,11 +582,11 @@ describe('ReorderableElement', () => {
         />,
       );
 
-      const addButton = screen.getByTestId('handle-add field');
-      fireEvent.click(addButton);
+      const addButton = page.getByTestId('handle-add field');
+      await userEvent.click(addButton);
 
-      expect(screen.getByText('Text Input')).toBeInTheDocument();
-      expect(screen.getByText('Password Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Text Input')).toBeInTheDocument();
+      await expect.element(page.getByText('Password Input')).toBeInTheDocument();
     });
   });
 });

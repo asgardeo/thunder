@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useDeleteFlow from '../useDeleteFlow';
@@ -54,8 +54,8 @@ describe('useDeleteFlow', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useDeleteFlow());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useDeleteFlow());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -66,11 +66,11 @@ describe('useDeleteFlow', () => {
   it('should successfully delete a flow', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -88,15 +88,15 @@ describe('useDeleteFlow', () => {
       }),
     );
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
 
@@ -107,11 +107,11 @@ describe('useDeleteFlow', () => {
     const apiError = new Error('Failed to delete flow');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -121,12 +121,12 @@ describe('useDeleteFlow', () => {
   it('should remove specific flow from cache on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result, queryClient} = renderHook(() => useDeleteFlow());
+    const {result, queryClient} = await renderHook(() => useDeleteFlow());
     const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
 
     result.current.mutate('flow-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -138,12 +138,12 @@ describe('useDeleteFlow', () => {
   it('should invalidate flows list query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result, queryClient} = renderHook(() => useDeleteFlow());
+    const {result, queryClient} = await renderHook(() => useDeleteFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     result.current.mutate('flow-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -155,7 +155,7 @@ describe('useDeleteFlow', () => {
   it('should support mutateAsync for promise-based workflows', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     const promise = result.current.mutateAsync('flow-123');
 
@@ -167,11 +167,11 @@ describe('useDeleteFlow', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123', {onSuccess});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
     });
   });
@@ -182,11 +182,11 @@ describe('useDeleteFlow', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123', {onError});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledWith(apiError, 'flow-123', undefined, expect.anything());
     });
   });
@@ -194,19 +194,17 @@ describe('useDeleteFlow', () => {
   it('should reset mutation state', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    result.current.reset();;
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isIdle).toBe(true);
     });
   });
@@ -220,11 +218,11 @@ describe('useDeleteFlow', () => {
 
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-456');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -238,17 +236,17 @@ describe('useDeleteFlow', () => {
   it('should handle multiple sequential deletions', async () => {
     mockHttpRequest.mockResolvedValue({});
 
-    const {result} = renderHook(() => useDeleteFlow());
+    const {result} = await renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-1');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
     result.current.mutate('flow-2');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(2);
     });
   });

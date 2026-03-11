@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import GroupDeleteDialog from '../GroupDeleteDialog';
 
 const mockMutate = vi.fn();
@@ -46,34 +45,32 @@ describe('GroupDeleteDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('should render dialog when open', () => {
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
+  it('should render dialog when open', async () => {
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
 
-    expect(screen.getByText('Delete Group')).toBeInTheDocument();
-    expect(screen.getByText('Are you sure you want to delete this group?')).toBeInTheDocument();
-    expect(screen.getByText('This action cannot be undone. All group associations will be permanently removed.')).toBeInTheDocument();
+    await expect.element(page.getByText('Delete Group')).toBeInTheDocument();
+    await expect.element(page.getByText('Are you sure you want to delete this group?')).toBeInTheDocument();
+    await expect.element(page.getByText('This action cannot be undone. All group associations will be permanently removed.')).toBeInTheDocument();
   });
 
-  it('should not render content when closed', () => {
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} open={false} />);
+  it('should not render content when closed', async () => {
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} open={false} />);
 
-    expect(screen.queryByText('Delete Group')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Delete Group')).not.toBeInTheDocument();
   });
 
   it('should call onClose when cancel is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
 
-    await user.click(screen.getByText('Cancel'));
+    await userEvent.click(page.getByText('Cancel'));
 
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
   it('should call mutate when confirm is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
 
-    await user.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
     expect(mockMutate).toHaveBeenCalledWith('g1', expect.objectContaining({onSuccess: expect.any(Function) as unknown, onError: expect.any(Function) as unknown}));
   });
@@ -83,10 +80,9 @@ describe('GroupDeleteDialog', () => {
       opts.onSuccess();
     });
 
-    const user = userEvent.setup();
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
 
-    await user.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
     expect(defaultProps.onClose).toHaveBeenCalled();
     expect(defaultProps.onSuccess).toHaveBeenCalled();
@@ -97,29 +93,24 @@ describe('GroupDeleteDialog', () => {
       opts.onError(new Error('Delete failed'));
     });
 
-    const user = userEvent.setup();
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
 
-    await user.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete failed')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Delete failed')).toBeInTheDocument();
   });
 
-  it('should not call mutate when groupId is null', () => {
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} groupId={null} />);
+  it('should not call mutate when groupId is null', async () => {
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} groupId={null} />);
 
     // Button should be disabled when groupId is null, preventing mutation
-    const deleteButton = screen.getByText('Delete').closest('button');
-    expect(deleteButton).toBeDisabled();
+    await expect.element(page.getByRole('button', {name: 'Delete'})).toBeDisabled();
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
-  it('should disable delete button when groupId is null', () => {
-    renderWithProviders(<GroupDeleteDialog {...defaultProps} groupId={null} />);
+  it('should disable delete button when groupId is null', async () => {
+    await renderWithProviders(<GroupDeleteDialog {...defaultProps} groupId={null} />);
 
-    const deleteButton = screen.getByText('Delete').closest('button');
-    expect(deleteButton).toBeDisabled();
+    await expect.element(page.getByRole('button', {name: 'Delete'})).toBeDisabled();
   });
 });

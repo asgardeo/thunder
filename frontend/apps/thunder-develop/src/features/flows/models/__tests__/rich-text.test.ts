@@ -22,19 +22,19 @@ import type {UpdateType} from '../rich-text';
 
 describe('rich-text', () => {
   describe('UPDATE_TYPES', () => {
-    it('should have INTERNAL type with value "internal"', () => {
+    it('should have INTERNAL type with value "internal"', async () => {
       expect(UPDATE_TYPES.INTERNAL).toBe('internal');
     });
 
-    it('should have EXTERNAL type with value "external"', () => {
+    it('should have EXTERNAL type with value "external"', async () => {
       expect(UPDATE_TYPES.EXTERNAL).toBe('external');
     });
 
-    it('should have NONE type with value "none"', () => {
+    it('should have NONE type with value "none"', async () => {
       expect(UPDATE_TYPES.NONE).toBe('none');
     });
 
-    it('should have exactly three update types', () => {
+    it('should have exactly three update types', async () => {
       const keys = Object.keys(UPDATE_TYPES);
       expect(keys).toHaveLength(3);
       expect(keys).toContain('INTERNAL');
@@ -42,7 +42,7 @@ describe('rich-text', () => {
       expect(keys).toContain('NONE');
     });
 
-    it('should be immutable (const assertion)', () => {
+    it('should be immutable (const assertion)', async () => {
       const updateType: UpdateType = UPDATE_TYPES.INTERNAL;
       expect(updateType).toBe('internal');
 

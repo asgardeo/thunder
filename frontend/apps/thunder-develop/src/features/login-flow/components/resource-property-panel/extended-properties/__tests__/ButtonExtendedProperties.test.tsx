@@ -17,16 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {Resource} from '@/features/flows/models/resources';
 import ButtonExtendedProperties from '../ButtonExtendedProperties';
-
-// Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 describe('ButtonExtendedProperties', () => {
   const mockOnChange = vi.fn();
@@ -45,60 +39,60 @@ describe('ButtonExtendedProperties', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the start icon label', () => {
+    it('should render the start icon label', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('flows:core.buttonExtendedProperties.startIcon.label')).toBeInTheDocument();
+      await expect.element(page.getByText('Start Icon')).toBeInTheDocument();
     });
 
-    it('should render the end icon label', () => {
+    it('should render the end icon label', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('flows:core.buttonExtendedProperties.endIcon.label')).toBeInTheDocument();
+      await expect.element(page.getByText('End Icon')).toBeInTheDocument();
     });
 
-    it('should render start icon input field', () => {
+    it('should render start icon input field', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
+      const startIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
       expect(startIconInput).toBeInTheDocument();
     });
 
-    it('should render end icon input field', () => {
+    it('should render end icon input field', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
+      const endIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
       expect(endIconInput).toBeInTheDocument();
     });
 
-    it('should render hint text for start icon', () => {
+    it('should render hint text for start icon', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('flows:core.buttonExtendedProperties.startIcon.hint')).toBeInTheDocument();
+      await expect.element(page.getByText('Optional icon displayed before the button label')).toBeInTheDocument();
     });
 
-    it('should render hint text for end icon', () => {
+    it('should render hint text for end icon', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('flows:core.buttonExtendedProperties.endIcon.hint')).toBeInTheDocument();
+      await expect.element(page.getByText('Optional icon displayed after the button label')).toBeInTheDocument();
     });
 
-    it('should render dividers', () => {
+    it('should render dividers', async () => {
       const resource = createMockResource();
 
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      const {container} = await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
       const dividers = container.querySelectorAll('.MuiDivider-root');
       expect(dividers.length).toBe(2);
@@ -106,121 +100,121 @@ describe('ButtonExtendedProperties', () => {
   });
 
   describe('Initial Values', () => {
-    it('should display existing startIcon value', () => {
+    it('should display existing startIcon value', async () => {
       const resource = createMockResource({
         startIcon: '/assets/icons/test-start.svg',
       } as Partial<Resource>);
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const startIconInput = screen.getByPlaceholderText<HTMLInputElement>(
-        'flows:core.buttonExtendedProperties.startIcon.placeholder',
+      const startIconInput = page.getByPlaceholder(
+        'Enter icon path (e.g., assets/images/icons/icon.svg)',
       );
-      expect(startIconInput.value).toBe('/assets/icons/test-start.svg');
+      expect((startIconInput.element() as HTMLInputElement).value).toBe('/assets/icons/test-start.svg');
     });
 
-    it('should display existing endIcon value', () => {
+    it('should display existing endIcon value', async () => {
       const resource = createMockResource({
         endIcon: '/assets/icons/test-end.svg',
       } as Partial<Resource>);
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const endIconInput = screen.getByPlaceholderText<HTMLInputElement>(
-        'flows:core.buttonExtendedProperties.endIcon.placeholder',
+      const endIconInput = page.getByPlaceholder(
+        'Enter icon path (e.g., assets/images/icons/icon.svg)',
       );
-      expect(endIconInput.value).toBe('/assets/icons/test-end.svg');
+      expect((endIconInput.element() as HTMLInputElement).value).toBe('/assets/icons/test-end.svg');
     });
 
-    it('should display empty value when startIcon is not set', () => {
+    it('should display empty value when startIcon is not set', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const startIconInput = screen.getByPlaceholderText<HTMLInputElement>(
-        'flows:core.buttonExtendedProperties.startIcon.placeholder',
+      const startIconInput = page.getByPlaceholder(
+        'Enter icon path (e.g., assets/images/icons/icon.svg)',
       );
-      expect(startIconInput.value).toBe('');
+      expect((startIconInput.element() as HTMLInputElement).value).toBe('');
     });
 
-    it('should display empty value when endIcon is not set', () => {
+    it('should display empty value when endIcon is not set', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const endIconInput = screen.getByPlaceholderText<HTMLInputElement>(
-        'flows:core.buttonExtendedProperties.endIcon.placeholder',
+      const endIconInput = page.getByPlaceholder(
+        'Enter icon path (e.g., assets/images/icons/icon.svg)',
       );
-      expect(endIconInput.value).toBe('');
+      expect((endIconInput.element() as HTMLInputElement).value).toBe('');
     });
   });
 
   describe('Change Handlers', () => {
-    it('should call onChange when start icon value changes', () => {
+    it('should call onChange when start icon value changes', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
-      fireEvent.change(startIconInput, {target: {value: '/new/icon/path.svg'}});
+      const startIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
+      await userEvent.fill(startIconInput, '/new/icon/path.svg');
 
       expect(mockOnChange).toHaveBeenCalledWith('startIcon', '/new/icon/path.svg', resource);
     });
 
-    it('should call onChange when end icon value changes', () => {
+    it('should call onChange when end icon value changes', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
-      fireEvent.change(endIconInput, {target: {value: '/new/end/icon.svg'}});
+      const endIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
+      await userEvent.fill(endIconInput, '/new/end/icon.svg');
 
       expect(mockOnChange).toHaveBeenCalledWith('endIcon', '/new/end/icon.svg', resource);
     });
 
-    it('should call onChange with empty string when clearing start icon', () => {
+    it('should call onChange with empty string when clearing start icon', async () => {
       const resource = createMockResource({
         startIcon: '/existing/icon.svg',
       } as Partial<Resource>);
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
-      fireEvent.change(startIconInput, {target: {value: ''}});
+      const startIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
+      await userEvent.fill(startIconInput, '');
 
       expect(mockOnChange).toHaveBeenCalledWith('startIcon', '', resource);
     });
 
-    it('should call onChange with empty string when clearing end icon', () => {
+    it('should call onChange with empty string when clearing end icon', async () => {
       const resource = createMockResource({
         endIcon: '/existing/icon.svg',
       } as Partial<Resource>);
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
-      fireEvent.change(endIconInput, {target: {value: ''}});
+      const endIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
+      await userEvent.fill(endIconInput, '');
 
       expect(mockOnChange).toHaveBeenCalledWith('endIcon', '', resource);
     });
   });
 
   describe('Input Attributes', () => {
-    it('should have correct id for start icon input', () => {
+    it('should have correct id for start icon input', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
+      const startIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
       expect(startIconInput).toHaveAttribute('id', 'start-icon-input');
     });
 
-    it('should have correct id for end icon input', () => {
+    it('should have correct id for end icon input', async () => {
       const resource = createMockResource();
 
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      await render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
+      const endIconInput = page.getByPlaceholder('Enter icon path (e.g., assets/images/icons/icon.svg)');
       expect(endIconInput).toHaveAttribute('id', 'end-icon-input');
     });
   });

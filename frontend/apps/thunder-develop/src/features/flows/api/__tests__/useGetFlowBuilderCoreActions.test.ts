@@ -17,14 +17,14 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetFlowBuilderCoreActions from '../useGetFlowBuilderCoreActions';
 import actions from '../../data/actions.json';
 
 describe('useGetFlowBuilderCoreActions', () => {
   describe('Return Structure', () => {
-    it('should return an object with data, error, isLoading, isValidating, and mutate', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return an object with data, error, isLoading, isValidating, and mutate', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(result.current).toHaveProperty('data');
       expect(result.current).toHaveProperty('error');
@@ -33,32 +33,32 @@ describe('useGetFlowBuilderCoreActions', () => {
       expect(result.current).toHaveProperty('mutate');
     });
 
-    it('should return actions data from JSON file', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return actions data from JSON file', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(result.current.data).toEqual(actions);
     });
 
-    it('should return error as null', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return error as null', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(result.current.error).toBeNull();
     });
 
-    it('should return isLoading as false', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return isLoading as false', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(result.current.isLoading).toBe(false);
     });
 
-    it('should return isValidating as false', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return isValidating as false', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(result.current.isValidating).toBe(false);
     });
 
-    it('should return mutate as a function that returns null', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return mutate as a function that returns null', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(typeof result.current.mutate).toBe('function');
       expect(result.current.mutate()).toBeNull();
@@ -66,19 +66,19 @@ describe('useGetFlowBuilderCoreActions', () => {
   });
 
   describe('Generic Type Support', () => {
-    it('should support custom generic type', () => {
+    it('should support custom generic type', async () => {
       interface CustomType {
         customField: string;
       }
 
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions<CustomType>());
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions<CustomType>());
 
       // The data is cast to the generic type
       expect(result.current.data).toBeDefined();
     });
 
-    it('should default to Actions type when no generic is provided', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should default to Actions type when no generic is provided', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       // Verify data matches expected Actions structure
       const {data} = result.current;
@@ -87,14 +87,14 @@ describe('useGetFlowBuilderCoreActions', () => {
   });
 
   describe('Data Content', () => {
-    it('should return actions data as an array', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return actions data as an array', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(Array.isArray(result.current.data)).toBe(true);
     });
 
-    it('should contain action items with expected structure', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should contain action items with expected structure', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       const {data} = result.current;
       if (data.length > 0) {
@@ -105,8 +105,8 @@ describe('useGetFlowBuilderCoreActions', () => {
       }
     });
 
-    it('should contain navigation category actions', () => {
-      const {result} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should contain navigation category actions', async () => {
+      const {result} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       const {data} = result.current;
       const navigationActions = data.filter((action) => action.category === 'NAVIGATION');
@@ -115,9 +115,9 @@ describe('useGetFlowBuilderCoreActions', () => {
   });
 
   describe('Consistency', () => {
-    it('should return the same data structure on multiple calls', () => {
-      const {result: result1} = renderHook(() => useGetFlowBuilderCoreActions());
-      const {result: result2} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should return the same data structure on multiple calls', async () => {
+      const {result: result1} = await renderHook(() => useGetFlowBuilderCoreActions());
+      const {result: result2} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       expect(result1.current.data).toEqual(result2.current.data);
       expect(result1.current.error).toEqual(result2.current.error);
@@ -125,11 +125,11 @@ describe('useGetFlowBuilderCoreActions', () => {
       expect(result1.current.isValidating).toEqual(result2.current.isValidating);
     });
 
-    it('should maintain stable reference for mutate function', () => {
-      const {result, rerender} = renderHook(() => useGetFlowBuilderCoreActions());
+    it('should maintain stable reference for mutate function', async () => {
+      const {result, rerender} = await renderHook(() => useGetFlowBuilderCoreActions());
 
       const initialMutate = result.current.mutate;
-      rerender();
+      await rerender();
 
       // Note: In the current implementation, mutate is recreated on each call
       expect(typeof result.current.mutate).toBe('function');

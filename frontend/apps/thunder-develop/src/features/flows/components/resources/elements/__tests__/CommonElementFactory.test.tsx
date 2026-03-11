@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import CommonElementFactory from '../CommonElementFactory';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '../../../../models/elements';
 
@@ -161,31 +162,31 @@ describe('CommonElementFactory', () => {
     }) as Element;
 
   describe('Form Block', () => {
-    it('should render FormAdapter for Form block with BLOCK category', () => {
+    it('should render FormAdapter for Form block with BLOCK category', async () => {
       const formElement = createMockElement({
         type: BlockTypes.Form,
         category: ElementCategories.Block,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={formElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={formElement} />);
 
-      expect(screen.getByTestId('form-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('form-adapter')).toHaveAttribute('data-step-id', 'step-1');
-      expect(screen.getByTestId('form-adapter')).toHaveAttribute('data-resource-id', 'element-1');
+      await expect.element(page.getByTestId('form-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('form-adapter')).toHaveAttribute('data-step-id', 'step-1');
+      await expect.element(page.getByTestId('form-adapter')).toHaveAttribute('data-resource-id', 'element-1');
     });
 
-    it('should render BlockAdapter for Form block with non-BLOCK category', () => {
+    it('should render BlockAdapter for Form block with non-BLOCK category', async () => {
       const actionBlock = createMockElement({
         type: BlockTypes.Form,
         category: ElementCategories.Action,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={actionBlock} />);
+      await render(<CommonElementFactory stepId="step-1" resource={actionBlock} />);
 
-      expect(screen.getByTestId('block-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('block-adapter')).toBeInTheDocument();
     });
 
-    it('should pass availableElements and onAddElementToForm to FormAdapter', () => {
+    it('should pass availableElements and onAddElementToForm to FormAdapter', async () => {
       const formElement = createMockElement({
         type: BlockTypes.Form,
         category: ElementCategories.Block,
@@ -194,7 +195,7 @@ describe('CommonElementFactory', () => {
       const availableElements = [createMockElement({id: 'available-1'})];
       const onAddElementToForm = vi.fn();
 
-      render(
+      await render(
         <CommonElementFactory
           stepId="step-1"
           resource={formElement}
@@ -203,208 +204,208 @@ describe('CommonElementFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('form-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('form-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Checkbox Element', () => {
-    it('should render CheckboxAdapter for Checkbox type', () => {
+    it('should render CheckboxAdapter for Checkbox type', async () => {
       const checkboxElement = createMockElement({
         type: ElementTypes.Checkbox,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={checkboxElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={checkboxElement} />);
 
-      expect(screen.getByTestId('checkbox-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('checkbox-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Phone Input Element', () => {
-    it('should render PhoneNumberInputAdapter for PhoneInput type', () => {
+    it('should render PhoneNumberInputAdapter for PhoneInput type', async () => {
       const phoneElement = createMockElement({
         type: ElementTypes.PhoneInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={phoneElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={phoneElement} />);
 
-      expect(screen.getByTestId('phone-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('phone-input-adapter')).toBeInTheDocument();
     });
   });
 
   describe('OTP Input Element', () => {
-    it('should render OTPInputAdapter for OtpInput type', () => {
+    it('should render OTPInputAdapter for OtpInput type', async () => {
       const otpElement = createMockElement({
         type: ElementTypes.OtpInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={otpElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={otpElement} />);
 
-      expect(screen.getByTestId('otp-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('otp-input-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Default Input Elements', () => {
-    it('should render DefaultInputAdapter for TextInput type', () => {
+    it('should render DefaultInputAdapter for TextInput type', async () => {
       const textInputElement = createMockElement({
         type: ElementTypes.TextInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={textInputElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={textInputElement} />);
 
-      expect(screen.getByTestId('default-input-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.TextInput);
+      await expect.element(page.getByTestId('default-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.TextInput);
     });
 
-    it('should render DefaultInputAdapter for PasswordInput type', () => {
+    it('should render DefaultInputAdapter for PasswordInput type', async () => {
       const passwordElement = createMockElement({
         type: ElementTypes.PasswordInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={passwordElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={passwordElement} />);
 
-      expect(screen.getByTestId('default-input-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.PasswordInput);
+      await expect.element(page.getByTestId('default-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.PasswordInput);
     });
 
-    it('should render DefaultInputAdapter for EmailInput type', () => {
+    it('should render DefaultInputAdapter for EmailInput type', async () => {
       const emailElement = createMockElement({
         type: ElementTypes.EmailInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={emailElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={emailElement} />);
 
-      expect(screen.getByTestId('default-input-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.EmailInput);
+      await expect.element(page.getByTestId('default-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.EmailInput);
     });
 
-    it('should render DefaultInputAdapter for NumberInput type', () => {
+    it('should render DefaultInputAdapter for NumberInput type', async () => {
       const numberElement = createMockElement({
         type: ElementTypes.NumberInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={numberElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={numberElement} />);
 
-      expect(screen.getByTestId('default-input-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.NumberInput);
+      await expect.element(page.getByTestId('default-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.NumberInput);
     });
 
-    it('should render DefaultInputAdapter for DateInput type', () => {
+    it('should render DefaultInputAdapter for DateInput type', async () => {
       const dateElement = createMockElement({
         type: ElementTypes.DateInput,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={dateElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={dateElement} />);
 
-      expect(screen.getByTestId('default-input-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.DateInput);
+      await expect.element(page.getByTestId('default-input-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('default-input-adapter')).toHaveAttribute('data-type', ElementTypes.DateInput);
     });
   });
 
   describe('Dropdown Element', () => {
-    it('should render ChoiceAdapter for Dropdown type', () => {
+    it('should render ChoiceAdapter for Dropdown type', async () => {
       const dropdownElement = createMockElement({
         type: ElementTypes.Dropdown,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={dropdownElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={dropdownElement} />);
 
-      expect(screen.getByTestId('choice-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('choice-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Action Element', () => {
-    it('should render ButtonAdapter for Action type', () => {
+    it('should render ButtonAdapter for Action type', async () => {
       const actionElement = createMockElement({
         type: ElementTypes.Action,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={actionElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={actionElement} />);
 
-      expect(screen.getByTestId('button-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('button-adapter')).toBeInTheDocument();
     });
 
-    it('should pass elementIndex to ButtonAdapter', () => {
+    it('should pass elementIndex to ButtonAdapter', async () => {
       const actionElement = createMockElement({
         type: ElementTypes.Action,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={actionElement} elementIndex={5} />);
+      await render(<CommonElementFactory stepId="step-1" resource={actionElement} elementIndex={5} />);
 
-      expect(screen.getByTestId('button-adapter')).toHaveAttribute('data-element-index', '5');
+      await expect.element(page.getByTestId('button-adapter')).toHaveAttribute('data-element-index', '5');
     });
   });
 
   describe('Text Element', () => {
-    it('should render TypographyAdapter for Text type', () => {
+    it('should render TypographyAdapter for Text type', async () => {
       const textElement = createMockElement({
         type: ElementTypes.Text,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={textElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={textElement} />);
 
-      expect(screen.getByTestId('typography-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('typography-adapter')).toHaveAttribute('data-step-id', 'step-1');
+      await expect.element(page.getByTestId('typography-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('typography-adapter')).toHaveAttribute('data-step-id', 'step-1');
     });
   });
 
   describe('RichText Element', () => {
-    it('should render RichTextAdapter for RichText type', () => {
+    it('should render RichTextAdapter for RichText type', async () => {
       const richTextElement = createMockElement({
         type: ElementTypes.RichText,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={richTextElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={richTextElement} />);
 
-      expect(screen.getByTestId('rich-text-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Divider Element', () => {
-    it('should render DividerAdapter for Divider type', () => {
+    it('should render DividerAdapter for Divider type', async () => {
       const dividerElement = createMockElement({
         type: ElementTypes.Divider,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={dividerElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={dividerElement} />);
 
-      expect(screen.getByTestId('divider-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('divider-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Image Element', () => {
-    it('should render ImageAdapter for Image type', () => {
+    it('should render ImageAdapter for Image type', async () => {
       const imageElement = createMockElement({
         type: ElementTypes.Image,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={imageElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={imageElement} />);
 
-      expect(screen.getByTestId('image-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('image-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Captcha Element', () => {
-    it('should render CaptchaAdapter for Captcha type', () => {
+    it('should render CaptchaAdapter for Captcha type', async () => {
       const captchaElement = createMockElement({
         type: ElementTypes.Captcha,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={captchaElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={captchaElement} />);
 
-      expect(screen.getByTestId('captcha-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('captcha-adapter')).toBeInTheDocument();
     });
   });
 
   describe('Resend Element', () => {
-    it('should render ResendButtonAdapter for Resend type', () => {
+    it('should render ResendButtonAdapter for Resend type', async () => {
       const resendElement = createMockElement({
         type: ElementTypes.Resend,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={resendElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={resendElement} />);
 
-      expect(screen.getByTestId('resend-button-adapter')).toBeInTheDocument();
-      expect(screen.getByTestId('resend-button-adapter')).toHaveAttribute('data-step-id', 'step-1');
+      await expect.element(page.getByTestId('resend-button-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('resend-button-adapter')).toHaveAttribute('data-step-id', 'step-1');
     });
   });
 
@@ -436,48 +437,48 @@ describe('CommonElementFactory', () => {
   });
 
   describe('Unknown Element Type', () => {
-    it('should return null for unknown element type', () => {
+    it('should return null for unknown element type', async () => {
       const unknownElement = createMockElement({
         type: 'UNKNOWN_TYPE' as typeof ElementTypes[keyof typeof ElementTypes],
       });
 
-      const {container} = render(<CommonElementFactory stepId="step-1" resource={unknownElement} />);
+      const {container} = await render(<CommonElementFactory stepId="step-1" resource={unknownElement} />);
 
       expect(container.firstChild).toBeNull();
     });
   });
 
   describe('Default Props', () => {
-    it('should work with undefined elementIndex', () => {
+    it('should work with undefined elementIndex', async () => {
       const actionElement = createMockElement({
         type: ElementTypes.Action,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={actionElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={actionElement} />);
 
-      expect(screen.getByTestId('button-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('button-adapter')).toBeInTheDocument();
     });
 
-    it('should work with undefined availableElements', () => {
+    it('should work with undefined availableElements', async () => {
       const formElement = createMockElement({
         type: BlockTypes.Form,
         category: ElementCategories.Block,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={formElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={formElement} />);
 
-      expect(screen.getByTestId('form-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('form-adapter')).toBeInTheDocument();
     });
 
-    it('should work with undefined onAddElementToForm', () => {
+    it('should work with undefined onAddElementToForm', async () => {
       const formElement = createMockElement({
         type: BlockTypes.Form,
         category: ElementCategories.Block,
       });
 
-      render(<CommonElementFactory stepId="step-1" resource={formElement} />);
+      await render(<CommonElementFactory stepId="step-1" resource={formElement} />);
 
-      expect(screen.getByTestId('form-adapter')).toBeInTheDocument();
+      await expect.element(page.getByTestId('form-adapter')).toBeInTheDocument();
     });
   });
 });

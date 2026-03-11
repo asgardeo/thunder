@@ -17,28 +17,42 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useCreateUserType from '../useCreateUserType';
 import type {ApiUserSchema, CreateUserSchemaRequest} from '../../types/user-types';
-import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
 
-vi.mock('@asgardeo/react', () => ({useAsgardeo: vi.fn()}));
+const {mockHttpRequest, mockGetServerUrl} = vi.hoisted(() => ({
+  mockHttpRequest: vi.fn(),
+  mockGetServerUrl: vi.fn<() => string | undefined>(() => 'https://localhost:8090'),
+}));
+
+vi.mock('@asgardeo/react', () => ({
+  useAsgardeo: () => ({
+    http: {
+      request: mockHttpRequest,
+    },
+  }),
+}));
+
+// Mock useConfig
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
-  return {...actual, useConfig: vi.fn()};
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: mockGetServerUrl,
+    }),
+  };
 });
-
-const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useCreateUserType', () => {
   const mockUserSchema: ApiUserSchema = {
     id: '123',
-    name: 'Person',
-    ouId: 'ou-1',
+    name: 'TestUserType',
+    ouId: 'root-ou',
     allowSelfRegistration: true,
     schema: {
-      email: {
+      username: {
         type: 'string',
         required: true,
       },
@@ -46,199 +60,196 @@ describe('useCreateUserType', () => {
   };
 
   const mockRequest: CreateUserSchemaRequest = {
-    name: 'Person',
-    ouId: 'ou-1',
+    name: 'TestUserType',
+    ouId: 'root-ou',
     allowSelfRegistration: true,
     schema: {
-      email: {
+      username: {
         type: 'string',
         required: true,
       },
     },
   };
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
-
-    vi.mocked(useAsgardeo).mockReturnValue({
-      http: {
-        request: mockHttpRequest,
-      },
-    } as unknown as ReturnType<typeof useAsgardeo>);
-
-    vi.mocked(useConfig).mockReturnValue({
-      getServerUrl: () => 'https://api.test.com',
-    } as ReturnType<typeof useConfig>);
+    mockHttpRequest.mockReset();
+    mockGetServerUrl.mockReturnValue('https://localhost:8090');
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateUserType());
+  it('should initialize with default state', async () => {
+    const {result} = await renderHook(() => useCreateUserType());
 
-    expect(result.current.data).toBeUndefined();
+    expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isIdle).toBe(true);
-    expect(result.current.isSuccess).toBe(false);
-    expect(result.current.isError).toBe(false);
-    expect(typeof result.current.mutate).toBe('function');
-    expect(typeof result.current.mutateAsync).toBe('function');
+    expect(result.current.loading).toBe(false);
+    expect(typeof result.current.createUserType).toBe('function');
+    expect(typeof result.current.reset).toBe('function');
   });
 
   it('should successfully create a user type', async () => {
-    mockHttpRequest.mockResolvedValueOnce({
-      data: mockUserSchema,
+    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    await result.current.createUserType(mockRequest);
+
+    await vi.waitFor(() => {
+      expect(result.current.data).toEqual(mockUserSchema);
+      expect(result.current.error).toBeNull();
+      expect(result.current.loading).toBe(false);
     });
-
-    const {result} = renderHook(() => useCreateUserType());
-
-    result.current.mutate(mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(result.current.data).toEqual(mockUserSchema);
-    expect(result.current.error).toBeNull();
-    expect(result.current.isPending).toBe(false);
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://api.test.com/user-schemas',
+        url: 'https://localhost:8090/user-schemas',
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: JSON.stringify(mockRequest),
+        data: mockRequest,
       }),
     );
   });
 
-  it('should set pending state during creation', async () => {
-    let resolveMutation!: (value: {data: ApiUserSchema}) => void;
-    mockHttpRequest.mockReturnValue(
-      new Promise<{data: ApiUserSchema}>((resolve) => {
-        resolveMutation = resolve;
-      }),
-    );
-
-    const {result} = renderHook(() => useCreateUserType());
-
-    result.current.mutate(mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.isPending).toBe(true);
+  it('should set loading state during creation', async () => {
+    // Create a promise we can control
+    let resolveRequest: (value: {data: ApiUserSchema}) => void;
+    const requestPromise = new Promise<{data: ApiUserSchema}>((resolve) => {
+      resolveRequest = resolve;
     });
 
-    await act(async () => {
-      resolveMutation({data: mockUserSchema});
+    mockHttpRequest.mockReturnValueOnce(requestPromise);
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    const promise = result.current.createUserType(mockRequest);
+
+    await vi.waitFor(() => {
+      expect(result.current.loading).toBe(true);
     });
 
-    await waitFor(() => {
-      expect(result.current.isPending).toBe(false);
-    });
+    // Now resolve the request
+    resolveRequest!({data: mockUserSchema});
 
-    expect(result.current.isSuccess).toBe(true);
+    await promise;
+
+    await vi.waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
   });
 
   it('should handle API error', async () => {
-    const apiError = new Error('Failed to create user type');
+    mockHttpRequest.mockRejectedValueOnce(new Error('Validation failed'));
 
-    mockHttpRequest.mockRejectedValueOnce(apiError);
+    const {result} = await renderHook(() => useCreateUserType());
 
-    const {result} = renderHook(() => useCreateUserType());
+    await expect(result.current.createUserType(mockRequest)).rejects.toThrow('Validation failed');
 
-    result.current.mutate(mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
-
-    expect(result.current.error).toEqual(apiError);
-    expect(result.current.data).toBeUndefined();
-    expect(result.current.isPending).toBe(false);
-  });
-
-  it('should invalidate user types query on success', async () => {
-    mockHttpRequest.mockResolvedValueOnce({
-      data: mockUserSchema,
-    });
-
-    const {result, queryClient} = renderHook(() => useCreateUserType());
-    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    result.current.mutate(mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: [UserTypeQueryKeys.USER_TYPES],
+    await vi.waitFor(() => {
+      expect(result.current.error).toEqual({
+        code: 'CREATE_USER_TYPE_ERROR',
+        message: 'Validation failed',
+        description: 'Failed to create user type',
+      });
+      expect(result.current.data).toBeNull();
+      expect(result.current.loading).toBe(false);
     });
   });
 
-  it('should handle invalidateQueries rejection gracefully', async () => {
-    mockHttpRequest.mockResolvedValueOnce({
-      data: mockUserSchema,
+  it('should handle network error', async () => {
+    mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    await expect(result.current.createUserType(mockRequest)).rejects.toThrow('Network error');
+
+    await vi.waitFor(() => {
+      expect(result.current.error).toEqual({
+        code: 'CREATE_USER_TYPE_ERROR',
+        message: 'Network error',
+        description: 'Failed to create user type',
+      });
+      expect(result.current.data).toBeNull();
+      expect(result.current.loading).toBe(false);
     });
-
-    const {result, queryClient} = renderHook(() => useCreateUserType());
-    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
-
-    result.current.mutate(mockRequest);
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(result.current.data).toEqual(mockUserSchema);
   });
 
-  it('should support mutateAsync for promise-based workflows', async () => {
-    mockHttpRequest.mockResolvedValueOnce({
-      data: mockUserSchema,
+  it('should reset state when reset is called', async () => {
+    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    await result.current.createUserType(mockRequest);
+
+    await vi.waitFor(() => {
+      expect(result.current.data).toEqual(mockUserSchema);
     });
 
-    const {result} = renderHook(() => useCreateUserType());
+    result.current.reset();
 
-    const promise = result.current.mutateAsync(mockRequest);
-
-    await expect(promise).resolves.toEqual(mockUserSchema);
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
+    await vi.waitFor(() => {
+      expect(result.current.data).toBeNull();
+      expect(result.current.error).toBeNull();
     });
-    expect(result.current.data).toEqual(mockUserSchema);
   });
 
-  it('should reset mutation state', async () => {
-    mockHttpRequest.mockResolvedValueOnce({
-      data: mockUserSchema,
+  it('should clear previous data and error when starting new request', async () => {
+    mockHttpRequest
+      .mockResolvedValueOnce({data: mockUserSchema})
+      .mockResolvedValueOnce({data: {...mockUserSchema, id: '456'}});
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    await result.current.createUserType(mockRequest);
+
+    await vi.waitFor(() => {
+      expect(result.current.data).toEqual(mockUserSchema);
     });
 
-    const {result} = renderHook(() => useCreateUserType());
+    await result.current.createUserType(mockRequest);
 
-    result.current.mutate(mockRequest);
+    await vi.waitFor(() => {
+      expect(result.current.data).toEqual({...mockUserSchema, id: '456'});
+      expect(result.current.error).toBeNull();
+    });
+  });
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
+  it('should handle non-Error rejection', async () => {
+    mockHttpRequest.mockRejectedValueOnce('String error');
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    await expect(result.current.createUserType(mockRequest)).rejects.toBe('String error');
+
+    await vi.waitFor(() => {
+      expect(result.current.error).toEqual({
+        code: 'CREATE_USER_TYPE_ERROR',
+        message: 'An unknown error occurred',
+        description: 'Failed to create user type',
+      });
+      expect(result.current.data).toBeNull();
+      expect(result.current.loading).toBe(false);
+    });
+  });
+
+  it('should fallback to env variable when getServerUrl returns undefined', async () => {
+    mockGetServerUrl.mockReturnValue(undefined);
+    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
+
+    const {result} = await renderHook(() => useCreateUserType());
+
+    await result.current.createUserType(mockRequest);
+
+    await vi.waitFor(() => {
+      expect(result.current.data).toEqual(mockUserSchema);
     });
 
-    act(() => {
-      result.current.reset();
-    });
-
-    await waitFor(() => {
-      expect(result.current.data).toBeUndefined();
-    });
-    expect(result.current.error).toBeNull();
-    expect(result.current.isIdle).toBe(true);
-    expect(result.current.isSuccess).toBe(false);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: expect.stringContaining('/user-schemas') as string,
+        method: 'POST',
+      }),
+    );
   });
 });

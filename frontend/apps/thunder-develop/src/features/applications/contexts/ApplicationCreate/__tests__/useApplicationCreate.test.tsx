@@ -17,7 +17,8 @@
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import React from 'react';
 import useApplicationCreate from '../useApplicationCreate';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
@@ -84,8 +85,8 @@ describe('useApplicationCreate', () => {
       },
     });
   });
-  it('returns context when used within ApplicationCreateProvider', () => {
-    render(
+  it('returns context when used within ApplicationCreateProvider', async () => {
+    await render(
       <TestWrapper>
         <ApplicationCreateProvider>
           <TestConsumer />
@@ -93,22 +94,22 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('context-available')).toHaveTextContent('object');
+    await expect.element(page.getByTestId('context-available')).toHaveTextContent('object');
   });
 
-  it('throws error when used outside ApplicationCreateProvider', () => {
+  it('throws error when used outside ApplicationCreateProvider', async () => {
     // Suppress error output in tests
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(() => {
-      render(<TestConsumerWithoutProvider />);
+    expect(async () => {
+      await render(<TestConsumerWithoutProvider />);
     }).toThrow('useApplicationCreate must be used within ApplicationCreateProvider');
 
     // Restore console.error
     errorSpy.mockRestore();
   });
 
-  it('provides all required context properties', () => {
+  it('provides all required context properties', async () => {
     function TestContextProperties() {
       const context = useApplicationCreate();
 
@@ -155,7 +156,7 @@ describe('useApplicationCreate', () => {
       );
     }
 
-    render(
+    await render(
       <TestWrapper>
         <ApplicationCreateProvider>
           <TestContextProperties />
@@ -163,11 +164,11 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('has-all-properties')).toHaveTextContent('true');
-    expect(screen.getByTestId('missing-properties')).toHaveTextContent('[]');
+    await expect.element(page.getByTestId('has-all-properties')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('missing-properties')).toHaveTextContent('[]');
   });
 
-  it('returns same context reference across multiple hook calls', () => {
+  it('returns same context reference across multiple hook calls', async () => {
     function TestMultipleHookCalls() {
       const context1 = useApplicationCreate();
       const context2 = useApplicationCreate();
@@ -179,7 +180,7 @@ describe('useApplicationCreate', () => {
       );
     }
 
-    render(
+    await render(
       <TestWrapper>
         <ApplicationCreateProvider>
           <TestMultipleHookCalls />
@@ -187,10 +188,10 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('same-reference')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('same-reference')).toHaveTextContent('true');
   });
 
-  it('provides functions that are properly typed', () => {
+  it('provides functions that are properly typed', async () => {
     function TestFunctionTypes() {
       const {
         setCurrentStep,
@@ -233,7 +234,7 @@ describe('useApplicationCreate', () => {
       );
     }
 
-    render(
+    await render(
       <TestWrapper>
         <ApplicationCreateProvider>
           <TestFunctionTypes />
@@ -241,32 +242,32 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('setCurrentStep-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setAppName-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('toggleIntegration-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('reset-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSelectedTheme-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setAppLogo-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setIntegrations-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSelectedAuthFlow-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSignInApproach-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSelectedTechnology-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSelectedPlatform-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSelectedTemplateConfig-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setHostingUrl-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setCallbackUrlFromConfig-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setHasCompletedOnboarding-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setError-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setCurrentStep-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setAppName-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('toggleIntegration-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('reset-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setSelectedTheme-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setAppLogo-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setIntegrations-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setSelectedAuthFlow-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setSignInApproach-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setSelectedTechnology-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setSelectedPlatform-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setSelectedTemplateConfig-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setHostingUrl-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setCallbackUrlFromConfig-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setHasCompletedOnboarding-type')).toHaveTextContent('function');
+    await expect.element(page.getByTestId('setError-type')).toHaveTextContent('function');
   });
 
-  it('throws descriptive error message when used outside provider', () => {
+  it('throws descriptive error message when used outside provider', async () => {
     // Suppress error output in tests
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     let thrownError: Error | null = null;
 
     try {
-      render(<TestConsumerWithoutProvider />);
+      await render(<TestConsumerWithoutProvider />);
     } catch (error) {
       thrownError = error as Error;
     }
@@ -278,7 +279,7 @@ describe('useApplicationCreate', () => {
     errorSpy.mockRestore();
   });
 
-  it('has exactly 38 properties in the context interface', () => {
+  it('has exactly 38 properties in the context interface', async () => {
     function TestContextProperties() {
       const context = useApplicationCreate();
 
@@ -289,7 +290,7 @@ describe('useApplicationCreate', () => {
       );
     }
 
-    render(
+    await render(
       <TestWrapper>
         <ApplicationCreateProvider>
           <TestContextProperties />
@@ -297,6 +298,6 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('property-count')).toHaveTextContent('38');
+    await expect.element(page.getByTestId('property-count')).toHaveTextContent('38');
   });
 });

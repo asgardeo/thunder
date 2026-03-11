@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import App from '../App';
 
 // Mock the ProtectedRoute component
@@ -71,8 +72,8 @@ vi.mock('../layouts/FullScreenLayout', () => ({
 }));
 
 describe('App', () => {
-  it('renders without crashing', () => {
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
+  it('renders without crashing', async () => {
+    await render(<App />);
+    await expect.element(page.getByTestId('dashboard-layout')).toBeInTheDocument();
   });
 });

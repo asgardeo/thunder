@@ -17,76 +17,73 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import ConfigCard from '../ConfigCard';
 
 describe('ConfigCard', () => {
   describe('Rendering', () => {
-    it('renders the title text', () => {
-      render(
+    it('renders the title text', async () => {
+      await render(
         <ConfigCard title="Shape">
           <p>Content here</p>
         </ConfigCard>,
       );
-      expect(screen.getByText('Shape')).toBeInTheDocument();
+      await expect.element(page.getByText('Shape')).toBeInTheDocument();
     });
 
-    it('renders children content when open (default)', () => {
-      render(
+    it('renders children content when open (default)', async () => {
+      await render(
         <ConfigCard title="General">
           <p>My child content</p>
         </ConfigCard>,
       );
-      expect(screen.getByText('My child content')).toBeVisible();
+      await expect.element(page.getByText('My child content')).toBeVisible();
     });
   });
 
   describe('Accordion behavior', () => {
-    it('is expanded by default (defaultOpen not specified)', () => {
-      const {container} = render(
+    it('is expanded by default (defaultOpen not specified)', async () => {
+      const {container} = await render(
         <ConfigCard title="Typography">
           <p>Inner text</p>
         </ConfigCard>,
       );
       // Check the content region is visible (Accordion expanded)
       const details = container.querySelector('.MuiCollapse-entered, [aria-expanded="true"]');
-      expect(details ?? screen.getByText('Inner text')).toBeTruthy();
+      expect(details ?? container.querySelector('p')).toBeTruthy();
     });
 
     it('can be toggled closed by clicking the header', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigCard title="Colors">
           <p>Color content</p>
         </ConfigCard>,
       );
 
-      await user.click(screen.getByText('Colors'));
+      await userEvent.click(page.getByText('Colors'));
       // After clicking, accordion may collapse — title should still be visible
-      expect(screen.getByText('Colors')).toBeInTheDocument();
+      await expect.element(page.getByText('Colors')).toBeInTheDocument();
     });
 
-    it('renders with defaultOpen=false as collapsed', () => {
-      render(
+    it('renders with defaultOpen=false as collapsed', async () => {
+      await render(
         <ConfigCard title="Shape" defaultOpen={false}>
           <p>Shape content</p>
         </ConfigCard>,
       );
       // Title should always be visible
-      expect(screen.getByText('Shape')).toBeInTheDocument();
+      await expect.element(page.getByText('Shape')).toBeInTheDocument();
     });
 
     it('can be opened by clicking when defaultOpen=false', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigCard title="Type" defaultOpen={false}>
           <p>Some type content</p>
         </ConfigCard>,
       );
 
-      await user.click(screen.getByText('Type'));
-      expect(screen.getByText('Some type content')).toBeInTheDocument();
+      await userEvent.click(page.getByText('Type'));
+      await expect.element(page.getByText('Some type content')).toBeInTheDocument();
     });
   });
 });

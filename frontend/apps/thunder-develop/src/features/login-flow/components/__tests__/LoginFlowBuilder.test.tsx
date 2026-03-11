@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {Node, Edge} from '@xyflow/react';
 import {
   ElementTypes,
@@ -86,13 +87,6 @@ const {
     }),
   };
 });
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 // Mock @wso2/oxygen-ui Snackbar and Alert
 vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
@@ -541,57 +535,57 @@ describe('LoginFlowBuilder', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the FlowBuilder component', () => {
-      render(<LoginFlowBuilder />);
+    it('should render the FlowBuilder component', async () => {
+      await render(<LoginFlowBuilder />);
 
-      expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
     });
 
-    it('should render with default flow title', () => {
-      render(<LoginFlowBuilder />);
+    it('should render with default flow title', async () => {
+      await render(<LoginFlowBuilder />);
 
-      expect(screen.getByTestId('flow-title')).toHaveTextContent('Login Flow');
+      await expect.element(page.getByTestId('flow-title')).toHaveTextContent('Login Flow');
     });
 
-    it('should render with default flow handle', () => {
-      render(<LoginFlowBuilder />);
+    it('should render with default flow handle', async () => {
+      await render(<LoginFlowBuilder />);
 
-      expect(screen.getByTestId('flow-handle')).toHaveTextContent('login-flow');
+      await expect.element(page.getByTestId('flow-handle')).toHaveTextContent('login-flow');
     });
   });
 
   describe('Flow Name Management', () => {
     it('should update flow name when onFlowTitleChange is called', async () => {
-      render(<LoginFlowBuilder />);
+      await render(<LoginFlowBuilder />);
 
-      const changeTitleBtn = screen.getByTestId('change-title-btn');
-      fireEvent.click(changeTitleBtn);
+      const changeTitleBtn = page.getByTestId('change-title-btn');
+      await userEvent.click(changeTitleBtn);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('flow-title')).toHaveTextContent('New Flow Name');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('flow-title')).toHaveTextContent('New Flow Name');
       });
     });
 
     it('should generate handle from flow name', async () => {
-      render(<LoginFlowBuilder />);
+      await render(<LoginFlowBuilder />);
 
-      const changeTitleBtn = screen.getByTestId('change-title-btn');
-      fireEvent.click(changeTitleBtn);
+      const changeTitleBtn = page.getByTestId('change-title-btn');
+      await userEvent.click(changeTitleBtn);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('flow-handle')).toHaveTextContent('new-flow-name');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('flow-handle')).toHaveTextContent('new-flow-name');
       });
     });
   });
 
   describe('Save Functionality', () => {
     it('should call createFlow.mutate when saving a new flow', async () => {
-      render(<LoginFlowBuilder />);
+      await render(<LoginFlowBuilder />);
 
-      const saveBtn = screen.getByTestId('save-btn');
-      fireEvent.click(saveBtn);
+      const saveBtn = page.getByTestId('save-btn');
+      await userEvent.click(saveBtn);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockCreateFlowMutate).toHaveBeenCalled();
       });
     });
@@ -599,28 +593,28 @@ describe('LoginFlowBuilder', () => {
     it('should show validation error when flow is invalid', async () => {
       // This test verifies the validation check happens before save
       // The actual save functionality is tested through the mock verification above
-      render(<LoginFlowBuilder />);
+      await render(<LoginFlowBuilder />);
 
       // The save button exists and can be clicked
-      const saveBtn = screen.getByTestId('save-btn');
+      const saveBtn = page.getByTestId('save-btn');
       expect(saveBtn).toBeInTheDocument();
     });
   });
 
   describe('Snackbar Notifications', () => {
-    it('should render error snackbar container', () => {
-      render(<LoginFlowBuilder />);
+    it('should render error snackbar container', async () => {
+      await render(<LoginFlowBuilder />);
 
       // The Snackbar components are rendered but hidden by default
-      expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
     });
   });
 
   describe('Auto Layout', () => {
-    it('should not trigger auto layout by default', () => {
-      render(<LoginFlowBuilder />);
+    it('should not trigger auto layout by default', async () => {
+      await render(<LoginFlowBuilder />);
 
-      expect(screen.getByTestId('auto-layout')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('auto-layout')).toHaveTextContent('false');
     });
   });
 });
@@ -812,10 +806,10 @@ describe('handleAddElementToForm', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The FlowBuilder mock should be rendered
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should not modify nodes when form is not found', async () => {
@@ -832,9 +826,9 @@ describe('handleAddElementToForm', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -846,7 +840,7 @@ describe('Verbose Mode Filtering', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
   });
 
-  it('should show all nodes when verbose mode is enabled', () => {
+  it('should show all nodes when verbose mode is enabled', async () => {
     const mockNodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'execution-1', type: 'EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -854,22 +848,22 @@ describe('Verbose Mode Filtering', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // With verbose mode enabled (default in mock), all nodes should be visible
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('2');
   });
 
-  it('should show all edges when verbose mode is enabled', () => {
+  it('should show all edges when verbose mode is enabled', async () => {
     const mockNodes: Node[] = [{id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}];
     const mockEdges: Edge[] = [{id: 'edge-1', source: 'view-1', target: 'execution-1'}];
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([mockEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 });
 
@@ -882,11 +876,11 @@ describe('Edge Style Updates', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
   });
 
-  it('should update edge types when edge style changes', () => {
-    render(<LoginFlowBuilder />);
+  it('should update edge types when edge style changes', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The edge style effect is triggered on mount
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -905,13 +899,13 @@ describe('Save Functionality with Validation', () => {
   it('should show error and open validation panel when flow is invalid', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // When flow is invalid, setOpenValidationPanel should be called
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
     });
   });
@@ -920,13 +914,13 @@ describe('Save Functionality with Validation', () => {
     mockIsFlowValid.value = true;
     mockValidateFlowGraph.mockReturnValue(['Structure error: missing start node']);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // createFlowMutate should NOT be called when there are validation errors
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
     });
   });
@@ -935,12 +929,12 @@ describe('Save Functionality with Validation', () => {
     mockIsFlowValid.value = true;
     mockValidateFlowGraph.mockReturnValue([]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -965,12 +959,12 @@ describe('Update Existing Flow', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -979,12 +973,12 @@ describe('Update Existing Flow', () => {
     mockUseParams.mockReturnValue({});
     mockExistingFlowData.value = null;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1003,12 +997,12 @@ describe('Update Existing Flow', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1027,12 +1021,12 @@ describe('Update Existing Flow', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1046,12 +1040,12 @@ describe('Update Existing Flow', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1065,12 +1059,12 @@ describe('Update Existing Flow', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1088,23 +1082,23 @@ describe('Snackbar Close Handlers', () => {
     mockValidateFlowGraph.mockReturnValue([]);
   });
 
-  it('should render snackbar components', () => {
-    render(<LoginFlowBuilder />);
+  it('should render snackbar components', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Snackbars are rendered but initially hidden
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should show error snackbar when validation fails and close it', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // The error snackbar should be triggered when validation fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
     });
   });
@@ -1115,12 +1109,12 @@ describe('Snackbar Close Handlers', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1131,12 +1125,12 @@ describe('Snackbar Close Handlers', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -1166,13 +1160,13 @@ describe('Resource Add Functionality', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
     // Verify the component renders after resource add attempt
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should replace existing form when adding new form', async () => {
@@ -1195,12 +1189,12 @@ describe('Resource Add Functionality', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1216,12 +1210,12 @@ describe('Template and Widget Loading', () => {
   });
 
   it('should load template with steps', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load widget into target resource', async () => {
@@ -1236,21 +1230,21 @@ describe('Template and Widget Loading', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load step and handle VIEW type', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-btn');
+    await userEvent.click(loadStepBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1265,18 +1259,18 @@ describe('Node Types Creation', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should create node types from steps', () => {
-    render(<LoginFlowBuilder />);
+  it('should create node types from steps', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Node types are created in useMemo based on steps
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should include static step types', () => {
-    render(<LoginFlowBuilder />);
+  it('should include static step types', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Static step types should be available
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1293,27 +1287,27 @@ describe('Existing Flow Data Loading', () => {
   it('should transform and load existing flow data', async () => {
     mockUseParams.mockReturnValue({flowId: 'test-flow-id'});
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should set needsAutoLayout when nodes lack layout data', async () => {
     mockUseParams.mockReturnValue({flowId: 'test-flow-id'});
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Auto layout is determined based on node positions
-    expect(screen.getByTestId('auto-layout')).toBeInTheDocument();
+    await expect.element(page.getByTestId('auto-layout')).toBeInTheDocument();
   });
 
   it('should sync flow name from existing flow data', async () => {
     mockUseParams.mockReturnValue({flowId: 'test-flow-id'});
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Flow title should be set from existing data or default
-    expect(screen.getByTestId('flow-title')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-title')).toBeInTheDocument();
   });
 });
 
@@ -1329,7 +1323,7 @@ describe('History Restoration', () => {
   });
 
   it('should handle restore from history event', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Dispatch a custom event for history restoration
     const event = new CustomEvent('restoreFromHistory', {
@@ -1341,11 +1335,11 @@ describe('History Restoration', () => {
 
     window.dispatchEvent(event);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should not restore when nodes or edges are missing', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Dispatch event without nodes and edges
     const event = new CustomEvent('restoreFromHistory', {
@@ -1354,7 +1348,7 @@ describe('History Restoration', () => {
 
     window.dispatchEvent(event);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1523,7 +1517,7 @@ describe('handleAddElementToView Callback', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should add input element to existing form in view', () => {
+  it('should add input element to existing form in view', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1544,12 +1538,12 @@ describe('handleAddElementToView Callback', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should create new form when adding input to view without form', () => {
+  it('should create new form when adding input to view without form', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1563,12 +1557,12 @@ describe('handleAddElementToView Callback', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should add non-input element directly to view components', () => {
+  it('should add non-input element directly to view components', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1582,9 +1576,9 @@ describe('handleAddElementToView Callback', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1598,7 +1592,7 @@ describe('handleAddElementToForm Callback', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should add element to form within view', () => {
+  it('should add element to form within view', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1619,12 +1613,12 @@ describe('handleAddElementToForm Callback', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should not modify nodes when view with form is not found', () => {
+  it('should not modify nodes when view with form is not found', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1638,9 +1632,9 @@ describe('handleAddElementToForm Callback', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1656,26 +1650,26 @@ describe('handleTemplateLoad Callback', () => {
   });
 
   it('should return empty arrays when template has no steps', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should handle template with END step and set flow completion configs', async () => {
     // This tests the template loading path with END step
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should handle BASIC_FEDERATED template type', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The template loading is handled by the mock
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1691,12 +1685,12 @@ describe('handleWidgetLoad Callback', () => {
   });
 
   it('should return current nodes and edges when widget has no steps', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should merge widget steps with MERGE_WITH_DROP_POINT strategy', async () => {
@@ -1713,21 +1707,21 @@ describe('handleWidgetLoad Callback', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should add widget steps without merge strategy', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1743,24 +1737,24 @@ describe('handleStepLoad Callback', () => {
   });
 
   it('should load VIEW step with empty components and set default components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-btn');
+    await userEvent.click(loadStepBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load VIEW step with existing components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should resolve step metadata for non-VIEW steps', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1934,11 +1928,11 @@ describe('updateFlowWithSequence Function', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should trigger flow update sequence on mount', () => {
-    render(<LoginFlowBuilder />);
+  it('should trigger flow update sequence on mount', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The flow update sequence is triggered automatically
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -1957,12 +1951,12 @@ describe('Snackbar Close Handlers Extended', () => {
   it('should close error snackbar when handleCloseErrorSnackbar is called', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
     });
   });
@@ -1973,12 +1967,12 @@ describe('Snackbar Close Handlers Extended', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -2002,12 +1996,12 @@ describe('Navigation After Save', () => {
       capturedOnSuccess = options?.onSuccess;
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
 
@@ -2029,12 +2023,12 @@ describe('Navigation After Save', () => {
       capturedOnSuccess = options?.onSuccess;
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
     });
 
@@ -2053,7 +2047,7 @@ describe('Existing Flow Loading with Layout', () => {
     mockValidateFlowGraph.mockReturnValue([]);
   });
 
-  it('should set needsAutoLayout when nodes lack layout position', () => {
+  it('should set needsAutoLayout when nodes lack layout position', async () => {
     mockUseParams.mockReturnValue({flowId: 'flow-with-no-layout'});
     mockExistingFlowData.value = {
       id: 'flow-with-no-layout',
@@ -2065,12 +2059,12 @@ describe('Existing Flow Loading with Layout', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should not set needsAutoLayout when nodes have layout position', () => {
+  it('should not set needsAutoLayout when nodes have layout position', async () => {
     mockUseParams.mockReturnValue({flowId: 'flow-with-layout'});
     mockExistingFlowData.value = {
       id: 'flow-with-layout',
@@ -2082,12 +2076,12 @@ describe('Existing Flow Loading with Layout', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should sync flowHandle from existing flow data', () => {
+  it('should sync flowHandle from existing flow data', async () => {
     mockUseParams.mockReturnValue({flowId: 'flow-with-handle'});
     mockExistingFlowData.value = {
       id: 'flow-with-handle',
@@ -2096,12 +2090,12 @@ describe('Existing Flow Loading with Layout', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-handle')).toHaveTextContent('custom-handle');
+    await expect.element(page.getByTestId('flow-handle')).toHaveTextContent('custom-handle');
   });
 
-  it('should generate handle from name when handle is missing', () => {
+  it('should generate handle from name when handle is missing', async () => {
     mockUseParams.mockReturnValue({flowId: 'flow-without-handle'});
     mockExistingFlowData.value = {
       id: 'flow-without-handle',
@@ -2109,9 +2103,9 @@ describe('Existing Flow Loading with Layout', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-handle')).toHaveTextContent('flow-without-handle');
+    await expect.element(page.getByTestId('flow-handle')).toHaveTextContent('flow-without-handle');
   });
 });
 
@@ -2126,11 +2120,11 @@ describe('Edge Type Registration', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should register default edge types', () => {
-    render(<LoginFlowBuilder />);
+  it('should register default edge types', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Edge types are registered in useMemo
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2145,11 +2139,11 @@ describe('Steps By Type Indexing', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should index steps by type for efficient lookup', () => {
-    render(<LoginFlowBuilder />);
+  it('should index steps by type for efficient lookup', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Steps are indexed by type in useEffect
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2165,12 +2159,12 @@ describe('MutateComponents Button Handler', () => {
   });
 
   it('should call mutateComponents when button is clicked', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const mutateBtn = screen.getByTestId('mutate-components-btn');
-    fireEvent.click(mutateBtn);
+    const mutateBtn = page.getByTestId('mutate-components-btn');
+    await userEvent.click(mutateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2269,33 +2263,33 @@ describe('Extended Callback Tests', () => {
     ];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addNonElementBtn = screen.getByTestId('add-non-element-resource-btn');
-    fireEvent.click(addNonElementBtn);
+    const addNonElementBtn = page.getByTestId('add-non-element-resource-btn');
+    await userEvent.click(addNonElementBtn);
 
     // Should not modify nodes since resourceType is STEP, not ELEMENT
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load template with END step and set flow completion configs', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-with-end-step-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-with-end-step-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetFlowCompletionConfigs).toHaveBeenCalled();
     });
   });
 
   it('should load BASIC_FEDERATED template and return execution step', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-basic-federated-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-basic-federated-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load widget with MERGE_WITH_DROP_POINT strategy', async () => {
@@ -2309,39 +2303,39 @@ describe('Extended Callback Tests', () => {
     ];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-with-merge-strategy-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-with-merge-strategy-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load step with existing components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-step-with-components-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-with-components-btn');
+    await userEvent.click(loadStepBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should load non-VIEW step', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-non-view-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-non-view-step-btn');
+    await userEvent.click(loadStepBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should mutate components with form containing password field', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const mutateBtn = screen.getByTestId('mutate-components-with-form-btn');
-    fireEvent.click(mutateBtn);
+    const mutateBtn = page.getByTestId('mutate-components-with-form-btn');
+    await userEvent.click(mutateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2375,13 +2369,13 @@ describe('handleResourceAdd with Form Replacement', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
     // Verify setNodes was called to replace the form
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
   });
@@ -2400,12 +2394,12 @@ describe('handleResourceAdd with Form Replacement', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
   });
@@ -2489,8 +2483,8 @@ describe('Edge Style Update Effect', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should update edge types when component mounts with edges', () => {
-    render(<LoginFlowBuilder />);
+  it('should update edge types when component mounts with edges', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The edge style effect should be triggered on mount
     expect(mockSetEdges).toHaveBeenCalled();
@@ -2516,10 +2510,10 @@ describe('Navigation After Successful Save with Timeout', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Verify mutation was called
     expect(mockCreateFlowMutate).toHaveBeenCalled();
@@ -2548,10 +2542,10 @@ describe('Navigation After Successful Save with Timeout', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Verify mutation was called
     expect(mockUpdateFlowMutate).toHaveBeenCalled();
@@ -2580,19 +2574,19 @@ describe('Snackbar Close Handler Functions', () => {
   it('should trigger error snackbar on validation failure and allow closing', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Error snackbar should be triggered
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
     });
 
     // The error snackbar message should be displayed
     // Since we mock the Snackbar, we just verify the flow triggered
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should trigger success snackbar on successful save', async () => {
@@ -2601,12 +2595,12 @@ describe('Snackbar Close Handler Functions', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -2617,12 +2611,12 @@ describe('Snackbar Close Handler Functions', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -2631,13 +2625,13 @@ describe('Snackbar Close Handler Functions', () => {
     mockIsFlowValid.value = true;
     mockValidateFlowGraph.mockReturnValue(['Graph has disconnected nodes']);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // createFlowMutate should not be called due to structure validation failure
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
     });
   });
@@ -2654,19 +2648,19 @@ describe('NodeTypes Creation with Step References', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should create node types from available steps', () => {
-    render(<LoginFlowBuilder />);
+  it('should create node types from available steps', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The nodeTypes useMemo creates factories for each step type
     // The mock includes a VIEW step type
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should include static step types like START and END', () => {
-    render(<LoginFlowBuilder />);
+  it('should include static step types like START and END', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Static step types (START, END) are registered separately
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2713,11 +2707,11 @@ describe('Resource Ref Updates', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should update resource refs when resources change', () => {
-    render(<LoginFlowBuilder />);
+  it('should update resource refs when resources change', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Resources are stored in a ref and updated via useEffect
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2732,17 +2726,17 @@ describe('Handle Add Element Ref Updates', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should update handleAddElementToView ref when callback changes', () => {
-    render(<LoginFlowBuilder />);
+  it('should update handleAddElementToView ref when callback changes', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The refs are updated via useEffect when callbacks change
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should update handleAddElementToForm ref when callback changes', () => {
-    render(<LoginFlowBuilder />);
+  it('should update handleAddElementToForm ref when callback changes', async () => {
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2756,7 +2750,7 @@ describe('handleAddElementToForm - INPUT_ELEMENT_TYPES handling', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should find view containing form and add element to that form', () => {
+  it('should find view containing form and add element to that form', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -2777,13 +2771,13 @@ describe('handleAddElementToForm - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Verify component renders with the form structure
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should not modify nodes when view with target form is not found', () => {
+  it('should not modify nodes when view with target form is not found', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -2804,13 +2798,13 @@ describe('handleAddElementToForm - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Component should render even without matching form
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should return prevNodes unchanged when no view step contains the target form', () => {
+  it('should return prevNodes unchanged when no view step contains the target form', async () => {
     const mockNodes: Node[] = [
       {
         id: 'execution-1',
@@ -2822,12 +2816,12 @@ describe('handleAddElementToForm - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should update the form components when element is added', () => {
+  it('should update the form components when element is added', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-step-1',
@@ -2848,12 +2842,12 @@ describe('handleAddElementToForm - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should schedule node internals update after adding element to form', () => {
+  it('should schedule node internals update after adding element to form', async () => {
     const mockUpdateInternals = vi.fn();
     mockUseUpdateNodeInternals.mockReturnValue(mockUpdateInternals);
 
@@ -2877,9 +2871,9 @@ describe('handleAddElementToForm - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -2893,7 +2887,7 @@ describe('handleAddElementToView - INPUT_ELEMENT_TYPES handling', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should add input element to existing form when form exists in view', () => {
+  it('should add input element to existing form when form exists in view', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -2914,12 +2908,12 @@ describe('handleAddElementToView - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should create new form when adding input element to view without form', () => {
+  it('should create new form when adding input element to view without form', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -2933,12 +2927,12 @@ describe('handleAddElementToView - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should add non-input element directly to view components', () => {
+  it('should add non-input element directly to view components', async () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -2952,12 +2946,12 @@ describe('handleAddElementToView - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should return prevNodes when view with given ID is not found', () => {
+  it('should return prevNodes when view with given ID is not found', async () => {
     const mockNodes: Node[] = [
       {
         id: 'other-view',
@@ -2969,9 +2963,9 @@ describe('handleAddElementToView - INPUT_ELEMENT_TYPES handling', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3120,7 +3114,7 @@ describe('Edge Style Update Effect', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should update edge types when edgeStyle changes', () => {
+  it('should update edge types when edgeStyle changes', async () => {
     const existingEdges: Edge[] = [
       {id: 'edge-1', source: 'a', target: 'b', type: 'smoothstep'},
       {id: 'edge-2', source: 'b', target: 'c', type: 'smoothstep'},
@@ -3128,7 +3122,7 @@ describe('Edge Style Update Effect', () => {
 
     mockUseEdgesState.mockReturnValue([existingEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The edge style effect runs on mount and updates edge types
     expect(mockSetEdges).toHaveBeenCalled();
@@ -3164,12 +3158,12 @@ describe('Static Step Factory Creation', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should create static step node types for START and END', () => {
-    render(<LoginFlowBuilder />);
+  it('should create static step node types for START and END', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Static step types are created in useMemo
     // The mock StaticStepFactory should be available for START and END types
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3540,7 +3534,7 @@ describe('Edge Style Update Effect - Component Integration', () => {
     });
   });
 
-  it('should call setEdges to update edge types on mount', () => {
+  it('should call setEdges to update edge types on mount', async () => {
     const existingEdges: Edge[] = [
       {id: 'edge-1', source: 'a', target: 'b', type: 'smoothstep'},
       {id: 'edge-2', source: 'b', target: 'c', type: 'smoothstep'},
@@ -3548,13 +3542,13 @@ describe('Edge Style Update Effect - Component Integration', () => {
 
     mockUseEdgesState.mockReturnValue([existingEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The edge style effect should call setEdges
     expect(mockSetEdges).toHaveBeenCalled();
   });
 
-  it('should update edge types when edgeStyle value changes', () => {
+  it('should update edge types when edgeStyle value changes', async () => {
     mockUseFlowBuilderCore.mockReturnValue({
       setFlowCompletionConfigs: mockSetFlowCompletionConfigs,
       edgeStyle: 'bezier',
@@ -3565,7 +3559,7 @@ describe('Edge Style Update Effect - Component Integration', () => {
 
     mockUseEdgesState.mockReturnValue([existingEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The effect should update edges with new style
     expect(mockSetEdges).toHaveBeenCalled();
@@ -3588,12 +3582,12 @@ describe('StepsByType Ref Update Effect - Component Integration', () => {
     });
   });
 
-  it('should render component which triggers steps indexing effect', () => {
-    render(<LoginFlowBuilder />);
+  it('should render component which triggers steps indexing effect', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The component renders, which triggers the stepsByType indexing effect
     // The effect runs when steps change (useGetLoginFlowBuilderResources mock provides steps)
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3613,12 +3607,12 @@ describe('NodeTypes and StaticStepFactory Creation - Component Integration', () 
     });
   });
 
-  it('should create nodeTypes with StepFactory and StaticStepFactory', () => {
-    render(<LoginFlowBuilder />);
+  it('should create nodeTypes with StepFactory and StaticStepFactory', async () => {
+    await render(<LoginFlowBuilder />);
 
     // The nodeTypes useMemo creates factories for each step type including static steps
     // This test verifies the component renders which requires nodeTypes to be created
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3642,23 +3636,23 @@ describe('Snackbar State Management - Close Handlers', () => {
   it('should show error snackbar and allow closing via handleCloseErrorSnackbar', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Validation fails, which triggers error snackbar to open
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
     });
 
     // Error snackbar should be visible
-    await waitFor(() => {
-      const errorAlert = screen.queryByTestId('alert-error');
+    await vi.waitFor(async () => {
+      const errorAlert = page.getByTestId('alert-error');
       if (errorAlert) {
         // Click the close button which triggers handleCloseErrorSnackbar
-        const closeBtn = screen.getByTestId('alert-error-close');
-        fireEvent.click(closeBtn);
+        const closeBtn = page.getByTestId('alert-error-close');
+        await userEvent.click(closeBtn);
       }
     });
   });
@@ -3670,23 +3664,23 @@ describe('Snackbar State Management - Close Handlers', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Success triggers setSuccessSnackbar to open
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
 
     // Success snackbar should be visible
-    await waitFor(() => {
-      const successAlert = screen.queryByTestId('alert-success');
+    await vi.waitFor(async () => {
+      const successAlert = page.getByTestId('alert-success');
       if (successAlert) {
         // Click the close button which triggers handleCloseSuccessSnackbar
-        const closeBtn = screen.getByTestId('alert-success-close');
-        fireEvent.click(closeBtn);
+        const closeBtn = page.getByTestId('alert-success-close');
+        await userEvent.click(closeBtn);
       }
     });
   });
@@ -3698,22 +3692,22 @@ describe('Snackbar State Management - Close Handlers', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Error triggers setErrorSnackbar
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
 
     // Error snackbar should be visible after error
-    await waitFor(() => {
-      const errorAlert = screen.queryByTestId('alert-error');
+    await vi.waitFor(async () => {
+      const errorAlert = page.getByTestId('alert-error');
       if (errorAlert) {
-        const closeBtn = screen.getByTestId('alert-error-close');
-        fireEvent.click(closeBtn);
+        const closeBtn = page.getByTestId('alert-error-close');
+        await userEvent.click(closeBtn);
       }
     });
   });
@@ -3725,20 +3719,20 @@ describe('Snackbar State Management - Close Handlers', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
 
     // Click the snackbar close button (tests the Snackbar onClose prop)
-    await waitFor(() => {
-      const snackbarCloseBtn = screen.queryByTestId('snackbar-close');
+    await vi.waitFor(async () => {
+      const snackbarCloseBtn = page.getByTestId('snackbar-close');
       if (snackbarCloseBtn) {
-        fireEvent.click(snackbarCloseBtn);
+        await userEvent.click(snackbarCloseBtn);
       }
     });
   });
@@ -3776,12 +3770,12 @@ describe('handleResourceAdd setNodes Callback Execution', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
@@ -3820,12 +3814,12 @@ describe('handleResourceAdd setNodes Callback Execution', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
@@ -3861,12 +3855,12 @@ describe('handleResourceAdd setNodes Callback Execution', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
@@ -3909,11 +3903,11 @@ describe('handleAddElementToView Callback Execution', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // We need to wait for the component to mount and the refs to be set
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
     });
 
     // Note: The actual handleAddElementToView is triggered via ref in nodeTypes
@@ -3933,10 +3927,10 @@ describe('handleAddElementToView Callback Execution', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Verify the component renders with the view node setup
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -3971,10 +3965,10 @@ describe('handleAddElementToForm Callback Execution', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Verify component renders with form structure
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -4063,7 +4057,7 @@ describe('Restore From History Event Handler', () => {
   });
 
   it('should call setNodes and setEdges when restoreFromHistory event is dispatched', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Dispatch a custom event for history restoration with valid nodes and edges
     const event = new CustomEvent('restoreFromHistory', {
@@ -4076,14 +4070,14 @@ describe('Restore From History Event Handler', () => {
     window.dispatchEvent(event);
 
     // setNodes and setEdges should be called with the restored data
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockSetEdges).toHaveBeenCalled();
     });
   });
 
   it('should not call setNodes or setEdges when event detail is missing nodes', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const initialSetNodesCalls = mockSetNodes.mock.calls.length;
 
@@ -4098,13 +4092,13 @@ describe('Restore From History Event Handler', () => {
 
     // setNodes should not be called for restore (only initial calls)
     // We check that no additional calls were made
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes.mock.calls.length).toBe(initialSetNodesCalls);
     });
   });
 
   it('should not call setNodes or setEdges when event detail is missing edges', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const initialSetNodesCalls = mockSetNodes.mock.calls.length;
 
@@ -4118,7 +4112,7 @@ describe('Restore From History Event Handler', () => {
     window.dispatchEvent(event);
 
     // No additional setNodes calls for restore
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes.mock.calls.length).toBe(initialSetNodesCalls);
     });
   });
@@ -4146,10 +4140,10 @@ describe('Existing Flow Loading - useLayoutEffect', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // setNodes should be called with processed nodes from existing flow
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockSetEdges).toHaveBeenCalled();
     });
@@ -4168,13 +4162,13 @@ describe('Existing Flow Loading - useLayoutEffect', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // When nodes lack layout data (more than 1 node without position),
     // needsAutoLayout should be set to true
     // This is reflected in the triggerAutoLayoutOnLoad prop
-    await waitFor(() => {
-      expect(screen.getByTestId('auto-layout')).toHaveTextContent('true');
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('auto-layout')).toHaveTextContent('true');
     });
   });
 
@@ -4190,11 +4184,11 @@ describe('Existing Flow Loading - useLayoutEffect', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // When all nodes have layout, needsAutoLayout should be false
-    await waitFor(() => {
-      expect(screen.getByTestId('auto-layout')).toHaveTextContent('false');
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('auto-layout')).toHaveTextContent('false');
     });
   });
 });
@@ -4231,12 +4225,12 @@ describe('handleResourceAdd - setNodes Callback Internal Logic', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
@@ -4261,19 +4255,19 @@ describe('handleResourceAdd - setNodes Callback Internal Logic', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Note: handleResourceAdd only modifies if a VIEW step exists
     // Since we have no VIEW, clicking add resource won't change the nodes
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
 
     // Click the add non-element resource button (which has resourceType: STEP)
     // This tests the early return in handleResourceAdd for non-ELEMENT resources
-    const addNonElementBtn = screen.getByTestId('add-non-element-resource-btn');
-    fireEvent.click(addNonElementBtn);
+    const addNonElementBtn = page.getByTestId('add-non-element-resource-btn');
+    await userEvent.click(addNonElementBtn);
 
     // The component should still be rendered normally
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should replace existing form when adding new form element', async () => {
@@ -4305,12 +4299,12 @@ describe('handleResourceAdd - setNodes Callback Internal Logic', () => {
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
@@ -4342,34 +4336,34 @@ describe('handleStepLoad - Step Processing', () => {
   });
 
   it('should process VIEW step with empty data and add default components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Click the load step button which calls onStepLoad with VIEW step
-    const loadStepBtn = screen.getByTestId('load-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-btn');
+    await userEvent.click(loadStepBtn);
 
     // The handleStepLoad callback is executed by the mock
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should process VIEW step with existing components and resolve metadata', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Click the load step with components button
-    const loadStepBtn = screen.getByTestId('load-step-with-components-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-with-components-btn');
+    await userEvent.click(loadStepBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should process non-VIEW step and resolve metadata', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Click the load non-view step button
-    const loadStepBtn = screen.getByTestId('load-non-view-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-non-view-step-btn');
+    await userEvent.click(loadStepBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -4385,13 +4379,13 @@ describe('handleWidgetLoad - Widget Processing with Default Property Selectors',
   });
 
   it('should return early when widget has no steps', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-btn');
+    await userEvent.click(loadWidgetBtn);
 
     // Widget with no steps should return unchanged nodes/edges
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should merge widget with MERGE_WITH_DROP_POINT strategy when target exists', async () => {
@@ -4406,13 +4400,13 @@ describe('handleWidgetLoad - Widget Processing with Default Property Selectors',
 
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-with-merge-strategy-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-with-merge-strategy-btn');
+    await userEvent.click(loadWidgetBtn);
 
     // Widget should merge components with target node
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -4428,34 +4422,34 @@ describe('handleTemplateLoad - Template Processing', () => {
   });
 
   it('should call setFlowCompletionConfigs when template has END step with config', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-with-end-step-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-with-end-step-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetFlowCompletionConfigs).toHaveBeenCalled();
     });
   });
 
   it('should return execution step resource for BASIC_FEDERATED template', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-basic-federated-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-basic-federated-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
     // BASIC_FEDERATED template should return execution step info
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should return empty arrays for template without steps', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The basic template button returns a template that may have empty steps
-    const loadTemplateBtn = screen.getByTestId('load-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -4474,7 +4468,7 @@ describe('Edge Style Effect - setEdges Callback Execution', () => {
     });
   });
 
-  it('should call setEdges with callback that updates edge types', () => {
+  it('should call setEdges with callback that updates edge types', async () => {
     const existingEdges: Edge[] = [
       {id: 'edge-1', source: 'a', target: 'b', type: 'default'},
       {id: 'edge-2', source: 'b', target: 'c', type: 'default'},
@@ -4490,7 +4484,7 @@ describe('Edge Style Effect - setEdges Callback Execution', () => {
 
     mockUseEdgesState.mockReturnValue([existingEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The edge style effect runs on mount
     expect(mockSetEdges).toHaveBeenCalled();
@@ -4537,7 +4531,7 @@ describe('Verbose Mode Filtering - Component Integration', () => {
     expect(filteredNodesVerbose).toHaveLength(3);
   });
 
-  it('should render component with nodes state', () => {
+  it('should render component with nodes state', async () => {
     const mockNodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -4552,10 +4546,10 @@ describe('Verbose Mode Filtering - Component Integration', () => {
       isVerboseMode: true,
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Component renders with nodes
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should correctly filter edges based on verbose mode - logic test', () => {
@@ -4595,27 +4589,27 @@ describe('generateSteps Function - Step Generation Logic', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should generate START step and preserve existing step positions', () => {
+  it('should generate START step and preserve existing step positions', async () => {
     // The generateSteps function is called internally during template loading
     // Test by loading a template which triggers generateSteps
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
     // generateSteps is called and should create START step + template steps
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should use existing START step position when template includes START step', () => {
-    render(<LoginFlowBuilder />);
+  it('should use existing START step position when template includes START step', async () => {
+    await render(<LoginFlowBuilder />);
 
     // Load a template that includes steps
-    const loadTemplateBtn = screen.getByTestId('load-template-with-end-step-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-with-end-step-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -4634,10 +4628,10 @@ describe('updateFlowWithSequence - Flow Update Sequence', () => {
     // When no flowId is provided, component loads default template
     // which triggers updateFlowWithSequence
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // setNodes should be called as part of the flow update sequence
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
   });
@@ -4671,11 +4665,11 @@ describe('updateAllNodeInternals - Node Internals Update', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // updateAllNodeInternals is called after loading existing flow
     // via queueMicrotask
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
   });
@@ -5197,14 +5191,14 @@ describe('handleResourceAdd - Edge Cases', () => {
     const mockNodes: Node[] = [];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addResourceBtn = screen.getByTestId('add-resource-btn');
-    fireEvent.click(addResourceBtn);
+    const addResourceBtn = page.getByTestId('add-resource-btn');
+    await userEvent.click(addResourceBtn);
 
     // setNodes should not be called with any updates since there's no view
     // The component should handle this gracefully
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should skip non-element resources', async () => {
@@ -5218,14 +5212,14 @@ describe('handleResourceAdd - Edge Cases', () => {
     ];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Click button that adds non-element resource (STEP type)
-    const addNonElementBtn = screen.getByTestId('add-non-element-resource-btn');
-    fireEvent.click(addNonElementBtn);
+    const addNonElementBtn = page.getByTestId('add-non-element-resource-btn');
+    await userEvent.click(addNonElementBtn);
 
     // Should return early without modifying nodes
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should add non-form element to existing view components', async () => {
@@ -5241,13 +5235,13 @@ describe('handleResourceAdd - Edge Cases', () => {
     ];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const addNonFormElementBtn = screen.getByTestId('add-non-form-element-btn');
-    fireEvent.click(addNonFormElementBtn);
+    const addNonFormElementBtn = page.getByTestId('add-non-form-element-btn');
+    await userEvent.click(addNonFormElementBtn);
 
     // The mock should verify that setNodes is called to add the element
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -5272,12 +5266,12 @@ describe('handleWidgetLoad - Complex Scenarios', () => {
     ];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-with-default-selector-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-with-default-selector-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should handle widget merge with target resource', async () => {
@@ -5293,24 +5287,24 @@ describe('handleWidgetLoad - Complex Scenarios', () => {
     ];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-with-merge-strategy-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-with-merge-strategy-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should return unchanged data when widget has no steps', async () => {
     const mockNodes: Node[] = [];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadWidgetBtn = screen.getByTestId('load-widget-btn');
-    fireEvent.click(loadWidgetBtn);
+    const loadWidgetBtn = page.getByTestId('load-widget-btn');
+    await userEvent.click(loadWidgetBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -5326,32 +5320,32 @@ describe('handleTemplateLoad - Edge Cases', () => {
   });
 
   it('should return empty arrays when template config is null', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-null-config-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-null-config-btn');
+    await userEvent.click(loadTemplateBtn);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should handle BASIC_FEDERATED template and return execution step', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-basic-federated-template-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-basic-federated-template-btn');
+    await userEvent.click(loadTemplateBtn);
 
     // This should return the execution step as the default resource
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should set flow completion configs when END step has config', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadTemplateBtn = screen.getByTestId('load-template-with-end-step-btn');
-    fireEvent.click(loadTemplateBtn);
+    const loadTemplateBtn = page.getByTestId('load-template-with-end-step-btn');
+    await userEvent.click(loadTemplateBtn);
 
     // The END step config should trigger setFlowCompletionConfigs
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -5372,10 +5366,10 @@ describe('Existing Flow Data Loading - Sync Logic', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-title')).toHaveTextContent('My Custom Flow');
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('flow-title')).toHaveTextContent('My Custom Flow');
     });
   });
 
@@ -5388,11 +5382,11 @@ describe('Existing Flow Data Loading - Sync Logic', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    await waitFor(() => {
+    await vi.waitFor(async () => {
       // Handle should be generated from name
-      expect(screen.getByTestId('flow-handle')).toHaveTextContent('my-custom-flow');
+      await expect.element(page.getByTestId('flow-handle')).toHaveTextContent('my-custom-flow');
     });
   });
 
@@ -5405,10 +5399,10 @@ describe('Existing Flow Data Loading - Sync Logic', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-handle')).toHaveTextContent('custom-handle-value');
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('flow-handle')).toHaveTextContent('custom-handle-value');
     });
   });
 
@@ -5423,11 +5417,11 @@ describe('Existing Flow Data Loading - Sync Logic', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    await waitFor(() => {
+    await vi.waitFor(async () => {
       // Auto layout should be triggered when nodes lack layout data
-      expect(screen.getByTestId('auto-layout')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('auto-layout')).toHaveTextContent('true');
     });
   });
 
@@ -5442,10 +5436,10 @@ describe('Existing Flow Data Loading - Sync Logic', () => {
       ],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('auto-layout')).toHaveTextContent('false');
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('auto-layout')).toHaveTextContent('false');
     });
   });
 });
@@ -5464,21 +5458,21 @@ describe('Snackbar Close Handlers - Direct Testing', () => {
   it('should close error snackbar when close button is clicked', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for error snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(async () => {
+      const snackbar = page.getByTestId('snackbar');
       if (snackbar) {
-        const closeBtn = screen.getByTestId('snackbar-close');
-        fireEvent.click(closeBtn);
+        const closeBtn = page.getByTestId('snackbar-close');
+        await userEvent.click(closeBtn);
       }
     });
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should close success snackbar after successful save', async () => {
@@ -5487,37 +5481,37 @@ describe('Snackbar Close Handlers - Direct Testing', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for success callback and snackbar
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
 
     // Try to close the success snackbar if visible
-    const snackbar = screen.queryByTestId('snackbar');
+    const snackbar = page.getByTestId('snackbar');
     if (snackbar) {
-      const closeBtn = screen.getByTestId('snackbar-close');
-      fireEvent.click(closeBtn);
+      const closeBtn = page.getByTestId('snackbar-close');
+      await userEvent.click(closeBtn);
     }
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should show error snackbar when structure validation fails', async () => {
     mockIsFlowValid.value = true;
     mockValidateFlowGraph.mockReturnValue(['Missing start node']);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Error snackbar should be triggered for structure validation failure
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
     });
   });
@@ -5535,13 +5529,13 @@ describe('mutateComponents - Form Processing', () => {
   });
 
   it('should call mutateComponents and process form with password field', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const mutateBtn = screen.getByTestId('mutate-components-with-form-btn');
-    fireEvent.click(mutateBtn);
+    const mutateBtn = page.getByTestId('mutate-components-with-form-btn');
+    await userEvent.click(mutateBtn);
 
     // mutateComponents should process the form and set executor for password field
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should filter multiple form blocks keeping only the first', () => {
@@ -5580,33 +5574,33 @@ describe('handleStepLoad - Non-VIEW Steps', () => {
   });
 
   it('should process non-VIEW step without adding default components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-non-view-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-non-view-step-btn');
+    await userEvent.click(loadStepBtn);
 
     // Non-VIEW steps should be processed without adding blank template components
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should process VIEW step with existing components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-step-with-components-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-with-components-btn');
+    await userEvent.click(loadStepBtn);
 
     // VIEW step with components should keep its components
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should add default components to VIEW step with empty components', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const loadStepBtn = screen.getByTestId('load-step-btn');
-    fireEvent.click(loadStepBtn);
+    const loadStepBtn = page.getByTestId('load-step-btn');
+    await userEvent.click(loadStepBtn);
 
     // VIEW step with empty data should get default components from blank template
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -5650,7 +5644,7 @@ describe('Edge Style Effect', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should apply edge style to all edges when style changes', () => {
+  it('should apply edge style to all edges when style changes', async () => {
     const mockEdges: Edge[] = [
       {id: 'edge-1', source: 'a', target: 'b', type: 'default'},
       {id: 'edge-2', source: 'b', target: 'c', type: 'default'},
@@ -5658,10 +5652,10 @@ describe('Edge Style Effect', () => {
 
     mockUseEdgesState.mockReturnValue([mockEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // setEdges should be called to apply the edge style
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('2');
   });
 });
 
@@ -5677,7 +5671,7 @@ describe('History Restoration - Edge Cases', () => {
   });
 
   it('should restore both nodes and edges from history event', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const restoredNodes = [
       {id: 'restored-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
@@ -5692,14 +5686,14 @@ describe('History Restoration - Edge Cases', () => {
     window.dispatchEvent(event);
 
     // setNodes and setEdges should be called with restored data
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalledWith(restoredNodes);
       expect(mockSetEdges).toHaveBeenCalledWith(restoredEdges);
     });
   });
 
   it('should not restore when only nodes are provided without edges', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {nodes: [{id: 'node-1', type: 'VIEW'}]},
@@ -5708,11 +5702,11 @@ describe('History Restoration - Edge Cases', () => {
     window.dispatchEvent(event);
 
     // Should not call setNodes without both nodes and edges
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should not restore when only edges are provided without nodes', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {edges: [{id: 'edge-1', source: 'a', target: 'b'}]},
@@ -5720,7 +5714,7 @@ describe('History Restoration - Edge Cases', () => {
 
     window.dispatchEvent(event);
 
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -5743,12 +5737,12 @@ describe('Update Flow - Callbacks', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
       // Verify the first argument contains flowId
       const callArgs = mockUpdateFlowMutate.mock.calls[0];
@@ -5773,12 +5767,12 @@ describe('Update Flow - Callbacks', () => {
       }
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccessCalled).toBe(true);
     });
   });
@@ -5800,29 +5794,29 @@ describe('Update Flow - Callbacks', () => {
       }
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onErrorCalled).toBe(true);
     });
 
     // Error snackbar should be shown
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
   it('should call createFlow.mutate for new flows', async () => {
     mockUseParams.mockReturnValue({});
     mockExistingFlowData.value = null;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
     });
   });
@@ -5839,12 +5833,12 @@ describe('Update Flow - Callbacks', () => {
       }
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccessCalled).toBe(true);
     });
   });
@@ -5861,12 +5855,12 @@ describe('Update Flow - Callbacks', () => {
       }
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onErrorCalled).toBe(true);
     });
   });
@@ -5883,7 +5877,7 @@ describe('Verbose Mode Filtering Integration', () => {
     mockIsVerboseMode.value = true;
   });
 
-  it('should filter out EXECUTION nodes when isVerboseMode is false in rendered component', () => {
+  it('should filter out EXECUTION nodes when isVerboseMode is false in rendered component', async () => {
     // Set up nodes with execution type (TASK_EXECUTION is the actual type used by StepTypes.Execution)
     const nodesWithExecution: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
@@ -5908,15 +5902,15 @@ describe('Verbose Mode Filtering Integration', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The FlowBuilder should receive filtered nodes (2 instead of 3)
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('2');
     // The FlowBuilder should receive filtered edges (1 instead of 3)
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 
-  it('should keep all nodes and edges when isVerboseMode is true', () => {
+  it('should keep all nodes and edges when isVerboseMode is true', async () => {
     const nodesWithExecution: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -5940,12 +5934,12 @@ describe('Verbose Mode Filtering Integration', () => {
       isVerboseMode: true,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // All nodes should be passed through
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('3');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('3');
     // All edges should be passed through
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('3');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('3');
   });
 });
 
@@ -5970,28 +5964,28 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
   it('should display error snackbar when flow validation fails and close it', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for error snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(() => {
+      const snackbar = page.getByTestId('snackbar');
       expect(snackbar).toBeInTheDocument();
     });
 
     // Verify error alert is shown
-    const errorAlert = screen.getByTestId('alert-error');
+    const errorAlert = page.getByTestId('alert-error');
     expect(errorAlert).toBeInTheDocument();
 
     // Close the snackbar using the alert close button
-    const closeBtn = screen.getByTestId('alert-error-close');
-    fireEvent.click(closeBtn);
+    const closeBtn = page.getByTestId('alert-error-close');
+    await userEvent.click(closeBtn);
 
     // Wait for snackbar to close
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).not.toBeInTheDocument();
     });
   });
 
@@ -6002,28 +5996,28 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for success snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(() => {
+      const snackbar = page.getByTestId('snackbar');
       expect(snackbar).toBeInTheDocument();
     });
 
     // Verify success alert is shown
-    const successAlert = screen.getByTestId('alert-success');
+    const successAlert = page.getByTestId('alert-success');
     expect(successAlert).toBeInTheDocument();
 
     // Close the snackbar using the alert close button
-    const closeBtn = screen.getByTestId('alert-success-close');
-    fireEvent.click(closeBtn);
+    const closeBtn = page.getByTestId('alert-success-close');
+    await userEvent.click(closeBtn);
 
     // Wait for snackbar to close
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).not.toBeInTheDocument();
     });
   });
 
@@ -6034,28 +6028,28 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for error snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(() => {
+      const snackbar = page.getByTestId('snackbar');
       expect(snackbar).toBeInTheDocument();
     });
 
     // Verify error alert is shown
-    const errorAlert = screen.getByTestId('alert-error');
+    const errorAlert = page.getByTestId('alert-error');
     expect(errorAlert).toBeInTheDocument();
 
     // Close the snackbar using the snackbar close button
-    const closeBtn = screen.getByTestId('snackbar-close');
-    fireEvent.click(closeBtn);
+    const closeBtn = page.getByTestId('snackbar-close');
+    await userEvent.click(closeBtn);
 
     // Wait for snackbar to close
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).not.toBeInTheDocument();
     });
   });
 
@@ -6073,19 +6067,19 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for success snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(() => {
+      const snackbar = page.getByTestId('snackbar');
       expect(snackbar).toBeInTheDocument();
     });
 
     // Verify success alert is shown
-    const successAlert = screen.getByTestId('alert-success');
+    const successAlert = page.getByTestId('alert-success');
     expect(successAlert).toBeInTheDocument();
   });
 
@@ -6103,19 +6097,19 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
       options?.onError?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for error snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(() => {
+      const snackbar = page.getByTestId('snackbar');
       expect(snackbar).toBeInTheDocument();
     });
 
     // Verify error alert is shown
-    const errorAlert = screen.getByTestId('alert-error');
+    const errorAlert = page.getByTestId('alert-error');
     expect(errorAlert).toBeInTheDocument();
   });
 
@@ -6123,19 +6117,19 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
     mockIsFlowValid.value = true;
     mockValidateFlowGraph.mockReturnValue(['Missing required node']);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for error snackbar to appear
-    await waitFor(() => {
-      const snackbar = screen.queryByTestId('snackbar');
+    await vi.waitFor(() => {
+      const snackbar = page.getByTestId('snackbar');
       expect(snackbar).toBeInTheDocument();
     });
 
     // Verify error alert is shown
-    const errorAlert = screen.getByTestId('alert-error');
+    const errorAlert = page.getByTestId('alert-error');
     expect(errorAlert).toBeInTheDocument();
 
     // Create mutation should NOT have been called
@@ -6153,7 +6147,7 @@ describe('Verbose Mode Filtering - Component Integration', () => {
     mockValidateFlowGraph.mockReturnValue([]);
   });
 
-  it('should filter EXECUTION nodes and their edges when isVerboseMode is false', () => {
+  it('should filter EXECUTION nodes and their edges when isVerboseMode is false', async () => {
     const nodesWithExecution: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6176,15 +6170,15 @@ describe('Verbose Mode Filtering - Component Integration', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // Execution node should be filtered out (2 VIEW nodes remain)
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('2');
     // Edges connected to execution node should be filtered out (only e3 remains)
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 
-  it('should keep all nodes and edges when isVerboseMode is true', () => {
+  it('should keep all nodes and edges when isVerboseMode is true', async () => {
     const nodesWithExecution: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6207,15 +6201,15 @@ describe('Verbose Mode Filtering - Component Integration', () => {
       isVerboseMode: true,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // All nodes should be present
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('3');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('3');
     // All edges should be present
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('3');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('3');
   });
 
-  it('should only filter edges where source OR target is an execution node', () => {
+  it('should only filter edges where source OR target is an execution node', async () => {
     const nodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6240,12 +6234,12 @@ describe('Verbose Mode Filtering - Component Integration', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // 3 VIEW nodes should remain
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('3');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('3');
     // Only e3 and e4 should remain
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('2');
   });
 });
 
@@ -6267,7 +6261,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
   });
 
   it('should restore nodes and edges when both are provided', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6278,14 +6272,14 @@ describe('RestoreFromHistory Event - All Branches', () => {
 
     window.dispatchEvent(event);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockSetEdges).toHaveBeenCalled();
     });
   });
 
   it('should NOT restore when only nodes are provided (edges missing)', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6303,7 +6297,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
   });
 
   it('should NOT restore when only edges are provided (nodes missing)', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6321,7 +6315,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
   });
 
   it('should NOT restore when nodes is empty array', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6334,13 +6328,13 @@ describe('RestoreFromHistory Event - All Branches', () => {
 
     // Empty array is falsy in the condition check (length === 0 is truthy but empty array is truthy)
     // Actually empty array IS truthy, so this should call setNodes
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
   });
 
   it('should NOT restore when edges is empty array', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6352,13 +6346,13 @@ describe('RestoreFromHistory Event - All Branches', () => {
     window.dispatchEvent(event);
 
     // Empty array IS truthy, so this should still call setNodes/setEdges
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
   });
 
   it('should NOT restore when nodes is undefined', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6376,7 +6370,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
   });
 
   it('should NOT restore when edges is undefined', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {
@@ -6394,7 +6388,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
   });
 
   it('should NOT restore when detail is empty object', async () => {
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
       detail: {},
@@ -6403,7 +6397,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
     window.dispatchEvent(event);
 
     // Both are undefined, so neither setter should be called with restoration data
-    expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
+    await expect.element(page.getByTestId('flow-builder')).toBeInTheDocument();
   });
 });
 
@@ -6428,13 +6422,13 @@ describe('isEditingExistingFlow Branch Coverage', () => {
     mockUseParams.mockReturnValue({flowId: 'some-flow-id'});
     mockExistingFlowData.value = null;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Should call CREATE (not update) because existingFlowData is null
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
       expect(mockUpdateFlowMutate).not.toHaveBeenCalled();
     });
@@ -6450,13 +6444,13 @@ describe('isEditingExistingFlow Branch Coverage', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Should call CREATE (not update) because flowId is undefined
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
       expect(mockUpdateFlowMutate).not.toHaveBeenCalled();
     });
@@ -6471,13 +6465,13 @@ describe('isEditingExistingFlow Branch Coverage', () => {
       nodes: [],
     };
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Should call UPDATE because both flowId and existingFlowData exist
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockUpdateFlowMutate).toHaveBeenCalled();
       expect(mockCreateFlowMutate).not.toHaveBeenCalled();
     });
@@ -6487,13 +6481,13 @@ describe('isEditingExistingFlow Branch Coverage', () => {
     mockUseParams.mockReturnValue({});
     mockExistingFlowData.value = null;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Should call CREATE
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockCreateFlowMutate).toHaveBeenCalled();
       expect(mockUpdateFlowMutate).not.toHaveBeenCalled();
     });
@@ -6509,7 +6503,7 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should handle empty nodes array in non-verbose mode', () => {
+  it('should handle empty nodes array in non-verbose mode', async () => {
     mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
     mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
 
@@ -6520,13 +6514,13 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('0');
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('0');
   });
 
-  it('should handle nodes with no execution types in non-verbose mode', () => {
+  it('should handle nodes with no execution types in non-verbose mode', async () => {
     const nodesWithoutExecution: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'view-2', type: 'VIEW', position: {x: 100, y: 0}, data: {}},
@@ -6543,15 +6537,15 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // All nodes remain because none are TASK_EXECUTION
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('2');
     // All edges remain because none connect to execution nodes
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 
-  it('should handle all execution nodes in non-verbose mode', () => {
+  it('should handle all execution nodes in non-verbose mode', async () => {
     const allExecutionNodes: Node[] = [
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-2', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6568,12 +6562,12 @@ describe('Verbose Mode - Empty Arrays Edge Cases', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // All nodes filtered out
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('0');
     // All edges filtered out
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('0');
   });
 });
 
@@ -6593,7 +6587,7 @@ describe('Edge Style Effect - Branch Coverage', () => {
     }));
   });
 
-  it('should update edges when edgeStyle changes', () => {
+  it('should update edges when edgeStyle changes', async () => {
     const initialEdges: Edge[] = [
       {id: 'e1', source: 'a', target: 'b', type: 'default'},
       {id: 'e2', source: 'b', target: 'c', type: 'default'},
@@ -6601,16 +6595,16 @@ describe('Edge Style Effect - Branch Coverage', () => {
 
     mockUseEdgesState.mockReturnValue([initialEdges, mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // The setEdges should be called to update edge types
     expect(mockSetEdges).toHaveBeenCalled();
   });
 
-  it('should handle empty edges when edge style effect runs', () => {
+  it('should handle empty edges when edge style effect runs', async () => {
     mockUseEdgesState.mockReturnValue([[], mockSetEdges, vi.fn()]);
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
     // setEdges should still be called even with empty array
     expect(mockSetEdges).toHaveBeenCalled();
@@ -6637,23 +6631,23 @@ describe('Snackbar onClose Handlers - Direct Coverage', () => {
   it('should call handleCloseErrorSnackbar when error snackbar onClose is triggered', async () => {
     mockIsFlowValid.value = false;
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for snackbar to appear
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).toBeInTheDocument();
     });
 
     // Click the snackbar close button (tests the Snackbar onClose prop)
-    const snackbarCloseBtn = screen.getByTestId('snackbar-close');
-    fireEvent.click(snackbarCloseBtn);
+    const snackbarCloseBtn = page.getByTestId('snackbar-close');
+    await userEvent.click(snackbarCloseBtn);
 
     // Snackbar should close
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).not.toBeInTheDocument();
     });
   });
 
@@ -6663,23 +6657,23 @@ describe('Snackbar onClose Handlers - Direct Coverage', () => {
       options?.onSuccess?.();
     });
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    const saveBtn = screen.getByTestId('save-btn');
-    fireEvent.click(saveBtn);
+    const saveBtn = page.getByTestId('save-btn');
+    await userEvent.click(saveBtn);
 
     // Wait for snackbar to appear
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).toBeInTheDocument();
     });
 
     // Click the snackbar close button (tests the Snackbar onClose prop)
-    const snackbarCloseBtn = screen.getByTestId('snackbar-close');
-    fireEvent.click(snackbarCloseBtn);
+    const snackbarCloseBtn = page.getByTestId('snackbar-close');
+    await userEvent.click(snackbarCloseBtn);
 
     // Snackbar should close
-    await waitFor(() => {
-      expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByTestId('snackbar')).not.toBeInTheDocument();
     });
   });
 });
@@ -6694,7 +6688,7 @@ describe('Verbose Mode Node and Edge Filtering', () => {
     mockValidateFlowGraph.mockReturnValue([]);
   });
 
-  it('should filter out execution nodes and keep view nodes when verbose mode is disabled', () => {
+  it('should filter out execution nodes and keep view nodes when verbose mode is disabled', async () => {
     const mixedNodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6710,12 +6704,12 @@ describe('Verbose Mode Node and Edge Filtering', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('1');
   });
 
-  it('should filter out all nodes when only execution nodes exist and verbose mode is disabled', () => {
+  it('should filter out all nodes when only execution nodes exist and verbose mode is disabled', async () => {
     const executionOnlyNodes: Node[] = [{id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 0, y: 0}, data: {}}];
     const edges: Edge[] = [];
 
@@ -6728,12 +6722,12 @@ describe('Verbose Mode Node and Edge Filtering', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('0');
   });
 
-  it('should filter edges where source node is an execution node', () => {
+  it('should filter edges where source node is an execution node', async () => {
     const nodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6753,12 +6747,12 @@ describe('Verbose Mode Node and Edge Filtering', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 
-  it('should filter edges where target node is an execution node', () => {
+  it('should filter edges where target node is an execution node', async () => {
     const nodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6778,12 +6772,12 @@ describe('Verbose Mode Node and Edge Filtering', () => {
       isVerboseMode: false,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 
-  it('should show all nodes including execution nodes when verbose mode is enabled', () => {
+  it('should show all nodes including execution nodes when verbose mode is enabled', async () => {
     const nodes: Node[] = [
       {id: 'view-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       {id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 100, y: 0}, data: {}},
@@ -6798,12 +6792,12 @@ describe('Verbose Mode Node and Edge Filtering', () => {
       isVerboseMode: true,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('nodes-count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('nodes-count')).toHaveTextContent('2');
   });
 
-  it('should show all edges including those connected to execution nodes when verbose mode is enabled', () => {
+  it('should show all edges including those connected to execution nodes when verbose mode is enabled', async () => {
     const nodes: Node[] = [{id: 'exec-1', type: 'TASK_EXECUTION', position: {x: 0, y: 0}, data: {}}];
     const edges: Edge[] = [{id: 'e1', source: 'exec-1', target: 'exec-1'}];
 
@@ -6816,8 +6810,8 @@ describe('Verbose Mode Node and Edge Filtering', () => {
       isVerboseMode: true,
     }));
 
-    render(<LoginFlowBuilder />);
+    await render(<LoginFlowBuilder />);
 
-    expect(screen.getByTestId('edges-count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('edges-count')).toHaveTextContent('1');
   });
 });

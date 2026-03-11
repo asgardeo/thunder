@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetApplication from '../useGetApplication';
 import type {Application} from '../../models/application';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
@@ -109,10 +109,10 @@ describe('useGetApplication', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with loading state when applicationId is provided', () => {
+  it('should initialize with loading state when applicationId is provided', async () => {
     mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
+    const {result} = await renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -125,9 +125,9 @@ describe('useGetApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useGetApplication(applicationId));
+    const {result} = await renderHook(() => useGetApplication(applicationId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -142,9 +142,9 @@ describe('useGetApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    renderHook(() => useGetApplication(applicationId));
+    await renderHook(() => useGetApplication(applicationId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -165,9 +165,9 @@ describe('useGetApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result, queryClient} = renderHook(() => useGetApplication(applicationId));
+    const {result, queryClient} = await renderHook(() => useGetApplication(applicationId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -180,9 +180,9 @@ describe('useGetApplication', () => {
     const apiError = new Error('Failed to fetch application');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
+    const {result} = await renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -194,9 +194,9 @@ describe('useGetApplication', () => {
     const notFoundError = new Error('Application not found');
     mockHttpRequest.mockRejectedValueOnce(notFoundError);
 
-    const {result} = renderHook(() => useGetApplication('non-existent-id'));
+    const {result} = await renderHook(() => useGetApplication('non-existent-id'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -208,24 +208,24 @@ describe('useGetApplication', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
+    const {result} = await renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
     expect(result.current.error).toEqual(networkError);
   });
 
-  it('should not make API call when applicationId is empty string', () => {
-    const {result} = renderHook(() => useGetApplication(''));
+  it('should not make API call when applicationId is empty string', async () => {
+    const {result} = await renderHook(() => useGetApplication(''));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should not make API call when applicationId is falsy', () => {
-    const {result} = renderHook(() => useGetApplication(''));
+  it('should not make API call when applicationId is falsy', async () => {
+    const {result} = await renderHook(() => useGetApplication(''));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -237,9 +237,9 @@ describe('useGetApplication', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: app1});
 
-    const {result: result1} = renderHook(() => useGetApplication('app-1'));
+    const {result: result1} = await renderHook(() => useGetApplication('app-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -247,9 +247,9 @@ describe('useGetApplication', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: app2});
 
-    const {result: result2} = renderHook(() => useGetApplication('app-2'));
+    const {result: result2} = await renderHook(() => useGetApplication('app-2'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -272,9 +272,9 @@ describe('useGetApplication', () => {
       data: emptyApplication,
     });
 
-    const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
+    const {result} = await renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -287,11 +287,11 @@ describe('useGetApplication', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: app1}).mockResolvedValueOnce({data: app2});
 
-    const {result, rerender} = renderHook(({appId}: {appId: string}) => useGetApplication(appId), {
+    const {result, rerender} = await renderHook((props?) => useGetApplication(props!.appId), {
       initialProps: {appId: 'app-1'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -299,9 +299,9 @@ describe('useGetApplication', () => {
     expect(mockHttpRequest).toHaveBeenCalledTimes(1);
 
     // Change the application ID
-    rerender({appId: 'app-2'});
+    await rerender({appId: 'app-2'});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.id).toBe('app-2');
     });
 
@@ -316,9 +316,9 @@ describe('useGetApplication', () => {
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
 
     // First call - get the queryClient from the render result
-    const {result: result1, queryClient} = renderHook(() => useGetApplication(applicationId));
+    const {result: result1, queryClient} = await renderHook(() => useGetApplication(applicationId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -330,11 +330,11 @@ describe('useGetApplication', () => {
     });
 
     // Second call with same queryClient should use cache
-    const {result: result2} = renderHook(() => useGetApplication(applicationId), {
+    const {result: result2} = await renderHook(() => useGetApplication(applicationId), {
       queryClient,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -396,9 +396,9 @@ describe('useGetApplication', () => {
       data: completeApplication,
     });
 
-    const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
+    const {result} = await renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

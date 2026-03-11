@@ -16,61 +16,73 @@
  * under the License.
  */
 
-import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
+import {useState, useCallback} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiUserSchema, UpdateUserSchemaRequest} from '../types/user-types';
-import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
+import type {ApiUserSchema, UpdateUserSchemaRequest, ApiError} from '../types/user-types';
 
 /**
- * Variables for the {@link useUpdateUserType} mutation.
+ * Return type for the useUpdateUserType hook.
  */
-export interface UpdateUserTypeVariables {
-  /**
-   * The unique identifier of the user type to update
-   */
-  userTypeId: string;
-  /**
-   * The updated user type data
-   */
-  data: UpdateUserSchemaRequest;
+export interface UseUpdateUserTypeReturn {
+  data: ApiUserSchema | null;
+  error: ApiError | null;
+  loading: boolean;
+  updateUserType: (userTypeId: string, requestData: UpdateUserSchemaRequest) => Promise<ApiUserSchema>;
+  reset: () => void;
 }
 
 /**
  * Custom React hook to update an existing user schema (user type) in the Thunder server.
  *
- * @returns TanStack Query mutation object for updating user types
+ * @returns Hook state and actions for updating user types
  */
-export default function useUpdateUserType(): UseMutationResult<ApiUserSchema, Error, UpdateUserTypeVariables> {
+export default function useUpdateUserType(): UseUpdateUserTypeReturn {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
 
-  return useMutation<ApiUserSchema, Error, UpdateUserTypeVariables>({
-    mutationFn: async ({userTypeId, data}: UpdateUserTypeVariables): Promise<ApiUserSchema> => {
-      const serverUrl: string = getServerUrl();
-      const response: {
-        data: ApiUserSchema;
-      } = await http.request({
-        url: `${serverUrl}/user-schemas/${userTypeId}`,
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: JSON.stringify(data),
-      } as unknown as Parameters<typeof http.request>[0]);
+  const [data, setData] = useState<ApiUserSchema | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
+  const [loading, setLoading] = useState(false);
 
-      return response.data;
+  const updateUserType = useCallback(
+    async (userTypeId: string, requestData: UpdateUserSchemaRequest): Promise<ApiUserSchema> => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const serverUrl: string = getServerUrl() ?? '';
+        const response: {data: ApiUserSchema} = await http.request({
+          url: `${serverUrl}/user-schemas/${userTypeId}`,
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          data: requestData,
+        } as unknown as Parameters<typeof http.request>[0]);
+
+        setData(response.data);
+        setLoading(false);
+        return response.data;
+      } catch (err: unknown) {
+        setLoading(false);
+        const apiError: ApiError = {
+          code: 'UPDATE_USER_TYPE_ERROR',
+          message: err instanceof Error ? err.message : 'An unknown error occurred',
+          description: 'Failed to update user type',
+        };
+        setError(apiError);
+        throw err;
+      }
     },
-    onSuccess: (_data, variables) => {
-      queryClient
-        .invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPE, variables.userTypeId]})
-        .catch(() => {
-          // Ignore invalidation errors
-        });
-      queryClient.invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPES]}).catch(() => {
-        // Ignore invalidation errors
-      });
-    },
-  });
+    [getServerUrl, http],
+  );
+
+  const reset = useCallback(() => {
+    setData(null);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  return {data, error, loading, updateUserType, reset};
 }

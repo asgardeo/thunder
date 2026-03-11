@@ -17,16 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ConfigureUserDetails, {type ConfigureUserDetailsProps} from '../ConfigureUserDetails';
 import type {ApiUserSchema} from '../../../types/users';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 const mockSchema: ApiUserSchema = {
   id: 'schema-1',
@@ -62,89 +56,89 @@ describe('ConfigureUserDetails', () => {
   });
 
   const renderComponent = (props: Partial<ConfigureUserDetailsProps> = {}) =>
-    render(<ConfigureUserDetails {...defaultProps} {...props} />);
+    renderWithProviders(<ConfigureUserDetails {...defaultProps} {...props} />);
 
-  it('renders the component with title and subtitle', () => {
-    renderComponent();
+  it('renders the component with title and subtitle', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('users:createWizard.userDetails.title')).toBeInTheDocument();
-    expect(screen.getByText('users:createWizard.userDetails.subtitle')).toBeInTheDocument();
+    await expect.element(page.getByText('Enter user details')).toBeInTheDocument();
+    await expect.element(page.getByText('Fill in the required information for the new user.')).toBeInTheDocument();
   });
 
-  it('renders the data-testid attribute', () => {
-    renderComponent();
+  it('renders the data-testid attribute', async () => {
+    await renderComponent();
 
-    expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-details')).toBeInTheDocument();
   });
 
-  it('renders string fields from the schema', () => {
-    renderComponent();
+  it('renders string fields from the schema', async () => {
+    await renderComponent();
 
-    expect(screen.getByPlaceholderText(/enter username/i)).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder(/enter username/i)).toBeInTheDocument();
   });
 
-  it('renders number fields from the schema', () => {
-    renderComponent();
+  it('renders number fields from the schema', async () => {
+    await renderComponent();
 
-    expect(screen.getByPlaceholderText(/enter age/i)).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder(/enter age/i)).toBeInTheDocument();
   });
 
-  it('renders boolean fields from the schema', () => {
-    renderComponent();
+  it('renders boolean fields from the schema', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('checkbox')).toBeInTheDocument();
+    await expect.element(page.getByRole('checkbox')).toBeInTheDocument();
   });
 
   it('calls onFormValuesChange when form values change', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const usernameInput = screen.getByPlaceholderText(/enter username/i);
-    await user.type(usernameInput, 'john');
+    const usernameInput = page.getByPlaceholder(/enter username/i);
+    await userEvent.fill(usernameInput, 'john');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnFormValuesChange).toHaveBeenCalled();
       const lastCall = mockOnFormValuesChange.mock.calls[mockOnFormValuesChange.mock.calls.length - 1][0] as Record<string, unknown>;
       expect(lastCall).toHaveProperty('username', 'john');
     });
   });
 
-  it('renders with default values pre-filled', () => {
-    renderComponent({
+  it('renders with default values pre-filled', async () => {
+    await renderComponent({
       defaultValues: {username: 'existing_user', age: 25},
     });
 
-    expect(screen.getByPlaceholderText(/enter username/i)).toHaveValue('existing_user');
+    await expect.element(page.getByPlaceholder(/enter username/i)).toHaveValue('existing_user');
   });
 
   describe('onReadyChange callback', () => {
-    it('calls onReadyChange with false when required fields are empty', () => {
-      renderComponent({onReadyChange: mockOnReadyChange});
+    it('calls onReadyChange with false when required fields are empty', async () => {
+      await renderComponent({onReadyChange: mockOnReadyChange});
 
       // username is required and starts empty, so form is not valid
-      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      await vi.waitFor(() => {
+        expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      });
     });
 
     it('calls onReadyChange with true when required fields are filled', async () => {
-      const user = userEvent.setup();
-      renderComponent({onReadyChange: mockOnReadyChange});
+      await renderComponent({onReadyChange: mockOnReadyChange});
 
-      const usernameInput = screen.getByPlaceholderText(/enter username/i);
-      await user.type(usernameInput, 'john');
+      const usernameInput = page.getByPlaceholder(/enter username/i);
+      await userEvent.fill(usernameInput, 'john');
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnReadyChange).toHaveBeenCalledWith(true);
       });
     });
 
-    it('does not crash when onReadyChange is undefined', () => {
-      expect(() => {
-        renderComponent({onReadyChange: undefined});
+    it('does not crash when onReadyChange is undefined', async () => {
+      expect(async () => {
+        await renderComponent({onReadyChange: undefined});
       }).not.toThrow();
     });
   });
 
-  it('renders credential fields as password inputs with toggle visibility', () => {
+  it('renders credential fields as password inputs with toggle visibility', async () => {
     const schemaWithCredential: ApiUserSchema = {
       id: 'schema-cred',
       name: 'Employee',
@@ -161,25 +155,25 @@ describe('ConfigureUserDetails', () => {
       },
     };
 
-    renderComponent({schema: schemaWithCredential});
+    await renderComponent({schema: schemaWithCredential});
 
-    const passwordInput = screen.getByPlaceholderText(/enter password/i);
-    expect(passwordInput).toHaveAttribute('type', 'password');
-    expect(screen.getByLabelText('show password')).toBeInTheDocument();
+    const passwordInput = page.getByPlaceholder(/enter password/i);
+    await expect.element(passwordInput).toHaveAttribute('type', 'password');
+    await expect.element(page.getByLabelText('show password')).toBeInTheDocument();
 
-    const usernameInput = screen.getByPlaceholderText(/enter username/i);
-    expect(usernameInput).toHaveAttribute('type', 'text');
+    const usernameInput = page.getByPlaceholder(/enter username/i);
+    await expect.element(usernameInput).toHaveAttribute('type', 'text');
   });
 
-  it('handles schema with no fields', () => {
+  it('handles schema with no fields', async () => {
     const emptySchema: ApiUserSchema = {
       id: 'schema-empty',
       name: 'Empty',
       schema: {},
     };
 
-    renderComponent({schema: emptySchema});
+    await renderComponent({schema: emptySchema});
 
-    expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-details')).toBeInTheDocument();
   });
 });

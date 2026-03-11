@@ -17,19 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import PhoneNumberInputAdapter from '../PhoneNumberInputAdapter';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
 }));
@@ -54,116 +48,116 @@ describe('PhoneNumberInputAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render TextField component', () => {
+    it('should render TextField component', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<PhoneNumberInputAdapter resource={resource} />);
+      const {container} = await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
     });
 
-    it('should render input with type number', () => {
+    it('should render input with type number', async () => {
       const resource = createMockElement();
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('type', 'number');
+      await expect.element(page.getByRole('spinbutton')).toHaveAttribute('type', 'number');
     });
 
-    it('should render with label', () => {
+    it('should render with label', async () => {
       const resource = createMockElement({label: 'Mobile Number'});
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.getByLabelText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Mobile Number')).toBeInTheDocument();
     });
   });
 
   describe('Placeholder', () => {
-    it('should render placeholder when provided', () => {
+    it('should render placeholder when provided', async () => {
       const resource = createMockElement({placeholder: '+1 (555) 123-4567'});
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('placeholder', '+1 (555) 123-4567');
+      await expect.element(page.getByRole('spinbutton')).toHaveAttribute('placeholder', '+1 (555) 123-4567');
     });
 
-    it('should render empty placeholder when not provided', () => {
+    it('should render empty placeholder when not provided', async () => {
       const resource = createMockElement({placeholder: undefined});
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('placeholder', '');
+      await expect.element(page.getByRole('spinbutton')).toHaveAttribute('placeholder', '');
     });
   });
 
   describe('Required Field', () => {
-    it('should show required indicator when required is true', () => {
+    it('should show required indicator when required is true', async () => {
       const resource = createMockElement({required: true});
 
-      const {container} = render(<PhoneNumberInputAdapter resource={resource} />);
+      const {container} = await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormLabel-asterisk')).toBeInTheDocument();
     });
 
-    it('should not show required indicator when required is false', () => {
+    it('should not show required indicator when required is false', async () => {
       const resource = createMockElement({required: false});
 
-      const {container} = render(<PhoneNumberInputAdapter resource={resource} />);
+      const {container} = await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormLabel-asterisk')).not.toBeInTheDocument();
     });
   });
 
   describe('Hint Text', () => {
-    it('should render hint when provided', () => {
+    it('should render hint when provided', async () => {
       const resource = createMockElement({hint: 'Include country code'});
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.getByTestId('hint')).toHaveTextContent('Include country code');
+      await expect.element(page.getByTestId('hint')).toHaveTextContent('Include country code');
     });
 
-    it('should not render hint when not provided', () => {
+    it('should not render hint when not provided', async () => {
       const resource = createMockElement({hint: undefined});
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
 
-    it('should not render hint when empty', () => {
+    it('should not render hint when empty', async () => {
       const resource = createMockElement({hint: ''});
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
   });
 
   describe('Custom Styling', () => {
-    it('should apply className when provided', () => {
+    it('should apply className when provided', async () => {
       const resource = createMockElement({className: 'custom-phone'});
 
-      const {container} = render(<PhoneNumberInputAdapter resource={resource} />);
+      const {container} = await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(container.querySelector('.custom-phone')).toBeInTheDocument();
     });
   });
 
   describe('Empty Label', () => {
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      const {container} = render(<PhoneNumberInputAdapter resource={resource} />);
+      const {container} = await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      const {container} = render(<PhoneNumberInputAdapter resource={resource} />);
+      const {container} = await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiTextField-root')).toBeInTheDocument();
     });
@@ -176,7 +170,7 @@ describe('PhoneNumberInputAdapter', () => {
 
       const resource = createMockElement();
 
-      render(<PhoneNumberInputAdapter resource={resource} />);
+      await render(<PhoneNumberInputAdapter resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalled();
     });

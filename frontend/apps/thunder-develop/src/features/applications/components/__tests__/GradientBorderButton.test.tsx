@@ -17,127 +17,125 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import GradientBorderButton from '../GradientBorderButton';
 
 describe('GradientBorderButton', () => {
   describe('Rendering', () => {
-    it('should render button with children text', () => {
-      render(<GradientBorderButton>Click Me</GradientBorderButton>);
+    it('should render button with children text', async () => {
+      await render(<GradientBorderButton>Click Me</GradientBorderButton>);
 
-      expect(screen.getByRole('button', {name: 'Click Me'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Click Me'})).toBeInTheDocument();
     });
 
-    it('should render as text variant by default', () => {
-      render(<GradientBorderButton>Button</GradientBorderButton>);
+    it('should render as text variant by default', async () => {
+      await render(<GradientBorderButton>Button</GradientBorderButton>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
 
-      expect(button.className).toContain('MuiButton-text');
+      expect(button.element().className).toContain('MuiButton-text');
     });
 
-    it('should have ripple disabled by default', () => {
-      render(<GradientBorderButton>Button</GradientBorderButton>);
+    it('should have ripple disabled by default', async () => {
+      await render(<GradientBorderButton>Button</GradientBorderButton>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
 
       // Check that the button has the TouchRipple component disabled via the disableRipple prop
       // MUI conditionally renders the ripple span only when ripple is enabled
-      const rippleElement = button.querySelector('.MuiTouchRipple-root');
+      const rippleElement = button.element().querySelector('.MuiTouchRipple-root');
       expect(rippleElement).toBeNull();
     });
   });
 
   describe('Props', () => {
-    it('should accept and apply custom className', () => {
-      render(<GradientBorderButton className="custom-class">Button</GradientBorderButton>);
+    it('should accept and apply custom className', async () => {
+      await render(<GradientBorderButton className="custom-class">Button</GradientBorderButton>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
 
-      expect(button.className).toContain('custom-class');
+      expect(button.element().className).toContain('custom-class');
     });
 
     it('should handle onClick event', async () => {
-      const user = userEvent.setup();
       let clicked = false;
       const handleClick = () => {
         clicked = true;
       };
 
-      render(<GradientBorderButton onClick={handleClick}>Click Me</GradientBorderButton>);
+      await render(<GradientBorderButton onClick={handleClick}>Click Me</GradientBorderButton>);
 
-      await user.click(screen.getByRole('button'));
+      await userEvent.click(page.getByRole('button'));
 
       expect(clicked).toBe(true);
     });
 
-    it('should be disabled when disabled prop is true', () => {
-      render(<GradientBorderButton disabled>Button</GradientBorderButton>);
+    it('should be disabled when disabled prop is true', async () => {
+      await render(<GradientBorderButton disabled>Button</GradientBorderButton>);
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
 
       expect(button).toBeDisabled();
     });
 
-    it('should accept startIcon prop', () => {
-      render(<GradientBorderButton startIcon={<span data-testid="start-icon">→</span>}>Button</GradientBorderButton>);
+    it('should accept startIcon prop', async () => {
+      await render(<GradientBorderButton startIcon={<span data-testid="start-icon">→</span>}>Button</GradientBorderButton>);
 
-      expect(screen.getByTestId('start-icon')).toBeInTheDocument();
+      await expect.element(page.getByTestId('start-icon')).toBeInTheDocument();
     });
 
-    it('should accept endIcon prop', () => {
-      render(<GradientBorderButton endIcon={<span data-testid="end-icon">←</span>}>Button</GradientBorderButton>);
+    it('should accept endIcon prop', async () => {
+      await render(<GradientBorderButton endIcon={<span data-testid="end-icon">←</span>}>Button</GradientBorderButton>);
 
-      expect(screen.getByTestId('end-icon')).toBeInTheDocument();
+      await expect.element(page.getByTestId('end-icon')).toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should support aria-label', () => {
-      render(<GradientBorderButton aria-label="Custom Label">Button</GradientBorderButton>);
+    it('should support aria-label', async () => {
+      await render(<GradientBorderButton aria-label="Custom Label">Button</GradientBorderButton>);
 
-      expect(screen.getByLabelText('Custom Label')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Custom Label')).toBeInTheDocument();
     });
 
-    it('should support aria-describedby', () => {
-      render(
+    it('should support aria-describedby', async () => {
+      await render(
         <>
           <GradientBorderButton aria-describedby="description">Button</GradientBorderButton>
           <div id="description">Button description</div>
         </>,
       );
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
 
       expect(button).toHaveAttribute('aria-describedby', 'description');
     });
 
     it('should be keyboard accessible', async () => {
-      const user = userEvent.setup();
       let clicked = false;
       const handleClick = () => {
         clicked = true;
       };
 
-      render(<GradientBorderButton onClick={handleClick}>Button</GradientBorderButton>);
+      await render(<GradientBorderButton onClick={handleClick}>Button</GradientBorderButton>);
 
-      const button = screen.getByRole('button');
-      button.focus();
-      await user.keyboard('{Enter}');
+      const button = page.getByRole('button');
+      button.element().focus();
+      await userEvent.keyboard('{Enter}');
 
       expect(clicked).toBe(true);
     });
   });
 
   describe('Ref Forwarding', () => {
-    it('should forward ref to button element', () => {
+    it('should forward ref to button element', async () => {
       let buttonRef: HTMLButtonElement | null = null;
       const refCallback = (ref: HTMLButtonElement | null): void => {
         buttonRef = ref;
       };
 
-      render(<GradientBorderButton ref={refCallback}>Button</GradientBorderButton>);
+      await render(<GradientBorderButton ref={refCallback}>Button</GradientBorderButton>);
 
       expect(buttonRef).toBeInstanceOf(HTMLButtonElement);
       expect(buttonRef).not.toBeNull();

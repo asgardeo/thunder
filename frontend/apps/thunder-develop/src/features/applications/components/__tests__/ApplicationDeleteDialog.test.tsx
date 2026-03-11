@@ -16,32 +16,14 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
 import ApplicationDeleteDialog from '../ApplicationDeleteDialog';
 import * as useDeleteApplicationModule from '../../api/useDeleteApplication';
 
 // Mock the useDeleteApplication hook
 vi.mock('../../api/useDeleteApplication');
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:delete.title': 'Delete Application',
-        'applications:delete.message': 'Are you sure you want to delete this application?',
-        'applications:delete.disclaimer':
-          'This action cannot be undone. All data associated with this application will be permanently deleted.',
-        'common:actions.cancel': 'Cancel',
-        'common:actions.delete': 'Delete',
-        'common:status.deleting': 'Deleting...',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 describe('ApplicationDeleteDialog', () => {
   const mockOnClose = vi.fn();
@@ -55,7 +37,7 @@ describe('ApplicationDeleteDialog', () => {
     onSuccess: mockOnSuccess,
   };
 
-  const renderWithProviders = (props = defaultProps) => render(<ApplicationDeleteDialog {...props} />);
+  const renderComponent = (props = defaultProps) => renderWithProviders(<ApplicationDeleteDialog {...props} />);
 
   beforeEach(() => {
 
@@ -85,78 +67,74 @@ describe('ApplicationDeleteDialog', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the dialog when open is true', () => {
-      renderWithProviders();
+    it('should render the dialog when open is true', async () => {
+      await renderComponent();
 
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Delete Application')).toBeInTheDocument();
-      expect(screen.getByText('Are you sure you want to delete this application?')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByText('Delete Application')).toBeInTheDocument();
+      await expect.element(page.getByText('Are you sure you want to delete this application? This action cannot be undone.')).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'This action cannot be undone. All data associated with this application will be permanently deleted.',
+        page.getByText(
+          'Warning: All associated data, configurations, and access tokens will be permanently removed.',
         ),
       ).toBeInTheDocument();
     });
 
-    it('should not render dialog content when open is false', () => {
-      renderWithProviders({...defaultProps, open: false});
+    it('should not render dialog content when open is false', async () => {
+      await renderComponent({...defaultProps, open: false});
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should render Cancel and Delete buttons', () => {
-      renderWithProviders();
+    it('should render Cancel and Delete buttons', async () => {
+      await renderComponent();
 
-      expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
     });
 
-    it('should not render error alert initially', () => {
-      renderWithProviders();
+    it('should not render error alert initially', async () => {
+      await renderComponent();
 
-      expect(screen.queryByRole('alert')).toHaveTextContent('This action cannot be undone'); // Only warning alert
+      await expect.element(page.getByRole('alert')).toHaveTextContent('Warning: All associated data'); // Only warning alert
     });
   });
 
   describe('User Interactions', () => {
     it('should call onClose when Cancel button is clicked', async () => {
-      const user = userEvent.setup();
-      renderWithProviders();
+      await renderComponent();
 
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      await user.click(cancelButton);
+      const cancelButton = page.getByRole('button', {name: 'Cancel'});
+      await userEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
     it('should call onClose when Escape key is pressed', async () => {
-      const user = userEvent.setup();
-      renderWithProviders();
+      await renderComponent();
 
       // Press Escape key
-      await user.keyboard('{Escape}');
+      await userEvent.keyboard('{Escape}');
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should trigger delete mutation when Delete button is clicked', async () => {
-      const user = userEvent.setup();
-      renderWithProviders();
+      await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
       expect(mockMutate).toHaveBeenCalledTimes(1);
       expect(mockMutate).toHaveBeenCalledWith('test-app-id', expect.any(Object));
     });
 
     it('should not trigger delete mutation when applicationId is null', async () => {
-      const user = userEvent.setup();
-      renderWithProviders({...defaultProps, applicationId: ''});
+      await renderComponent({...defaultProps, applicationId: ''});
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
@@ -164,56 +142,53 @@ describe('ApplicationDeleteDialog', () => {
 
   describe('Delete Success Flow', () => {
     it('should call onClose and onSuccess callbacks on successful delete', async () => {
-      const user = userEvent.setup();
 
       mockMutate.mockImplementation((_, options: {onSuccess?: () => void}) => {
         // Simulate successful mutation
         options?.onSuccess?.();
       });
 
-      renderWithProviders();
+      await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnClose).toHaveBeenCalledTimes(1);
         expect(mockOnSuccess).toHaveBeenCalledTimes(1);
       });
     });
 
     it('should work without onSuccess callback', async () => {
-      const user = userEvent.setup();
 
       mockMutate.mockImplementation((_, options: {onSuccess?: () => void}) => {
         options?.onSuccess?.();
       });
 
-      renderWithProviders({...defaultProps, onSuccess: vi.fn()});
+      await renderComponent({...defaultProps, onSuccess: vi.fn()});
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnClose).toHaveBeenCalledTimes(1);
       });
     });
 
     it('should clear any previous errors on successful delete', async () => {
-      const user = userEvent.setup();
 
       // First, trigger an error
       mockMutate.mockImplementationOnce((_, options: {onError?: (error: Error) => void}) => {
         options?.onError?.(new Error('Delete failed'));
       });
 
-      const {rerender} = renderWithProviders();
+      const {rerender} = await renderComponent();
 
-      let deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      let deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Delete failed')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(page.getByText('Delete failed').element()).toBeInTheDocument();
       });
 
       // Then trigger success
@@ -221,34 +196,33 @@ describe('ApplicationDeleteDialog', () => {
         options?.onSuccess?.();
       });
 
-      rerender(<ApplicationDeleteDialog {...defaultProps} />);
+      await rerender(<ApplicationDeleteDialog {...defaultProps} />);
 
-      deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockOnClose).toHaveBeenCalled();
-        expect(screen.queryByText('Delete failed')).not.toBeInTheDocument();
+        expect(page.getByText('Delete failed').query()).not.toBeInTheDocument();
       });
     });
   });
 
   describe('Delete Error Flow', () => {
     it('should display error message when delete fails', async () => {
-      const user = userEvent.setup();
       const errorMessage = 'Failed to delete application';
 
       mockMutate.mockImplementation((_, options: {onError?: (error: Error) => void}) => {
         options?.onError?.(new Error(errorMessage));
       });
 
-      renderWithProviders();
+      await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(page.getByText(errorMessage).element()).toBeInTheDocument();
       });
 
       expect(mockOnClose).not.toHaveBeenCalled();
@@ -256,52 +230,50 @@ describe('ApplicationDeleteDialog', () => {
     });
 
     it('should clear error when Cancel is clicked after error', async () => {
-      const user = userEvent.setup();
 
       mockMutate.mockImplementation((_, options: {onError?: (error: Error) => void}) => {
         options?.onError?.(new Error('Delete failed'));
       });
 
-      renderWithProviders();
+      await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Delete failed')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(page.getByText('Delete failed').element()).toBeInTheDocument();
       });
 
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      await user.click(cancelButton);
+      const cancelButton = page.getByRole('button', {name: 'Cancel'});
+      await userEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should persist error message across re-renders until cleared', async () => {
-      const user = userEvent.setup();
 
       mockMutate.mockImplementation((_, options: {onError?: (error: Error) => void}) => {
         options?.onError?.(new Error('Delete failed'));
       });
 
-      const {rerender} = renderWithProviders();
+      const {rerender} = await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Delete failed')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(page.getByText('Delete failed').element()).toBeInTheDocument();
       });
 
       // Re-render with same props
-      rerender(<ApplicationDeleteDialog {...defaultProps} />);
+      await rerender(<ApplicationDeleteDialog {...defaultProps} />);
 
-      expect(screen.getByText('Delete failed')).toBeInTheDocument();
+      await expect.element(page.getByText('Delete failed')).toBeInTheDocument();
     });
   });
 
   describe('Loading State', () => {
-    it('should disable buttons when delete is pending', () => {
+    it('should disable buttons when delete is pending', async () => {
       vi.mocked(useDeleteApplicationModule.default).mockReturnValue({
         mutate: mockMutate,
         isPending: true,
@@ -321,13 +293,13 @@ describe('ApplicationDeleteDialog', () => {
         variables: '',
       });
 
-      renderWithProviders();
+      await renderComponent();
 
-      expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
-      expect(screen.getByRole('button', {name: 'Deleting...'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Deleting...'})).toBeDisabled();
     });
 
-    it('should show "Deleting..." text on Delete button when pending', () => {
+    it('should show "Deleting..." text on Delete button when pending', async () => {
       vi.mocked(useDeleteApplicationModule.default).mockReturnValue({
         mutate: mockMutate,
         isPending: true,
@@ -347,10 +319,10 @@ describe('ApplicationDeleteDialog', () => {
         variables: '',
       });
 
-      renderWithProviders();
+      await renderComponent();
 
-      expect(screen.getByRole('button', {name: 'Deleting...'})).toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Deleting...'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
     });
 
     it('should not trigger another delete when already pending', async () => {
@@ -373,9 +345,9 @@ describe('ApplicationDeleteDialog', () => {
         variables: 'test-app-id',
       });
 
-      renderWithProviders();
+      await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Deleting...'});
+      const deleteButton = page.getByRole('button', {name: 'Deleting...'});
       expect(deleteButton).toBeDisabled();
 
       // Verify button cannot be interacted with when disabled
@@ -385,74 +357,70 @@ describe('ApplicationDeleteDialog', () => {
 
   describe('Edge Cases', () => {
     it('should handle rapid clicks on Delete button', async () => {
-      const user = userEvent.setup();
-      renderWithProviders();
+      await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
 
-      await user.click(deleteButton);
-      await user.click(deleteButton);
-      await user.click(deleteButton);
+      await userEvent.click(deleteButton);
+      await userEvent.click(deleteButton);
+      await userEvent.click(deleteButton);
 
       // Should still only call mutate once per click (3 times total)
       expect(mockMutate).toHaveBeenCalledTimes(3);
     });
 
     it('should handle dialog opening and closing multiple times', async () => {
-      const user = userEvent.setup();
-      const {rerender} = renderWithProviders({...defaultProps, open: false});
+      const {rerender} = await renderComponent({...defaultProps, open: false});
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
 
       // Open dialog
-      rerender(<ApplicationDeleteDialog {...defaultProps} open />);
+      await rerender(<ApplicationDeleteDialog {...defaultProps} open />);
 
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
 
       // Click Cancel
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      await user.click(cancelButton);
+      const cancelButton = page.getByRole('button', {name: 'Cancel'});
+      await userEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
 
       // Close dialog (simulate parent closing it)
-      rerender(<ApplicationDeleteDialog {...defaultProps} open={false} />);
+      await rerender(<ApplicationDeleteDialog {...defaultProps} open={false} />);
 
       // Wait for dialog to close
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(page.getByRole('dialog').query()).not.toBeInTheDocument();
       });
 
       // Open again
-      rerender(<ApplicationDeleteDialog {...defaultProps} open />);
+      await rerender(<ApplicationDeleteDialog {...defaultProps} open />);
 
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
     });
 
     it('should handle changing applicationId while dialog is open', async () => {
-      const user = userEvent.setup();
-      const {rerender} = renderWithProviders();
+      const {rerender} = await renderComponent();
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
       expect(mockMutate).toHaveBeenCalledWith('test-app-id', expect.any(Object));
 
       // Change applicationId
-      rerender(<ApplicationDeleteDialog {...defaultProps} applicationId="new-app-id" />);
+      await rerender(<ApplicationDeleteDialog {...defaultProps} applicationId="new-app-id" />);
 
       mockMutate.mockClear();
 
-      const deleteButtonAfterChange = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButtonAfterChange);
+      const deleteButtonAfterChange = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButtonAfterChange);
 
       expect(mockMutate).toHaveBeenCalledWith('new-app-id', expect.any(Object));
     });
 
     it('should handle all callbacks being undefined', async () => {
-      const user = userEvent.setup();
 
-      renderWithProviders({
+      await renderComponent({
         open: true,
         applicationId: 'test-app-id',
         onClose: vi.fn(),
@@ -463,49 +431,48 @@ describe('ApplicationDeleteDialog', () => {
         options?.onSuccess?.();
       });
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
-      await user.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
+      await userEvent.click(deleteButton);
 
       // Should not throw error even though onSuccess is undefined
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockMutate).toHaveBeenCalled();
       });
     });
   });
 
   describe('Accessibility', () => {
-    it('should have proper ARIA attributes', () => {
-      renderWithProviders();
+    it('should have proper ARIA attributes', async () => {
+      await renderComponent();
 
-      const dialog = screen.getByRole('dialog');
+      const dialog = page.getByRole('dialog');
       expect(dialog).toHaveAttribute('role', 'dialog');
     });
 
     it('should be keyboard accessible', async () => {
-      const user = userEvent.setup();
-      renderWithProviders();
+      await renderComponent();
 
-      const cancelButton = screen.getByRole('button', {name: 'Cancel'});
-      const deleteButton = screen.getByRole('button', {name: 'Delete'});
+      const cancelButton = page.getByRole('button', {name: 'Cancel'});
+      const deleteButton = page.getByRole('button', {name: 'Delete'});
 
       // Tab to focus buttons
-      await user.tab();
+      await userEvent.tab();
       expect(cancelButton).toHaveFocus();
 
-      await user.tab();
+      await userEvent.tab();
       expect(deleteButton).toHaveFocus();
 
       // Press Enter on Delete button
-      await user.keyboard('{Enter}');
+      await userEvent.keyboard('{Enter}');
 
       expect(mockMutate).toHaveBeenCalledWith('test-app-id', expect.any(Object));
     });
 
-    it('should have proper button labels', () => {
-      renderWithProviders();
+    it('should have proper button labels', async () => {
+      await renderComponent();
 
-      expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
     });
   });
 });

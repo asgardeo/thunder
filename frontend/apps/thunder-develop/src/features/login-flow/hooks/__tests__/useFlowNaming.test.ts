@@ -17,169 +17,149 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useFlowNaming from '../useFlowNaming';
 
 describe('useFlowNaming', () => {
   describe('Hook Interface', () => {
-    it('should return flowName', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should return flowName', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(result.current.flowName).toBeDefined();
       expect(typeof result.current.flowName).toBe('string');
     });
 
-    it('should return flowHandle', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should return flowHandle', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(result.current.flowHandle).toBeDefined();
       expect(typeof result.current.flowHandle).toBe('string');
     });
 
-    it('should return needsAutoLayout', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should return needsAutoLayout', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(typeof result.current.needsAutoLayout).toBe('boolean');
     });
 
-    it('should return setNeedsAutoLayout function', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should return setNeedsAutoLayout function', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(typeof result.current.setNeedsAutoLayout).toBe('function');
     });
 
-    it('should return handleFlowNameChange function', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should return handleFlowNameChange function', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(typeof result.current.handleFlowNameChange).toBe('function');
     });
   });
 
   describe('Default values', () => {
-    it('should use default name when no props provided', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should use default name when no props provided', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(result.current.flowName).toBe('Login Flow');
     });
 
-    it('should use default handle when no props provided', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should use default handle when no props provided', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(result.current.flowHandle).toBe('login-flow');
     });
 
-    it('should use custom default name when provided', () => {
-      const {result} = renderHook(() => useFlowNaming({defaultName: 'Custom Flow'}));
+    it('should use custom default name when provided', async () => {
+      const {result} = await renderHook(() => useFlowNaming({defaultName: 'Custom Flow'}));
       expect(result.current.flowName).toBe('Custom Flow');
     });
 
-    it('should use custom default handle when provided', () => {
-      const {result} = renderHook(() => useFlowNaming({defaultHandle: 'custom-handle'}));
+    it('should use custom default handle when provided', async () => {
+      const {result} = await renderHook(() => useFlowNaming({defaultHandle: 'custom-handle'}));
       expect(result.current.flowHandle).toBe('custom-handle');
     });
 
-    it('should initialize needsAutoLayout to false', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should initialize needsAutoLayout to false', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
       expect(result.current.needsAutoLayout).toBe(false);
     });
   });
 
   describe('handleFlowNameChange', () => {
-    it('should update flowName when called', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should update flowName when called', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('New Flow Name');
-      });
+      result.current.handleFlowNameChange('New Flow Name');
 
       expect(result.current.flowName).toBe('New Flow Name');
     });
 
-    it('should generate handle from name', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should generate handle from name', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('My Custom Flow');
-      });
+      result.current.handleFlowNameChange('My Custom Flow');
 
       expect(result.current.flowHandle).toBe('my-custom-flow');
     });
 
-    it('should convert name to lowercase for handle', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should convert name to lowercase for handle', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('UPPERCASE NAME');
-      });
+      result.current.handleFlowNameChange('UPPERCASE NAME');
 
       expect(result.current.flowHandle).toBe('uppercase-name');
     });
 
-    it('should replace spaces with hyphens in handle', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should replace spaces with hyphens in handle', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('Multiple   Spaces   Here');
-      });
+      result.current.handleFlowNameChange('Multiple   Spaces   Here');
 
       expect(result.current.flowHandle).toBe('multiple-spaces-here');
     });
 
-    it('should remove special characters from handle', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should remove special characters from handle', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('Flow@Name#With$Special!Characters');
-      });
+      result.current.handleFlowNameChange('Flow@Name#With$Special!Characters');
 
       expect(result.current.flowHandle).toBe('flownamewithspecialcharacters');
     });
 
-    it('should remove leading and trailing hyphens', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should remove leading and trailing hyphens', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange(' - Trimmed Name - ');
-      });
+      result.current.handleFlowNameChange(' - Trimmed Name - ');
 
       expect(result.current.flowHandle).toBe('trimmed-name');
     });
 
-    it('should collapse multiple hyphens into one', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should collapse multiple hyphens into one', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('Name---With---Multiple---Hyphens');
-      });
+      result.current.handleFlowNameChange('Name---With---Multiple---Hyphens');
 
       expect(result.current.flowHandle).toBe('name-with-multiple-hyphens');
     });
   });
 
   describe('setNeedsAutoLayout', () => {
-    it('should update needsAutoLayout when called', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should update needsAutoLayout when called', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
       expect(result.current.needsAutoLayout).toBe(false);
 
-      act(() => {
-        result.current.setNeedsAutoLayout(true);
-      });
+      result.current.setNeedsAutoLayout(true);
 
       expect(result.current.needsAutoLayout).toBe(true);
     });
 
-    it('should allow toggling needsAutoLayout', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should allow toggling needsAutoLayout', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.setNeedsAutoLayout(true);
-      });
+      result.current.setNeedsAutoLayout(true);
       expect(result.current.needsAutoLayout).toBe(true);
 
-      act(() => {
-        result.current.setNeedsAutoLayout(false);
-      });
+      result.current.setNeedsAutoLayout(false);
       expect(result.current.needsAutoLayout).toBe(false);
     });
   });
 
   describe('existingFlowData synchronization', () => {
-    it('should sync flowName from existingFlowData', () => {
-      const {result} = renderHook(() =>
+    it('should sync flowName from existingFlowData', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {
             name: 'Existing Flow Name',
@@ -191,8 +171,8 @@ describe('useFlowNaming', () => {
       expect(result.current.flowName).toBe('Existing Flow Name');
     });
 
-    it('should sync flowHandle from existingFlowData', () => {
-      const {result} = renderHook(() =>
+    it('should sync flowHandle from existingFlowData', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {
             name: 'Existing Flow Name',
@@ -204,8 +184,8 @@ describe('useFlowNaming', () => {
       expect(result.current.flowHandle).toBe('existing-handle');
     });
 
-    it('should generate handle from name when existingFlowData has name but no handle', () => {
-      const {result} = renderHook(() =>
+    it('should generate handle from name when existingFlowData has name but no handle', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {
             name: 'Flow Without Handle',
@@ -218,8 +198,8 @@ describe('useFlowNaming', () => {
       expect(result.current.flowHandle).toBe('flow-without-handle');
     });
 
-    it('should handle existingFlowData with only handle', () => {
-      const {result} = renderHook(() =>
+    it('should handle existingFlowData with only handle', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {
             handle: 'only-handle',
@@ -234,8 +214,8 @@ describe('useFlowNaming', () => {
       expect(result.current.flowName).toBe('Login Flow');
     });
 
-    it('should handle empty existingFlowData', () => {
-      const {result} = renderHook(() =>
+    it('should handle empty existingFlowData', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {},
         }),
@@ -245,9 +225,9 @@ describe('useFlowNaming', () => {
       expect(result.current.flowHandle).toBe('login-flow');
     });
 
-    it('should update when existingFlowData changes', () => {
-      const {result, rerender} = renderHook(
-        ({existingFlowData}) => useFlowNaming({existingFlowData}),
+    it('should update when existingFlowData changes', async () => {
+      const {result, rerender} = await renderHook(
+        (props?) => useFlowNaming({existingFlowData: props!.existingFlowData}),
         {
           initialProps: {
             existingFlowData: {
@@ -261,7 +241,7 @@ describe('useFlowNaming', () => {
       expect(result.current.flowName).toBe('Initial Name');
       expect(result.current.flowHandle).toBe('initial-handle');
 
-      rerender({
+      await rerender({
         existingFlowData: {
           name: 'Updated Name',
           handle: 'updated-handle',
@@ -272,8 +252,8 @@ describe('useFlowNaming', () => {
       expect(result.current.flowHandle).toBe('updated-handle');
     });
 
-    it('should generate handle from complex name when no handle provided', () => {
-      const {result} = renderHook(() =>
+    it('should generate handle from complex name when no handle provided', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {
             name: 'Complex Flow Name With UPPERCASE and Special@Chars!',
@@ -286,8 +266,8 @@ describe('useFlowNaming', () => {
       expect(result.current.flowHandle).toBe('complex-flow-name-with-uppercase-and-specialchars');
     });
 
-    it('should prefer explicit handle over generated one', () => {
-      const {result} = renderHook(() =>
+    it('should prefer explicit handle over generated one', async () => {
+      const {result} = await renderHook(() =>
         useFlowNaming({
           existingFlowData: {
             name: 'Different Name',
@@ -302,60 +282,50 @@ describe('useFlowNaming', () => {
   });
 
   describe('generateHandleFromName edge cases', () => {
-    it('should handle empty string', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should handle empty string', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('');
-      });
+      result.current.handleFlowNameChange('');
 
       expect(result.current.flowHandle).toBe('');
     });
 
-    it('should handle string with only special characters', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should handle string with only special characters', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('@#$%^&*()');
-      });
+      result.current.handleFlowNameChange('@#$%^&*()');
 
       expect(result.current.flowHandle).toBe('');
     });
 
-    it('should handle string with only spaces', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should handle string with only spaces', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('     ');
-      });
+      result.current.handleFlowNameChange('     ');
 
       expect(result.current.flowHandle).toBe('');
     });
 
-    it('should handle numbers in name', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should handle numbers in name', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('Flow 123 Test');
-      });
+      result.current.handleFlowNameChange('Flow 123 Test');
 
       expect(result.current.flowHandle).toBe('flow-123-test');
     });
 
-    it('should trim whitespace from name before generating handle', () => {
-      const {result} = renderHook(() => useFlowNaming());
+    it('should trim whitespace from name before generating handle', async () => {
+      const {result} = await renderHook(() => useFlowNaming());
 
-      act(() => {
-        result.current.handleFlowNameChange('  Trimmed Flow  ');
-      });
+      result.current.handleFlowNameChange('  Trimmed Flow  ');
 
       expect(result.current.flowHandle).toBe('trimmed-flow');
     });
   });
 
   describe('undefined props handling', () => {
-    it('should handle undefined props gracefully', () => {
-      const {result} = renderHook(() => useFlowNaming(undefined));
+    it('should handle undefined props gracefully', async () => {
+      const {result} = await renderHook(() => useFlowNaming(undefined));
 
       expect(result.current.flowName).toBe('Login Flow');
       expect(result.current.flowHandle).toBe('login-flow');

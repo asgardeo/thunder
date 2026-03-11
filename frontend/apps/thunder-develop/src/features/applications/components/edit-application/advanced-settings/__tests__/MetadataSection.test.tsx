@@ -17,19 +17,14 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import MetadataSection from '../MetadataSection';
 import type {Application} from '../../../../models/application';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
 describe('MetadataSection', () => {
   describe('Rendering', () => {
-    it('should render metadata section with created and updated timestamps', () => {
+    it('should render metadata section with created and updated timestamps', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -38,14 +33,14 @@ describe('MetadataSection', () => {
         updated_at: '2025-01-15T12:30:00Z',
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
-      expect(screen.getByText('applications:edit.advanced.labels.metadata')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.createdAt')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.updatedAt')).toBeInTheDocument();
+      await expect.element(page.getByText('Metadata')).toBeInTheDocument();
+      await expect.element(page.getByText('Created At')).toBeInTheDocument();
+      await expect.element(page.getByText('Updated At')).toBeInTheDocument();
     });
 
-    it('should render only created_at when updated_at is missing', () => {
+    it('should render only created_at when updated_at is missing', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -53,14 +48,14 @@ describe('MetadataSection', () => {
         created_at: '2025-01-01T00:00:00Z',
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
-      expect(screen.getByText('applications:edit.advanced.labels.metadata')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.createdAt')).toBeInTheDocument();
-      expect(screen.queryByText('applications:edit.advanced.labels.updatedAt')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Metadata')).toBeInTheDocument();
+      await expect.element(page.getByText('Created At')).toBeInTheDocument();
+      await expect.element(page.getByText('Updated At')).not.toBeInTheDocument();
     });
 
-    it('should render only updated_at when created_at is missing', () => {
+    it('should render only updated_at when created_at is missing', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -68,28 +63,28 @@ describe('MetadataSection', () => {
         updated_at: '2025-01-15T12:30:00Z',
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
-      expect(screen.getByText('applications:edit.advanced.labels.metadata')).toBeInTheDocument();
-      expect(screen.queryByText('applications:edit.advanced.labels.createdAt')).not.toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.updatedAt')).toBeInTheDocument();
+      await expect.element(page.getByText('Metadata')).toBeInTheDocument();
+      await expect.element(page.getByText('Created At')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Updated At')).toBeInTheDocument();
     });
 
-    it('should return null when both timestamps are missing', () => {
+    it('should return null when both timestamps are missing', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
       } as Application;
 
-      const {container} = render(<MetadataSection application={application} />);
+      const {container} = await render(<MetadataSection application={application} />);
 
       expect(container.firstChild).toBeNull();
     });
   });
 
   describe('Timestamp Formatting', () => {
-    it('should format created_at timestamp as locale string', () => {
+    it('should format created_at timestamp as locale string', async () => {
       const createdDate = '2025-01-01T10:30:45Z';
       const application: Application = {
         id: 'test-app-id',
@@ -98,13 +93,13 @@ describe('MetadataSection', () => {
         created_at: createdDate,
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
       const expectedFormattedDate = new Date(createdDate).toLocaleString();
-      expect(screen.getByText(expectedFormattedDate)).toBeInTheDocument();
+      await expect.element(page.getByText(expectedFormattedDate)).toBeInTheDocument();
     });
 
-    it('should format updated_at timestamp as locale string', () => {
+    it('should format updated_at timestamp as locale string', async () => {
       const updatedDate = '2025-01-15T14:20:30Z';
       const application: Application = {
         id: 'test-app-id',
@@ -113,13 +108,13 @@ describe('MetadataSection', () => {
         updated_at: updatedDate,
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
       const expectedFormattedDate = new Date(updatedDate).toLocaleString();
-      expect(screen.getByText(expectedFormattedDate)).toBeInTheDocument();
+      await expect.element(page.getByText(expectedFormattedDate)).toBeInTheDocument();
     });
 
-    it('should format both timestamps correctly', () => {
+    it('should format both timestamps correctly', async () => {
       const createdDate = '2025-01-01T08:00:00Z';
       const updatedDate = '2025-01-15T16:45:00Z';
       const application: Application = {
@@ -130,18 +125,18 @@ describe('MetadataSection', () => {
         updated_at: updatedDate,
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
       const expectedCreatedDate = new Date(createdDate).toLocaleString();
       const expectedUpdatedDate = new Date(updatedDate).toLocaleString();
 
-      expect(screen.getByText(expectedCreatedDate)).toBeInTheDocument();
-      expect(screen.getByText(expectedUpdatedDate)).toBeInTheDocument();
+      await expect.element(page.getByText(expectedCreatedDate)).toBeInTheDocument();
+      await expect.element(page.getByText(expectedUpdatedDate)).toBeInTheDocument();
     });
   });
 
   describe('Layout and Styling', () => {
-    it('should render timestamps with correct typography variants', () => {
+    it('should render timestamps with correct typography variants', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -150,16 +145,16 @@ describe('MetadataSection', () => {
         updated_at: '2025-01-15T00:00:00Z',
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
-      const createdLabel = screen.getByText('applications:edit.advanced.labels.createdAt');
-      const updatedLabel = screen.getByText('applications:edit.advanced.labels.updatedAt');
+      const createdLabel = page.getByText('Created At');
+      const updatedLabel = page.getByText('Updated At');
 
       expect(createdLabel).toHaveClass('MuiTypography-subtitle2');
       expect(updatedLabel).toHaveClass('MuiTypography-subtitle2');
     });
 
-    it('should render in a Stack with proper spacing', () => {
+    it('should render in a Stack with proper spacing', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -168,7 +163,7 @@ describe('MetadataSection', () => {
         updated_at: '2025-01-15T00:00:00Z',
       } as Application;
 
-      const {container} = render(<MetadataSection application={application} />);
+      const {container} = await render(<MetadataSection application={application} />);
 
       const stack = container.querySelector('.MuiStack-root');
       expect(stack).toBeInTheDocument();
@@ -176,7 +171,7 @@ describe('MetadataSection', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle invalid date strings gracefully', () => {
+    it('should handle invalid date strings gracefully', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -184,13 +179,13 @@ describe('MetadataSection', () => {
         created_at: 'invalid-date',
       } as Application;
 
-      render(<MetadataSection application={application} />);
+      await render(<MetadataSection application={application} />);
 
-      expect(screen.getByText('applications:edit.advanced.labels.createdAt')).toBeInTheDocument();
-      expect(screen.getByText('Invalid Date')).toBeInTheDocument();
+      await expect.element(page.getByText('Created At')).toBeInTheDocument();
+      await expect.element(page.getByText('Invalid Date')).toBeInTheDocument();
     });
 
-    it('should handle undefined timestamp values', () => {
+    it('should handle undefined timestamp values', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -199,12 +194,12 @@ describe('MetadataSection', () => {
         updated_at: undefined,
       } as Application;
 
-      const {container} = render(<MetadataSection application={application} />);
+      const {container} = await render(<MetadataSection application={application} />);
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should handle empty string timestamps', () => {
+    it('should handle empty string timestamps', async () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
@@ -213,7 +208,7 @@ describe('MetadataSection', () => {
         updated_at: '',
       } as Application;
 
-      const {container} = render(<MetadataSection application={application} />);
+      const {container} = await render(<MetadataSection application={application} />);
 
       expect(container.firstChild).toBeNull();
     });

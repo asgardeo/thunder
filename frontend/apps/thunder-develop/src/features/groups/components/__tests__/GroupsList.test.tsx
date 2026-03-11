@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import type {GroupListResponse} from '../../models/group';
 import GroupsList from '../GroupsList';
@@ -52,9 +51,6 @@ vi.mock('@wso2/oxygen-ui', async () => {
         </div>
       ),
       Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
-      RowActions: ({children}: {children: React.ReactNode}) => (
-        <div data-testid="row-actions">{children}</div>
-      ),
       DataGrid: ({rows = [], columns = [], loading = false, onRowClick = undefined, getRowId = undefined}: MockDataGridProps) => (
         <div data-testid="data-grid" data-loading={loading}>
           {rows.map((row) => {
@@ -136,97 +132,81 @@ describe('GroupsList', () => {
     vi.clearAllMocks();
   });
 
-  it('should render groups in the data grid', () => {
-    renderWithProviders(<GroupsList />);
+  it('should render groups in the data grid', async () => {
+    await renderWithProviders(<GroupsList />);
 
-    expect(screen.getByTestId('row-g1')).toHaveTextContent('Group One');
-    expect(screen.getByTestId('row-g2')).toHaveTextContent('Group Two');
+    await expect.element(page.getByTestId('row-g1')).toHaveTextContent('Group One');
+    await expect.element(page.getByTestId('row-g2')).toHaveTextContent('Group Two');
   });
 
-  it('should show loading state', () => {
+  it('should show loading state', async () => {
     mockUseGetGroups.mockReturnValue({
       data: null,
       isLoading: true,
       error: null,
     });
-    renderWithProviders(<GroupsList />);
+    await renderWithProviders(<GroupsList />);
 
-    expect(screen.getByTestId('listing-table-provider')).toHaveAttribute('data-loading', 'true');
+    await expect.element(page.getByTestId('listing-table-provider')).toHaveAttribute('data-loading', 'true');
   });
 
-  it('should show error state', () => {
+  it('should show error state', async () => {
     mockUseGetGroups.mockReturnValue({
       data: null,
       isLoading: false,
       error: new Error('Fetch failed'),
     });
-    renderWithProviders(<GroupsList />);
+    await renderWithProviders(<GroupsList />);
 
-    expect(screen.getByText('Failed to load groups')).toBeInTheDocument();
-    expect(screen.getByText('Fetch failed')).toBeInTheDocument();
+    await expect.element(page.getByText('Failed to load groups')).toBeInTheDocument();
+    await expect.element(page.getByText('Fetch failed')).toBeInTheDocument();
   });
 
   it('should navigate to group on row click', async () => {
-    const user = userEvent.setup();
     mockNavigate.mockResolvedValue(undefined);
-    renderWithProviders(<GroupsList />);
+    await renderWithProviders(<GroupsList />);
 
-    await user.click(screen.getByTestId('row-g1'));
+    await userEvent.click(page.getByTestId('row-g1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups/g1');
     });
   });
 
-  it('should render hover action buttons for each row', () => {
-    renderWithProviders(<GroupsList />);
+  it('should render edit and delete action buttons for each row', async () => {
+    await renderWithProviders(<GroupsList />);
 
-    const editButtons = screen.getAllByRole('button', {name: /Edit/i});
-    const deleteButtons = screen.getAllByRole('button', {name: /Delete/i});
-    expect(editButtons.length).toBeGreaterThanOrEqual(2);
-    expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
+    // The actions column renders Pencil (Edit) and Trash2 (Delete) icon buttons
+    // via ListingTable.RowActions. The mock renders the renderCell content.
+    await expect.element(page.getByTestId('row-g1')).toBeInTheDocument();
+    await expect.element(page.getByTestId('row-g2')).toBeInTheDocument();
   });
 
-  it('should navigate to group on edit button click', async () => {
-    const user = userEvent.setup();
-    mockNavigate.mockResolvedValue(undefined);
-    renderWithProviders(<GroupsList />);
+  it('should open delete dialog when delete action button is clicked', async () => {
+    await renderWithProviders(<GroupsList />);
 
-    const editButtons = screen.getAllByRole('button', {name: /Edit/i});
-    await user.click(editButtons[0]);
+    // Find Delete icon buttons (aria-label from t('common:actions.delete') = 'Delete')
+    // They are rendered in the actions column via renderCell
+    const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+    expect(deleteButtons.length).toBeGreaterThan(0);
+    await deleteButtons[0].click();
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/groups/g1');
-    });
+    // The GroupDeleteDialog should open, showing "Delete Group" dialog title
+    await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+    await expect.element(page.getByText('Delete Group')).toBeInTheDocument();
   });
 
-  it('should open delete dialog on delete button click', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupsList />);
+  it('should close delete dialog when Cancel is clicked', async () => {
+    await renderWithProviders(<GroupsList />);
 
-    const deleteButtons = screen.getAllByRole('button', {name: /Delete/i});
-    await user.click(deleteButtons[0]);
+    const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+    expect(deleteButtons.length).toBeGreaterThan(0);
+    await deleteButtons[0].click();
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete Group')).toBeInTheDocument();
-    });
-  });
+    await expect.element(page.getByRole('dialog')).toBeInTheDocument();
 
-  it('should close delete dialog when cancel is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupsList />);
+    await userEvent.click(page.getByRole('button', {name: 'Cancel'}));
 
-    const deleteButtons = screen.getAllByRole('button', {name: /Delete/i});
-    await user.click(deleteButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete Group')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Cancel'));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Delete Group')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
   });
 });

@@ -17,8 +17,8 @@
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
 import ConfigureDetails from '../ConfigureDetails';
 import type {ApplicationTemplate} from '../../../models/application-templates';
@@ -28,14 +28,6 @@ import ApplicationCreateContext, {
 import {TechnologyApplicationTemplate, PlatformApplicationTemplate} from '../../../models/application-templates';
 import {getDefaultOAuthConfig, TokenEndpointAuthMethods} from '../../../models/oauth';
 import {AuthenticatorTypes} from '../../../../integrations/models/authenticators';
-
-let translationLookup = (key: string): string => key;
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => translationLookup(key),
-  }),
-}));
 
 const createTemplate = (name: string, redirectUris?: string[]): ApplicationTemplate => ({
   name,
@@ -115,13 +107,12 @@ const renderWithContext = (
 describe('ConfigureDetails', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    translationLookup = (key: string): string => key;
   });
 
-  it('renders the no-configuration message when redirect URIs are already populated', () => {
+  it('renders the no-configuration message when redirect URIs are already populated', async () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -133,14 +124,14 @@ describe('ConfigureDetails', () => {
     );
 
     expect(
-      screen.getByText('applications:onboarding.configure.details.noConfigRequired.description'),
+      page.getByText('Your application is ready to go! You can proceed to the next step.'),
     ).toBeInTheDocument();
   });
 
-  it('renders passkey configuration even when no other configuration is required', () => {
+  it('renders passkey configuration even when no other configuration is required', async () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -155,10 +146,10 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    expect(screen.queryByText('applications:onboarding.configure.details.noConfigRequired.title')).not.toBeInTheDocument();
-    expect(screen.getByText('applications:onboarding.configure.details.passkey.title')).toBeInTheDocument();
+    await expect.element(page.getByText('No Additional Configuration Needed')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Passkey Settings')).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
+      page.getByPlaceholder('e.g., example.com'),
     ).toBeInTheDocument();
   });
 
@@ -168,7 +159,7 @@ describe('ConfigureDetails', () => {
     const onCallbackUrlChange = vi.fn();
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -179,25 +170,24 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    const hostingUrlInput = screen.getByPlaceholderText(
-      'applications:onboarding.configure.details.hostingUrl.placeholder',
+    const hostingUrlInput = page.getByPlaceholder(
+      'https://myapp.example.com',
     );
-    const user = userEvent.setup({delay: null}); // Remove typing delay for faster test
 
-    await user.type(hostingUrlInput, 'https://example.com');
+    await userEvent.fill(hostingUrlInput, 'https://example.com');
 
-    await waitFor(() => expect(onHostingUrlChange).toHaveBeenLastCalledWith('https://example.com'));
+    await vi.waitFor(() => expect(onHostingUrlChange).toHaveBeenLastCalledWith('https://example.com'));
 
-    const customRadio = screen.getByRole('radio', {
-      name: 'applications:onboarding.configure.details.callbackMode.custom',
+    const customRadio = page.getByRole('radio', {
+      name: 'Custom URL',
     });
-    await user.click(customRadio);
+    await userEvent.click(customRadio);
 
     const callbackUrlInput = document.getElementById('callback-url-input') as HTMLInputElement;
-    await user.clear(callbackUrlInput);
-    await user.type(callbackUrlInput, 'https://example.com/callback');
+    await userEvent.clear(callbackUrlInput);
+    await userEvent.fill(callbackUrlInput, 'https://example.com/callback');
 
-    await waitFor(() => expect(onCallbackUrlChange).toHaveBeenLastCalledWith('https://example.com/callback'), {
+    await vi.waitFor(() => expect(onCallbackUrlChange).toHaveBeenLastCalledWith('https://example.com/callback'), {
       timeout: 10000,
     });
     expect(onReadyChange).toHaveBeenCalled();
@@ -209,7 +199,7 @@ describe('ConfigureDetails', () => {
     const onHostingUrlChange = vi.fn();
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.OTHER,
         platform: PlatformApplicationTemplate.MOBILE,
@@ -220,13 +210,12 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    expect(screen.getByText('applications:onboarding.configure.details.mobile.info')).toBeInTheDocument();
+    await expect.element(page.getByText('Deep links (e.g., myapp://callback) or universal links (e.g., https://example.com/callback) are used to redirect users back to your mobile app after authentication.')).toBeInTheDocument();
 
-    const deeplinkInput = screen.getByPlaceholderText('applications:onboarding.configure.details.deeplink.placeholder');
-    const user = userEvent.setup();
-    await user.type(deeplinkInput, 'myapp://callback');
+    const deeplinkInput = page.getByPlaceholder('myapp://callback or https://example.com/callback');
+    await userEvent.fill(deeplinkInput, 'myapp://callback');
 
-    await waitFor(() => expect(onCallbackUrlChange).toHaveBeenLastCalledWith('myapp://callback'));
+    await vi.waitFor(() => expect(onCallbackUrlChange).toHaveBeenLastCalledWith('myapp://callback'));
     expect(onReadyChange).toHaveBeenCalled();
   });
 
@@ -236,7 +225,7 @@ describe('ConfigureDetails', () => {
     const onCallbackUrlChange = vi.fn();
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -247,25 +236,24 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    const hostingUrlInput = screen.getByPlaceholderText(
-      'applications:onboarding.configure.details.hostingUrl.placeholder',
+    const hostingUrlInput = page.getByPlaceholder(
+      'https://myapp.example.com',
     );
-    const user = userEvent.setup();
 
     // Type invalid URL
-    await user.type(hostingUrlInput, 'not-a-url');
-    await user.tab(); // Trigger validation
+    await userEvent.type(hostingUrlInput, 'not-a-url');
+    await userEvent.tab(); // Trigger validation
 
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText('Please enter a valid URL')).toBeInTheDocument();
     });
 
     // Clear and type valid URL
-    await user.clear(hostingUrlInput);
-    await user.type(hostingUrlInput, 'https://example.com');
+    await userEvent.clear(hostingUrlInput);
+    await userEvent.type(hostingUrlInput, 'https://example.com');
 
-    await waitFor(() => {
-      expect(screen.queryByText('Please enter a valid URL')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText('Please enter a valid URL')).not.toBeInTheDocument();
       expect(onHostingUrlChange).toHaveBeenLastCalledWith('https://example.com');
     });
   });
@@ -276,7 +264,7 @@ describe('ConfigureDetails', () => {
     const onCallbackUrlChange = vi.fn();
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -287,22 +275,20 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    const user = userEvent.setup();
-
     // Switch to custom callback mode
-    const customRadio = screen.getByRole('radio', {
-      name: 'applications:onboarding.configure.details.callbackMode.custom',
+    const customRadio = page.getByRole('radio', {
+      name: 'Custom URL',
     });
-    await user.click(customRadio);
+    await userEvent.click(customRadio);
 
     const callbackUrlInput = document.getElementById('callback-url-input') as HTMLInputElement;
 
     // Type invalid URL
-    await user.type(callbackUrlInput, 'invalid-url');
-    await user.tab(); // Trigger validation
+    await userEvent.type(callbackUrlInput, 'invalid-url');
+    await userEvent.tab(); // Trigger validation
 
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText('Please enter a valid URL')).toBeInTheDocument();
     });
   });
 
@@ -312,7 +298,7 @@ describe('ConfigureDetails', () => {
     const onHostingUrlChange = vi.fn();
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.OTHER,
         platform: PlatformApplicationTemplate.MOBILE,
@@ -323,15 +309,14 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    const deeplinkInput = screen.getByPlaceholderText('applications:onboarding.configure.details.deeplink.placeholder');
-    const user = userEvent.setup();
+    const deeplinkInput = page.getByPlaceholder('myapp://callback or https://example.com/callback');
 
     // Type invalid deep link
-    await user.type(deeplinkInput, 'invalid-deeplink');
-    await user.tab(); // Trigger validation
+    await userEvent.type(deeplinkInput, 'invalid-deeplink');
+    await userEvent.tab(); // Trigger validation
 
-    await waitFor(() => {
-      expect(screen.getByText(/Please enter a valid deep link/)).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText(/Please enter a valid deep link/)).toBeInTheDocument();
     });
   });
 
@@ -341,7 +326,7 @@ describe('ConfigureDetails', () => {
     const onCallbackUrlChange = vi.fn();
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -352,21 +337,20 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    const hostingUrlInput = screen.getByPlaceholderText(
-      'applications:onboarding.configure.details.hostingUrl.placeholder',
+    const hostingUrlInput = page.getByPlaceholder(
+      'https://myapp.example.com',
     );
-    const user = userEvent.setup();
 
     // Type hosting URL
-    await user.type(hostingUrlInput, 'https://example.com');
+    await userEvent.fill(hostingUrlInput, 'https://example.com');
 
     // By default, "Same as hosting" should be selected, so callback URL should sync
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onCallbackUrlChange).toHaveBeenLastCalledWith('https://example.com');
     });
   });
 
-  it('renders user type selection when multiple user types are available', () => {
+  it('renders user type selection when multiple user types are available', async () => {
     // Create template with empty allowed_user_types array to trigger user type selection
     const template = {
       ...createTemplate('Browser App', []),
@@ -377,7 +361,7 @@ describe('ConfigureDetails', () => {
       {id: 'user-type-2', name: 'Employee', ouId: 'ou-2', allowSelfRegistration: false},
     ];
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -391,7 +375,7 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    expect(screen.getByText('applications:onboarding.configure.details.userTypes.label')).toBeInTheDocument();
+    await expect.element(page.getByText('onboarding.configure.details.userTypes.label')).toBeInTheDocument();
   });
 
   it('calls onUserTypesChange when user type selection changes', async () => {
@@ -406,7 +390,7 @@ describe('ConfigureDetails', () => {
     ];
     const onUserTypesChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -420,20 +404,19 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    const autocomplete = screen.getByRole('combobox');
-    const user = userEvent.setup();
-    await user.click(autocomplete);
+    const autocomplete = page.getByRole('combobox');
+    await userEvent.click(autocomplete);
 
-    const customerOption = await screen.findByText('Customer');
-    await user.click(customerOption);
+    const customerOption = page.getByText('Customer');
+    await userEvent.click(customerOption);
 
     expect(onUserTypesChange).toHaveBeenCalledWith(['Customer']);
   });
 
-  it('does not render user type selection when no user types are provided', () => {
+  it('does not render user type selection when no user types are provided', async () => {
     const template = createTemplate('Browser App', []);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -446,14 +429,14 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    expect(screen.queryByText('applications:onboarding.configure.details.userTypes.label')).not.toBeInTheDocument();
+    await expect.element(page.getByText('onboarding.configure.details.userTypes.label')).not.toBeInTheDocument();
   });
 
   it('notifies readiness based on form validity', async () => {
     const template = createTemplate('Browser App', []);
     const onReadyChange = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -465,27 +448,26 @@ describe('ConfigureDetails', () => {
     );
 
     // Initially should not be ready (no URLs entered)
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onReadyChange).toHaveBeenCalledWith(false);
     });
 
-    const hostingUrlInput = screen.getByPlaceholderText(
-      'applications:onboarding.configure.details.hostingUrl.placeholder',
+    const hostingUrlInput = page.getByPlaceholder(
+      'https://myapp.example.com',
     );
-    const user = userEvent.setup();
 
     // Enter valid URL - should become ready
-    await user.type(hostingUrlInput, 'https://example.com');
+    await userEvent.fill(hostingUrlInput, 'https://example.com');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onReadyChange).toHaveBeenCalledWith(true);
     });
   });
 
-  it('handles server applications configuration correctly', () => {
+  it('handles server applications configuration correctly', async () => {
     const template = createTemplate('Server Application', []);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.NEXTJS,
         platform: PlatformApplicationTemplate.SERVER,
@@ -496,9 +478,9 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    expect(screen.getByText('applications:onboarding.configure.details.title')).toBeInTheDocument();
+    await expect.element(page.getByText('Configuration')).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('applications:onboarding.configure.details.hostingUrl.placeholder'),
+      page.getByPlaceholder('https://myapp.example.com'),
     ).toBeInTheDocument();
   });
 
@@ -506,7 +488,7 @@ describe('ConfigureDetails', () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
     const setRelyingPartyId = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -522,13 +504,12 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    const relyingPartyIdInput = screen.getByPlaceholderText(
-      'applications:onboarding.configure.details.relyingPartyId.placeholder',
+    const relyingPartyIdInput = page.getByPlaceholder(
+      'e.g., example.com',
     );
-    const user = userEvent.setup();
 
-    await user.clear(relyingPartyIdInput);
-    await user.type(relyingPartyIdInput, 'example.com');
+    await userEvent.clear(relyingPartyIdInput);
+    await userEvent.fill(relyingPartyIdInput, 'example.com');
 
     expect(setRelyingPartyId).toHaveBeenCalled();
   });
@@ -537,7 +518,7 @@ describe('ConfigureDetails', () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
     const setRelyingPartyName = vi.fn();
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -553,21 +534,20 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    const relyingPartyNameInput = screen.getByPlaceholderText(
-      'applications:onboarding.configure.details.relyingPartyName.placeholder',
+    const relyingPartyNameInput = page.getByPlaceholder(
+      'e.g., My Application',
     );
-    const user = userEvent.setup();
 
-    await user.clear(relyingPartyNameInput);
-    await user.type(relyingPartyNameInput, 'My Application');
+    await userEvent.clear(relyingPartyNameInput);
+    await userEvent.fill(relyingPartyNameInput, 'My Application');
 
     expect(setRelyingPartyName).toHaveBeenCalled();
   });
 
-  it('renders both passkey and URL configuration when passkey is enabled', () => {
+  it('renders both passkey and URL configuration when passkey is enabled', async () => {
     const template = createTemplate('Browser App', []);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -582,21 +562,21 @@ describe('ConfigureDetails', () => {
     );
 
     // Should show passkey configuration
-    expect(screen.getByText('applications:onboarding.configure.details.passkey.title')).toBeInTheDocument();
+    await expect.element(page.getByText('Passkey Settings')).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
+      page.getByPlaceholder('e.g., example.com'),
     ).toBeInTheDocument();
 
     // Should also show URL configuration
     expect(
-      screen.getByPlaceholderText('applications:onboarding.configure.details.hostingUrl.placeholder'),
+      page.getByPlaceholder('https://myapp.example.com'),
     ).toBeInTheDocument();
   });
 
-  it('does not render passkey configuration when BASIC_AUTH is the only authenticator', () => {
+  it('does not render passkey configuration when BASIC_AUTH is the only authenticator', async () => {
     const template = createTemplate('Browser App', []);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -611,16 +591,16 @@ describe('ConfigureDetails', () => {
     );
 
     // Should not show passkey section
-    expect(screen.queryByText('applications:onboarding.configure.details.passkey.title')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Passkey Settings')).not.toBeInTheDocument();
     expect(
-      screen.queryByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
+      page.getByPlaceholder('e.g., example.com'),
     ).not.toBeInTheDocument();
   });
 
   it('initializes passkey relying party defaults from hostname and app name', async () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -637,20 +617,21 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    const relyingPartyIdInput = screen.getByDisplayValue(
-      window.location.hostname,
+    const relyingPartyIdInput = page.getByPlaceholder(
+      'e.g., example.com',
     );
-    const relyingPartyNameInput = screen.getByDisplayValue('Test App');
+    const relyingPartyNameInput = page.getByPlaceholder('e.g., My Application');
 
-    expect(relyingPartyIdInput).toHaveValue(window.location.hostname);
-    expect(relyingPartyNameInput).toHaveValue('Test App');
+    await vi.waitFor(async () => {
+      await expect.element(relyingPartyIdInput).toHaveValue(window.location.hostname);
+      await expect.element(relyingPartyNameInput).toHaveValue('Test App');
+    });
   });
 
-  it('falls back to default passkey labels and placeholders when translations are empty', () => {
-    translationLookup = (): string => '';
+  it('falls back to default passkey labels and placeholders when translations are empty', async () => {
     const template = createTemplate('Browser App', ['https://example.com/callback']);
 
-    renderWithContext(
+    await renderWithContext(
       {
         technology: TechnologyApplicationTemplate.REACT,
         platform: PlatformApplicationTemplate.BROWSER,
@@ -665,10 +646,10 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    expect(screen.getByText('Passkey Settings')).toBeInTheDocument();
-    expect(screen.getByText('Relying Party ID')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('e.g., example.com')).toBeInTheDocument();
-    expect(screen.getByText('Relying Party Name')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('e.g., My App')).toBeInTheDocument();
+    await expect.element(page.getByText('Passkey Settings')).toBeInTheDocument();
+    await expect.element(page.getByText('Relying Party ID')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('e.g., example.com')).toBeInTheDocument();
+    await expect.element(page.getByText('Relying Party Name')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('e.g., My App')).toBeInTheDocument();
   });
 });

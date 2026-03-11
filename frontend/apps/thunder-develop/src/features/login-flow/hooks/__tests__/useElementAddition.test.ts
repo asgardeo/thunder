@@ -18,7 +18,7 @@
 
 import type React from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {Node} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
@@ -99,8 +99,8 @@ describe('useElementAddition', () => {
   });
 
   describe('Hook Interface', () => {
-    it('should return handleAddElementToView function', () => {
-      const {result} = renderHook(() =>
+    it('should return handleAddElementToView function', async () => {
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -110,8 +110,8 @@ describe('useElementAddition', () => {
       expect(typeof result.current.handleAddElementToView).toBe('function');
     });
 
-    it('should return handleAddElementToForm function', () => {
-      const {result} = renderHook(() =>
+    it('should return handleAddElementToForm function', async () => {
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -121,8 +121,8 @@ describe('useElementAddition', () => {
       expect(typeof result.current.handleAddElementToForm).toBe('function');
     });
 
-    it('should maintain stable function references', () => {
-      const {result, rerender} = renderHook(() =>
+    it('should maintain stable function references', async () => {
+      const {result, rerender} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -132,7 +132,7 @@ describe('useElementAddition', () => {
       const initialHandleAddToView = result.current.handleAddElementToView;
       const initialHandleAddToForm = result.current.handleAddElementToForm;
 
-      rerender();
+      await rerender();
 
       expect(result.current.handleAddElementToView).toBe(initialHandleAddToView);
       expect(result.current.handleAddElementToForm).toBe(initialHandleAddToForm);
@@ -140,8 +140,8 @@ describe('useElementAddition', () => {
   });
 
   describe('handleAddElementToView', () => {
-    it('should call setNodes when adding an element to view', () => {
-      const {result} = renderHook(() =>
+    it('should call setNodes when adding an element to view', async () => {
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -150,15 +150,13 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'button-1', type: ElementTypes.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(element, 'view-1');
-      });
+      result.current.handleAddElementToView(element, 'view-1');
 
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
-    it('should call generateStepElement with the element', () => {
-      const {result} = renderHook(() =>
+    it('should call generateStepElement with the element', async () => {
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -167,14 +165,12 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'button-1', type: ElementTypes.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(element, 'view-1');
-      });
+      result.current.handleAddElementToView(element, 'view-1');
 
       expect(mockGenerateStepElement).toHaveBeenCalledWith(element);
     });
 
-    it('should do nothing when view node does not exist', () => {
+    it('should do nothing when view node does not exist', async () => {
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
           const nodes: Node[] = [createMockViewNode({id: 'other-view'})];
@@ -183,7 +179,7 @@ describe('useElementAddition', () => {
         return updater;
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -192,9 +188,7 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'button-1', type: ElementTypes.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(element, 'non-existent-view');
-      });
+      result.current.handleAddElementToView(element, 'non-existent-view');
 
       expect(mockSetNodes).toHaveBeenCalled();
       // The setNodes callback should return unchanged nodes
@@ -204,7 +198,7 @@ describe('useElementAddition', () => {
       expect(resultNodes).toEqual(inputNodes);
     });
 
-    it('should add non-input element directly to view components', () => {
+    it('should add non-input element directly to view components', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -213,7 +207,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -222,16 +216,14 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'button-1', type: ElementTypes.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(element, 'view-1');
-      });
+      result.current.handleAddElementToView(element, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       expect((capturedNodes[0].data as {components: Element[]}).components).toHaveLength(1);
       expect((capturedNodes[0].data as {components: Element[]}).components[0].id).toBe('generated-button-1');
     });
 
-    it('should add input element to existing form in view', () => {
+    it('should add input element to existing form in view', async () => {
       const existingForm = createMockElement({
         id: 'form-1',
         type: BlockTypes.Form,
@@ -248,7 +240,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -257,9 +249,7 @@ describe('useElementAddition', () => {
 
       const inputElement = createMockElement({id: 'text-input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToView(inputElement, 'view-1');
-      });
+      result.current.handleAddElementToView(inputElement, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       // Should have the form with the new input element inside
@@ -271,7 +261,7 @@ describe('useElementAddition', () => {
       expect(form.components[0].id).toBe('generated-text-input-1');
     });
 
-    it('should create new form when adding input element to view without form', () => {
+    it('should create new form when adding input element to view without form', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -280,7 +270,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -289,9 +279,7 @@ describe('useElementAddition', () => {
 
       const inputElement = createMockElement({id: 'text-input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToView(inputElement, 'view-1');
-      });
+      result.current.handleAddElementToView(inputElement, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       // Should have created a new form containing the input element
@@ -311,7 +299,7 @@ describe('useElementAddition', () => {
         return undefined;
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -320,9 +308,7 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'button-1', type: ElementTypes.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(element, 'view-1');
-      });
+      result.current.handleAddElementToView(element, 'view-1');
 
       // Wait for queueMicrotask to execute
       await new Promise((resolve) => {
@@ -332,7 +318,7 @@ describe('useElementAddition', () => {
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('view-1');
     });
 
-    it('should handle view without components property', () => {
+    it('should handle view without components property', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -341,7 +327,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -350,9 +336,7 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'button-1', type: ElementTypes.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(element, 'view-1');
-      });
+      result.current.handleAddElementToView(element, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       expect(capturedNodes[0].data.components).toBeDefined();
@@ -360,8 +344,8 @@ describe('useElementAddition', () => {
   });
 
   describe('handleAddElementToForm', () => {
-    it('should call setNodes when adding an element to form', () => {
-      const {result} = renderHook(() =>
+    it('should call setNodes when adding an element to form', async () => {
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -370,15 +354,13 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(element, 'form-1');
-      });
+      result.current.handleAddElementToForm(element, 'form-1');
 
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
-    it('should call generateStepElement with the element', () => {
-      const {result} = renderHook(() =>
+    it('should call generateStepElement with the element', async () => {
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -387,14 +369,12 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(element, 'form-1');
-      });
+      result.current.handleAddElementToForm(element, 'form-1');
 
       expect(mockGenerateStepElement).toHaveBeenCalledWith(element);
     });
 
-    it('should do nothing when form does not exist in any view', () => {
+    it('should do nothing when form does not exist in any view', async () => {
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
@@ -403,7 +383,7 @@ describe('useElementAddition', () => {
         return updater;
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -412,9 +392,7 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(element, 'non-existent-form');
-      });
+      result.current.handleAddElementToForm(element, 'non-existent-form');
 
       expect(mockSetNodes).toHaveBeenCalled();
       // The setNodes callback should return unchanged nodes
@@ -424,7 +402,7 @@ describe('useElementAddition', () => {
       expect(resultNodes).toEqual(inputNodes);
     });
 
-    it('should add element to the correct form', () => {
+    it('should add element to the correct form', async () => {
       const existingForm = createMockElement({
         id: 'form-1',
         type: BlockTypes.Form,
@@ -441,7 +419,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -450,9 +428,7 @@ describe('useElementAddition', () => {
 
       const inputElement = createMockElement({id: 'text-input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(inputElement, 'form-1');
-      });
+      result.current.handleAddElementToForm(inputElement, 'form-1');
 
       expect(capturedNodes.length).toBe(1);
       const form = (capturedNodes[0].data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
@@ -461,7 +437,7 @@ describe('useElementAddition', () => {
       expect(form.components[0].id).toBe('generated-text-input-1');
     });
 
-    it('should preserve existing form components when adding new element', () => {
+    it('should preserve existing form components when adding new element', async () => {
       const existingInput = createMockElement({
         id: 'existing-input',
         type: ElementTypes.TextInput,
@@ -485,7 +461,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -494,9 +470,7 @@ describe('useElementAddition', () => {
 
       const newInputElement = createMockElement({id: 'new-input', type: ElementTypes.PasswordInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(newInputElement, 'form-1');
-      });
+      result.current.handleAddElementToForm(newInputElement, 'form-1');
 
       expect(capturedNodes.length).toBe(1);
       const form = (capturedNodes[0].data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
@@ -522,7 +496,7 @@ describe('useElementAddition', () => {
         return undefined;
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -531,9 +505,7 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(element, 'form-1');
-      });
+      result.current.handleAddElementToForm(element, 'form-1');
 
       // Wait for queueMicrotask to execute
       await new Promise((resolve) => {
@@ -543,7 +515,7 @@ describe('useElementAddition', () => {
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('view-1');
     });
 
-    it('should not update other nodes when adding element to form', () => {
+    it('should not update other nodes when adding element to form', async () => {
       const existingForm = createMockElement({
         id: 'form-1',
         type: BlockTypes.Form,
@@ -565,7 +537,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -574,16 +546,14 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(element, 'form-1');
-      });
+      result.current.handleAddElementToForm(element, 'form-1');
 
       expect(capturedNodes.length).toBe(2);
       // The other node should remain unchanged
       expect(capturedNodes[1].data.components).toEqual([{id: 'other-element'}]);
     });
 
-    it('should skip non-View nodes when searching for form', () => {
+    it('should skip non-View nodes when searching for form', async () => {
       const existingForm = createMockElement({
         id: 'form-1',
         type: BlockTypes.Form,
@@ -608,7 +578,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -617,9 +587,7 @@ describe('useElementAddition', () => {
 
       const element = createMockElement({id: 'input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(element, 'form-1');
-      });
+      result.current.handleAddElementToForm(element, 'form-1');
 
       // The element should be added to the form in the View node, not the execution node
       expect(capturedNodes.length).toBe(2);
@@ -628,7 +596,7 @@ describe('useElementAddition', () => {
       expect(form?.components).toHaveLength(1);
     });
 
-    it('should handle form with undefined components property', () => {
+    it('should handle form with undefined components property', async () => {
       const existingForm = createMockElement({
         id: 'form-1',
         type: BlockTypes.Form,
@@ -645,7 +613,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -654,9 +622,7 @@ describe('useElementAddition', () => {
 
       const inputElement = createMockElement({id: 'text-input-1', type: ElementTypes.TextInput});
 
-      act(() => {
-        result.current.handleAddElementToForm(inputElement, 'form-1');
-      });
+      result.current.handleAddElementToForm(inputElement, 'form-1');
 
       expect(capturedNodes.length).toBe(1);
       const form = (capturedNodes[0].data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
@@ -666,7 +632,7 @@ describe('useElementAddition', () => {
   });
 
   describe('mutateComponents integration', () => {
-    it('should call mutateComponents when adding input element to new form', () => {
+    it('should call mutateComponents when adding input element to new form', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -675,7 +641,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -685,9 +651,7 @@ describe('useElementAddition', () => {
       // Use a different input type to ensure full code path coverage
       const inputElement = createMockElement({id: 'password-input-1', type: ElementTypes.PasswordInput});
 
-      act(() => {
-        result.current.handleAddElementToView(inputElement, 'view-1');
-      });
+      result.current.handleAddElementToView(inputElement, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       // Should have created a new form containing the input element via mutateComponents
@@ -697,7 +661,7 @@ describe('useElementAddition', () => {
       expect(form).toBeDefined();
     });
 
-    it('should call mutateComponents when adding non-input element to view', () => {
+    it('should call mutateComponents when adding non-input element to view', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -706,7 +670,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -716,15 +680,13 @@ describe('useElementAddition', () => {
       // Use a Resend element type to ensure non-input path is covered
       const resendElement = createMockElement({id: 'resend-1', type: ElementTypes.Resend, category: ElementCategories.Action});
 
-      act(() => {
-        result.current.handleAddElementToView(resendElement, 'view-1');
-      });
+      result.current.handleAddElementToView(resendElement, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       expect((capturedNodes[0].data as {components: Element[]}).components).toHaveLength(1);
     });
 
-    it('should handle email input type', () => {
+    it('should handle email input type', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -733,7 +695,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -742,9 +704,7 @@ describe('useElementAddition', () => {
 
       const emailInput = createMockElement({id: 'email-input-1', type: ElementTypes.EmailInput});
 
-      act(() => {
-        result.current.handleAddElementToView(emailInput, 'view-1');
-      });
+      result.current.handleAddElementToView(emailInput, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       // Should have created a new form for this input type
@@ -754,7 +714,7 @@ describe('useElementAddition', () => {
       expect(form).toBeDefined();
     });
 
-    it('should handle OTP input type', () => {
+    it('should handle OTP input type', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -763,7 +723,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -772,9 +732,7 @@ describe('useElementAddition', () => {
 
       const otpInput = createMockElement({id: 'otp-input-1', type: ElementTypes.OtpInput});
 
-      act(() => {
-        result.current.handleAddElementToView(otpInput, 'view-1');
-      });
+      result.current.handleAddElementToView(otpInput, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       const form = (capturedNodes[0].data as {components: Element[]}).components.find(
@@ -783,7 +741,7 @@ describe('useElementAddition', () => {
       expect(form).toBeDefined();
     });
 
-    it('should handle checkbox input type', () => {
+    it('should handle checkbox input type', async () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
@@ -792,7 +750,7 @@ describe('useElementAddition', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      const {result} = renderHook(() =>
+      const {result} = await renderHook(() =>
         useElementAddition({
           setNodes: mockSetNodes,
           updateNodeInternals: mockUpdateNodeInternals,
@@ -801,9 +759,7 @@ describe('useElementAddition', () => {
 
       const checkboxInput = createMockElement({id: 'checkbox-1', type: ElementTypes.Checkbox});
 
-      act(() => {
-        result.current.handleAddElementToView(checkboxInput, 'view-1');
-      });
+      result.current.handleAddElementToView(checkboxInput, 'view-1');
 
       expect(capturedNodes.length).toBe(1);
       const form = (capturedNodes[0].data as {components: Element[]}).components.find(

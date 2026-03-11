@@ -17,17 +17,12 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import EditAdvancedSettings from '../EditAdvancedSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
 import CertificateTypes from '../../../../constants/certificate-types';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 describe('EditAdvancedSettings', () => {
   const mockApplication: Application = {
@@ -53,8 +48,8 @@ describe('EditAdvancedSettings', () => {
   const mockOnFieldChange = vi.fn();
 
   describe('Rendering', () => {
-    it('should render all three sections', () => {
-      render(
+    it('should render all three sections', async () => {
+      await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -63,25 +58,25 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.getByText('applications:edit.advanced.labels.oauth2Config')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.metadata')).toBeInTheDocument();
+      await expect.element(page.getByText('OAuth2 Configuration')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Certificate'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Metadata'})).toBeInTheDocument();
     });
 
-    it('should render without OAuth2 config when not provided', () => {
-      render(<EditAdvancedSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+    it('should render without OAuth2 config when not provided', async () => {
+      await render(<EditAdvancedSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.queryByText('applications:edit.advanced.labels.oauth2Config')).not.toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.metadata')).toBeInTheDocument();
+      await expect.element(page.getByText('OAuth2 Configuration')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Certificate'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Metadata'})).toBeInTheDocument();
     });
 
-    it('should render without metadata section when timestamps are missing', () => {
+    it('should render without metadata section when timestamps are missing', async () => {
       const appWithoutMetadata = {...mockApplication};
       delete (appWithoutMetadata as Partial<Application>).created_at;
       delete (appWithoutMetadata as Partial<Application>).updated_at;
 
-      render(
+      await render(
         <EditAdvancedSettings
           application={appWithoutMetadata}
           editedApp={{}}
@@ -90,15 +85,15 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.getByText('applications:edit.advanced.labels.oauth2Config')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
-      expect(screen.queryByText('applications:edit.advanced.labels.metadata')).not.toBeInTheDocument();
+      await expect.element(page.getByText('OAuth2 Configuration')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Certificate'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Metadata'})).not.toBeInTheDocument();
     });
   });
 
   describe('Section Integration', () => {
-    it('should pass correct props to OAuth2ConfigSection', () => {
-      render(
+    it('should pass correct props to OAuth2ConfigSection', async () => {
+      await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -107,13 +102,13 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.getByText('authorization_code')).toBeInTheDocument();
-      expect(screen.getByText('refresh_token')).toBeInTheDocument();
-      expect(screen.getByText('code')).toBeInTheDocument();
+      await expect.element(page.getByText('authorization_code', {exact: true})).toBeInTheDocument();
+      await expect.element(page.getByText('refresh_token', {exact: true})).toBeInTheDocument();
+      await expect.element(page.getByText('code', {exact: true})).toBeInTheDocument();
     });
 
-    it('should pass correct props to CertificateSection', () => {
-      render(
+    it('should pass correct props to CertificateSection', async () => {
+      await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -122,11 +117,11 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.getByLabelText('applications:edit.advanced.labels.certificateType')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Certificate Type')).toBeInTheDocument();
     });
 
-    it('should pass correct props to MetadataSection', () => {
-      render(
+    it('should pass correct props to MetadataSection', async () => {
+      await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -135,14 +130,14 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.getByText('applications:edit.advanced.labels.createdAt')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.labels.updatedAt')).toBeInTheDocument();
+      await expect.element(page.getByText('Created At')).toBeInTheDocument();
+      await expect.element(page.getByText('Updated At')).toBeInTheDocument();
     });
   });
 
   describe('Layout', () => {
-    it('should render sections in a Stack with spacing', () => {
-      const {container} = render(
+    it('should render sections in a Stack with spacing', async () => {
+      const {container} = await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -157,8 +152,8 @@ describe('EditAdvancedSettings', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle undefined oauth2Config', () => {
-      render(
+    it('should handle undefined oauth2Config', async () => {
+      await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -167,11 +162,11 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.queryByText('applications:edit.advanced.labels.oauth2Config')).not.toBeInTheDocument();
+      await expect.element(page.getByText('OAuth2 Configuration')).not.toBeInTheDocument();
     });
 
-    it('should handle empty editedApp', () => {
-      render(
+    it('should handle empty editedApp', async () => {
+      await render(
         <EditAdvancedSettings
           application={mockApplication}
           editedApp={{}}
@@ -180,19 +175,19 @@ describe('EditAdvancedSettings', () => {
         />,
       );
 
-      expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Certificate'})).toBeInTheDocument();
     });
 
-    it('should render with minimal application data', () => {
+    it('should render with minimal application data', async () => {
       const minimalApp = {
         id: 'minimal-id',
         name: 'Minimal App',
         template: 'custom',
       } as Application;
 
-      render(<EditAdvancedSettings application={minimalApp} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<EditAdvancedSettings application={minimalApp} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Certificate'})).toBeInTheDocument();
     });
   });
 });

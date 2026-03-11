@@ -17,7 +17,7 @@
  */
 
 import {describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {page, renderWithProviders} from '@thunder/test-utils/browser';
 import {useContext, useMemo} from 'react';
 import TranslationCreateContext, {type TranslationCreateContextType} from '../TranslationCreateContext';
 
@@ -74,25 +74,25 @@ function TestWithMockValue() {
 }
 
 describe('TranslationCreateContext', () => {
-  it('provides undefined value when used without provider', () => {
-    render(<TestConsumer />);
+  it('provides undefined value when used without provider', async () => {
+    await renderWithProviders(<TestConsumer />);
 
-    expect(screen.getByTestId('context')).toHaveTextContent('undefined');
+    await expect.element(page.getByTestId('context')).toHaveTextContent('undefined');
   });
 
-  it('provides context value when used with provider', () => {
-    render(<TestWithMockValue />);
+  it('provides context value when used with provider', async () => {
+    await renderWithProviders(<TestWithMockValue />);
 
-    expect(screen.getByTestId('context')).toHaveTextContent('defined');
-    expect(screen.getByTestId('context-type')).toHaveTextContent('object');
+    await expect.element(page.getByTestId('context')).toHaveTextContent('defined');
+    await expect.element(page.getByTestId('context-type')).toHaveTextContent('object');
   });
 
-  it('provides correct context properties when used with provider', () => {
-    render(<TestWithMockValue />);
+  it('provides correct context properties when used with provider', async () => {
+    await renderWithProviders(<TestWithMockValue />);
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent('LANGUAGE');
-    expect(screen.getByTestId('locale-code')).toHaveTextContent('fr-FR');
-    expect(screen.getByTestId('selected-country')).toHaveTextContent('France');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent('LANGUAGE');
+    await expect.element(page.getByTestId('locale-code')).toHaveTextContent('fr-FR');
+    await expect.element(page.getByTestId('selected-country')).toHaveTextContent('France');
   });
 
   it('has correct TypeScript interface definition', () => {

@@ -16,40 +16,14 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@thunder/test-utils';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {page, userEvent} from 'vitest/browser';
 import ClientSecretSuccessDialog from '../ClientSecretSuccessDialog';
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:regenerateSecret.success.title': 'Save Your New Client Secret',
-        'applications:regenerateSecret.success.subtitle':
-          "This is the only time you'll see this secret. Store it somewhere safe.",
-        'applications:regenerateSecret.success.secretLabel': 'New Client Secret',
-        'applications:regenerateSecret.success.copyButton': 'Copy to clipboard',
-        'applications:regenerateSecret.success.toggleVisibility': 'Toggle secret visibility',
-        'applications:regenerateSecret.success.copySecret': 'Copy Secret',
-        'applications:regenerateSecret.success.copied': 'Copied to clipboard',
-        'applications:regenerateSecret.success.securityReminder.title': 'Security Reminder',
-        'applications:regenerateSecret.success.securityReminder.description':
-          'Never share your client secret publicly or store it in version control.',
-        'common:actions.done': 'Done',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 describe('ClientSecretSuccessDialog', () => {
   const mockOnClose = vi.fn();
   const testClientSecret = 'test-client-secret-abc123xyz789';
-  // Stored at describe scope so assertions can reference it even after userEvent.setup()
-  // replaces navigator.clipboard with its own stub.
-  const mockWriteText = vi.fn().mockResolvedValue(undefined);
 
   const defaultProps = {
     open: true,
@@ -57,207 +31,196 @@ describe('ClientSecretSuccessDialog', () => {
     onClose: mockOnClose,
   };
 
-  const renderDialog = (props = defaultProps) => render(<ClientSecretSuccessDialog {...props} />);
-
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Mock clipboard API using defineProperty since navigator.clipboard is a getter-only property.
-    // Re-apply each time because userEvent.setup() may replace navigator.clipboard with its own stub.
-    mockWriteText.mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: {
-        writeText: mockWriteText,
-      },
-      writable: true,
-      configurable: true,
-    });
-  });
-
-  afterEach(() => {
     vi.clearAllMocks();
   });
 
   describe('Rendering', () => {
-    it('should render the dialog when open is true', () => {
-      renderDialog();
+    it('should render the dialog when open is true', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Save Your New Client Secret')).toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+      await expect.element(page.getByText('Save Your New Client Secret')).toBeInTheDocument();
     });
 
-    it('should display the subtitle message', () => {
-      renderDialog();
+    it('should display the subtitle message', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      expect(
-        screen.getByText("This is the only time you'll see this secret. Store it somewhere safe."),
+      await expect.element(
+        page.getByText("This is the only time you'll see this secret. Store it somewhere safe."),
       ).toBeInTheDocument();
     });
 
-    it('should display the client secret label', () => {
-      renderDialog();
+    it('should display the client secret label', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      expect(screen.getByText('New Client Secret')).toBeInTheDocument();
+      await expect.element(page.getByText('New Client Secret', {exact: true})).toBeInTheDocument();
     });
 
-    it('should have the client secret as a masked password field by default', () => {
-      renderDialog();
+    it('should have the client secret as a masked password field by default', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      const textField = document.querySelector('input[type="password"]');
-      expect(textField).toBeInTheDocument();
-      expect(textField).toHaveValue(testClientSecret);
+      // The dialog renders in a portal - query the document for the password input
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+      const dialog = page.getByRole('dialog').element();
+      const passwordInput = dialog.querySelector('input[type="password"]');
+      expect(passwordInput).not.toBeNull();
+      expect(passwordInput).toHaveValue(testClientSecret);
     });
 
-    it('should display the security reminder', () => {
-      renderDialog();
+    it('should display the security reminder', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      expect(screen.getByText('Security Reminder')).toBeInTheDocument();
-      expect(
-        screen.getByText('Never share your client secret publicly or store it in version control.'),
+      await expect.element(page.getByText('Security Reminder')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'Never share your client secret publicly or store it in version control. If you believe your secret has been compromised, regenerate it immediately.',
+        ),
       ).toBeInTheDocument();
     });
 
-    it('should not render dialog content when open is false', () => {
-      renderDialog({...defaultProps, open: false});
+    it('should not render dialog content when open is false', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} open={false} />);
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should render Done and Copy Secret buttons', () => {
-      renderDialog();
+    it('should render Done and Copy Secret buttons', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Copy Secret'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Done'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Copy Secret'})).toBeInTheDocument();
     });
 
-    it('should render the warning icon', () => {
-      renderDialog();
+    it('should render the warning icon', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      // AlertTriangle icon should be present
-      const svgIcons = document.querySelectorAll('svg');
+      // The AlertTriangle icon is rendered inside the dialog
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+      // Verify the dialog has SVG icons by checking presence of SVG elements inside dialog
+      const dialog = page.getByRole('dialog').element();
+      const svgIcons = dialog.querySelectorAll('svg');
       expect(svgIcons.length).toBeGreaterThan(0);
     });
   });
 
   describe('User Interactions', () => {
     it('should call onClose when Done button is clicked', async () => {
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      const doneButton = screen.getByRole('button', {name: 'Done'});
-      await user.click(doneButton);
+      await userEvent.click(page.getByRole('button', {name: 'Done'}));
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should call onClose when Escape key is pressed', async () => {
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      await user.keyboard('{Escape}');
+      await userEvent.keyboard('{Escape}');
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
     it('should copy client secret to clipboard when Copy Secret button is clicked', async () => {
-      const user = userEvent.setup();
-      renderDialog();
-      // Spy after userEvent.setup() so we intercept the clipboard stub it installs
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
       const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-      const copyButton = screen.getByRole('button', {name: 'Copy Secret'});
-      await user.click(copyButton);
+      await userEvent.click(page.getByRole('button', {name: 'Copy Secret'}));
 
       expect(writeTextSpy).toHaveBeenCalledWith(testClientSecret);
     });
 
     it('should copy client secret when inline copy icon is clicked', async () => {
-      const user = userEvent.setup();
-      renderDialog();
-      // Spy after userEvent.setup() so we intercept the clipboard stub it installs
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
       const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-      const copyButton = screen.getByRole('button', {name: 'Copy to clipboard'});
-      await user.click(copyButton);
+      await userEvent.click(page.getByRole('button', {name: 'Copy to clipboard'}));
 
       expect(writeTextSpy).toHaveBeenCalledWith(testClientSecret);
     });
 
     it('should show "Copied to clipboard" text after successful copy', async () => {
-      vi.useFakeTimers({shouldAdvanceTime: true});
-      const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
-      renderDialog();
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
+      vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
-      const copyButton = screen.getByRole('button', {name: 'Copy Secret'});
-      await user.click(copyButton);
+      await userEvent.click(page.getByRole('button', {name: 'Copy Secret'}));
 
-      await waitFor(() => {
-        expect(screen.getByText('Copied to clipboard')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Copied to clipboard')).toBeInTheDocument();
       });
-
-      vi.useRealTimers();
     });
 
     it('should toggle secret visibility when visibility button is clicked', async () => {
-      const user = userEvent.setup();
-      renderDialog();
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
       // Initially should be password type (masked)
-      const passwordField = document.querySelector('input[type="password"]');
-      expect(passwordField).toBeInTheDocument();
+      const dialog = page.getByRole('dialog').element();
+      expect(dialog.querySelector('input[type="password"]')).not.toBeNull();
 
       // Click toggle visibility button
-      const toggleButton = screen.getByRole('button', {name: 'Toggle secret visibility'});
-      await user.click(toggleButton);
+      await userEvent.click(page.getByRole('button', {name: 'Toggle secret visibility'}));
 
       // Should now be text type (visible)
-      const textField = document.querySelector('input[type="text"]');
-      expect(textField).toBeInTheDocument();
-      expect(textField).toHaveValue(testClientSecret);
+      await vi.waitFor(() => {
+        const textInput = dialog.querySelector('input[type="text"]');
+        expect(textInput).not.toBeNull();
+        expect(textInput).toHaveValue(testClientSecret);
+      });
     });
   });
 
   describe('Text Field Properties', () => {
-    it('should have a readonly text field', () => {
-      renderDialog();
+    it('should have a readonly text field', async () => {
+      await render(<ClientSecretSuccessDialog {...defaultProps} />);
 
-      const textField = document.querySelector('input');
-      expect(textField).toHaveAttribute('readonly');
+      // The dialog renders in a portal - query the document for the input
+      const dialog = page.getByRole('dialog').element();
+      const input = dialog.querySelector('input');
+      expect(input).toHaveAttribute('readonly');
     });
 
     it('should display the full client secret when visible', async () => {
-      const user = userEvent.setup();
       const longSecret = 'a'.repeat(64);
-      renderDialog({...defaultProps, clientSecret: longSecret});
+      await render(<ClientSecretSuccessDialog {...defaultProps} clientSecret={longSecret} />);
+
+      const dialog = page.getByRole('dialog').element();
 
       // Toggle visibility to see the full secret
-      const toggleButton = screen.getByRole('button', {name: 'Toggle secret visibility'});
-      await user.click(toggleButton);
+      await userEvent.click(page.getByRole('button', {name: 'Toggle secret visibility'}));
 
-      const textField = document.querySelector('input[type="text"]');
-      expect(textField).toHaveValue(longSecret);
+      await vi.waitFor(() => {
+        const textInput = dialog.querySelector('input[type="text"]');
+        expect(textInput).not.toBeNull();
+        expect(textInput).toHaveValue(longSecret);
+      });
     });
 
     it('should reset visibility state when dialog is closed and reopened', async () => {
-      const user = userEvent.setup();
-      const {rerender} = renderDialog();
+      const {rerender} = await render(<ClientSecretSuccessDialog {...defaultProps} />);
+
+      const dialog = page.getByRole('dialog').element();
 
       // Toggle visibility
-      const toggleButton = screen.getByRole('button', {name: 'Toggle secret visibility'});
-      await user.click(toggleButton);
+      await userEvent.click(page.getByRole('button', {name: 'Toggle secret visibility'}));
 
-      // Should be visible
-      expect(document.querySelector('input[type="text"]')).toBeInTheDocument();
+      // Verify toggled to text type
+      await vi.waitFor(() => {
+        expect(dialog.querySelector('input[type="text"]')).not.toBeNull();
+      });
 
       // Click Done to close
-      const doneButton = screen.getByRole('button', {name: 'Done'});
-      await user.click(doneButton);
+      await userEvent.click(page.getByRole('button', {name: 'Done'}));
 
       // Rerender with open: false then open: true
-      rerender(<ClientSecretSuccessDialog {...defaultProps} open={false} />);
-      rerender(<ClientSecretSuccessDialog {...defaultProps} open />);
+      await rerender(<ClientSecretSuccessDialog {...defaultProps} open={false} />);
+      await rerender(<ClientSecretSuccessDialog {...defaultProps} open />);
 
-      // Should be masked again
-      expect(document.querySelector('input[type="password"]')).toBeInTheDocument();
+      // Dialog should reopen with masked field (password type)
+      await expect.element(page.getByRole('dialog')).toBeInTheDocument();
+      await vi.waitFor(() => {
+        const reopenedDialog = page.getByRole('dialog').element();
+        expect(reopenedDialog.querySelector('input[type="password"]')).not.toBeNull();
+      });
     });
   });
 });

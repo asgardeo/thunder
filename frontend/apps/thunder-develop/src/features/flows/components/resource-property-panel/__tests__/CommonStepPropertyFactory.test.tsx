@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import CommonStepPropertyFactory from '../CommonStepPropertyFactory';
 import type {Resource} from '../../../models/resources';
 import {ElementTypes} from '../../../models/elements';
@@ -41,14 +42,14 @@ describe('CommonStepPropertyFactory', () => {
   });
 
   describe('RichText Element with text property', () => {
-    it('should render RichTextWithTranslation for text property when resource is RichText', () => {
+    it('should render RichTextWithTranslation for text property when resource is RichText', async () => {
       const richTextResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.RichText,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={richTextResource}
           propertyKey="text"
@@ -57,17 +58,17 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('rich-text-with-translation')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-with-translation')).toBeInTheDocument();
     });
 
-    it('should call onChange when RichText content changes', () => {
+    it('should call onChange when RichText content changes', async () => {
       const richTextResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.RichText,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={richTextResource}
           propertyKey="text"
@@ -76,20 +77,20 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const button = screen.getByText('Rich Text Editor');
-      fireEvent.click(button);
+      const button = page.getByText('Rich Text Editor');
+      await userEvent.click(button);
 
       expect(mockOnChange).toHaveBeenCalledWith('text', '<p>Updated content</p>', richTextResource);
     });
 
-    it('should not render RichTextWithTranslation for non-text properties on RichText', () => {
+    it('should not render RichTextWithTranslation for non-text properties on RichText', async () => {
       const richTextResource: Resource = {
         id: 'resource-1',
         type: ElementTypes.RichText,
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={richTextResource}
           propertyKey="other"
@@ -98,19 +99,19 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.queryByTestId('rich-text-with-translation')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-with-translation')).not.toBeInTheDocument();
     });
   });
 
   describe('Boolean Properties', () => {
-    it('should render FormControlLabel with Checkbox for boolean true value', () => {
+    it('should render FormControlLabel with Checkbox for boolean true value', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="isEnabled"
@@ -119,19 +120,19 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const checkbox = screen.getByRole('checkbox');
+      const checkbox = page.getByRole('checkbox');
       expect(checkbox).toBeInTheDocument();
       expect(checkbox).toBeChecked();
     });
 
-    it('should render FormControlLabel with Checkbox for boolean false value', () => {
+    it('should render FormControlLabel with Checkbox for boolean false value', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="isDisabled"
@@ -140,19 +141,19 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const checkbox = screen.getByRole('checkbox');
+      const checkbox = page.getByRole('checkbox');
       expect(checkbox).toBeInTheDocument();
       expect(checkbox).not.toBeChecked();
     });
 
-    it('should convert camelCase propertyKey to Start Case label for checkbox', () => {
+    it('should convert camelCase propertyKey to Start Case label for checkbox', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="showHeader"
@@ -161,17 +162,17 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByText('Show Header')).toBeInTheDocument();
+      await expect.element(page.getByText('Show Header')).toBeInTheDocument();
     });
 
-    it('should call onChange with correct parameters when checkbox is toggled', () => {
+    it('should call onChange with correct parameters when checkbox is toggled', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="active"
@@ -180,22 +181,22 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const checkbox = screen.getByRole('checkbox');
-      fireEvent.click(checkbox);
+      const checkbox = page.getByRole('checkbox');
+      await userEvent.click(checkbox);
 
       expect(mockOnChange).toHaveBeenCalledWith('active', true, resource);
     });
   });
 
   describe('String Properties', () => {
-    it('should render FormControl with TextField for string value', () => {
+    it('should render FormControl with TextField for string value', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="title"
@@ -204,19 +205,19 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeInTheDocument();
       expect(textField).toHaveValue('My Title');
     });
 
-    it('should render TextField for empty string value', () => {
+    it('should render TextField for empty string value', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="description"
@@ -225,19 +226,19 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const textField = screen.getByRole('textbox');
+      const textField = page.getByRole('textbox');
       expect(textField).toBeInTheDocument();
       expect(textField).toHaveValue('');
     });
 
-    it('should convert camelCase propertyKey to Start Case label for text field', () => {
+    it('should convert camelCase propertyKey to Start Case label for text field', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="pageTitle"
@@ -246,17 +247,17 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByText('Page Title')).toBeInTheDocument();
+      await expect.element(page.getByText('Page Title')).toBeInTheDocument();
     });
 
-    it('should show placeholder with Start Case property key', () => {
+    it('should show placeholder with Start Case property key', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="userName"
@@ -265,18 +266,18 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const textField = screen.getByPlaceholderText('Enter User Name');
+      const textField = page.getByPlaceholder('Enter User Name');
       expect(textField).toBeInTheDocument();
     });
 
-    it('should call onChange when text field value changes', () => {
+    it('should call onChange when text field value changes', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="name"
@@ -285,22 +286,22 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      const textField = screen.getByRole('textbox');
-      fireEvent.change(textField, {target: {value: 'Updated Value'}});
+      const textField = page.getByRole('textbox');
+      await userEvent.fill(textField, 'Updated Value');
 
       expect(mockOnChange).toHaveBeenCalledWith('name', 'Updated Value', resource);
     });
   });
 
   describe('Null Cases', () => {
-    it('should return null for object property values', () => {
+    it('should return null for object property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="config"
@@ -312,14 +313,14 @@ describe('CommonStepPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for number property values', () => {
+    it('should return null for number property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="order"
@@ -331,14 +332,14 @@ describe('CommonStepPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for array property values', () => {
+    it('should return null for array property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="items"
@@ -350,14 +351,14 @@ describe('CommonStepPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for undefined property values', () => {
+    it('should return null for undefined property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="undefinedProp"
@@ -369,14 +370,14 @@ describe('CommonStepPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for null property values', () => {
+    it('should return null for null property values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {container} = await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="nullProp"
@@ -390,14 +391,14 @@ describe('CommonStepPropertyFactory', () => {
   });
 
   describe('Additional Props', () => {
-    it('should pass additional props to FormControlLabel for boolean values', () => {
+    it('should pass additional props to FormControlLabel for boolean values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="enabled"
@@ -407,17 +408,17 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('checkbox')).toBeInTheDocument();
     });
 
-    it('should pass additional props to TextField for string values', () => {
+    it('should pass additional props to TextField for string values', async () => {
       const resource: Resource = {
         id: 'resource-1',
         type: 'VIEW',
         config: {},
       } as Resource;
 
-      render(
+      await render(
         <CommonStepPropertyFactory
           resource={resource}
           propertyKey="name"
@@ -427,7 +428,7 @@ describe('CommonStepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('textbox')).toBeInTheDocument();
     });
   });
 });

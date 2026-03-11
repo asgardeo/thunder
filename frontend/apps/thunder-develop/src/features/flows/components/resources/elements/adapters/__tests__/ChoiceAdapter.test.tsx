@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import type {FieldOption} from '@/features/flows/models/base';
 import ChoiceAdapter from '../ChoiceAdapter';
@@ -49,66 +50,66 @@ describe('ChoiceAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render FormControl container', () => {
+    it('should render FormControl container', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormControl-root')).toBeInTheDocument();
     });
 
-    it('should render form label with resource label', () => {
+    it('should render form label with resource label', async () => {
       const resource = createMockElement({label: 'Choose your preference'});
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      expect(screen.getByText('Choose your preference')).toBeInTheDocument();
+      await expect.element(page.getByText('Choose your preference')).toBeInTheDocument();
     });
 
-    it('should render RadioGroup component', () => {
+    it('should render RadioGroup component', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiRadioGroup-root')).toBeInTheDocument();
     });
   });
 
   describe('Options Rendering', () => {
-    it('should render radio options for each field option', () => {
+    it('should render radio options for each field option', async () => {
       const options = createMockOptions();
       const resource = createMockElement({options});
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      expect(screen.getByText('Option 1')).toBeInTheDocument();
-      expect(screen.getByText('Option 2')).toBeInTheDocument();
-      expect(screen.getByText('Option 3')).toBeInTheDocument();
+      await expect.element(page.getByText('Option 1')).toBeInTheDocument();
+      await expect.element(page.getByText('Option 2')).toBeInTheDocument();
+      await expect.element(page.getByText('Option 3')).toBeInTheDocument();
     });
 
-    it('should render radio buttons for each option', () => {
+    it('should render radio buttons for each option', async () => {
       const options = createMockOptions();
       const resource = createMockElement({options});
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      const radioButtons = screen.getAllByRole('radio');
+      const radioButtons = page.getByRole('radio');
       expect(radioButtons).toHaveLength(3);
     });
 
-    it('should handle empty options array', () => {
+    it('should handle empty options array', async () => {
       const resource = createMockElement({options: []});
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       const radioButtons = container.querySelectorAll('input[type="radio"]');
       expect(radioButtons).toHaveLength(0);
     });
 
-    it('should handle undefined options', () => {
+    it('should handle undefined options', async () => {
       const resource = createMockElement({options: undefined});
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       const radioButtons = container.querySelectorAll('input[type="radio"]');
       expect(radioButtons).toHaveLength(0);
@@ -116,29 +117,29 @@ describe('ChoiceAdapter', () => {
   });
 
   describe('Default Value', () => {
-    it('should set default value on RadioGroup', () => {
+    it('should set default value on RadioGroup', async () => {
       const options = createMockOptions();
       const resource = createMockElement({
         options,
         defaultValue: 'option2',
       });
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      const radioButtons = screen.getAllByRole('radio');
+      const radioButtons = page.getByRole('radio').all();
       expect(radioButtons[1]).toBeChecked();
     });
 
-    it('should handle no default value', () => {
+    it('should handle no default value', async () => {
       const options = createMockOptions();
       const resource = createMockElement({
         options,
         defaultValue: undefined,
       });
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      const radioButtons = screen.getAllByRole('radio');
+      const radioButtons = page.getByRole('radio').all();
       radioButtons.forEach((radio) => {
         expect(radio).not.toBeChecked();
       });
@@ -146,55 +147,55 @@ describe('ChoiceAdapter', () => {
   });
 
   describe('Hint Text', () => {
-    it('should render hint when provided', () => {
+    it('should render hint when provided', async () => {
       const resource = createMockElement({hint: 'Select one of the options above'});
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      expect(screen.getByTestId('hint')).toBeInTheDocument();
-      expect(screen.getByTestId('hint')).toHaveTextContent('Select one of the options above');
+      await expect.element(page.getByTestId('hint')).toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).toHaveTextContent('Select one of the options above');
     });
 
-    it('should not render hint when not provided', () => {
+    it('should not render hint when not provided', async () => {
       const resource = createMockElement({hint: undefined});
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
 
-    it('should not render hint when empty string', () => {
+    it('should not render hint when empty string', async () => {
       const resource = createMockElement({hint: ''});
 
-      render(<ChoiceAdapter resource={resource} />);
+      await render(<ChoiceAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
   });
 
   describe('Form Label', () => {
-    it('should render with resource id as label id', () => {
+    it('should render with resource id as label id', async () => {
       const resource = createMockElement({id: 'my-choice-field'});
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       const label = container.querySelector('.MuiFormLabel-root');
       expect(label).toHaveAttribute('id', 'my-choice-field');
     });
 
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       const label = container.querySelector('.MuiFormLabel-root');
       expect(label).toBeInTheDocument();
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      const {container} = render(<ChoiceAdapter resource={resource} />);
+      const {container} = await render(<ChoiceAdapter resource={resource} />);
 
       const label = container.querySelector('.MuiFormLabel-root');
       expect(label).toBeInTheDocument();

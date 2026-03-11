@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {useForm, type Control, type FieldErrors} from 'react-hook-form';
 import TokenValidationSection from '../TokenValidationSection';
 
@@ -61,199 +61,195 @@ function TestWrapper({
 
 describe('TokenValidationSection', () => {
   describe('Rendering with tokenType="shared"', () => {
-    it('should render the settings card with correct title and description', () => {
-      render(
+    it('should render the settings card with correct title and description', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('Token Validation');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('Token Validation');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Configure token validation settings such as audience and validity',
       );
     });
 
-    it('should render the validity period field with default value', () => {
-      render(
+    it('should render the validity period field with default value', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
+      const input = page.getByLabelText('Token Validity');
       expect(input).toBeInTheDocument();
       expect(input).toHaveValue(3600);
     });
 
-    it('should render number input type', () => {
-      render(
+    it('should render number input type', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
-      expect((input as HTMLInputElement).type).toBe('number');
+      const input = page.getByLabelText('Token Validity');
+      expect((input.element() as HTMLInputElement).type).toBe('number');
     });
 
-    it('should render with custom initial value', () => {
-      render(
+    it('should render with custom initial value', async () => {
+      await render(
         <TestWrapper defaultValues={{validityPeriod: 7200}}>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
+      const input = page.getByLabelText('Token Validity');
       expect(input).toHaveValue(7200);
     });
 
-    it('should render helper text when no error', () => {
-      render(
+    it('should render helper text when no error', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      expect(screen.getByText('Token validity period in seconds (e.g., 3600 for 1 hour)')).toBeInTheDocument();
+      await expect.element(page.getByText('Token validity period in seconds (e.g., 3600 for 1 hour)')).toBeInTheDocument();
     });
   });
 
   describe('Rendering with tokenType="access"', () => {
-    it('should render the settings card with access token title and description', () => {
-      render(
+    it('should render the settings card with access token title and description', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="access" />}
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('Access Token Validation');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('Access Token Validation');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Configure how long access tokens remain valid before expiration',
       );
     });
 
-    it('should render the access token validity field with default value', () => {
-      render(
+    it('should render the access token validity field with default value', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="access" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
+      const input = page.getByLabelText('Token Validity');
       expect(input).toHaveValue(3600);
     });
 
-    it('should render with custom initial access token value', () => {
-      render(
+    it('should render with custom initial access token value', async () => {
+      await render(
         <TestWrapper defaultValues={{accessTokenValidity: 1800}}>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="access" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
+      const input = page.getByLabelText('Token Validity');
       expect(input).toHaveValue(1800);
     });
   });
 
   describe('Rendering with tokenType="id"', () => {
-    it('should render the settings card with ID token title and description', () => {
-      render(
+    it('should render the settings card with ID token title and description', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="id" />}
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('ID Token Validation');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('ID Token Validation');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Configure how long ID tokens remain valid before expiration',
       );
     });
 
-    it('should render the ID token validity field with default value', () => {
-      render(
+    it('should render the ID token validity field with default value', async () => {
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="id" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
+      const input = page.getByLabelText('Token Validity');
       expect(input).toHaveValue(3600);
     });
 
-    it('should render with custom initial ID token value', () => {
-      render(
+    it('should render with custom initial ID token value', async () => {
+      await render(
         <TestWrapper defaultValues={{idTokenValidity: 900}}>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="id" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
+      const input = page.getByLabelText('Token Validity');
       expect(input).toHaveValue(900);
     });
   });
 
   describe('User Interaction', () => {
     it('should allow user to type a new validity value', async () => {
-      const user = userEvent.setup();
-
-      render(
+      
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
-      await user.clear(input);
-      await user.type(input, '7200');
+      const input = page.getByLabelText('Token Validity');
+      await userEvent.clear(input);
+      await userEvent.type(input, '7200');
 
       expect(input).toHaveValue(7200);
     });
 
     it('should allow user to update existing value', async () => {
-      const user = userEvent.setup();
-
-      render(
+      
+      await render(
         <TestWrapper defaultValues={{validityPeriod: 1800}}>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
-      await user.clear(input);
-      await user.type(input, '3600');
+      const input = page.getByLabelText('Token Validity');
+      await userEvent.clear(input);
+      await userEvent.type(input, '3600');
 
       expect(input).toHaveValue(3600);
     });
 
     it('should handle numeric input for access token', async () => {
-      const user = userEvent.setup();
-
-      render(
+      
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="access" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
-      await user.clear(input);
-      await user.type(input, '5400');
+      const input = page.getByLabelText('Token Validity');
+      await userEvent.clear(input);
+      await userEvent.type(input, '5400');
 
       expect(input).toHaveValue(5400);
     });
 
     it('should handle numeric input for ID token', async () => {
-      const user = userEvent.setup();
-
-      render(
+      
+      await render(
         <TestWrapper>
           {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="id" />}
         </TestWrapper>,
       );
 
-      const input = screen.getByLabelText('Token Validity');
-      await user.clear(input);
-      await user.type(input, '1200');
+      const input = page.getByLabelText('Token Validity');
+      await userEvent.clear(input);
+      await userEvent.type(input, '1200');
 
       expect(input).toHaveValue(1200);
     });

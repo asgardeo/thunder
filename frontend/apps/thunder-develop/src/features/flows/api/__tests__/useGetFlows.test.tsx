@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useGetFlows from '../useGetFlows';
@@ -93,9 +93,9 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows());
+    const {result} = await renderHook(() => useGetFlows());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -114,9 +114,9 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows({limit: 10, offset: 20}));
+    const {result} = await renderHook(() => useGetFlows({limit: 10, offset: 20}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -134,9 +134,9 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}));
+    const {result} = await renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -156,12 +156,12 @@ describe('useGetFlows', () => {
       }),
     );
 
-    const {result} = renderHook(() => useGetFlows());
+    const {result} = await renderHook(() => useGetFlows());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
   });
@@ -170,9 +170,9 @@ describe('useGetFlows', () => {
     const apiError = new Error('Failed to fetch flows');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetFlows());
+    const {result} = await renderHook(() => useGetFlows());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -187,9 +187,9 @@ describe('useGetFlows', () => {
 
     const params = {flowType: FlowType.REGISTRATION, limit: 15, offset: 5};
 
-    const {queryClient} = renderHook(() => useGetFlows(params));
+    const {queryClient} = await renderHook(() => useGetFlows(params));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
     });
 
@@ -203,16 +203,16 @@ describe('useGetFlows', () => {
     });
 
     // First render with no params
-    const {result: result1} = renderHook(() => useGetFlows());
+    const {result: result1} = await renderHook(() => useGetFlows());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
     // Second render with params
-    const {result: result2} = renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}));
+    const {result: result2} = await renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -231,9 +231,9 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows());
+    const {result} = await renderHook(() => useGetFlows());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -256,9 +256,9 @@ describe('useGetFlows', () => {
       data: emptyResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows());
+    const {result} = await renderHook(() => useGetFlows());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

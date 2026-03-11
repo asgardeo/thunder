@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ArrayFieldInput from '../ArrayFieldInput';
 
 describe('ArrayFieldInput', () => {
@@ -27,327 +28,327 @@ describe('ArrayFieldInput', () => {
     vi.clearAllMocks();
   });
 
-  it('renders input field with placeholder', () => {
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('renders input field with placeholder', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    expect(screen.getByPlaceholderText('Add tags')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Add tags')).toBeInTheDocument();
   });
 
-  it('renders add button', () => {
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('renders add button', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const addButton = screen.getByRole('button');
-    expect(addButton).toBeInTheDocument();
+    const addButton = page.getByRole('button');
+    await expect.element(addButton).toBeInTheDocument();
   });
 
-  it('add button is disabled when input is empty', () => {
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('add button is disabled when input is empty', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const addButton = screen.getByRole('button');
-    expect(addButton).toBeDisabled();
+    const addButton = page.getByRole('button');
+    await expect.element(addButton).toBeDisabled();
   });
 
   it('allows typing in the input field', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test value');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test value');
 
-    expect(input).toHaveValue('test value');
+    await expect.element(input).toHaveValue('test value');
   });
 
   it('adds value when add button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test value');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test value');
 
-    const addButton = screen.getByRole('button');
-    await user.click(addButton);
+    const addButton = page.getByRole('button');
+    await userEvent.click(addButton);
 
-    expect(mockOnChange).toHaveBeenCalledWith(['test value']);
-  });
-
-  it('adds value when Enter key is pressed', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
-
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test value{Enter}');
-
-    expect(mockOnChange).toHaveBeenCalledWith(['test value']);
-  });
-
-  it('clears input after adding value', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
-
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test value');
-
-    const addButton = screen.getByRole('button');
-    await user.click(addButton);
-
-    await waitFor(() => {
-      expect(input).toHaveValue('');
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledWith(['test value']);
     });
   });
 
-  it('displays existing values as chips', () => {
-    render(<ArrayFieldInput value={['tag1', 'tag2', 'tag3']} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('adds value when Enter key is pressed', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    expect(screen.getByText('tag1')).toBeInTheDocument();
-    expect(screen.getByText('tag2')).toBeInTheDocument();
-    expect(screen.getByText('tag3')).toBeInTheDocument();
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test value');
+    await userEvent.keyboard('{Enter}');
+
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledWith(['test value']);
+    });
+  });
+
+  it('clears input after adding value', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test value');
+
+    const addButton = page.getByRole('button');
+    await userEvent.click(addButton);
+
+    await expect.element(input).toHaveValue('');
+  });
+
+  it('displays existing values as chips', async () => {
+    await renderWithProviders(<ArrayFieldInput value={['tag1', 'tag2', 'tag3']} onChange={mockOnChange} fieldLabel="Tags" />);
+
+    await expect.element(page.getByText('tag1')).toBeInTheDocument();
+    await expect.element(page.getByText('tag2')).toBeInTheDocument();
+    await expect.element(page.getByText('tag3')).toBeInTheDocument();
   });
 
   it('deletes chip when delete icon is clicked', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={['tag1', 'tag2', 'tag3']} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={['tag1', 'tag2', 'tag3']} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const deleteButtons = screen.getAllByTestId('CancelIcon');
-    await user.click(deleteButtons[1]); // Delete 'tag2'
+    const deleteButtons = page.getByTestId('CancelIcon').all();
+    await userEvent.click(deleteButtons[1]); // Delete 'tag2'
 
-    expect(mockOnChange).toHaveBeenCalledWith(['tag1', 'tag3']);
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledWith(['tag1', 'tag3']);
+    });
   });
 
   it('trims whitespace from input value', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, '  test value  ');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, '  test value  ');
 
-    const addButton = screen.getByRole('button');
-    await user.click(addButton);
+    const addButton = page.getByRole('button');
+    await userEvent.click(addButton);
 
-    expect(mockOnChange).toHaveBeenCalledWith(['test value']);
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledWith(['test value']);
+    });
   });
 
   it('does not add empty value', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, '   ');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, '   ');
 
-    const addButton = screen.getByRole('button');
+    const addButton = page.getByRole('button');
     // Button should be disabled for empty/whitespace-only input
-    expect(addButton).toBeDisabled();
+    await expect.element(addButton).toBeDisabled();
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
   it('appends new value to existing values', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={['existing1', 'existing2']} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={['existing1', 'existing2']} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'new value{Enter}');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'new value');
+    await userEvent.keyboard('{Enter}');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnChange).toHaveBeenCalledWith(['existing1', 'existing2', 'new value']);
     });
   });
 
   it('handles non-array value prop gracefully', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={'not-an-array' as unknown as string[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={'not-an-array' as unknown as string[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    expect(input).toBeInTheDocument();
+    const input = page.getByPlaceholder('Add tags');
+    await expect.element(input).toBeInTheDocument();
 
     // Should still be able to add values even with invalid initial value
-    await user.type(input, 'new value');
-    const addButton = screen.getByRole('button');
-    await user.click(addButton);
+    await userEvent.fill(input, 'new value');
+    const addButton = page.getByRole('button');
+    await userEvent.click(addButton);
 
     // Should call onChange with just the new value (not trying to spread the invalid value)
-    expect(mockOnChange).toHaveBeenCalledWith(['new value']);
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledWith(['new value']);
+    });
   });
 
   it('enables add button when input has value', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const addButton = screen.getByRole('button');
-    expect(addButton).toBeDisabled();
+    const addButton = page.getByRole('button');
+    await expect.element(addButton).toBeDisabled();
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test');
 
-    expect(addButton).not.toBeDisabled();
+    await expect.element(addButton).not.toBeDisabled();
   });
 
   it('prevents default behavior on Enter key press', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test{Enter}');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test');
+    await userEvent.keyboard('{Enter}');
 
     // Should not trigger form submission
-    expect(mockOnChange).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalled();
+    });
   });
 
-  it('does not render chips container when array is empty', () => {
-    const {container} = render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('does not render chips container when array is empty', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
     // Chips should not be rendered when array is empty
-    const chips = container.querySelectorAll('.MuiChip-root');
+    const chips = document.querySelectorAll('.MuiChip-root');
     expect(chips).toHaveLength(0);
   });
 
-  it('handles different casing in field label for placeholder', () => {
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="TAGS" />);
+  it('handles different casing in field label for placeholder', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="TAGS" />);
 
-    expect(screen.getByPlaceholderText('Add tags')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Add tags')).toBeInTheDocument();
   });
 
   it('handles empty string after trim', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, '     {Enter}');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, '     ');
+    await userEvent.keyboard('{Enter}');
 
     // Should not add anything since trimmed value is empty
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
-  it('converts non-string items to strings in chip labels', () => {
-    render(<ArrayFieldInput value={['123', '456'] as string[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('converts non-string items to strings in chip labels', async () => {
+    await renderWithProviders(<ArrayFieldInput value={['123', '456'] as string[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    expect(screen.getByText('123')).toBeInTheDocument();
-    expect(screen.getByText('456')).toBeInTheDocument();
+    await expect.element(page.getByText('123')).toBeInTheDocument();
+    await expect.element(page.getByText('456')).toBeInTheDocument();
   });
 
   it('handles multiple rapid additions', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
+    const input = page.getByPlaceholder('Add tags');
 
-    await user.type(input, 'first{Enter}');
-    await waitFor(() => {
+    await userEvent.fill(input, 'first');
+    await userEvent.keyboard('{Enter}');
+    await vi.waitFor(() => {
       expect(mockOnChange).toHaveBeenCalledWith(['first']);
     });
 
-    await user.type(input, 'second{Enter}');
-    await waitFor(() => {
+    await userEvent.fill(input, 'second');
+    await userEvent.keyboard('{Enter}');
+    await vi.waitFor(() => {
       expect(mockOnChange).toHaveBeenCalledWith(['second']);
     });
   });
 
-  it('does not call onChange when trying to add empty input via button', () => {
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('does not call onChange when trying to add empty input via button', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const addButton = screen.getByRole('button');
+    const addButton = page.getByRole('button');
     // Button is disabled, but test the behavior
-    expect(addButton).toBeDisabled();
+    await expect.element(addButton).toBeDisabled();
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
-  it('renders with mixed case fieldLabel correctly', () => {
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="User Tags" />);
+  it('renders with mixed case fieldLabel correctly', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="User Tags" />);
 
-    expect(screen.getByPlaceholderText('Add user tags')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Add user tags')).toBeInTheDocument();
   });
 
   it('does not add value when non-Enter key is pressed', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test');
 
     // Press a key that is not Enter
-    await user.keyboard('{Escape}');
+    await userEvent.keyboard('{Escape}');
 
     // Should not call onChange
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
   it('does not add value when other keys are pressed', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test');
 
     // Press keys that are not Enter
-    await user.keyboard('{Tab}');
-    await user.keyboard('{Shift}');
-    await user.keyboard('{Control}');
+    await userEvent.keyboard('{Tab}');
+    await userEvent.keyboard('{Shift}');
+    await userEvent.keyboard('{Control}');
 
     // Should not call onChange
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
-  it('handles the case when currentValue.length is 0', () => {
-    const {container} = render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+  it('handles the case when currentValue.length is 0', async () => {
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
     // When currentValue.length is 0, no chips should be rendered
-    const chips = container.querySelectorAll('.MuiChip-root');
+    const chips = document.querySelectorAll('.MuiChip-root');
     expect(chips).toHaveLength(0);
   });
 
   it('tests the false branch of inputValue.trim() in handleAdd', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
+    const input = page.getByPlaceholder('Add tags');
 
     // Type only spaces
-    await user.type(input, '   ');
+    await userEvent.fill(input, '   ');
 
     // Try to trigger handleAdd with only whitespace (button should be disabled)
-    const addButton = screen.getByRole('button');
-    expect(addButton).toBeDisabled();
+    const addButton = page.getByRole('button');
+    await expect.element(addButton).toBeDisabled();
 
     // Even if we could click it, it shouldn't add anything
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
   it('tests button disabled state transitions', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    const addButton = screen.getByRole('button');
+    const input = page.getByPlaceholder('Add tags');
+    const addButton = page.getByRole('button');
 
     // Initially disabled
-    expect(addButton).toBeDisabled();
+    await expect.element(addButton).toBeDisabled();
 
     // Type something - button should enable
-    await user.type(input, 'test');
-    expect(addButton).not.toBeDisabled();
+    await userEvent.fill(input, 'test');
+    await expect.element(addButton).not.toBeDisabled();
 
     // Clear input - button should disable again
-    await user.clear(input);
-    expect(addButton).toBeDisabled();
+    await userEvent.clear(input);
+    await expect.element(addButton).toBeDisabled();
 
     // Type whitespace only - button should remain disabled
-    await user.type(input, '   ');
-    expect(addButton).toBeDisabled();
+    await userEvent.fill(input, '   ');
+    await expect.element(addButton).toBeDisabled();
 
     // Type actual content - button should enable
-    await user.type(input, 'real content');
-    expect(addButton).not.toBeDisabled();
+    await userEvent.fill(input, 'real content');
+    await expect.element(addButton).not.toBeDisabled();
   });
 
   it('handles null or undefined value gracefully', async () => {
-    const user = userEvent.setup();
-    render(<ArrayFieldInput value={null as unknown as string[]} onChange={mockOnChange} fieldLabel="Tags" />);
+    await renderWithProviders(<ArrayFieldInput value={null as unknown as string[]} onChange={mockOnChange} fieldLabel="Tags" />);
 
-    const input = screen.getByPlaceholderText('Add tags');
-    await user.type(input, 'test');
+    const input = page.getByPlaceholder('Add tags');
+    await userEvent.fill(input, 'test');
 
-    const addButton = screen.getByRole('button');
-    await user.click(addButton);
+    const addButton = page.getByRole('button');
+    await userEvent.click(addButton);
 
     // Should treat null/undefined as empty array
-    expect(mockOnChange).toHaveBeenCalledWith(['test']);
+    await vi.waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledWith(['test']);
+    });
   });
 });

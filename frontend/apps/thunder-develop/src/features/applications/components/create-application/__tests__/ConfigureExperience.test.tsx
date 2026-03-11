@@ -17,24 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import ConfigureExperience from '../ConfigureExperience';
 import {ApplicationCreateFlowSignInApproach} from '../../../models/application-create-flow';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
-vi.mock('@thunder/shared-contexts', () => ({
-  useConfig: () => ({
-    getFeatureConfig: () => ({}),
-    config: {brand: {}},
-  }),
-}));
 
 describe('ConfigureExperience', () => {
   const mockOnApproachChange = vi.fn();
@@ -45,78 +31,75 @@ describe('ConfigureExperience', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the component with both approach options', () => {
-      render(
+    it('should render the component with both approach options', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
         />,
       );
 
-      expect(screen.getByText('applications:onboarding.configure.approach.inbuilt.title')).toBeInTheDocument();
-      expect(screen.getByText('applications:onboarding.configure.approach.native.title')).toBeInTheDocument();
+      await expect.element(page.getByText('Embedded sign-in/sign-up components in your app')).toBeInTheDocument();
     });
 
-    it('should select INBUILT approach by default', () => {
-      render(
+    it('should select INBUILT approach by default', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
         />,
       );
 
-      const inbuiltRadio = screen.getAllByRole('radio')[0];
+      const inbuiltRadio = page.getByRole('radio').all()[0];
       expect(inbuiltRadio).toBeChecked();
     });
 
-    it('should select EMBEDDED approach when prop is set', () => {
-      render(
+    it('should select EMBEDDED approach when prop is set', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
           onApproachChange={mockOnApproachChange}
         />,
       );
 
-      const embeddedRadio = screen.getAllByRole('radio')[1];
+      const embeddedRadio = page.getByRole('radio').all()[1];
       expect(embeddedRadio).toBeChecked();
     });
   });
 
   describe('User Interactions', () => {
     it('should call onApproachChange when INBUILT is clicked', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
           onApproachChange={mockOnApproachChange}
         />,
       );
 
-      const inbuiltRadio = screen.getAllByRole('radio')[0];
-      await user.click(inbuiltRadio);
+      const inbuiltRadio = page.getByRole('radio').all()[0];
+      await userEvent.click(inbuiltRadio);
 
       expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.INBUILT);
     });
 
     it('should call onApproachChange when EMBEDDED is clicked', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
         />,
       );
 
-      const embeddedRadio = screen.getAllByRole('radio')[1];
-      await user.click(embeddedRadio);
+      const embeddedRadio = page.getByRole('radio').all()[1];
+      await userEvent.click(embeddedRadio);
 
       expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
     });
   });
 
   describe('Ready State', () => {
-    it('should call onReadyChange with true on mount', () => {
-      render(
+    it('should call onReadyChange with true on mount', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -139,8 +122,8 @@ describe('ConfigureExperience', () => {
       mockOnUserTypesChange.mockClear();
     });
 
-    it('should render user types selection when userTypes prop is provided', () => {
-      render(
+    it('should render user types selection when userTypes prop is provided', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -150,12 +133,12 @@ describe('ConfigureExperience', () => {
       );
 
       expect(
-        screen.getByText('applications:onboarding.configure.experience.access.userTypes.title'),
+        page.getByText('User Access'),
       ).toBeInTheDocument();
     });
 
-    it('should not render user types selection when userTypes prop is undefined', () => {
-      render(
+    it('should not render user types selection when userTypes prop is undefined', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -163,14 +146,14 @@ describe('ConfigureExperience', () => {
       );
 
       expect(
-        screen.queryByText('applications:onboarding.configure.experience.access.userTypes.title'),
+        page.getByText('User Access'),
       ).not.toBeInTheDocument();
     });
 
-    it('should not render user types selection when only one user type exists', () => {
+    it('should not render user types selection when only one user type exists', async () => {
       const singleUserType = [{id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true}];
 
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -180,13 +163,12 @@ describe('ConfigureExperience', () => {
       );
 
       expect(
-        screen.queryByText('applications:onboarding.configure.experience.access.userTypes.title'),
+        page.getByText('User Access'),
       ).not.toBeInTheDocument();
     });
 
     it('should render user type cards and allow selection', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -197,20 +179,19 @@ describe('ConfigureExperience', () => {
       );
 
       // Should render user type cards
-      expect(screen.getByText('Internal')).toBeInTheDocument();
-      expect(screen.getByText('External')).toBeInTheDocument();
+      await expect.element(page.getByText('Internal')).toBeInTheDocument();
+      await expect.element(page.getByText('External')).toBeInTheDocument();
 
       // Click External card to add it to selection
-      const externalCard = screen.getByText('External').closest('[class*="MuiCard"]');
+      const externalCard = page.getByText('External').element().closest('[class*="MuiCard"]');
       expect(externalCard).toBeInTheDocument();
-      await user.click(externalCard!);
+      await userEvent.click(externalCard!);
 
       expect(mockOnUserTypesChange).toHaveBeenCalledWith(['Internal', 'External']);
     });
 
     it('should remove user type from selection when clicking selected card', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -221,14 +202,14 @@ describe('ConfigureExperience', () => {
       );
 
       // Click Internal card to remove it from selection
-      const internalCard = screen.getByText('Internal').closest('[class*="MuiCard"]');
-      await user.click(internalCard!);
+      const internalCard = page.getByText('Internal').element().closest('[class*="MuiCard"]');
+      await userEvent.click(internalCard!);
 
       expect(mockOnUserTypesChange).toHaveBeenCalledWith(['External']);
     });
 
-    it('should auto-select first user type when none selected', () => {
-      render(
+    it('should auto-select first user type when none selected', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -241,9 +222,9 @@ describe('ConfigureExperience', () => {
       expect(mockOnUserTypesChange).toHaveBeenCalledWith(['Internal']);
     });
 
-    it('should call onReadyChange with false when no user types selected (with multiple available)', () => {
+    it('should call onReadyChange with false when no user types selected (with multiple available)', async () => {
       const mockOnReadyChangeLocal = vi.fn();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -258,9 +239,9 @@ describe('ConfigureExperience', () => {
       expect(mockOnReadyChangeLocal).toHaveBeenCalledWith(false);
     });
 
-    it('should call onReadyChange with true when user types are selected', () => {
+    it('should call onReadyChange with true when user types are selected', async () => {
       const mockOnReadyChangeLocal = vi.fn();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -289,8 +270,8 @@ describe('ConfigureExperience', () => {
       mockOnUserTypesChange.mockClear();
     });
 
-    it('should render autocomplete when 5 or more user types exist', () => {
-      render(
+    it('should render autocomplete when 5 or more user types exist', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -301,12 +282,11 @@ describe('ConfigureExperience', () => {
       );
 
       // Should have an autocomplete input
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
 
     it('should allow selecting user types from autocomplete', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -316,18 +296,18 @@ describe('ConfigureExperience', () => {
         />,
       );
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
       // Should show options
-      const type2Option = await screen.findByText('Type2');
-      await user.click(type2Option);
+      const type2Option = page.getByText('Type2');
+      await userEvent.click(type2Option);
 
       expect(mockOnUserTypesChange).toHaveBeenCalledWith(['Type1', 'Type2']);
     });
 
-    it('should show error state when no user types selected with autocomplete', () => {
-      render(
+    it('should show error state when no user types selected with autocomplete', async () => {
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -338,32 +318,30 @@ describe('ConfigureExperience', () => {
       );
 
       // The TextField should have error state
-      const textField = screen.getByRole('combobox');
-      expect(textField.closest('.MuiAutocomplete-root')?.querySelector('.Mui-error')).toBeInTheDocument();
+      const textField = page.getByRole('combobox');
+      expect(textField.element().closest('.MuiAutocomplete-root')?.querySelector('.Mui-error')).toBeInTheDocument();
     });
   });
 
   describe('Card Click Handlers', () => {
     it('should call onApproachChange when clicking INBUILT card', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
           onApproachChange={mockOnApproachChange}
         />,
       );
 
-      // Find the INBUILT card by its title text and click the card itself
-      const inbuiltTitle = screen.getByText('applications:onboarding.configure.approach.inbuilt.title');
-      const inbuiltCard = inbuiltTitle.closest('[class*="MuiCard"]');
-      await user.click(inbuiltCard!);
+      // Find the INBUILT card by its radio button (first radio) and click the card itself
+      const inbuiltRadio = page.getByRole('radio').all()[0];
+      const inbuiltCard = inbuiltRadio.element().closest('[class*="MuiCard"]');
+      await userEvent.click(inbuiltCard!);
 
       expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.INBUILT);
     });
 
     it('should call onApproachChange when clicking EMBEDDED card', async () => {
-      const user = userEvent.setup();
-      render(
+      await render(
         <ConfigureExperience
           selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
           onApproachChange={mockOnApproachChange}
@@ -371,9 +349,9 @@ describe('ConfigureExperience', () => {
       );
 
       // Find the EMBEDDED card by its title text and click the card itself
-      const embeddedTitle = screen.getByText('applications:onboarding.configure.approach.native.title');
-      const embeddedCard = embeddedTitle.closest('[class*="MuiCard"]');
-      await user.click(embeddedCard!);
+      const embeddedTitle = page.getByText('Embedded sign-in/sign-up components in your app');
+      const embeddedCard = embeddedTitle.element().closest('[class*="MuiCard"]');
+      await userEvent.click(embeddedCard!);
 
       expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
     });

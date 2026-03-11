@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import ThemeBuilderProvider from '../ThemeBuilderProvider';
 import useThemeBuilder from '../useThemeBuilder';
 
@@ -94,7 +93,7 @@ describe('ThemeBuilderProvider', () => {
   });
 
   describe('Loading state', () => {
-    it('renders null while loading', () => {
+    it('renders null while loading', async () => {
       mockUseGetTheme.mockReturnValue({data: undefined, isLoading: true});
       const {container} = render(
         <ThemeBuilderProvider>
@@ -106,7 +105,7 @@ describe('ThemeBuilderProvider', () => {
       expect(container).toBeEmptyDOMElement();
     });
 
-    it('does not render children while loading', () => {
+    it('does not render children while loading', async () => {
       mockUseGetTheme.mockReturnValue({data: undefined, isLoading: true});
       render(
         <ThemeBuilderProvider>
@@ -114,7 +113,7 @@ describe('ThemeBuilderProvider', () => {
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.queryByTestId('child')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('child')).not.toBeInTheDocument();
     });
   });
 
@@ -126,79 +125,79 @@ describe('ThemeBuilderProvider', () => {
       });
     });
 
-    it('renders children when not loading', () => {
+    it('renders children when not loading', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('themeId')).toBeInTheDocument();
+      await expect.element(page.getByTestId('themeId')).toBeInTheDocument();
     });
 
-    it('provides the themeId from route params', () => {
+    it('provides the themeId from route params', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('themeId')).toHaveTextContent('theme-123');
+      await expect.element(page.getByTestId('themeId')).toHaveTextContent('theme-123');
     });
 
-    it('provides the displayName from fetched data', () => {
+    it('provides the displayName from fetched data', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('displayName')).toHaveTextContent('Ocean Blue');
+      await expect.element(page.getByTestId('displayName')).toHaveTextContent('Ocean Blue');
     });
 
-    it('initialises draftTheme from fetched theme data', () => {
+    it('initialises draftTheme from fetched theme data', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('draft-primary')).toHaveTextContent('#1a73e8');
+      await expect.element(page.getByTestId('draft-primary')).toHaveTextContent('#1a73e8');
     });
 
-    it('starts with isDirty=false', () => {
+    it('starts with isDirty=false', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('isDirty')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('isDirty')).toHaveTextContent('false');
     });
 
-    it('starts with activeSection="colors"', () => {
+    it('starts with activeSection="colors"', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('activeSection')).toHaveTextContent('colors');
+      await expect.element(page.getByTestId('activeSection')).toHaveTextContent('colors');
     });
 
-    it('starts with viewport="desktop"', () => {
+    it('starts with viewport="desktop"', async () => {
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('viewport')).toHaveTextContent('desktop');
+      await expect.element(page.getByTestId('viewport')).toHaveTextContent('desktop');
     });
   });
 
   describe('previewColorScheme initialisation', () => {
-    it('sets previewColorScheme to "light" when theme defaultColorScheme is "light"', () => {
+    it('sets previewColorScheme to "light" when theme defaultColorScheme is "light"', async () => {
       mockUseGetTheme.mockReturnValue({
         data: {id: 'theme-123', displayName: 'Light Theme', theme: {...mockTheme, defaultColorScheme: 'light'}},
         isLoading: false,
@@ -210,7 +209,7 @@ describe('ThemeBuilderProvider', () => {
         </ThemeBuilderProvider>,
       );
 
-      expect(screen.getByTestId('previewColorScheme')).toHaveTextContent('light');
+      await expect.element(page.getByTestId('previewColorScheme')).toHaveTextContent('light');
     });
 
     it('sets previewColorScheme to "dark" when theme defaultColorScheme is "dark"', async () => {
@@ -229,8 +228,8 @@ describe('ThemeBuilderProvider', () => {
         </ThemeBuilderProvider>,
       );
 
-      await waitFor(() => {
-        expect(screen.getByTestId('previewColorScheme')).toHaveTextContent('dark');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('previewColorScheme')).toHaveTextContent('dark');
       });
     });
   });
@@ -244,32 +243,30 @@ describe('ThemeBuilderProvider', () => {
     });
 
     it('updates the nested path in draftTheme', async () => {
-      const user = userEvent.setup();
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      await user.click(screen.getByText('UpdatePrimary'));
+      await userEvent.click(page.getByText('UpdatePrimary'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('draft-primary')).toHaveTextContent('#ff0000');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('draft-primary')).toHaveTextContent('#ff0000');
       });
     });
 
     it('marks isDirty as true after an update', async () => {
-      const user = userEvent.setup();
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      await user.click(screen.getByText('UpdatePrimary'));
+      await userEvent.click(page.getByText('UpdatePrimary'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('isDirty')).toHaveTextContent('true');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('isDirty')).toHaveTextContent('true');
       });
     });
   });
@@ -283,7 +280,6 @@ describe('ThemeBuilderProvider', () => {
     });
 
     it('reverts draftTheme to original on reset', async () => {
-      const user = userEvent.setup();
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
@@ -291,30 +287,29 @@ describe('ThemeBuilderProvider', () => {
       );
 
       // First update
-      await user.click(screen.getByText('UpdatePrimary'));
-      await waitFor(() => expect(screen.getByTestId('draft-primary')).toHaveTextContent('#ff0000'));
+      await userEvent.click(page.getByText('UpdatePrimary'));
+      await vi.waitFor(async () => expect.element(page.getByTestId('draft-primary')).toHaveTextContent('#ff0000'));
 
       // Then reset
-      await user.click(screen.getByText('Reset'));
-      await waitFor(() => {
-        expect(screen.getByTestId('draft-primary')).toHaveTextContent('#1a73e8');
+      await userEvent.click(page.getByText('Reset'));
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('draft-primary')).toHaveTextContent('#1a73e8');
       });
     });
 
     it('sets isDirty back to false after reset', async () => {
-      const user = userEvent.setup();
       render(
         <ThemeBuilderProvider>
           <TestConsumer />
         </ThemeBuilderProvider>,
       );
 
-      await user.click(screen.getByText('UpdatePrimary'));
-      await waitFor(() => expect(screen.getByTestId('isDirty')).toHaveTextContent('true'));
+      await userEvent.click(page.getByText('UpdatePrimary'));
+      await vi.waitFor(async () => expect.element(page.getByTestId('isDirty')).toHaveTextContent('true'));
 
-      await user.click(screen.getByText('Reset'));
-      await waitFor(() => {
-        expect(screen.getByTestId('isDirty')).toHaveTextContent('false');
+      await userEvent.click(page.getByText('Reset'));
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('isDirty')).toHaveTextContent('false');
       });
     });
   });

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {StaticStepTypes} from '@/features/flows/models/steps';
 import StaticStepFactory from '../StaticStepFactory';
 
@@ -40,28 +41,28 @@ describe('StaticStepFactory', () => {
   });
 
   describe('Rendering', () => {
-    it('should render CommonStaticStepFactory for Start type', () => {
+    it('should render CommonStaticStepFactory for Start type', async () => {
       const props = createNodeProps({type: StaticStepTypes.Start});
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-static-step-factory')).toBeInTheDocument();
     });
 
-    it('should pass type prop to CommonStaticStepFactory', () => {
+    it('should pass type prop to CommonStaticStepFactory', async () => {
       const props = createNodeProps({type: StaticStepTypes.Start});
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toHaveAttribute('data-type', StaticStepTypes.Start);
+      await expect.element(page.getByTestId('common-static-step-factory')).toHaveAttribute('data-type', StaticStepTypes.Start);
     });
 
-    it('should pass UserOnboard type to CommonStaticStepFactory', () => {
+    it('should pass UserOnboard type to CommonStaticStepFactory', async () => {
       const props = createNodeProps({type: StaticStepTypes.UserOnboard});
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toHaveAttribute(
+      await expect.element(page.getByTestId('common-static-step-factory')).toHaveAttribute(
         'data-type',
         StaticStepTypes.UserOnboard,
       );
@@ -69,55 +70,55 @@ describe('StaticStepFactory', () => {
   });
 
   describe('Props Forwarding', () => {
-    it('should forward additional node props', () => {
+    it('should forward additional node props', async () => {
       const props = createNodeProps({
         id: 'custom-node-id',
         position: {x: 100, y: 200},
         data: {customData: 'test'},
       });
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-static-step-factory')).toBeInTheDocument();
     });
 
-    it('should handle different node IDs', () => {
+    it('should handle different node IDs', async () => {
       const props1 = createNodeProps({id: 'node-1', type: StaticStepTypes.Start});
       const props2 = createNodeProps({id: 'node-2', type: StaticStepTypes.Start});
 
-      const {rerender} = render(<StaticStepFactory {...props1} />);
+      const {rerender} = await render(<StaticStepFactory {...props1} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-static-step-factory')).toBeInTheDocument();
 
-      rerender(<StaticStepFactory {...props2} />);
+      await rerender(<StaticStepFactory {...props2} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-static-step-factory')).toBeInTheDocument();
     });
   });
 
   describe('Type Handling', () => {
-    it('should handle undefined type gracefully', () => {
+    it('should handle undefined type gracefully', async () => {
       const props = createNodeProps({type: undefined});
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-static-step-factory')).toBeInTheDocument();
     });
 
-    it('should handle empty string type', () => {
+    it('should handle empty string type', async () => {
       const props = createNodeProps({type: ''});
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toHaveAttribute('data-type', '');
+      await expect.element(page.getByTestId('common-static-step-factory')).toHaveAttribute('data-type', '');
     });
 
-    it('should handle custom type string', () => {
+    it('should handle custom type string', async () => {
       const props = createNodeProps({type: 'CUSTOM_TYPE'});
 
-      render(<StaticStepFactory {...props} />);
+      await render(<StaticStepFactory {...props} />);
 
-      expect(screen.getByTestId('common-static-step-factory')).toHaveAttribute('data-type', 'CUSTOM_TYPE');
+      await expect.element(page.getByTestId('common-static-step-factory')).toHaveAttribute('data-type', 'CUSTOM_TYPE');
     });
   });
 });

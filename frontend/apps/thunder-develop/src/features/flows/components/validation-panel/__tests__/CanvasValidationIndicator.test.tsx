@@ -17,24 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import CanvasValidationIndicator from '../CanvasValidationIndicator';
 import Notification, {NotificationType} from '../../../models/notification';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:core.notificationPanel.tabs.errors': 'Errors',
-        'flows:core.notificationPanel.tabs.warnings': 'Warnings',
-        'flows:core.notificationPanel.tabs.info': 'Info',
-        'flows:core.notificationPanel.trigger.label': 'Validation Status',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 // Mock @xyflow/react
 vi.mock('@xyflow/react', () => ({
@@ -81,50 +67,50 @@ describe('CanvasValidationIndicator', () => {
   });
 
   describe('Visibility', () => {
-    it('should return null when there are no notifications', () => {
+    it('should return null when there are no notifications', async () => {
       mockNotifications = [];
 
-      const {container} = render(<CanvasValidationIndicator />);
+      const {container} = await render(<CanvasValidationIndicator />);
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should render when there are notifications', () => {
+    it('should render when there are notifications', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByTestId('panel')).toBeInTheDocument();
+      await expect.element(page.getByTestId('panel')).toBeInTheDocument();
     });
   });
 
   describe('Error Notifications', () => {
-    it('should display error count', () => {
+    it('should display error count', async () => {
       mockNotifications = [
         createNotification('1', 'Error 1', NotificationType.ERROR),
         createNotification('2', 'Error 2', NotificationType.ERROR),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByText('2')).toBeInTheDocument();
+      await expect.element(page.getByText('2')).toBeInTheDocument();
     });
 
-    it('should have error button with correct aria-label', () => {
+    it('should have error button with correct aria-label', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
     });
 
-    it('should open validation panel on error tab when error button clicked', () => {
+    it('should open validation panel on error tab when error button clicked', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const errorButton = screen.getByRole('button', {name: '1 Errors'});
-      fireEvent.click(errorButton);
+      const errorButton = page.getByRole('button', {name: '1 Errors'});
+      await userEvent.click(errorButton);
 
       expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(0);
       expect(mockSetIsOpenResourcePropertiesPanel).toHaveBeenCalledWith(false);
@@ -133,33 +119,33 @@ describe('CanvasValidationIndicator', () => {
   });
 
   describe('Warning Notifications', () => {
-    it('should display warning count', () => {
+    it('should display warning count', async () => {
       mockNotifications = [
         createNotification('1', 'Warning 1', NotificationType.WARNING),
         createNotification('2', 'Warning 2', NotificationType.WARNING),
         createNotification('3', 'Warning 3', NotificationType.WARNING),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByText('3')).toBeInTheDocument();
+      await expect.element(page.getByText('3')).toBeInTheDocument();
     });
 
-    it('should have warning button with correct aria-label', () => {
+    it('should have warning button with correct aria-label', async () => {
       mockNotifications = [createNotification('1', 'Warning', NotificationType.WARNING)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByRole('button', {name: '1 Warnings'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Warnings'})).toBeInTheDocument();
     });
 
-    it('should open validation panel on warnings tab when warning button clicked', () => {
+    it('should open validation panel on warnings tab when warning button clicked', async () => {
       mockNotifications = [createNotification('1', 'Warning', NotificationType.WARNING)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const warningButton = screen.getByRole('button', {name: '1 Warnings'});
-      fireEvent.click(warningButton);
+      const warningButton = page.getByRole('button', {name: '1 Warnings'});
+      await userEvent.click(warningButton);
 
       expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(1);
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
@@ -167,29 +153,29 @@ describe('CanvasValidationIndicator', () => {
   });
 
   describe('Info Notifications', () => {
-    it('should display info count', () => {
+    it('should display info count', async () => {
       mockNotifications = [createNotification('1', 'Info', NotificationType.INFO)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByText('1')).toBeInTheDocument();
+      await expect.element(page.getByText('1')).toBeInTheDocument();
     });
 
-    it('should have info button with correct aria-label', () => {
+    it('should have info button with correct aria-label', async () => {
       mockNotifications = [createNotification('1', 'Info', NotificationType.INFO)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
     });
 
-    it('should open validation panel on info tab when info button clicked', () => {
+    it('should open validation panel on info tab when info button clicked', async () => {
       mockNotifications = [createNotification('1', 'Info', NotificationType.INFO)];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const infoButton = screen.getByRole('button', {name: '1 Info'});
-      fireEvent.click(infoButton);
+      const infoButton = page.getByRole('button', {name: '1 Info'});
+      await userEvent.click(infoButton);
 
       expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(2);
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(true);
@@ -197,7 +183,7 @@ describe('CanvasValidationIndicator', () => {
   });
 
   describe('Mixed Notifications', () => {
-    it('should display counts for all notification types', () => {
+    it('should display counts for all notification types', async () => {
       mockNotifications = [
         createNotification('1', 'Error', NotificationType.ERROR),
         createNotification('2', 'Warning 1', NotificationType.WARNING),
@@ -205,36 +191,36 @@ describe('CanvasValidationIndicator', () => {
         createNotification('4', 'Info', NotificationType.INFO),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: '2 Warnings'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '2 Warnings'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
     });
 
-    it('should only show buttons for notification types that exist', () => {
+    it('should only show buttons for notification types that exist', async () => {
       mockNotifications = [
         createNotification('1', 'Error', NotificationType.ERROR),
         createNotification('2', 'Info', NotificationType.INFO),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      expect(screen.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: /Warnings/})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Warnings/})).not.toBeInTheDocument();
     });
   });
 
   describe('Panel Toggle', () => {
-    it('should close validation panel if already open when button clicked', () => {
+    it('should close validation panel if already open when button clicked', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
       mockOpenValidationPanel = true;
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const errorButton = screen.getByRole('button', {name: '1 Errors'});
-      fireEvent.click(errorButton);
+      const errorButton = page.getByRole('button', {name: '1 Errors'});
+      await userEvent.click(errorButton);
 
       expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
       expect(mockSetCurrentActiveTab).not.toHaveBeenCalled();
@@ -242,86 +228,86 @@ describe('CanvasValidationIndicator', () => {
   });
 
   describe('Panel Open CSS Class', () => {
-    it('should have panel-open class when validation panel is open', () => {
+    it('should have panel-open class when validation panel is open', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
       mockOpenValidationPanel = true;
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const panel = screen.getByTestId('panel');
-      expect(panel.className).toContain('panel-open');
+      const panel = page.getByTestId('panel');
+      expect(panel.element().className).toContain('panel-open');
     });
 
-    it('should have panel-open class when resource properties panel is open', () => {
+    it('should have panel-open class when resource properties panel is open', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
       mockIsResourcePropertiesPanelOpen = true;
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const panel = screen.getByTestId('panel');
-      expect(panel.className).toContain('panel-open');
+      const panel = page.getByTestId('panel');
+      expect(panel.element().className).toContain('panel-open');
     });
 
-    it('should not have panel-open class when no panels are open', () => {
+    it('should not have panel-open class when no panels are open', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
       mockOpenValidationPanel = false;
       mockIsResourcePropertiesPanelOpen = false;
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const panel = screen.getByTestId('panel');
-      expect(panel.className).not.toContain('panel-open');
+      const panel = page.getByTestId('panel');
+      expect(panel.element().className).not.toContain('panel-open');
     });
   });
 
   describe('Primary Status Color', () => {
-    it('should use error status when there are errors', () => {
+    it('should use error status when there are errors', async () => {
       mockNotifications = [
         createNotification('1', 'Error', NotificationType.ERROR),
         createNotification('2', 'Warning', NotificationType.WARNING),
         createNotification('3', 'Info', NotificationType.INFO),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
       // When errors exist, error status should be primary
-      expect(screen.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
     });
 
-    it('should use warning status when there are warnings but no errors', () => {
+    it('should use warning status when there are warnings but no errors', async () => {
       mockNotifications = [
         createNotification('1', 'Warning', NotificationType.WARNING),
         createNotification('2', 'Info', NotificationType.INFO),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
       // When only warnings and info, warning should be primary
-      expect(screen.getByRole('button', {name: '1 Warnings'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Warnings'})).toBeInTheDocument();
     });
 
-    it('should use info status when there are only info notifications', () => {
+    it('should use info status when there are only info notifications', async () => {
       mockNotifications = [
         createNotification('1', 'Info', NotificationType.INFO),
       ];
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
       // When only info notifications, info should be primary
-      expect(screen.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
     });
   });
 
   describe('Both Panels Open', () => {
-    it('should have panel-open class when both panels are open', () => {
+    it('should have panel-open class when both panels are open', async () => {
       mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
       mockOpenValidationPanel = true;
       mockIsResourcePropertiesPanelOpen = true;
 
-      render(<CanvasValidationIndicator />);
+      await render(<CanvasValidationIndicator />);
 
-      const panel = screen.getByTestId('panel');
-      expect(panel.className).toContain('panel-open');
+      const panel = page.getByTestId('panel');
+      expect(panel.element().className).toContain('panel-open');
     });
   });
 });

@@ -17,36 +17,30 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import RulesProperties from '../RulesProperties';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 // Mock the SCSS
 vi.mock('../RulesProperties.scss', () => ({}));
 
 describe('RulesProperties', () => {
   describe('Rendering', () => {
-    it('should render the component', () => {
-      render(<RulesProperties />);
+    it('should render the component', async () => {
+      await render(<RulesProperties />);
 
-      expect(screen.getByText('flows:core.rulesProperties.description')).toBeInTheDocument();
+      await expect.element(page.getByText('Define a rule to how conditionally proceed to next steps in the flow')).toBeInTheDocument();
     });
 
-    it('should render Typography with body2 variant', () => {
-      const {container} = render(<RulesProperties />);
+    it('should render Typography with body2 variant', async () => {
+      const {container} = await render(<RulesProperties />);
 
       const typography = container.querySelector('.MuiTypography-body2');
       expect(typography).toBeInTheDocument();
     });
 
-    it('should render within a Stack component', () => {
-      const {container} = render(<RulesProperties />);
+    it('should render within a Stack component', async () => {
+      const {container} = await render(<RulesProperties />);
 
       const stack = container.querySelector('.MuiStack-root');
       expect(stack).toBeInTheDocument();

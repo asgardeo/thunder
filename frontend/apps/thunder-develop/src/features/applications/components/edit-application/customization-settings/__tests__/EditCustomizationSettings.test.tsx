@@ -17,15 +17,10 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import EditCustomizationSettings from '../EditCustomizationSettings';
 import type {Application} from '../../../../models/application';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 vi.mock('@thunder/shared-design', () => ({
   useGetThemes: vi.fn(() => ({
@@ -54,59 +49,59 @@ describe('EditCustomizationSettings', () => {
   const mockOnFieldChange = vi.fn();
 
   describe('Rendering', () => {
-    it('should render all three sections', () => {
-      render(
+    it('should render all three sections', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      expect(screen.getByText('applications:edit.customization.sections.appearance')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.sections.urls')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.general.sections.contacts')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Appearance'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'URLs'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Contacts'})).toBeInTheDocument();
     });
 
-    it('should render sections in correct order', () => {
-      render(
+    it('should render sections in correct order', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
       // Verify all three sections are present
-      expect(screen.getByText('applications:edit.customization.sections.appearance')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.sections.urls')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.general.sections.contacts')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Appearance'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'URLs'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Contacts'})).toBeInTheDocument();
     });
   });
 
   describe('Section Integration', () => {
-    it('should pass correct props to AppearanceSection', () => {
-      render(
+    it('should pass correct props to AppearanceSection', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      expect(screen.getByText('applications:edit.customization.labels.theme')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('applications:edit.customization.theme.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByText('Theme', {exact: true})).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Select a Theme')).toBeInTheDocument();
     });
 
-    it('should pass correct props to UrlsSection', () => {
-      render(
+    it('should pass correct props to UrlsSection', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      expect(screen.getByText('applications:edit.customization.labels.tosUri')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.labels.policyUri')).toBeInTheDocument();
+      await expect.element(page.getByText('Terms of Service URI')).toBeInTheDocument();
+      await expect.element(page.getByText('Privacy Policy URI')).toBeInTheDocument();
     });
 
-    it('should pass correct props to ContactsSection', () => {
-      render(
+    it('should pass correct props to ContactsSection', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      expect(screen.getByPlaceholderText('applications:edit.general.contacts.placeholder')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('admin@example.com, support@example.com')).toBeInTheDocument();
     });
   });
 
   describe('Layout', () => {
-    it('should render sections in a Stack with spacing', () => {
-      const {container} = render(
+    it('should render sections in a Stack with spacing', async () => {
+      const {container} = await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
@@ -116,26 +111,26 @@ describe('EditCustomizationSettings', () => {
   });
 
   describe('Props Propagation', () => {
-    it('should propagate application prop to all sections', () => {
-      render(
+    it('should propagate application prop to all sections', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
       // Verify theme from application
-      expect(screen.getByRole('combobox')).toHaveValue('Default Theme');
+      await expect.element(page.getByRole('combobox')).toHaveValue('Default Theme');
 
       // Verify URLs from application
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
       expect(tosField).toHaveValue('https://example.com/terms');
       expect(policyField).toHaveValue('https://example.com/privacy');
 
       // Verify contacts from application
-      const contactsField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const contactsField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(contactsField).toHaveValue('contact@example.com');
     });
 
-    it('should propagate editedApp prop to all sections', () => {
+    it('should propagate editedApp prop to all sections', async () => {
       const editedApp = {
         theme_id: 'theme-2',
         tos_uri: 'https://edited.com/terms',
@@ -143,7 +138,7 @@ describe('EditCustomizationSettings', () => {
         contacts: ['edited@example.com'],
       };
 
-      render(
+      await render(
         <EditCustomizationSettings
           application={mockApplication}
           editedApp={editedApp}
@@ -152,53 +147,53 @@ describe('EditCustomizationSettings', () => {
       );
 
       // Verify edited theme
-      expect(screen.getByRole('combobox')).toHaveValue('Dark Theme');
+      await expect.element(page.getByRole('combobox')).toHaveValue('Dark Theme');
 
       // Verify edited URLs
-      const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
-      const policyField = screen.getByPlaceholderText('applications:edit.customization.policyUri.placeholder');
+      const tosField = page.getByPlaceholder('https://example.com/terms');
+      const policyField = page.getByPlaceholder('https://example.com/privacy');
       expect(tosField).toHaveValue('https://edited.com/terms');
       expect(policyField).toHaveValue('https://edited.com/privacy');
 
       // Verify edited contacts
-      const contactsField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      const contactsField = page.getByPlaceholder('admin@example.com, support@example.com');
       expect(contactsField).toHaveValue('edited@example.com');
     });
 
-    it('should propagate onFieldChange callback to all sections', () => {
-      render(
+    it('should propagate onFieldChange callback to all sections', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
       // All sections should be rendered, which means onFieldChange was passed
-      expect(screen.getByText('applications:edit.customization.sections.appearance')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.sections.urls')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.general.sections.contacts')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Appearance'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'URLs'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Contacts'})).toBeInTheDocument();
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle minimal application data', () => {
+    it('should handle minimal application data', async () => {
       const minimalApp = {
         id: 'minimal-id',
         name: 'Minimal App',
         template: 'custom',
       } as Application;
 
-      render(<EditCustomizationSettings application={minimalApp} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+      await render(<EditCustomizationSettings application={minimalApp} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByText('applications:edit.customization.sections.appearance')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.customization.sections.urls')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.general.sections.contacts')).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Appearance'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'URLs'})).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', {name: 'Contacts'})).toBeInTheDocument();
     });
 
-    it('should handle empty editedApp', () => {
-      render(
+    it('should handle empty editedApp', async () => {
+      await render(
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
       // Should fall back to application values
-      expect(screen.getByRole('combobox')).toHaveValue('Default Theme');
+      await expect.element(page.getByRole('combobox')).toHaveValue('Default Theme');
     });
   });
 });

@@ -17,24 +17,10 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import {type BasicFlowDefinition} from '@/features/flows/models/responses';
 import FlowsListView, {type FlowsListViewProps} from '../FlowsListView';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'common:or': 'or',
-        'applications:onboarding.configure.SignInOptions.preConfiguredFlows.selectFlow': 'Select a flow',
-        'applications:onboarding.configure.SignInOptions.preConfiguredFlows.searchFlows': 'Search flows...',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 describe('FlowsListView', () => {
   const mockOnFlowSelect = vi.fn();
@@ -81,19 +67,19 @@ describe('FlowsListView', () => {
     vi.clearAllMocks();
   });
 
-  const renderComponent = (props: Partial<FlowsListViewProps> = {}) =>
+  const renderComponent = async (props: Partial<FlowsListViewProps> = {}) =>
     render(<FlowsListView {...defaultProps} {...props} />);
 
   describe('rendering', () => {
-    it('should return null when no selectable flows available', () => {
-      const {container} = renderComponent({
+    it('should return null when no selectable flows available', async () => {
+      const {container} = await renderComponent({
         availableFlows: [],
       });
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null when all flows are develop-app flows', () => {
+    it('should return null when all flows are develop-app flows', async () => {
       const developAppFlows: BasicFlowDefinition[] = [
         {
           id: 'flow-1',
@@ -106,14 +92,14 @@ describe('FlowsListView', () => {
         },
       ];
 
-      const {container} = renderComponent({
+      const {container} = await renderComponent({
         availableFlows: developAppFlows,
       });
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null when all flows are default flows', () => {
+    it('should return null when all flows are default flows', async () => {
       const defaultFlows: BasicFlowDefinition[] = [
         {
           id: 'flow-1',
@@ -126,34 +112,34 @@ describe('FlowsListView', () => {
         },
       ];
 
-      const {container} = renderComponent({
+      const {container} = await renderComponent({
         availableFlows: defaultFlows,
       });
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should render divider with "or" text', () => {
-      renderComponent();
+    it('should render divider with "or" text', async () => {
+      await renderComponent();
 
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render autocomplete component', () => {
-      renderComponent();
+    it('should render autocomplete component', async () => {
+      await renderComponent();
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
 
-    it('should render with proper label text', () => {
-      renderComponent();
+    it('should render with proper label text', async () => {
+      await renderComponent();
 
-      expect(screen.getByLabelText('Select a flow')).toBeInTheDocument();
+      await expect.element(page.getByLabelText('Select a flow')).toBeInTheDocument();
     });
   });
 
   describe('flow filtering', () => {
-    it('should filter out develop-app flows', () => {
+    it('should filter out develop-app flows', async () => {
       const mixedFlows: BasicFlowDefinition[] = [
         ...mockFlows,
         {
@@ -167,13 +153,13 @@ describe('FlowsListView', () => {
         },
       ];
 
-      renderComponent({availableFlows: mixedFlows});
+      await renderComponent({availableFlows: mixedFlows});
 
       // The component should render since there are selectable flows
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
 
-    it('should filter out default flows', () => {
+    it('should filter out default flows', async () => {
       const mixedFlows: BasicFlowDefinition[] = [
         ...mockFlows,
         {
@@ -187,88 +173,83 @@ describe('FlowsListView', () => {
         },
       ];
 
-      renderComponent({availableFlows: mixedFlows});
+      await renderComponent({availableFlows: mixedFlows});
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
   describe('autocomplete interaction', () => {
     it('should call onFlowSelect when a flow is selected', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
-      const flowOption = screen.getByText('Basic Authentication Flow');
-      await user.click(flowOption);
+      const flowOption = page.getByText('Basic Authentication Flow');
+      await userEvent.click(flowOption);
 
       expect(mockOnFlowSelect).toHaveBeenCalledWith('flow-1');
     });
 
     it('should call onClearSelection when selection is cleared', async () => {
-      const user = userEvent.setup();
-      renderComponent({
+      await renderComponent({
         selectedAuthFlow: mockFlows[0],
       });
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
       // Clear the selection by clicking outside or selecting null
-      await user.clear(autocomplete);
-      await user.tab(); // blur to trigger onChange with null
+      await userEvent.clear(autocomplete);
+      await userEvent.tab(); // blur to trigger onChange with null
 
       expect(mockOnClearSelection).toHaveBeenCalled();
     });
 
     it('should show selected flow value in autocomplete', async () => {
-      const user = userEvent.setup();
-      renderComponent({
+      await renderComponent({
         selectedAuthFlow: mockFlows[1],
       });
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
       // Open the dropdown to see options
-      expect(screen.getByText('Google OAuth Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('Google OAuth Flow')).toBeInTheDocument();
     });
 
     it('should display flow options when opened', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
       // Check that flow options are displayed
-      expect(screen.getByText('Basic Authentication Flow')).toBeInTheDocument();
-      expect(screen.getByText('Google OAuth Flow')).toBeInTheDocument();
-      expect(screen.getByText('Multi-Factor Auth Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('Basic Authentication Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('Google OAuth Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('Multi-Factor Auth Flow')).toBeInTheDocument();
     });
   });
 
   describe('disabled state', () => {
-    it('should disable autocomplete when disabled prop is true', () => {
-      renderComponent({disabled: true});
+    it('should disable autocomplete when disabled prop is true', async () => {
+      await renderComponent({disabled: true});
 
-      const autocomplete = screen.getByRole('combobox');
+      const autocomplete = page.getByRole('combobox');
       expect(autocomplete).toBeDisabled();
     });
 
-    it('should enable autocomplete when disabled prop is false', () => {
-      renderComponent({disabled: false});
+    it('should enable autocomplete when disabled prop is false', async () => {
+      await renderComponent({disabled: false});
 
-      const autocomplete = screen.getByRole('combobox');
+      const autocomplete = page.getByRole('combobox');
       expect(autocomplete).not.toBeDisabled();
     });
   });
 
   describe('edge cases', () => {
     it('should handle flows with special characters in names', async () => {
-      const user = userEvent.setup();
       const specialFlows: BasicFlowDefinition[] = [
         {
           id: 'special-flow',
@@ -281,16 +262,15 @@ describe('FlowsListView', () => {
         },
       ];
 
-      renderComponent({availableFlows: specialFlows});
+      await renderComponent({availableFlows: specialFlows});
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
-      expect(screen.getByText('OAuth 2.0 & OIDC Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('OAuth 2.0 & OIDC Flow')).toBeInTheDocument();
     });
 
     it('should handle flows with very long names', async () => {
-      const user = userEvent.setup();
       const longNameFlows: BasicFlowDefinition[] = [
         {
           id: 'long-flow',
@@ -303,15 +283,15 @@ describe('FlowsListView', () => {
         },
       ];
 
-      renderComponent({availableFlows: longNameFlows});
+      await renderComponent({availableFlows: longNameFlows});
 
-      const autocomplete = screen.getByRole('combobox');
-      await user.click(autocomplete);
+      const autocomplete = page.getByRole('combobox');
+      await userEvent.click(autocomplete);
 
-      expect(screen.getByText(/This is a very long flow name/)).toBeInTheDocument();
+      await expect.element(page.getByText(/This is a very long flow name/)).toBeInTheDocument();
     });
 
-    it('should handle when selectedAuthFlow is not in available flows', () => {
+    it('should handle when selectedAuthFlow is not in available flows', async () => {
       const unknownFlow: BasicFlowDefinition = {
         id: 'unknown-flow',
         name: 'Unknown Flow',
@@ -322,39 +302,37 @@ describe('FlowsListView', () => {
         updatedAt: '',
       };
 
-      renderComponent({
+      await renderComponent({
         selectedAuthFlow: unknownFlow,
       });
 
       // Should not crash and should still render
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
   describe('accessibility', () => {
-    it('should have proper ARIA attributes for autocomplete', () => {
-      renderComponent();
+    it('should have proper ARIA attributes for autocomplete', async () => {
+      await renderComponent();
 
-      const combobox = screen.getByRole('combobox');
+      const combobox = page.getByRole('combobox');
       expect(combobox).toHaveAttribute('aria-autocomplete', 'list');
     });
 
     it('should be keyboard navigable', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const combobox = screen.getByRole('combobox');
-      await user.tab();
+      const combobox = page.getByRole('combobox');
+      await userEvent.tab();
       expect(combobox).toHaveFocus();
     });
 
     it('should expand dropdown on Enter key', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      const combobox = screen.getByRole('combobox');
-      await user.tab();
-      await user.keyboard('{ArrowDown}');
+      const combobox = page.getByRole('combobox');
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowDown}');
 
       // Dropdown should be expanded
       expect(combobox).toHaveAttribute('aria-expanded', 'true');

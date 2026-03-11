@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {Group} from '../../models/group';
 
 const mockHttpRequest = vi.fn();
@@ -59,9 +58,9 @@ describe('useGetGroup', () => {
 
   it('should fetch a group by ID', async () => {
     mockHttpRequest.mockResolvedValue({data: mockGroup});
-    const {result} = renderHook(() => useGetGroup('g1'));
+    const {result} = await renderHook(() => useGetGroup('g1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockGroup);
     });
 
@@ -73,8 +72,8 @@ describe('useGetGroup', () => {
     );
   });
 
-  it('should not fetch when groupId is empty', () => {
-    const {result} = renderHook(() => useGetGroup(''));
+  it('should not fetch when groupId is empty', async () => {
+    const {result} = await renderHook(() => useGetGroup(''));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -82,9 +81,9 @@ describe('useGetGroup', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Not found'));
-    const {result} = renderHook(() => useGetGroup('g1'));
+    const {result} = await renderHook(() => useGetGroup('g1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).toBeTruthy();
       expect(result.current.error?.message).toBe('Not found');
     });

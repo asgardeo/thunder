@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useCreateOrganizationUnit from '../useCreateOrganizationUnit';
 import type {OrganizationUnit} from '../../models/organization-unit';
 import type {CreateOrganizationUnitRequest} from '../../models/requests';
@@ -67,8 +67,8 @@ describe('useCreateOrganizationUnit', () => {
     vi.clearAllMocks();
   });
 
-  it('should be idle initially', () => {
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+  it('should be idle initially', async () => {
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     expect(result.current.isPending).toBe(false);
     expect(result.current.isSuccess).toBe(false);
@@ -79,11 +79,11 @@ describe('useCreateOrganizationUnit', () => {
   it('should create organization unit successfully', async () => {
     mockHttpRequest.mockResolvedValue({data: mockCreatedOU});
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(createRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(mockCreatedOU);
     });
@@ -106,18 +106,18 @@ describe('useCreateOrganizationUnit', () => {
         }),
     );
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(createRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
     // Resolve to clean up
     resolvePromise!({data: mockCreatedOU});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
   });
@@ -126,11 +126,11 @@ describe('useCreateOrganizationUnit', () => {
     const errorMessage = 'Failed to create organization unit';
     mockHttpRequest.mockRejectedValue(new Error(errorMessage));
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(createRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
       expect(result.current.error?.message).toBe(errorMessage);
     });
@@ -140,11 +140,11 @@ describe('useCreateOrganizationUnit', () => {
     mockHttpRequest.mockResolvedValue({data: mockCreatedOU});
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(createRequest, {onSuccess});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
       expect(onSuccess.mock.calls[0][0]).toEqual(mockCreatedOU);
       expect(onSuccess.mock.calls[0][1]).toEqual(createRequest);
@@ -156,11 +156,11 @@ describe('useCreateOrganizationUnit', () => {
     mockHttpRequest.mockRejectedValue(error);
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(createRequest, {onError});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalled();
     });
   });
@@ -176,11 +176,11 @@ describe('useCreateOrganizationUnit', () => {
     };
     mockHttpRequest.mockResolvedValue({data: ouWithParent});
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(requestWithParent);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(ouWithParent);
     });
 
@@ -204,11 +204,11 @@ describe('useCreateOrganizationUnit', () => {
     };
     mockHttpRequest.mockResolvedValue({data: ouWithoutDescription});
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(requestWithoutDescription);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(ouWithoutDescription);
     });
   });
@@ -216,7 +216,7 @@ describe('useCreateOrganizationUnit', () => {
   it('should use mutateAsync for promise-based mutation', async () => {
     mockHttpRequest.mockResolvedValue({data: mockCreatedOU});
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     const response = await result.current.mutateAsync(createRequest);
 
@@ -226,11 +226,11 @@ describe('useCreateOrganizationUnit', () => {
   it('should invalidate organization units query on success', async () => {
     mockHttpRequest.mockResolvedValue({data: mockCreatedOU});
 
-    const {result} = renderHook(() => useCreateOrganizationUnit());
+    const {result} = await renderHook(() => useCreateOrganizationUnit());
 
     result.current.mutate(createRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

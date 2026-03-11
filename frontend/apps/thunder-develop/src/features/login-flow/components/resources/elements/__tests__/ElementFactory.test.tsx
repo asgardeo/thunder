@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {ResourceTypes} from '@/features/flows/models/resources';
 import type {Element} from '@/features/flows/models/elements';
 import ElementFactory from '../ElementFactory';
@@ -42,68 +43,68 @@ describe('ElementFactory', () => {
     }) as Element;
 
   describe('Valid Element Resource', () => {
-    it('should render CommonElementFactory for Element resources', () => {
+    it('should render CommonElementFactory for Element resources', async () => {
       const resource = createMockResource();
 
-      render(<ElementFactory resource={resource} stepId="step-1" />);
+      await render(<ElementFactory resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('common-element-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-element-factory')).toBeInTheDocument();
     });
 
-    it('should pass resource to CommonElementFactory', () => {
+    it('should pass resource to CommonElementFactory', async () => {
       const resource = createMockResource({id: 'custom-element'});
 
-      render(<ElementFactory resource={resource} stepId="step-1" />);
+      await render(<ElementFactory resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('common-element-factory')).toHaveAttribute('data-resource-id', 'custom-element');
+      await expect.element(page.getByTestId('common-element-factory')).toHaveAttribute('data-resource-id', 'custom-element');
     });
 
-    it('should pass stepId to CommonElementFactory', () => {
+    it('should pass stepId to CommonElementFactory', async () => {
       const resource = createMockResource();
 
-      render(<ElementFactory resource={resource} stepId="step-123" />);
+      await render(<ElementFactory resource={resource} stepId="step-123" />);
 
-      expect(screen.getByTestId('common-element-factory')).toHaveAttribute('data-step-id', 'step-123');
+      await expect.element(page.getByTestId('common-element-factory')).toHaveAttribute('data-step-id', 'step-123');
     });
 
-    it('should render for resources without resourceType (template/widget components)', () => {
+    it('should render for resources without resourceType (template/widget components)', async () => {
       const resource = {
         id: 'template-element',
         type: 'TEXT_INPUT',
         category: 'FIELD',
       } as Element;
 
-      render(<ElementFactory resource={resource} stepId="step-1" />);
+      await render(<ElementFactory resource={resource} stepId="step-1" />);
 
-      expect(screen.getByTestId('common-element-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-element-factory')).toBeInTheDocument();
     });
   });
 
   describe('Invalid Resources', () => {
-    it('should return null when resource is null', () => {
-      const {container} = render(<ElementFactory resource={null as unknown as Element} stepId="step-1" />);
+    it('should return null when resource is null', async () => {
+      const {container} = await render(<ElementFactory resource={null as unknown as Element} stepId="step-1" />);
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null when resource is undefined', () => {
-      const {container} = render(<ElementFactory resource={undefined as unknown as Element} stepId="step-1" />);
+    it('should return null when resource is undefined', async () => {
+      const {container} = await render(<ElementFactory resource={undefined as unknown as Element} stepId="step-1" />);
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for Step resource type', () => {
+    it('should return null for Step resource type', async () => {
       const resource = createMockResource({resourceType: ResourceTypes.Step} as Partial<Element>);
 
-      const {container} = render(<ElementFactory resource={resource} stepId="step-1" />);
+      const {container} = await render(<ElementFactory resource={resource} stepId="step-1" />);
 
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for Widget resource type', () => {
+    it('should return null for Widget resource type', async () => {
       const resource = createMockResource({resourceType: ResourceTypes.Widget} as Partial<Element>);
 
-      const {container} = render(<ElementFactory resource={resource} stepId="step-1" />);
+      const {container} = await render(<ElementFactory resource={resource} stepId="step-1" />);
 
       expect(container.firstChild).toBeNull();
     });

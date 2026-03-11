@@ -16,27 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {screen, fireEvent, renderWithProviders} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import DangerZoneSection from '../DangerZoneSection';
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:edit.general.sections.dangerZone.title': 'Danger Zone',
-        'applications:edit.general.sections.dangerZone.description':
-          'Irreversible and destructive actions for this application',
-        'applications:edit.general.sections.dangerZone.regenerateSecret.title': 'Regenerate Client Secret',
-        'applications:edit.general.sections.dangerZone.regenerateSecret.description':
-          'Regenerating the client secret will immediately invalidate the current client secret and generate a new one. All active access tokens will be revoked and the application will stop working until the new client secret is updated in your application configuration.',
-        'applications:edit.general.sections.dangerZone.regenerateSecret.button': 'Regenerate Client Secret',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
 
 describe('DangerZoneSection', () => {
   const mockOnRegenerateClick = vi.fn();
@@ -45,65 +28,56 @@ describe('DangerZoneSection', () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it('should render the danger zone section', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+
+    await expect.element(page.getByText('Danger Zone')).toBeInTheDocument();
+    await expect.element(page.getByText('Actions in this section are irreversible. Proceed with caution.')).toBeInTheDocument();
   });
 
-  it('should render the danger zone section', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+  it('should render revoke application title', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
 
-    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
-    expect(screen.getByText('Irreversible and destructive actions for this application')).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Regenerate Client Secret', level: 6})).toBeInTheDocument();
   });
 
-  it('should render revoke application title', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+  it('should render warning description', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
 
-    const heading = screen.getByRole('heading', {name: 'Regenerate Client Secret', level: 6});
-    expect(heading).toBeInTheDocument();
-  });
-
-  it('should render warning description', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
-
-    expect(
-      screen.getByText(
-        'Regenerating the client secret will immediately invalidate the current client secret and generate a new one. All active access tokens will be revoked and the application will stop working until the new client secret is updated in your application configuration.',
-      ),
+    await expect.element(
+      page.getByText('Regenerating the client secret will immediately invalidate the current client secret and cannot be undone.'),
     ).toBeInTheDocument();
   });
 
-  it('should render revoke button', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+  it('should render revoke button', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
 
-    const regenerateButton = screen.getByRole('button', {name: 'Regenerate Client Secret'});
-    expect(regenerateButton).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Regenerate Client Secret'})).toBeInTheDocument();
   });
 
-  it('should call onRegenerateClick when revoke button is clicked', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+  it('should call onRegenerateClick when revoke button is clicked', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
 
-    const regenerateButton = screen.getByRole('button', {name: 'Regenerate Client Secret'});
-    fireEvent.click(regenerateButton);
+    await userEvent.click(page.getByRole('button', {name: 'Regenerate Client Secret'}));
 
     expect(mockOnRegenerateClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onRegenerateClick multiple times when clicked multiple times', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+  it('should call onRegenerateClick multiple times when clicked multiple times', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
 
-    const regenerateButton = screen.getByRole('button', {name: 'Regenerate Client Secret'});
-    fireEvent.click(regenerateButton);
-    fireEvent.click(regenerateButton);
-    fireEvent.click(regenerateButton);
+    const regenerateButton = page.getByRole('button', {name: 'Regenerate Client Secret'});
+    await userEvent.click(regenerateButton);
+    await userEvent.click(regenerateButton);
+    await userEvent.click(regenerateButton);
 
     expect(mockOnRegenerateClick).toHaveBeenCalledTimes(3);
   });
 
-  it('should render revoke button with error color', () => {
-    renderWithProviders(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
+  it('should render revoke button with error color', async () => {
+    await render(<DangerZoneSection onRegenerateClick={mockOnRegenerateClick} />);
 
-    const regenerateButton = screen.getByRole('button', {name: 'Regenerate Client Secret'});
-    expect(regenerateButton).toHaveClass('MuiButton-colorError');
+    const regenerateButton = page.getByRole('button', {name: 'Regenerate Client Secret'});
+    expect(regenerateButton.element()).toHaveClass('MuiButton-colorError');
   });
 });

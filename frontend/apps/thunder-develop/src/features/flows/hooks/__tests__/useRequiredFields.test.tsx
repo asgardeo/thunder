@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ValidationContext, type ValidationContextProps} from '../../context/ValidationContext';
 import useRequiredFields, {type RequiredFieldInterface} from '../useRequiredFields';
@@ -66,47 +66,46 @@ describe('useRequiredFields', () => {
   });
 
   describe('Basic Functionality', () => {
-    it('should not throw when used with provider', () => {
+    it('should not throw when used with provider', async () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      expect(() => {
-        renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
-          wrapper: createWrapper(),
-        });
-      }).not.toThrow();
+      await renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+        wrapper: createWrapper(),
+      });
+      // If we get here without throwing, the test passes
     });
 
-    it('should add notification when required field is missing', () => {
+    it('should add notification when required field is missing', async () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).toHaveBeenCalled();
     });
 
-    it('should not add notification when required field is present in config', () => {
+    it('should not add notification when required field is present in config', async () => {
       const resource = createResource({
         config: {field: {name: '', type: {}}, styles: {}, label: 'Test Label'},
       } as Partial<Resource>);
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).not.toHaveBeenCalled();
     });
 
-    it('should not add notification when required field is present on resource', () => {
+    it('should not add notification when required field is present on resource', async () => {
       const resource = createResource();
       (resource as unknown as Record<string, string>).label = 'Test Label';
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
@@ -115,47 +114,47 @@ describe('useRequiredFields', () => {
   });
 
   describe('Nested Property Validation', () => {
-    it('should validate nested properties', () => {
+    it('should validate nested properties', async () => {
       const resource = createResource();
       (resource as unknown as Record<string, {property: string}>).nested = {property: 'value'};
       const fields: RequiredFieldInterface[] = [{name: 'nested.property', errorMessage: 'Nested property is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).not.toHaveBeenCalled();
     });
 
-    it('should add notification for missing nested property', () => {
+    it('should add notification for missing nested property', async () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [{name: 'nested.property', errorMessage: 'Nested property is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).toHaveBeenCalled();
     });
 
-    it('should treat IDP placeholder as missing value', () => {
+    it('should treat IDP placeholder as missing value', async () => {
       const resource = createResource();
       (resource as unknown as Record<string, {name: string}>).idp = {name: '{{IDP_NAME}}'};
       const fields: RequiredFieldInterface[] = [{name: 'idp.name', errorMessage: 'IDP name is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).toHaveBeenCalled();
     });
 
-    it('should treat IDP_ID placeholder as missing value', () => {
+    it('should treat IDP_ID placeholder as missing value', async () => {
       const resource = createResource();
       (resource as unknown as Record<string, {id: string}>).idp = {id: '{{IDP_ID}}'};
       const fields: RequiredFieldInterface[] = [{name: 'idp.id', errorMessage: 'IDP ID is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
@@ -164,21 +163,21 @@ describe('useRequiredFields', () => {
   });
 
   describe('Multiple Fields', () => {
-    it('should validate multiple required fields', () => {
+    it('should validate multiple required fields', async () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [
         {name: 'label', errorMessage: 'Label is required'},
         {name: 'value', errorMessage: 'Value is required'},
       ];
 
-      renderHook(() => useRequiredFields(resource, 'Required fields missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required fields missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).toHaveBeenCalled();
     });
 
-    it('should handle mix of present and missing fields', () => {
+    it('should handle mix of present and missing fields', async () => {
       const resource = createResource({
         config: {field: {name: '', type: {}}, styles: {}, label: 'Test'},
       } as Partial<Resource>);
@@ -187,7 +186,7 @@ describe('useRequiredFields', () => {
         {name: 'value', errorMessage: 'Value is required'},
       ];
 
-      renderHook(() => useRequiredFields(resource, 'Required fields missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required fields missing', fields), {
         wrapper: createWrapper(),
       });
 
@@ -196,21 +195,21 @@ describe('useRequiredFields', () => {
   });
 
   describe('Existing Notification Handling', () => {
-    it('should add field to existing notification when notification exists', () => {
+    it('should add field to existing notification when notification exists', async () => {
       const existingNotification = new Notification('resource-1_REQUIRED_FIELD', 'Required field missing', 'error');
       mockGetNotification.mockReturnValue(existingNotification);
 
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
       expect(mockAddNotification).toHaveBeenCalled();
     });
 
-    it('should not add duplicate field notification', () => {
+    it('should not add duplicate field notification', async () => {
       const existingNotification = new Notification('resource-1_REQUIRED_FIELD', 'Required field missing', 'error');
       existingNotification.addResourceFieldNotification('resource-1_label', 'Label is required');
       mockGetNotification.mockReturnValue(existingNotification);
@@ -218,7 +217,7 @@ describe('useRequiredFields', () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
@@ -228,7 +227,7 @@ describe('useRequiredFields', () => {
   });
 
   describe('Notification Removal', () => {
-    it('should remove field notification when field becomes valid', () => {
+    it('should remove field notification when field becomes valid', async () => {
       const existingNotification = new Notification('resource-1_REQUIRED_FIELD', 'Required field missing', 'error');
       existingNotification.addResourceFieldNotification('resource-1_label', 'Label is required');
       mockGetNotification.mockReturnValue(existingNotification);
@@ -238,7 +237,7 @@ describe('useRequiredFields', () => {
       } as Partial<Resource>);
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
@@ -246,7 +245,7 @@ describe('useRequiredFields', () => {
       expect(mockRemoveNotification).toHaveBeenCalledWith('resource-1_REQUIRED_FIELD_ERROR');
     });
 
-    it('should update notification when one of multiple fields becomes valid', () => {
+    it('should update notification when one of multiple fields becomes valid', async () => {
       const existingNotification = new Notification('resource-1_REQUIRED_FIELD_ERROR', 'Required field missing', 'error');
       existingNotification.addResourceFieldNotification('resource-1_label', 'Label is required');
       existingNotification.addResourceFieldNotification('resource-1_value', 'Value is required');
@@ -257,7 +256,7 @@ describe('useRequiredFields', () => {
       } as Partial<Resource>);
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      await renderHook(()  => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
@@ -268,55 +267,52 @@ describe('useRequiredFields', () => {
   });
 
   describe('Cleanup on Unmount', () => {
-    it('should remove notification on unmount', () => {
+    it('should remove notification on unmount', async () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      const {unmount} = renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+      const {unmount} = await renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
         wrapper: createWrapper(),
       });
 
-      unmount();
+      await unmount();
 
       expect(mockRemoveNotification).toHaveBeenCalledWith('resource-1_REQUIRED_FIELD_ERROR');
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty fields array', () => {
+    it('should handle empty fields array', async () => {
       const resource = createResource();
       const fields: RequiredFieldInterface[] = [];
 
-      expect(() => {
-        renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
-          wrapper: createWrapper(),
-        });
-      }).not.toThrow();
+      await renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+        wrapper: createWrapper(),
+      });
+      // If we get here without throwing, the test passes
 
       expect(mockAddNotification).not.toHaveBeenCalled();
     });
 
-    it('should handle undefined config', () => {
+    it('should handle undefined config', async () => {
       // Testing runtime edge case where config might be undefined
       const resource = {id: 'resource-1', type: 'BUTTON', config: undefined} as unknown as Resource;
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      expect(() => {
-        renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
-          wrapper: createWrapper(),
-        });
-      }).not.toThrow();
+      await renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+        wrapper: createWrapper(),
+      });
+      // If we get here without throwing, the test passes
     });
 
-    it('should handle resource without config property', () => {
+    it('should handle resource without config property', async () => {
       const resource = {id: 'resource-1', type: 'BUTTON'} as Resource;
       const fields: RequiredFieldInterface[] = [{name: 'label', errorMessage: 'Label is required'}];
 
-      expect(() => {
-        renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
-          wrapper: createWrapper(),
-        });
-      }).not.toThrow();
+      await renderHook(() => useRequiredFields(resource, 'Required field missing', fields), {
+        wrapper: createWrapper(),
+      });
+      // If we get here without throwing, the test passes
     });
   });
 });

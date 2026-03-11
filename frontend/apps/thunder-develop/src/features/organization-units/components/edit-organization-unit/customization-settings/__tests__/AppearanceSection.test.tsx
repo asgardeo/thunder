@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import AppearanceSection from '../AppearanceSection';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 
@@ -25,22 +26,6 @@ import type {OrganizationUnit} from '../../../../models/organization-unit';
 const mockUseGetThemes = vi.fn();
 vi.mock('@thunder/shared-design', () => ({
   useGetThemes: (): unknown => mockUseGetThemes(),
-}));
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.customization.sections.appearance': 'Appearance',
-        'organizationUnits:edit.customization.sections.appearance.description': 'Customize the look and feel',
-        'organizationUnits:edit.customization.labels.theme': 'Theme',
-        'organizationUnits:edit.customization.theme.placeholder': 'Select a theme',
-        'organizationUnits:edit.customization.theme.hint': 'Choose a theme for your organization unit',
-      };
-      return translations[key] ?? key;
-    },
-  }),
 }));
 
 describe('AppearanceSection', () => {
@@ -65,74 +50,73 @@ describe('AppearanceSection', () => {
     vi.clearAllMocks();
   });
 
-  it('should render the appearance section', () => {
+  it('should render the appearance section', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: mockThemes},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByText('Appearance')).toBeInTheDocument();
-    expect(screen.getByText('Customize the look and feel')).toBeInTheDocument();
+    await expect.element(page.getByText('Appearance')).toBeInTheDocument();
+    await expect.element(page.getByText('Customize the look and feel of this organization unit.')).toBeInTheDocument();
   });
 
-  it('should render theme label', () => {
+  it('should render theme label', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: mockThemes},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByText('Theme')).toBeInTheDocument();
+    await expect.element(page.getByText('Theme').first()).toBeInTheDocument();
   });
 
-  it('should show loading spinner when themes are loading', () => {
+  it('should show loading spinner when themes are loading', async () => {
     mockUseGetThemes.mockReturnValue({
       data: null,
       isLoading: true,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should render autocomplete with theme options', () => {
+  it('should render autocomplete with theme options', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: mockThemes},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
-    expect(autocomplete).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Select a theme')).toBeInTheDocument();
   });
 
-  it('should display current theme from organizationUnit', () => {
+  it('should display current theme from organizationUnit', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: mockThemes},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByDisplayValue('Default Theme')).toBeInTheDocument();
+    await expect.element(page.getByRole('combobox')).toHaveValue('Default Theme');
   });
 
-  it('should display edited theme when available', () => {
+  it('should display edited theme when available', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: mockThemes},
       isLoading: false,
@@ -142,7 +126,7 @@ describe('AppearanceSection', () => {
       theme_id: 'dark-theme',
     };
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection
         organizationUnit={mockOrganizationUnit}
         editedOU={editedOU}
@@ -150,7 +134,7 @@ describe('AppearanceSection', () => {
       />,
     );
 
-    expect(screen.getByDisplayValue('Dark Theme')).toBeInTheDocument();
+    await expect.element(page.getByRole('combobox')).toHaveValue('Dark Theme');
   });
 
   it('should call onFieldChange when theme is selected', async () => {
@@ -159,20 +143,18 @@ describe('AppearanceSection', () => {
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByRole('combobox');
-    fireEvent.mouseDown(autocomplete); // MUI Autocomplete usually responds to mouseDown to open
+    const autocomplete = page.getByRole('combobox');
+    await userEvent.click(autocomplete);
 
-    await waitFor(() => {
-      expect(screen.getByText('Light Theme')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Light Theme')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Light Theme'));
+    await userEvent.click(page.getByText('Light Theme'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', 'light-theme');
     });
   });
@@ -183,60 +165,57 @@ describe('AppearanceSection', () => {
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
-    const clearButton = autocomplete.parentElement?.querySelector('[title="Clear"]');
+    // Hover over the autocomplete to make the clear button visible
+    await userEvent.hover(page.getByRole('combobox'));
+    const clearButton = page.getByRole('button', {name: 'Clear'});
 
-    if (clearButton) {
-      fireEvent.click(clearButton);
+    await userEvent.click(clearButton);
 
-      await waitFor(() => {
-        expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', '');
-      });
-    }
+    await vi.waitFor(() => {
+      expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', '');
+    });
   });
 
-  it('should handle empty themes list', () => {
+  it('should handle empty themes list', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: []},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
-    expect(autocomplete).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Select a theme')).toBeInTheDocument();
   });
 
-  it('should handle null themes data', () => {
+  it('should handle null themes data', async () => {
     mockUseGetThemes.mockReturnValue({
       data: null,
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    const autocomplete = screen.getByPlaceholderText('Select a theme');
-    expect(autocomplete).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Select a theme')).toBeInTheDocument();
   });
 
-  it('should render helper text', () => {
+  it('should render helper text', async () => {
     mockUseGetThemes.mockReturnValue({
       data: {themes: mockThemes},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <AppearanceSection organizationUnit={mockOrganizationUnit} editedOU={{}} onFieldChange={mockOnFieldChange} />,
     );
 
-    expect(screen.getByText('Choose a theme for your organization unit')).toBeInTheDocument();
+    await expect.element(page.getByText('The theme applied to this organization unit.')).toBeInTheDocument();
   });
 });

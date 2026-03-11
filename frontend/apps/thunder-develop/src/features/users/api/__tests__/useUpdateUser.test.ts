@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useUpdateUser, {type UpdateUserVariables} from '../useUpdateUser';
 import type {ApiUser} from '../../types/users';
 import UserQueryKeys from '../../constants/user-query-keys';
@@ -77,8 +77,8 @@ describe('useUpdateUser', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useUpdateUser());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useUpdateUser());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -95,13 +95,13 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     act(() => {
       result.current.mutate(mockVariables);
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -115,11 +115,11 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -148,15 +148,15 @@ describe('useUpdateUser', () => {
       }),
     );
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
+    await vi.waitFor(
       () => {
         expect(result.current.isSuccess).toBe(true);
       },
@@ -170,11 +170,11 @@ describe('useUpdateUser', () => {
     const apiError = new Error('Failed to update user');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -187,11 +187,11 @@ describe('useUpdateUser', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -205,7 +205,7 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result, queryClient} = renderHook(() => useUpdateUser());
+    const {result, queryClient} = await renderHook(() => useUpdateUser());
 
     // Pre-populate cache with original user
     const originalUser = {...mockUser, attributes: {username: 'john', email: 'john@test.com'}};
@@ -220,7 +220,7 @@ describe('useUpdateUser', () => {
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -242,7 +242,7 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result, queryClient} = renderHook(() => useUpdateUser());
+    const {result, queryClient} = await renderHook(() => useUpdateUser());
 
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
@@ -250,7 +250,7 @@ describe('useUpdateUser', () => {
     result.current.mutate(mockVariables);
 
     // The mutation should still succeed even if invalidateQueries fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -262,13 +262,13 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     const promise = result.current.mutateAsync(mockVariables);
 
     await expect(promise).resolves.toEqual(mockUser);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
     expect(result.current.data).toEqual(mockUser);
@@ -278,13 +278,13 @@ describe('useUpdateUser', () => {
     const apiError = new Error('Update failed');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     const promise = result.current.mutateAsync(mockVariables);
 
     await expect(promise).rejects.toEqual(apiError);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
   });
@@ -294,19 +294,17 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    result.current.reset();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toBeUndefined();
     });
     expect(result.current.error).toBeNull();
@@ -320,12 +318,12 @@ describe('useUpdateUser', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: user1}).mockResolvedValueOnce({data: user2});
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     // First update
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -337,7 +335,7 @@ describe('useUpdateUser', () => {
       data: {...mockVariables.data, attributes: {username: 'update-2', email: 'john@test.com'}},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(user2);
     });
 
@@ -350,7 +348,7 @@ describe('useUpdateUser', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: user1}).mockResolvedValueOnce({data: user2});
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     // Update first user
     result.current.mutate({
@@ -358,7 +356,7 @@ describe('useUpdateUser', () => {
       data: mockVariables.data,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -370,7 +368,7 @@ describe('useUpdateUser', () => {
       data: mockVariables.data,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.id).toBe('user-2');
     });
 
@@ -388,11 +386,11 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -413,11 +411,11 @@ describe('useUpdateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -433,12 +431,12 @@ describe('useUpdateUser', () => {
     const apiError = new Error('Temporary error');
     mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce({data: mockUser});
 
-    const {result} = renderHook(() => useUpdateUser());
+    const {result} = await renderHook(() => useUpdateUser());
 
     // First attempt - should fail
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -447,7 +445,7 @@ describe('useUpdateUser', () => {
     // Second attempt - should succeed
     result.current.mutate(mockVariables);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

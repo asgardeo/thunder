@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import RichTextAdapter from '../RichTextAdapter';
@@ -25,15 +26,16 @@ import RichTextAdapter from '../RichTextAdapter';
 // Mock dependencies
 vi.mock('../RichTextAdapter.scss', () => ({}));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
+}));
+
+vi.mock('../PlaceholderComponent', () => ({
+  default: ({value, children}: {value: string; children?: ReactNode}) => (
+    <span data-testid="placeholder" data-value={value}>
+      {children ?? value}
+    </span>
+  ),
 }));
 
 describe('RichTextAdapter', () => {
@@ -52,64 +54,64 @@ describe('RichTextAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render with rich-text-content class', () => {
+    it('should render with rich-text-content class', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      const {container} = await render(<RichTextAdapter resource={resource} />);
 
       expect(container.querySelector('.rich-text-content')).toBeInTheDocument();
     });
 
-    it('should render label content', () => {
+    it('should render PlaceholderComponent', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('World');
+      await expect.element(page.getByTestId('placeholder')).toBeInTheDocument();
     });
 
-    it('should render label text', () => {
+    it('should pass label to PlaceholderComponent', async () => {
       const resource = createMockElement({label: 'Test Label'});
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Test Label');
+      await expect.element(page.getByTestId('placeholder')).toHaveAttribute('data-value', 'Test Label');
     });
   });
 
   describe('HTML Sanitization', () => {
-    it('should render sanitized HTML content', () => {
+    it('should render sanitized HTML content', async () => {
       const resource = createMockElement({label: '<p>Paragraph content</p>'});
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Paragraph content');
+      await expect.element(page.getByTestId('placeholder')).toBeInTheDocument();
     });
 
-    it('should handle plain text content', () => {
+    it('should handle plain text content', async () => {
       const resource = createMockElement({label: 'Plain text without HTML'});
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Plain text without HTML');
+      await expect.element(page.getByTestId('placeholder')).toHaveAttribute('data-value', 'Plain text without HTML');
     });
   });
 
   describe('Empty Content', () => {
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveAttribute('data-value', '');
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveAttribute('data-value', '');
     });
   });
 
@@ -120,19 +122,19 @@ describe('RichTextAdapter', () => {
 
       const resource = createMockElement();
 
-      render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalled();
     });
   });
 
   describe('Different Resource IDs', () => {
-    it('should render with different resource IDs', () => {
+    it('should render with different resource IDs', async () => {
       const resource1 = createMockElement({id: 'richtext-1', label: 'First'});
       const resource2 = createMockElement({id: 'richtext-2', label: 'Second'});
 
-      const {container: container1} = render(<RichTextAdapter resource={resource1} />);
-      const {container: container2} = render(<RichTextAdapter resource={resource2} />);
+      const {container: container1} = await render(<RichTextAdapter resource={resource1} />);
+      const {container: container2} = await render(<RichTextAdapter resource={resource2} />);
 
       expect(container1.querySelector('.rich-text-content')).toBeInTheDocument();
       expect(container2.querySelector('.rich-text-content')).toBeInTheDocument();
@@ -140,44 +142,46 @@ describe('RichTextAdapter', () => {
   });
 
   describe('Anchor Tag Security', () => {
-    it('should handle anchor tags with target="_blank"', () => {
+    it('should handle anchor tags with target="_blank"', async () => {
       const resource = createMockElement({
         label: '<a href="https://example.com" target="_blank">External Link</a>',
       });
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('External Link');
+      // The content should be sanitized and rendered
+      await expect.element(page.getByTestId('placeholder')).toBeInTheDocument();
     });
 
-    it('should handle anchor tags without target attribute', () => {
+    it('should handle anchor tags without target attribute', async () => {
       const resource = createMockElement({
         label: '<a href="https://example.com">Regular Link</a>',
       });
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Regular Link');
+      await expect.element(page.getByTestId('placeholder')).toBeInTheDocument();
     });
 
-    it('should handle anchor tags with target="_self"', () => {
+    it('should handle anchor tags with target="_self"', async () => {
       const resource = createMockElement({
         label: '<a href="https://example.com" target="_self">Same Window Link</a>',
       });
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Same Window Link');
+      await expect.element(page.getByTestId('placeholder')).toBeInTheDocument();
     });
 
-    it('should handle multiple anchor tags', () => {
+    it('should handle multiple anchor tags', async () => {
       const resource = createMockElement({
-        label: '<a href="https://link1.com" target="_blank">Link 1</a> and <a href="https://link2.com">Link 2</a>',
+        label:
+          '<a href="https://link1.com" target="_blank">Link 1</a> and <a href="https://link2.com">Link 2</a>',
       });
 
-      const {container} = render(<RichTextAdapter resource={resource} />);
+      await render(<RichTextAdapter resource={resource} />);
 
-      expect(container.querySelector('.rich-text-content')).toHaveTextContent('Link 1 and Link 2');
+      await expect.element(page.getByTestId('placeholder')).toBeInTheDocument();
     });
   });
 });

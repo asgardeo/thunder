@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ManageGroupsSection from '../ManageGroupsSection';
 import type {Group} from '../../../../models/group';
 
@@ -32,21 +33,6 @@ vi.mock('../../../../../../hooks/useDataGridLocaleText', () => ({
   default: () => ({}),
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.groups.sections.manage.title': 'Manage Groups',
-        'organizationUnits:edit.groups.sections.manage.description': 'View and manage groups in this organization unit',
-        'organizationUnits:edit.users.sections.manage.listing.columns.name': 'Group Name',
-        'organizationUnits:edit.groups.sections.manage.listing.columns.id': 'Group ID',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('ManageGroupsSection', () => {
   const mockGroups: Group[] = [
     {id: 'group-1', name: 'Developers', organizationUnit: 'ou-123'},
@@ -58,101 +44,100 @@ describe('ManageGroupsSection', () => {
     vi.clearAllMocks();
   });
 
-  it('should render the manage groups section', () => {
+  it('should render the manage groups section', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: {groups: mockGroups},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Manage Groups')).toBeInTheDocument();
-    expect(screen.getByText('View and manage groups in this organization unit')).toBeInTheDocument();
+    await expect.element(page.getByText('Groups')).toBeInTheDocument();
+    await expect.element(page.getByText('View groups belonging to this organization unit')).toBeInTheDocument();
   });
 
-  it('should render data grid with groups', () => {
+  it('should render data grid with groups', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: {groups: mockGroups},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
-    expect(screen.getByText('Developers')).toBeInTheDocument();
-    expect(screen.getByText('Designers')).toBeInTheDocument();
-    expect(screen.getByText('Product Managers')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByText('Developers')).toBeInTheDocument();
+    await expect.element(page.getByText('Designers')).toBeInTheDocument();
+    await expect.element(page.getByText('Product Managers')).toBeInTheDocument();
   });
 
-  it('should render column headers', () => {
+  it('should render column headers', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: {groups: mockGroups},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByText('Group Name')).toBeInTheDocument();
-    expect(screen.getByText('Group ID')).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'Group Name'})).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'Group ID'})).toBeInTheDocument();
   });
 
-  it('should show loading state', () => {
+  it('should show loading state', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: null,
       isLoading: true,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    const grid = screen.getByRole('grid');
-    expect(grid).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
     // DataGrid shows loading overlay when isLoading is true
   });
 
-  it('should handle empty groups list', () => {
+  it('should handle empty groups list', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: {groups: []},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
     // Grid should show "No rows" message
   });
 
-  it('should handle null groups data', () => {
+  it('should handle null groups data', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: null,
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
   });
 
-  it('should call useGetOrganizationUnitGroups with correct ID', () => {
+  it('should call useGetOrganizationUnitGroups with correct ID', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: {groups: mockGroups},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-456" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-456" />);
 
     expect(mockUseGetOrganizationUnitGroups).toHaveBeenCalledWith('ou-456');
   });
 
-  it('should render group IDs correctly', () => {
+  it('should render group IDs correctly', async () => {
     mockUseGetOrganizationUnitGroups.mockReturnValue({
       data: {groups: mockGroups},
       isLoading: false,
     });
 
-    renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
+    await renderWithProviders(<ManageGroupsSection organizationUnitId="ou-123" />);
 
-    expect(screen.getAllByText('group-1').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('group-2').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('group-3').length).toBeGreaterThan(0);
+    expect((page.getByText('group-1').all()).length).toBeGreaterThan(0);
+    expect((page.getByText('group-2').all()).length).toBeGreaterThan(0);
+    expect((page.getByText('group-3').all()).length).toBeGreaterThan(0);
   });
 });

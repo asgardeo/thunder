@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
 import TechnologyBasedApplicationTemplateMetadata from '../TechnologyBasedApplicationTemplateMetadata';
 import {TechnologyApplicationTemplate} from '../../models/application-templates';
 
@@ -55,9 +55,9 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
       expect(reactMetadata?.value).toBe(TechnologyApplicationTemplate.REACT);
     });
 
-    it('should have icon component', () => {
+    it('should have icon component', async () => {
       expect(reactMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{reactMetadata?.icon}</div>);
+      const {container} = await render(<div>{reactMetadata?.icon}</div>);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -91,9 +91,9 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
       expect(nextjsMetadata?.value).toBe(TechnologyApplicationTemplate.NEXTJS);
     });
 
-    it('should have icon component', () => {
+    it('should have icon component', async () => {
       expect(nextjsMetadata?.icon).toBeDefined();
-      const {container} = render(<div>{nextjsMetadata?.icon}</div>);
+      const {container} = await render(<div>{nextjsMetadata?.icon}</div>);
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -146,11 +146,13 @@ describe('TechnologyBasedApplicationTemplateMetadata', () => {
   });
 
   describe('Icons', () => {
-    it('should all have renderable icons', () => {
-      TechnologyBasedApplicationTemplateMetadata.forEach((metadata) => {
-        const {container} = render(<div>{metadata.icon}</div>);
+    it('should all have renderable icons', async () => {
+      // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+      for (const metadata of TechnologyBasedApplicationTemplateMetadata) {
+        // eslint-disable-next-line no-await-in-loop
+        const {container} = await render(<div>{metadata.icon}</div>);
         expect(container.querySelector('svg')).toBeInTheDocument();
-      });
+      }
     });
   });
 

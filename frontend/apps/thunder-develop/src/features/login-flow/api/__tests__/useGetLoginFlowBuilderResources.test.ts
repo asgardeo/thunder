@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetLoginFlowBuilderResources from '../useGetLoginFlowBuilderResources';
 
 // Mock the core resources hook
@@ -54,72 +54,72 @@ vi.mock('../../data/widgets.json', () => ({
 }));
 
 describe('useGetLoginFlowBuilderResources', () => {
-  it('should return combined resources from core and login-flow', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should return combined resources from core and login-flow', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.data).toBeDefined();
   });
 
-  it('should merge steps from core and login-flow', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should merge steps from core and login-flow', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.data.steps).toBeDefined();
     expect(Array.isArray(result.current.data.steps)).toBe(true);
   });
 
-  it('should merge templates from core and login-flow', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should merge templates from core and login-flow', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.data.templates).toBeDefined();
     expect(Array.isArray(result.current.data.templates)).toBe(true);
   });
 
-  it('should merge widgets from core and login-flow', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should merge widgets from core and login-flow', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.data.widgets).toBeDefined();
     expect(Array.isArray(result.current.data.widgets)).toBe(true);
   });
 
-  it('should include executors from login-flow', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should include executors from login-flow', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.data.executors).toBeDefined();
     expect(Array.isArray(result.current.data.executors)).toBe(true);
   });
 
-  it('should return loading state as false', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should return loading state as false', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('should return error as null', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should return error as null', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.error).toBeNull();
   });
 
-  it('should return isValidating as false', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should return isValidating as false', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.isValidating).toBe(false);
   });
 
-  it('should return mutate function', () => {
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+  it('should return mutate function', async () => {
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
     expect(result.current.mutate).toBeDefined();
     expect(typeof result.current.mutate).toBe('function');
   });
 
-  it('should support generic type parameter', () => {
+  it('should support generic type parameter', async () => {
     interface CustomResources {
       elements: unknown[];
       steps: unknown[];
     }
 
-    const {result} = renderHook(() => useGetLoginFlowBuilderResources<CustomResources>());
+    const {result} = await renderHook(() => useGetLoginFlowBuilderResources<CustomResources>());
 
     expect(result.current.data).toBeDefined();
   });
@@ -140,7 +140,7 @@ describe('useGetLoginFlowBuilderResources', () => {
 
     it('should handle undefined coreResources by using empty arrays as fallback', async () => {
       const {default: useGetLoginFlowBuilderResourcesModule} = await import('../useGetLoginFlowBuilderResources');
-      const {result} = renderHook(() => useGetLoginFlowBuilderResourcesModule());
+      const {result} = await renderHook(() => useGetLoginFlowBuilderResourcesModule());
 
       // When coreResources is undefined, the hook should still work with fallback empty arrays
       expect(result.current.data).toBeDefined();
@@ -173,7 +173,7 @@ describe('useGetLoginFlowBuilderResources', () => {
 
     it('should fallback to empty array when coreResources arrays are undefined/null', async () => {
       const {default: useGetLoginFlowBuilderResourcesModule} = await import('../useGetLoginFlowBuilderResources');
-      const {result} = renderHook(() => useGetLoginFlowBuilderResourcesModule());
+      const {result} = await renderHook(() => useGetLoginFlowBuilderResourcesModule());
 
       // The nullish coalescing operator should provide empty arrays as fallback
       expect(result.current.data.steps).toBeDefined();
@@ -201,8 +201,8 @@ describe('useGetLoginFlowBuilderResources', () => {
       }));
     });
 
-    it('should spread coreResources even when partially undefined', () => {
-      const {result} = renderHook(() => useGetLoginFlowBuilderResources());
+    it('should spread coreResources even when partially undefined', async () => {
+      const {result} = await renderHook(() => useGetLoginFlowBuilderResources());
 
       // Verify that the spread operator worked correctly and login-flow data is present
       expect(result.current.data.executors).toContainEqual({id: 'login-executor'});

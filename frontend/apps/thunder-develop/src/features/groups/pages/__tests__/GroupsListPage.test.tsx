@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import GroupsListPage from '../GroupsListPage';
 
 vi.mock('../../components/GroupsList', () => ({
@@ -45,37 +44,38 @@ describe('GroupsListPage', () => {
     vi.clearAllMocks();
   });
 
-  it('should render page title and subtitle', () => {
-    renderWithProviders(<GroupsListPage />);
+  it('should render page title and subtitle', async () => {
+    await renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByText('Groups')).toBeInTheDocument();
-    expect(screen.getByText('Manage groups and their members across organization units')).toBeInTheDocument();
+    await expect.element(page.getByText('Groups')).toBeInTheDocument();
+    await expect.element(
+      page.getByText('Manage groups and their members across organization units'),
+    ).toBeInTheDocument();
   });
 
-  it('should render add group button', () => {
-    renderWithProviders(<GroupsListPage />);
+  it('should render add group button', async () => {
+    await renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByText('Add Group')).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Add Group/i})).toBeInTheDocument();
   });
 
   it('should navigate to create page on add group click', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupsListPage />);
+    await renderWithProviders(<GroupsListPage />);
 
-    await user.click(screen.getByText('Add Group'));
+    await userEvent.click(page.getByRole('button', {name: /Add Group/i}));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups/create');
   });
 
-  it('should render search field', () => {
-    renderWithProviders(<GroupsListPage />);
+  it('should render search field', async () => {
+    await renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByPlaceholderText('Search groups...')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Search groups...')).toBeInTheDocument();
   });
 
-  it('should render GroupsList component', () => {
-    renderWithProviders(<GroupsListPage />);
+  it('should render GroupsList component', async () => {
+    await renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByTestId('groups-list')).toBeInTheDocument();
+    await expect.element(page.getByTestId('groups-list')).toBeInTheDocument();
   });
 });

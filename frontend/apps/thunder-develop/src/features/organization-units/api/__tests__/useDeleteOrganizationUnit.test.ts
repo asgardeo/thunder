@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useDeleteOrganizationUnit from '../useDeleteOrganizationUnit';
 
 // Mock useAsgardeo
@@ -50,8 +50,8 @@ describe('useDeleteOrganizationUnit', () => {
     vi.clearAllMocks();
   });
 
-  it('should be idle initially', () => {
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+  it('should be idle initially', async () => {
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     expect(result.current.isPending).toBe(false);
     expect(result.current.isSuccess).toBe(false);
@@ -61,11 +61,11 @@ describe('useDeleteOrganizationUnit', () => {
   it('should delete organization unit successfully', async () => {
     mockHttpRequest.mockResolvedValue({});
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('ou-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -86,18 +86,18 @@ describe('useDeleteOrganizationUnit', () => {
         }),
     );
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('ou-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
     // Resolve to clean up
     resolvePromise!({});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
   });
@@ -106,11 +106,11 @@ describe('useDeleteOrganizationUnit', () => {
     const errorMessage = 'Failed to delete organization unit';
     mockHttpRequest.mockRejectedValue(new Error(errorMessage));
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('ou-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
       expect(result.current.error?.message).toBe(errorMessage);
     });
@@ -120,11 +120,11 @@ describe('useDeleteOrganizationUnit', () => {
     mockHttpRequest.mockResolvedValue({});
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('ou-123', {onSuccess});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
     });
   });
@@ -134,11 +134,11 @@ describe('useDeleteOrganizationUnit', () => {
     mockHttpRequest.mockRejectedValue(error);
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('ou-123', {onError});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalled();
     });
   });
@@ -146,11 +146,11 @@ describe('useDeleteOrganizationUnit', () => {
   it('should delete different organization units', async () => {
     mockHttpRequest.mockResolvedValue({});
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('ou-456');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -164,11 +164,11 @@ describe('useDeleteOrganizationUnit', () => {
   it('should use mutateAsync for promise-based mutation', async () => {
     mockHttpRequest.mockResolvedValue({});
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     await result.current.mutateAsync('ou-123');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
   });
@@ -176,11 +176,11 @@ describe('useDeleteOrganizationUnit', () => {
   it('should handle not found error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Organization unit not found'));
 
-    const {result} = renderHook(() => useDeleteOrganizationUnit());
+    const {result} = await renderHook(() => useDeleteOrganizationUnit());
 
     result.current.mutate('non-existent-ou');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
       expect(result.current.error?.message).toBe('Organization unit not found');
     });

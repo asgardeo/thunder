@@ -17,9 +17,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {MemoryRouter} from 'react-router';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
+
 import RegistrationFlowSection from '../RegistrationFlowSection';
 import useGetFlows from '../../../../../flows/api/useGetFlows';
 import type {Application} from '../../../../models/application';
@@ -77,73 +77,65 @@ describe('RegistrationFlowSection', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the settings card with title and description', () => {
+    it('should render the settings card with title and description', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: []},
         isLoading: false,
       } as unknown as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('Registration Flow');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('Registration Flow');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Choose the flow that handles user sign-up and account creation.',
       );
     });
 
-    it('should render autocomplete field', () => {
+    it('should render autocomplete field', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByPlaceholderText('Select a registration flow')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Select a registration flow')).toBeInTheDocument();
       expect(
-        screen.getByText('Select the flow that handles user registration for this application.'),
+        page.getByText('Select the flow that handles user registration for this application.'),
       ).toBeInTheDocument();
     });
 
-    it('should render toggle button', () => {
+    it('should render toggle button', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('toggle-button')).toBeInTheDocument();
+      await expect.element(page.getByTestId('toggle-button')).toBeInTheDocument();
     });
 
-    it('should display alert when registration flow is selected', () => {
+    it('should display alert when registration flow is selected', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
     });
 
-    it('should not display alert when no registration flow is selected', () => {
+    it('should not display alert when no registration flow is selected', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
@@ -151,16 +143,14 @@ describe('RegistrationFlowSection', () => {
 
       const appWithoutFlow = {...mockApplication, registration_flow_id: undefined};
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={appWithoutFlow} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('should display alert when registration flow is in editedApp', () => {
+    it('should display alert when registration flow is in editedApp', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
@@ -168,88 +158,78 @@ describe('RegistrationFlowSection', () => {
 
       const appWithoutFlow = {...mockApplication, registration_flow_id: undefined};
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection
             application={appWithoutFlow}
             editedApp={{registration_flow_id: 'reg-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
     });
   });
 
   describe('Loading State', () => {
-    it('should show loading indicator while fetching flows', () => {
+    it('should show loading indicator while fetching flows', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should not show loading indicator when flows are loaded', () => {
+    it('should not show loading indicator when flows are loaded', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).not.toBeInTheDocument();
     });
   });
 
   describe('Enable/Disable Toggle', () => {
-    it('should pass enabled state from application to SettingsCard', () => {
+    it('should pass enabled state from application to SettingsCard', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('toggle-button')).toHaveTextContent('Toggle: ON');
+      await expect.element(page.getByTestId('toggle-button')).toHaveTextContent('Toggle: ON');
     });
 
-    it('should pass enabled state from editedApp to SettingsCard', () => {
+    it('should pass enabled state from editedApp to SettingsCard', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection
             application={mockApplication}
             editedApp={{is_registration_flow_enabled: false}}
             onFieldChange={mockOnFieldChange}
           />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('toggle-button')).toHaveTextContent('Toggle: OFF');
+      await expect.element(page.getByTestId('toggle-button')).toHaveTextContent('Toggle: OFF');
     });
 
-    it('should default to false when is_registration_flow_enabled is undefined', () => {
+    it('should default to false when is_registration_flow_enabled is undefined', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
@@ -257,111 +237,100 @@ describe('RegistrationFlowSection', () => {
 
       const appWithoutEnabled = {...mockApplication, is_registration_flow_enabled: undefined};
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={appWithoutEnabled} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('toggle-button')).toHaveTextContent('Toggle: OFF');
+      await expect.element(page.getByTestId('toggle-button')).toHaveTextContent('Toggle: OFF');
     });
 
     it('should call onFieldChange when toggle is clicked', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetFlows).mockReturnValue({
+            vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      await user.click(screen.getByTestId('toggle-button'));
+      await userEvent.click(page.getByTestId('toggle-button'));
 
       expect(mockOnFieldChange).toHaveBeenCalledWith('is_registration_flow_enabled', false);
     });
   });
 
   describe('Flow Selection', () => {
-    it('should display selected flow from application', () => {
+    it('should display selected flow from application', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      const input = screen.getByPlaceholderText('Select a registration flow');
+      const input = page.getByPlaceholder('Select a registration flow');
       expect(input).toHaveValue('Default Registration Flow');
     });
 
-    it('should display selected flow from editedApp over application', () => {
+    it('should display selected flow from editedApp over application', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection
             application={mockApplication}
             editedApp={{registration_flow_id: 'reg-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
-        </MemoryRouter>,
       );
 
-      const input = screen.getByPlaceholderText('Select a registration flow');
+      const input = page.getByPlaceholder('Select a registration flow');
       expect(input).toHaveValue('Custom Registration Flow');
     });
 
     it('should handle flow selection', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetFlows).mockReturnValue({
+            vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      const input = screen.getByPlaceholderText('Select a registration flow');
-      await user.click(input);
+      const input = page.getByPlaceholder('Select a registration flow');
+      await userEvent.click(input);
 
-      await waitFor(() => {
-        expect(screen.getByText('SSO Registration Flow')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('SSO Registration Flow')).toBeInTheDocument();
       });
 
-      await user.click(screen.getByText('SSO Registration Flow'));
+      await userEvent.click(page.getByText('SSO Registration Flow'));
 
       expect(mockOnFieldChange).toHaveBeenCalledWith('registration_flow_id', 'reg-flow-3');
     });
 
     it('should handle clearing selection', async () => {
-      const user = userEvent.setup();
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
-          <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
+      await render(
+        <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      const clearButton = screen.getByTitle('Clear');
-      await user.click(clearButton);
+      // Hover over the autocomplete to reveal the clear button
+      const input = page.getByPlaceholder('Select a registration flow');
+      await userEvent.hover(input);
+
+      const clearButton = page.getByRole('button', {name: 'Clear'});
+      await userEvent.click(clearButton);
 
       expect(mockOnFieldChange).toHaveBeenCalledWith('registration_flow_id', '');
     });
@@ -369,136 +338,120 @@ describe('RegistrationFlowSection', () => {
 
   describe('Flow Options Display', () => {
     it('should display flow name and handle in options', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetFlows).mockReturnValue({
+            vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      const input = screen.getByPlaceholderText('Select a registration flow');
-      await user.click(input);
+      const input = page.getByPlaceholder('Select a registration flow');
+      await userEvent.click(input);
 
-      await waitFor(() => {
-        expect(screen.getByText('Custom Registration Flow')).toBeInTheDocument();
-        expect(screen.getByText('custom-reg')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Custom Registration Flow')).toBeInTheDocument();
+        await expect.element(page.getByText('custom-reg')).toBeInTheDocument();
       });
     });
 
     it('should display all available flows in dropdown', async () => {
-      const user = userEvent.setup();
-      vi.mocked(useGetFlows).mockReturnValue({
+            vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      const input = screen.getByPlaceholderText('Select a registration flow');
-      await user.click(input);
+      const input = page.getByPlaceholder('Select a registration flow');
+      await userEvent.click(input);
 
-      await waitFor(() => {
-        expect(screen.getByText('Default Registration Flow')).toBeInTheDocument();
-        expect(screen.getByText('Custom Registration Flow')).toBeInTheDocument();
-        expect(screen.getByText('SSO Registration Flow')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Default Registration Flow')).toBeInTheDocument();
+        await expect.element(page.getByText('Custom Registration Flow')).toBeInTheDocument();
+        await expect.element(page.getByText('SSO Registration Flow')).toBeInTheDocument();
       });
     });
   });
 
   describe('Empty State', () => {
-    it('should handle empty flows array', () => {
+    it('should handle empty flows array', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: []},
         isLoading: false,
       } as unknown as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByPlaceholderText('Select a registration flow')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Select a registration flow')).toBeInTheDocument();
     });
 
-    it('should handle undefined flows data', () => {
+    it('should handle undefined flows data', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: undefined,
         isLoading: false,
       } as MockedUseGetFlows);
 
-      render(
-        <MemoryRouter>
+      await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
-      expect(screen.getByPlaceholderText('Select a registration flow')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Select a registration flow')).toBeInTheDocument();
     });
   });
 
   describe('Alert Links', () => {
-    it('should display edit link with correct flow ID from application', () => {
+    it('should display edit link with correct flow ID from application', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const {container} = render(
-        <MemoryRouter>
+      const {container} = await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
       const links = container.querySelectorAll('a');
-      const editLink = Array.from(links).find((link) => link.getAttribute('href')?.includes('/flows/signup/'));
+      const editLink = Array.from(links).find((link: Element) => link.getAttribute('href')?.includes('/flows/signup/'));
       expect(editLink).toHaveAttribute('href', '/flows/signup/reg-flow-1');
     });
 
-    it('should display edit link with correct flow ID from editedApp', () => {
+    it('should display edit link with correct flow ID from editedApp', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const {container} = render(
-        <MemoryRouter>
+      const {container} = await render(
           <RegistrationFlowSection
             application={mockApplication}
             editedApp={{registration_flow_id: 'reg-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
-        </MemoryRouter>,
       );
 
       const links = container.querySelectorAll('a');
-      const editLink = Array.from(links).find((link) => link.getAttribute('href')?.includes('/flows/signup/'));
+      const editLink = Array.from(links).find((link: Element) => link.getAttribute('href')?.includes('/flows/signup/'));
       expect(editLink).toHaveAttribute('href', '/flows/signup/reg-flow-2');
     });
 
-    it('should display create link', () => {
+    it('should display create link', async () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const {container} = render(
-        <MemoryRouter>
+      const {container} = await render(
           <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
       );
 
       const links = container.querySelectorAll('a');
-      const createLink = Array.from(links).find((link) => link.getAttribute('href') === '/flows');
+      const createLink = Array.from(links).find((link: Element) => link.getAttribute('href') === '/flows');
       expect(createLink).toHaveAttribute('href', '/flows');
     });
   });

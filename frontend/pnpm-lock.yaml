@@ -126,6 +126,9 @@ catalogs:
     vitest:
       specifier: 4.0.17
       version: 4.0.17
+    vitest-browser-react:
+      specifier: 2.0.5
+      version: 2.0.5
     zod:
       specifier: 4.3.6
       version: 4.3.6
@@ -435,9 +438,15 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.0.4(rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@2.6.1)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2))
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.17(playwright@1.58.1)(rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@2.6.1)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2))(vitest@4.0.17)
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.0.17(vitest@4.0.17)
+      '@vitest/coverage-v8':
+        specifier: 4.0.17
+        version: 4.0.17(@vitest/browser@4.0.17(rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@2.6.1)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2))(vitest@4.0.17))(vitest@4.0.17)
       babel-plugin-react-compiler:
         specifier: 'catalog:'
         version: 19.1.0-rc.3
@@ -447,6 +456,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 27.0.1(postcss@8.5.6)
+      playwright:
+        specifier: 'catalog:'
+        version: 1.58.1
       rollup-plugin-visualizer:
         specifier: 'catalog:'
         version: 6.0.5(rolldown@1.0.0-beta.45)
@@ -462,6 +474,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.17(@opentelemetry/api@1.9.0)(@types/node@24.7.2)(@vitest/browser-playwright@4.0.17)(esbuild@0.25.9)(jiti@2.6.1)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
+      vitest-browser-react:
+        specifier: 'catalog:'
+        version: 2.0.5(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.0.17)
 
   apps/thunder-gate:
     dependencies:
@@ -1053,6 +1068,9 @@ importers:
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
+      vitest-browser-react:
+        specifier: 'catalog:'
+        version: 2.0.5(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.0.17)
     devDependencies:
       '@tanstack/react-query':
         specifier: 'catalog:'
@@ -1081,6 +1099,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.7)
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.0.17(playwright@1.58.1)(rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@2.6.1)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2))(vitest@4.0.17)
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.8.0(@mui/system@7.3.6(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(@wso2/oxygen-ui-icons-react@0.8.0(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1090,6 +1111,9 @@ importers:
       i18next:
         specifier: 'catalog:'
         version: 25.6.0(typescript@5.9.3)
+      playwright:
+        specifier: 'catalog:'
+        version: 1.58.1
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -1957,6 +1981,10 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@bcoe/v8-coverage@1.0.2':
+    resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
+    engines: {node: '>=18'}
 
   '@bufbuild/protobuf@2.10.2':
     resolution: {integrity: sha512-uFsRXwIGyu+r6AMdz+XijIIZJYpoWeYzILt5yZ2d3mCjQrWUTVpVD9WL/jZAbvp+Ed04rOhrsk7FiTcEDseB5A==}
@@ -5009,6 +5037,15 @@ packages:
     peerDependencies:
       vitest: 4.0.17
 
+  '@vitest/coverage-v8@4.0.17':
+    resolution: {integrity: sha512-/6zU2FLGg0jsd+ePZcwHRy3+WpNTBBhDY56P4JTRqUN/Dp6CvOEa9HrikcQ4KfV2b2kAHUFB4dl1SuocWXSFEw==}
+    peerDependencies:
+      '@vitest/browser': 4.0.17
+      vitest: 4.0.17
+    peerDependenciesMeta:
+      '@vitest/browser':
+        optional: true
+
   '@vitest/expect@4.0.17':
     resolution: {integrity: sha512-mEoqP3RqhKlbmUmntNDDCJeTDavDR+fVYkSOw8qRwJFaW/0/5zA9zFeTrHqNtcmwh6j26yMmwx2PqUDPzt5ZAQ==}
 
@@ -5438,6 +5475,9 @@ packages:
 
   ast-types-flow@0.0.8:
     resolution: {integrity: sha512-OH/2E5Fg20h2aPrbe+QL8JZQFko0YZaF+j4mnQ7BGhfavO7OpSLa8a0y9sBwomHdSbkhTS8TQNayBfnW5DwbvQ==}
+
+  ast-v8-to-istanbul@0.3.12:
+    resolution: {integrity: sha512-BRRC8VRZY2R4Z4lFIL35MwNXmwVqBityvOIwETtsCSwvjl0IdgFsy9NhdaA6j74nUdtJJlIypeRhpDam19Wq3g==}
 
   astring@1.9.0:
     resolution: {integrity: sha512-LElXdjswlqjWrPpJFg1Fx4wpkOCxj1TDHlSV4PlaRxHGWko024xICaa97ZkMfs6DRKlCguiAI+rbXv5GWwXIkg==}
@@ -7917,6 +7957,9 @@ packages:
 
   js-base64@3.7.8:
     resolution: {integrity: sha512-hNngCeKxIUQiEUN3GPJOkz4wF/YvdUdbNL9hsBcMQTkKzboD7T/q3OYOuuPZLUE6dBxSGpwhk5mwuDud7JVAow==}
+
+  js-tokens@10.0.0:
+    resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -10812,6 +10855,20 @@ packages:
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
 
+  vitest-browser-react@2.0.5:
+    resolution: {integrity: sha512-YODQX8mHTJCyKNVYTWJrLEYrUtw+QfLl78owgvuE7C5ydgmGBq6v5s4jK2w6wdPhIZsN9PpV1rQbmAevWJjO9g==}
+    peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
+      '@types/react-dom': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+      vitest: ^4.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true
+
   vitest@4.0.17:
     resolution: {integrity: sha512-FQMeF0DJdWY0iOnbv466n/0BudNdKj1l5jYgl5JVTwjSsZSlqyXFt/9+1sEyhR6CLowbZpV7O1sCHrzBhucKKg==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
@@ -12196,6 +12253,8 @@ snapshots:
       use-sync-external-store: 1.6.0(react@19.2.3)
     optionalDependencies:
       '@types/react': 19.2.7
+
+  '@bcoe/v8-coverage@1.0.2': {}
 
   '@bufbuild/protobuf@2.10.2': {}
 
@@ -16290,6 +16349,22 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@vitest/coverage-v8@4.0.17(@vitest/browser@4.0.17(rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@2.6.1)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2))(vitest@4.0.17))(vitest@4.0.17)':
+    dependencies:
+      '@bcoe/v8-coverage': 1.0.2
+      '@vitest/utils': 4.0.17
+      ast-v8-to-istanbul: 0.3.12
+      istanbul-lib-coverage: 3.2.2
+      istanbul-lib-report: 3.0.1
+      istanbul-reports: 3.2.0
+      magicast: 0.5.2
+      obug: 2.1.1
+      std-env: 3.10.0
+      tinyrainbow: 3.0.3
+      vitest: 4.0.17(@opentelemetry/api@1.9.0)(@types/node@24.7.2)(@vitest/browser-playwright@4.0.17)(esbuild@0.25.9)(jiti@2.6.1)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
+    optionalDependencies:
+      '@vitest/browser': 4.0.17(rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@2.6.1)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2))(vitest@4.0.17)
+
   '@vitest/expect@4.0.17':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -16833,6 +16908,12 @@ snapshots:
   assertion-error@2.0.1: {}
 
   ast-types-flow@0.0.8: {}
+
+  ast-v8-to-istanbul@0.3.12:
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      estree-walker: 3.0.3
+      js-tokens: 10.0.0
 
   astring@1.9.0: {}
 
@@ -19738,6 +19819,8 @@ snapshots:
   jose@6.0.11: {}
 
   js-base64@3.7.8: {}
+
+  js-tokens@10.0.0: {}
 
   js-tokens@4.0.0: {}
 
@@ -23180,6 +23263,15 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
+
+  vitest-browser-react@2.0.5(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.0.17):
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      vitest: 4.0.17(@opentelemetry/api@1.9.0)(@types/node@24.7.2)(@vitest/browser-playwright@4.0.17)(esbuild@0.25.9)(jiti@2.6.1)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
+    optionalDependencies:
+      '@types/react': 19.2.7
+      '@types/react-dom': 19.2.3(@types/react@19.2.7)
 
   vitest@4.0.17(@opentelemetry/api@1.9.0)(@types/node@24.7.2)(@vitest/browser-playwright@4.0.17)(esbuild@0.25.9)(jiti@2.6.1)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2):
     dependencies:

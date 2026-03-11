@@ -20,7 +20,7 @@ import {Stack, Checkbox, FormControlLabel, Divider} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import {useState, useEffect, useMemo, useRef} from 'react';
 import {useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver} from '@/hooks/useZodResolver';
 import {z} from 'zod';
 import {useQuery} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';

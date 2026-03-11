@@ -19,7 +19,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import useComponentDelete from '../useComponentDelete';
 import type {Element} from '../../models/elements';
 
@@ -38,26 +38,26 @@ describe('useComponentDelete', () => {
   });
 
   describe('Hook Interface', () => {
-    it('should return deleteComponent function', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should return deleteComponent function', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       expect(typeof result.current.deleteComponent).toBe('function');
     });
 
-    it('should return stable function reference across renders', () => {
-      const {result, rerender} = renderHook(() => useComponentDelete());
+    it('should return stable function reference across renders', async () => {
+      const {result, rerender} = await renderHook(() => useComponentDelete());
 
       const initialFn = result.current.deleteComponent;
 
-      rerender();
+      await rerender();
 
       expect(result.current.deleteComponent).toBe(initialFn);
     });
   });
 
   describe('deleteComponent', () => {
-    it('should call updateNodeData with stepId', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should call updateNodeData with stepId', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const component: Element = {
         id: 'component-1',
@@ -65,15 +65,13 @@ describe('useComponentDelete', () => {
         category: 'INPUT',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', component);
-      });
+      result.current.deleteComponent('step-1', component);
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
     });
 
-    it('should remove component from flat list', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should remove component from flat list', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const componentToDelete: Element = {
         id: 'component-2',
@@ -81,9 +79,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', componentToDelete);
-      });
+      result.current.deleteComponent('step-1', componentToDelete);
 
       // Get the updater function passed to updateNodeData
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
@@ -107,8 +103,8 @@ describe('useComponentDelete', () => {
       expect(updatedData.components.find((c: Element) => c.id === 'component-3')).toBeDefined();
     });
 
-    it('should remove component from nested list recursively', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should remove component from nested list recursively', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const nestedComponent: Element = {
         id: 'nested-component',
@@ -116,9 +112,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', nestedComponent);
-      });
+      result.current.deleteComponent('step-1', nestedComponent);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 
@@ -148,8 +142,8 @@ describe('useComponentDelete', () => {
       expect(container.components.find((c: Element) => c.id === 'other-component')).toBeDefined();
     });
 
-    it('should handle deeply nested components', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should handle deeply nested components', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const deepNestedComponent: Element = {
         id: 'deep-nested',
@@ -157,9 +151,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', deepNestedComponent);
-      });
+      result.current.deleteComponent('step-1', deepNestedComponent);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 
@@ -190,8 +182,8 @@ describe('useComponentDelete', () => {
       expect(level2.components).toHaveLength(0);
     });
 
-    it('should handle empty components array', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should handle empty components array', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const component: Element = {
         id: 'component-1',
@@ -199,9 +191,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', component);
-      });
+      result.current.deleteComponent('step-1', component);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 
@@ -216,8 +206,8 @@ describe('useComponentDelete', () => {
       expect(updatedData.components).toHaveLength(0);
     });
 
-    it('should handle undefined components array', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should handle undefined components array', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const component: Element = {
         id: 'component-1',
@@ -225,9 +215,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', component);
-      });
+      result.current.deleteComponent('step-1', component);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 
@@ -240,8 +228,8 @@ describe('useComponentDelete', () => {
       expect(updatedData.components).toEqual([]);
     });
 
-    it('should handle null node data', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should handle null node data', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const component: Element = {
         id: 'component-1',
@@ -249,9 +237,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', component);
-      });
+      result.current.deleteComponent('step-1', component);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 
@@ -260,8 +246,8 @@ describe('useComponentDelete', () => {
       expect(updatedData.components).toEqual([]);
     });
 
-    it('should preserve other component properties when deleting', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should preserve other component properties when deleting', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const componentToDelete: Element = {
         id: 'component-2',
@@ -269,9 +255,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', componentToDelete);
-      });
+      result.current.deleteComponent('step-1', componentToDelete);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 
@@ -297,8 +281,8 @@ describe('useComponentDelete', () => {
       expect(preserved.config).toEqual({placeholder: 'Enter email'});
     });
 
-    it('should not modify original component objects (immutability)', () => {
-      const {result} = renderHook(() => useComponentDelete());
+    it('should not modify original component objects (immutability)', async () => {
+      const {result} = await renderHook(() => useComponentDelete());
 
       const componentToDelete: Element = {
         id: 'nested',
@@ -306,9 +290,7 @@ describe('useComponentDelete', () => {
         category: 'ACTION',
       } as Element;
 
-      act(() => {
-        result.current.deleteComponent('step-1', componentToDelete);
-      });
+      result.current.deleteComponent('step-1', componentToDelete);
 
       const updaterFn = mockUpdateNodeData.mock.calls[0][1];
 

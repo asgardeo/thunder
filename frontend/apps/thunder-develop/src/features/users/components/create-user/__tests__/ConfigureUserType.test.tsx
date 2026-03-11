@@ -17,16 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, within} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ConfigureUserType, {type ConfigureUserTypeProps} from '../ConfigureUserType';
 import type {SchemaInterface} from '../../../types/users';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 const mockSchemas: SchemaInterface[] = [
   {id: 'schema-1', name: 'Employee', ouId: 'ou-1'},
@@ -49,119 +43,126 @@ describe('ConfigureUserType', () => {
   });
 
   const renderComponent = (props: Partial<ConfigureUserTypeProps> = {}) =>
-    render(<ConfigureUserType {...defaultProps} {...props} />);
+    renderWithProviders(<ConfigureUserType {...defaultProps} {...props} />);
 
-  it('renders the component with title and subtitle', () => {
-    renderComponent();
+  it('renders the component with title and subtitle', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectUserType.title')).toBeInTheDocument();
-    expect(screen.getByText('users:createWizard.selectUserType.subtitle')).toBeInTheDocument();
+    await expect.element(page.getByText('Select a user type')).toBeInTheDocument();
+    await expect.element(page.getByText('Choose a user type (schema) for the new user.')).toBeInTheDocument();
   });
 
-  it('renders the user type select field', () => {
-    renderComponent();
+  it('renders the user type select field', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectUserType.fieldLabel')).toBeInTheDocument();
-    expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+    await expect.element(page.getByText('User Type')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
   });
 
-  it('renders placeholder when no schema is selected', () => {
-    renderComponent();
+  it('renders placeholder when no schema is selected', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('users:createWizard.selectUserType.placeholder')).toBeInTheDocument();
+    await expect.element(page.getByText('Select a user type')).toBeInTheDocument();
   });
 
   it('renders all schema options in the select', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
-    const listbox = await screen.findByRole('listbox');
-    await waitFor(() => {
-      expect(within(listbox).getByText('Employee')).toBeInTheDocument();
-      expect(within(listbox).getByText('Contractor')).toBeInTheDocument();
-      expect(within(listbox).getByText('Vendor')).toBeInTheDocument();
-    });
+    const listbox = page.getByRole('listbox');
+    await expect.element(listbox.getByText('Employee')).toBeInTheDocument();
+    await expect.element(listbox.getByText('Contractor')).toBeInTheDocument();
+    await expect.element(listbox.getByText('Vendor')).toBeInTheDocument();
   });
 
   it('calls onSchemaChange when a schema is selected', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
-    const listbox = await screen.findByRole('listbox');
-    await user.click(within(listbox).getByText('Employee'));
+    const listbox = page.getByRole('listbox');
+    await userEvent.click(listbox.getByText('Employee'));
 
-    expect(mockOnSchemaChange).toHaveBeenCalledWith(mockSchemas[0]);
+    await vi.waitFor(() => {
+      expect(mockOnSchemaChange).toHaveBeenCalledWith(mockSchemas[0]);
+    });
   });
 
   it('calls onSchemaChange when selecting a different schema', async () => {
-    const user = userEvent.setup();
-    renderComponent({selectedSchema: mockSchemas[0]});
+    await renderComponent({selectedSchema: mockSchemas[0]});
 
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
-    const listbox = await screen.findByRole('listbox');
-    await user.click(within(listbox).getByText('Contractor'));
+    const listbox = page.getByRole('listbox');
+    await userEvent.click(listbox.getByText('Contractor'));
 
-    expect(mockOnSchemaChange).toHaveBeenCalledWith(mockSchemas[1]);
+    await vi.waitFor(() => {
+      expect(mockOnSchemaChange).toHaveBeenCalledWith(mockSchemas[1]);
+    });
   });
 
-  it('displays the selected schema name', () => {
-    renderComponent({selectedSchema: mockSchemas[0]});
+  it('displays the selected schema name', async () => {
+    await renderComponent({selectedSchema: mockSchemas[0]});
 
-    expect(screen.getByText('Employee')).toBeInTheDocument();
+    await expect.element(page.getByText('Employee')).toBeInTheDocument();
   });
 
   describe('onReadyChange callback', () => {
-    it('calls onReadyChange with true when a schema is selected', () => {
-      renderComponent({
+    it('calls onReadyChange with true when a schema is selected', async () => {
+      await renderComponent({
         selectedSchema: mockSchemas[0],
         onReadyChange: mockOnReadyChange,
       });
 
-      expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+      await vi.waitFor(() => {
+        expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+      });
     });
 
-    it('calls onReadyChange with false when no schema is selected', () => {
-      renderComponent({
+    it('calls onReadyChange with false when no schema is selected', async () => {
+      await renderComponent({
         selectedSchema: null,
         onReadyChange: mockOnReadyChange,
       });
 
-      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      await vi.waitFor(() => {
+        expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      });
     });
 
-    it('does not crash when onReadyChange is undefined', () => {
-      expect(() => {
-        renderComponent({selectedSchema: mockSchemas[0], onReadyChange: undefined});
+    it('does not crash when onReadyChange is undefined', async () => {
+      expect(async () => {
+        await renderComponent({selectedSchema: mockSchemas[0], onReadyChange: undefined});
       }).not.toThrow();
     });
 
-    it('calls onReadyChange when selectedSchema transitions from null to non-null', () => {
-      const {rerender} = render(
+    it('calls onReadyChange when selectedSchema transitions from null to non-null', async () => {
+      const {rerender} = await renderWithProviders(
         <ConfigureUserType {...defaultProps} selectedSchema={null} onReadyChange={mockOnReadyChange} />,
       );
 
-      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      await vi.waitFor(() => {
+        expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      });
       mockOnReadyChange.mockClear();
 
-      rerender(
+      await rerender(
         <ConfigureUserType {...defaultProps} selectedSchema={mockSchemas[0]} onReadyChange={mockOnReadyChange} />,
       );
 
-      expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+      await vi.waitFor(() => {
+        expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+      });
     });
   });
 
-  it('handles empty schemas list', () => {
-    renderComponent({schemas: []});
+  it('handles empty schemas list', async () => {
+    await renderComponent({schemas: []});
 
-    expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-user-type')).toBeInTheDocument();
   });
 });

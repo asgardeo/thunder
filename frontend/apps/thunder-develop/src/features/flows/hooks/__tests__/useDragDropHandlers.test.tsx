@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, act, cleanup} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node, Edge} from '@xyflow/react';
@@ -141,18 +141,17 @@ describe('useDragDropHandlers', () => {
     vi.useFakeTimers();
     await vi.runAllTimersAsync();
     vi.useRealTimers();
-    cleanup();
   });
 
   describe('Hook Initialization', () => {
-    it('should return stable handler functions', () => {
-      const {result, rerender} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should return stable handler functions', async () => {
+      const {result, rerender} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
       const initialHandlers = result.current;
 
-      rerender();
+      await rerender();
 
       // Handlers should remain the same reference
       expect(result.current.addCanvasNode).toBe(initialHandlers.addCanvasNode);
@@ -162,8 +161,8 @@ describe('useDragDropHandlers', () => {
       expect(result.current.addToFormAtIndex).toBe(initialHandlers.addToFormAtIndex);
     });
 
-    it('should return all required handler functions', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should return all required handler functions', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -176,8 +175,8 @@ describe('useDragDropHandlers', () => {
   });
 
   describe('addCanvasNode', () => {
-    it('should add a new node to the canvas', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should add a new node to the canvas', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -187,21 +186,19 @@ describe('useDragDropHandlers', () => {
       const targetData: DragTargetData = {};
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addCanvasNode(
-          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addCanvasNode(
+        event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
       expect(mockOnStepLoad).toHaveBeenCalled();
     });
 
-    it('should not add node when source resource is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add node when source resource is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -209,19 +206,17 @@ describe('useDragDropHandlers', () => {
       const targetData: DragTargetData = {};
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addCanvasNode(
-          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addCanvasNode(
+        event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockSetNodes).not.toHaveBeenCalled();
     });
 
-    it('should not add node when native event is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add node when native event is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -231,19 +226,17 @@ describe('useDragDropHandlers', () => {
       const targetData: DragTargetData = {};
       const event = {nativeEvent: undefined};
 
-      act(() => {
-        result.current.addCanvasNode(
-          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addCanvasNode(
+        event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockSetNodes).not.toHaveBeenCalled();
     });
 
-    it('should not add node when native event lacks clientX/clientY', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add node when native event lacks clientX/clientY', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -253,21 +246,19 @@ describe('useDragDropHandlers', () => {
       const targetData: DragTargetData = {};
       const event = {nativeEvent: new Event('custom')};
 
-      act(() => {
-        result.current.addCanvasNode(
-          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addCanvasNode(
+        event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockSetNodes).not.toHaveBeenCalled();
     });
   });
 
   describe('addToView', () => {
-    it('should add element to view step', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should add element to view step', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -280,27 +271,25 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToView(
-          event as unknown as Parameters<typeof result.current.addToView>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToView(
+        event as unknown as Parameters<typeof result.current.addToView>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
       expect(mockGenerateStepElement).toHaveBeenCalled();
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
     });
 
-    it('should handle widget drop on view', () => {
+    it('should handle widget drop on view', async () => {
       const mockNodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
       const mockEdges: Edge[] = [];
       mockGetNodes.mockReturnValue(mockNodes);
       mockGetEdges.mockReturnValue(mockEdges);
       mockOnWidgetLoad.mockReturnValue([mockNodes, mockEdges, null, null]);
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -318,21 +307,19 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToView(
-          event as unknown as Parameters<typeof result.current.addToView>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToView(
+        event as unknown as Parameters<typeof result.current.addToView>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockOnWidgetLoad).toHaveBeenCalledWith(widgetResource as Widget, expect.any(Object), mockNodes, mockEdges);
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockSetEdges).toHaveBeenCalled();
     });
 
-    it('should not add element when source resource is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add element when source resource is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -342,21 +329,19 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToView(
-          event as unknown as Parameters<typeof result.current.addToView>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToView(
+        event as unknown as Parameters<typeof result.current.addToView>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
   });
 
   describe('addToForm', () => {
-    it('should add element to form within a step', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should add element to form within a step', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -369,21 +354,19 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToForm(
-          event as unknown as Parameters<typeof result.current.addToForm>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToForm(
+        event as unknown as Parameters<typeof result.current.addToForm>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
       expect(mockGenerateStepElement).toHaveBeenCalled();
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
     });
 
-    it('should not add element when target step is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add element when target step is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -395,21 +378,19 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToForm(
-          event as unknown as Parameters<typeof result.current.addToForm>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToForm(
+        event as unknown as Parameters<typeof result.current.addToForm>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
   });
 
   describe('addToViewAtIndex', () => {
-    it('should add element at specific index in view', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should add element at specific index in view', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -417,15 +398,13 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element}),
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
       expect(mockGenerateStepElement).toHaveBeenCalled();
     });
 
-    it('should handle widget drop at index', () => {
+    it('should handle widget drop at index', async () => {
       const mockTargetNode: Node = {
         id: 'step-1',
         position: {x: 0, y: 0},
@@ -440,7 +419,7 @@ describe('useDragDropHandlers', () => {
         null,
       ]);
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -453,31 +432,27 @@ describe('useDragDropHandlers', () => {
         dragged: widgetResource,
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       expect(mockOnWidgetLoad).toHaveBeenCalled();
       expect(mockSetNodes).toHaveBeenCalled();
       expect(mockSetEdges).toHaveBeenCalled();
     });
 
-    it('should not add when source resource is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add when source resource is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
       const sourceData: DragSourceData = {};
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
 
-    it('should not add when target step is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add when target step is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -485,17 +460,15 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element}),
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, '', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, '', 'element-2');;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
   });
 
   describe('addToFormAtIndex', () => {
-    it('should add element at specific index in form', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should add element at specific index in form', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -503,30 +476,26 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'element-2');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'element-2');;
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
       expect(mockGenerateStepElement).toHaveBeenCalled();
     });
 
-    it('should not add when source resource is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add when source resource is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
       const sourceData: DragSourceData = {};
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'element-2');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'element-2');;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
 
-    it('should not add when target step is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add when target step is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -534,15 +503,13 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, '', 'form-1', 'element-2');
-      });
+      result.current.addToFormAtIndex(sourceData, '', 'form-1', 'element-2');;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
 
-    it('should not add when form id is missing', () => {
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+    it('should not add when form id is missing', async () => {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -550,16 +517,14 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', '', 'element-2');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', '', 'element-2');;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
   });
 
   describe('Metadata Handling', () => {
-    it('should call autoAssignConnections when metadata has executorConnections', () => {
+    it('should call autoAssignConnections when metadata has executorConnections', async () => {
       const mockAutoAssignConnections = vi.mocked(autoAssignConnections);
 
       const propsWithMetadata: UseDragDropHandlersProps = {
@@ -582,7 +547,7 @@ describe('useDragDropHandlers', () => {
       mockGetEdges.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([mockNodes, [], null, null]);
 
-      const {result} = renderHook(() => useDragDropHandlers(propsWithMetadata), {
+      const {result} = await renderHook(() => useDragDropHandlers(propsWithMetadata), {
         wrapper: createWrapper(),
       });
 
@@ -600,13 +565,11 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToView(
-          event as unknown as Parameters<typeof result.current.addToView>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToView(
+        event as unknown as Parameters<typeof result.current.addToView>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(mockAutoAssignConnections).toHaveBeenCalledWith(
         mockNodes,
@@ -616,13 +579,13 @@ describe('useDragDropHandlers', () => {
   });
 
   describe('addToView - Callback Execution', () => {
-    it('should execute updateNodeData callback to add element to components', () => {
+    it('should execute updateNodeData callback to add element to components', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -635,13 +598,11 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToView(
-          event as unknown as Parameters<typeof result.current.addToView>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToView(
+        event as unknown as Parameters<typeof result.current.addToView>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(capturedCallback).not.toBeNull();
 
@@ -661,13 +622,13 @@ describe('useDragDropHandlers', () => {
   });
 
   describe('addToForm - Callback Execution', () => {
-    it('should execute updateNodeData callback to add element to form components', () => {
+    it('should execute updateNodeData callback to add element to form components', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -681,13 +642,11 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToForm(
-          event as unknown as Parameters<typeof result.current.addToForm>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToForm(
+        event as unknown as Parameters<typeof result.current.addToForm>[0],
+        sourceData,
+        targetData,
+      );;
 
       expect(capturedCallback).not.toBeNull();
 
@@ -713,13 +672,13 @@ describe('useDragDropHandlers', () => {
       expect(form?.components?.length).toBeGreaterThan(1);
     });
 
-    it('should handle node with no existing components', () => {
+    it('should handle node with no existing components', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -733,13 +692,11 @@ describe('useDragDropHandlers', () => {
       };
       const event = createMockDragEvent(100, 200);
 
-      act(() => {
-        result.current.addToForm(
-          event as unknown as Parameters<typeof result.current.addToForm>[0],
-          sourceData,
-          targetData,
-        );
-      });
+      result.current.addToForm(
+        event as unknown as Parameters<typeof result.current.addToForm>[0],
+        sourceData,
+        targetData,
+      );;
 
       // Execute the callback with a node that has no components
       const mockNode: Node = {
@@ -755,13 +712,13 @@ describe('useDragDropHandlers', () => {
   });
 
   describe('addToViewAtIndex - Callback Execution', () => {
-    it('should execute updateNodeData callback to insert element at target index', () => {
+    it('should execute updateNodeData callback to insert element at target index', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -769,9 +726,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       expect(capturedCallback).not.toBeNull();
 
@@ -794,13 +749,13 @@ describe('useDragDropHandlers', () => {
       expect(callbackResult.components.length).toBe(4);
     });
 
-    it('should append element when target index is not found', () => {
+    it('should append element when target index is not found', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -808,9 +763,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'non-existent-element');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'non-existent-element');;
 
       // Execute the callback with a node where target element doesn't exist
       const mockNode: Node = {
@@ -827,13 +780,13 @@ describe('useDragDropHandlers', () => {
       expect(callbackResult.components.length).toBe(2);
     });
 
-    it('should handle node with empty components array', () => {
+    it('should handle node with empty components array', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -841,9 +794,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       // Execute the callback with a node that has no components
       const mockNode: Node = {
@@ -857,7 +808,7 @@ describe('useDragDropHandlers', () => {
       expect(callbackResult.components.length).toBe(1);
     });
 
-    it('should handle widget drop at index with empty components', () => {
+    it('should handle widget drop at index with empty components', async () => {
       const mockTargetNode: Node = {
         id: 'step-1',
         position: {x: 0, y: 0},
@@ -867,7 +818,7 @@ describe('useDragDropHandlers', () => {
       mockGetEdges.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([[{...mockTargetNode, data: {components: []}}], [], null, null]);
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -880,9 +831,7 @@ describe('useDragDropHandlers', () => {
         dragged: widgetResource,
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       expect(mockOnWidgetLoad).toHaveBeenCalled();
       expect(mockSetNodes).toHaveBeenCalled();
@@ -890,13 +839,13 @@ describe('useDragDropHandlers', () => {
   });
 
   describe('addToFormAtIndex - Callback Execution', () => {
-    it('should execute updateNodeData callback to insert element at target index in form', () => {
+    it('should execute updateNodeData callback to insert element at target index in form', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -904,9 +853,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'input-2');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'input-2');;
 
       expect(capturedCallback).not.toBeNull();
 
@@ -940,13 +887,13 @@ describe('useDragDropHandlers', () => {
       expect(form?.components?.length).toBe(4);
     });
 
-    it('should append element when target index is not found in form', () => {
+    it('should append element when target index is not found in form', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -954,9 +901,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'non-existent');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'non-existent');;
 
       const mockNode: Node = {
         id: 'step-1',
@@ -975,13 +920,13 @@ describe('useDragDropHandlers', () => {
       expect(form?.components?.length).toBe(2);
     });
 
-    it('should handle form with no existing components', () => {
+    it('should handle form with no existing components', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -989,9 +934,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'input-2');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'input-2');;
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1011,13 +954,13 @@ describe('useDragDropHandlers', () => {
       expect(form?.components?.length).toBe(1);
     });
 
-    it('should not modify components that do not match the form id', () => {
+    it('should not modify components that do not match the form id', async () => {
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
       mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
         capturedCallback = callback;
       });
 
-      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+      const {result} = await renderHook(() => useDragDropHandlers(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -1025,9 +968,7 @@ describe('useDragDropHandlers', () => {
         dragged: createMockResource({resourceType: ResourceTypes.Element, type: 'TEXT_INPUT'}),
       };
 
-      act(() => {
-        result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'input-2');
-      });
+      result.current.addToFormAtIndex(sourceData, 'step-1', 'form-1', 'input-2');;
 
       const mockNode: Node = {
         id: 'step-1',
@@ -1051,7 +992,7 @@ describe('useDragDropHandlers', () => {
   });
 
   describe('addToViewAtIndex - Widget handling with metadata', () => {
-    it('should call autoAssignConnections when dropping widget at index with metadata', () => {
+    it('should call autoAssignConnections when dropping widget at index with metadata', async () => {
       const mockAutoAssignConnections = vi.mocked(autoAssignConnections);
 
       const propsWithMetadata: UseDragDropHandlersProps = {
@@ -1083,7 +1024,7 @@ describe('useDragDropHandlers', () => {
         null,
       ]);
 
-      const {result} = renderHook(() => useDragDropHandlers(propsWithMetadata), {
+      const {result} = await renderHook(() => useDragDropHandlers(propsWithMetadata), {
         wrapper: createWrapper(),
       });
 
@@ -1096,9 +1037,7 @@ describe('useDragDropHandlers', () => {
         dragged: widgetResource,
       };
 
-      act(() => {
-        result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');
-      });
+      result.current.addToViewAtIndex(sourceData, 'step-1', 'element-2');;
 
       expect(mockAutoAssignConnections).toHaveBeenCalledWith(
         expect.any(Array),

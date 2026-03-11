@@ -17,22 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Step} from '@/features/flows/models/steps';
 import GithubExecution from '../GithubExecution';
 
 // Use vi.hoisted to define mock function before vi.mock hoisting
 const mockUseRequiredFields = vi.hoisted(() => vi.fn());
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({i18nKey, children = null}: {i18nKey: string; children?: React.ReactNode}) => (
-    <span data-i18n-key={i18nKey}>{children}</span>
-  ),
-}));
 
 // Mock resolveStaticResourcePath
 vi.mock('@/features/flows/utils/resolveStaticResourcePath', () => ({
@@ -74,39 +65,39 @@ describe('GithubExecution', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the GitHub execution component', () => {
+    it('should render the GitHub execution component', async () => {
       const resource = createMockResource();
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       // Resource has display.label = 'GitHub', so it shows that instead of the translation key
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      await expect.element(page.getByText('GitHub')).toBeInTheDocument();
     });
 
-    it('should render GitHub icon', () => {
+    it('should render GitHub icon', async () => {
       const resource = createMockResource();
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('src', '/static/assets/images/icons/github.svg');
       expect(img).toHaveAttribute('alt', 'github-icon');
       expect(img).toHaveAttribute('height', '20');
     });
 
-    it('should have the correct CSS class', () => {
+    it('should have the correct CSS class', async () => {
       const resource = createMockResource();
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       // Resource has display.label = 'GitHub'
-      const container = screen.getByText('GitHub').parentElement;
+      const container = page.getByText('GitHub').element().parentElement;
       expect(container).toHaveClass('flow-builder-execution');
       expect(container).toHaveClass('github');
     });
   });
 
   describe('Required Fields Validation', () => {
-    it('should call useRequiredFields with resource and idpId field', () => {
+    it('should call useRequiredFields with resource and idpId field', async () => {
       const resource = createMockResource();
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalledWith(
         resource,
@@ -114,15 +105,15 @@ describe('GithubExecution', () => {
         expect.arrayContaining([
           expect.objectContaining({
             name: 'data.properties.idpId',
-            errorMessage: 'flows:core.validation.fields.input.idpId',
+            errorMessage: 'Connection is required',
           }),
         ]),
       );
     });
 
-    it('should pass generalMessage as ReactElement to useRequiredFields', () => {
+    it('should pass generalMessage as ReactElement to useRequiredFields', async () => {
       const resource = createMockResource({id: 'test-github-id'});
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalledWith(
         resource,
@@ -135,13 +126,13 @@ describe('GithubExecution', () => {
       );
     });
 
-    it('should memoize fields array', () => {
+    it('should memoize fields array', async () => {
       const resource = createMockResource();
-      const {rerender} = render(<GithubExecution resource={resource} />);
+      const {rerender} = await render(<GithubExecution resource={resource} />);
 
       const firstCallFields = mockUseRequiredFields.mock.calls[0][2] as unknown[];
 
-      rerender(<GithubExecution resource={resource} />);
+      await rerender(<GithubExecution resource={resource} />);
 
       const secondCallFields = mockUseRequiredFields.mock.calls[1][2] as unknown[];
 
@@ -151,7 +142,7 @@ describe('GithubExecution', () => {
   });
 
   describe('Resource Handling', () => {
-    it('should handle resource with idpId configured', () => {
+    it('should handle resource with idpId configured', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -164,13 +155,13 @@ describe('GithubExecution', () => {
           },
         },
       });
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       // Resource has display.label = 'GitHub'
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      await expect.element(page.getByText('GitHub')).toBeInTheDocument();
     });
 
-    it('should handle resource without idpId', () => {
+    it('should handle resource without idpId', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -181,13 +172,13 @@ describe('GithubExecution', () => {
           properties: {},
         },
       });
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       // Resource has display.label = 'GitHub'
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      await expect.element(page.getByText('GitHub')).toBeInTheDocument();
     });
 
-    it('should handle resource with undefined properties', () => {
+    it('should handle resource with undefined properties', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -197,21 +188,21 @@ describe('GithubExecution', () => {
           },
         },
       });
-      render(<GithubExecution resource={resource} />);
+      await render(<GithubExecution resource={resource} />);
 
       // Resource has display.label = 'GitHub'
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      await expect.element(page.getByText('GitHub')).toBeInTheDocument();
     });
   });
 
   describe('Memoization', () => {
-    it('should memoize generalMessage based on resource.id', () => {
+    it('should memoize generalMessage based on resource.id', async () => {
       const resource = createMockResource({id: 'github-1'});
-      const {rerender} = render(<GithubExecution resource={resource} />);
+      const {rerender} = await render(<GithubExecution resource={resource} />);
 
       const firstCallMessage = mockUseRequiredFields.mock.calls[0][1] as unknown;
 
-      rerender(<GithubExecution resource={resource} />);
+      await rerender(<GithubExecution resource={resource} />);
 
       const secondCallMessage = mockUseRequiredFields.mock.calls[1][1] as unknown;
 
@@ -219,15 +210,15 @@ describe('GithubExecution', () => {
       expect(firstCallMessage).toBe(secondCallMessage);
     });
 
-    it('should update generalMessage when resource.id changes', () => {
+    it('should update generalMessage when resource.id changes', async () => {
       const resource1 = createMockResource({id: 'github-1'});
       const resource2 = createMockResource({id: 'github-2'});
 
-      const {rerender} = render(<GithubExecution resource={resource1} />);
+      const {rerender} = await render(<GithubExecution resource={resource1} />);
 
       const firstCallMessage = mockUseRequiredFields.mock.calls[0][1] as unknown;
 
-      rerender(<GithubExecution resource={resource2} />);
+      await rerender(<GithubExecution resource={resource2} />);
 
       const secondCallMessage = mockUseRequiredFields.mock.calls[1][1] as unknown;
 

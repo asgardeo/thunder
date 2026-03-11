@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import Sortable from '../Sortable';
 
 // Mock refs
@@ -64,25 +65,25 @@ describe('Sortable', () => {
   });
 
   describe('Rendering', () => {
-    it('should render children', () => {
-      render(
+    it('should render children', async () => {
+      await render(
         <Sortable id="test-sortable" index={0}>
           <div data-testid="child-content">Sortable Content</div>
         </Sortable>,
       );
 
-      expect(screen.getByTestId('child-content')).toBeInTheDocument();
-      expect(screen.getByText('Sortable Content')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-content')).toBeInTheDocument();
+      await expect.element(page.getByText('Sortable Content')).toBeInTheDocument();
     });
 
-    it('should render without children', () => {
-      const {container} = render(<Sortable id="empty-sortable" index={0} />);
+    it('should render without children', async () => {
+      const {container} = await render(<Sortable id="empty-sortable" index={0} />);
 
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should render with memoized presentation wrapper', () => {
-      const {container} = render(
+    it('should render with memoized presentation wrapper', async () => {
+      const {container} = await render(
         <Sortable id="test-sortable" index={0}>
           <span>Content</span>
         </Sortable>,
@@ -97,7 +98,7 @@ describe('Sortable', () => {
     it('should call useSortable with correct id', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
 
-      render(
+      await render(
         <Sortable id="unique-sortable-123" index={5}>
           <div>Content</div>
         </Sortable>,
@@ -113,7 +114,7 @@ describe('Sortable', () => {
     it('should call useSortable with correct index', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={3}>
           <div>Content</div>
         </Sortable>,
@@ -131,7 +132,7 @@ describe('Sortable', () => {
 
       const handleRef = {current: document.createElement('button')};
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0} handleRef={handleRef}>
           <div>Content</div>
         </Sortable>,
@@ -148,7 +149,7 @@ describe('Sortable', () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
       const {RestrictToVerticalAxis} = await import('@dnd-kit/abstract/modifiers');
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -166,7 +167,7 @@ describe('Sortable', () => {
 
       const customCollisionDetector = vi.fn();
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0} collisionDetector={customCollisionDetector}>
           <div>Content</div>
         </Sortable>,
@@ -182,7 +183,7 @@ describe('Sortable', () => {
     it('should pass additional props to useSortable', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0} accept={['TYPE_A']} data={{custom: 'data'}} disabled>
           <div>Content</div>
         </Sortable>,
@@ -202,7 +203,7 @@ describe('Sortable', () => {
     it('should call useDragDropManager', async () => {
       const {useDragDropManager} = await import('@dnd-kit/react');
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -213,8 +214,8 @@ describe('Sortable', () => {
   });
 
   describe('Styling', () => {
-    it('should render with full width and height wrapper', () => {
-      const {container} = render(
+    it('should render with full width and height wrapper', async () => {
+      const {container} = await render(
         <Sortable id="test-sortable" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -226,8 +227,8 @@ describe('Sortable', () => {
   });
 
   describe('Index Positioning', () => {
-    it('should work with index 0', () => {
-      const {container} = render(
+    it('should work with index 0', async () => {
+      const {container} = await render(
         <Sortable id="first-item" index={0}>
           <div>First</div>
         </Sortable>,
@@ -236,8 +237,8 @@ describe('Sortable', () => {
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should work with high index values', () => {
-      const {container} = render(
+    it('should work with high index values', async () => {
+      const {container} = await render(
         <Sortable id="last-item" index={100}>
           <div>Last</div>
         </Sortable>,
@@ -258,7 +259,7 @@ describe('Sortable', () => {
         isDropTarget: false,
       } as unknown as ReturnType<typeof useSortable>);
 
-      const {container} = render(
+      const {container} = await render(
         <Sortable id="dragging-item" index={0}>
           <div>Dragging</div>
         </Sortable>,
@@ -282,7 +283,7 @@ describe('Sortable', () => {
         source: {id: 'drag-1', type: 'TYPE_A'},
       } as ReturnType<typeof useDragOperation>);
 
-      const {container} = render(
+      const {container} = await render(
         <Sortable id="drop-target" index={0}>
           <div>Drop Target</div>
         </Sortable>,
@@ -307,7 +308,7 @@ describe('Sortable', () => {
         source: {id: 'drag-1', type: 'TYPE_A'},
       } as ReturnType<typeof useDragOperation>);
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -332,7 +333,7 @@ describe('Sortable', () => {
         source: null,
       } as ReturnType<typeof useDragOperation>);
 
-      render(
+      await render(
         <Sortable id="test-sortable" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -360,7 +361,7 @@ describe('Sortable', () => {
         target: null,
       } as unknown as ReturnType<typeof useDragOperation>);
 
-      const {container} = render(
+      const {container} = await render(
         <Sortable id="test-sortable" index={2}>
           <div>Content</div>
         </Sortable>,
@@ -385,7 +386,7 @@ describe('Sortable', () => {
         target: null,
       } as unknown as ReturnType<typeof useDragOperation>);
 
-      const {container} = render(
+      const {container} = await render(
         <Sortable id="test-sortable" index={3}>
           <div>Content</div>
         </Sortable>,
@@ -410,7 +411,7 @@ describe('Sortable', () => {
         target: null,
       } as unknown as ReturnType<typeof useDragOperation>);
 
-      const {container} = render(
+      const {container} = await render(
         <Sortable id="test-sortable" index={1}>
           <div>Content</div>
         </Sortable>,
@@ -421,8 +422,8 @@ describe('Sortable', () => {
   });
 
   describe('Memoized Presentation', () => {
-    it('should render children through MemoizedSortablePresentation', () => {
-      const {getByText} = render(
+    it('should render children through MemoizedSortablePresentation', async () => {
+      const {getByText} = await render(
         <Sortable id="memo-test" index={0}>
           <span>Memoized Content</span>
         </Sortable>,
@@ -452,8 +453,8 @@ describe('Sortable', () => {
       vi.mocked(dndKit.useDragDropManager).mockReturnValue(freshManager as unknown as ReturnType<typeof dndKit.useDragDropManager>);
     });
 
-    it('should register dragstart event listener on manager', () => {
-      render(
+    it('should register dragstart event listener on manager', async () => {
+      await render(
         <Sortable id="test-sortable-event-1" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -462,8 +463,8 @@ describe('Sortable', () => {
       expect(freshManager.monitor.addEventListener).toHaveBeenCalledWith('dragstart', expect.any(Function));
     });
 
-    it('should register dragend event listener on manager', () => {
-      render(
+    it('should register dragend event listener on manager', async () => {
+      await render(
         <Sortable id="test-sortable-event-2" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -472,8 +473,8 @@ describe('Sortable', () => {
       expect(freshManager.monitor.addEventListener).toHaveBeenCalledWith('dragend', expect.any(Function));
     });
 
-    it('should handle dragstart event and update global state', () => {
-      render(
+    it('should handle dragstart event and update global state', async () => {
+      await render(
         <Sortable id="test-sortable-event-3" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -501,8 +502,8 @@ describe('Sortable', () => {
       // that uses the global state
     });
 
-    it('should handle dragstart event with source that has no index', () => {
-      render(
+    it('should handle dragstart event with source that has no index', async () => {
+      await render(
         <Sortable id="test-sortable-event-4" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -523,8 +524,8 @@ describe('Sortable', () => {
       });
     });
 
-    it('should handle dragstart event with undefined source', () => {
-      render(
+    it('should handle dragstart event with undefined source', async () => {
+      await render(
         <Sortable id="test-sortable-event-5" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -543,8 +544,8 @@ describe('Sortable', () => {
       });
     });
 
-    it('should handle dragend event and reset global state', () => {
-      render(
+    it('should handle dragend event and reset global state', async () => {
+      await render(
         <Sortable id="test-sortable-event-6" index={0}>
           <div>Content</div>
         </Sortable>,
@@ -578,8 +579,8 @@ describe('Sortable', () => {
       // The global state should be reset
     });
 
-    it('should not notify listeners if state has not changed', () => {
-      render(
+    it('should not notify listeners if state has not changed', async () => {
+      await render(
         <Sortable id="test-sortable-event-7" index={0}>
           <div>Content</div>
         </Sortable>,

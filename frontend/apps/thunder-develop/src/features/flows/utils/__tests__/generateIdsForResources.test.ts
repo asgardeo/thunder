@@ -29,7 +29,7 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Basic Functionality', () => {
-    it('should replace placeholder ID with generated ID', () => {
+    it('should replace placeholder ID with generated ID', async () => {
       const resources = {id: '{{ID}}', type: 'button'};
       const result = generateIdsForResources(resources);
 
@@ -37,21 +37,21 @@ describe('generateIdsForResources', () => {
       expect(result.id).toMatch(/^button_[a-z0-9]+$/);
     });
 
-    it('should use default matcher "ID"', () => {
+    it('should use default matcher "ID"', async () => {
       const resources = {id: '{{ID}}'};
       const result = generateIdsForResources(resources);
 
       expect(result.id).not.toBe('{{ID}}');
     });
 
-    it('should support custom matcher', () => {
+    it('should support custom matcher', async () => {
       const resources = {id: '{{CUSTOM}}'};
       const result = generateIdsForResources(resources, 'CUSTOM');
 
       expect(result.id).not.toBe('{{CUSTOM}}');
     });
 
-    it('should not replace non-matching placeholders', () => {
+    it('should not replace non-matching placeholders', async () => {
       const resources = {id: '{{OTHER}}'};
       const result = generateIdsForResources(resources);
 
@@ -60,7 +60,7 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Type-based ID Generation', () => {
-    it('should use type property in lowercase for ID prefix', () => {
+    it('should use type property in lowercase for ID prefix', async () => {
       vi.mocked(Math.random).mockReturnValue(0.5);
 
       const resources = {id: '{{ID}}', type: 'BUTTON'};
@@ -69,7 +69,7 @@ describe('generateIdsForResources', () => {
       expect(result.id).toMatch(/^button_/);
     });
 
-    it('should use "component" as default prefix when type is missing', () => {
+    it('should use "component" as default prefix when type is missing', async () => {
       vi.mocked(Math.random).mockReturnValue(0.5);
 
       const resources = {id: '{{ID}}'};
@@ -78,7 +78,7 @@ describe('generateIdsForResources', () => {
       expect(result.id).toMatch(/^component_/);
     });
 
-    it('should use "component" as default prefix when type is not a string', () => {
+    it('should use "component" as default prefix when type is not a string', async () => {
       vi.mocked(Math.random).mockReturnValue(0.5);
 
       const resources = {id: '{{ID}}', type: 123};
@@ -89,7 +89,7 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Nested Objects', () => {
-    it('should replace IDs in nested objects', () => {
+    it('should replace IDs in nested objects', async () => {
       const resources = {
         id: '{{ID}}',
         type: 'container',
@@ -104,7 +104,7 @@ describe('generateIdsForResources', () => {
       expect(result.children.id).toMatch(/^button_/);
     });
 
-    it('should replace IDs in deeply nested objects', () => {
+    it('should replace IDs in deeply nested objects', async () => {
       const resources = {
         level1: {
           level2: {
@@ -122,7 +122,7 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Arrays', () => {
-    it('should replace IDs in arrays', () => {
+    it('should replace IDs in arrays', async () => {
       const resources = [
         {id: '{{ID}}', type: 'button'},
         {id: '{{ID}}', type: 'input'},
@@ -133,7 +133,7 @@ describe('generateIdsForResources', () => {
       expect(result[1].id).toMatch(/^input_/);
     });
 
-    it('should replace IDs in nested arrays', () => {
+    it('should replace IDs in nested arrays', async () => {
       const resources = {
         components: [
           {id: '{{ID}}', type: 'text'},
@@ -146,7 +146,7 @@ describe('generateIdsForResources', () => {
       expect(result.components[1].id).toMatch(/^link_/);
     });
 
-    it('should handle arrays of primitives', () => {
+    it('should handle arrays of primitives', async () => {
       const resources = {
         tags: ['tag1', 'tag2'],
         id: '{{ID}}',
@@ -160,25 +160,25 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Primitive Values', () => {
-    it('should return strings unchanged', () => {
+    it('should return strings unchanged', async () => {
       const result = generateIdsForResources('hello');
 
       expect(result).toBe('hello');
     });
 
-    it('should return numbers unchanged', () => {
+    it('should return numbers unchanged', async () => {
       const result = generateIdsForResources(42);
 
       expect(result).toBe(42);
     });
 
-    it('should return booleans unchanged', () => {
+    it('should return booleans unchanged', async () => {
       const result = generateIdsForResources(true);
 
       expect(result).toBe(true);
     });
 
-    it('should return null unchanged', () => {
+    it('should return null unchanged', async () => {
       const result = generateIdsForResources(null);
 
       expect(result).toBeNull();
@@ -186,7 +186,7 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Non-ID Properties', () => {
-    it('should preserve other properties', () => {
+    it('should preserve other properties', async () => {
       const resources = {
         id: '{{ID}}',
         type: 'button',
@@ -202,7 +202,7 @@ describe('generateIdsForResources', () => {
       expect(result.count).toBe(5);
     });
 
-    it('should not replace non-id properties with placeholder pattern', () => {
+    it('should not replace non-id properties with placeholder pattern', async () => {
       const resources = {
         id: '{{ID}}',
         type: 'button',
@@ -215,35 +215,35 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty objects', () => {
+    it('should handle empty objects', async () => {
       const resources = {};
       const result = generateIdsForResources(resources);
 
       expect(result).toEqual({});
     });
 
-    it('should handle empty arrays', () => {
+    it('should handle empty arrays', async () => {
       const resources: unknown[] = [];
       const result = generateIdsForResources(resources);
 
       expect(result).toEqual([]);
     });
 
-    it('should handle objects without id property', () => {
+    it('should handle objects without id property', async () => {
       const resources = {name: 'test', value: 123};
       const result = generateIdsForResources(resources);
 
       expect(result).toEqual({name: 'test', value: 123});
     });
 
-    it('should handle id property that is not a placeholder', () => {
+    it('should handle id property that is not a placeholder', async () => {
       const resources = {id: 'existing-id', type: 'button'};
       const result = generateIdsForResources(resources);
 
       expect(result.id).toBe('existing-id');
     });
 
-    it('should generate unique IDs for multiple placeholders', () => {
+    it('should generate unique IDs for multiple placeholders', async () => {
       const resources = [
         {id: '{{ID}}', type: 'button'},
         {id: '{{ID}}', type: 'button'},
@@ -259,7 +259,7 @@ describe('generateIdsForResources', () => {
   });
 
   describe('Type Preservation', () => {
-    it('should preserve TypeScript generic type', () => {
+    it('should preserve TypeScript generic type', async () => {
       interface Resource {
         id: string;
         type: string;

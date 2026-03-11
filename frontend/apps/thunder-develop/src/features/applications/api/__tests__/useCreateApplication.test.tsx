@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useCreateApplication from '../useCreateApplication';
@@ -157,8 +157,8 @@ describe('useCreateApplication', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateApplication());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useCreateApplication());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -175,11 +175,11 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -198,28 +198,27 @@ describe('useCreateApplication', () => {
   });
 
   it('should set pending state during creation', async () => {
-    let resolveRequest!: (value: {data: Application}) => void;
     mockHttpRequest.mockReturnValue(
       new Promise((resolve) => {
-        resolveRequest = resolve;
+        setTimeout(
+          () =>
+            resolve({
+              data: mockApplication,
+            }),
+          100,
+        );
       }),
     );
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
-    act(() => {
-      result.current.mutate(mockRequest);
-    });
+    result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await act(async () => {
-      resolveRequest({data: mockApplication});
-    });
-
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
 
@@ -231,11 +230,11 @@ describe('useCreateApplication', () => {
 
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -249,11 +248,11 @@ describe('useCreateApplication', () => {
 
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -267,12 +266,12 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result, queryClient} = renderHook(() => useCreateApplication());
+    const {result, queryClient} = await renderHook(() => useCreateApplication());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -286,14 +285,14 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result, queryClient} = renderHook(() => useCreateApplication());
+    const {result, queryClient} = await renderHook(() => useCreateApplication());
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
 
     result.current.mutate(mockRequest);
 
     // The mutation should still succeed even if invalidateQueries fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -305,13 +304,13 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     const promise = result.current.mutateAsync(mockRequest);
 
     await expect(promise).resolves.toEqual(mockApplication);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
     expect(result.current.data).toEqual(mockApplication);
@@ -324,13 +323,13 @@ describe('useCreateApplication', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest, {
       onSuccess,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onSuccess).toHaveBeenCalledWith(
         mockApplication,
         mockRequest,
@@ -349,13 +348,13 @@ describe('useCreateApplication', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest, {
       onError,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledWith(
         apiError,
         mockRequest,
@@ -373,19 +372,17 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    result.current.reset();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toBeUndefined();
     });
     expect(result.current.error).toBeNull();
@@ -401,11 +398,11 @@ describe('useCreateApplication', () => {
       data: firstApp,
     });
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(firstApp);
     });
@@ -416,7 +413,7 @@ describe('useCreateApplication', () => {
 
     result.current.mutate({...mockRequest, name: 'Second App'});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(secondApp);
     });
   });
@@ -432,11 +429,11 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -455,11 +452,11 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication());
+    const {result} = await renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

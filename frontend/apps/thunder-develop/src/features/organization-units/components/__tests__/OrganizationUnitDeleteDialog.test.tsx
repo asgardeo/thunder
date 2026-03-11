@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import OrganizationUnitDeleteDialog from '../OrganizationUnitDeleteDialog';
 
 // Mock the delete hook — controllable per test
@@ -25,26 +26,6 @@ const mockMutate = vi.fn();
 const mockDeleteHook = {mutate: mockMutate, isPending: false};
 vi.mock('../../api/useDeleteOrganizationUnit', () => ({
   default: () => mockDeleteHook,
-}));
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:delete.dialog.title': 'Delete Organization Unit',
-        'organizationUnits:delete.dialog.message':
-          'Are you sure you want to delete this organization unit? This action cannot be undone.',
-        'organizationUnits:delete.dialog.disclaimer':
-          'Warning: All associated data, configurations, and user assignments will be permanently removed.',
-        'organizationUnits:delete.dialog.error': 'Failed to delete organization unit. Please try again.',
-        'common:actions.cancel': 'Cancel',
-        'common:actions.delete': 'Delete',
-        'common:status.deleting': 'Deleting...',
-      };
-      return translations[key] ?? key;
-    },
-  }),
 }));
 
 describe('OrganizationUnitDeleteDialog', () => {
@@ -60,42 +41,44 @@ describe('OrganizationUnitDeleteDialog', () => {
     mockMutate.mockReset();
   });
 
-  it('should render dialog when open is true', () => {
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+  it('should render dialog when open is true', async () => {
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
 
-    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
-    expect(
-      screen.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
-    ).toBeInTheDocument();
+    await expect.element(page.getByText('Delete Organization Unit')).toBeInTheDocument();
+    await expect
+      .element(
+        page.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
+      )
+      .toBeInTheDocument();
   });
 
-  it('should not render dialog content when open is false', () => {
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} open={false} />);
+  it('should not render dialog content when open is false', async () => {
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} open={false} />);
 
-    expect(screen.queryByText('Delete Organization Unit')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Delete Organization Unit')).not.toBeInTheDocument();
   });
 
-  it('should call onClose when cancel button is clicked', () => {
+  it('should call onClose when cancel button is clicked', async () => {
     const onClose = vi.fn();
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} />);
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} />);
 
-    fireEvent.click(screen.getByText('Cancel'));
+    await userEvent.click(page.getByText('Cancel'));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('should call mutate with correct id when delete button is clicked', () => {
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+  it('should call mutate with correct id when delete button is clicked', async () => {
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
     expect(mockMutate).toHaveBeenCalledWith('ou-123', expect.any(Object));
   });
 
-  it('should not call mutate when organizationUnitId is null', () => {
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} organizationUnitId={null} />);
+  it('should not call mutate when organizationUnitId is null', async () => {
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} organizationUnitId={null} />);
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
     expect(mockMutate).not.toHaveBeenCalled();
   });
@@ -107,11 +90,13 @@ describe('OrganizationUnitDeleteDialog', () => {
       options.onSuccess();
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onSuccess={onSuccess} />);
+    await renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onSuccess={onSuccess} />,
+    );
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onClose).toHaveBeenCalled();
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -128,11 +113,13 @@ describe('OrganizationUnitDeleteDialog', () => {
       );
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onError={onError} />);
+    await renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onError={onError} />,
+    );
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onClose).toHaveBeenCalled();
       expect(onError).toHaveBeenCalledWith('Network error');
     });
@@ -144,11 +131,11 @@ describe('OrganizationUnitDeleteDialog', () => {
       options.onError(new Error());
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledWith('Failed to delete organization unit. Please try again.');
     });
   });
@@ -159,11 +146,13 @@ describe('OrganizationUnitDeleteDialog', () => {
       options.onSuccess();
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onSuccess={undefined} />);
+    await renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onSuccess={undefined} />,
+    );
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onClose).toHaveBeenCalled();
     });
   });
@@ -174,20 +163,22 @@ describe('OrganizationUnitDeleteDialog', () => {
       options.onError(new Error('Network error'));
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onError={undefined} />);
+    await renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onError={undefined} />,
+    );
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onClose).toHaveBeenCalled();
     });
   });
 
-  it('should display cancel and delete buttons', () => {
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+  it('should display cancel and delete buttons', async () => {
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
 
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
-    expect(screen.getByText('Delete')).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
   });
 
   it('should use error message when response has no description', async () => {
@@ -200,11 +191,11 @@ describe('OrganizationUnitDeleteDialog', () => {
       );
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledWith('Something went wrong');
     });
   });
@@ -215,23 +206,25 @@ describe('OrganizationUnitDeleteDialog', () => {
       options.onError(new Error('   '));
     });
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} onError={onError} />);
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(page.getByRole('button', {name: 'Delete'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledWith('Failed to delete organization unit. Please try again.');
     });
   });
 
-  it('should render warning disclaimer alert', () => {
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+  it('should render warning disclaimer alert', async () => {
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
 
-    expect(
-      screen.getByText(
-        'Warning: All associated data, configurations, and user assignments will be permanently removed.',
-      ),
-    ).toBeInTheDocument();
+    await expect
+      .element(
+        page.getByText(
+          'Warning: All associated data, configurations, and user assignments will be permanently removed.',
+        ),
+      )
+      .toBeInTheDocument();
   });
 });
 
@@ -249,17 +242,17 @@ describe('OrganizationUnitDeleteDialog - pending state', () => {
     mockDeleteHook.isPending = false;
   });
 
-  it('should show deleting text and disable buttons when pending', () => {
+  it('should show deleting text and disable buttons when pending', async () => {
     mockDeleteHook.isPending = true;
 
-    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+    await renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
 
-    expect(screen.getByText('Deleting...')).toBeInTheDocument();
+    await expect.element(page.getByText('Deleting...')).toBeInTheDocument();
 
     // Both buttons should be disabled
-    const cancelButton = screen.getByText('Cancel').closest('button');
-    const deleteButton = screen.getByText('Deleting...').closest('button');
-    expect(cancelButton).toBeDisabled();
-    expect(deleteButton).toBeDisabled();
+    const cancelButton = page.getByRole('button', {name: 'Cancel'});
+    const deleteButton = page.getByRole('button', {name: 'Deleting...'});
+    await expect.element(cancelButton).toBeDisabled();
+    await expect.element(deleteButton).toBeDisabled();
   });
 });

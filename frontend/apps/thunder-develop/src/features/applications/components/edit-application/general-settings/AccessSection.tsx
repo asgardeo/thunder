@@ -34,7 +34,7 @@ import {Trash, Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useEffect, useState} from 'react';
 import {useForm, Controller} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {zodResolver} from '@/hooks/useZodResolver';
 import {z} from 'zod';
 import useGetUserTypes from '../../../../user-types/api/useGetUserTypes';
 import type {Application} from '../../../models/application';

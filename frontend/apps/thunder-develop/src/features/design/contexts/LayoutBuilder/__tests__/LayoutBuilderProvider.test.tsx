@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import LayoutBuilderProvider from '../LayoutBuilderProvider';
 import useLayoutBuilder from '../useLayoutBuilder';
 
@@ -87,7 +86,7 @@ describe('LayoutBuilderProvider', () => {
   });
 
   describe('Loading state', () => {
-    it('renders null while loading', () => {
+    it('renders null while loading', async () => {
       mockUseGetLayout.mockReturnValue({data: undefined, isLoading: true});
       const {container} = render(
         <LayoutBuilderProvider>
@@ -98,7 +97,7 @@ describe('LayoutBuilderProvider', () => {
       expect(container).toBeEmptyDOMElement();
     });
 
-    it('does not render children while loading', () => {
+    it('does not render children while loading', async () => {
       mockUseGetLayout.mockReturnValue({data: undefined, isLoading: true});
       render(
         <LayoutBuilderProvider>
@@ -106,7 +105,7 @@ describe('LayoutBuilderProvider', () => {
         </LayoutBuilderProvider>,
       );
 
-      expect(screen.queryByTestId('child')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('child')).not.toBeInTheDocument();
     });
   });
 
@@ -118,44 +117,44 @@ describe('LayoutBuilderProvider', () => {
       });
     });
 
-    it('renders children when not loading', () => {
+    it('renders children when not loading', async () => {
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      expect(screen.getByTestId('layoutId')).toBeInTheDocument();
+      await expect.element(page.getByTestId('layoutId')).toBeInTheDocument();
     });
 
-    it('provides the layoutId from route params', () => {
+    it('provides the layoutId from route params', async () => {
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      expect(screen.getByTestId('layoutId')).toHaveTextContent('layout-123');
+      await expect.element(page.getByTestId('layoutId')).toHaveTextContent('layout-123');
     });
 
-    it('provides the displayName from fetched data', () => {
+    it('provides the displayName from fetched data', async () => {
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      expect(screen.getByTestId('displayName')).toHaveTextContent('Default Layout');
+      await expect.element(page.getByTestId('displayName')).toHaveTextContent('Default Layout');
     });
 
-    it('starts with isDirty=false', () => {
+    it('starts with isDirty=false', async () => {
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      expect(screen.getByTestId('isDirty')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('isDirty')).toHaveTextContent('false');
     });
 
     it('auto-selects the first screen', async () => {
@@ -165,9 +164,9 @@ describe('LayoutBuilderProvider', () => {
         </LayoutBuilderProvider>,
       );
 
-      await waitFor(() => {
+      await vi.waitFor(async () => {
         // First screen key in mockLayout.screens is 'auth'
-        expect(screen.getByTestId('selectedScreen')).toHaveTextContent('auth');
+        await expect.element(page.getByTestId('selectedScreen')).toHaveTextContent('auth');
       });
     });
   });
@@ -187,8 +186,9 @@ describe('LayoutBuilderProvider', () => {
         </LayoutBuilderProvider>,
       );
 
-      await waitFor(() => {
-        const text = screen.getByTestId('allScreens').textContent ?? '';
+      await vi.waitFor(async () => {
+        const el = await page.getByTestId('allScreens').element();
+        const text = el.textContent ?? '';
         expect(text).toContain('auth');
         expect(text).toContain('login');
       });
@@ -210,8 +210,9 @@ describe('LayoutBuilderProvider', () => {
         </LayoutBuilderProvider>,
       );
 
-      await waitFor(() => {
-        const text = screen.getByTestId('baseScreenNames').textContent ?? '';
+      await vi.waitFor(async () => {
+        const el = await page.getByTestId('baseScreenNames').element();
+        const text = el.textContent ?? '';
         expect(text).toContain('auth');
         expect(text).not.toContain('login');
       });
@@ -227,62 +228,60 @@ describe('LayoutBuilderProvider', () => {
     });
 
     it('adds a new screen to getAllScreens', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      await user.click(screen.getByText('AddScreen'));
+      await userEvent.click(page.getByText('AddScreen'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('allScreens').textContent).toContain('recovery');
+      await vi.waitFor(async () => {
+        const el = await page.getByTestId('allScreens').element();
+        expect(el.textContent).toContain('recovery');
       });
     });
 
     it('selects the newly added screen', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      await user.click(screen.getByText('AddScreen'));
+      await userEvent.click(page.getByText('AddScreen'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('selectedScreen')).toHaveTextContent('recovery');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('selectedScreen')).toHaveTextContent('recovery');
       });
     });
 
     it('marks isDirty after adding a screen', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      await user.click(screen.getByText('AddScreen'));
+      await userEvent.click(page.getByText('AddScreen'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('isDirty')).toHaveTextContent('true');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('isDirty')).toHaveTextContent('true');
       });
     });
 
     it('new screen does not appear in base screen names (has extends)', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      await user.click(screen.getByText('AddScreen'));
+      await userEvent.click(page.getByText('AddScreen'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('baseScreenNames').textContent).not.toContain('recovery');
+      await vi.waitFor(async () => {
+        const el = await page.getByTestId('baseScreenNames').element();
+        expect(el.textContent).not.toContain('recovery');
       });
     });
   });
@@ -296,17 +295,16 @@ describe('LayoutBuilderProvider', () => {
     });
 
     it('marks isDirty as true after an update', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      await user.click(screen.getByText('UpdateBg'));
+      await userEvent.click(page.getByText('UpdateBg'));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('isDirty')).toHaveTextContent('true');
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('isDirty')).toHaveTextContent('true');
       });
     });
   });
@@ -320,24 +318,22 @@ describe('LayoutBuilderProvider', () => {
     });
 
     it('clears isDirty after reset', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
         </LayoutBuilderProvider>,
       );
 
-      await user.click(screen.getByText('UpdateBg'));
-      await waitFor(() => expect(screen.getByTestId('isDirty')).toHaveTextContent('true'));
+      await userEvent.click(page.getByText('UpdateBg'));
+      await vi.waitFor(async () => expect.element(page.getByTestId('isDirty')).toHaveTextContent('true'));
 
-      await user.click(screen.getByText('Reset'));
-      await waitFor(() => {
-        expect(screen.getByTestId('isDirty')).toHaveTextContent('false');
+      await userEvent.click(page.getByText('Reset'));
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('isDirty')).toHaveTextContent('false');
       });
     });
 
     it('clears extraScreens on reset', async () => {
-      const user = userEvent.setup();
       render(
         <LayoutBuilderProvider>
           <TestConsumer />
@@ -345,12 +341,16 @@ describe('LayoutBuilderProvider', () => {
       );
 
       // Add a screen, then reset
-      await user.click(screen.getByText('AddScreen'));
-      await waitFor(() => expect(screen.getByTestId('allScreens').textContent).toContain('recovery'));
+      await userEvent.click(page.getByText('AddScreen'));
+      await vi.waitFor(async () => {
+        const el = await page.getByTestId('allScreens').element();
+        expect(el.textContent).toContain('recovery');
+      });
 
-      await user.click(screen.getByText('Reset'));
-      await waitFor(() => {
-        expect(screen.getByTestId('allScreens').textContent).not.toContain('recovery');
+      await userEvent.click(page.getByText('Reset'));
+      await vi.waitFor(async () => {
+        const el = await page.getByTestId('allScreens').element();
+        expect(el.textContent).not.toContain('recovery');
       });
     });
   });

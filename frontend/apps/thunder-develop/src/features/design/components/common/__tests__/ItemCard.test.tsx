@@ -17,60 +17,49 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import ItemCard from '../ItemCard';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 describe('ItemCard', () => {
   const thumbnail = <div data-testid="thumb">Thumbnail</div>;
 
   describe('Rendering', () => {
-    it('renders the item name', () => {
-      render(<ItemCard thumbnail={thumbnail} name="Default Theme" onClick={vi.fn()} />);
-      expect(screen.getByText('Default Theme')).toBeInTheDocument();
+    it('renders the item name', async () => {
+      await render(<ItemCard thumbnail={thumbnail} name="Default Theme" onClick={vi.fn()} />);
+      await expect.element(page.getByText('Default Theme')).toBeInTheDocument();
     });
 
-    it('renders the thumbnail content', () => {
-      render(<ItemCard thumbnail={thumbnail} name="My Theme" onClick={vi.fn()} />);
-      expect(screen.getByTestId('thumb')).toBeInTheDocument();
+    it('renders the thumbnail content', async () => {
+      await render(<ItemCard thumbnail={thumbnail} name="My Theme" onClick={vi.fn()} />);
+      await expect.element(page.getByTestId('thumb')).toBeInTheDocument();
     });
 
-    it('renders different names correctly', () => {
-      render(<ItemCard thumbnail={thumbnail} name="Ocean Blue" onClick={vi.fn()} />);
-      expect(screen.getByText('Ocean Blue')).toBeInTheDocument();
+    it('renders different names correctly', async () => {
+      await render(<ItemCard thumbnail={thumbnail} name="Ocean Blue" onClick={vi.fn()} />);
+      await expect.element(page.getByText('Ocean Blue')).toBeInTheDocument();
     });
   });
 
   describe('Interaction', () => {
     it('calls onClick when the card is clicked', async () => {
       const onClick = vi.fn();
-      const user = userEvent.setup();
-      render(<ItemCard thumbnail={thumbnail} name="Theme A" onClick={onClick} />);
+      await render(<ItemCard thumbnail={thumbnail} name="Theme A" onClick={onClick} />);
 
-      await user.click(screen.getByText('Theme A'));
+      await userEvent.click(page.getByText('Theme A'));
 
       expect(onClick).toHaveBeenCalledOnce();
     });
 
     it('calls onClick only when the card is clicked', async () => {
       const onClick = vi.fn();
-      const user = userEvent.setup();
-      render(
+      await render(
         <div>
           <ItemCard thumbnail={thumbnail} name="Theme B" onClick={onClick} />
           <button type="button">Other</button>
         </div>,
       );
 
-      await user.click(screen.getByText('Other'));
+      await userEvent.click(page.getByText('Other'));
 
       expect(onClick).not.toHaveBeenCalled();
     });

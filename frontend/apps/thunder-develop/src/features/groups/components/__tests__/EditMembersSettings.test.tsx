@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import EditMembersSettings from '../edit-group/members-settings/EditMembersSettings';
 import type {Group} from '../../models/group';
 
@@ -84,40 +83,34 @@ describe('EditMembersSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('should render ManageMembersSection', () => {
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+  it('should render ManageMembersSection', async () => {
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    expect(screen.getByTestId('manage-members-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('manage-members-section')).toBeInTheDocument();
   });
 
-  it('should render Add Member button in header action', () => {
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+  it('should render Add Member button in header action', async () => {
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    expect(screen.getByText('Add Member')).toBeInTheDocument();
+    await expect.element(page.getByText('Add Member')).toBeInTheDocument();
   });
 
   it('should open add member dialog when button clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByText('Add Member'));
+    await userEvent.click(page.getByText('Add Member'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('add-member-dialog')).toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('add-member-dialog')).toBeInTheDocument();
   });
 
   it('should call addGroupMembers when members are added', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByText('Add Member'));
+    await userEvent.click(page.getByText('Add Member'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('add-member-dialog')).toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('add-member-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Add'));
+    await userEvent.click(page.getByTestId('add-member-dialog').getByRole('button', {name: 'Add'}));
 
     expect(mockAddMutate).toHaveBeenCalledWith(
       {groupId: 'g1', members: [{id: 'u1', type: 'user'}]},
@@ -126,19 +119,14 @@ describe('EditMembersSettings', () => {
   });
 
   it('should close dialog when close is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByText('Add Member'));
-    await waitFor(() => {
-      expect(screen.getByTestId('add-member-dialog')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Add Member'));
+    await expect.element(page.getByTestId('add-member-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Close'));
+    await userEvent.click(page.getByText('Close'));
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('add-member-dialog')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('add-member-dialog')).not.toBeInTheDocument();
   });
 
   it('should close dialog on successful add', async () => {
@@ -148,19 +136,14 @@ describe('EditMembersSettings', () => {
       },
     );
 
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByText('Add Member'));
-    await waitFor(() => {
-      expect(screen.getByTestId('add-member-dialog')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Add Member'));
+    await expect.element(page.getByTestId('add-member-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Add'));
+    await userEvent.click(page.getByTestId('add-member-dialog').getByRole('button', {name: 'Add'}));
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('add-member-dialog')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('add-member-dialog')).not.toBeInTheDocument();
   });
 
   it('should show error when add fails', async () => {
@@ -170,26 +153,20 @@ describe('EditMembersSettings', () => {
       },
     );
 
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByText('Add Member'));
-    await waitFor(() => {
-      expect(screen.getByTestId('add-member-dialog')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Add Member'));
+    await expect.element(page.getByTestId('add-member-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Add'));
+    await userEvent.click(page.getByTestId('add-member-dialog').getByRole('button', {name: 'Add'}));
 
-    await waitFor(() => {
-      expect(screen.getByText('Add failed')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Add failed')).toBeInTheDocument();
   });
 
   it('should call removeGroupMembers when remove button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByTestId('remove-member-btn'));
+    await userEvent.click(page.getByTestId('remove-member-btn'));
 
     expect(mockRemoveMutate).toHaveBeenCalledWith(
       {groupId: 'g1', members: [{id: 'u1', type: 'user'}]},
@@ -205,17 +182,12 @@ describe('EditMembersSettings', () => {
       },
     );
 
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByText('Add Member'));
-    await waitFor(() => {
-      expect(screen.getByTestId('add-member-dialog')).toBeInTheDocument();
-    });
-    await user.click(screen.getByText('Add'));
-    await waitFor(() => {
-      expect(screen.getByText('Some error')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Add Member'));
+    await expect.element(page.getByTestId('add-member-dialog')).toBeInTheDocument();
+    await userEvent.click(page.getByTestId('add-member-dialog').getByRole('button', {name: 'Add'}));
+    await expect.element(page.getByText('Some error')).toBeInTheDocument();
 
     // Now trigger successful remove which should clear the error
     mockRemoveMutate.mockImplementation(
@@ -224,11 +196,9 @@ describe('EditMembersSettings', () => {
       },
     );
 
-    await user.click(screen.getByTestId('remove-member-btn'));
+    await userEvent.click(page.getByTestId('remove-member-btn'));
 
-    await waitFor(() => {
-      expect(screen.queryByText('Some error')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Some error')).not.toBeInTheDocument();
   });
 
   it('should show error when remove fails', async () => {
@@ -238,14 +208,11 @@ describe('EditMembersSettings', () => {
       },
     );
 
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByTestId('remove-member-btn'));
+    await userEvent.click(page.getByTestId('remove-member-btn'));
 
-    await waitFor(() => {
-      expect(screen.getByText('Remove failed')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Remove failed')).toBeInTheDocument();
   });
 
   it('should close error alert when dismiss is clicked', async () => {
@@ -255,19 +222,13 @@ describe('EditMembersSettings', () => {
       },
     );
 
-    const user = userEvent.setup();
-    renderWithProviders(<EditMembersSettings group={mockGroup} />);
+    await renderWithProviders(<EditMembersSettings group={mockGroup} />);
 
-    await user.click(screen.getByTestId('remove-member-btn'));
-    await waitFor(() => {
-      expect(screen.getByText('Remove failed')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByTestId('remove-member-btn'));
+    await expect.element(page.getByText('Remove failed')).toBeInTheDocument();
 
-    const closeAlertButton = screen.getByRole('button', {name: /close/i});
-    await user.click(closeAlertButton);
+    await userEvent.click(page.getByRole('button', {name: /close/i}));
 
-    await waitFor(() => {
-      expect(screen.queryByText('Remove failed')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Remove failed')).not.toBeInTheDocument();
   });
 });

@@ -17,19 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import CheckboxAdapter from '../CheckboxAdapter';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
 }));
@@ -58,96 +52,96 @@ describe('CheckboxAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render FormControlLabel component', () => {
+    it('should render FormControlLabel component', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      const {container} = await render(<CheckboxAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormControlLabel-root')).toBeInTheDocument();
     });
 
-    it('should render Checkbox component', () => {
+    it('should render Checkbox component', async () => {
       const resource = createMockElement();
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      await expect.element(page.getByRole('checkbox')).toBeInTheDocument();
     });
 
-    it('should render label text', () => {
+    it('should render label via PlaceholderComponent', async () => {
       const resource = createMockElement({label: 'I agree'});
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByText('I agree')).toBeInTheDocument();
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('I agree');
     });
 
-    it('should render checkbox as checked by default', () => {
+    it('should render checkbox as checked by default', async () => {
       const resource = createMockElement();
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByRole('checkbox')).toBeChecked();
+      expect(page.getByRole('checkbox')).toBeChecked();
     });
   });
 
   describe('Required Field', () => {
-    it('should show required indicator when required is true', () => {
+    it('should show required indicator when required is true', async () => {
       const resource = createMockElement({required: true});
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      const {container} = await render(<CheckboxAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormControlLabel-asterisk')).toBeInTheDocument();
     });
 
-    it('should not show required indicator when required is false', () => {
+    it('should not show required indicator when required is false', async () => {
       const resource = createMockElement({required: false});
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      const {container} = await render(<CheckboxAdapter resource={resource} />);
 
       expect(container.querySelector('.MuiFormControlLabel-asterisk')).not.toBeInTheDocument();
     });
   });
 
   describe('Hint Text', () => {
-    it('should render hint when provided', () => {
+    it('should render hint when provided', async () => {
       const resource = createMockElement({hint: 'Please read the terms'});
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.getByTestId('hint')).toHaveTextContent('Please read the terms');
+      await expect.element(page.getByTestId('hint')).toHaveTextContent('Please read the terms');
     });
 
-    it('should not render hint when not provided', () => {
+    it('should not render hint when not provided', async () => {
       const resource = createMockElement({hint: undefined});
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
 
-    it('should not render hint when empty', () => {
+    it('should not render hint when empty', async () => {
       const resource = createMockElement({hint: ''});
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(screen.queryByTestId('hint')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('hint')).not.toBeInTheDocument();
     });
   });
 
   describe('Custom Styling', () => {
-    it('should apply className when provided', () => {
+    it('should apply className when provided', async () => {
       const resource = createMockElement({className: 'custom-checkbox'});
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      const {container} = await render(<CheckboxAdapter resource={resource} />);
 
       expect(container.querySelector('.custom-checkbox')).toBeInTheDocument();
     });
 
-    it('should apply styles when provided', () => {
+    it('should apply styles when provided', async () => {
       const resource = createMockElement({styles: {marginTop: '10px'}});
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      const {container} = await render(<CheckboxAdapter resource={resource} />);
 
       const label = container.querySelector('.MuiFormControlLabel-root');
       expect(label).toHaveStyle({marginTop: '10px'});
@@ -155,20 +149,20 @@ describe('CheckboxAdapter', () => {
   });
 
   describe('Empty Label', () => {
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(container.querySelector('.MuiFormControlLabel-label')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('');
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      const {container} = render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
-      expect(container.querySelector('.MuiFormControlLabel-label')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('');
     });
   });
 
@@ -179,7 +173,7 @@ describe('CheckboxAdapter', () => {
 
       const resource = createMockElement();
 
-      render(<CheckboxAdapter resource={resource} />);
+      await render(<CheckboxAdapter resource={resource} />);
 
       expect(mockUseRequiredFields).toHaveBeenCalled();
     });

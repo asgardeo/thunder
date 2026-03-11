@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ConfigureOrganizationUnit, {type ConfigureOrganizationUnitProps} from '../ConfigureOrganizationUnit';
 
 vi.mock('../../../../organization-units/components/OrganizationUnitTreePicker', () => ({
@@ -44,85 +44,91 @@ describe('ConfigureOrganizationUnit', () => {
     vi.clearAllMocks();
   });
 
-  const renderComponent = (props: Partial<ConfigureOrganizationUnitProps> = {}) =>
-    render(<ConfigureOrganizationUnit {...defaultProps} {...props} />);
+  it('should render the component with test id', async () => {
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} />);
 
-  it('should render the component with test id', () => {
-    renderComponent();
-
-    expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-organization-unit')).toBeInTheDocument();
   });
 
-  it('should render the title heading', () => {
-    renderComponent();
+  it('should render the title heading', async () => {
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} />);
 
-    expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
   });
 
-  it('should render the subtitle', () => {
-    renderComponent();
+  it('should render the subtitle', async () => {
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} />);
 
-    expect(screen.getByText('Choose the organization unit this group will belong to.')).toBeInTheDocument();
+    await expect.element(page.getByText('Choose the organization unit this group will belong to.')).toBeInTheDocument();
   });
 
-  it('should render the organization unit tree picker', () => {
-    renderComponent();
+  it('should render the organization unit tree picker', async () => {
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} />);
 
-    expect(screen.getByTestId('ou-tree-picker')).toBeInTheDocument();
+    await expect.element(page.getByTestId('ou-tree-picker')).toBeInTheDocument();
   });
 
-  it('should pass selectedOuId to the tree picker', () => {
-    renderComponent({selectedOuId: 'ou-456'});
+  it('should pass selectedOuId to the tree picker', async () => {
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} selectedOuId="ou-456" />);
 
-    expect(screen.getByTestId('ou-value')).toHaveTextContent('ou-456');
+    await expect.element(page.getByTestId('ou-value')).toHaveTextContent('ou-456');
   });
 
   it('should call onOuIdChange when an OU is selected', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} />);
 
-    await user.click(screen.getByTestId('select-ou'));
+    await userEvent.click(page.getByTestId('select-ou'));
 
     expect(mockOnOuIdChange).toHaveBeenCalledWith('ou-123');
   });
 
-  it('should render required field indicator', () => {
-    renderComponent();
+  it('should render required field indicator', async () => {
+    await renderWithProviders(<ConfigureOrganizationUnit {...defaultProps} />);
 
-    expect(screen.getByText('Organization Unit')).toBeInTheDocument();
+    await expect.element(page.getByText('Organization Unit')).toBeInTheDocument();
   });
 
   describe('onReadyChange callback', () => {
-    it('should call onReadyChange with true when selectedOuId is not empty', () => {
+    it('should call onReadyChange with true when selectedOuId is not empty', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({selectedOuId: 'ou-123', onReadyChange: mockOnReadyChange});
+      await renderWithProviders(
+        <ConfigureOrganizationUnit {...defaultProps} selectedOuId="ou-123" onReadyChange={mockOnReadyChange} />,
+      );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange with false when selectedOuId is empty', () => {
+    it('should call onReadyChange with false when selectedOuId is empty', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({selectedOuId: '', onReadyChange: mockOnReadyChange});
+      await renderWithProviders(
+        <ConfigureOrganizationUnit {...defaultProps} selectedOuId="" onReadyChange={mockOnReadyChange} />,
+      );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('should not crash when onReadyChange is undefined', () => {
-      expect(() => {
-        renderComponent({selectedOuId: 'ou-123', onReadyChange: undefined});
-      }).not.toThrow();
+    it('should not crash when onReadyChange is undefined', async () => {
+      await expect(
+        renderWithProviders(
+          <ConfigureOrganizationUnit {...defaultProps} selectedOuId="ou-123" onReadyChange={undefined} />,
+        ),
+      ).resolves.not.toThrow();
     });
 
-    it('should call onReadyChange when selectedOuId transitions from empty to non-empty', () => {
+    it('should call onReadyChange when selectedOuId transitions from empty to non-empty', async () => {
       const mockOnReadyChange = vi.fn();
-      const {rerender} = render(
-        <ConfigureOrganizationUnit selectedOuId="" onOuIdChange={mockOnOuIdChange} onReadyChange={mockOnReadyChange} />,
+      const {rerender} = await renderWithProviders(
+        <ConfigureOrganizationUnit
+          selectedOuId=""
+          onOuIdChange={mockOnOuIdChange}
+          onReadyChange={mockOnReadyChange}
+        />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
       mockOnReadyChange.mockClear();
 
-      rerender(
+      await rerender(
         <ConfigureOrganizationUnit
           selectedOuId="ou-123"
           onOuIdChange={mockOnOuIdChange}
@@ -133,9 +139,9 @@ describe('ConfigureOrganizationUnit', () => {
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange when selectedOuId transitions from non-empty to empty', () => {
+    it('should call onReadyChange when selectedOuId transitions from non-empty to empty', async () => {
       const mockOnReadyChange = vi.fn();
-      const {rerender} = render(
+      const {rerender} = await renderWithProviders(
         <ConfigureOrganizationUnit
           selectedOuId="ou-123"
           onOuIdChange={mockOnOuIdChange}
@@ -146,8 +152,12 @@ describe('ConfigureOrganizationUnit', () => {
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
       mockOnReadyChange.mockClear();
 
-      rerender(
-        <ConfigureOrganizationUnit selectedOuId="" onOuIdChange={mockOnOuIdChange} onReadyChange={mockOnReadyChange} />,
+      await rerender(
+        <ConfigureOrganizationUnit
+          selectedOuId=""
+          onOuIdChange={mockOnOuIdChange}
+          onReadyChange={mockOnReadyChange}
+        />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);

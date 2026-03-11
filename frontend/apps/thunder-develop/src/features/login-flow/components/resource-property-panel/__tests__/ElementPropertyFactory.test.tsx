@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Resource} from '@/features/flows/models/resources';
 import ElementPropertyFactory from '../ElementPropertyFactory';
 
@@ -43,10 +44,10 @@ describe('ElementPropertyFactory', () => {
   const mockOnChange = vi.fn();
 
   describe('Rendering', () => {
-    it('should render CommonElementPropertyFactory', () => {
+    it('should render CommonElementPropertyFactory', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <ElementPropertyFactory
           resource={resource}
           propertyKey="label"
@@ -55,13 +56,13 @@ describe('ElementPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-element-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-element-property-factory')).toBeInTheDocument();
     });
 
-    it('should pass resource to CommonElementPropertyFactory', () => {
+    it('should pass resource to CommonElementPropertyFactory', async () => {
       const resource = createMockResource({id: 'custom-element'});
 
-      render(
+      await render(
         <ElementPropertyFactory
           resource={resource}
           propertyKey="label"
@@ -70,13 +71,13 @@ describe('ElementPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-element-property-factory')).toHaveAttribute('data-resource-id', 'custom-element');
+      await expect.element(page.getByTestId('common-element-property-factory')).toHaveAttribute('data-resource-id', 'custom-element');
     });
 
-    it('should pass propertyKey to CommonElementPropertyFactory', () => {
+    it('should pass propertyKey to CommonElementPropertyFactory', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <ElementPropertyFactory
           resource={resource}
           propertyKey="placeholder"
@@ -85,13 +86,13 @@ describe('ElementPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-element-property-factory')).toHaveAttribute('data-property-key', 'placeholder');
+      await expect.element(page.getByTestId('common-element-property-factory')).toHaveAttribute('data-property-key', 'placeholder');
     });
 
-    it('should pass propertyValue to CommonElementPropertyFactory', () => {
+    it('should pass propertyValue to CommonElementPropertyFactory', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <ElementPropertyFactory
           resource={resource}
           propertyKey="label"
@@ -100,7 +101,7 @@ describe('ElementPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-element-property-factory')).toHaveAttribute('data-property-value', 'My Label');
+      await expect.element(page.getByTestId('common-element-property-factory')).toHaveAttribute('data-property-value', 'My Label');
     });
   });
 });

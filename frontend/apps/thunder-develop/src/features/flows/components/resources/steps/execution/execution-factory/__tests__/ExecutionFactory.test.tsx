@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Step} from '@/features/flows/models/steps';
 import {ExecutionTypes} from '@/features/flows/models/steps';
 import ExecutionFactory from '../ExecutionFactory';
@@ -29,13 +30,6 @@ const mockUseColorScheme = vi.hoisted(() =>
     systemMode: 'light',
   })),
 );
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 // Mock useColorScheme
 vi.mock('@wso2/oxygen-ui', async () => {
@@ -111,7 +105,7 @@ describe('ExecutionFactory', () => {
   });
 
   describe('Google Federation', () => {
-    it('should render GoogleExecution for GoogleOIDCAuthExecutor', () => {
+    it('should render GoogleExecution for GoogleOIDCAuthExecutor', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -121,14 +115,14 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByTestId('google-execution')).toBeInTheDocument();
-      expect(screen.queryByTestId('github-execution')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('sms-otp-execution')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('google-execution')).toBeInTheDocument();
+      await expect.element(page.getByTestId('github-execution')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('sms-otp-execution')).not.toBeInTheDocument();
     });
 
-    it('should pass resource to GoogleExecution', () => {
+    it('should pass resource to GoogleExecution', async () => {
       const resource = createMockResource({
         id: 'google-resource-1',
         data: {
@@ -139,15 +133,15 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const googleExecution = screen.getByTestId('google-execution');
+      const googleExecution = page.getByTestId('google-execution');
       expect(googleExecution).toHaveAttribute('data-resource-id', 'google-resource-1');
     });
   });
 
   describe('GitHub Federation', () => {
-    it('should render GithubExecution for GithubOAuthExecutor', () => {
+    it('should render GithubExecution for GithubOAuthExecutor', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -157,14 +151,14 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByTestId('github-execution')).toBeInTheDocument();
-      expect(screen.queryByTestId('google-execution')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('sms-otp-execution')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('github-execution')).toBeInTheDocument();
+      await expect.element(page.getByTestId('google-execution')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('sms-otp-execution')).not.toBeInTheDocument();
     });
 
-    it('should pass resource to GithubExecution', () => {
+    it('should pass resource to GithubExecution', async () => {
       const resource = createMockResource({
         id: 'github-resource-1',
         data: {
@@ -175,15 +169,15 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const githubExecution = screen.getByTestId('github-execution');
+      const githubExecution = page.getByTestId('github-execution');
       expect(githubExecution).toHaveAttribute('data-resource-id', 'github-resource-1');
     });
   });
 
   describe('SMS OTP Auth', () => {
-    it('should render SmsOtpExecution for SMSOTPAuthExecutor', () => {
+    it('should render SmsOtpExecution for SMSOTPAuthExecutor', async () => {
       const resource = createMockResource({
         data: {
           action: {
@@ -193,14 +187,14 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByTestId('sms-otp-execution')).toBeInTheDocument();
-      expect(screen.queryByTestId('google-execution')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('github-execution')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('sms-otp-execution')).toBeInTheDocument();
+      await expect.element(page.getByTestId('google-execution')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('github-execution')).not.toBeInTheDocument();
     });
 
-    it('should pass resource to SmsOtpExecution', () => {
+    it('should pass resource to SmsOtpExecution', async () => {
       const resource = createMockResource({
         id: 'sms-otp-resource-1',
         data: {
@@ -211,15 +205,15 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const smsOtpExecution = screen.getByTestId('sms-otp-execution');
+      const smsOtpExecution = page.getByTestId('sms-otp-execution');
       expect(smsOtpExecution).toHaveAttribute('data-resource-id', 'sms-otp-resource-1');
     });
   });
 
   describe('Generic Executor with Display Image', () => {
-    it('should render image and label for executors with display.image', () => {
+    it('should render image and label for executors with display.image', async () => {
       const resource = createMockResource({
         display: {
           label: 'Custom Executor',
@@ -234,15 +228,15 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('src', '/static/assets/images/icons/custom.svg');
       expect(img).toHaveAttribute('alt', 'Custom Executor-icon');
-      expect(screen.getByText('Custom Executor')).toBeInTheDocument();
+      await expect.element(page.getByText('Custom Executor')).toBeInTheDocument();
     });
 
-    it('should use default alt text when displayLabel is undefined', () => {
+    it('should use default alt text when displayLabel is undefined', async () => {
       const resource = createMockResource({
         display: {
           label: undefined as unknown as string,
@@ -257,13 +251,13 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveAttribute('alt', 'executor-icon');
     });
 
-    it('should use translation key for default label when displayLabel is undefined', () => {
+    it('should use translation key for default label when displayLabel is undefined', async () => {
       const resource = createMockResource({
         display: {
           label: undefined as unknown as string,
@@ -278,12 +272,12 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
 
-    it('should apply dark mode filter when in dark mode', () => {
+    it('should apply dark mode filter when in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'dark',
         systemMode: 'dark',
@@ -303,13 +297,13 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'brightness(0.9) invert(1)'});
     });
 
-    it('should not apply filter in light mode', () => {
+    it('should not apply filter in light mode', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'light',
         systemMode: 'light',
@@ -329,13 +323,13 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'none'});
     });
 
-    it('should use systemMode when mode is set to system', () => {
+    it('should use systemMode when mode is set to system', async () => {
       mockUseColorScheme.mockReturnValue({
         mode: 'system',
         systemMode: 'dark',
@@ -355,15 +349,15 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      const img = screen.getByRole('img');
+      const img = page.getByRole('img');
       expect(img).toHaveStyle({filter: 'brightness(0.9) invert(1)'});
     });
   });
 
   describe('Fallback Executor without Display Image', () => {
-    it('should render only label when display.image is not provided', () => {
+    it('should render only label when display.image is not provided', async () => {
       const resource = createMockResource({
         display: {
           label: 'No Image Executor',
@@ -378,13 +372,13 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByText('No Image Executor')).toBeInTheDocument();
-      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      await expect.element(page.getByText('No Image Executor')).toBeInTheDocument();
+      await expect.element(page.getByRole('img')).not.toBeInTheDocument();
     });
 
-    it('should use translation key for default label when displayLabel is not provided and no image', () => {
+    it('should use translation key for default label when displayLabel is not provided and no image', async () => {
       const resource = createMockResource({
         display: undefined,
         data: {
@@ -395,12 +389,12 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
 
-    it('should render fallback when display is completely undefined', () => {
+    it('should render fallback when display is completely undefined', async () => {
       const resource = createMockResource({
         display: undefined,
         data: {
@@ -411,49 +405,49 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle undefined data', () => {
+    it('should handle undefined data', async () => {
       const resource = createMockResource({
         display: undefined,
         data: undefined,
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
       // Should render fallback
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
 
-    it('should handle undefined action', () => {
+    it('should handle undefined action', async () => {
       const resource = createMockResource({
         display: undefined,
         data: {},
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
       // Should render fallback
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
 
-    it('should handle undefined executor', () => {
+    it('should handle undefined executor', async () => {
       const resource = createMockResource({
         display: undefined,
         data: {
           action: {},
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
       // Should render fallback
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
 
-    it('should handle undefined executor name', () => {
+    it('should handle undefined executor name', async () => {
       const resource = createMockResource({
         display: undefined,
         data: {
@@ -462,10 +456,10 @@ describe('ExecutionFactory', () => {
           },
         },
       });
-      render(<ExecutionFactory resource={resource} />);
+      await render(<ExecutionFactory resource={resource} />);
 
       // Should render fallback
-      expect(screen.getByText('flows:core.executions.names.default')).toBeInTheDocument();
+      await expect.element(page.getByText('Execution')).toBeInTheDocument();
     });
   });
 });

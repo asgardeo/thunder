@@ -18,22 +18,23 @@
 
 import {useState} from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, renderHook, screen, userEvent} from '@thunder/test-utils';
+import {render, renderHook} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import useDataGridLocaleText from '../useDataGridLocaleText';
 
 // Unmock the hook for testing the actual implementation
 vi.unmock('@/hooks/useDataGridLocaleText');
 
 describe('useDataGridLocaleText', () => {
-  it('should return localized text object for DataGrid', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return localized text object for DataGrid', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current).toBeDefined();
     expect(typeof result.current).toBe('object');
   });
 
-  it('should return root labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return root labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.noRowsLabel).toBe('No rows');
     expect(result.current.noResultsOverlayLabel).toBe('No results found.');
@@ -41,8 +42,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.noColumnsOverlayManageColumns).toBe('Manage columns');
   });
 
-  it('should return toolbar density labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return toolbar density labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.toolbarDensity).toBe('Density');
     expect(result.current.toolbarDensityLabel).toBe('Density');
@@ -51,15 +52,15 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.toolbarDensityComfortable).toBe('Comfortable');
   });
 
-  it('should return toolbar columns labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return toolbar columns labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.toolbarColumns).toBe('Columns');
     expect(result.current.toolbarColumnsLabel).toBe('Select columns');
   });
 
-  it('should return toolbar filters labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return toolbar filters labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.toolbarFilters).toBe('Filters');
     expect(result.current.toolbarFiltersLabel).toBe('Show filters');
@@ -67,8 +68,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.toolbarFiltersTooltipShow).toBe('Show filters');
   });
 
-  it('should return toolbar filters tooltip active as a function', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return toolbar filters tooltip active as a function', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(typeof result.current.toolbarFiltersTooltipActive).toBe('function');
     if (result.current.toolbarFiltersTooltipActive) {
@@ -77,16 +78,16 @@ describe('useDataGridLocaleText', () => {
     }
   });
 
-  it('should return quick filter labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return quick filter labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.toolbarQuickFilterPlaceholder).toBe('Search…');
     expect(result.current.toolbarQuickFilterLabel).toBe('Search');
     expect(result.current.toolbarQuickFilterDeleteIconLabel).toBe('Clear');
   });
 
-  it('should return export labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return export labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.toolbarExport).toBe('Export');
     expect(result.current.toolbarExportLabel).toBe('Export');
@@ -94,8 +95,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.toolbarExportPrint).toBe('Print');
   });
 
-  it('should return columns management labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return columns management labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.columnsManagementSearchTitle).toBe('Search');
     expect(result.current.columnsManagementNoColumns).toBe('No columns');
@@ -103,8 +104,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.columnsManagementReset).toBe('Reset');
   });
 
-  it('should return filter panel labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return filter panel labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.filterPanelAddFilter).toBe('Add filter');
     expect(result.current.filterPanelRemoveAll).toBe('Remove all');
@@ -118,8 +119,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.filterPanelInputPlaceholder).toBe('Filter value');
   });
 
-  it('should return filter operator labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return filter operator labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.filterOperatorContains).toBe('contains');
     expect(result.current.filterOperatorDoesNotContain).toBe('does not contain');
@@ -138,16 +139,16 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.filterOperatorIsAnyOf).toBe('is any of');
   });
 
-  it('should return filter value labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return filter value labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.filterValueAny).toBe('any');
     expect(result.current.filterValueTrue).toBe('true');
     expect(result.current.filterValueFalse).toBe('false');
   });
 
-  it('should return column menu labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return column menu labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.columnMenuLabel).toBe('Menu');
     expect(result.current.columnMenuShowColumns).toBe('Show columns');
@@ -159,8 +160,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.columnMenuSortDesc).toBe('Sort by DESC');
   });
 
-  it('should return column header labels as functions', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return column header labels as functions', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(typeof result.current.columnHeaderFiltersTooltipActive).toBe('function');
     expect(result.current.columnHeaderFiltersLabel).toBe('Show filters');
@@ -171,8 +172,8 @@ describe('useDataGridLocaleText', () => {
     }
   });
 
-  it('should return footer labels as functions', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return footer labels as functions', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(typeof result.current.footerRowSelected).toBe('function');
     expect(result.current.footerTotalRows).toBe('Total Rows:');
@@ -186,8 +187,8 @@ describe('useDataGridLocaleText', () => {
     }
   });
 
-  it('should return checkbox selection labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return checkbox selection labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.checkboxSelectionHeaderName).toBe('Checkbox selection');
     expect(result.current.checkboxSelectionSelectAllRows).toBe('Select all rows');
@@ -196,37 +197,37 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.checkboxSelectionUnselectRow).toBe('Unselect row');
   });
 
-  it('should return boolean cell labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return boolean cell labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.booleanCellTrueLabel).toBe('yes');
     expect(result.current.booleanCellFalseLabel).toBe('no');
   });
 
-  it('should return actions cell label', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return actions cell label', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.actionsCellMore).toBe('more');
   });
 
-  it('should return column pinning labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return column pinning labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.pinToLeft).toBe('Pin to left');
     expect(result.current.pinToRight).toBe('Pin to right');
     expect(result.current.unpin).toBe('Unpin');
   });
 
-  it('should return tree data labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return tree data labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.treeDataGroupingHeaderName).toBe('Group');
     expect(result.current.treeDataExpand).toBe('see children');
     expect(result.current.treeDataCollapse).toBe('hide children');
   });
 
-  it('should return grouping labels as functions', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return grouping labels as functions', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.groupingColumnHeaderName).toBe('Group');
     expect(typeof result.current.groupColumn).toBe('function');
@@ -239,16 +240,16 @@ describe('useDataGridLocaleText', () => {
     }
   });
 
-  it('should return master/detail labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return master/detail labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.detailPanelToggle).toBe('Detail panel toggle');
     expect(result.current.expandDetailPanel).toBe('Expand');
     expect(result.current.collapseDetailPanel).toBe('Collapse');
   });
 
-  it('should return pagination labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return pagination labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.paginationRowsPerPage).toBe('Rows per page:');
     expect(typeof result.current.paginationDisplayedRows).toBe('function');
@@ -262,14 +263,14 @@ describe('useDataGridLocaleText', () => {
     }
   });
 
-  it('should return row reordering label', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return row reordering label', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.rowReorderingHeaderName).toBe('Row reordering');
   });
 
-  it('should return aggregation labels', () => {
-    const {result} = renderHook(() => useDataGridLocaleText());
+  it('should return aggregation labels', async () => {
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     expect(result.current.aggregationMenuItemHeader).toBe('Aggregation');
     expect(result.current.aggregationFunctionLabelSum).toBe('sum');
@@ -279,11 +280,11 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.aggregationFunctionLabelSize).toBe('size');
   });
 
-  it('should memoize the result', () => {
-    const {result, rerender} = renderHook(() => useDataGridLocaleText());
+  it('should memoize the result', async () => {
+    const {result, rerender} = await renderHook(() => useDataGridLocaleText());
     const firstResult = result.current;
 
-    rerender();
+    await rerender();
 
     // The result should be the same object reference due to memoization
     expect(result.current).toBe(firstResult);
@@ -305,19 +306,18 @@ describe('useDataGridLocaleText', () => {
       );
     }
 
-    const user = userEvent.setup();
-    render(<TestComponent />);
+    await render(<TestComponent />);
 
-    expect(screen.getByTestId('label')).toHaveTextContent('No rows');
+    await expect.element(page.getByTestId('label')).toHaveTextContent('No rows');
 
     // Trigger re-renders via state updates to exercise compiler memoization
-    await user.click(screen.getByText('increment'));
-    expect(screen.getByTestId('count')).toHaveTextContent('1');
-    expect(screen.getByTestId('label')).toHaveTextContent('No rows');
+    await userEvent.click(page.getByText('increment'));
+    await expect.element(page.getByTestId('count')).toHaveTextContent('1');
+    await expect.element(page.getByTestId('label')).toHaveTextContent('No rows');
 
-    await user.click(screen.getByText('increment'));
-    expect(screen.getByTestId('count')).toHaveTextContent('2');
-    expect(screen.getByTestId('label')).toHaveTextContent('No rows');
+    await userEvent.click(page.getByText('increment'));
+    await expect.element(page.getByTestId('count')).toHaveTextContent('2');
+    await expect.element(page.getByTestId('label')).toHaveTextContent('No rows');
   });
 
   it('should return undefined for function keys when resource bundle has non-function values', async () => {
@@ -340,7 +340,7 @@ describe('useDataGridLocaleText', () => {
       };
     });
 
-    const {result} = renderHook(() => useDataGridLocaleText());
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     // The value should be undefined since it's not a function
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
@@ -361,7 +361,7 @@ describe('useDataGridLocaleText', () => {
 
     vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(() => ({}));
 
-    const {result} = renderHook(() => useDataGridLocaleText());
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     // All function-type keys should be undefined
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
@@ -381,7 +381,7 @@ describe('useDataGridLocaleText', () => {
 
     vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(() => undefined as unknown as Record<string, unknown>);
 
-    const {result} = renderHook(() => useDataGridLocaleText());
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     // All function-type keys should be undefined when bundle is null/undefined
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
@@ -406,7 +406,7 @@ describe('useDataGridLocaleText', () => {
       () => null as unknown as Record<string, unknown>,
     );
 
-    const {result} = renderHook(() => useDataGridLocaleText());
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     // All function-type keys should be undefined when bundle is null
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
@@ -447,7 +447,7 @@ describe('useDataGridLocaleText', () => {
       };
     });
 
-    const {result} = renderHook(() => useDataGridLocaleText());
+    const {result} = await renderHook(() => useDataGridLocaleText());
 
     // All function-type keys should be undefined since they are not functions
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();

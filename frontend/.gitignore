@@ -24,6 +24,9 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Vitest Browser Mode failure screenshots
+**/__screenshots__
+
 # misc
 /.sass-cache
 /connect.lock

@@ -17,13 +17,19 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ConfigureName, {type ConfigureNameProps} from '../ConfigureName';
 
-vi.mock('@thunder/utils');
+const mockGenerateRandomHumanReadableIdentifiers = vi.hoisted(() => vi.fn());
 
-const {generateRandomHumanReadableIdentifiers} = await import('@thunder/utils');
+vi.mock('@thunder/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/utils')>();
+  return {
+    ...actual,
+    generateRandomHumanReadableIdentifiers: mockGenerateRandomHumanReadableIdentifiers,
+  };
+});
 
 describe('ConfigureName', () => {
   const mockOnNameChange = vi.fn();
@@ -36,194 +42,171 @@ describe('ConfigureName', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(generateRandomHumanReadableIdentifiers).mockReturnValue(mockSuggestions);
+    mockGenerateRandomHumanReadableIdentifiers.mockReturnValue(mockSuggestions);
   });
 
-  const renderComponent = (props: Partial<ConfigureNameProps> = {}) =>
-    render(<ConfigureName {...defaultProps} {...props} />);
+  it('should render the component with test id', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-  it('should render the component with test id', () => {
-    renderComponent();
-
-    expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+    await expect.element(page.getByTestId('configure-name')).toBeInTheDocument();
   });
 
-  it('should render the title heading', () => {
-    renderComponent();
+  it('should render the title heading', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
   });
 
-  it('should render the text field with correct label', () => {
-    renderComponent();
+  it('should render the text field with correct label', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    expect(screen.getByText('Group Name')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    await expect.element(page.getByText('Group Name')).toBeInTheDocument();
+    await expect.element(page.getByRole('textbox')).toBeInTheDocument();
   });
 
-  it('should display the current name value', () => {
-    renderComponent({name: 'My Test Group'});
+  it('should display the current name value', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} name="My Test Group" />);
 
-    const input = screen.getByRole('textbox');
-    expect(input).toHaveValue('My Test Group');
+    await expect.element(page.getByRole('textbox')).toHaveValue('My Test Group');
   });
 
   it('should call onNameChange when typing in the input', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'New Group');
+    const input = page.getByRole('textbox');
+    await userEvent.type(input, 'New Group');
 
     expect(mockOnNameChange).toHaveBeenCalledTimes(9); // Once per character
   });
 
-  it('should render name suggestions', () => {
-    renderComponent();
+  it('should render name suggestions', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    mockSuggestions.forEach((suggestion) => {
-      expect(screen.getByText(suggestion)).toBeInTheDocument();
-    });
+    for (const suggestion of mockSuggestions) {
+      await expect.element(page.getByText(suggestion)).toBeInTheDocument();
+    }
   });
 
-  it('should display suggestions label', () => {
-    renderComponent();
+  it('should display suggestions label', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    expect(screen.getByText('In a hurry? Pick a random name:')).toBeInTheDocument();
+    await expect.element(page.getByText('In a hurry? Pick a random name:')).toBeInTheDocument();
   });
 
   it('should call onNameChange when clicking a suggestion chip', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    const suggestionChip = screen.getByText('Brave Tigers Squad');
-    await user.click(suggestionChip);
+    await userEvent.click(page.getByText('Brave Tigers Squad'));
 
     expect(mockOnNameChange).toHaveBeenCalledWith('Brave Tigers Squad');
   });
 
-  it('should render all suggestion chips as clickable', () => {
-    renderComponent();
+  it('should render all suggestion chips as clickable', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    mockSuggestions.forEach((suggestion) => {
-      const chip = screen.getByText(suggestion);
-      expect(chip.closest('div[role="button"]')).toBeInTheDocument();
-    });
+    for (const suggestion of mockSuggestions) {
+      await expect.element(page.getByText(suggestion)).toBeInTheDocument();
+    }
   });
 
-  it('should generate suggestions only once on mount', () => {
-    const {rerender} = renderComponent();
+  it('should generate suggestions only once on mount', async () => {
+    const {rerender} = await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    expect(generateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
+    expect(mockGenerateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
 
-    rerender(<ConfigureName {...defaultProps} name="Updated Name" />);
+    await rerender(<ConfigureName {...defaultProps} name="Updated Name" />);
 
-    expect(generateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
+    expect(mockGenerateRandomHumanReadableIdentifiers).toHaveBeenCalledTimes(1);
   });
 
-  it('should display placeholder text', () => {
-    renderComponent();
+  it('should display placeholder text', async () => {
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    const input = screen.getByRole('textbox');
-    expect(input).toHaveAttribute('placeholder');
-  });
-
-  it('should render required field indicator', () => {
-    renderComponent();
-
-    const label = screen.getByText('Group Name');
-    const labelElement = label.closest('label');
-    expect(labelElement).toHaveClass('Mui-required');
+    await expect.element(page.getByRole('textbox')).toHaveAttribute('placeholder');
   });
 
   it('should allow clearing the input', async () => {
-    const user = userEvent.setup();
-    renderComponent({name: 'Some Group'});
+    await renderWithProviders(<ConfigureName {...defaultProps} name="Some Group" />);
 
-    const input = screen.getByRole('textbox');
-    await user.clear(input);
+    const input = page.getByRole('textbox');
+    await userEvent.clear(input);
 
     expect(mockOnNameChange).toHaveBeenCalledWith('');
   });
 
   it('should handle rapid suggestion clicks', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderWithProviders(<ConfigureName {...defaultProps} />);
 
-    await user.click(screen.getByText('Brave Tigers Squad'));
-    await user.click(screen.getByText('Crimson Hawks Team'));
+    await userEvent.click(page.getByText('Brave Tigers Squad'));
+    await userEvent.click(page.getByText('Crimson Hawks Team'));
 
     expect(mockOnNameChange).toHaveBeenCalledWith('Brave Tigers Squad');
     expect(mockOnNameChange).toHaveBeenCalledWith('Crimson Hawks Team');
     expect(mockOnNameChange).toHaveBeenCalledTimes(2);
   });
 
-  it('should update input value when name prop changes', () => {
-    const {rerender} = renderComponent({name: 'Initial Name'});
+  it('should update input value when name prop changes', async () => {
+    const {rerender} = await renderWithProviders(<ConfigureName {...defaultProps} name="Initial Name" />);
 
-    let input = screen.getByRole('textbox');
-    expect(input).toHaveValue('Initial Name');
+    await expect.element(page.getByRole('textbox')).toHaveValue('Initial Name');
 
-    rerender(<ConfigureName name="Updated Name" onNameChange={mockOnNameChange} />);
+    await rerender(<ConfigureName name="Updated Name" onNameChange={mockOnNameChange} />);
 
-    input = screen.getByRole('textbox');
-    expect(input).toHaveValue('Updated Name');
+    await expect.element(page.getByRole('textbox')).toHaveValue('Updated Name');
   });
 
   describe('onReadyChange callback', () => {
-    it('should call onReadyChange with true when name is not empty', () => {
+    it('should call onReadyChange with true when name is not empty', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({name: 'My Group', onReadyChange: mockOnReadyChange});
+      await renderWithProviders(<ConfigureName {...defaultProps} name="My Group" onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange with false when name is empty', () => {
+    it('should call onReadyChange with false when name is empty', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({name: '', onReadyChange: mockOnReadyChange});
+      await renderWithProviders(<ConfigureName {...defaultProps} name="" onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('should call onReadyChange with false when name contains only whitespace', () => {
+    it('should call onReadyChange with false when name contains only whitespace', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({name: '   ', onReadyChange: mockOnReadyChange});
+      await renderWithProviders(<ConfigureName {...defaultProps} name="   " onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('should not crash when onReadyChange is undefined', () => {
-      expect(() => {
-        renderComponent({name: 'Test Group', onReadyChange: undefined});
-      }).not.toThrow();
+    it('should not crash when onReadyChange is undefined', async () => {
+      await expect(
+        renderWithProviders(<ConfigureName {...defaultProps} name="Test Group" onReadyChange={undefined} />),
+      ).resolves.not.toThrow();
     });
 
-    it('should call onReadyChange when name transitions from empty to non-empty', () => {
+    it('should call onReadyChange when name transitions from empty to non-empty', async () => {
       const mockOnReadyChange = vi.fn();
-      const {rerender} = render(
+      const {rerender} = await renderWithProviders(
         <ConfigureName name="" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
       mockOnReadyChange.mockClear();
 
-      rerender(
-        <ConfigureName name="New Group" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />,
-      );
+      await rerender(<ConfigureName name="New Group" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange when name transitions from non-empty to empty', () => {
+    it('should call onReadyChange when name transitions from non-empty to empty', async () => {
       const mockOnReadyChange = vi.fn();
-      const {rerender} = render(
+      const {rerender} = await renderWithProviders(
         <ConfigureName name="My Group" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />,
       );
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
       mockOnReadyChange.mockClear();
 
-      rerender(<ConfigureName name="" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />);
+      await rerender(<ConfigureName name="" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });

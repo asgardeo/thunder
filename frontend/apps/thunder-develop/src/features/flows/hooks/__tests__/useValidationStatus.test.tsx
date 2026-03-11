@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ValidationContext, type ValidationContextProps} from '../../context/ValidationContext';
 import useValidationStatus from '../useValidationStatus';
@@ -44,8 +44,8 @@ describe('useValidationStatus', () => {
     return Wrapper;
   };
 
-  it('should return context values when used within provider', () => {
-    const {result} = renderHook(() => useValidationStatus(), {
+  it('should return context values when used within provider', async () => {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(mockContextValue),
     });
 
@@ -53,23 +53,23 @@ describe('useValidationStatus', () => {
     expect(result.current.notifications).toEqual([]);
   });
 
-  it('should return default context values when used without explicit provider', () => {
+  it('should return default context values when used without explicit provider', async () => {
     // When no provider is present, React returns the default context value
     // The hook checks for falsy context, but createContext provides defaults
-    const {result} = renderHook(() => useValidationStatus());
+    const {result} = await renderHook(() => useValidationStatus());
 
     // Default context values should be returned
     expect(result.current.isValid).toBe(true);
     expect(result.current.notifications).toEqual([]);
   });
 
-  it('should return notifications array', () => {
+  it('should return notifications array', async () => {
     const contextWithNotifications: ValidationContextProps = {
       ...mockContextValue,
       notifications: [mockNotification],
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithNotifications),
     });
 
@@ -77,56 +77,56 @@ describe('useValidationStatus', () => {
     expect(result.current.notifications[0].getId()).toBe('notification-1');
   });
 
-  it('should return isValid as false when validation fails', () => {
+  it('should return isValid as false when validation fails', async () => {
     const invalidContext: ValidationContextProps = {
       ...mockContextValue,
       isValid: false,
       notifications: [mockNotification],
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(invalidContext),
     });
 
     expect(result.current.isValid).toBe(false);
   });
 
-  it('should return addNotification function when provided', () => {
+  it('should return addNotification function when provided', async () => {
     const mockAddNotification = vi.fn();
     const contextWithAdd: ValidationContextProps = {
       ...mockContextValue,
       addNotification: mockAddNotification,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithAdd),
     });
 
     expect(result.current.addNotification).toBe(mockAddNotification);
   });
 
-  it('should return removeNotification function when provided', () => {
+  it('should return removeNotification function when provided', async () => {
     const mockRemoveNotification = vi.fn();
     const contextWithRemove: ValidationContextProps = {
       ...mockContextValue,
       removeNotification: mockRemoveNotification,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithRemove),
     });
 
     expect(result.current.removeNotification).toBe(mockRemoveNotification);
   });
 
-  it('should return getNotification function', () => {
+  it('should return getNotification function', async () => {
     const mockGetNotification = vi.fn().mockReturnValue(mockNotification);
     const contextWithGet: ValidationContextProps = {
       ...mockContextValue,
       getNotification: mockGetNotification,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithGet),
     });
 
@@ -134,60 +134,60 @@ describe('useValidationStatus', () => {
     expect(result.current.getNotification('notification-1')).toBe(mockNotification);
   });
 
-  it('should return selectedNotification when provided', () => {
+  it('should return selectedNotification when provided', async () => {
     const contextWithSelected: ValidationContextProps = {
       ...mockContextValue,
       selectedNotification: mockNotification,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithSelected),
     });
 
     expect(result.current.selectedNotification).toBe(mockNotification);
   });
 
-  it('should return openValidationPanel state', () => {
+  it('should return openValidationPanel state', async () => {
     const contextWithPanel: ValidationContextProps = {
       ...mockContextValue,
       openValidationPanel: true,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithPanel),
     });
 
     expect(result.current.openValidationPanel).toBe(true);
   });
 
-  it('should return setOpenValidationPanel function when provided', () => {
+  it('should return setOpenValidationPanel function when provided', async () => {
     const mockSetOpen = vi.fn();
     const contextWithSetPanel: ValidationContextProps = {
       ...mockContextValue,
       setOpenValidationPanel: mockSetOpen,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithSetPanel),
     });
 
     expect(result.current.setOpenValidationPanel).toBe(mockSetOpen);
   });
 
-  it('should return currentActiveTab state', () => {
+  it('should return currentActiveTab state', async () => {
     const contextWithTab: ValidationContextProps = {
       ...mockContextValue,
       currentActiveTab: 2,
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithTab),
     });
 
     expect(result.current.currentActiveTab).toBe(2);
   });
 
-  it('should return validationConfig', () => {
+  it('should return validationConfig', async () => {
     const contextWithConfig: ValidationContextProps = {
       ...mockContextValue,
       validationConfig: {
@@ -197,7 +197,7 @@ describe('useValidationStatus', () => {
       },
     };
 
-    const {result} = renderHook(() => useValidationStatus(), {
+    const {result} = await renderHook(() => useValidationStatus(), {
       wrapper: createWrapper(contextWithConfig),
     });
 
@@ -205,7 +205,7 @@ describe('useValidationStatus', () => {
     expect(result.current.validationConfig?.isRecoveryFactorValidationEnabled).toBe(true);
   });
 
-  it('should throw an error when used outside of ValidationProvider with falsy context', () => {
+  it('should throw an error when used outside of ValidationProvider with falsy context', async () => {
     // Create a wrapper that provides null/undefined as the context value
     function NullContextWrapper({children}: {children: ReactNode}) {
       return (
@@ -215,10 +215,10 @@ describe('useValidationStatus', () => {
       );
     }
 
-    expect(() => {
-      renderHook(() => useValidationStatus(), {
+    await expect(async () => {
+      await renderHook(()  => useValidationStatus(), {
         wrapper: NullContextWrapper,
       });
-    }).toThrow('useValidationStatus must be used within a ValidationProvider');
+    }).rejects.toThrow('useValidationStatus must be used within a ValidationProvider');
   });
 });

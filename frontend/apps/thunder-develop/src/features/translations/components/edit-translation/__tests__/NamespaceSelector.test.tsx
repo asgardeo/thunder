@@ -17,17 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import NamespaceSelector from '../NamespaceSelector';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const defaultProps = {
   namespaces: ['commonNamespace', 'loginFlow', 'userProfile'],
@@ -42,54 +33,55 @@ describe('NamespaceSelector', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the namespace label', () => {
-      render(<NamespaceSelector {...defaultProps} />);
+    it('renders the namespace label', async () => {
+      await renderWithProviders(<NamespaceSelector {...defaultProps} />);
 
-      expect(screen.getByText('editor.namespace')).toBeInTheDocument();
+      await expect.element(page.getByText('Namespace')).toBeInTheDocument();
     });
 
-    it('renders the helper text', () => {
-      render(<NamespaceSelector {...defaultProps} />);
+    it('renders the helper text', async () => {
+      await renderWithProviders(<NamespaceSelector {...defaultProps} />);
 
-      expect(screen.getByText('editor.namespace.helperText')).toBeInTheDocument();
+      await expect.element(
+        page.getByText(
+          'A namespace typically represents a page or a section within a page. It helps group and organize related translation keys for better structure and maintainability.',
+        ),
+      ).toBeInTheDocument();
     });
 
-    it('renders with the current value displayed in the input', () => {
-      render(<NamespaceSelector {...defaultProps} value="loginFlow" />);
+    it('renders with the current value displayed in the input', async () => {
+      await renderWithProviders(<NamespaceSelector {...defaultProps} value="loginFlow" />);
 
-      expect(screen.getByRole('combobox')).toHaveValue('Login Flow');
+      await expect.element(page.getByRole('combobox')).toHaveValue('Login Flow');
     });
 
-    it('renders with empty string when value is null', () => {
-      render(<NamespaceSelector {...defaultProps} value={null} />);
+    it('renders with empty string when value is null', async () => {
+      await renderWithProviders(<NamespaceSelector {...defaultProps} value={null} />);
 
-      expect(screen.getByRole('combobox')).toHaveValue('');
+      await expect.element(page.getByRole('combobox')).toHaveValue('');
     });
   });
 
   describe('Option label formatting', () => {
     it('formats camelCase namespace keys into human-readable labels', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<NamespaceSelector {...defaultProps} />);
 
-      render(<NamespaceSelector {...defaultProps} />);
+      await userEvent.click(page.getByRole('combobox'));
 
-      await user.click(screen.getByRole('combobox'));
-
-      expect(screen.getByText('Common Namespace')).toBeInTheDocument();
-      expect(screen.getByText('Login Flow')).toBeInTheDocument();
-      expect(screen.getByText('User Profile')).toBeInTheDocument();
+      await expect.element(page.getByText('Common Namespace')).toBeInTheDocument();
+      await expect.element(page.getByText('Login Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('User Profile')).toBeInTheDocument();
     });
   });
 
   describe('Interaction', () => {
     it('calls onChange when a namespace option is selected', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
 
-      render(<NamespaceSelector {...defaultProps} onChange={onChange} />);
+      await renderWithProviders(<NamespaceSelector {...defaultProps} onChange={onChange} />);
 
-      await user.click(screen.getByRole('combobox'));
-      await user.click(screen.getByText('Login Flow'));
+      await userEvent.click(page.getByRole('combobox'));
+      await userEvent.click(page.getByText('Login Flow'));
 
       expect(onChange).toHaveBeenCalledWith('loginFlow');
     });
@@ -97,23 +89,17 @@ describe('NamespaceSelector', () => {
 
   describe('Loading state', () => {
     it('shows no namespace options while loading', async () => {
-      const user = userEvent.setup();
+      await renderWithProviders(<NamespaceSelector {...defaultProps} loading namespaces={[]} value={null} />);
 
-      render(<NamespaceSelector {...defaultProps} loading namespaces={[]} value={null} />);
+      await userEvent.click(page.getByRole('combobox'));
 
-      // MUI Autocomplete's loading indicator lives inside the Popper listbox,
-      // which requires a real layout engine to position in jsdom. Assert the
-      // observable behaviour instead: with no loaded namespaces there are no
-      // selectable option elements.
-      await user.click(screen.getByRole('combobox'));
-
-      expect(screen.queryAllByRole('option')).toHaveLength(0);
+      expect(page.getByRole('option').all()).toHaveLength(0);
     });
 
-    it('does not show loading indicator when loading is false', () => {
-      render(<NamespaceSelector {...defaultProps} loading={false} />);
+    it('does not show loading indicator when loading is false', async () => {
+      await renderWithProviders(<NamespaceSelector {...defaultProps} loading={false} />);
 
-      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).not.toBeInTheDocument();
     });
   });
 });

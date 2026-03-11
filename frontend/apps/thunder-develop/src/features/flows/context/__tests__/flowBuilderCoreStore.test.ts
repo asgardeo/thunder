@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {renderHook} from '@thunder/test-utils/browser';
 import {
   updateLastInteractedStore,
   useLastInteractedResourceOnly,
@@ -33,15 +33,15 @@ describe('flowBuilderCoreStore', () => {
       updateLastInteractedStore(null, '');
     });
 
-    it('should return initial state with null resource and empty stepId', () => {
-      const {result} = renderHook(() => useLastInteractedResourceOnly());
+    it('should return initial state with null resource and empty stepId', async () => {
+      const {result} = await renderHook(() => useLastInteractedResourceOnly());
 
       expect(result.current.resource).toBeNull();
       expect(result.current.stepId).toBe('');
     });
 
-    it('should update store when resource changes', () => {
-      const {result} = renderHook(() => useLastInteractedResourceOnly());
+    it('should update store when resource changes', async () => {
+      const {result} = await renderHook(() => useLastInteractedResourceOnly());
 
       const mockResource: Resource = {
         id: 'resource-1',
@@ -49,16 +49,16 @@ describe('flowBuilderCoreStore', () => {
         resourceType: 'STEP',
       } as Resource;
 
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
-      });
+      updateLastInteractedStore(mockResource, 'step-1');
 
-      expect(result.current.resource).toEqual(mockResource);
-      expect(result.current.stepId).toBe('step-1');
+      await vi.waitFor(() => {
+        expect(result.current.resource).toEqual(mockResource);
+        expect(result.current.stepId).toBe('step-1');
+      });
     });
 
-    it('should update store when stepId changes', () => {
-      const {result} = renderHook(() => useLastInteractedResourceOnly());
+    it('should update store when stepId changes', async () => {
+      const {result} = await renderHook(() => useLastInteractedResourceOnly());
 
       const mockResource: Resource = {
         id: 'resource-1',
@@ -66,21 +66,21 @@ describe('flowBuilderCoreStore', () => {
         resourceType: 'STEP',
       } as Resource;
 
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
+      updateLastInteractedStore(mockResource, 'step-1');
+
+      await vi.waitFor(() => {
+        expect(result.current.stepId).toBe('step-1');
       });
 
-      expect(result.current.stepId).toBe('step-1');
+      updateLastInteractedStore(mockResource, 'step-2');
 
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-2');
+      await vi.waitFor(() => {
+        expect(result.current.stepId).toBe('step-2');
       });
-
-      expect(result.current.stepId).toBe('step-2');
     });
 
-    it('should not notify listeners when values do not change', () => {
-      const {result} = renderHook(() => useLastInteractedResourceOnly());
+    it('should not notify listeners when values do not change', async () => {
+      const {result} = await renderHook(() => useLastInteractedResourceOnly());
 
       const mockResource: Resource = {
         id: 'resource-1',
@@ -88,24 +88,24 @@ describe('flowBuilderCoreStore', () => {
         resourceType: 'STEP',
       } as Resource;
 
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
+      updateLastInteractedStore(mockResource, 'step-1');
+
+      await vi.waitFor(() => {
+        expect(result.current.resource).toEqual(mockResource);
       });
 
       const initialResource = result.current.resource;
       const initialStepId = result.current.stepId;
 
       // Update with same values - should not trigger re-render
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
-      });
+      updateLastInteractedStore(mockResource, 'step-1');
 
       expect(result.current.resource).toBe(initialResource);
       expect(result.current.stepId).toBe(initialStepId);
     });
 
-    it('should handle setting resource back to null', () => {
-      const {result} = renderHook(() => useLastInteractedResourceOnly());
+    it('should handle setting resource back to null', async () => {
+      const {result} = await renderHook(() => useLastInteractedResourceOnly());
 
       const mockResource: Resource = {
         id: 'resource-1',
@@ -113,23 +113,23 @@ describe('flowBuilderCoreStore', () => {
         resourceType: 'STEP',
       } as Resource;
 
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
+      updateLastInteractedStore(mockResource, 'step-1');
+
+      await vi.waitFor(() => {
+        expect(result.current.resource).toEqual(mockResource);
       });
 
-      expect(result.current.resource).toEqual(mockResource);
+      updateLastInteractedStore(null, '');
 
-      act(() => {
-        updateLastInteractedStore(null, '');
+      await vi.waitFor(() => {
+        expect(result.current.resource).toBeNull();
+        expect(result.current.stepId).toBe('');
       });
-
-      expect(result.current.resource).toBeNull();
-      expect(result.current.stepId).toBe('');
     });
 
-    it('should handle multiple subscribers', () => {
-      const {result: result1} = renderHook(() => useLastInteractedResourceOnly());
-      const {result: result2} = renderHook(() => useLastInteractedResourceOnly());
+    it('should handle multiple subscribers', async () => {
+      const {result: result1} = await renderHook(() => useLastInteractedResourceOnly());
+      const {result: result2} = await renderHook(() => useLastInteractedResourceOnly());
 
       const mockResource: Resource = {
         id: 'resource-1',
@@ -137,16 +137,16 @@ describe('flowBuilderCoreStore', () => {
         resourceType: 'STEP',
       } as Resource;
 
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
-      });
+      updateLastInteractedStore(mockResource, 'step-1');
 
-      expect(result1.current.resource).toEqual(mockResource);
-      expect(result2.current.resource).toEqual(mockResource);
+      await vi.waitFor(() => {
+        expect(result1.current.resource).toEqual(mockResource);
+        expect(result2.current.resource).toEqual(mockResource);
+      });
     });
 
-    it('should clean up listener on unmount', () => {
-      const {unmount} = renderHook(() => useLastInteractedResourceOnly());
+    it('should clean up listener on unmount', async () => {
+      const {unmount} = await renderHook(() => useLastInteractedResourceOnly());
 
       // Unmount should not throw
       expect(() => unmount()).not.toThrow();
@@ -159,93 +159,93 @@ describe('flowBuilderCoreStore', () => {
       updatePropertiesPanelStore(false);
     });
 
-    it('should return initial state with isOpen false', () => {
-      const {result} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should return initial state with isOpen false', async () => {
+      const {result} = await renderHook(() => usePropertiesPanelStateOnly());
 
       expect(result.current.isOpen).toBe(false);
     });
 
-    it('should update store when isOpen changes to true', () => {
-      const {result} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should update store when isOpen changes to true', async () => {
+      const {result} = await renderHook(() => usePropertiesPanelStateOnly());
 
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(true);
       });
-
-      expect(result.current.isOpen).toBe(true);
     });
 
-    it('should update store when isOpen changes to false', () => {
-      const {result} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should update store when isOpen changes to false', async () => {
+      const {result} = await renderHook(() => usePropertiesPanelStateOnly());
 
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(true);
       });
 
-      expect(result.current.isOpen).toBe(true);
+      updatePropertiesPanelStore(false);
 
-      act(() => {
-        updatePropertiesPanelStore(false);
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(false);
       });
-
-      expect(result.current.isOpen).toBe(false);
     });
 
-    it('should not notify listeners when value does not change', () => {
-      const {result} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should not notify listeners when value does not change', async () => {
+      const {result} = await renderHook(() => usePropertiesPanelStateOnly());
 
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(true);
       });
 
       const initialIsOpen = result.current.isOpen;
 
       // Update with same value - should not trigger unnecessary updates
-      act(() => {
-        updatePropertiesPanelStore(true);
-      });
+      updatePropertiesPanelStore(true);
 
       expect(result.current.isOpen).toBe(initialIsOpen);
     });
 
-    it('should handle multiple subscribers', () => {
-      const {result: result1} = renderHook(() => usePropertiesPanelStateOnly());
-      const {result: result2} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should handle multiple subscribers', async () => {
+      const {result: result1} = await renderHook(() => usePropertiesPanelStateOnly());
+      const {result: result2} = await renderHook(() => usePropertiesPanelStateOnly());
 
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+
+      await vi.waitFor(() => {
+        expect(result1.current.isOpen).toBe(true);
+        expect(result2.current.isOpen).toBe(true);
       });
-
-      expect(result1.current.isOpen).toBe(true);
-      expect(result2.current.isOpen).toBe(true);
     });
 
-    it('should clean up listener on unmount', () => {
-      const {unmount} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should clean up listener on unmount', async () => {
+      const {unmount} = await renderHook(() => usePropertiesPanelStateOnly());
 
       // Unmount should not throw
       expect(() => unmount()).not.toThrow();
     });
 
-    it('should toggle isOpen state correctly', () => {
-      const {result} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should toggle isOpen state correctly', async () => {
+      const {result} = await renderHook(() => usePropertiesPanelStateOnly());
 
       expect(result.current.isOpen).toBe(false);
 
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(true);
       });
-      expect(result.current.isOpen).toBe(true);
 
-      act(() => {
-        updatePropertiesPanelStore(false);
+      updatePropertiesPanelStore(false);
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(false);
       });
-      expect(result.current.isOpen).toBe(false);
 
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+      await vi.waitFor(() => {
+        expect(result.current.isOpen).toBe(true);
       });
-      expect(result.current.isOpen).toBe(true);
     });
   });
 
@@ -255,9 +255,9 @@ describe('flowBuilderCoreStore', () => {
       updatePropertiesPanelStore(false);
     });
 
-    it('should have independent stores that do not affect each other', () => {
-      const {result: lastInteracted} = renderHook(() => useLastInteractedResourceOnly());
-      const {result: propertiesPanel} = renderHook(() => usePropertiesPanelStateOnly());
+    it('should have independent stores that do not affect each other', async () => {
+      const {result: lastInteracted} = await renderHook(() => useLastInteractedResourceOnly());
+      const {result: propertiesPanel} = await renderHook(() => usePropertiesPanelStateOnly());
 
       const mockResource: Resource = {
         id: 'resource-1',
@@ -266,22 +266,24 @@ describe('flowBuilderCoreStore', () => {
       } as Resource;
 
       // Update last interacted store
-      act(() => {
-        updateLastInteractedStore(mockResource, 'step-1');
+      updateLastInteractedStore(mockResource, 'step-1');
+
+      await vi.waitFor(() => {
+        expect(lastInteracted.current.resource).toEqual(mockResource);
       });
 
       // Properties panel should remain unchanged
       expect(propertiesPanel.current.isOpen).toBe(false);
-      expect(lastInteracted.current.resource).toEqual(mockResource);
 
       // Update properties panel store
-      act(() => {
-        updatePropertiesPanelStore(true);
+      updatePropertiesPanelStore(true);
+
+      await vi.waitFor(() => {
+        expect(propertiesPanel.current.isOpen).toBe(true);
       });
 
       // Last interacted should remain unchanged
       expect(lastInteracted.current.resource).toEqual(mockResource);
-      expect(propertiesPanel.current.isOpen).toBe(true);
     });
   });
 });

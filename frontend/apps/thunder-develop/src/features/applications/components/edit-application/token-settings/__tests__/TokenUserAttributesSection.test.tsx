@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {useState} from 'react';
 import TokenUserAttributesSection from '../TokenUserAttributesSection';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -118,156 +118,165 @@ function TestWrapper({
 
 describe('TokenUserAttributesSection', () => {
   describe('Rendering with tokenType="shared"', () => {
-    it('should render the settings card with correct title and description', () => {
-      render(<TestWrapper />);
+    it('should render the settings card with correct title and description', async () => {
+      await render(<TestWrapper />);
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('User Attributes');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('User Attributes');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Select which user attributes to include in your tokens. These attributes will be available in the issued tokens.',
       );
     });
 
-    it('should render JWT preview section', () => {
-      render(<TestWrapper />);
+    it('should render JWT preview section', async () => {
+      await render(<TestWrapper />);
 
-      expect(screen.getByText('Token Preview (JWT)')).toBeInTheDocument();
+      await expect.element(page.getByText('Token Preview (JWT)')).toBeInTheDocument();
     });
 
-    it('should render user attributes accordion', () => {
-      render(<TestWrapper />);
+    it('should render user attributes accordion', async () => {
+      await render(<TestWrapper />);
 
-      const userAttributesElements = screen.getAllByText('User Attributes');
+      const userAttributesElements = page.getByText('User Attributes');
       expect(userAttributesElements.length).toBeGreaterThan(0);
     });
 
-    it('should render default attributes accordion', () => {
-      render(<TestWrapper />);
+    it('should render default attributes accordion', async () => {
+      const {container} = await render(<TestWrapper />);
 
-      expect(screen.getByText('Default Attributes')).toBeInTheDocument();
+      // Target the h6 Typography element specifically to avoid matching the h3 Accordion wrapper
+      const defaultAttributesHeading = Array.from(container.querySelectorAll('h6')).find(
+        (el) => el.textContent === 'Default Attributes',
+      );
+      expect(defaultAttributesHeading).toBeInTheDocument();
     });
 
-    it('should display default token attributes as chips', () => {
-      render(<TestWrapper />);
+    it('should display default token attributes as chips', async () => {
+      const {container} = await render(<TestWrapper />);
 
-      expect(screen.getByText('aud')).toBeInTheDocument();
-      expect(screen.getByText('exp')).toBeInTheDocument();
-      expect(screen.getByText('iat')).toBeInTheDocument();
-      expect(screen.getByText('iss')).toBeInTheDocument();
-      expect(screen.getByText('sub')).toBeInTheDocument();
+      // Use container query to find chips specifically (not JWT preview spans)
+      const chipLabels = container.querySelectorAll('.MuiChip-label');
+      const chipTexts = Array.from(chipLabels).map((el) => el.textContent);
+      expect(chipTexts).toContain('aud');
+      expect(chipTexts).toContain('exp');
+      expect(chipTexts).toContain('iat');
+      expect(chipTexts).toContain('iss');
+      expect(chipTexts).toContain('sub');
     });
 
-    it('should display loading state when isLoadingUserAttributes is true', () => {
-      render(<TestWrapper isLoadingUserAttributes />);
+    it('should display loading state when isLoadingUserAttributes is true', async () => {
+      await render(<TestWrapper isLoadingUserAttributes />);
 
       // Loading state is rendered, but the exact text depends on i18n translations
-      expect(screen.getByTestId('card-title')).toHaveTextContent('User Attributes');
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('User Attributes');
     });
 
-    it('should display user attributes as chips when provided', () => {
+    it('should display user attributes as chips when provided', async () => {
       const userAttributes = ['email', 'username', 'firstName'];
-      render(<TestWrapper userAttributes={userAttributes} />);
+      await render(<TestWrapper userAttributes={userAttributes} />);
 
-      expect(screen.getByText('email')).toBeInTheDocument();
-      expect(screen.getByText('username')).toBeInTheDocument();
-      expect(screen.getByText('firstName')).toBeInTheDocument();
+      await expect.element(page.getByText('email')).toBeInTheDocument();
+      await expect.element(page.getByText('username')).toBeInTheDocument();
+      await expect.element(page.getByText('firstName')).toBeInTheDocument();
     });
 
-    it('should display no attributes message when userAttributes is empty', () => {
-      render(<TestWrapper userAttributes={[]} isLoadingUserAttributes={false} />);
+    it('should display no attributes message when userAttributes is empty', async () => {
+      await render(<TestWrapper userAttributes={[]} isLoadingUserAttributes={false} />);
 
       // Empty state alert is rendered with specific message
       expect(
-        screen.getByText('No user attributes available. Configure allowed user types for this application.'),
+        page.getByText('No user attributes available. Configure allowed user types for this application.'),
       ).toBeInTheDocument();
     });
 
-    it('should not render scopes section for shared token type', () => {
-      render(<TestWrapper tokenType="shared" />);
+    it('should not render scopes section for shared token type', async () => {
+      await render(<TestWrapper tokenType="shared" />);
 
-      expect(screen.queryByText('Scopes')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Scopes')).not.toBeInTheDocument();
     });
   });
 
   describe('Rendering with tokenType="access"', () => {
-    it('should render correct title for access token', () => {
-      render(<TestWrapper tokenType="access" />);
+    it('should render correct title for access token', async () => {
+      await render(<TestWrapper tokenType="access" />);
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('Access Token User Attributes');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('Access Token User Attributes');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Configure user attributes that will be included in the access token. You can add custom attributes from user profiles.',
       );
     });
 
-    it('should render access token preview title', () => {
-      render(<TestWrapper tokenType="access" />);
+    it('should render access token preview title', async () => {
+      await render(<TestWrapper tokenType="access" />);
 
-      expect(screen.getByText('Access Token Preview (JWT)')).toBeInTheDocument();
+      await expect.element(page.getByText('Access Token Preview (JWT)')).toBeInTheDocument();
     });
 
-    it('should not render scopes section for access token', () => {
-      render(<TestWrapper tokenType="access" />);
+    it('should not render scopes section for access token', async () => {
+      await render(<TestWrapper tokenType="access" />);
 
-      expect(screen.queryByText('Scopes')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Scopes')).not.toBeInTheDocument();
     });
   });
 
   describe('Rendering with tokenType="id"', () => {
-    it('should render correct title for ID token', () => {
-      render(<TestWrapper tokenType="id" />);
+    it('should render correct title for ID token', async () => {
+      await render(<TestWrapper tokenType="id" />);
 
-      expect(screen.getByTestId('card-title')).toHaveTextContent('ID Token User Attributes');
-      expect(screen.getByTestId('card-description')).toHaveTextContent(
+      await expect.element(page.getByTestId('card-title')).toHaveTextContent('ID Token User Attributes');
+      await expect.element(page.getByTestId('card-description')).toHaveTextContent(
         'Configure user attributes that will be included in the ID token. You can add custom attributes from user profiles and define scope-based attributes.',
       );
     });
 
-    it('should render ID token preview title', () => {
-      render(<TestWrapper tokenType="id" />);
+    it('should render ID token preview title', async () => {
+      await render(<TestWrapper tokenType="id" />);
 
-      expect(screen.getByText('ID Token Preview (JWT)')).toBeInTheDocument();
+      await expect.element(page.getByText('ID Token Preview (JWT)')).toBeInTheDocument();
     });
 
-    it('should render scopes section for ID token', () => {
+    it('should render scopes section for ID token', async () => {
       const oauth2Config = {
         scopes: ['openid', 'profile', 'email'],
       } as OAuth2Config;
 
-      render(<TestWrapper tokenType="id" oauth2Config={oauth2Config} />);
+      await render(<TestWrapper tokenType="id" oauth2Config={oauth2Config} />);
 
-      expect(screen.getByText('Scopes')).toBeInTheDocument();
+      await expect.element(page.getByText('Scopes')).toBeInTheDocument();
     });
 
-    it('should display scopes as chips when provided', () => {
+    it('should display scopes as chips when provided', async () => {
       const oauth2Config = {
         scopes: ['openid', 'profile', 'email'],
       } as OAuth2Config;
 
-      render(<TestWrapper tokenType="id" oauth2Config={oauth2Config} />);
+      const {container} = await render(<TestWrapper tokenType="id" oauth2Config={oauth2Config} />);
 
-      expect(screen.getByText('openid')).toBeInTheDocument();
-      expect(screen.getByText('profile')).toBeInTheDocument();
-      expect(screen.getByText('email')).toBeInTheDocument();
+      // Use chip labels to avoid matching description text that contains "profiles" or "email"
+      const chipLabels = container.querySelectorAll('.MuiChip-label');
+      const chipTexts = Array.from(chipLabels).map((el) => el.textContent);
+      expect(chipTexts).toContain('openid');
+      expect(chipTexts).toContain('profile');
+      expect(chipTexts).toContain('email');
     });
 
-    it('should display no scopes message when scopes array is empty', () => {
+    it('should display no scopes message when scopes array is empty', async () => {
       const oauth2Config: OAuth2Config = {
         grant_types: [],
         response_types: [],
         scopes: [],
       };
 
-      render(<TestWrapper tokenType="id" oauth2Config={oauth2Config} />);
+      await render(<TestWrapper tokenType="id" oauth2Config={oauth2Config} />);
 
-      expect(screen.getByText('No scopes configured')).toBeInTheDocument();
+      await expect.element(page.getByText('No scopes configured')).toBeInTheDocument();
     });
   });
 
   describe('User Interaction', () => {
     it('should call onAttributeClick when a user attribute chip is clicked', async () => {
-      const user = userEvent.setup();
-      const mockOnAttributeClick = vi.fn();
+            const mockOnAttributeClick = vi.fn();
 
-      render(
+      await render(
         <TestWrapper userAttributes={['email', 'username']}>
           {(props) => (
             <TokenUserAttributesSection
@@ -287,53 +296,51 @@ describe('TokenUserAttributesSection', () => {
         </TestWrapper>,
       );
 
-      const emailChip = screen.getByText('email');
-      await user.click(emailChip);
+      const emailChip = page.getByText('email');
+      await userEvent.click(emailChip);
 
       expect(mockOnAttributeClick).toHaveBeenCalledWith('email', 'shared');
     });
 
     it('should toggle user attributes accordion when clicked', async () => {
-      const user = userEvent.setup();
-
-      render(<TestWrapper userAttributes={['email']} />);
+      
+      await render(<TestWrapper userAttributes={['email']} />);
 
       // Find the User Attributes accordion header (not the default attributes one)
-      const accordionHeaders = screen.getAllByText('User Attributes');
-      const userAttributesHeader = accordionHeaders.find((el) => el.closest('button') !== null);
+      const accordionHeaders = page.getByText('User Attributes').all();
+      const userAttributesHeader = accordionHeaders.find((el: import('vitest/browser').Locator) => el.element().closest('button') !== null);
 
       expect(userAttributesHeader).toBeDefined();
 
       // Initially expanded - should show the email chip
-      expect(screen.getByText('email')).toBeInTheDocument();
+      await expect.element(page.getByText('email')).toBeInTheDocument();
 
       // Click to collapse
-      await user.click(userAttributesHeader!);
+      await userEvent.click(userAttributesHeader!);
 
       // Note: Accordion collapse behavior is controlled by Material-UI
       // In a real DOM, the content would be hidden but may still be in the document
     });
 
-    it('should render current attributes as filled chips', () => {
+    it('should render current attributes as filled chips', async () => {
       const userAttributes = ['email', 'username', 'firstName'];
       const currentAttributes = ['email', 'username'];
 
-      render(<TestWrapper userAttributes={userAttributes} currentAttributes={currentAttributes} />);
+      const {container} = await render(<TestWrapper userAttributes={userAttributes} currentAttributes={currentAttributes} />);
 
-      const emailChip = screen.getByText('email').closest('[role="button"]');
-      const usernameChip = screen.getByText('username').closest('[role="button"]');
-      const firstNameChip = screen.getByText('firstName').closest('[role="button"]');
+      // Use chip labels to avoid matching JWT preview spans
+      const chipLabels = container.querySelectorAll('.MuiChip-label');
+      const chipTexts = Array.from(chipLabels).map((el) => el.textContent);
 
-      // Chips for selected attributes should be present
-      expect(emailChip).toBeInTheDocument();
-      expect(usernameChip).toBeInTheDocument();
-      expect(firstNameChip).toBeInTheDocument();
+      expect(chipTexts).toContain('email');
+      expect(chipTexts).toContain('username');
+      expect(chipTexts).toContain('firstName');
     });
   });
 
   describe('JWT Preview', () => {
-    it('should display current attributes in JWT preview', () => {
-      const {container} = render(<TestWrapper currentAttributes={['email', 'username']} />);
+    it('should display current attributes in JWT preview', async () => {
+      const {container} = await render(<TestWrapper currentAttributes={['email', 'username']} />);
 
       // SyntaxHighlighter renders code, so we check the container's text content
       const jsonText = container.textContent || '';
@@ -341,8 +348,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('username');
     });
 
-    it('should display default attributes in JWT preview', () => {
-      const {container} = render(<TestWrapper />);
+    it('should display default attributes in JWT preview', async () => {
+      const {container} = await render(<TestWrapper />);
 
       const jsonText = container.textContent || '';
       expect(jsonText).toContain('aud');
@@ -354,27 +361,31 @@ describe('TokenUserAttributesSection', () => {
   });
 
   describe('Info Messages', () => {
-    it('should display info about default attributes being always included', () => {
-      render(<TestWrapper />);
+    it('should display info about default attributes being always included', async () => {
+      await render(<TestWrapper />);
 
       // Info message is rendered but text depends on i18n translations
       // Check that Default Attributes accordion is present
-      expect(screen.getByText('Default Attributes')).toBeInTheDocument();
+      // Target the h6 Typography element specifically to avoid matching the h3 Accordion wrapper
+      const defaultAttributesHeading = Array.from(document.querySelectorAll('h6')).find(
+        (el) => el.textContent === 'Default Attributes',
+      );
+      expect(defaultAttributesHeading).toBeInTheDocument();
     });
 
-    it('should display hint about configuring attributes', () => {
-      render(<TestWrapper userAttributes={['email']} />);
+    it('should display hint about configuring attributes', async () => {
+      await render(<TestWrapper userAttributes={['email']} />);
 
       // Tooltip messages are rendered on hover but depend on i18n translations
       // Check that user attributes are rendered as clickable chips
-      const emailChip = screen.getByText('email');
+      const emailChip = page.getByText('email');
       expect(emailChip).toBeInTheDocument();
     });
   });
 
   describe('Pending Additions and Removals', () => {
-    it('should include pending additions in JWT preview for shared token type', () => {
-      const {container} = render(
+    it('should include pending additions in JWT preview for shared token type', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={[]}
@@ -396,8 +407,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<email>');
     });
 
-    it('should include pending additions in JWT preview for access token when activeTokenType matches', () => {
-      const {container} = render(
+    it('should include pending additions in JWT preview for access token when activeTokenType matches', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="access"
           currentAttributes={[]}
@@ -418,8 +429,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<email>');
     });
 
-    it('should include pending additions in JWT preview for id token when activeTokenType matches', () => {
-      const {container} = render(
+    it('should include pending additions in JWT preview for id token when activeTokenType matches', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="id"
           currentAttributes={[]}
@@ -440,8 +451,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<email>');
     });
 
-    it('should include pending additions in JWT preview for userinfo token when activeTokenType matches', () => {
-      const {container} = render(
+    it('should include pending additions in JWT preview for userinfo token when activeTokenType matches', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="userinfo"
           currentAttributes={[]}
@@ -462,8 +473,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<email>');
     });
 
-    it('should not include pending additions in JWT preview when activeTokenType does not match', () => {
-      const {container} = render(
+    it('should not include pending additions in JWT preview when activeTokenType does not match', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="access"
           currentAttributes={[]}
@@ -484,8 +495,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).not.toContain('<email>');
     });
 
-    it('should exclude pending removals from JWT preview for shared token type', () => {
-      const {container} = render(
+    it('should exclude pending removals from JWT preview for shared token type', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={['email', 'username']}
@@ -508,8 +519,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<username>');
     });
 
-    it('should exclude pending removals from JWT preview when activeTokenType matches', () => {
-      const {container} = render(
+    it('should exclude pending removals from JWT preview when activeTokenType matches', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="access"
           currentAttributes={['email', 'username']}
@@ -530,8 +541,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<username>');
     });
 
-    it('should not exclude pending removals from JWT preview when activeTokenType does not match', () => {
-      const {container} = render(
+    it('should not exclude pending removals from JWT preview when activeTokenType does not match', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="access"
           currentAttributes={['email', 'username']}
@@ -553,8 +564,8 @@ describe('TokenUserAttributesSection', () => {
       expect(jsonText).toContain('<username>');
     });
 
-    it('should show pending addition chip as active for shared token type', () => {
-      render(
+    it('should show pending addition chip as active for shared token type', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={[]}
@@ -570,14 +581,17 @@ describe('TokenUserAttributesSection', () => {
         />,
       );
 
-      const emailChip = screen.getByText('email').closest('.MuiChip-root');
-      expect(emailChip).toBeInTheDocument();
+      // Use container query to find the chip specifically (not JWT preview spans)
+      const emailChipRoot = Array.from(container.querySelectorAll('.MuiChip-root')).find(
+        (el) => el.querySelector('.MuiChip-label')?.textContent === 'email',
+      );
+      expect(emailChipRoot).toBeInTheDocument();
       // The chip for a pending addition should be filled/primary
-      expect(emailChip).toHaveClass('MuiChip-filled');
+      expect(emailChipRoot).toHaveClass('MuiChip-filled');
     });
 
-    it('should show pending removal chip as inactive for shared token type', () => {
-      render(
+    it('should show pending removal chip as inactive for shared token type', async () => {
+      const {container} = await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={['email']}
@@ -593,19 +607,21 @@ describe('TokenUserAttributesSection', () => {
         />,
       );
 
-      const emailChip = screen.getByText('email').closest('.MuiChip-root');
-      expect(emailChip).toBeInTheDocument();
+      // Use container query to find the chip specifically (not JWT preview spans)
+      const emailChipRoot = Array.from(container.querySelectorAll('.MuiChip-root')).find(
+        (el) => el.querySelector('.MuiChip-label')?.textContent === 'email',
+      );
+      expect(emailChipRoot).toBeInTheDocument();
       // The chip for a pending removal should be outlined/inactive
-      expect(emailChip).toHaveClass('MuiChip-outlined');
+      expect(emailChipRoot).toHaveClass('MuiChip-outlined');
     });
   });
 
   describe('Accordion Toggle Behavior', () => {
     it('should collapse and re-expand user attributes accordion', async () => {
-      const user = userEvent.setup();
-      const mockSetExpandedSections = vi.fn();
+            const mockSetExpandedSections = vi.fn();
 
-      render(
+      await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={[]}
@@ -622,12 +638,12 @@ describe('TokenUserAttributesSection', () => {
       );
 
       // Find the User Attributes accordion summary button
-      const accordionHeaders = screen.getAllByText('User Attributes');
-      const userAttributesButton = accordionHeaders.find((el) => el.closest('button') !== null);
+      const accordionHeaders = page.getByText('User Attributes').all();
+      const userAttributesButton = accordionHeaders.find((el: import('vitest/browser').Locator) => el.element().closest('button') !== null);
       expect(userAttributesButton).toBeDefined();
 
       // Click to collapse
-      await user.click(userAttributesButton!);
+      await userEvent.click(userAttributesButton!);
 
       // Verify setExpandedSections was called
       expect(mockSetExpandedSections).toHaveBeenCalled();
@@ -643,7 +659,7 @@ describe('TokenUserAttributesSection', () => {
       // Now simulate re-expand: render with collapsed state, then click to expand
       mockSetExpandedSections.mockClear();
 
-      const {unmount} = render(
+      const {unmount} = await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={[]}
@@ -659,10 +675,10 @@ describe('TokenUserAttributesSection', () => {
         />,
       );
 
-      const accordionHeaders2 = screen.getAllByText('User Attributes');
-      const userAttributesButton2 = accordionHeaders2.find((el) => el.closest('button') !== null);
+      const accordionHeaders2 = page.getByText('User Attributes').all();
+      const userAttributesButton2 = accordionHeaders2.find((el: import('vitest/browser').Locator) => el.element().closest('button') !== null);
 
-      await user.click(userAttributesButton2!);
+      await userEvent.click(userAttributesButton2!);
 
       // Find the call from the onChange handler (not the useEffect auto-expand)
       const allCalls = mockSetExpandedSections.mock.calls as [(prev: Set<string>) => Set<string>][];
@@ -678,14 +694,13 @@ describe('TokenUserAttributesSection', () => {
       const expandResult: Set<string> = expandCall![0](new Set(['default-shared']));
       expect(expandResult.has('user-shared')).toBe(true);
 
-      unmount();
+      await unmount();
     });
 
     it('should collapse and re-expand default attributes accordion', async () => {
-      const user = userEvent.setup();
-      const mockSetExpandedSections = vi.fn();
+            const mockSetExpandedSections = vi.fn();
 
-      render(
+      await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={[]}
@@ -702,11 +717,15 @@ describe('TokenUserAttributesSection', () => {
       );
 
       // Find the Default Attributes accordion summary button
-      const defaultAttributesButton = screen.getByText('Default Attributes').closest('button');
+      // Target the h6 Typography element specifically to avoid matching the h3 Accordion wrapper
+      const defaultAttributesH6 = Array.from(document.querySelectorAll('h6')).find(
+        (el) => el.textContent === 'Default Attributes',
+      );
+      const defaultAttributesButton = defaultAttributesH6?.closest('button');
       expect(defaultAttributesButton).toBeDefined();
 
       // Click to collapse
-      await user.click(defaultAttributesButton!);
+      await userEvent.click(defaultAttributesButton!);
 
       // Verify setExpandedSections was called
       expect(mockSetExpandedSections).toHaveBeenCalled();
@@ -722,7 +741,7 @@ describe('TokenUserAttributesSection', () => {
       // Now simulate re-expand: render with collapsed default, click to expand
       mockSetExpandedSections.mockClear();
 
-      const {unmount} = render(
+      const {unmount} = await render(
         <TokenUserAttributesSection
           tokenType="shared"
           currentAttributes={[]}
@@ -738,11 +757,11 @@ describe('TokenUserAttributesSection', () => {
         />,
       );
 
-      const defaultAttributesButton2 = screen
-        .getAllByText('Default Attributes')
-        .find((el) => el.closest('button') !== null);
+      const defaultAttributesButton2 = Array.from(document.querySelectorAll('button')).find(
+        (btn) => btn.textContent?.includes('Default Attributes'),
+      );
 
-      await user.click(defaultAttributesButton2!);
+      await userEvent.click(defaultAttributesButton2!);
 
       // Find the call from the onChange handler that adds default-shared back
       const allCalls = mockSetExpandedSections.mock.calls as [(prev: Set<string>) => Set<string>][];
@@ -757,13 +776,13 @@ describe('TokenUserAttributesSection', () => {
       const expandResult: Set<string> = expandCall![0](new Set(['user-shared']));
       expect(expandResult.has('default-shared')).toBe(true);
 
-      unmount();
+      await unmount();
     });
   });
 
   describe('Refinements', () => {
-    it('should hide content when readOnly is true', () => {
-      render(
+    it('should hide content when readOnly is true', async () => {
+      await render(
         <TokenUserAttributesSection
           tokenType="userinfo"
           currentAttributes={[]}
@@ -780,13 +799,20 @@ describe('TokenUserAttributesSection', () => {
         />,
       );
 
-      // Content should be hidden
-      expect(screen.queryByText('User Attributes')).not.toBeInTheDocument();
-      expect(screen.queryByText('Default Attributes')).not.toBeInTheDocument();
+      // Content should be hidden (accordion headings are inside the !readOnly block)
+      // Target h6 Typography elements specifically to avoid matching the card title "User Info Attributes"
+      const userAttributesH6 = Array.from(document.querySelectorAll('h6')).find(
+        (el) => el.textContent === 'User Attributes',
+      );
+      const defaultAttributesH6 = Array.from(document.querySelectorAll('h6')).find(
+        (el) => el.textContent === 'Default Attributes',
+      );
+      expect(userAttributesH6).not.toBeInTheDocument();
+      expect(defaultAttributesH6).not.toBeInTheDocument();
     });
 
-    it('should render headerAction', () => {
-      render(
+    it('should render headerAction', async () => {
+      await render(
         <TokenUserAttributesSection
           tokenType="userinfo"
           currentAttributes={[]}
@@ -803,7 +829,7 @@ describe('TokenUserAttributesSection', () => {
         />,
       );
 
-      expect(screen.getByText('Test Action')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Action')).toBeInTheDocument();
     });
   });
 });

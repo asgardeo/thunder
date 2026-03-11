@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {renderWithProviders} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import OrganizationUnitsListPage from '../OrganizationUnitsListPage';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 
@@ -97,67 +98,35 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   };
 });
 
-// Mock translations — stable reference to avoid useCallback churn
-const listTranslations: Record<string, string> = {
-  'organizationUnits:listing.title': 'Organization Units',
-  'organizationUnits:listing.subtitle': 'Manage your organization units',
-  'organizationUnits:listing.addRootOrganizationUnit': 'Add Root Organization Unit',
-  'organizationUnits:listing.error.title': 'Error loading organization units',
-  'organizationUnits:listing.error.unknown': 'An unknown error occurred',
-  'organizationUnits:listing.treeView.empty': 'No organization units found',
-  'organizationUnits:listing.treeView.noChildren': 'No child organization units',
-  'organizationUnits:listing.treeView.loadError': 'Failed to load child organization units',
-  'organizationUnits:listing.treeView.addChild': 'Add child organization unit',
-  'organizationUnits:listing.treeView.addChildOrganizationUnit': 'Add Child Organization Unit',
-  'organizationUnits:delete.dialog.title': 'Delete Organization Unit',
-  'organizationUnits:delete.dialog.message':
-    'Are you sure you want to delete this organization unit? This action cannot be undone.',
-  'organizationUnits:delete.dialog.disclaimer':
-    'Warning: All associated data, configurations, and user assignments will be permanently removed.',
-  'common:actions.edit': 'Edit',
-  'common:actions.delete': 'Delete',
-  'common:actions.cancel': 'Cancel',
-};
-const stableListT = (key: string): string => listTranslations[key] ?? key;
-const stableListTranslation = {t: stableListT};
-vi.mock('react-i18next', () => ({
-  useTranslation: () => stableListTranslation,
-}));
-
 describe('OrganizationUnitsListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
   });
 
-  it('should render page title', () => {
-    renderWithProviders(<OrganizationUnitsListPage />);
+  it('should render page title', async () => {
+    await renderWithProviders(<OrganizationUnitsListPage />);
 
-    expect(screen.getByText('Organization Units')).toBeInTheDocument();
+    await expect.element(page.getByText('Organization Units (OU)')).toBeInTheDocument();
   });
 
-  it('should render page subtitle', () => {
-    renderWithProviders(<OrganizationUnitsListPage />);
+  it('should render page subtitle', async () => {
+    await renderWithProviders(<OrganizationUnitsListPage />);
 
-    expect(screen.getByText('Manage your organization units')).toBeInTheDocument();
+    await expect.element(page.getByText('Manage organization units and hierarchies')).toBeInTheDocument();
   });
 
   it('should render tree view with organization units', async () => {
-    renderWithProviders(<OrganizationUnitsListPage />);
+    await renderWithProviders(<OrganizationUnitsListPage />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-      expect(screen.getByText('Child Organization')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Root Organization').first()).toBeInTheDocument();
+    await expect.element(page.getByText('Child Organization')).toBeInTheDocument();
   });
 
   it('should render add root organization unit button in tree view', async () => {
-    renderWithProviders(<OrganizationUnitsListPage />);
+    await renderWithProviders(<OrganizationUnitsListPage />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Add Root Organization Unit')).toBeInTheDocument();
+    await expect.element(page.getByText('Root Organization').first()).toBeInTheDocument();
+    await expect.element(page.getByText('Add Root Organization Unit')).toBeInTheDocument();
   });
 });

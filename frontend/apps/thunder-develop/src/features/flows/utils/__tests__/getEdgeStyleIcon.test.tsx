@@ -17,14 +17,14 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
 import getEdgeStyleIcon from '../getEdgeStyleIcon';
 import {EdgeStyleTypes} from '../../models/steps';
 
 describe('getEdgeStyleIcon', () => {
-  it('should return BezierEdgeIcon for Bezier style', () => {
+  it('should return BezierEdgeIcon for Bezier style', async () => {
     const icon = getEdgeStyleIcon(EdgeStyleTypes.Bezier);
-    const {container} = render(icon);
+    const {container} = await render(icon);
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
@@ -34,9 +34,9 @@ describe('getEdgeStyleIcon', () => {
     expect(path?.getAttribute('d')).toContain('C');
   });
 
-  it('should return SmoothStepEdgeIcon for SmoothStep style', () => {
+  it('should return SmoothStepEdgeIcon for SmoothStep style', async () => {
     const icon = getEdgeStyleIcon(EdgeStyleTypes.SmoothStep);
-    const {container} = render(icon);
+    const {container} = await render(icon);
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
@@ -46,9 +46,9 @@ describe('getEdgeStyleIcon', () => {
     expect(path?.getAttribute('d')).toContain('Q');
   });
 
-  it('should return StepEdgeIcon for Step style', () => {
+  it('should return StepEdgeIcon for Step style', async () => {
     const icon = getEdgeStyleIcon(EdgeStyleTypes.Step);
-    const {container} = render(icon);
+    const {container} = await render(icon);
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
@@ -62,10 +62,10 @@ describe('getEdgeStyleIcon', () => {
     expect(d).not.toContain('Q');
   });
 
-  it('should return SmoothStepEdgeIcon as default for unknown style', () => {
+  it('should return SmoothStepEdgeIcon as default for unknown style', async () => {
     // @ts-expect-error Testing with invalid style
     const icon = getEdgeStyleIcon('unknown-style');
-    const {container} = render(icon);
+    const {container} = await render(icon);
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
@@ -85,18 +85,20 @@ describe('getEdgeStyleIcon', () => {
     });
   });
 
-  it('should return icons with consistent SVG structure', () => {
+  it('should return icons with consistent SVG structure', async () => {
     const styles = [EdgeStyleTypes.Bezier, EdgeStyleTypes.SmoothStep, EdgeStyleTypes.Step];
 
-    styles.forEach((style) => {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const style of styles) {
       const icon = getEdgeStyleIcon(style);
-      const {container} = render(icon);
+      // eslint-disable-next-line no-await-in-loop
+      const {container} = await render(icon);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('width', '20');
       expect(svg).toHaveAttribute('height', '20');
       expect(svg).toHaveAttribute('viewBox', '0 0 24 24');
       expect(svg).toHaveAttribute('stroke', 'currentColor');
-    });
+    }
   });
 });

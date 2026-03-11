@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ResourcePanelItem from '../ResourcePanelItem';
 import type {Resource} from '../../../models/resources';
 
@@ -41,7 +42,7 @@ const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
   display: {
     label: 'Test Resource',
     description: 'Test Description',
-    image: 'path/test-image.svg',
+    image: 'test-image.svg',
     showOnResourcePanel: true,
   },
   ...overrides,
@@ -49,66 +50,66 @@ const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
 
 describe('ResourcePanelItem', () => {
   describe('Rendering', () => {
-    it('should render resource label', () => {
+    it('should render resource label', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
-      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Resource')).toBeInTheDocument();
     });
 
-    it('should render resource description', () => {
+    it('should render resource description', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
-      expect(screen.getByText('Test Description')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Description')).toBeInTheDocument();
     });
 
-    it('should not render description when not provided', () => {
+    it('should not render description when not provided', async () => {
       const resource = createMockResource({
         display: {
           label: 'Test Resource',
           showOnResourcePanel: true,
         },
       } as Partial<Resource>);
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
-      expect(screen.queryByText('Test Description')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Test Description')).not.toBeInTheDocument();
     });
 
-    it('should render Avatar with image when provided', () => {
+    it('should render Avatar with image when provided', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
-      const avatar = screen.getByRole('img');
-      expect(avatar).toHaveAttribute('src', '/static/path/test-image.svg');
+      const avatar = page.getByRole('img');
+      expect(avatar).toHaveAttribute('src', '/static/test-image.svg');
     });
 
-    it('should render children when provided instead of default card', () => {
+    it('should render children when provided instead of default card', async () => {
       const resource = createMockResource();
-      render(
+      await render(
         <ResourcePanelItem resource={resource}>
           <div data-testid="custom-child">Custom Content</div>
         </ResourcePanelItem>,
       );
 
-      expect(screen.getByTestId('custom-child')).toBeInTheDocument();
-      expect(screen.queryByText('Test Resource')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('custom-child')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Resource')).not.toBeInTheDocument();
     });
   });
 
   describe('Type Variants', () => {
-    it('should have default type of static', () => {
+    it('should have default type of static', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelItem resource={resource} />);
+      const {container} = await render(<ResourcePanelItem resource={resource} />);
 
       // Static type should have default cursor
       const card = container.querySelector('.MuiCard-root');
       expect(card).toBeInTheDocument();
     });
 
-    it('should accept draggable type', () => {
+    it('should accept draggable type', async () => {
       const resource = createMockResource();
-      const {container} = render(<ResourcePanelItem resource={resource} type="draggable" />);
+      const {container} = await render(<ResourcePanelItem resource={resource} type="draggable" />);
 
       const card = container.querySelector('.MuiCard-root');
       expect(card).toBeInTheDocument();
@@ -116,62 +117,62 @@ describe('ResourcePanelItem', () => {
   });
 
   describe('Add Button', () => {
-    it('should render add button when onAdd is provided', () => {
+    it('should render add button when onAdd is provided', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelItem resource={resource} onAdd={onAdd} />);
+      await render(<ResourcePanelItem resource={resource} onAdd={onAdd} />);
 
-      const addButton = screen.getByRole('button');
+      const addButton = page.getByRole('button');
       expect(addButton).toBeInTheDocument();
     });
 
-    it('should not render add button when onAdd is not provided', () => {
+    it('should not render add button when onAdd is not provided', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
-      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button')).not.toBeInTheDocument();
     });
 
-    it('should call onAdd with resource when add button is clicked', () => {
+    it('should call onAdd with resource when add button is clicked', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelItem resource={resource} onAdd={onAdd} />);
+      await render(<ResourcePanelItem resource={resource} onAdd={onAdd} />);
 
-      const addButton = screen.getByRole('button');
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button');
+      await userEvent.click(addButton);
 
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(onAdd).toHaveBeenCalledWith(resource);
     });
 
-    it('should disable add button when disabled prop is true', () => {
+    it('should disable add button when disabled prop is true', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelItem resource={resource} onAdd={onAdd} disabled />);
+      await render(<ResourcePanelItem resource={resource} onAdd={onAdd} disabled />);
 
-      const addButton = screen.getByRole('button');
+      const addButton = page.getByRole('button');
       expect(addButton).toBeDisabled();
     });
 
-    it('should not call onAdd when button is disabled and clicked', () => {
+    it('should not call onAdd when button is disabled and clicked', async () => {
       const resource = createMockResource();
       const onAdd = vi.fn();
-      render(<ResourcePanelItem resource={resource} onAdd={onAdd} disabled />);
+      await render(<ResourcePanelItem resource={resource} onAdd={onAdd} disabled />);
 
-      const addButton = screen.getByRole('button');
-      fireEvent.click(addButton);
+      const addButton = page.getByRole('button');
+      await userEvent.click(addButton);
 
       expect(onAdd).not.toHaveBeenCalled();
     });
   });
 
   describe('Color Scheme', () => {
-    it('should render with light mode by default', () => {
+    it('should render with light mode by default', async () => {
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
       // Component renders without error in light mode
-      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Resource')).toBeInTheDocument();
     });
 
     it('should apply dark mode filter when mode is dark', async () => {
@@ -184,10 +185,10 @@ describe('ResourcePanelItem', () => {
       } as unknown as ReturnType<typeof oxygenUI.useColorScheme>);
 
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
       // Component renders with dark mode
-      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Resource')).toBeInTheDocument();
     });
 
     it('should use systemMode when mode is system', async () => {
@@ -200,10 +201,10 @@ describe('ResourcePanelItem', () => {
       } as unknown as ReturnType<typeof oxygenUI.useColorScheme>);
 
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
       // Component renders using systemMode (dark)
-      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Resource')).toBeInTheDocument();
     });
 
     it('should use light effectiveMode when mode is system and systemMode is light', async () => {
@@ -215,9 +216,9 @@ describe('ResourcePanelItem', () => {
       } as unknown as ReturnType<typeof oxygenUI.useColorScheme>);
 
       const resource = createMockResource();
-      render(<ResourcePanelItem resource={resource} />);
+      await render(<ResourcePanelItem resource={resource} />);
 
-      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Resource')).toBeInTheDocument();
     });
   });
 });

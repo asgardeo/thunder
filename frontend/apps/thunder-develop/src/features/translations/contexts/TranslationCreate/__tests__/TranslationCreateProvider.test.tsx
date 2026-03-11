@@ -17,8 +17,7 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationCreateProvider from '../TranslationCreateProvider';
 import useTranslationCreate from '../useTranslationCreate';
 import {TranslationCreateFlowStep} from '../../../models/translation-create-flow';
@@ -78,205 +77,183 @@ describe('TranslationCreateProvider', () => {
     vi.clearAllMocks();
   });
 
-  it('provides initial state values', () => {
-    render(
+  it('provides initial state values', async () => {
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.COUNTRY);
-    expect(screen.getByTestId('selected-country')).toHaveTextContent('null');
-    expect(screen.getByTestId('selected-locale')).toHaveTextContent('null');
-    expect(screen.getByTestId('locale-code-override')).toHaveTextContent('');
-    expect(screen.getByTestId('locale-code')).toHaveTextContent('');
-    expect(screen.getByTestId('populate-from-english')).toHaveTextContent('true');
-    expect(screen.getByTestId('is-creating')).toHaveTextContent('false');
-    expect(screen.getByTestId('progress')).toHaveTextContent('0');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.COUNTRY);
+    await expect.element(page.getByTestId('selected-country')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('selected-locale')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('locale-code-override')).toHaveTextContent('');
+    await expect.element(page.getByTestId('locale-code')).toHaveTextContent('');
+    await expect.element(page.getByTestId('populate-from-english')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('is-creating')).toHaveTextContent('false');
+    await expect.element(page.getByTestId('progress')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
   it('updates current step when setCurrentStep is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Language Step'));
+    await userEvent.click(page.getByText('Set Language Step'));
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.LANGUAGE);
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.LANGUAGE);
   });
 
   it('updates selected country when setSelectedCountry is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Country'));
+    await userEvent.click(page.getByText('Set Country'));
 
-    expect(screen.getByTestId('selected-country')).toHaveTextContent('France');
+    await expect.element(page.getByTestId('selected-country')).toHaveTextContent('France');
   });
 
   it('updates selected locale when setSelectedLocale is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Locale'));
+    await userEvent.click(page.getByText('Set Locale'));
 
-    expect(screen.getByTestId('selected-locale')).toHaveTextContent('fr-FR');
+    await expect.element(page.getByTestId('selected-locale')).toHaveTextContent('fr-FR');
   });
 
   it('derives localeCode from localeCodeOverride when set', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Locale Code Override'));
+    await userEvent.click(page.getByText('Set Locale Code Override'));
 
-    expect(screen.getByTestId('locale-code-override')).toHaveTextContent('fr-CA');
-    expect(screen.getByTestId('locale-code')).toHaveTextContent('fr-CA');
+    await expect.element(page.getByTestId('locale-code-override')).toHaveTextContent('fr-CA');
+    await expect.element(page.getByTestId('locale-code')).toHaveTextContent('fr-CA');
   });
 
   it('derives localeCode from selectedLocale when no override is set', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Locale'));
+    await userEvent.click(page.getByText('Set Locale'));
 
-    expect(screen.getByTestId('locale-code-override')).toHaveTextContent('');
-    expect(screen.getByTestId('locale-code')).toHaveTextContent('fr-FR');
+    await expect.element(page.getByTestId('locale-code-override')).toHaveTextContent('');
+    await expect.element(page.getByTestId('locale-code')).toHaveTextContent('fr-FR');
   });
 
   it('override takes precedence over selectedLocale for localeCode', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Locale'));
-    await user.click(screen.getByText('Set Locale Code Override'));
+    await userEvent.click(page.getByText('Set Locale'));
+    await userEvent.click(page.getByText('Set Locale Code Override'));
 
-    expect(screen.getByTestId('locale-code')).toHaveTextContent('fr-CA');
+    await expect.element(page.getByTestId('locale-code')).toHaveTextContent('fr-CA');
   });
 
   it('updates populateFromEnglish when setPopulateFromEnglish is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    expect(screen.getByTestId('populate-from-english')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('populate-from-english')).toHaveTextContent('true');
 
-    await user.click(screen.getByText('Set Populate False'));
+    await userEvent.click(page.getByText('Set Populate False'));
 
-    expect(screen.getByTestId('populate-from-english')).toHaveTextContent('false');
+    await expect.element(page.getByTestId('populate-from-english')).toHaveTextContent('false');
   });
 
   it('updates isCreating when setIsCreating is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Creating'));
+    await userEvent.click(page.getByText('Set Creating'));
 
-    expect(screen.getByTestId('is-creating')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('is-creating')).toHaveTextContent('true');
   });
 
   it('updates progress when setProgress is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Progress 50'));
+    await userEvent.click(page.getByText('Set Progress 50'));
 
-    expect(screen.getByTestId('progress')).toHaveTextContent('50');
+    await expect.element(page.getByTestId('progress')).toHaveTextContent('50');
   });
 
   it('updates error when setError is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set Error'));
 
-    expect(screen.getByTestId('error')).toHaveTextContent('Something went wrong');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Something went wrong');
   });
 
   it('resets all state when reset is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <TranslationCreateProvider>
         <TestConsumer />
       </TranslationCreateProvider>,
     );
 
     // Set several values
-    await user.click(screen.getByText('Set Language Step'));
-    await user.click(screen.getByText('Set Country'));
-    await user.click(screen.getByText('Set Locale Code Override'));
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set Language Step'));
+    await userEvent.click(page.getByText('Set Country'));
+    await userEvent.click(page.getByText('Set Locale Code Override'));
+    await userEvent.click(page.getByText('Set Error'));
 
     // Verify values are set
-    expect(screen.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.LANGUAGE);
-    expect(screen.getByTestId('selected-country')).toHaveTextContent('France');
-    expect(screen.getByTestId('locale-code-override')).toHaveTextContent('fr-CA');
-    expect(screen.getByTestId('error')).toHaveTextContent('Something went wrong');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.LANGUAGE);
+    await expect.element(page.getByTestId('selected-country')).toHaveTextContent('France');
+    await expect.element(page.getByTestId('locale-code-override')).toHaveTextContent('fr-CA');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Something went wrong');
 
     // Reset
-    await user.click(screen.getByText('Reset'));
+    await userEvent.click(page.getByText('Reset'));
 
     // Verify back to initial state
-    expect(screen.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.COUNTRY);
-    expect(screen.getByTestId('selected-country')).toHaveTextContent('null');
-    expect(screen.getByTestId('locale-code-override')).toHaveTextContent('');
-    expect(screen.getByTestId('locale-code')).toHaveTextContent('');
-    expect(screen.getByTestId('populate-from-english')).toHaveTextContent('true');
-    expect(screen.getByTestId('is-creating')).toHaveTextContent('false');
-    expect(screen.getByTestId('progress')).toHaveTextContent('0');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(TranslationCreateFlowStep.COUNTRY);
+    await expect.element(page.getByTestId('selected-country')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('locale-code-override')).toHaveTextContent('');
+    await expect.element(page.getByTestId('locale-code')).toHaveTextContent('');
+    await expect.element(page.getByTestId('populate-from-english')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('is-creating')).toHaveTextContent('false');
+    await expect.element(page.getByTestId('progress')).toHaveTextContent('0');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
-  it('memoizes context value to prevent unnecessary re-renders', () => {
+  it('memoizes context value to prevent unnecessary re-renders', async () => {
     const renderSpy = vi.fn();
 
     function TestRenderer() {
@@ -284,7 +261,7 @@ describe('TranslationCreateProvider', () => {
       return <TestConsumer />;
     }
 
-    const {rerender} = render(
+    const {rerender} = await renderWithProviders(
       <TranslationCreateProvider>
         <TestRenderer />
       </TranslationCreateProvider>,
@@ -292,7 +269,7 @@ describe('TranslationCreateProvider', () => {
 
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
-    rerender(
+    await rerender(
       <TranslationCreateProvider>
         <TestRenderer />
       </TranslationCreateProvider>,

@@ -19,7 +19,8 @@
 /* eslint-disable react/require-default-props, jsx-a11y/no-static-element-interactions */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import React, {type ReactNode} from 'react';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
 import {EdgeStyleTypes} from '../../../models/steps';
@@ -203,33 +204,33 @@ describe('BaseEdge', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the edge path', () => {
-      render(<BaseEdge {...defaultProps} />, {
+    it('should render the edge path', async () => {
+      await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('base-edge-edge-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('base-edge-edge-1')).toBeInTheDocument();
     });
 
-    it('should render EdgeLabelRenderer', () => {
-      render(<BaseEdge {...defaultProps} />, {
+    it('should render EdgeLabelRenderer', async () => {
+      await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('edge-label-renderer')).toBeInTheDocument();
+      await expect.element(page.getByTestId('edge-label-renderer')).toBeInTheDocument();
     });
 
-    it('should render with calculated path', () => {
-      render(<BaseEdge {...defaultProps} />, {
+    it('should render with calculated path', async () => {
+      await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const edge = screen.getByTestId('base-edge-edge-1');
+      const edge = page.getByTestId('base-edge-edge-1');
       expect(edge).toHaveAttribute('d', 'M 0,0 L 100,0 L 100,100 L 200,100');
     });
 
-    it('should render invisible hover detection path', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should render invisible hover detection path', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
@@ -240,90 +241,90 @@ describe('BaseEdge', () => {
   });
 
   describe('Label', () => {
-    it('should render label when provided', () => {
-      render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
+    it('should render label when provided', async () => {
+      await render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('edge-label')).toBeInTheDocument();
+      await expect.element(page.getByTestId('edge-label')).toBeInTheDocument();
     });
 
-    it('should not render label container when label is not provided', () => {
-      render(<BaseEdge {...defaultProps} />, {
+    it('should not render label container when label is not provided', async () => {
+      await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Label container should not have the label content
-      expect(screen.queryByTestId('edge-label')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('edge-label')).not.toBeInTheDocument();
     });
   });
 
   describe('Hover Behavior', () => {
-    it('should show delete button on hover', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should show delete button on hover', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Initially, delete button should not be visible
-      expect(screen.queryByTestId('x-icon')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).not.toBeInTheDocument();
 
       // Hover over the edge group
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Delete button should now be visible
-      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).toBeInTheDocument();
     });
 
-    it('should hide delete button when mouse leaves', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should hide delete button when mouse leaves', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       const group = container.querySelector('g');
 
       // Hover over
-      fireEvent.mouseEnter(group!);
-      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+      await userEvent.hover(group!);
+      await expect.element(page.getByTestId('x-icon')).toBeInTheDocument();
 
       // Mouse leave
-      fireEvent.mouseLeave(group!);
-      expect(screen.queryByTestId('x-icon')).not.toBeInTheDocument();
+      await userEvent.unhover(group!);
+      await expect.element(page.getByTestId('x-icon')).not.toBeInTheDocument();
     });
 
-    it('should increase stroke width on hover', () => {
-      const {container} = render(<BaseEdge {...defaultProps} style={{stroke: 'blue'}} />, {
+    it('should increase stroke width on hover', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} style={{stroke: 'blue'}} />, {
         wrapper: createWrapper(),
       });
 
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const edge = screen.getByTestId('base-edge-edge-1');
+      const edge = page.getByTestId('base-edge-edge-1');
       expect(edge).toHaveStyle('stroke-width: 3');
     });
   });
 
   describe('Delete Functionality', () => {
-    it('should call deleteElements when delete button is clicked', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should call deleteElements when delete button is clicked', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Click delete button
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
+      await userEvent.click(deleteButton);
 
       expect(mockDeleteElements).toHaveBeenCalledWith({edges: [{id: 'edge-1'}]});
     });
 
-    it('should stop event propagation on delete click', () => {
+    it('should stop event propagation on delete click', async () => {
       const parentClickHandler = vi.fn();
-      const {container} = render(
+      const {container} = await render(
         // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         <div onClick={parentClickHandler}>
           <BaseEdge {...defaultProps} />
@@ -335,183 +336,180 @@ describe('BaseEdge', () => {
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Click delete button
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.click(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
+      await userEvent.click(deleteButton);
 
       // Parent click handler should not be called
       expect(parentClickHandler).not.toHaveBeenCalled();
     });
 
-    it('should handle keyboard Enter key to delete', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should handle keyboard Enter key to delete', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Press Enter on delete button
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.keyDown(deleteButton, {key: 'Enter'});
+      await userEvent.keyboard('{Enter}');
 
       expect(mockDeleteElements).toHaveBeenCalledWith({edges: [{id: 'edge-1'}]});
     });
 
-    it('should handle keyboard Space key to delete', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should handle keyboard Space key to delete', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Press Space on delete button
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.keyDown(deleteButton, {key: ' '});
+      await userEvent.keyboard('{ }');
 
       expect(mockDeleteElements).toHaveBeenCalledWith({edges: [{id: 'edge-1'}]});
     });
 
-    it('should not delete on other key presses', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should not delete on other key presses', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Press other key on delete button
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.keyDown(deleteButton, {key: 'Tab'});
+      await userEvent.keyboard('{Tab}');
 
       expect(mockDeleteElements).not.toHaveBeenCalled();
     });
 
-    it('should not show delete button when deletable is false', () => {
-      const {container} = render(<BaseEdge {...defaultProps} deletable={false} />, {
+    it('should not show delete button when deletable is false', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} deletable={false} />, {
         wrapper: createWrapper(),
       });
 
       // Hover over the edge
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Delete button should not be visible
-      expect(screen.queryByRole('button', {name: 'Delete edge'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Delete edge'})).not.toBeInTheDocument();
     });
   });
 
   describe('Edge Styles', () => {
-    it('should apply custom style prop', () => {
-      render(<BaseEdge {...defaultProps} style={{stroke: 'red', strokeDasharray: '5,5'}} />, {
+    it('should apply custom style prop', async () => {
+      await render(<BaseEdge {...defaultProps} style={{stroke: 'red', strokeDasharray: '5,5'}} />, {
         wrapper: createWrapper(),
       });
 
-      const edge = screen.getByTestId('base-edge-edge-1');
+      const edge = page.getByTestId('base-edge-edge-1');
       expect(edge).toHaveStyle('stroke: red');
     });
 
-    it('should use edge style from context', () => {
+    it('should use edge style from context', async () => {
       const contextWithBezier = {
         ...defaultContextValue,
         edgeStyle: EdgeStyleTypes.Bezier,
       };
 
-      render(<BaseEdge {...defaultProps} />, {
+      await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(contextWithBezier),
       });
 
-      expect(screen.getByTestId('base-edge-edge-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('base-edge-edge-1')).toBeInTheDocument();
     });
 
-    it('should pass interaction width to base edge', () => {
-      render(<BaseEdge {...defaultProps} />, {
+    it('should pass interaction width to base edge', async () => {
+      await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
-      const edge = screen.getByTestId('base-edge-edge-1');
+      const edge = page.getByTestId('base-edge-edge-1');
       expect(edge).toHaveAttribute('data-interaction-width', '20');
     });
   });
 
   describe('Markers', () => {
-    it('should pass markerEnd to base edge', () => {
-      render(<BaseEdge {...defaultProps} markerEnd="url(#arrow)" />, {
+    it('should pass markerEnd to base edge', async () => {
+      await render(<BaseEdge {...defaultProps} markerEnd="url(#arrow)" />, {
         wrapper: createWrapper(),
       });
 
-      const edge = screen.getByTestId('base-edge-edge-1');
+      const edge = page.getByTestId('base-edge-edge-1');
       expect(edge).toHaveAttribute('data-marker-end', 'url(#arrow)');
     });
 
-    it('should pass markerStart to base edge', () => {
-      render(<BaseEdge {...defaultProps} markerStart="url(#arrow-start)" />, {
+    it('should pass markerStart to base edge', async () => {
+      await render(<BaseEdge {...defaultProps} markerStart="url(#arrow-start)" />, {
         wrapper: createWrapper(),
       });
 
-      const edge = screen.getByTestId('base-edge-edge-1');
+      const edge = page.getByTestId('base-edge-edge-1');
       expect(edge).toHaveAttribute('data-marker-start', 'url(#arrow-start)');
     });
   });
 
   describe('Accessibility', () => {
-    it('should have accessible delete button with aria-label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should have accessible delete button with aria-label', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
       expect(deleteButton).toHaveAttribute('aria-label', 'Delete edge');
     });
 
-    it('should have tabIndex on delete button', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should have tabIndex on delete button', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
       expect(deleteButton).toHaveAttribute('tabIndex', '0');
     });
   });
 
   describe('Delete Button Styling', () => {
-    it('should render X icon with correct size', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should render X icon with correct size', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const xIcon = screen.getByTestId('x-icon');
+      const xIcon = page.getByTestId('x-icon');
       expect(xIcon).toHaveAttribute('data-size', '16');
     });
 
-    it('should render X icon with white color', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should render X icon with white color', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const xIcon = screen.getByTestId('x-icon');
+      const xIcon = page.getByTestId('x-icon');
       // Check for white color in either format (named or RGB)
       expect(xIcon).toHaveStyle({color: 'rgb(255, 255, 255)'});
     });
@@ -521,123 +519,123 @@ describe('BaseEdge', () => {
     it('should handle deleteElements rejection gracefully', async () => {
       mockDeleteElements.mockRejectedValueOnce(new Error('Delete failed'));
 
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover to show delete button
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Click delete button - should not throw
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      expect(() => fireEvent.click(deleteButton)).not.toThrow();
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
+      expect(async () => userEvent.click(deleteButton)).not.toThrow();
     });
   });
 
   describe('Label Hover Effects', () => {
-    it('should maintain hover state when mouse enters label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
+    it('should maintain hover state when mouse enters label', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
         wrapper: createWrapper(),
       });
 
       // First hover over the edge group
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Then hover over the label box
-      const boxes = screen.getAllByTestId('box-component');
+      const boxes = page.getByTestId('box-component');
       // First box is the label container
-      const labelBox = boxes[0];
-      fireEvent.mouseEnter(labelBox);
+      const labelBox = boxes.all()[0];
+      await userEvent.hover(labelBox);
 
       // Should still show delete button (hover state maintained)
-      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).toBeInTheDocument();
     });
 
-    it('should update hover state when mouse leaves label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
+    it('should update hover state when mouse leaves label', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
         wrapper: createWrapper(),
       });
 
       // Hover over the edge group
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const boxes = screen.getAllByTestId('box-component');
-      const labelBox = boxes[0];
+      const boxes = page.getByTestId('box-component');
+      const labelBox = boxes.all()[0];
 
       // Enter and leave label
-      fireEvent.mouseEnter(labelBox);
-      fireEvent.mouseLeave(labelBox);
+      await userEvent.hover(labelBox);
+      await userEvent.unhover(labelBox);
 
       // Leave the group too
-      fireEvent.mouseLeave(group!);
+      await userEvent.unhover(group!);
 
       // Delete button should be hidden
-      expect(screen.queryByTestId('x-icon')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).not.toBeInTheDocument();
     });
   });
 
   describe('Delete Button Hover Effects', () => {
-    it('should maintain hover state when mouse enters delete button', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should maintain hover state when mouse enters delete button', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // First hover over the edge group
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
       // Then hover over the delete button itself
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.mouseEnter(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
+      await userEvent.hover(deleteButton);
 
       // Should still show delete button
-      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).toBeInTheDocument();
     });
 
-    it('should update hover state when mouse leaves delete button', () => {
-      const {container} = render(<BaseEdge {...defaultProps} />, {
+    it('should update hover state when mouse leaves delete button', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} />, {
         wrapper: createWrapper(),
       });
 
       // Hover over the edge group
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
 
       // Enter and leave delete button
-      fireEvent.mouseEnter(deleteButton);
-      fireEvent.mouseLeave(deleteButton);
+      await userEvent.hover(deleteButton);
+      await userEvent.unhover(deleteButton);
 
       // Leave the group too
-      fireEvent.mouseLeave(group!);
+      await userEvent.unhover(group!);
 
       // Delete button should be hidden
-      expect(screen.queryByTestId('x-icon')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).not.toBeInTheDocument();
     });
 
-    it('should show delete button when hovering over label then delete button', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span>Label</span>} />, {
+    it('should show delete button when hovering over label then delete button', async () => {
+      const {container} = await render(<BaseEdge {...defaultProps} label={<span>Label</span>} />, {
         wrapper: createWrapper(),
       });
 
       // Hover over the edge group
       const group = container.querySelector('g');
-      fireEvent.mouseEnter(group!);
+      await userEvent.hover(group!);
 
-      const boxes = screen.getAllByTestId('box-component');
+      const boxes = page.getByTestId('box-component');
       // Hover over label first
-      fireEvent.mouseEnter(boxes[0]);
+      await userEvent.hover(boxes.all()[0]);
 
       // Then hover over delete button
-      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
-      fireEvent.mouseEnter(deleteButton);
+      const deleteButton = page.getByRole('button', {name: 'Delete edge'});
+      await userEvent.hover(deleteButton);
 
       // Delete button should still be visible
-      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+      await expect.element(page.getByTestId('x-icon')).toBeInTheDocument();
     });
   });
 });

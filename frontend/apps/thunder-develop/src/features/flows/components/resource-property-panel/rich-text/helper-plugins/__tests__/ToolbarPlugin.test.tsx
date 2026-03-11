@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import ToolbarPlugin from '../ToolbarPlugin';
 
 // Use vi.hoisted for mock functions that need to be available during module mocking
@@ -104,166 +105,166 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the toolbar', () => {
-      render(<ToolbarPlugin />);
+    it('should render the toolbar', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(document.querySelector('.MuiPaper-root')).toBeInTheDocument();
     });
 
-    it('should render undo button when history is enabled', () => {
-      render(<ToolbarPlugin history />);
+    it('should render undo button when history is enabled', async () => {
+      await render(<ToolbarPlugin history />);
 
-      expect(screen.getByRole('button', {name: 'Undo'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Undo'})).toBeInTheDocument();
     });
 
-    it('should render redo button when history is enabled', () => {
-      render(<ToolbarPlugin history />);
+    it('should render redo button when history is enabled', async () => {
+      await render(<ToolbarPlugin history />);
 
-      expect(screen.getByRole('button', {name: 'Redo'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Redo'})).toBeInTheDocument();
     });
 
-    it('should not render undo/redo buttons when history is disabled', () => {
-      render(<ToolbarPlugin history={false} />);
+    it('should not render undo/redo buttons when history is disabled', async () => {
+      await render(<ToolbarPlugin history={false} />);
 
-      expect(screen.queryByRole('button', {name: 'Undo'})).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: 'Redo'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Undo'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Redo'})).not.toBeInTheDocument();
     });
 
-    it('should render bold button when bold is enabled', () => {
-      render(<ToolbarPlugin bold />);
+    it('should render bold button when bold is enabled', async () => {
+      await render(<ToolbarPlugin bold />);
 
-      expect(screen.getByRole('button', {name: 'Format Bold'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Bold'})).toBeInTheDocument();
     });
 
-    it('should not render bold button when bold is disabled', () => {
-      render(<ToolbarPlugin bold={false} />);
+    it('should not render bold button when bold is disabled', async () => {
+      await render(<ToolbarPlugin bold={false} />);
 
-      expect(screen.queryByRole('button', {name: 'Format Bold'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Bold'})).not.toBeInTheDocument();
     });
 
-    it('should render italic button when italic is enabled', () => {
-      render(<ToolbarPlugin italic />);
+    it('should render italic button when italic is enabled', async () => {
+      await render(<ToolbarPlugin italic />);
 
-      expect(screen.getByRole('button', {name: 'Format Italics'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Italics'})).toBeInTheDocument();
     });
 
-    it('should not render italic button when italic is disabled', () => {
-      render(<ToolbarPlugin italic={false} />);
+    it('should not render italic button when italic is disabled', async () => {
+      await render(<ToolbarPlugin italic={false} />);
 
-      expect(screen.queryByRole('button', {name: 'Format Italics'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Italics'})).not.toBeInTheDocument();
     });
 
-    it('should render underline button when underline is enabled', () => {
-      render(<ToolbarPlugin underline />);
+    it('should render underline button when underline is enabled', async () => {
+      await render(<ToolbarPlugin underline />);
 
-      expect(screen.getByRole('button', {name: 'Format Underline'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Underline'})).toBeInTheDocument();
     });
 
-    it('should not render underline button when underline is disabled', () => {
-      render(<ToolbarPlugin underline={false} />);
+    it('should not render underline button when underline is disabled', async () => {
+      await render(<ToolbarPlugin underline={false} />);
 
-      expect(screen.queryByRole('button', {name: 'Format Underline'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Underline'})).not.toBeInTheDocument();
     });
 
-    it('should render link button when link is enabled', () => {
-      render(<ToolbarPlugin link />);
+    it('should render link button when link is enabled', async () => {
+      await render(<ToolbarPlugin link />);
 
-      expect(screen.getByRole('button', {name: 'Format Link'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Link'})).toBeInTheDocument();
     });
 
-    it('should not render link button when link is disabled', () => {
-      render(<ToolbarPlugin link={false} />);
+    it('should not render link button when link is disabled', async () => {
+      await render(<ToolbarPlugin link={false} />);
 
-      expect(screen.queryByRole('button', {name: 'Format Link'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Link'})).not.toBeInTheDocument();
     });
 
-    it('should render alignment buttons when alignment is enabled', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should render alignment buttons when alignment is enabled', async () => {
+      await render(<ToolbarPlugin alignment />);
 
-      expect(screen.getByRole('button', {name: 'Left Align'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Center Align'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Right Align'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Justify Align'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Left Align'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Center Align'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Right Align'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Justify Align'})).toBeInTheDocument();
     });
 
-    it('should not render alignment buttons when alignment is disabled', () => {
-      render(<ToolbarPlugin alignment={false} />);
+    it('should not render alignment buttons when alignment is disabled', async () => {
+      await render(<ToolbarPlugin alignment={false} />);
 
-      expect(screen.queryByRole('button', {name: 'Left Align'})).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: 'Center Align'})).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: 'Right Align'})).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: 'Justify Align'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Left Align'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Center Align'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Right Align'})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Justify Align'})).not.toBeInTheDocument();
     });
 
-    it('should render typography dropdown when typography is enabled', () => {
-      render(<ToolbarPlugin typography />);
+    it('should render typography dropdown when typography is enabled', async () => {
+      await render(<ToolbarPlugin typography />);
 
-      expect(screen.getByText('Paragraph')).toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).toBeInTheDocument();
     });
 
-    it('should not render typography dropdown when typography is disabled', () => {
-      render(<ToolbarPlugin typography={false} />);
+    it('should not render typography dropdown when typography is disabled', async () => {
+      await render(<ToolbarPlugin typography={false} />);
 
-      expect(screen.queryByText('Paragraph')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).not.toBeInTheDocument();
     });
   });
 
   describe('Disabled State', () => {
-    it('should disable undo button when disabled prop is true', () => {
-      render(<ToolbarPlugin history disabled />);
+    it('should disable undo button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin history disabled />);
 
-      expect(screen.getByRole('button', {name: 'Undo'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Undo'})).toBeDisabled();
     });
 
-    it('should disable redo button when disabled prop is true', () => {
-      render(<ToolbarPlugin history disabled />);
+    it('should disable redo button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin history disabled />);
 
-      expect(screen.getByRole('button', {name: 'Redo'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Redo'})).toBeDisabled();
     });
 
-    it('should disable bold button when disabled prop is true', () => {
-      render(<ToolbarPlugin bold disabled />);
+    it('should disable bold button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin bold disabled />);
 
-      expect(screen.getByRole('button', {name: 'Format Bold'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Format Bold'})).toBeDisabled();
     });
 
-    it('should disable italic button when disabled prop is true', () => {
-      render(<ToolbarPlugin italic disabled />);
+    it('should disable italic button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin italic disabled />);
 
-      expect(screen.getByRole('button', {name: 'Format Italics'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Format Italics'})).toBeDisabled();
     });
 
-    it('should disable underline button when disabled prop is true', () => {
-      render(<ToolbarPlugin underline disabled />);
+    it('should disable underline button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin underline disabled />);
 
-      expect(screen.getByRole('button', {name: 'Format Underline'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Format Underline'})).toBeDisabled();
     });
 
-    it('should disable link button when disabled prop is true', () => {
-      render(<ToolbarPlugin link disabled />);
+    it('should disable link button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin link disabled />);
 
-      expect(screen.getByRole('button', {name: 'Format Link'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Format Link'})).toBeDisabled();
     });
 
-    it('should disable alignment buttons when disabled prop is true', () => {
-      render(<ToolbarPlugin alignment disabled />);
+    it('should disable alignment buttons when disabled prop is true', async () => {
+      await render(<ToolbarPlugin alignment disabled />);
 
-      expect(screen.getByRole('button', {name: 'Left Align'})).toBeDisabled();
-      expect(screen.getByRole('button', {name: 'Center Align'})).toBeDisabled();
-      expect(screen.getByRole('button', {name: 'Right Align'})).toBeDisabled();
-      expect(screen.getByRole('button', {name: 'Justify Align'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Left Align'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Center Align'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Right Align'})).toBeDisabled();
+      await expect.element(page.getByRole('button', {name: 'Justify Align'})).toBeDisabled();
     });
 
-    it('should disable typography button when disabled prop is true', () => {
-      render(<ToolbarPlugin typography disabled />);
+    it('should disable typography button when disabled prop is true', async () => {
+      await render(<ToolbarPlugin typography disabled />);
 
-      const typographyButton = screen.getByText('Paragraph').closest('button');
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
       expect(typographyButton).toBeDisabled();
     });
   });
 
   describe('Button Clicks', () => {
-    it('should dispatch UNDO_COMMAND when undo button is clicked', () => {
+    it('should dispatch UNDO_COMMAND when undo button is clicked', async () => {
       // Mock registerCommand to capture the CAN_UNDO_COMMAND callback and call it to enable undo
       mockRegisterCommand.mockImplementation(((command: string, callback: (payload: boolean) => boolean) => {
         if (command === 'CAN_UNDO_COMMAND') {
@@ -273,15 +274,15 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       }) as typeof mockRegisterCommand);
 
-      render(<ToolbarPlugin history />);
+      await render(<ToolbarPlugin history />);
 
-      const undoButton = screen.getByRole('button', {name: 'Undo'});
-      fireEvent.click(undoButton);
+      const undoButton = page.getByRole('button', {name: 'Undo'});
+      await userEvent.click(undoButton);
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('UNDO_COMMAND', undefined);
     });
 
-    it('should dispatch REDO_COMMAND when redo button is clicked', () => {
+    it('should dispatch REDO_COMMAND when redo button is clicked', async () => {
       // Mock registerCommand to capture the CAN_REDO_COMMAND callback and call it to enable redo
       mockRegisterCommand.mockImplementation(((command: string, callback: (payload: boolean) => boolean) => {
         if (command === 'CAN_REDO_COMMAND') {
@@ -291,164 +292,164 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       }) as typeof mockRegisterCommand);
 
-      render(<ToolbarPlugin history />);
+      await render(<ToolbarPlugin history />);
 
-      const redoButton = screen.getByRole('button', {name: 'Redo'});
-      fireEvent.click(redoButton);
+      const redoButton = page.getByRole('button', {name: 'Redo'});
+      await userEvent.click(redoButton);
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('REDO_COMMAND', undefined);
     });
 
-    it('should dispatch FORMAT_TEXT_COMMAND with bold when bold button is clicked', () => {
-      render(<ToolbarPlugin bold />);
+    it('should dispatch FORMAT_TEXT_COMMAND with bold when bold button is clicked', async () => {
+      await render(<ToolbarPlugin bold />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Format Bold'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Bold'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_TEXT_COMMAND', 'bold');
     });
 
-    it('should dispatch FORMAT_TEXT_COMMAND with italic when italic button is clicked', () => {
-      render(<ToolbarPlugin italic />);
+    it('should dispatch FORMAT_TEXT_COMMAND with italic when italic button is clicked', async () => {
+      await render(<ToolbarPlugin italic />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Format Italics'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Italics'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_TEXT_COMMAND', 'italic');
     });
 
-    it('should dispatch FORMAT_TEXT_COMMAND with underline when underline button is clicked', () => {
-      render(<ToolbarPlugin underline />);
+    it('should dispatch FORMAT_TEXT_COMMAND with underline when underline button is clicked', async () => {
+      await render(<ToolbarPlugin underline />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Format Underline'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Underline'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_TEXT_COMMAND', 'underline');
     });
 
-    it('should dispatch FORMAT_ELEMENT_COMMAND with left when left align button is clicked', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should dispatch FORMAT_ELEMENT_COMMAND with left when left align button is clicked', async () => {
+      await render(<ToolbarPlugin alignment />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Left Align'}));
+      await userEvent.click(page.getByRole('button', {name: 'Left Align'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_ELEMENT_COMMAND', 'left');
     });
 
-    it('should dispatch FORMAT_ELEMENT_COMMAND with center when center align button is clicked', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should dispatch FORMAT_ELEMENT_COMMAND with center when center align button is clicked', async () => {
+      await render(<ToolbarPlugin alignment />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Center Align'}));
+      await userEvent.click(page.getByRole('button', {name: 'Center Align'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_ELEMENT_COMMAND', 'center');
     });
 
-    it('should dispatch FORMAT_ELEMENT_COMMAND with right when right align button is clicked', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should dispatch FORMAT_ELEMENT_COMMAND with right when right align button is clicked', async () => {
+      await render(<ToolbarPlugin alignment />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Right Align'}));
+      await userEvent.click(page.getByRole('button', {name: 'Right Align'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_ELEMENT_COMMAND', 'right');
     });
 
-    it('should dispatch FORMAT_ELEMENT_COMMAND with justify when justify align button is clicked', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should dispatch FORMAT_ELEMENT_COMMAND with justify when justify align button is clicked', async () => {
+      await render(<ToolbarPlugin alignment />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Justify Align'}));
+      await userEvent.click(page.getByRole('button', {name: 'Justify Align'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('FORMAT_ELEMENT_COMMAND', 'justify');
     });
 
-    it('should dispatch TOGGLE_LINK_COMMAND when link button is clicked', () => {
-      render(<ToolbarPlugin link />);
+    it('should dispatch TOGGLE_LINK_COMMAND when link button is clicked', async () => {
+      await render(<ToolbarPlugin link />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://');
     });
   });
 
   describe('Typography Menu', () => {
-    it('should open typography menu when typography button is clicked', () => {
-      render(<ToolbarPlugin typography />);
+    it('should open typography menu when typography button is clicked', async () => {
+      await render(<ToolbarPlugin typography />);
 
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
-      expect(screen.getByText('Heading 1')).toBeInTheDocument();
-      expect(screen.getByText('Heading 2')).toBeInTheDocument();
-      expect(screen.getByText('Heading 3')).toBeInTheDocument();
-      expect(screen.getByText('Heading 4')).toBeInTheDocument();
-      expect(screen.getByText('Heading 5')).toBeInTheDocument();
+      await expect.element(page.getByText('Heading 1')).toBeInTheDocument();
+      await expect.element(page.getByText('Heading 2')).toBeInTheDocument();
+      await expect.element(page.getByText('Heading 3')).toBeInTheDocument();
+      await expect.element(page.getByText('Heading 4')).toBeInTheDocument();
+      await expect.element(page.getByText('Heading 5')).toBeInTheDocument();
     });
 
     it('should close typography menu when menu item is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 1
-      fireEvent.click(screen.getByText('Heading 1'));
+      await userEvent.click(page.getByText('Heading 1'));
 
       // Menu should close - use waitFor because menu closing is async in MUI
-      await waitFor(() => {
-        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('menu')).not.toBeInTheDocument();
       });
     });
   });
 
   describe('Default Props', () => {
-    it('should have history enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have history enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Undo'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Redo'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Undo'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Redo'})).toBeInTheDocument();
     });
 
-    it('should have bold enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have bold enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Format Bold'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Bold'})).toBeInTheDocument();
     });
 
-    it('should have italic enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have italic enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Format Italics'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Italics'})).toBeInTheDocument();
     });
 
-    it('should have underline enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have underline enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Format Underline'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Underline'})).toBeInTheDocument();
     });
 
-    it('should have alignment enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have alignment enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Left Align'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Left Align'})).toBeInTheDocument();
     });
 
-    it('should have typography enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have typography enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByText('Paragraph')).toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).toBeInTheDocument();
     });
 
-    it('should have link enabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should have link enabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Format Link'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Format Link'})).toBeInTheDocument();
     });
 
-    it('should not be disabled by default', () => {
-      render(<ToolbarPlugin />);
+    it('should not be disabled by default', async () => {
+      await render(<ToolbarPlugin />);
 
-      expect(screen.getByRole('button', {name: 'Format Bold'})).not.toBeDisabled();
+      expect(page.getByRole('button', {name: 'Format Bold'})).not.toBeDisabled();
     });
   });
 
   describe('Custom className', () => {
-    it('should apply custom className to the toolbar', () => {
-      render(<ToolbarPlugin className="custom-toolbar-class" />);
+    it('should apply custom className to the toolbar', async () => {
+      await render(<ToolbarPlugin className="custom-toolbar-class" />);
 
       const paper = document.querySelector('.MuiPaper-root');
       expect(paper).toHaveClass('custom-toolbar-class');
@@ -456,26 +457,26 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Command Registration', () => {
-    it('should register update listener on mount', () => {
-      render(<ToolbarPlugin />);
+    it('should register update listener on mount', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should register SELECTION_CHANGE_COMMAND on mount', () => {
-      render(<ToolbarPlugin />);
+    it('should register SELECTION_CHANGE_COMMAND on mount', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should register CAN_UNDO_COMMAND on mount', () => {
-      render(<ToolbarPlugin />);
+    it('should register CAN_UNDO_COMMAND on mount', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should register CAN_REDO_COMMAND on mount', () => {
-      render(<ToolbarPlugin />);
+    it('should register CAN_REDO_COMMAND on mount', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
@@ -483,38 +484,38 @@ describe('ToolbarPlugin', () => {
 
   describe('Format Paragraph', () => {
     it('should format selection to paragraph when menu item is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click paragraph option
-      const paragraphItems = screen.getAllByText('Paragraph');
+      const paragraphItems = page.getByText('Paragraph').all();
       // The second one is the menu item
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphMenuItem = paragraphItems.find(item => item.element().closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
-        fireEvent.click(paragraphMenuItem);
+        await userEvent.click(paragraphMenuItem);
       }
 
       // Menu should close
-      await waitFor(() => {
-        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByRole('menu')).not.toBeInTheDocument();
       });
     });
 
-    it('should call editor update when formatting to paragraph', () => {
-      render(<ToolbarPlugin typography />);
+    it('should call editor update when formatting to paragraph', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click paragraph option
-      const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphItems = page.getByText('Paragraph').all();
+      const paragraphMenuItem = paragraphItems.find(item => item.element().closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
-        fireEvent.click(paragraphMenuItem);
+        await userEvent.click(paragraphMenuItem);
       }
 
       expect(mockUpdate).toHaveBeenCalled();
@@ -523,83 +524,83 @@ describe('ToolbarPlugin', () => {
 
   describe('Format Heading', () => {
     it('should format selection to h1 when Heading 1 is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 1
-      fireEvent.click(screen.getByText('Heading 1'));
+      await userEvent.click(page.getByText('Heading 1'));
 
       expect(mockUpdate).toHaveBeenCalled();
     });
 
     it('should format selection to h2 when Heading 2 is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 2
-      fireEvent.click(screen.getByText('Heading 2'));
+      await userEvent.click(page.getByText('Heading 2'));
 
       expect(mockUpdate).toHaveBeenCalled();
     });
 
     it('should format selection to h3 when Heading 3 is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 3
-      fireEvent.click(screen.getByText('Heading 3'));
+      await userEvent.click(page.getByText('Heading 3'));
 
       expect(mockUpdate).toHaveBeenCalled();
     });
 
     it('should format selection to h4 when Heading 4 is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 4
-      fireEvent.click(screen.getByText('Heading 4'));
+      await userEvent.click(page.getByText('Heading 4'));
 
       expect(mockUpdate).toHaveBeenCalled();
     });
 
     it('should format selection to h5 when Heading 5 is clicked', async () => {
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 5
-      fireEvent.click(screen.getByText('Heading 5'));
+      await userEvent.click(page.getByText('Heading 5'));
 
       expect(mockUpdate).toHaveBeenCalled();
     });
   });
 
   describe('Insert Link', () => {
-    it('should dispatch TOGGLE_LINK_COMMAND with https:// when adding new link', () => {
-      render(<ToolbarPlugin link />);
+    it('should dispatch TOGGLE_LINK_COMMAND with https:// when adding new link', async () => {
+      await render(<ToolbarPlugin link />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       // When isLink is false (default), it adds a new link with 'https://'
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://');
     });
 
-    it('should register link command handler', () => {
-      render(<ToolbarPlugin link />);
+    it('should register link command handler', async () => {
+      await render(<ToolbarPlugin link />);
 
       // The component registers commands including link toggle
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -625,7 +626,7 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin />);
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
@@ -647,7 +648,7 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin bold />);
+      await render(<ToolbarPlugin bold />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
@@ -669,7 +670,7 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin italic />);
+      await render(<ToolbarPlugin italic />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
@@ -691,40 +692,40 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin underline />);
+      await render(<ToolbarPlugin underline />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('Alignment State', () => {
-    it('should highlight left align button when alignment is 1', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should highlight left align button when alignment is 1', async () => {
+      await render(<ToolbarPlugin alignment />);
 
-      const leftAlignButton = screen.getByRole('button', {name: 'Left Align'});
+      const leftAlignButton = page.getByRole('button', {name: 'Left Align'});
       // By default, alignment is 1 (left) which maps to selectedAlignment === 1
       expect(leftAlignButton).toBeInTheDocument();
     });
 
     it('should highlight center align button when alignment is 2', async () => {
       // This would require mocking the selection to have alignment format 2
-      render(<ToolbarPlugin alignment />);
+      await render(<ToolbarPlugin alignment />);
 
-      const centerAlignButton = screen.getByRole('button', {name: 'Center Align'});
+      const centerAlignButton = page.getByRole('button', {name: 'Center Align'});
       expect(centerAlignButton).toBeInTheDocument();
     });
 
     it('should highlight right align button when alignment is 3', async () => {
-      render(<ToolbarPlugin alignment />);
+      await render(<ToolbarPlugin alignment />);
 
-      const rightAlignButton = screen.getByRole('button', {name: 'Right Align'});
+      const rightAlignButton = page.getByRole('button', {name: 'Right Align'});
       expect(rightAlignButton).toBeInTheDocument();
     });
 
     it('should highlight justify align button when alignment is 4', async () => {
-      render(<ToolbarPlugin alignment />);
+      await render(<ToolbarPlugin alignment />);
 
-      const justifyAlignButton = screen.getByRole('button', {name: 'Justify Align'});
+      const justifyAlignButton = page.getByRole('button', {name: 'Justify Align'});
       expect(justifyAlignButton).toBeInTheDocument();
     });
   });
@@ -734,23 +735,23 @@ describe('ToolbarPlugin', () => {
       const {$isHeadingNode} = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
       ($isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should detect paragraph block type', () => {
-      render(<ToolbarPlugin typography />);
+    it('should detect paragraph block type', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Default block type is paragraph
-      expect(screen.getByText('Paragraph')).toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).toBeInTheDocument();
     });
 
-    it('should handle unknown block type as paragraph', () => {
-      render(<ToolbarPlugin typography />);
+    it('should handle unknown block type as paragraph', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Unknown types default to paragraph
-      expect(screen.getByText('Paragraph')).toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).toBeInTheDocument();
     });
   });
 
@@ -759,7 +760,7 @@ describe('ToolbarPlugin', () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       ($isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
-      render(<ToolbarPlugin link />);
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
@@ -768,17 +769,17 @@ describe('ToolbarPlugin', () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       ($isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
-      render(<ToolbarPlugin link />);
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('Active State Classes', () => {
-    it('should not apply active class when disabled', () => {
-      render(<ToolbarPlugin bold disabled />);
+    it('should not apply active class when disabled', async () => {
+      await render(<ToolbarPlugin bold disabled />);
 
-      const boldButton = screen.getByRole('button', {name: 'Format Bold'});
+      const boldButton = page.getByRole('button', {name: 'Format Bold'});
       expect(boldButton).not.toHaveClass('active');
     });
 
@@ -799,7 +800,7 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin bold />);
+      await render(<ToolbarPlugin bold />);
 
       // The active class is applied via classNames utility
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
@@ -807,16 +808,16 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Element Key Resolution', () => {
-    it('should get element by key from editor', () => {
-      render(<ToolbarPlugin />);
+    it('should get element by key from editor', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockGetElementByKey).toBeDefined();
     });
 
-    it('should handle null element DOM', () => {
+    it('should handle null element DOM', async () => {
       mockGetElementByKey.mockReturnValueOnce(null as unknown as HTMLDivElement);
 
-      render(<ToolbarPlugin />);
+      await render(<ToolbarPlugin />);
 
       // Component should handle null gracefully
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
@@ -824,18 +825,18 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Format Paragraph with Selection', () => {
-    it('should call editor update when formatting to paragraph', () => {
-      render(<ToolbarPlugin typography />);
+    it('should call editor update when formatting to paragraph', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click paragraph option
-      const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphItems = page.getByText('Paragraph').all();
+      const paragraphMenuItem = paragraphItems.find(item => item.element().closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
-        fireEvent.click(paragraphMenuItem);
+        await userEvent.click(paragraphMenuItem);
       }
 
       // editor.update should be called when formatting
@@ -844,10 +845,10 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Insert Link Toggle', () => {
-    it('should dispatch TOGGLE_LINK_COMMAND when link button is clicked', () => {
-      render(<ToolbarPlugin link />);
+    it('should dispatch TOGGLE_LINK_COMMAND when link button is clicked', async () => {
+      await render(<ToolbarPlugin link />);
 
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       // The dispatch command should have been called
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', expect.anything());
@@ -855,18 +856,18 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('formatParagraph with Range Selection', () => {
-    it('should call $setBlocksType when selection is range and blockType is not paragraph', () => {
-      render(<ToolbarPlugin typography />);
+    it('should call $setBlocksType when selection is range and blockType is not paragraph', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click paragraph option (to change from h1 to paragraph)
-      const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphItems = page.getByText('Paragraph').all();
+      const paragraphMenuItem = paragraphItems.find(item => item.element().closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
-        fireEvent.click(paragraphMenuItem);
+        await userEvent.click(paragraphMenuItem);
       }
 
       expect(mockUpdate).toHaveBeenCalled();
@@ -874,11 +875,11 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('insertLink with existing link (remove link)', () => {
-    it('should dispatch TOGGLE_LINK_COMMAND with null when isLink is true', () => {
-      render(<ToolbarPlugin link />);
+    it('should dispatch TOGGLE_LINK_COMMAND with null when isLink is true', async () => {
+      await render(<ToolbarPlugin link />);
 
       // Click the link button (should add a link when isLink is false)
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       // Should dispatch with 'https://' to add the link (since isLink is false by default)
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://');
@@ -886,79 +887,79 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('$updateToolbar Function Coverage', () => {
-    it('should update text format states (bold, italic, underline)', () => {
-      render(<ToolbarPlugin bold italic underline />);
+    it('should update text format states (bold, italic, underline)', async () => {
+      await render(<ToolbarPlugin bold italic underline />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should update link state when parent is link node', () => {
-      render(<ToolbarPlugin link />);
+    it('should update link state when parent is link node', async () => {
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should update link state when node itself is link', () => {
+    it('should update link state when node itself is link', async () => {
       // This tests the node being a link directly
-      render(<ToolbarPlugin link />);
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should set isLink to false when neither parent nor node is link', () => {
-      render(<ToolbarPlugin link />);
+    it('should set isLink to false when neither parent nor node is link', async () => {
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should update alignment state from element format', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should update alignment state from element format', async () => {
+      await render(<ToolbarPlugin alignment />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should update block type to heading when element is heading node', () => {
-      render(<ToolbarPlugin typography />);
+    it('should update block type to heading when element is heading node', async () => {
+      await render(<ToolbarPlugin typography />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should update block type to paragraph for unknown type', () => {
-      render(<ToolbarPlugin typography />);
+    it('should update block type to paragraph for unknown type', async () => {
+      await render(<ToolbarPlugin typography />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should update block type for known type in blockTypeToBlockName', () => {
-      render(<ToolbarPlugin typography />);
+    it('should update block type for known type in blockTypeToBlockName', async () => {
+      await render(<ToolbarPlugin typography />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should handle anchorNode with root key', () => {
-      render(<ToolbarPlugin />);
+    it('should handle anchorNode with root key', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('Command Registration Callbacks', () => {
-    it('should execute SELECTION_CHANGE_COMMAND callback and return false', () => {
-      render(<ToolbarPlugin />);
+    it('should execute SELECTION_CHANGE_COMMAND callback and return false', async () => {
+      await render(<ToolbarPlugin />);
 
       // SELECTION_CHANGE_COMMAND is registered
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should execute CAN_UNDO_COMMAND callback and update canUndo state', () => {
-      render(<ToolbarPlugin history />);
+    it('should execute CAN_UNDO_COMMAND callback and update canUndo state', async () => {
+      await render(<ToolbarPlugin history />);
 
       // CAN_UNDO_COMMAND is registered
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should execute CAN_REDO_COMMAND callback and update canRedo state', () => {
-      render(<ToolbarPlugin history />);
+    it('should execute CAN_REDO_COMMAND callback and update canRedo state', async () => {
+      await render(<ToolbarPlugin history />);
 
       // CAN_REDO_COMMAND is registered
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -966,23 +967,23 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Update Listener Execution', () => {
-    it('should call $updateToolbar through editorState.read', () => {
-      render(<ToolbarPlugin />);
+    it('should call $updateToolbar through editorState.read', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('formatHeading Coverage', () => {
-    it('should not update editor when blockType already matches heading size', () => {
-      render(<ToolbarPlugin typography />);
+    it('should not update editor when blockType already matches heading size', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click heading 1
-      fireEvent.click(screen.getByText('Heading 1'));
+      await userEvent.click(page.getByText('Heading 1'));
 
       expect(mockUpdate).toHaveBeenCalled();
     });
@@ -1009,17 +1010,17 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click paragraph option - this should trigger $setBlocksType
-      const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphItems = page.getByText('Paragraph').all();
+      const paragraphMenuItem = paragraphItems.find(item => item.element().closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
-        fireEvent.click(paragraphMenuItem);
+        await userEvent.click(paragraphMenuItem);
       }
 
       // Verify $setBlocksType was called through editor.update
@@ -1062,7 +1063,7 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       });
 
-      render(<ToolbarPlugin link />);
+      await render(<ToolbarPlugin link />);
 
       // Trigger update listener to set isLink to true
       if (capturedUpdateListener) {
@@ -1075,7 +1076,7 @@ describe('ToolbarPlugin', () => {
       }
 
       // Now click the link button - since isLink is true, it should dispatch with null
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       // Should dispatch TOGGLE_LINK_COMMAND
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', expect.anything());
@@ -1083,67 +1084,67 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('$updateToolbar Function Coverage', () => {
-    it('should set isBold, isItalic, isUnderline from selection format', () => {
-      render(<ToolbarPlugin bold italic underline />);
+    it('should set isBold, isItalic, isUnderline from selection format', async () => {
+      await render(<ToolbarPlugin bold italic underline />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should set isLink true when parent is link node', () => {
-      render(<ToolbarPlugin link />);
+    it('should set isLink true when parent is link node', async () => {
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should set isLink false when neither parent nor node is link', () => {
-      render(<ToolbarPlugin link />);
+    it('should set isLink false when neither parent nor node is link', async () => {
+      await render(<ToolbarPlugin link />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should set selectedAlignment from element.getFormat()', () => {
-      render(<ToolbarPlugin alignment />);
+    it('should set selectedAlignment from element.getFormat()', async () => {
+      await render(<ToolbarPlugin alignment />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should set blockType from heading tag when element is heading node', () => {
-      render(<ToolbarPlugin typography />);
+    it('should set blockType from heading tag when element is heading node', async () => {
+      await render(<ToolbarPlugin typography />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
 
-    it('should set blockType to paragraph for unknown element type', () => {
-      render(<ToolbarPlugin typography />);
+    it('should set blockType to paragraph for unknown element type', async () => {
+      await render(<ToolbarPlugin typography />);
 
       // Should default to 'paragraph' for unknown types
-      expect(screen.getByText('Paragraph')).toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).toBeInTheDocument();
     });
 
-    it('should use anchorNode when key is root', () => {
-      render(<ToolbarPlugin />);
+    it('should use anchorNode when key is root', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('Command Registration Callbacks Direct Execution', () => {
-    it('should execute SELECTION_CHANGE_COMMAND callback and call $updateToolbar', () => {
-      render(<ToolbarPlugin />);
+    it('should execute SELECTION_CHANGE_COMMAND callback and call $updateToolbar', async () => {
+      await render(<ToolbarPlugin />);
 
       // SELECTION_CHANGE_COMMAND is registered
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should execute CAN_UNDO_COMMAND callback and update canUndo state', () => {
-      render(<ToolbarPlugin history />);
+    it('should execute CAN_UNDO_COMMAND callback and update canUndo state', async () => {
+      await render(<ToolbarPlugin history />);
 
       // CAN_UNDO_COMMAND is registered
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should execute CAN_REDO_COMMAND callback and update canRedo state', () => {
-      render(<ToolbarPlugin history />);
+    it('should execute CAN_REDO_COMMAND callback and update canRedo state', async () => {
+      await render(<ToolbarPlugin history />);
 
       // CAN_REDO_COMMAND is registered
       expect(mockRegisterCommand).toHaveBeenCalled();
@@ -1151,18 +1152,18 @@ describe('ToolbarPlugin', () => {
   });
 
   describe('Update Listener Callback', () => {
-    it('should call editorState.read with $updateToolbar', () => {
-      render(<ToolbarPlugin />);
+    it('should call editorState.read with $updateToolbar', async () => {
+      await render(<ToolbarPlugin />);
 
       expect(mockRegisterUpdateListener).toHaveBeenCalled();
     });
   });
 
   describe('Block Type Detection from Known Type', () => {
-    it('should set blockType from element type when in blockTypeToBlockName', () => {
-      render(<ToolbarPlugin typography />);
+    it('should set blockType from element type when in blockTypeToBlockName', async () => {
+      await render(<ToolbarPlugin typography />);
 
-      expect(screen.getByText('Paragraph')).toBeInTheDocument();
+      await expect.element(page.getByText('Paragraph')).toBeInTheDocument();
     });
   });
 
@@ -1207,17 +1208,17 @@ describe('ToolbarPlugin', () => {
         },
       });
 
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Open menu
-      const typographyButton = screen.getByText('Paragraph').closest('button');
-      fireEvent.click(typographyButton!);
+      const typographyButton = page.getByText('Paragraph').element().closest('button');
+      await userEvent.click(typographyButton!);
 
       // Click paragraph option - this triggers formatParagraph which calls $setBlocksType
-      const paragraphItems = screen.getAllByText('Paragraph');
-      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      const paragraphItems = page.getByText('Paragraph').all();
+      const paragraphMenuItem = paragraphItems.find(item => item.element().closest('[role="menuitem"]'));
       if (paragraphMenuItem) {
-        fireEvent.click(paragraphMenuItem);
+        await userEvent.click(paragraphMenuItem);
       }
 
       // editor.update should have been called
@@ -1274,13 +1275,13 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       });
 
-      const {rerender} = render(<ToolbarPlugin link />);
+      const {rerender} = await render(<ToolbarPlugin link />);
 
       // Rerender to ensure state is updated
-      rerender(<ToolbarPlugin link />);
+      await rerender(<ToolbarPlugin link />);
 
       // Click the link button - since isLink is true (set by $isLinkNode returning true), should dispatch with null
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       // Should have dispatched TOGGLE_LINK_COMMAND with null
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', null);
@@ -1331,7 +1332,7 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       });
 
-      render(<ToolbarPlugin link />);
+      await render(<ToolbarPlugin link />);
 
       // Trigger update listener - this should call $updateToolbar and set isLink to false
       if (capturedCallback !== null) {
@@ -1343,7 +1344,7 @@ describe('ToolbarPlugin', () => {
       }
 
       // Click the link button - since isLink is false, should dispatch with 'https://'
-      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+      await userEvent.click(page.getByRole('button', {name: 'Format Link'}));
 
       // Should have dispatched TOGGLE_LINK_COMMAND with 'https://'
       expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://');
@@ -1391,7 +1392,7 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       });
 
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Trigger update listener - this should call $updateToolbar and set blockType to 'h2'
       if (capturedCallback !== null) {
@@ -1443,7 +1444,7 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       });
 
-      render(<ToolbarPlugin typography />);
+      await render(<ToolbarPlugin typography />);
 
       // Trigger update listener - this should call $updateToolbar and default to 'paragraph'
       if (capturedCallback !== null) {
@@ -1470,7 +1471,7 @@ describe('ToolbarPlugin', () => {
         return vi.fn();
       });
 
-      render(<ToolbarPlugin />);
+      await render(<ToolbarPlugin />);
 
       // Execute the SELECTION_CHANGE_COMMAND callback
       if (selectionChangeCallback !== null) {

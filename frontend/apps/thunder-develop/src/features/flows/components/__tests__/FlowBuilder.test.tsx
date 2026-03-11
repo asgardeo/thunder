@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Element} from '@/features/flows/models/elements';
 import type {Step} from '@/features/flows/models/steps';
 import FlowBuilder from '../FlowBuilder';
@@ -65,23 +66,23 @@ describe('FlowBuilder', () => {
     onEdgesChange: vi.fn(),
   };
 
-  it('should render ReactFlowProvider wrapper', () => {
-    render(<FlowBuilder {...mockProps} />);
+  it('should render ReactFlowProvider wrapper', async () => {
+    await render(<FlowBuilder {...mockProps} />);
 
-    expect(screen.getByTestId('react-flow-provider')).toBeInTheDocument();
+    await expect.element(page.getByTestId('react-flow-provider')).toBeInTheDocument();
   });
 
-  it('should render DecoratedVisualFlow inside provider', () => {
-    render(<FlowBuilder {...mockProps} />);
+  it('should render DecoratedVisualFlow inside provider', async () => {
+    await render(<FlowBuilder {...mockProps} />);
 
-    expect(screen.getByTestId('decorated-visual-flow')).toBeInTheDocument();
+    await expect.element(page.getByTestId('decorated-visual-flow')).toBeInTheDocument();
   });
 
-  it('should pass props to DecoratedVisualFlow', () => {
-    render(<FlowBuilder {...mockProps} />);
+  it('should pass props to DecoratedVisualFlow', async () => {
+    await render(<FlowBuilder {...mockProps} />);
 
-    const decoratedFlow = screen.getByTestId('decorated-visual-flow');
-    const propsKeys = JSON.parse(decoratedFlow.getAttribute('data-props') ?? '[]') as string[];
+    const decoratedFlow = page.getByTestId('decorated-visual-flow');
+    const propsKeys = JSON.parse(decoratedFlow.element().getAttribute('data-props') ?? '[]') as string[];
 
     expect(propsKeys).toContain('resources');
     expect(propsKeys).toContain('flowTitle');
@@ -89,13 +90,13 @@ describe('FlowBuilder', () => {
     expect(propsKeys).toContain('onFlowTitleChange');
   });
 
-  it('should render with minimal required props', () => {
-    render(<FlowBuilder {...mockProps} />);
+  it('should render with minimal required props', async () => {
+    await render(<FlowBuilder {...mockProps} />);
 
-    expect(screen.getByText('Decorated Visual Flow')).toBeInTheDocument();
+    await expect.element(page.getByText('Decorated Visual Flow')).toBeInTheDocument();
   });
 
-  it('should render with additional optional props', () => {
+  it('should render with additional optional props', async () => {
     const extendedProps = {
       ...mockProps,
       initialNodes: [{id: 'node-1', position: {x: 0, y: 0}, data: {}}],
@@ -104,9 +105,9 @@ describe('FlowBuilder', () => {
       onSave: vi.fn(),
     };
 
-    render(<FlowBuilder {...extendedProps} />);
+    await render(<FlowBuilder {...extendedProps} />);
 
-    expect(screen.getByTestId('react-flow-provider')).toBeInTheDocument();
-    expect(screen.getByTestId('decorated-visual-flow')).toBeInTheDocument();
+    await expect.element(page.getByTestId('react-flow-provider')).toBeInTheDocument();
+    await expect.element(page.getByTestId('decorated-visual-flow')).toBeInTheDocument();
   });
 });

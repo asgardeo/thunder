@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import type {NavigateFunction} from 'react-router';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
@@ -176,22 +176,22 @@ describe('ApplicationsList', () => {
     vi.mocked(useDataGridLocaleText).mockReturnValue({});
   });
 
-  const renderComponent = () => render(<ApplicationsList />);
+  const renderComponent = () => renderWithProviders(<ApplicationsList />);
 
-  it('should render loading state', () => {
+  it('should render loading state', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
     // DataGrid shows loading state through its internal overlay, not a standalone progressbar
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
   });
 
-  it('should render error state', () => {
+  it('should render error state', async () => {
     const error = new Error('Failed to load applications');
     vi.mocked(useGetApplications).mockReturnValue({
       data: undefined,
@@ -199,71 +199,71 @@ describe('ApplicationsList', () => {
       error,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByRole('heading', {name: 'Failed to load applications'})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Failed to load applications'})).toBeInTheDocument();
     // The error message is displayed twice - once in heading and once in body
-    const errorTexts = screen.getAllByText('Failed to load applications');
+    const errorTexts = page.getByText('Failed to load applications').all();
     expect(errorTexts).toHaveLength(2);
   });
 
-  it('should render applications list successfully', () => {
+  it('should render applications list successfully', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByText('Test App 1')).toBeInTheDocument();
-    expect(screen.getByText('Test App 2')).toBeInTheDocument();
-    expect(screen.getByText('First test application')).toBeInTheDocument();
-    expect(screen.getByText('Second test application')).toBeInTheDocument();
+    await expect.element(page.getByText('Test App 1')).toBeInTheDocument();
+    await expect.element(page.getByText('Test App 2')).toBeInTheDocument();
+    await expect.element(page.getByText('First test application')).toBeInTheDocument();
+    await expect.element(page.getByText('Second test application')).toBeInTheDocument();
   });
 
-  it('should display client IDs as chips', () => {
+  it('should display client IDs as chips', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByText('client_id_1')).toBeInTheDocument();
-    expect(screen.getByText('client_id_2')).toBeInTheDocument();
+    await expect.element(page.getByText('client_id_1')).toBeInTheDocument();
+    await expect.element(page.getByText('client_id_2')).toBeInTheDocument();
   });
 
-  it('should render avatar with logo URL', () => {
+  it('should render avatar with logo URL', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const avatars = screen.getAllByRole('img');
+    const avatars = page.getByRole('img').all();
     expect(avatars[0]).toHaveAttribute('src', 'https://example.com/logo1.png');
   });
 
-  it('should render AppWindow icon when logo URL is not provided', () => {
+  it('should render AppWindow icon when logo URL is not provided', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
     // Should show AppWindow icon when logo URL is not provided
-    const avatars = screen.getAllByRole('img', {hidden: true});
+    const avatars = page.getByRole('img', {includeHidden: true}).all();
     // The second app (Test App 2) has no logo_url, so it should have the AppWindow icon
     expect(avatars.length).toBeGreaterThan(0);
   });
 
-  it('should display "-" for missing description', () => {
+  it('should display "-" for missing description', async () => {
     const dataWithMissingDescription: ApplicationListResponse = {
       ...mockApplicationsData,
       applications: [
@@ -280,77 +280,73 @@ describe('ApplicationsList', () => {
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const dashElements = screen.getAllByText('-');
+    const dashElements = page.getByText('-').all();
     expect(dashElements.length).toBeGreaterThan(0);
   });
 
   it('should open delete dialog when clicking Delete action', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-    await user.click(deleteButtons[0]);
+    const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+    await userEvent.click(deleteButtons[0]);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(page.getByTestId('delete-dialog').element()).toBeInTheDocument();
     });
   });
 
   it('should navigate when clicking row', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const rows = screen.getAllByRole('row');
+    const rows = page.getByRole('row').all();
 
     expect(rows.length).toBeGreaterThanOrEqual(1);
-    await user.click(rows[0]);
+    await userEvent.click(rows[0]);
   });
 
   it('should close delete dialog when cancelled', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
-    await user.click(deleteButtons[0]);
+    const deleteButtons = page.getByRole('button', {name: /delete/i}).all();
+    await userEvent.click(deleteButtons[0]);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(page.getByTestId('delete-dialog').element()).toBeInTheDocument();
     });
 
-    const cancelButton = screen.getByRole('button', {name: /cancel/i});
-    await user.click(cancelButton);
+    const cancelButton = page.getByRole('button', {name: /cancel/i});
+    await userEvent.click(cancelButton);
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('delete-dialog')).not.toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(page.getByTestId('delete-dialog').query()).not.toBeInTheDocument();
     });
   });
 
   it('should handle navigation error gracefully', async () => {
-    const user = userEvent.setup();
-    const navigationError = new Error('Navigation failed');
+        const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
 
     vi.mocked(useGetApplications).mockReturnValue({
@@ -359,20 +355,20 @@ describe('ApplicationsList', () => {
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const rows = screen.getAllByRole('row');
+    const rows = page.getByRole('row').all();
     expect(rows.length).toBeGreaterThan(0);
-    await user.click(rows[0]);
+    await userEvent.click(rows[0]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
     });
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
   });
 
-  it('should handle empty applications list', () => {
+  it('should handle empty applications list', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: {
         totalResults: 0,
@@ -383,115 +379,113 @@ describe('ApplicationsList', () => {
       error: null,
     } as unknown as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
     // DataGrid should still render but with no rows
-    const grid = screen.getByRole('grid');
+    const grid = page.getByRole('grid');
     expect(grid).toBeInTheDocument();
   });
 
   it('should navigate to view page when clicking row', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const rows = screen.getAllByRole('row');
+    const rows = page.getByRole('row').all();
     // The mock DataGrid has no header row, so index 0 is the first data row (app-1)
     expect(rows.length).toBeGreaterThan(0);
-    await user.click(rows[0]);
+    await userEvent.click(rows[0]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
     });
   });
 
   it('should navigate to correct application when clicking different row', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const rows = screen.getAllByRole('row');
+    const rows = page.getByRole('row').all();
     // Click on second data row (index 1, no header row in mock)
     expect(rows.length).toBeGreaterThan(1);
-    await user.click(rows[1]);
+    await userEvent.click(rows[1]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/applications/app-2');
     });
   });
 
-  it('should prevent row selection on click', () => {
+  it('should prevent row selection on click', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
     // Verify disableRowSelectionOnClick is applied by checking grid props
-    const grid = screen.getByRole('grid');
+    const grid = page.getByRole('grid');
     expect(grid).toBeInTheDocument();
   });
 
-  it('should display pagination controls', () => {
+  it('should display pagination controls', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
     // Check for pagination elements
-    expect(screen.getByText(/1–2 of 2/)).toBeInTheDocument();
+    await expect.element(page.getByText(/1–2 of 2/)).toBeInTheDocument();
   });
 
-  it('should apply cursor pointer style to rows', () => {
+  it('should apply cursor pointer style to rows', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const grid = screen.getByRole('grid');
+    const grid = page.getByRole('grid');
     expect(grid).toBeInTheDocument();
     // The cursor style is applied via sx prop to the DataGrid
   });
 
-  it('should handle avatar image error', () => {
+  it('should handle avatar image error', async () => {
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const avatars = screen.getAllByRole('img');
+    const avatars = page.getByRole('img').all();
     // Trigger onError on the first avatar
     if (avatars[0]) {
-      avatars[0].dispatchEvent(new Event('error'));
+      avatars[0].element().dispatchEvent(new Event('error'));
       // The onError handler should set src to empty string
       expect(avatars[0]).toBeInTheDocument();
     }
   });
 
-  it('should display "-" for missing client_id', () => {
+  it('should display "-" for missing client_id', async () => {
     const dataWithMissingClientId: ApplicationListResponse = {
       ...mockApplicationsData,
       applications: [
@@ -508,56 +502,53 @@ describe('ApplicationsList', () => {
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
     // Should display "-" for missing client_id
-    const dashes = screen.getAllByText('-');
+    const dashes = page.getByText('-').all();
     expect(dashes.length).toBeGreaterThan(0);
   });
 
   it('should navigate to application when Edit action button is clicked', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    const editButtons = page.getByRole('button', {name: /^edit$/i}).all();
     expect(editButtons.length).toBeGreaterThan(0);
-    await user.click(editButtons[0]);
+    await userEvent.click(editButtons[0]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/applications/app-1');
     });
   });
 
   it('should navigate to correct application when Edit action is clicked for second row', async () => {
-    const user = userEvent.setup();
-
+    
     vi.mocked(useGetApplications).mockReturnValue({
       data: mockApplicationsData,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    const editButtons = page.getByRole('button', {name: /^edit$/i}).all();
     expect(editButtons.length).toBeGreaterThan(1);
-    await user.click(editButtons[1]);
+    await userEvent.click(editButtons[1]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/applications/app-2');
     });
   });
 
   it('should log error when Edit button navigation fails', async () => {
-    const user = userEvent.setup();
-    const navigationError = new Error('Navigation failed');
+        const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
 
     vi.mocked(useGetApplications).mockReturnValue({
@@ -566,12 +557,12 @@ describe('ApplicationsList', () => {
       error: null,
     } as ReturnType<typeof useGetApplications>);
 
-    renderComponent();
+    await renderComponent();
 
-    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
-    await user.click(editButtons[0]);
+    const editButtons = page.getByRole('button', {name: /^edit$/i}).all();
+    await userEvent.click(editButtons[0]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(
         'Failed to navigate to application',
         expect.objectContaining({

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useCreateUser from '../useCreateUser';
 import type {ApiUser, CreateUserRequest} from '../../types/users';
 import UserQueryKeys from '../../constants/user-query-keys';
@@ -74,8 +74,8 @@ describe('useCreateUser', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateUser());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useCreateUser());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -92,11 +92,11 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -117,25 +117,32 @@ describe('useCreateUser', () => {
   });
 
   it('should set pending state during creation', async () => {
-    let resolveRequest: (value: unknown) => void;
-    const requestPromise = new Promise((resolve) => {
-      resolveRequest = resolve;
-    });
-    mockHttpRequest.mockReturnValue(requestPromise);
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(
+          () =>
+            resolve({
+              data: mockUser,
+            }),
+          100,
+        );
+      }),
+    );
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    resolveRequest!({data: mockUser});
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+    await vi.waitFor(
+      () => {
+        expect(result.current.isSuccess).toBe(true);
+      },
+      {timeout: 200},
+    );
 
     expect(result.current.isPending).toBe(false);
   });
@@ -145,11 +152,11 @@ describe('useCreateUser', () => {
 
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -163,11 +170,11 @@ describe('useCreateUser', () => {
 
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -181,12 +188,12 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result, queryClient} = renderHook(() => useCreateUser());
+    const {result, queryClient} = await renderHook(() => useCreateUser());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -202,14 +209,14 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result, queryClient} = renderHook(() => useCreateUser());
+    const {result, queryClient} = await renderHook(() => useCreateUser());
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
 
     result.current.mutate(mockRequest);
 
     // The mutation should still succeed even if invalidateQueries fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -221,13 +228,13 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     const promise = result.current.mutateAsync(mockRequest);
 
     await expect(promise).resolves.toEqual(mockUser);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
     expect(result.current.data).toEqual(mockUser);
@@ -237,13 +244,13 @@ describe('useCreateUser', () => {
     const apiError = new Error('Creation failed');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     const promise = result.current.mutateAsync(mockRequest);
 
     await expect(promise).rejects.toEqual(apiError);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
   });
@@ -253,19 +260,17 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    result.current.reset();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toBeUndefined();
     });
     expect(result.current.error).toBeNull();
@@ -281,11 +286,11 @@ describe('useCreateUser', () => {
       data: firstUser,
     });
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(firstUser);
     });
@@ -296,7 +301,7 @@ describe('useCreateUser', () => {
 
     result.current.mutate({...mockRequest, type: 'Contractor'});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(secondUser);
     });
   });
@@ -312,11 +317,11 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -337,11 +342,11 @@ describe('useCreateUser', () => {
       data: mockUser,
     });
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -357,12 +362,12 @@ describe('useCreateUser', () => {
     const apiError = new Error('Temporary error');
     mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce({data: mockUser});
 
-    const {result} = renderHook(() => useCreateUser());
+    const {result} = await renderHook(() => useCreateUser());
 
     // First attempt - should fail
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -371,7 +376,7 @@ describe('useCreateUser', () => {
     // Second attempt - should succeed
     result.current.mutate(mockRequest);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

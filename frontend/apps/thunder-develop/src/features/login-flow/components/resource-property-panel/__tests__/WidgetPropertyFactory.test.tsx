@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Resource} from '@/features/flows/models/resources';
 import WidgetPropertyFactory from '../WidgetPropertyFactory';
 
@@ -43,10 +44,10 @@ describe('WidgetPropertyFactory', () => {
     }) as Resource;
 
   describe('Rendering', () => {
-    it('should render CommonWidgetPropertyFactory', () => {
+    it('should render CommonWidgetPropertyFactory', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <WidgetPropertyFactory
           resource={resource}
           propertyKey="title"
@@ -55,13 +56,13 @@ describe('WidgetPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-widget-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-widget-property-factory')).toBeInTheDocument();
     });
 
-    it('should pass resource to CommonWidgetPropertyFactory', () => {
+    it('should pass resource to CommonWidgetPropertyFactory', async () => {
       const resource = createMockResource({id: 'custom-widget'});
 
-      render(
+      await render(
         <WidgetPropertyFactory
           resource={resource}
           propertyKey="title"
@@ -70,13 +71,13 @@ describe('WidgetPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-widget-property-factory')).toHaveAttribute('data-resource-id', 'custom-widget');
+      await expect.element(page.getByTestId('common-widget-property-factory')).toHaveAttribute('data-resource-id', 'custom-widget');
     });
 
-    it('should pass propertyKey to CommonWidgetPropertyFactory', () => {
+    it('should pass propertyKey to CommonWidgetPropertyFactory', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <WidgetPropertyFactory
           resource={resource}
           propertyKey="description"
@@ -85,13 +86,13 @@ describe('WidgetPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-widget-property-factory')).toHaveAttribute('data-property-key', 'description');
+      await expect.element(page.getByTestId('common-widget-property-factory')).toHaveAttribute('data-property-key', 'description');
     });
 
-    it('should pass propertyValue to CommonWidgetPropertyFactory', () => {
+    it('should pass propertyValue to CommonWidgetPropertyFactory', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <WidgetPropertyFactory
           resource={resource}
           propertyKey="title"
@@ -100,13 +101,13 @@ describe('WidgetPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-widget-property-factory')).toHaveAttribute('data-property-value', 'My Widget');
+      await expect.element(page.getByTestId('common-widget-property-factory')).toHaveAttribute('data-property-value', 'My Widget');
     });
 
-    it('should handle different widget types', () => {
+    it('should handle different widget types', async () => {
       const resource = createMockResource({type: 'FOOTER'});
 
-      render(
+      await render(
         <WidgetPropertyFactory
           resource={resource}
           propertyKey="content"
@@ -115,7 +116,7 @@ describe('WidgetPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-widget-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-widget-property-factory')).toBeInTheDocument();
     });
   });
 });

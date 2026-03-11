@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
-import type {Theme} from '@thunder/shared-design';
+import type {ThemeConfig} from '@thunder/shared-design';
 import type {Application} from '../../models/application';
 import ApplicationCreatePage from '../ApplicationCreatePage';
 import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
@@ -156,23 +156,25 @@ vi.mock('../../components/create-application/ConfigureName', () => ({
 
 vi.mock('../../components/create-application/ConfigureDesign', () => ({
   default: ({
-    appLogo,
     onLogoSelect,
     onThemeSelect,
   }: {
     appLogo: string | null;
-    selectedTheme: Theme | null;
+    selectedTheme: ThemeConfig | null;
     onLogoSelect: (logo: string) => void;
     onInitialLogoLoad: (logo: string) => void;
     onReadyChange: (ready: boolean) => void;
-    onThemeSelect?: (themeId: string, themeConfig: Theme) => void;
+    onThemeSelect?: (themeId: string, themeConfig: ThemeConfig) => void;
   }) => (
     <div data-testid="configure-design">
-      {appLogo ? <span data-testid="preview-logo">{appLogo}</span> : null}
       <button type="button" data-testid="logo-select-btn" onClick={() => onLogoSelect('test-logo.png')}>
         Select Logo
       </button>
-      <button type="button" data-testid="select-theme-btn" onClick={() => onThemeSelect?.('theme-1', {} as Theme)}>
+      <button
+        type="button"
+        data-testid="select-theme-btn"
+        onClick={() => onThemeSelect?.('theme-1', {} as ThemeConfig)}
+      >
         Select Theme
       </button>
     </div>
@@ -183,41 +185,39 @@ vi.mock('../../components/create-application/configure-signin-options/ConfigureS
   const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
   return {
-    default: vi.fn(
-      ({
-        integrations,
-        onIntegrationToggle,
-        onReadyChange,
-      }: {
-        integrations: Record<string, boolean>;
-        onIntegrationToggle: (id: string) => void;
-        onReadyChange: (ready: boolean) => void;
-      }) => {
-        const {setSelectedAuthFlow} = useApplicationCreateContextModule.default();
+    default: vi.fn(({
+      integrations,
+      onIntegrationToggle,
+      onReadyChange,
+    }: {
+      integrations: Record<string, boolean>;
+      onIntegrationToggle: (id: string) => void;
+      onReadyChange: (ready: boolean) => void;
+    }) => {
+      const {setSelectedAuthFlow} = useApplicationCreateContextModule.default();
 
-        setTimeout(() => {
-          setSelectedAuthFlow({
-            id: 'test-flow-id',
-            name: 'Test Flow',
-            flowType: 'AUTHENTICATION',
-            handle: 'test-flow',
-            activeVersion: 1,
-            createdAt: '2024-01-01T00:00:00Z',
-            updatedAt: '2024-01-01T00:00:00Z',
-          });
-          const hasSelection = Object.values(integrations).some((enabled: boolean) => enabled);
-          onReadyChange(hasSelection);
-        }, 0);
+      setTimeout(() => {
+        setSelectedAuthFlow({
+          id: 'test-flow-id',
+          name: 'Test Flow',
+          flowType: 'AUTHENTICATION',
+          handle: 'test-flow',
+          activeVersion: 1,
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+        });
+        const hasSelection = Object.values(integrations).some((enabled: boolean) => enabled);
+        onReadyChange(hasSelection);
+      }, 0);
 
-        return (
-          <div data-testid="configure-sign-in">
-            <button type="button" data-testid="toggle-integration" onClick={() => onIntegrationToggle('basic_auth')}>
-              Toggle Integration
-            </button>
-          </div>
-        );
-      },
-    ),
+      return (
+        <div data-testid="configure-sign-in">
+          <button type="button" data-testid="toggle-integration" onClick={() => onIntegrationToggle('basic_auth')}>
+            Toggle Integration
+          </button>
+        </div>
+      );
+    }),
   };
 });
 
@@ -280,8 +280,20 @@ vi.mock('../../components/create-application/ConfigureDetails', () => ({
   },
 }));
 
-vi.mock('../../../../components/GatePreview/GatePreview', () => ({
-  default: () => <div data-testid="preview" />,
+vi.mock('../../components/create-application/Preview', () => ({
+  default: ({
+    appLogo,
+    selectedColor,
+  }: {
+    appLogo: string | null;
+    selectedColor: string;
+    integrations: Record<string, boolean>;
+  }) => (
+    <div data-testid="preview">
+      <div data-testid="preview-logo">{appLogo}</div>
+      <div data-testid="preview-color">{selectedColor}</div>
+    </div>
+  ),
 }));
 
 vi.mock('../../components/create-application/ShowClientSecret', () => ({
@@ -306,9 +318,7 @@ vi.mock('../../components/create-application/ShowClientSecret', () => ({
 }));
 
 describe('ApplicationCreatePage', () => {
-  let user: ReturnType<typeof userEvent.setup>;
-
-  const renderWithProviders = () =>
+  const renderWithProviders = async () =>
     render(
       <ApplicationCreateProvider>
         <ApplicationCreatePage />
@@ -316,8 +326,6 @@ describe('ApplicationCreatePage', () => {
     );
 
   beforeEach(async () => {
-    user = userEvent.setup();
-
     window.history.replaceState({}, '', '/');
 
     vi.clearAllMocks();
@@ -328,171 +336,171 @@ describe('ApplicationCreatePage', () => {
   });
 
   describe('Initial Rendering', () => {
-    it('should render the name step by default', () => {
-      renderWithProviders();
+    it('should render the name step by default', async () => {
+      await renderWithProviders();
 
-      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
-      expect(screen.queryByTestId('configure-design')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-name')).toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-design')).not.toBeInTheDocument();
     });
 
-    it('should not show preview on first step', () => {
-      renderWithProviders();
+    it('should not show preview on first step', async () => {
+      await renderWithProviders();
 
-      expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('preview')).not.toBeInTheDocument();
     });
 
-    it('should render close button', () => {
-      const {container} = renderWithProviders();
+    it('should render close button', async () => {
+      const {container} = await renderWithProviders();
 
       const buttons = container.querySelectorAll('button');
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('should show breadcrumb with current step', () => {
-      renderWithProviders();
+    it('should show breadcrumb with current step', async () => {
+      await renderWithProviders();
 
-      expect(screen.getByText('Create an Application')).toBeInTheDocument();
+      await expect.element(page.getByText('Create an Application')).toBeInTheDocument();
     });
   });
 
   describe('Step Navigation', () => {
-    it('should disable Continue button when name is empty', () => {
-      renderWithProviders();
+    it('should disable Continue button when name is empty', async () => {
+      await renderWithProviders();
 
-      const continueButton = screen.getByRole('button', {name: /continue/i});
+      const continueButton = page.getByRole('button', {name: /continue/i});
       expect(continueButton).toBeDisabled();
     });
 
     it('should enable Continue button when name is entered', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      const nameInput = screen.getByTestId('app-name-input');
-      await user.type(nameInput, 'My App');
+      const nameInput = page.getByTestId('app-name-input');
+      await userEvent.type(nameInput, 'My App');
 
-      const continueButton = screen.getByRole('button', {name: /continue/i});
+      const continueButton = page.getByRole('button', {name: /continue/i});
       expect(continueButton).toBeEnabled();
     });
 
     it('should navigate to design step from name step', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      const nameInput = screen.getByTestId('app-name-input');
-      await user.type(nameInput, 'My App');
+      const nameInput = page.getByTestId('app-name-input');
+      await userEvent.type(nameInput, 'My App');
 
-      const continueButton = screen.getByRole('button', {name: /continue/i});
-      await user.click(continueButton);
+      const continueButton = page.getByRole('button', {name: /continue/i});
+      await userEvent.click(continueButton);
 
-      expect(screen.getByTestId('configure-design')).toBeInTheDocument();
-      expect(screen.queryByTestId('configure-name')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-design')).toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-name')).not.toBeInTheDocument();
     });
 
     it('should show preview from design step onwards', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      const nameInput = screen.getByTestId('app-name-input');
-      await user.type(nameInput, 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      const nameInput = page.getByTestId('app-name-input');
+      await userEvent.type(nameInput, 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      expect(screen.getByTestId('preview')).toBeInTheDocument();
+      await expect.element(page.getByTestId('preview')).toBeInTheDocument();
     });
 
     it('should navigate through all steps', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
       // Step 1: Name
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Step 2: Design
-      expect(screen.getByTestId('configure-design')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await expect.element(page.getByTestId('configure-design')).toBeInTheDocument();
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Step 3: Sign In Options
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Step 4: Experience
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Step 5: Stack
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Step 6: Configure Details
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
     });
 
     it('should show Back button from design step onwards', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      expect(screen.getByRole('button', {name: /back/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /back/i})).toBeInTheDocument();
     });
 
     it('should navigate back to previous step', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /back/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /back/i}));
 
-      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
-      expect(screen.queryByTestId('configure-design')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-name')).toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-design')).not.toBeInTheDocument();
     });
   });
 
   describe('Breadcrumb Navigation', () => {
     it('should update breadcrumb as user progresses', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      expect(screen.getByText('Create an Application')).toBeInTheDocument();
+      await expect.element(page.getByText('Create an Application')).toBeInTheDocument();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      expect(screen.getByText('Design')).toBeInTheDocument();
+      await expect.element(page.getByText('Design')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      expect(screen.getByText('Sign In Options')).toBeInTheDocument();
+      await expect.element(page.getByText('Sign In Options')).toBeInTheDocument();
     });
 
     it('should allow clicking on previous breadcrumb steps', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      const firstBreadcrumb = screen.getByText('Create an Application');
-      await user.click(firstBreadcrumb);
+      const firstBreadcrumb = page.getByText('Create an Application');
+      await userEvent.click(firstBreadcrumb);
 
-      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-name')).toBeInTheDocument();
     });
   });
 
   describe('Close Functionality', () => {
     it('should navigate to applications list when close button is clicked', async () => {
-      const {container} = renderWithProviders();
+      const {container} = await renderWithProviders();
 
       const closeButton = container.querySelector('button');
       expect(closeButton).toBeInTheDocument();
 
       if (closeButton) {
-        await user.click(closeButton);
+        await userEvent.click(closeButton);
 
-        await waitFor(() => {
+        await vi.waitFor(() => {
           expect(mockNavigate).toHaveBeenCalledWith('/applications');
         });
       }
@@ -501,36 +509,36 @@ describe('ApplicationCreatePage', () => {
 
   describe('Form State Management', () => {
     it('should update app name state', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      const nameInput = screen.getByTestId('app-name-input');
-      await user.type(nameInput, 'Test App');
+      const nameInput = page.getByTestId('app-name-input');
+      await userEvent.type(nameInput, 'Test App');
 
       expect(nameInput).toHaveValue('Test App');
     });
 
     it('should preserve app name when navigating between steps', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      const nameInput = screen.getByTestId('app-name-input');
-      await user.type(nameInput, 'My App');
+      const nameInput = page.getByTestId('app-name-input');
+      await userEvent.type(nameInput, 'My App');
 
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /back/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /back/i}));
 
-      expect(screen.getByTestId('app-name-input')).toHaveValue('My App');
+      await expect.element(page.getByTestId('app-name-input')).toHaveValue('My App');
     });
 
     it('should update logo in state', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      const logoButton = screen.getByTestId('logo-select-btn');
-      await user.click(logoButton);
+      const logoButton = page.getByTestId('logo-select-btn');
+      await userEvent.click(logoButton);
 
-      expect(screen.getByTestId('preview-logo')).toHaveTextContent('test-logo.png');
+      await expect.element(page.getByTestId('preview-logo')).toHaveTextContent('test-logo.png');
     });
   });
 
@@ -540,34 +548,34 @@ describe('ApplicationCreatePage', () => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
       // Navigate through all steps
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
       });
 
@@ -583,34 +591,34 @@ describe('ApplicationCreatePage', () => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
       // Navigate through all steps
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
       });
     });
@@ -625,33 +633,33 @@ describe('ApplicationCreatePage', () => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
       // Navigate to experience step
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Select embedded approach
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      const selectEmbeddedBtn = screen.getByTestId('select-embedded-approach');
-      await user.click(selectEmbeddedBtn);
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      const selectEmbeddedBtn = page.getByTestId('select-embedded-approach');
+      await userEvent.click(selectEmbeddedBtn);
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Continue from stack - should create app immediately
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
       });
 
@@ -668,31 +676,31 @@ describe('ApplicationCreatePage', () => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByTestId('select-embedded-approach'));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByTestId('select-embedded-approach'));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Should NOT show configure details step
-      await waitFor(() => {
-        expect(screen.queryByTestId('configure-details')).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).not.toBeInTheDocument();
         expect(mockCreateApplication).toHaveBeenCalled();
       });
     });
@@ -704,35 +712,35 @@ describe('ApplicationCreatePage', () => {
         onError(new Error('Failed to create application'));
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(
-        () => {
-          expect(screen.getByText(/failed to create application/i)).toBeInTheDocument();
+      await vi.waitFor(
+        async () => {
+          await expect.element(page.getByText(/failed to create application/i)).toBeInTheDocument();
         },
         {timeout: 10000},
       );
@@ -743,44 +751,44 @@ describe('ApplicationCreatePage', () => {
         onError(new Error('Failed to create application'));
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(
-        () => {
-          expect(screen.getByText(/failed to create application/i)).toBeInTheDocument();
+      await vi.waitFor(
+        async () => {
+          await expect.element(page.getByText(/failed to create application/i)).toBeInTheDocument();
         },
         {timeout: 10000},
       );
 
-      const closeButton = screen.getByLabelText(/close/i);
-      await user.click(closeButton);
+      const closeButton = page.getByLabelText(/close/i);
+      await userEvent.click(closeButton);
 
-      await waitFor(() => {
-        expect(screen.queryByText(/failed to create application/i)).not.toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText(/failed to create application/i)).not.toBeInTheDocument();
       });
     });
   });
@@ -791,38 +799,38 @@ describe('ApplicationCreatePage', () => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Select a theme
-      const selectThemeBtn = screen.getByTestId('select-theme-btn');
-      await user.click(selectThemeBtn);
+      const selectThemeBtn = page.getByTestId('select-theme-btn');
+      await userEvent.click(selectThemeBtn);
 
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
       });
 
@@ -834,52 +842,52 @@ describe('ApplicationCreatePage', () => {
 
   describe('Integration Toggle', () => {
     it('should allow toggling integrations', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
 
-      const toggleButton = screen.getByTestId('toggle-integration');
-      await user.click(toggleButton);
+      const toggleButton = page.getByTestId('toggle-integration');
+      await userEvent.click(toggleButton);
 
-      expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
     });
   });
 
   describe('Callback URL Configuration', () => {
     it('should update OAuth config when callback URL changes', async () => {
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
 
-      const callbackInput = screen.getByTestId('callback-url-input');
-      await user.type(callbackInput, 'https://example.com/callback');
+      const callbackInput = page.getByTestId('callback-url-input');
+      await userEvent.type(callbackInput, 'https://example.com/callback');
 
       expect(callbackInput).toHaveValue('https://example.com/callback');
     });
@@ -904,39 +912,39 @@ describe('ApplicationCreatePage', () => {
         } as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Should show COMPLETE step with client secret
-      await waitFor(() => {
-        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('show-client-secret')).toBeInTheDocument();
       });
 
-      expect(screen.getByTestId('client-secret-app-name')).toHaveTextContent('My App');
-      expect(screen.getByTestId('client-secret-value')).toHaveTextContent('test_secret_12345');
+      await expect.element(page.getByTestId('client-secret-app-name')).toHaveTextContent('My App');
+      await expect.element(page.getByTestId('client-secret-value')).toHaveTextContent('test_secret_12345');
     });
 
     it('should not show COMPLETE step when application is created without client_secret', async () => {
@@ -948,39 +956,39 @@ describe('ApplicationCreatePage', () => {
         } as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Should navigate directly to application details page
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
       });
 
       // Should not show COMPLETE step
-      expect(screen.queryByTestId('show-client-secret')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('show-client-secret')).not.toBeInTheDocument();
     });
 
     it('should navigate to application details when continue is clicked on COMPLETE step', async () => {
@@ -1001,43 +1009,43 @@ describe('ApplicationCreatePage', () => {
         } as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Should show COMPLETE step
-      await waitFor(() => {
-        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('show-client-secret')).toBeInTheDocument();
       });
 
       // Click continue on COMPLETE step
-      const continueButton = screen.getByTestId('client-secret-continue');
-      await user.click(continueButton);
+      const continueButton = page.getByTestId('client-secret-continue');
+      await userEvent.click(continueButton);
 
       // Should navigate to application details page
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/applications/app-456');
       });
     });
@@ -1060,39 +1068,39 @@ describe('ApplicationCreatePage', () => {
         } as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Should show COMPLETE step
-      await waitFor(() => {
-        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('show-client-secret')).toBeInTheDocument();
       });
 
       // Back button should not be present
-      expect(screen.queryByRole('button', {name: /back/i})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /back/i})).not.toBeInTheDocument();
     });
 
     it('should not show preview panel on COMPLETE step', async () => {
@@ -1113,45 +1121,45 @@ describe('ApplicationCreatePage', () => {
         } as Application);
       });
 
-      renderWithProviders();
+      await renderWithProviders();
 
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Preview should be visible on DESIGN step
-      await waitFor(() => {
-        expect(screen.getByTestId('preview')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('preview')).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-experience')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-stack')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-details')).toBeInTheDocument();
       });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Should show COMPLETE step
-      await waitFor(() => {
-        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('show-client-secret')).toBeInTheDocument();
       });
 
       // Preview should not be visible on COMPLETE step
-      expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('preview')).not.toBeInTheDocument();
     });
   });
 
@@ -1172,58 +1180,54 @@ describe('ApplicationCreatePage', () => {
       });
 
       // Override MockConfigureSignInOptions to simulate selection without setting a flow
-      const ConfigureSignInOptionsModule = await import(
-        '../../components/create-application/configure-signin-options/ConfigureSignInOptions'
-      );
+      const ConfigureSignInOptionsModule = await import('../../components/create-application/configure-signin-options/ConfigureSignInOptions');
       const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
-
+          
           const handleSetup = () => {
-            // Explicitly set flow to null to trigger generation logic
+             // Explicitly set flow to null to trigger generation logic
             setSelectedAuthFlow(null);
             // Explicitly set integrations
-            setIntegrations({basic_auth: true});
+            setIntegrations({'basic_auth': true});
             onReadyChange?.(true);
           };
 
           return (
             <div data-testid="configure-sign-in">
-              <button type="button" data-testid="setup-flow-generation" onClick={handleSetup}>
-                Setup Flow Generation
-              </button>
+              <button type="button" data-testid="setup-flow-generation" onClick={handleSetup}>Setup Flow Generation</button>
             </div>
           );
-        },
+        }
       );
 
-      renderWithProviders();
+      await renderWithProviders();
 
       // Navigate to options step
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // At Options step
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-
+      
       // Trigger setup
-      await user.click(screen.getByTestId('setup-flow-generation'));
-
-      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByTestId('setup-flow-generation'));
+      
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
 
       // Experience -> Stack -> Configure
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Experience
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Stack
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Configure Details
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Experience
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Stack
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Configure Details
 
       // Verify generateFlowGraph called
-      await waitFor(() => {
+      await vi.waitFor(() => {
         expect(mockGenerateFlowGraph).toHaveBeenCalled();
         expect(mockCreateFlow).toHaveBeenCalled();
         expect(mockCreateApplication).toHaveBeenCalled();
@@ -1235,60 +1239,56 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should show error when flow generation fails', async () => {
-      // Mock createFlow to fail
-      mockCreateFlow.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
+       // Mock createFlow to fail
+       mockCreateFlow.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
         onError(new Error('Flow generation failed'));
       });
 
-      // Override MockConfigureSignInOptions to simulate selection without setting a flow
-      const ConfigureSignInOptionsModule = await import(
-        '../../components/create-application/configure-signin-options/ConfigureSignInOptions'
-      );
-      const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
+       // Override MockConfigureSignInOptions to simulate selection without setting a flow
+       const ConfigureSignInOptionsModule = await import('../../components/create-application/configure-signin-options/ConfigureSignInOptions');
+       const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
-      vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
+       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
-
+          
           const handleSetup = () => {
-            setSelectedAuthFlow(null);
-            setIntegrations({basic_auth: true});
-            onReadyChange?.(true);
+             setSelectedAuthFlow(null);
+             setIntegrations({'basic_auth': true});
+             onReadyChange?.(true);
           };
 
           return (
             <div data-testid="configure-sign-in">
-              <button type="button" data-testid="setup-flow-generation-error" onClick={handleSetup}>
-                Setup Flow Generation Error
-              </button>
+               <button type="button" data-testid="setup-flow-generation-error" onClick={handleSetup}>Setup Flow Generation Error</button>
             </div>
           );
-        },
+        }
       );
 
-      renderWithProviders();
+      await renderWithProviders();
 
       // Navigate to trigger point
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Design
-
+      await userEvent.type(page.getByTestId('app-name-input'), 'My App');
+      await userEvent.click(page.getByRole('button', {name: /continue/i}));
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Design
+      
       // Options step
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-
+      
       // Trigger setup
-      await user.click(screen.getByTestId('setup-flow-generation-error'));
+      await userEvent.click(page.getByTestId('setup-flow-generation-error'));
+      
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Options -> Experience
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Experience -> Stack
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Stack -> Configure
+      await userEvent.click(page.getByRole('button', {name: /continue/i})); // Configure -> Create
 
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Options -> Experience
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Experience -> Stack
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Stack -> Configure
-      await user.click(screen.getByRole('button', {name: /continue/i})); // Configure -> Create
-
-      await waitFor(() => {
-        expect(screen.getByText('Flow generation failed')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+         await expect.element(page.getByText('Flow generation failed')).toBeInTheDocument();
       });
     });
   });

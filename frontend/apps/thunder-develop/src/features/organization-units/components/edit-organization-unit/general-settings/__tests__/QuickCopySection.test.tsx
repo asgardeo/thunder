@@ -17,26 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import QuickCopySection from '../QuickCopySection';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
-
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.general.sections.quickCopy.title': 'Quick Copy',
-        'organizationUnits:edit.general.sections.quickCopy.description': 'Copy organization unit identifiers',
-        'organizationUnits:edit.general.handle.label': 'Handle',
-        'organizationUnits:edit.general.ou.id.label': 'Organization Unit ID',
-        'common:actions.copy': 'Copy',
-        'common:actions.copied': 'Copied',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
 
 describe('QuickCopySection', () => {
   const mockOrganizationUnit: OrganizationUnit = {
@@ -53,8 +37,8 @@ describe('QuickCopySection', () => {
     vi.clearAllMocks();
   });
 
-  it('should render the quick copy section', () => {
-    renderWithProviders(
+  it('should render the quick copy section', async () => {
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField={null}
@@ -62,12 +46,12 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    expect(screen.getByText('Quick Copy')).toBeInTheDocument();
-    expect(screen.getByText('Copy organization unit identifiers')).toBeInTheDocument();
+    await expect.element(page.getByText('Quick Copy')).toBeInTheDocument();
+    await expect.element(page.getByText('Copy organization unit identifiers')).toBeInTheDocument();
   });
 
-  it('should render handle field with correct value', () => {
-    renderWithProviders(
+  it('should render handle field with correct value', async () => {
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField={null}
@@ -75,13 +59,13 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const handleInput = screen.getByDisplayValue('engineering');
-    expect(handleInput).toBeInTheDocument();
-    expect(handleInput).toHaveAttribute('readonly');
+    const handleInput = page.getByRole('textbox', {name: 'Handle'});
+    await expect.element(handleInput).toHaveValue('engineering');
+    await expect.element(handleInput).toHaveAttribute('readonly');
   });
 
-  it('should render organization unit ID field with correct value', () => {
-    renderWithProviders(
+  it('should render organization unit ID field with correct value', async () => {
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField={null}
@@ -89,13 +73,13 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const idInput = screen.getByDisplayValue('ou-123');
-    expect(idInput).toBeInTheDocument();
-    expect(idInput).toHaveAttribute('readonly');
+    const idInput = page.getByRole('textbox', {name: 'Organization Unit ID'});
+    await expect.element(idInput).toHaveValue('ou-123');
+    await expect.element(idInput).toHaveAttribute('readonly');
   });
 
   it('should call onCopyToClipboard when handle copy button is clicked', async () => {
-    renderWithProviders(
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField={null}
@@ -103,16 +87,16 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copyButtons = screen.getAllByRole('button', {name: 'Copy'});
-    fireEvent.click(copyButtons[0]); // First copy button is for handle
+    const copyButtons = page.getByRole('button', {name: 'Copy'}).all();
+    await userEvent.click(copyButtons[0]); // First copy button is for handle
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnCopyToClipboard).toHaveBeenCalledWith('engineering', 'handle');
     });
   });
 
   it('should call onCopyToClipboard when ID copy button is clicked', async () => {
-    renderWithProviders(
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField={null}
@@ -120,16 +104,16 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copyButtons = screen.getAllByRole('button', {name: 'Copy'});
-    fireEvent.click(copyButtons[1]); // Second copy button is for ID
+    const copyButtons = page.getByRole('button', {name: 'Copy'}).all();
+    await userEvent.click(copyButtons[1]); // Second copy button is for ID
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnCopyToClipboard).toHaveBeenCalledWith('ou-123', 'ou_id');
     });
   });
 
-  it('should show check icon when handle is copied', () => {
-    renderWithProviders(
+  it('should show check icon when handle is copied', async () => {
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField="handle"
@@ -137,12 +121,11 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copiedButton = screen.getByLabelText('Copied');
-    expect(copiedButton).toBeInTheDocument();
+    await expect.element(page.getByLabelText('Copied')).toBeInTheDocument();
   });
 
-  it('should show check icon when ID is copied', () => {
-    renderWithProviders(
+  it('should show check icon when ID is copied', async () => {
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField="ou_id"
@@ -150,14 +133,13 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copiedButton = screen.getByLabelText('Copied');
-    expect(copiedButton).toBeInTheDocument();
+    await expect.element(page.getByLabelText('Copied')).toBeInTheDocument();
   });
 
   it('should handle copy errors gracefully', async () => {
     const mockOnCopyError = vi.fn().mockRejectedValue(new Error('Copy failed'));
 
-    renderWithProviders(
+    await renderWithProviders(
       <QuickCopySection
         organizationUnit={mockOrganizationUnit}
         copiedField={null}
@@ -165,10 +147,10 @@ describe('QuickCopySection', () => {
       />,
     );
 
-    const copyButtons = screen.getAllByLabelText('Copy');
-    fireEvent.click(copyButtons[0]);
+    const copyButtons = page.getByLabelText('Copy').all();
+    await userEvent.click(copyButtons[0]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnCopyError).toHaveBeenCalled();
     });
 

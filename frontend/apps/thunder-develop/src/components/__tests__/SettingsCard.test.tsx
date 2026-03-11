@@ -17,194 +17,193 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import SettingsCard from '../SettingsCard';
 
 describe('SettingsCard', () => {
   describe('Rendering', () => {
-    it('should render with title and children', () => {
-      render(
+    it('should render with title and children', async () => {
+      await render(
         <SettingsCard title="Test Settings">
           <div>Test Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.getByText('Test Settings')).toBeInTheDocument();
-      expect(screen.getByText('Test Content')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Settings')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Content')).toBeInTheDocument();
     });
 
-    it('should render with title and description', () => {
-      render(
+    it('should render with title and description', async () => {
+      await render(
         <SettingsCard title="Test Settings" description="This is a description">
           <div>Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.getByText('Test Settings')).toBeInTheDocument();
-      expect(screen.getByText('This is a description')).toBeInTheDocument();
+      await expect.element(page.getByText('Test Settings')).toBeInTheDocument();
+      await expect.element(page.getByText('This is a description')).toBeInTheDocument();
     });
 
-    it('should not render description when not provided', () => {
-      render(
+    it('should not render description when not provided', async () => {
+      await render(
         <SettingsCard title="Test Settings">
           <div>Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.getByText('Test Settings')).toBeInTheDocument();
-      expect(screen.queryByText('This is a description')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Test Settings')).toBeInTheDocument();
+      await expect.element(page.getByText('This is a description')).not.toBeInTheDocument();
     });
 
-    it('should not render toggle switch by default', () => {
-      render(
+    it('should not render toggle switch by default', async () => {
+      await render(
         <SettingsCard title="Test Settings">
           <div>Content</div>
         </SettingsCard>,
       );
 
-      const toggleSwitch = screen.queryByRole('switch');
-      expect(toggleSwitch).not.toBeInTheDocument();
+      await expect.element(page.getByRole('switch')).not.toBeInTheDocument();
     });
 
-    it('should render toggle switch when enabled and onToggle are provided', () => {
+    it('should render toggle switch when enabled and onToggle are provided', async () => {
       const mockOnToggle = vi.fn();
-      render(
+      await render(
         <SettingsCard title="Test Settings" enabled onToggle={mockOnToggle}>
           <div>Content</div>
         </SettingsCard>,
       );
 
-      const toggleSwitch = screen.getByRole('switch');
-      expect(toggleSwitch).toBeInTheDocument();
-      expect(toggleSwitch).toBeChecked();
+      const toggleSwitch = page.getByRole('switch');
+      await expect.element(toggleSwitch).toBeInTheDocument();
+      await expect.element(toggleSwitch).toBeChecked();
     });
 
-    it('should render toggle switch as unchecked when enabled is false', () => {
+    it('should render toggle switch as unchecked when enabled is false', async () => {
       const mockOnToggle = vi.fn();
-      render(
+      await render(
         <SettingsCard title="Test Settings" enabled={false} onToggle={mockOnToggle}>
           <div>Content</div>
         </SettingsCard>,
       );
 
-      const toggleSwitch = screen.getByRole('switch');
-      expect(toggleSwitch).not.toBeChecked();
+      const toggleSwitch = page.getByRole('switch');
+      await expect.element(toggleSwitch).not.toBeChecked();
     });
 
-    it('should show children when toggle is enabled', () => {
+    it('should show children when toggle is enabled', async () => {
       const mockOnToggle = vi.fn();
-      render(
+      await render(
         <SettingsCard title="Test Settings" enabled onToggle={mockOnToggle}>
           <div>Visible Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.getByText('Visible Content')).toBeInTheDocument();
+      await expect.element(page.getByText('Visible Content')).toBeInTheDocument();
     });
 
-    it('should hide children when toggle is disabled', () => {
+    it('should hide children when toggle is disabled', async () => {
       const mockOnToggle = vi.fn();
-      render(
+      await render(
         <SettingsCard title="Test Settings" enabled={false} onToggle={mockOnToggle}>
           <div>Hidden Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.queryByText('Hidden Content')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Hidden Content')).not.toBeInTheDocument();
     });
 
-    it('should show children when no toggle is provided', () => {
-      render(
+    it('should show children when no toggle is provided', async () => {
+      await render(
         <SettingsCard title="Test Settings">
           <div>Always Visible</div>
         </SettingsCard>,
       );
 
-      expect(screen.getByText('Always Visible')).toBeInTheDocument();
+      await expect.element(page.getByText('Always Visible')).toBeInTheDocument();
     });
   });
 
   describe('User Interactions', () => {
     it('should call onToggle when switch is clicked', async () => {
-      const user = userEvent.setup();
       const mockOnToggle = vi.fn();
 
-      render(
+      await render(
         <SettingsCard title="Test Settings" enabled={false} onToggle={mockOnToggle}>
           <div>Content</div>
         </SettingsCard>,
       );
 
-      const toggleSwitch = screen.getByRole('switch');
-      await user.click(toggleSwitch);
+      await userEvent.click(page.getByRole('switch'));
 
-      expect(mockOnToggle).toHaveBeenCalledWith(true);
-      expect(mockOnToggle).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(mockOnToggle).toHaveBeenCalledWith(true);
+        expect(mockOnToggle).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('should call onToggle with false when toggling off', async () => {
-      const user = userEvent.setup();
       const mockOnToggle = vi.fn();
 
-      render(
+      await render(
         <SettingsCard title="Test Settings" enabled onToggle={mockOnToggle}>
           <div>Content</div>
         </SettingsCard>,
       );
 
-      const toggleSwitch = screen.getByRole('switch');
-      await user.click(toggleSwitch);
+      await userEvent.click(page.getByRole('switch'));
 
-      expect(mockOnToggle).toHaveBeenCalledWith(false);
-      expect(mockOnToggle).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(mockOnToggle).toHaveBeenCalledWith(false);
+        expect(mockOnToggle).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
   describe('Accessibility', () => {
-    it('should render toggle switch with proper structure', () => {
+    it('should render toggle switch with proper structure', async () => {
       const mockOnToggle = vi.fn();
 
-      render(
+      await render(
         <SettingsCard title="Registration Flow" enabled onToggle={mockOnToggle}>
           <div>Content</div>
         </SettingsCard>,
       );
 
       // Verify the switch element exists and is accessible
-      const toggleSwitch = screen.getByRole('switch');
-      expect(toggleSwitch).toBeInTheDocument();
-      expect(toggleSwitch).toHaveAttribute('type', 'checkbox');
+      const toggleSwitch = page.getByRole('switch');
+      await expect.element(toggleSwitch).toBeInTheDocument();
+      await expect.element(toggleSwitch).toHaveAttribute('type', 'checkbox');
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle only enabled prop without onToggle', () => {
-      render(
+    it('should handle only enabled prop without onToggle', async () => {
+      await render(
         <SettingsCard title="Test Settings" enabled>
           <div>Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.queryByRole('switch')).not.toBeInTheDocument();
-      expect(screen.getByText('Content')).toBeInTheDocument();
+      await expect.element(page.getByRole('switch')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Content')).toBeInTheDocument();
     });
 
-    it('should handle only onToggle prop without enabled', () => {
+    it('should handle only onToggle prop without enabled', async () => {
       const mockOnToggle = vi.fn();
 
-      render(
+      await render(
         <SettingsCard title="Test Settings" onToggle={mockOnToggle}>
           <div>Content</div>
         </SettingsCard>,
       );
 
-      expect(screen.queryByRole('switch')).not.toBeInTheDocument();
-      expect(screen.getByText('Content')).toBeInTheDocument();
+      await expect.element(page.getByRole('switch')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Content')).toBeInTheDocument();
     });
 
-    it('should render complex children elements', () => {
-      render(
+    it('should render complex children elements', async () => {
+      await render(
         <SettingsCard title="Complex Settings">
           <div>
             <input type="text" placeholder="Username" />
@@ -213,23 +212,23 @@ describe('SettingsCard', () => {
         </SettingsCard>,
       );
 
-      expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Submit'})).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Username')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Submit'})).toBeInTheDocument();
     });
   });
 
-  it('should render headerAction if provided', () => {
-    render(
+  it('should render headerAction if provided', async () => {
+    await render(
       <SettingsCard title="Test Settings" headerAction={<button type="button">Action</button>}>
         <div>Content</div>
       </SettingsCard>,
     );
 
-    expect(screen.getByText('Action')).toBeInTheDocument();
+    await expect.element(page.getByText('Action')).toBeInTheDocument();
   });
 
-  it('should not render content wrapper if valid children are not present', () => {
-    const {container} = render(<SettingsCard title="Test Settings">{false && <div>Content</div>}</SettingsCard>);
+  it('should not render content wrapper if valid children are not present', async () => {
+    const {container} = await render(<SettingsCard title="Test Settings">{false && <div>Content</div>}</SettingsCard>);
 
     // Should only have the outer paper, title box, but NO inner content paper
     // The outer paper renders the title box div + potential content div
@@ -238,8 +237,8 @@ describe('SettingsCard', () => {
     expect(papers.length).toBe(1); // Only the outer card, no inner content card
   });
 
-  it('should render content wrapper if valid children are present', () => {
-    const {container} = render(
+  it('should render content wrapper if valid children are present', async () => {
+    const {container} = await render(
       <SettingsCard title="Test Settings">
         <div>Content</div>
       </SettingsCard>,

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import {MarkerType, type Edge, type Node} from '@xyflow/react';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
 import {ElementTypes} from '@/features/flows/models/elements';
@@ -73,16 +73,16 @@ const createMockStep = (overrides: Partial<Step> = {}): Step =>
 
 describe('useEdgeGeneration', () => {
   describe('generateEdges', () => {
-    it('should return empty array for empty steps', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should return empty array for empty steps', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges = result.current.generateEdges([]);
 
       expect(edges).toEqual([]);
     });
 
-    it('should create edge from START to first step', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create edge from START to first step', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({id: 'view-step-1', type: StepTypes.View}),
@@ -97,8 +97,8 @@ describe('useEdgeGeneration', () => {
       expect(startEdge?.target).toBe('view-step-1');
     });
 
-    it('should skip START step when creating edge to first step', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should skip START step when creating edge to first step', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({id: 'start', type: 'START' as typeof StepTypes.View}),
@@ -112,8 +112,8 @@ describe('useEdgeGeneration', () => {
       expect(startEdge?.target).toBe('view-step-1');
     });
 
-    it('should create edges for buttons with action.onSuccess', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create edges for buttons with action.onSuccess', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -139,8 +139,8 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('END');
     });
 
-    it('should handle nested buttons in BLOCK containers', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should handle nested buttons in BLOCK containers', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -171,8 +171,8 @@ describe('useEdgeGeneration', () => {
       expect(nestedButtonEdge).toBeDefined();
     });
 
-    it('should create edges for RESEND buttons', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create edges for RESEND buttons', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -199,8 +199,8 @@ describe('useEdgeGeneration', () => {
       expect(resendEdge?.target).toBe('view-step-2');
     });
 
-    it('should create edges from step-level actions', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create edges from step-level actions', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -220,8 +220,8 @@ describe('useEdgeGeneration', () => {
       expect(stepActionEdge).toBeDefined();
     });
 
-    it('should connect to END step when action.onSuccess is StepTypes.End', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should connect to END step when action.onSuccess is StepTypes.End', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -240,8 +240,8 @@ describe('useEdgeGeneration', () => {
       expect(endEdge).toBeDefined();
     });
 
-    it('should connect button to END step when button action.onSuccess is StepTypes.End', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should connect button to END step when button action.onSuccess is StepTypes.End', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -268,8 +268,8 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('END');
     });
 
-    it('should create fallback edge to END when no button has explicit action', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create fallback edge to END when no button has explicit action', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -295,8 +295,8 @@ describe('useEdgeGeneration', () => {
       expect(fallbackEdge).toBeDefined();
     });
 
-    it('should find first action button in nested structures for fallback edge', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should find first action button in nested structures for fallback edge', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -329,8 +329,8 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('END');
     });
 
-    it('should create step-level edge to END when step.data.action.onSuccess is StepTypes.End', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create step-level edge to END when step.data.action.onSuccess is StepTypes.End', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -352,8 +352,8 @@ describe('useEdgeGeneration', () => {
       expect(stepEdge?.target).toBe('END');
     });
 
-    it('should use custom startStepId from props', () => {
-      const {result} = renderHook(() => useEdgeGeneration({startStepId: 'custom-start'}));
+    it('should use custom startStepId from props', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration({startStepId: 'custom-start'}));
 
       const steps: Step[] = [
         createMockStep({id: 'view-step-1', type: StepTypes.View}),
@@ -366,8 +366,8 @@ describe('useEdgeGeneration', () => {
       expect(startEdge).toBeDefined();
     });
 
-    it('should use custom endStepId from props', () => {
-      const {result} = renderHook(() => useEdgeGeneration({endStepId: 'custom-end'}));
+    it('should use custom endStepId from props', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration({endStepId: 'custom-end'}));
 
       const steps: Step[] = [
         createMockStep({
@@ -392,8 +392,8 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('custom-end');
     });
 
-    it('should create edges with correct marker type', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create edges with correct marker type', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({id: 'view-step-1', type: StepTypes.View}),
@@ -409,8 +409,8 @@ describe('useEdgeGeneration', () => {
   });
 
   describe('validateEdges', () => {
-    it('should return edges with valid targets', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should return edges with valid targets', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges: Edge[] = [
         {
@@ -431,8 +431,8 @@ describe('useEdgeGeneration', () => {
       expect(validEdges).toHaveLength(1);
     });
 
-    it('should filter out edges with invalid targets', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should filter out edges with invalid targets', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges: Edge[] = [
         {id: 'edge-1', source: 'node-1', target: 'node-2', type: 'default'},
@@ -450,8 +450,8 @@ describe('useEdgeGeneration', () => {
       expect(validEdges[0].id).toBe('edge-1');
     });
 
-    it('should filter out edges with invalid sources', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should filter out edges with invalid sources', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges: Edge[] = [{id: 'edge-1', source: 'invalid-source', target: 'node-2', type: 'default'}];
 
@@ -462,8 +462,8 @@ describe('useEdgeGeneration', () => {
       expect(validEdges).toHaveLength(0);
     });
 
-    it('should always include START as valid target', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should always include START as valid target', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'start', type: 'default'}];
 
@@ -474,8 +474,8 @@ describe('useEdgeGeneration', () => {
       expect(validEdges).toHaveLength(1);
     });
 
-    it('should always include END as valid target', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should always include END as valid target', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'END', type: 'default'}];
 
@@ -486,8 +486,8 @@ describe('useEdgeGeneration', () => {
       expect(validEdges).toHaveLength(1);
     });
 
-    it('should return empty array when no edges are valid', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should return empty array when no edges are valid', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const edges: Edge[] = [
         {id: 'edge-1', source: 'invalid-1', target: 'invalid-2', type: 'default'},
@@ -501,8 +501,8 @@ describe('useEdgeGeneration', () => {
       expect(validEdges).toHaveLength(0);
     });
 
-    it('should handle empty edges array', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should handle empty edges array', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const validEdges = result.current.validateEdges([], []);
 
@@ -511,25 +511,25 @@ describe('useEdgeGeneration', () => {
   });
 
   describe('Hook Interface', () => {
-    it('should return generateEdges function', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should return generateEdges function', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       expect(typeof result.current.generateEdges).toBe('function');
     });
 
-    it('should return validateEdges function', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should return validateEdges function', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       expect(typeof result.current.validateEdges).toBe('function');
     });
 
-    it('should maintain stable function references', () => {
-      const {result, rerender} = renderHook(() => useEdgeGeneration());
+    it('should maintain stable function references', async () => {
+      const {result, rerender} = await renderHook(() => useEdgeGeneration());
 
       const initialGenerateEdges = result.current.generateEdges;
       const initialValidateEdges = result.current.validateEdges;
 
-      rerender();
+      await rerender();
 
       expect(result.current.generateEdges).toBe(initialGenerateEdges);
       expect(result.current.validateEdges).toBe(initialValidateEdges);
@@ -537,8 +537,8 @@ describe('useEdgeGeneration', () => {
   });
 
   describe('onFailure edge generation', () => {
-    it('should create edge for step-level onFailure action', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create edge for step-level onFailure action', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -568,8 +568,8 @@ describe('useEdgeGeneration', () => {
       expect(failureEdge?.target).toBe('view-step-3');
     });
 
-    it('should not create failure edge when onFailure target does not exist', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should not create failure edge when onFailure target does not exist', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -593,8 +593,8 @@ describe('useEdgeGeneration', () => {
       expect(failureEdge).toBeUndefined();
     });
 
-    it('should create failure edge without success edge when only onFailure is defined', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should create failure edge without success edge when only onFailure is defined', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -616,8 +616,8 @@ describe('useEdgeGeneration', () => {
       expect(failureEdge?.target).toBe('view-step-2');
     });
 
-    it('should handle step with both component actions and step-level onFailure', () => {
-      const {result} = renderHook(() => useEdgeGeneration());
+    it('should handle step with both component actions and step-level onFailure', async () => {
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -655,10 +655,10 @@ describe('useEdgeGeneration', () => {
   });
 
   describe('Edge cases for branch coverage', () => {
-    it('should connect button to actual END step when button action.onSuccess equals StepTypes.End string and END step has different id', () => {
+    it('should connect button to actual END step when button action.onSuccess equals StepTypes.End string and END step has different id', async () => {
       // This test covers lines 147-150: when button.action.onSuccess === StepTypes.End (the string 'END')
       // but there's no step with id 'END' in the flow (the end step has a different id like 'user-onboard')
-      const {result} = renderHook(() => useEdgeGeneration());
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -688,10 +688,10 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('user-onboard');
     });
 
-    it('should connect step-level action to actual END step when action.onSuccess equals StepTypes.End string and END step has different id', () => {
+    it('should connect step-level action to actual END step when action.onSuccess equals StepTypes.End string and END step has different id', async () => {
       // This test covers lines 204-208: when step.data.action.onSuccess === StepTypes.End (the string 'END')
       // but there's no step with id 'END' in the flow
-      const {result} = renderHook(() => useEdgeGeneration());
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
         createMockStep({
@@ -715,9 +715,9 @@ describe('useEdgeGeneration', () => {
       expect(stepEdge?.target).toBe('user-onboard');
     });
 
-    it('should use button ID from nested component when creating fallback edge with no prior edges to END', () => {
+    it('should use button ID from nested component when creating fallback edge with no prior edges to END', async () => {
       // This test specifically covers line 227: using buttonId for fallback edge
-      const {result} = renderHook(() => useEdgeGeneration());
+      const {result} = await renderHook(() => useEdgeGeneration());
 
       // We need a scenario where:
       // 1. A view step has components but none create edges to END

@@ -17,36 +17,14 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import ConfigureSignInOptions, {
   type ConfigureSignInOptionsProps,
 } from '../configure-signin-options/ConfigureSignInOptions';
 import ApplicationCreateProvider from '../../../contexts/ApplicationCreate/ApplicationCreateProvider';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:onboarding.configure.SignInOptions.title': 'Sign In Options',
-        'applications:onboarding.configure.SignInOptions.subtitle': 'Choose how users will sign-in to your application',
-        'applications:onboarding.configure.SignInOptions.usernamePassword': 'Username & Password',
-        'applications:onboarding.configure.SignInOptions.google': 'Google',
-        'applications:onboarding.configure.SignInOptions.github': 'GitHub',
-        'applications:onboarding.configure.SignInOptions.notConfigured': 'Not configured',
-        'applications:onboarding.configure.SignInOptions.noSelectionWarning':
-          'At least one login option is required. Please select at least one authentication method.',
-        'applications:onboarding.configure.SignInOptions.hint':
-          'You can always change these settings later in the application settings.',
-        'applications:onboarding.configure.SignInOptions.error': 'Failed to load authentication methods: {{error}}',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 // Mock the dependencies
 vi.mock('@/features/integrations/api/useIdentityProviders');
@@ -149,8 +127,8 @@ describe('ConfigureSignInOptions', () => {
     } as unknown as ReturnType<typeof useGetFlows>);
   });
 
-  const renderComponent = (props: Partial<ConfigureSignInOptionsProps> = {}) => {
-    const renderResult = render(
+  const renderComponent = async (props: Partial<ConfigureSignInOptionsProps> = {}) => {
+    const renderResult = await renderWithProviders(
       <ApplicationCreateProvider>
         <ConfigureSignInOptions {...defaultProps} {...props} />
       </ApplicationCreateProvider>,
@@ -167,19 +145,19 @@ describe('ConfigureSignInOptions', () => {
     };
   };
 
-  it('should render loading state', () => {
+  it('should render loading state', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should render error state', () => {
+  it('should render error state', async () => {
     const error = new Error('Failed to load integrations');
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: undefined,
@@ -187,87 +165,86 @@ describe('ConfigureSignInOptions', () => {
       error,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load authentication methods/i)).toBeInTheDocument();
+    await expect.element(page.getByRole('alert')).toBeInTheDocument();
+    await expect.element(page.getByText(/Failed to load authentication methods/i)).toBeInTheDocument();
   });
 
-  it('should render the component with title and subtitle', () => {
+  it('should render the component with title and subtitle', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
-    expect(screen.getByText('Choose how users will sign-in to your application')).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
+    await expect.element(page.getByText('Choose how users will sign-in to your application')).toBeInTheDocument();
   });
 
-  it('should always render Username & Password option first', () => {
+  it('should always render Username & Password option first', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByText('Username & Password')).toBeInTheDocument();
+    await expect.element(page.getByText('Username & Password')).toBeInTheDocument();
   });
 
-  it('should render Username & Password as toggleable (not forced enabled)', () => {
+  it('should render Username & Password as toggleable (not forced enabled)', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
-    const switches = screen.getAllByRole('switch');
+    const switches = page.getByRole('switch').all();
     expect(switches[0]).toBeChecked();
 
     // Should be toggleable (not disabled)
     expect(switches[0]).not.toBeDisabled();
   });
 
-  it('should render Username & Password as unchecked when not selected', () => {
+  it('should render Username & Password as unchecked when not selected', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({
+    await renderComponent({
       integrations: {},
     });
 
-    const switches = screen.getAllByRole('switch');
+    const switches = page.getByRole('switch').all();
     expect(switches[0]).not.toBeChecked();
   });
 
-  it('should render all identity providers', () => {
+  it('should render all identity providers', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByText('Google')).toBeInTheDocument();
-    expect(screen.getByText('GitHub')).toBeInTheDocument();
+    await expect.element(page.getByText('Google')).toBeInTheDocument();
+    await expect.element(page.getByText('GitHub')).toBeInTheDocument();
   });
 
   it('should call onIntegrationToggle when clicking Username & Password list item', async () => {
-    const user = userEvent.setup();
 
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
@@ -275,18 +252,17 @@ describe('ConfigureSignInOptions', () => {
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    const usernamePasswordButton = screen.getByText('Username & Password').closest('.MuiListItemButton-root');
+    const usernamePasswordButton = page.getByText('Username & Password').element().closest('.MuiListItemButton-root');
     if (usernamePasswordButton) {
-      await user.click(usernamePasswordButton);
+      await userEvent.click(usernamePasswordButton);
     }
 
     expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
   });
 
   it('should call onIntegrationToggle when clicking provider list item', async () => {
-    const user = userEvent.setup();
 
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
@@ -294,18 +270,17 @@ describe('ConfigureSignInOptions', () => {
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    const googleButton = screen.getByText('Google').closest('.MuiListItemButton-root');
+    const googleButton = page.getByText('Google').element().closest('.MuiListItemButton-root');
     if (googleButton) {
-      await user.click(googleButton);
+      await userEvent.click(googleButton);
     }
 
     expect(mockOnIntegrationToggle).toHaveBeenCalledWith('google-idp');
   });
 
   it('should call onIntegrationToggle when toggling switch', async () => {
-    const user = userEvent.setup();
 
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
@@ -313,22 +288,22 @@ describe('ConfigureSignInOptions', () => {
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    const switches = screen.getAllByRole('switch');
-    await user.click(switches[2]); // Click Google switch
+    const switches = page.getByRole('switch').all();
+    await userEvent.click(switches[2]); // Click Google switch
 
     expect(mockOnIntegrationToggle).toHaveBeenCalledWith('google-idp');
   });
 
-  it('should show checked state for enabled integrations', () => {
+  it('should show checked state for enabled integrations', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -336,61 +311,60 @@ describe('ConfigureSignInOptions', () => {
       },
     });
 
-    const switches = screen.getAllByRole('switch');
+    const switches = page.getByRole('switch').all();
     expect(switches[0]).toBeChecked(); // Username & Password
     expect(switches[2]).toBeChecked(); // Google
     expect(switches[3]).not.toBeChecked(); // GitHub
   });
 
-  it('should show username/password option when no integrations are available', () => {
+  it('should show username/password option when no integrations are available', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
     } as unknown as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
     // Should show username/password in the list with a switch (always toggleable)
-    expect(screen.getByText('Username & Password')).toBeInTheDocument();
-    expect(screen.getByRole('list')).toBeInTheDocument();
+    await expect.element(page.getByText('Username & Password')).toBeInTheDocument();
+    await expect.element(page.getByRole('list')).toBeInTheDocument();
 
     // Should have a toggle/switch (username/password is always toggleable)
-    const switches = screen.getAllByRole('switch');
+    const switches = page.getByRole('switch').all();
     expect(switches.length).toBeGreaterThan(0);
   });
 
-  it('should render integration icons', () => {
+  it('should render integration icons', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
     // Google and GitHub use direct icons, not getIntegrationIcon
     // Other providers (if any) would use getIntegrationIcon
-    expect(screen.getByText('Google')).toBeInTheDocument();
-    expect(screen.getByText('GitHub')).toBeInTheDocument();
+    await expect.element(page.getByText('Google')).toBeInTheDocument();
+    await expect.element(page.getByText('GitHub')).toBeInTheDocument();
   });
 
-  it('should render UserRound icon for Username & Password', () => {
+  it('should render UserRound icon for Username & Password', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
     // UserRound icon should be present
-    const usernamePasswordSection = screen.getByText('Username & Password').closest('div');
+    const usernamePasswordSection = page.getByText('Username & Password').element().closest('div');
     expect(usernamePasswordSection).toBeInTheDocument();
   });
 
   it('should stop propagation when clicking switch', async () => {
-    const user = userEvent.setup();
 
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
@@ -398,46 +372,45 @@ describe('ConfigureSignInOptions', () => {
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    const switches = screen.getAllByRole('switch');
-    await user.click(switches[1]);
+    const switches = page.getByRole('switch').all();
+    await userEvent.click(switches[1]);
 
     // Should only trigger once (not twice from card and switch)
     expect(mockOnIntegrationToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle empty integrations record', () => {
+  it('should handle empty integrations record', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({integrations: {}});
+    await renderComponent({integrations: {}});
 
-    const switches = screen.getAllByRole('switch');
+    const switches = page.getByRole('switch').all();
     // Username & Password should default to false when integrations is empty
     expect(switches[0]).not.toBeChecked();
     // Others should default to false
     expect(switches[1]).not.toBeChecked();
   });
 
-  it('should render info icon in subtitle', () => {
+  it('should render info icon in subtitle', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    const subtitle = screen.getByText('Choose how users will sign-in to your application').closest('div');
+    const subtitle = page.getByText('Choose how users will sign-in to your application').element().closest('div');
     expect(subtitle).toBeInTheDocument();
   });
 
   it('should handle multiple rapid toggles', async () => {
-    const user = userEvent.setup();
 
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
@@ -445,17 +418,17 @@ describe('ConfigureSignInOptions', () => {
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    const switches = screen.getAllByRole('switch');
-    await user.click(switches[1]);
-    await user.click(switches[2]);
-    await user.click(switches[1]);
+    const switches = page.getByRole('switch').all();
+    await userEvent.click(switches[1]);
+    await userEvent.click(switches[2]);
+    await userEvent.click(switches[1]);
 
     expect(mockOnIntegrationToggle).toHaveBeenCalledTimes(3);
   });
 
-  it('should handle providers with long names', () => {
+  it('should handle providers with long names', async () => {
     const longNameProvider: IdentityProvider = {
       id: 'long-name-idp',
       name: 'Very Long Identity Provider Name That Should Still Display',
@@ -469,213 +442,214 @@ describe('ConfigureSignInOptions', () => {
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent();
+    await renderComponent();
 
-    expect(screen.getByText(longNameProvider.name)).toBeInTheDocument();
+    await expect.element(page.getByText(longNameProvider.name)).toBeInTheDocument();
   });
 
-  it('should maintain switch state after re-render', () => {
+  it('should maintain switch state after re-render', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    const {rerender} = renderComponent({
+    const {rerender} = await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
 
-    let switches = screen.getAllByRole('switch');
+    let switches = page.getByRole('switch').all();
     expect(switches[2]).toBeChecked();
 
-    rerender({
+    await rerender({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
 
-    switches = screen.getAllByRole('switch');
+    switches = page.getByRole('switch').all();
     expect(switches[2]).toBeChecked();
   });
 
   describe('Google and GitHub always shown', () => {
-    it('should always show Google option even when not configured', () => {
+    it('should always show Google option even when not configured', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: [], // No providers in API
         isLoading: false,
         error: null,
       } as unknown as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByText('Google')).toBeInTheDocument();
+      await expect.element(page.getByText('Google')).toBeInTheDocument();
     });
 
-    it('should always show GitHub option even when not configured', () => {
+    it('should always show GitHub option even when not configured', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: [], // No providers in API
         isLoading: false,
         error: null,
       } as unknown as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      await expect.element(page.getByText('GitHub')).toBeInTheDocument();
     });
 
-    it('should show Google as disabled with "Not configured" when not in API', () => {
+    it('should show Google as disabled with "Not configured" when not in API', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: [], // No providers in API
         isLoading: false,
         error: null,
       } as unknown as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      const googleText = screen.getByText('Google');
-      const listItem = googleText.closest('.MuiListItem-root');
+      const googleText = page.getByText('Google');
+      const listItem = googleText.element().closest('.MuiListItem-root');
       expect(listItem).toBeInTheDocument();
 
       // Should have "Not configured" as secondary text (both Google and GitHub show it)
-      const notConfiguredTexts = screen.getAllByText('Not configured');
+      const notConfiguredTexts = page.getByText('Not configured').all();
       expect(notConfiguredTexts.length).toBeGreaterThanOrEqual(1);
 
       // Should not have a switch for Google (disabled)
-      const switches = screen.getAllByRole('switch');
+      const switches = page.getByRole('switch').all();
       // Only username/password and passkey should have a switch
       expect(switches.length).toBe(2);
 
       // Google button should be disabled
-      const googleButton = googleText.closest('.MuiListItemButton-root');
+      const googleButton = googleText.element().closest('.MuiListItemButton-root');
       expect(googleButton).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('should show GitHub as disabled with "Not configured" when not in API', () => {
+    it('should show GitHub as disabled with "Not configured" when not in API', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: [], // No providers in API
         isLoading: false,
         error: null,
       } as unknown as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      const githubText = screen.getByText('GitHub');
-      const listItem = githubText.closest('.MuiListItem-root');
+      const githubText = page.getByText('GitHub');
+      const listItem = githubText.element().closest('.MuiListItem-root');
       expect(listItem).toBeInTheDocument();
 
       // Should have "Not configured" as secondary text
-      const notConfiguredTexts = screen.getAllByText('Not configured');
+      const notConfiguredTexts = page.getByText('Not configured').all();
       expect(notConfiguredTexts.length).toBeGreaterThan(0);
     });
 
-    it('should show Google as enabled with switch when configured in API', () => {
+    it('should show Google as enabled with switch when configured in API', async () => {
+
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      const switches = screen.getAllByRole('switch');
+      const switches = page.getByRole('switch').all();
       // Should have switches for username/password, passkey, Google, and GitHub
       expect(switches.length).toBe(4);
 
       // Google should be toggleable
-      const googleButton = screen.getByText('Google').closest('.MuiListItemButton-root');
+      const googleButton = page.getByText('Google').element().closest('.MuiListItemButton-root');
       expect(googleButton).not.toBeDisabled();
     });
 
-    it('should show GitHub as enabled with switch when configured in API', () => {
+    it('should show GitHub as enabled with switch when configured in API', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      const switches = screen.getAllByRole('switch');
+      const switches = page.getByRole('switch').all();
       // Should have switches for username/password, passkey, Google, and GitHub
       expect(switches.length).toBe(4);
 
       // GitHub should be toggleable
-      const githubButton = screen.getByText('GitHub').closest('.MuiListItemButton-root');
+      const githubButton = page.getByText('GitHub').element().closest('.MuiListItemButton-root');
       expect(githubButton).not.toBeDisabled();
     });
 
-    it('should show Google enabled and GitHub disabled when only Google is configured', () => {
+    it('should show Google enabled and GitHub disabled when only Google is configured', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: [mockIdentityProviders[0]], // Only Google
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
       // Google should be enabled
-      const googleButton = screen.getByText('Google').closest('.MuiListItemButton-root');
+      const googleButton = page.getByText('Google').element().closest('.MuiListItemButton-root');
       expect(googleButton).not.toHaveAttribute('aria-disabled', 'true');
 
       // GitHub should be disabled
-      const githubButton = screen.getByText('GitHub').closest('.MuiListItemButton-root');
+      const githubButton = page.getByText('GitHub').element().closest('.MuiListItemButton-root');
       expect(githubButton).toHaveAttribute('aria-disabled', 'true');
 
       // Should show "Not configured" for GitHub
-      const notConfiguredTexts = screen.getAllByText('Not configured');
+      const notConfiguredTexts = page.getByText('Not configured').all();
       expect(notConfiguredTexts.length).toBeGreaterThan(0);
     });
   });
 
   describe('Validation warning', () => {
-    it('should show warning when no options are selected', () => {
+    it('should show warning when no options are selected', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent({
+      await renderComponent({
         integrations: {}, // No selections
       });
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      // Check for the translation key or the actual text
-      const alert = screen.getByRole('alert');
-      expect(alert.textContent).toMatch(/noSelectionWarning|at least one login option is required/i);
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
+      // Check for the actual translated text
+      const alert = page.getByRole('alert');
+      expect(alert.element().textContent).toMatch(/at least one sign-in option is required/i);
     });
 
-    it('should not show warning when at least one option is selected', () => {
+    it('should not show warning when at least one option is selected', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent({
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
       });
 
       // Should not have warning alert
-      const alerts = screen.queryAllByRole('alert');
-      const warningAlerts = alerts.filter((alert) => alert.textContent?.includes('at least one'));
+      const alerts = page.getByRole('alert').all();
+      const warningAlerts = alerts.filter((alert) => alert.element().textContent?.includes('at least one'));
       expect(warningAlerts.length).toBe(0);
     });
 
-    it('should show warning when only username/password is deselected', () => {
+    it('should show warning when only username/password is deselected', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent({
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
           'google-idp': false,
@@ -683,42 +657,41 @@ describe('ConfigureSignInOptions', () => {
         },
       });
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      // Check for the translation key or the actual text
-      const alert = screen.getByRole('alert');
-      expect(alert.textContent).toMatch(/noSelectionWarning|at least one login option is required/i);
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
+      // Check for the actual translated text
+      const alert = page.getByRole('alert');
+      expect(alert.element().textContent).toMatch(/at least one sign-in option is required/i);
     });
 
-    it('should hide warning when user selects an option', () => {
+    it('should hide warning when user selects an option', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      const {rerender} = renderComponent({
+      const {rerender} = await renderComponent({
         integrations: {}, // No selections initially
       });
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
 
       // Select username/password
-      rerender({
+      await rerender({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
       });
 
       // Warning should be gone
-      const warningAlerts = screen
-        .queryAllByRole('alert')
-        .filter((alert) => alert.textContent?.includes('at least one'));
+      const alerts = page.getByRole('alert').all();
+      const warningAlerts = alerts.filter((alert) => alert.element().textContent?.includes('at least one'));
       expect(warningAlerts.length).toBe(0);
     });
   });
 
   describe('onReadyChange callback', () => {
-    it('should call onReadyChange with true when integrations are selected', () => {
+    it('should call onReadyChange with true when integrations are selected', async () => {
       const onReadyChange = vi.fn();
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
@@ -726,7 +699,7 @@ describe('ConfigureSignInOptions', () => {
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent({
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
@@ -736,7 +709,7 @@ describe('ConfigureSignInOptions', () => {
       expect(onReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should call onReadyChange with false when no integrations are selected', () => {
+    it('should call onReadyChange with false when no integrations are selected', async () => {
       const onReadyChange = vi.fn();
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
@@ -744,7 +717,7 @@ describe('ConfigureSignInOptions', () => {
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent({
+      await renderComponent({
         integrations: {},
         onReadyChange,
       });
@@ -754,7 +727,7 @@ describe('ConfigureSignInOptions', () => {
   });
 
   describe('Flow loading states', () => {
-    it('should render loading state when flows are loading', () => {
+    it('should render loading state when flows are loading', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
@@ -774,12 +747,12 @@ describe('ConfigureSignInOptions', () => {
         fetchStatus: 'fetching',
       } as unknown as ReturnType<typeof useGetFlows>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should render error state when flows fail to load', () => {
+    it('should render error state when flows fail to load', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
@@ -800,15 +773,15 @@ describe('ConfigureSignInOptions', () => {
         fetchStatus: 'idle',
       } as unknown as ReturnType<typeof useGetFlows>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(screen.getByText(/Failed to load authentication methods/i)).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByText(/Failed to load authentication methods/i)).toBeInTheDocument();
     });
   });
 
   describe('Flow data handling', () => {
-    it('should handle when flows data is empty', () => {
+    it('should handle when flows data is empty', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
@@ -834,13 +807,13 @@ describe('ConfigureSignInOptions', () => {
         fetchStatus: 'idle',
       } as unknown as ReturnType<typeof useGetFlows>);
 
-      renderComponent();
+      await renderComponent();
 
       // Component should still render without flows
-      expect(screen.getByText('Username & Password')).toBeInTheDocument();
+      await expect.element(page.getByText('Username & Password')).toBeInTheDocument();
     });
 
-    it('should handle when flows data is null', () => {
+    it('should handle when flows data is null', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
@@ -860,16 +833,15 @@ describe('ConfigureSignInOptions', () => {
         fetchStatus: 'idle',
       } as unknown as ReturnType<typeof useGetFlows>);
 
-      renderComponent();
+      await renderComponent();
 
       // Component should still render without flows
-      expect(screen.getByText('Username & Password')).toBeInTheDocument();
+      await expect.element(page.getByText('Username & Password')).toBeInTheDocument();
     });
   });
 
   describe('Integration type mapping', () => {
     it('should handle OIDC type providers', async () => {
-      const user = userEvent.setup();
       const oidcProvider: IdentityProvider = {
         id: 'oidc-idp',
         name: 'OIDC Provider',
@@ -883,11 +855,11 @@ describe('ConfigureSignInOptions', () => {
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
-      const oidcButton = screen.getByText('OIDC Provider').closest('.MuiListItemButton-root');
+      const oidcButton = page.getByText('OIDC Provider').element().closest('.MuiListItemButton-root');
       if (oidcButton) {
-        await user.click(oidcButton);
+        await userEvent.click(oidcButton);
       }
 
       expect(mockOnIntegrationToggle).toHaveBeenCalledWith('oidc-idp');
@@ -895,17 +867,17 @@ describe('ConfigureSignInOptions', () => {
   });
 
   describe('Hint text', () => {
-    it('should render hint text with lightbulb icon', () => {
+    it('should render hint text with lightbulb icon', async () => {
       vi.mocked(useIdentityProviders).mockReturnValue({
         data: mockIdentityProviders,
         isLoading: false,
         error: null,
       } as ReturnType<typeof useIdentityProviders>);
 
-      renderComponent();
+      await renderComponent();
 
       expect(
-        screen.getByText('You can always change these settings later in the application settings.'),
+        page.getByText('You can always change these settings later in the application settings.'),
       ).toBeInTheDocument();
     });
   });

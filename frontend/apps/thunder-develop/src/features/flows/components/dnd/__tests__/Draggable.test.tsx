@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import Draggable from '../Draggable';
 
 // Mock useDraggable from @dnd-kit/react
@@ -30,26 +31,26 @@ vi.mock('@dnd-kit/react', () => ({
 
 describe('Draggable', () => {
   describe('Rendering', () => {
-    it('should render children', () => {
-      render(
+    it('should render children', async () => {
+      await render(
         <Draggable id="test-draggable" accept={['TYPE_A']}>
           <div data-testid="child-content">Draggable Content</div>
         </Draggable>,
       );
 
-      expect(screen.getByTestId('child-content')).toBeInTheDocument();
-      expect(screen.getByText('Draggable Content')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-content')).toBeInTheDocument();
+      await expect.element(page.getByText('Draggable Content')).toBeInTheDocument();
     });
 
-    it('should render without children', () => {
-      const {container} = render(<Draggable id="empty-draggable" accept={['TYPE_A']} />);
+    it('should render without children', async () => {
+      const {container} = await render(<Draggable id="empty-draggable" accept={['TYPE_A']} />);
 
       // Should still render the Box wrapper
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should render with Box wrapper', () => {
-      const {container} = render(
+    it('should render with Box wrapper', async () => {
+      const {container} = await render(
         <Draggable id="test-draggable" accept={['TYPE_A']}>
           <span>Content</span>
         </Draggable>,
@@ -64,7 +65,7 @@ describe('Draggable', () => {
     it('should call useDraggable with correct id', async () => {
       const {useDraggable} = await import('@dnd-kit/react');
 
-      render(
+      await render(
         <Draggable id="unique-id-123" accept={['TYPE_A']}>
           <div>Content</div>
         </Draggable>,
@@ -80,7 +81,7 @@ describe('Draggable', () => {
     it('should pass additional props to useDraggable', async () => {
       const {useDraggable} = await import('@dnd-kit/react');
 
-      render(
+      await render(
         <Draggable id="test-id" accept={['TYPE_A', 'TYPE_B']} data={{custom: 'data'}} type="CUSTOM_TYPE" disabled>
           <div>Content</div>
         </Draggable>,
@@ -98,8 +99,8 @@ describe('Draggable', () => {
   });
 
   describe('Accept Prop', () => {
-    it('should accept single type', () => {
-      const {container} = render(
+    it('should accept single type', async () => {
+      const {container} = await render(
         <Draggable id="test" accept={['SINGLE_TYPE']}>
           <div>Content</div>
         </Draggable>,
@@ -108,8 +109,8 @@ describe('Draggable', () => {
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should accept multiple types', () => {
-      const {container} = render(
+    it('should accept multiple types', async () => {
+      const {container} = await render(
         <Draggable id="test" accept={['TYPE_A', 'TYPE_B', 'TYPE_C']}>
           <div>Content</div>
         </Draggable>,
@@ -120,8 +121,8 @@ describe('Draggable', () => {
   });
 
   describe('Styling', () => {
-    it('should have full width and height', () => {
-      const {container} = render(
+    it('should have full width and height', async () => {
+      const {container} = await render(
         <Draggable id="test" accept={['TYPE_A']}>
           <div>Content</div>
         </Draggable>,

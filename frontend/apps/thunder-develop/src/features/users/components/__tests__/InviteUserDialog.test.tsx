@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders, getByDisplayValue} from '@thunder/test-utils/browser';
 import type {JSX} from 'react';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react';
 import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react';
@@ -140,39 +141,38 @@ describe('InviteUserDialog', () => {
     vi.clearAllTimers();
   });
 
-  it('renders dialog when open', () => {
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+  it('renders dialog when open', async () => {
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByText('Invite User')).toBeInTheDocument();
-    expect(screen.getByText(/Send an invite link to a new user/i)).toBeInTheDocument();
+    await expect.element(page.getByText('Invite User')).toBeInTheDocument();
+    await expect.element(page.getByText(/Send an invite link to a new user/i)).toBeInTheDocument();
   });
 
-  it('does not render when closed', () => {
-    render(<InviteUserDialog open={false} onClose={mockOnClose} />);
+  it('does not render when closed', async () => {
+    await renderWithProviders(<InviteUserDialog open={false} onClose={mockOnClose} />);
 
-    expect(screen.queryByText('Invite User')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Invite User')).not.toBeInTheDocument();
   });
 
   it('closes dialog when close button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const closeButton = screen.getByLabelText('close');
-    await user.click(closeButton);
+    const closeButton = page.getByLabelText('close');
+    await userEvent.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('displays loading state when initializing', () => {
+  it('displays loading state when initializing', async () => {
     Object.assign(mockInviteUserRenderProps, {
       isLoading: true,
       components: [],
       isInviteGenerated: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('displays form fields when components are available', async () => {
@@ -206,19 +206,16 @@ describe('InviteUserDialog', () => {
       isLoading: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    // Wait for form to render and check for email input by placeholder or label
-    await waitFor(() => {
-      const emailInput = screen.getByPlaceholderText('Enter email');
-      expect(emailInput).toBeInTheDocument();
-    });
+    // Wait for form to render and check for email input by placeholder
+    await expect.element(page.getByPlaceholder('Enter email')).toBeInTheDocument();
     // Check for label - it might be "Email" or a translation key
-    const labels = screen.getAllByText('Email');
+    const labels = page.getByText('Email').all();
     expect(labels.length).toBeGreaterThan(0);
   });
 
-  it('disables submit button when form is invalid', () => {
+  it('disables submit button when form is invalid', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -248,13 +245,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const submitButton = screen.getByRole('button', {name: /next/i});
-    expect(submitButton).toBeDisabled();
+    const submitButton = page.getByRole('button', {name: /next/i});
+    await expect.element(submitButton).toBeDisabled();
   });
 
-  it('enables submit button when form is valid', () => {
+  it('enables submit button when form is valid', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -284,14 +281,13 @@ describe('InviteUserDialog', () => {
       isValid: true,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const submitButton = screen.getByRole('button', {name: /next/i});
-    expect(submitButton).not.toBeDisabled();
+    const submitButton = page.getByRole('button', {name: /next/i});
+    await expect.element(submitButton).not.toBeDisabled();
   });
 
   it('calls handleInputChange when input value changes', async () => {
-    const user = userEvent.setup();
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -321,18 +317,17 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const emailInput = screen.getByPlaceholderText('Enter email');
-    await user.type(emailInput, 'test@example.com');
+    const emailInput = page.getByPlaceholder('Enter email');
+    await userEvent.fill(emailInput, 'test@example.com');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHandleInputChange).toHaveBeenCalledWith('email', 'test@example.com');
     });
   });
 
   it('submits form when submit button is clicked', async () => {
-    const user = userEvent.setup();
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -364,39 +359,39 @@ describe('InviteUserDialog', () => {
 
     mockHandleSubmit.mockResolvedValue({});
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const submitButton = screen.getByRole('button', {name: /next/i});
-    await user.click(submitButton);
+    const submitButton = page.getByRole('button', {name: /next/i});
+    await userEvent.click(submitButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHandleSubmit).toHaveBeenCalledWith(submitAction, {email: 'test@example.com'});
     });
   });
 
-  it('displays error message when error occurs', () => {
+  it('displays error message when error occurs', async () => {
     Object.assign(mockInviteUserRenderProps, {
       error: new Error('Failed to invite user'),
       components: [],
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByText(/Error/i)).toBeInTheDocument();
-    expect(screen.getByText('Failed to invite user')).toBeInTheDocument();
+    await expect.element(page.getByText(/Error/i)).toBeInTheDocument();
+    await expect.element(page.getByText('Failed to invite user')).toBeInTheDocument();
   });
 
-  it('displays invite link when invite is generated', () => {
+  it('displays invite link when invite is generated', async () => {
     const inviteLink = 'https://example.com/invite?token=abc123';
     Object.assign(mockInviteUserRenderProps, {
       isInviteGenerated: true,
       inviteLink,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} onSuccess={mockOnSuccess} />);
 
-    expect(screen.getByText(/Invite Link Generated!/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(inviteLink)).toBeInTheDocument();
+    await expect.element(page.getByText(/Invite Link Generated!/i)).toBeInTheDocument();
+    await expect.element(getByDisplayValue(inviteLink)).toBeInTheDocument();
   });
 
   it('calls onSuccess when invite link is generated', async () => {
@@ -406,15 +401,14 @@ describe('InviteUserDialog', () => {
       inviteLink,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} onSuccess={mockOnSuccess} />);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockOnSuccess).toHaveBeenCalledWith(inviteLink);
     });
   });
 
   it('copies invite link when copy button is clicked', async () => {
-    const user = userEvent.setup();
     const inviteLink = 'https://example.com/invite?token=abc123';
     Object.assign(mockInviteUserRenderProps, {
       isInviteGenerated: true,
@@ -422,38 +416,37 @@ describe('InviteUserDialog', () => {
       inviteLinkCopied: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const copyButton = screen.getByRole('button', {name: /copy/i});
-    await user.click(copyButton);
+    const copyButton = page.getByRole('button', {name: /copy/i});
+    await userEvent.click(copyButton);
 
     expect(mockCopyInviteLink).toHaveBeenCalled();
   });
 
   it('resets flow when "Invite Another User" is clicked', async () => {
-    const user = userEvent.setup();
     const inviteLink = 'https://example.com/invite?token=abc123';
     Object.assign(mockInviteUserRenderProps, {
       isInviteGenerated: true,
       inviteLink,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const inviteAnotherButton = screen.getByRole('button', {name: /Invite Another User/i});
-    await user.click(inviteAnotherButton);
+    const inviteAnotherButton = page.getByRole('button', {name: /Invite Another User/i});
+    await userEvent.click(inviteAnotherButton);
 
     expect(mockResetFlow).toHaveBeenCalled();
   });
 
-  it('displays stepper with correct steps', () => {
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+  it('displays stepper with correct steps', async () => {
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByText('User Details')).toBeInTheDocument();
-    expect(screen.getByText('Invite Link')).toBeInTheDocument();
+    await expect.element(page.getByText('User Details')).toBeInTheDocument();
+    await expect.element(page.getByText('Invite Link')).toBeInTheDocument();
   });
 
-  it('renders SELECT field with placeholder when no value selected', () => {
+  it('renders SELECT field with placeholder when no value selected', async () => {
     const selectComponent: EmbeddedFlowComponent = {
       id: 'user_type_select',
       ref: 'userType',
@@ -487,13 +480,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const select = screen.getByRole('combobox');
-    expect(select).toHaveTextContent('Select user type');
+    const select = page.getByRole('combobox');
+    await expect.element(select).toHaveTextContent('Select user type');
   });
 
-  it('displays loading spinner on submit button when loading', () => {
+  it('displays loading spinner on submit button when loading', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -524,18 +517,18 @@ describe('InviteUserDialog', () => {
       isLoading: true,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // When loading, the submit button shows a spinner instead of text
-    // Find the button that contains the progressbar (submit button)
-    const spinner = screen.getByRole('progressbar');
-    expect(spinner).toBeInTheDocument();
+    const spinner = page.getByRole('progressbar');
+    await expect.element(spinner).toBeInTheDocument();
     // The spinner's parent button should be disabled
-    const submitButton = spinner.closest('button');
+    const spinnerEl = spinner.element() as HTMLElement;
+    const submitButton = spinnerEl.closest('button');
     expect(submitButton).toBeDisabled();
   });
 
-  it('disables cancel button when loading', () => {
+  it('disables cancel button when loading', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -566,14 +559,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const cancelButton = screen.getByRole('button', {name: /cancel/i});
-    expect(cancelButton).toBeDisabled();
+    const cancelButton = page.getByRole('button', {name: /cancel/i});
+    await expect.element(cancelButton).toBeDisabled();
   });
 
   it('validates email format', async () => {
-    const user = userEvent.setup();
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -603,18 +595,17 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const emailInput = screen.getByPlaceholderText('Enter email');
-    await user.type(emailInput, 'invalid-email');
+    const emailInput = page.getByPlaceholder('Enter email');
+    await userEvent.fill(emailInput, 'invalid-email');
 
     // Form validation should prevent submission
-    const submitButton = screen.getByRole('button', {name: /next/i});
-    expect(submitButton).toBeDisabled();
+    const submitButton = page.getByRole('button', {name: /next/i});
+    await expect.element(submitButton).toBeDisabled();
   });
 
   it('renders TEXT_INPUT field correctly', async () => {
-    const user = userEvent.setup();
     const textInputComponent: EmbeddedFlowComponent = {
       id: 'first_name_input',
       ref: 'firstName',
@@ -644,19 +635,19 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const textInput = screen.getByPlaceholderText('Enter first name');
-    expect(textInput).toBeInTheDocument();
+    const textInput = page.getByPlaceholder('Enter first name');
+    await expect.element(textInput).toBeInTheDocument();
 
-    await user.type(textInput, 'John');
+    await userEvent.fill(textInput, 'John');
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHandleInputChange).toHaveBeenCalledWith('firstName', 'John');
     });
   });
 
-  it('renders TEXT component with body variant', () => {
+  it('renders TEXT component with body variant', async () => {
     const textComponent: EmbeddedFlowComponent = {
       id: 'description_text',
       type: EmbeddedFlowComponentType.Text,
@@ -693,12 +684,12 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByText('Please fill in the user details below')).toBeInTheDocument();
+    await expect.element(page.getByText('Please fill in the user details below')).toBeInTheDocument();
   });
 
-  it('skips TEXT component with HEADING_1 variant', () => {
+  it('skips TEXT component with HEADING_1 variant', async () => {
     const headingComponent: EmbeddedFlowComponent = {
       id: 'heading_text',
       type: EmbeddedFlowComponentType.Text,
@@ -735,13 +726,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // HEADING_1 should not be rendered
-    expect(screen.queryByText('Main Heading')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Main Heading')).not.toBeInTheDocument();
   });
 
-  it('displays error message when error occurs with components present', () => {
+  it('displays error message when error occurs with components present', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -772,16 +763,15 @@ describe('InviteUserDialog', () => {
       isValid: true,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Error should be displayed above the form
-    expect(screen.getByText('Email already exists')).toBeInTheDocument();
+    await expect.element(page.getByText('Email already exists')).toBeInTheDocument();
     // Form should still be visible
-    expect(screen.getByPlaceholderText('Enter email')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter email')).toBeInTheDocument();
   });
 
   it('closes dialog when cancel button is clicked', async () => {
-    const user = userEvent.setup();
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -811,15 +801,15 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const cancelButton = screen.getByRole('button', {name: /cancel/i});
-    await user.click(cancelButton);
+    const cancelButton = page.getByRole('button', {name: /cancel/i});
+    await userEvent.click(cancelButton);
 
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('returns null for block without submit action', () => {
+  it('returns null for block without submit action', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -842,14 +832,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Block should not render without submit action
-    expect(screen.queryByPlaceholderText('Enter email')).not.toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter email')).not.toBeInTheDocument();
   });
 
   it('handles SELECT field value changes', async () => {
-    const user = userEvent.setup();
     const selectComponent: EmbeddedFlowComponent = {
       id: 'role_select',
       ref: 'role',
@@ -883,22 +872,22 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Open the select dropdown
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
     // Select an option
-    const adminOption = await screen.findByRole('option', {name: 'Administrator'});
-    await user.click(adminOption);
+    const adminOption = page.getByRole('option', {name: 'Administrator'});
+    await userEvent.click(adminOption);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHandleInputChange).toHaveBeenCalledWith('role', 'admin');
     });
   });
 
-  it('displays check icon when invite link is already copied', () => {
+  it('displays check icon when invite link is already copied', async () => {
     const inviteLink = 'https://example.com/invite?token=abc123';
     Object.assign(mockInviteUserRenderProps, {
       isInviteGenerated: true,
@@ -906,35 +895,33 @@ describe('InviteUserDialog', () => {
       inviteLinkCopied: true, // Already copied via SDK
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // The copy button should show check icon when inviteLinkCopied is true
-    const copyButton = screen.getByRole('button', {name: /copy/i});
-    expect(copyButton).toBeInTheDocument();
+    const copyButton = page.getByRole('button', {name: /copy/i});
+    await expect.element(copyButton).toBeInTheDocument();
   });
 
   it('closes dialog from invite generated screen', async () => {
-    const user = userEvent.setup();
     const inviteLink = 'https://example.com/invite?token=abc123';
     Object.assign(mockInviteUserRenderProps, {
       isInviteGenerated: true,
       inviteLink,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Find the "Close" button (not the X icon button which has aria-label="close")
-    const closeButtons = screen.getAllByRole('button', {name: /close/i});
+    const closeButtons = page.getByRole('button', {name: /close/i}).all();
     // The "Close" text button should be in the generated invite screen
-    const closeTextButton = closeButtons.find((btn) => btn.textContent === 'Close');
+    const closeTextButton = closeButtons.find((btn) => btn.element().textContent === 'Close');
     expect(closeTextButton).toBeDefined();
-    await user.click(closeTextButton!);
+    await userEvent.click(closeTextButton!);
 
     expect(mockOnClose).toHaveBeenCalled();
   });
 
   it('handles getOptionValue with string option', async () => {
-    const user = userEvent.setup();
     const selectComponent: EmbeddedFlowComponent = {
       id: 'country_select',
       ref: 'country',
@@ -965,20 +952,20 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
-    const usaOption = await screen.findByRole('option', {name: 'USA'});
-    await user.click(usaOption);
+    const usaOption = page.getByRole('option', {name: 'USA'});
+    await userEvent.click(usaOption);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHandleInputChange).toHaveBeenCalledWith('country', 'USA');
     });
   });
 
-  it('renders multiple form fields in a block', () => {
+  it('renders multiple form fields in a block', async () => {
     const firstNameComponent: EmbeddedFlowComponent = {
       id: 'first_name_input',
       ref: 'firstName',
@@ -1026,15 +1013,15 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByPlaceholderText('Enter first name')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter last name')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter email')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /submit/i})).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter first name')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter last name')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter email')).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /submit/i})).toBeInTheDocument();
   });
 
-  it('renders submit button with outlined variant when not PRIMARY', () => {
+  it('renders submit button with outlined variant when not PRIMARY', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -1064,13 +1051,13 @@ describe('InviteUserDialog', () => {
       isValid: true,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const submitButton = screen.getByRole('button', {name: /submit/i});
-    expect(submitButton).toHaveClass('MuiButton-outlined');
+    const submitButton = page.getByRole('button', {name: /submit/i});
+    await expect.element(submitButton).toHaveClass('MuiButton-outlined');
   });
 
-  it('does not render component without ref in renderFormField', () => {
+  it('does not render component without ref in renderFormField', async () => {
     // Component without ref should not render a form field
     const componentWithoutRef: EmbeddedFlowComponent = {
       id: 'no_ref_input',
@@ -1100,29 +1087,28 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Field without ref should not be rendered
-    expect(screen.queryByPlaceholderText('This should not render')).not.toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('This should not render')).not.toBeInTheDocument();
   });
 
-  it('displays close button when error without components', () => {
+  it('displays close button when error without components', async () => {
     Object.assign(mockInviteUserRenderProps, {
       error: new Error('Authentication failed'),
       components: [],
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByText('Authentication failed')).toBeInTheDocument();
+    await expect.element(page.getByText('Authentication failed')).toBeInTheDocument();
     // Find the "Close" text button (not the X icon button)
-    const closeButtons = screen.getAllByRole('button', {name: /close/i});
-    const closeTextButton = closeButtons.find((btn) => btn.textContent === 'Close');
+    const closeButtons = page.getByRole('button', {name: /close/i}).all();
+    const closeTextButton = closeButtons.find((btn) => btn.element().textContent === 'Close');
     expect(closeTextButton).toBeDefined();
   });
 
   it('handles form submission error gracefully', async () => {
-    const user = userEvent.setup();
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -1155,18 +1141,18 @@ describe('InviteUserDialog', () => {
     // Make handleSubmit reject
     mockHandleSubmit.mockRejectedValue(new Error('Network error'));
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const submitButton = screen.getByRole('button', {name: /next/i});
-    await user.click(submitButton);
+    const submitButton = page.getByRole('button', {name: /next/i});
+    await userEvent.click(submitButton);
 
     // Should not throw, error is caught
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHandleSubmit).toHaveBeenCalled();
     });
   });
 
-  it('does not submit form when button is disabled', () => {
+  it('does not submit form when button is disabled', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -1196,10 +1182,11 @@ describe('InviteUserDialog', () => {
       isValid: false, // Form is invalid
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Try to submit the form programmatically (simulate form submission)
-    const form = screen.getByRole('button', {name: /next/i}).closest('form');
+    const submitButtonEl = page.getByRole('button', {name: /next/i}).element() as HTMLElement;
+    const form = submitButtonEl.closest('form');
     if (form) {
       const submitEvent = new Event('submit', {bubbles: true, cancelable: true});
       form.dispatchEvent(submitEvent);
@@ -1209,7 +1196,7 @@ describe('InviteUserDialog', () => {
     expect(mockHandleSubmit).not.toHaveBeenCalled();
   });
 
-  it('renders loading state when components are empty but not loading', () => {
+  it('renders loading state when components are empty but not loading', async () => {
     Object.assign(mockInviteUserRenderProps, {
       isLoading: false,
       components: [],
@@ -1217,13 +1204,13 @@ describe('InviteUserDialog', () => {
       error: null,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Should show loading spinner when waiting for components
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('handles SELECT with hint text', () => {
+  it('handles SELECT with hint text', async () => {
     const selectComponent = {
       id: 'tier_select',
       ref: 'tier',
@@ -1258,12 +1245,12 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    expect(screen.getByText('Choose your subscription level')).toBeInTheDocument();
+    await expect.element(page.getByText('Choose your subscription level')).toBeInTheDocument();
   });
 
-  it('uses fallback form validation when propsIsValid is undefined', () => {
+  it('uses fallback form validation when propsIsValid is undefined', async () => {
     const emailComponent: EmbeddedFlowComponent = {
       id: 'email_input',
       ref: 'email',
@@ -1294,14 +1281,14 @@ describe('InviteUserDialog', () => {
       isValid: undefined,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Button should be disabled based on form validation
-    const submitButton = screen.getByRole('button', {name: /next/i});
-    expect(submitButton).toBeDisabled();
+    const submitButton = page.getByRole('button', {name: /next/i});
+    await expect.element(submitButton).toBeDisabled();
   });
 
-  it('returns null for unsupported component types in renderFormField', () => {
+  it('returns null for unsupported component types in renderFormField', async () => {
     // Component with unsupported type should return null
     const unsupportedComponent: EmbeddedFlowComponent = {
       id: 'unsupported_component',
@@ -1330,14 +1317,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Unsupported component should not render any input
-    expect(screen.queryByLabelText('Unsupported')).not.toBeInTheDocument();
+    await expect.element(page.getByLabelText('Unsupported')).not.toBeInTheDocument();
   });
 
   it('handles getOptionValue with non-string value in object option', async () => {
-    const user = userEvent.setup();
     const selectComponent: EmbeddedFlowComponent = {
       id: 'complex_select',
       ref: 'complexOption',
@@ -1371,17 +1357,17 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
     // The option should render with the serialized value
-    const option = await screen.findByRole('option', {name: 'Complex Option 1'});
-    expect(option).toBeInTheDocument();
+    const option = page.getByRole('option', {name: 'Complex Option 1'});
+    await expect.element(option).toBeInTheDocument();
   });
 
-  it('handles getOptionLabel with non-string label in object option', () => {
+  it('handles getOptionLabel with non-string label in object option', async () => {
     const selectComponent: EmbeddedFlowComponent = {
       id: 'label_select',
       ref: 'labelOption',
@@ -1414,14 +1400,13 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Should render without crashing
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    await expect.element(page.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('handles option without label or value properties', async () => {
-    const user = userEvent.setup();
     const selectComponent: EmbeddedFlowComponent = {
       id: 'bare_select',
       ref: 'bareOption',
@@ -1454,18 +1439,17 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const select = screen.getByRole('combobox');
-    await user.click(select);
+    const select = page.getByRole('combobox');
+    await userEvent.click(select);
 
     // Should render the serialized option
-    const option = await screen.findByRole('option', {name: /option1/i});
-    expect(option).toBeInTheDocument();
+    const option = page.getByRole('option', {name: /option1/i});
+    await expect.element(option).toBeInTheDocument();
   });
 
   it('handles copyInviteLink returning undefined', async () => {
-    const user = userEvent.setup();
     const inviteLink = 'https://example.com/invite?token=abc123';
 
     // Set copyInviteLink to undefined
@@ -1476,13 +1460,13 @@ describe('InviteUserDialog', () => {
       copyInviteLink: undefined,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
-    const copyButton = screen.getByRole('button', {name: /copy/i});
-    await user.click(copyButton);
+    const copyButton = page.getByRole('button', {name: /copy/i});
+    await userEvent.click(copyButton);
 
     // Should not crash when copyInviteLink is undefined
-    expect(copyButton).toBeInTheDocument();
+    await expect.element(copyButton).toBeInTheDocument();
   });
 
   it('renders SELECT with selected value showing label', async () => {
@@ -1519,13 +1503,13 @@ describe('InviteUserDialog', () => {
       isValid: true,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Should show the label for the selected value
-    expect(screen.getByText('Administrator')).toBeInTheDocument();
+    await expect.element(page.getByText('Administrator')).toBeInTheDocument();
   });
 
-  it('renders SELECT with unknown selected value', () => {
+  it('renders SELECT with unknown selected value', async () => {
     const selectComponent: EmbeddedFlowComponent = {
       id: 'unknown_select',
       ref: 'unknownOption',
@@ -1556,13 +1540,13 @@ describe('InviteUserDialog', () => {
       isValid: true,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Should show the raw value when option not found
-    expect(screen.getByText('unknown_value')).toBeInTheDocument();
+    await expect.element(page.getByText('unknown_value')).toBeInTheDocument();
   });
 
-  it('returns null for non-Block component type at top level', () => {
+  it('returns null for non-Block component type at top level', async () => {
     // Test when a top-level component is not a Block type
     const nonBlockComponent: EmbeddedFlowComponent = {
       id: 'non_block',
@@ -1577,20 +1561,20 @@ describe('InviteUserDialog', () => {
       isValid: false,
     });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Non-Block component at top level should return null
-    expect(screen.queryByLabelText('Non Block')).not.toBeInTheDocument();
+    await expect.element(page.getByLabelText('Non Block')).not.toBeInTheDocument();
   });
 
   it('logs error when onError callback is triggered', async () => {
     // Enable error simulation
     simulateInviteUserError = true;
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
+    await renderWithProviders(<InviteUserDialog open onClose={mockOnClose} />);
 
     // Wait for the onError callback to be triggered
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith('User onboarding error', {error: mockInviteUserError});
     });
   });

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useDeleteApplication from '../useDeleteApplication';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
@@ -61,8 +61,8 @@ describe('useDeleteApplication', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useDeleteApplication());
+  it('should initialize with idle state', async () => {
+    const {result} = await renderHook(() => useDeleteApplication());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -78,11 +78,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -95,11 +95,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -122,15 +122,15 @@ describe('useDeleteApplication', () => {
     );
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
+    await vi.waitFor(
       () => {
         expect(result.current.isSuccess).toBe(true);
       },
@@ -145,11 +145,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -163,11 +163,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -180,11 +180,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(notFoundError);
 
     const applicationId = 'non-existent-id';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -195,7 +195,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result, queryClient} = renderHook(() => useDeleteApplication());
+    const {result, queryClient} = await renderHook(() => useDeleteApplication());
 
     // Pre-populate cache with application
     queryClient.setQueryData([ApplicationQueryKeys.APPLICATION, applicationId], {
@@ -207,7 +207,7 @@ describe('useDeleteApplication', () => {
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -223,7 +223,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result, queryClient} = renderHook(() => useDeleteApplication());
+    const {result, queryClient} = await renderHook(() => useDeleteApplication());
 
     // Pre-populate cache with applications list
     const mockApplicationsList: ApplicationListResponse = {
@@ -248,7 +248,7 @@ describe('useDeleteApplication', () => {
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -264,7 +264,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result, queryClient} = renderHook(() => useDeleteApplication());
+    const {result, queryClient} = await renderHook(() => useDeleteApplication());
 
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
@@ -272,7 +272,7 @@ describe('useDeleteApplication', () => {
     result.current.mutate(applicationId);
 
     // The mutation should still succeed even if invalidateQueries fails
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
   });
@@ -283,19 +283,19 @@ describe('useDeleteApplication', () => {
     const app1Id = 'app-1';
     const app2Id = 'app-2';
 
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     // Delete first application
     result.current.mutate(app1Id);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
     // Delete second application
     result.current.mutate(app2Id);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -319,11 +319,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(forbiddenError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -334,13 +334,13 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     const deletePromise = result.current.mutateAsync(applicationId);
 
     await expect(deletePromise).resolves.toBeUndefined();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
   });
@@ -350,13 +350,13 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     const deletePromise = result.current.mutateAsync(applicationId);
 
     await expect(deletePromise).rejects.toEqual(apiError);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
   });
@@ -371,7 +371,7 @@ describe('useDeleteApplication', () => {
     const app1Data = {id: app1Id, name: 'App 1'};
     const app2Data = {id: app2Id, name: 'App 2'};
 
-    const {result, queryClient} = renderHook(() => useDeleteApplication());
+    const {result, queryClient} = await renderHook(() => useDeleteApplication());
 
     queryClient.setQueryData([ApplicationQueryKeys.APPLICATION, app1Id], app1Data);
     queryClient.setQueryData([ApplicationQueryKeys.APPLICATION, app2Id], app2Data);
@@ -379,7 +379,7 @@ describe('useDeleteApplication', () => {
     // Delete first application
     result.current.mutate(app1Id);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -392,13 +392,13 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValue(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     // Trigger multiple deletions concurrently
     result.current.mutate(applicationId);
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -412,12 +412,12 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     // First attempt - should fail
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -426,7 +426,7 @@ describe('useDeleteApplication', () => {
     // Second attempt - should succeed
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -439,11 +439,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -455,11 +455,11 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(serverError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication());
+    const {result} = await renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, render, fireEvent} from '@testing-library/react';
+import {renderHook, render} from '@thunder/test-utils/browser';
+import {userEvent} from 'vitest/browser';
 import type {NodeProps} from '@xyflow/react';
 import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
 import type {Resources} from '@/features/flows/models/resources';
@@ -101,7 +102,7 @@ describe('useNodeTypes', () => {
     mockOnAddElementToForm = vi.fn() as unknown as (element: Element<unknown>, formId: string) => void;
   });
 
-  const renderUseNodeTypes = (overrides = {}) => {
+  const renderUseNodeTypes = async (overrides = {}) => {
     const defaultProps = {
       steps: [createMockStep()],
       resources: createMockResources(),
@@ -114,22 +115,22 @@ describe('useNodeTypes', () => {
   };
 
   describe('Hook Interface', () => {
-    it('should return nodeTypes object', () => {
-      const {result} = renderUseNodeTypes();
+    it('should return nodeTypes object', async () => {
+      const {result} = await renderUseNodeTypes();
       expect(result.current.nodeTypes).toBeDefined();
       expect(typeof result.current.nodeTypes).toBe('object');
     });
 
-    it('should return edgeTypes object', () => {
-      const {result} = renderUseNodeTypes();
+    it('should return edgeTypes object', async () => {
+      const {result} = await renderUseNodeTypes();
       expect(result.current.edgeTypes).toBeDefined();
       expect(typeof result.current.edgeTypes).toBe('object');
     });
   });
 
   describe('nodeTypes', () => {
-    it('should create node types for each step type', () => {
-      const {result} = renderUseNodeTypes({
+    it('should create node types for each step type', async () => {
+      const {result} = await renderUseNodeTypes({
         steps: [
           createMockStep({id: 'view-1', type: StepTypes.View}),
           createMockStep({id: 'execution-1', type: StepTypes.Execution}),
@@ -140,16 +141,16 @@ describe('useNodeTypes', () => {
       expect(result.current.nodeTypes[StepTypes.Execution]).toBeDefined();
     });
 
-    it('should create static node types for all StaticStepTypes', () => {
-      const {result} = renderUseNodeTypes();
+    it('should create static node types for all StaticStepTypes', async () => {
+      const {result} = await renderUseNodeTypes();
 
       Object.values(StaticStepTypes).forEach((type) => {
         expect(result.current.nodeTypes[type]).toBeDefined();
       });
     });
 
-    it('should render StepFactory component for step types', () => {
-      const {result} = renderUseNodeTypes({
+    it('should render StepFactory component for step types', async () => {
+      const {result} = await renderUseNodeTypes({
         steps: [createMockStep({id: 'view-1', type: StepTypes.View})],
       });
 
@@ -168,13 +169,13 @@ describe('useNodeTypes', () => {
         sourcePosition: undefined,
       } as unknown as NodeProps;
 
-      const {getByTestId} = render(<ViewNodeType {...mockNodeProps} />);
+      const {getByTestId} = await render(<ViewNodeType {...mockNodeProps} />);
       expect(getByTestId('step-factory')).toBeInTheDocument();
       expect(getByTestId('step-factory')).toHaveAttribute('data-resource-id', 'test-node');
     });
 
-    it('should render StaticStepFactory component for static step types', () => {
-      const {result} = renderUseNodeTypes();
+    it('should render StaticStepFactory component for static step types', async () => {
+      const {result} = await renderUseNodeTypes();
 
       const StartNodeType = result.current.nodeTypes[StaticStepTypes.Start];
       const mockNodeProps = {
@@ -189,13 +190,13 @@ describe('useNodeTypes', () => {
         dragging: false,
       } as unknown as NodeProps;
 
-      const {getByTestId} = render(<StartNodeType {...mockNodeProps} />);
+      const {getByTestId} = await render(<StartNodeType {...mockNodeProps} />);
       expect(getByTestId('static-step-factory')).toBeInTheDocument();
       expect(getByTestId('static-step-factory')).toHaveAttribute('data-type', StaticStepTypes.Start);
     });
 
-    it('should handle empty steps array', () => {
-      const {result} = renderUseNodeTypes({steps: []});
+    it('should handle empty steps array', async () => {
+      const {result} = await renderUseNodeTypes({steps: []});
 
       // Should still have static node types
       Object.values(StaticStepTypes).forEach((type) => {
@@ -203,8 +204,8 @@ describe('useNodeTypes', () => {
       });
     });
 
-    it('should handle undefined steps', () => {
-      const {result} = renderUseNodeTypes({steps: undefined});
+    it('should handle undefined steps', async () => {
+      const {result} = await renderUseNodeTypes({steps: undefined});
 
       // Should still have static node types
       Object.values(StaticStepTypes).forEach((type) => {
@@ -212,8 +213,8 @@ describe('useNodeTypes', () => {
       });
     });
 
-    it('should deduplicate step types', () => {
-      const {result} = renderUseNodeTypes({
+    it('should deduplicate step types', async () => {
+      const {result} = await renderUseNodeTypes({
         steps: [
           createMockStep({id: 'view-1', type: StepTypes.View}),
           createMockStep({id: 'view-2', type: StepTypes.View}),
@@ -225,11 +226,11 @@ describe('useNodeTypes', () => {
       expect(result.current.nodeTypes[StepTypes.View]).toBeDefined();
     });
 
-    it('should maintain stable nodeTypes reference when steps dont change types', () => {
-      const {result, rerender} = renderHook(
-        ({steps}) =>
+    it('should maintain stable nodeTypes reference when steps dont change types', async () => {
+      const {result, rerender} = await renderHook(
+        (props?) =>
           useNodeTypes({
-            steps,
+            steps: props!.steps,
             resources: createMockResources(),
             onAddElementToView: mockOnAddElementToView,
             onAddElementToForm: mockOnAddElementToForm,
@@ -244,7 +245,7 @@ describe('useNodeTypes', () => {
       const initialNodeTypes = result.current.nodeTypes;
 
       // Rerender with same step types but different IDs
-      rerender({
+      await rerender({
         steps: [createMockStep({id: 'view-2', type: StepTypes.View})],
       });
 
@@ -252,11 +253,11 @@ describe('useNodeTypes', () => {
       expect(result.current.nodeTypes).toBe(initialNodeTypes);
     });
 
-    it('should update nodeTypes when step types change', () => {
-      const {result, rerender} = renderHook(
-        ({steps}) =>
+    it('should update nodeTypes when step types change', async () => {
+      const {result, rerender} = await renderHook(
+        (props?) =>
           useNodeTypes({
-            steps,
+            steps: props!.steps,
             resources: createMockResources(),
             onAddElementToView: mockOnAddElementToView,
             onAddElementToForm: mockOnAddElementToForm,
@@ -272,7 +273,7 @@ describe('useNodeTypes', () => {
       expect(result.current.nodeTypes[StepTypes.Execution]).toBeUndefined();
 
       // Rerender with different step types
-      rerender({
+      await rerender({
         steps: [
           createMockStep({id: 'view-1', type: StepTypes.View}),
           createMockStep({id: 'execution-1', type: StepTypes.Execution}),
@@ -285,42 +286,42 @@ describe('useNodeTypes', () => {
   });
 
   describe('edgeTypes', () => {
-    it('should include default edge type', () => {
-      const {result} = renderUseNodeTypes();
+    it('should include default edge type', async () => {
+      const {result} = await renderUseNodeTypes();
       expect(result.current.edgeTypes.default).toBeDefined();
     });
 
-    it('should include smoothstep edge type', () => {
-      const {result} = renderUseNodeTypes();
+    it('should include smoothstep edge type', async () => {
+      const {result} = await renderUseNodeTypes();
       expect(result.current.edgeTypes.smoothstep).toBeDefined();
     });
 
-    it('should include step edge type', () => {
-      const {result} = renderUseNodeTypes();
+    it('should include step edge type', async () => {
+      const {result} = await renderUseNodeTypes();
       expect(result.current.edgeTypes.step).toBeDefined();
     });
 
-    it('should maintain stable edgeTypes reference', () => {
-      const {result, rerender} = renderUseNodeTypes();
+    it('should maintain stable edgeTypes reference', async () => {
+      const {result, rerender} = await renderUseNodeTypes();
 
       const initialEdgeTypes = result.current.edgeTypes;
 
-      rerender();
+      await rerender();
 
       expect(result.current.edgeTypes).toBe(initialEdgeTypes);
     });
   });
 
   describe('callback refs', () => {
-    it('should update onAddElementToView ref when callback changes', () => {
+    it('should update onAddElementToView ref when callback changes', async () => {
       const newOnAddElementToView = vi.fn();
 
-      const {result, rerender} = renderHook(
-        ({onAddElementToView}) =>
+      const {result, rerender} = await renderHook(
+        (props?) =>
           useNodeTypes({
             steps: [createMockStep()],
             resources: createMockResources(),
-            onAddElementToView,
+            onAddElementToView: props!.onAddElementToView,
             onAddElementToForm: mockOnAddElementToForm,
           }),
         {
@@ -339,24 +340,24 @@ describe('useNodeTypes', () => {
       } as unknown as NodeProps;
 
       // Initial render
-      render(<ViewNodeType {...mockNodeProps} />);
+      await render(<ViewNodeType {...mockNodeProps} />);
 
       // Update callback
-      rerender({onAddElementToView: newOnAddElementToView});
+      await rerender({onAddElementToView: newOnAddElementToView});
 
       // The ref should be updated without recreating nodeTypes
     });
 
-    it('should update onAddElementToForm ref when callback changes', () => {
+    it('should update onAddElementToForm ref when callback changes', async () => {
       const newOnAddElementToForm = vi.fn();
 
-      const {rerender} = renderHook(
-        ({onAddElementToForm}) =>
+      const {rerender} = await renderHook(
+        (props?) =>
           useNodeTypes({
             steps: [createMockStep()],
             resources: createMockResources(),
             onAddElementToView: mockOnAddElementToView,
-            onAddElementToForm,
+            onAddElementToForm: props!.onAddElementToForm,
           }),
         {
           initialProps: {
@@ -366,22 +367,22 @@ describe('useNodeTypes', () => {
       );
 
       // Update callback
-      rerender({onAddElementToForm: newOnAddElementToForm});
+      await rerender({onAddElementToForm: newOnAddElementToForm});
 
       // The ref should be updated without recreating nodeTypes
     });
 
-    it('should update resources ref when resources change', () => {
+    it('should update resources ref when resources change', async () => {
       const newResources = {
         ...createMockResources(),
         templates: [{id: 'new-template'}],
       } as unknown as Resources;
 
-      const {rerender} = renderHook(
-        ({resources}) =>
+      const {rerender} = await renderHook(
+        (props?) =>
           useNodeTypes({
             steps: [createMockStep()],
-            resources,
+            resources: props!.resources,
             onAddElementToView: mockOnAddElementToView,
             onAddElementToForm: mockOnAddElementToForm,
           }),
@@ -393,15 +394,15 @@ describe('useNodeTypes', () => {
       );
 
       // Update resources
-      rerender({resources: newResources});
+      await rerender({resources: newResources});
 
       // The ref should be updated without recreating nodeTypes
     });
   });
 
   describe('stepsByTypeRef organization', () => {
-    it('should organize steps by type', () => {
-      const {result} = renderUseNodeTypes({
+    it('should organize steps by type', async () => {
+      const {result} = await renderUseNodeTypes({
         steps: [
           createMockStep({id: 'view-1', type: StepTypes.View}),
           createMockStep({id: 'view-2', type: StepTypes.View}),
@@ -417,11 +418,11 @@ describe('useNodeTypes', () => {
       expect(ExecutionNodeType).toBeDefined();
     });
 
-    it('should update stepsByTypeRef when steps change', () => {
-      const {result, rerender} = renderHook(
-        ({steps}) =>
+    it('should update stepsByTypeRef when steps change', async () => {
+      const {result, rerender} = await renderHook(
+        (props?) =>
           useNodeTypes({
-            steps,
+            steps: props!.steps,
             resources: createMockResources(),
             onAddElementToView: mockOnAddElementToView,
             onAddElementToForm: mockOnAddElementToForm,
@@ -434,7 +435,7 @@ describe('useNodeTypes', () => {
       );
 
       // Rerender with new steps
-      rerender({
+      await rerender({
         steps: [
           createMockStep({id: 'view-1', type: StepTypes.View}),
           createMockStep({id: 'view-2', type: StepTypes.View}),
@@ -447,8 +448,8 @@ describe('useNodeTypes', () => {
   });
 
   describe('integration with onAddElement callbacks', () => {
-    it('should pass onAddElement callback that calls onAddElementToView', () => {
-      const {result} = renderUseNodeTypes();
+    it('should pass onAddElement callback that calls onAddElementToView', async () => {
+      const {result} = await renderUseNodeTypes();
 
       const ViewNodeType = result.current.nodeTypes[StepTypes.View];
 
@@ -460,12 +461,12 @@ describe('useNodeTypes', () => {
         data: {},
       } as unknown as NodeProps;
 
-      const {getByTestId} = render(<ViewNodeType {...mockNodeProps} />);
+      const {getByTestId} = await render(<ViewNodeType {...mockNodeProps} />);
       expect(getByTestId('step-factory')).toBeInTheDocument();
     });
 
-    it('should pass onAddElementToForm callback', () => {
-      const {result} = renderUseNodeTypes();
+    it('should pass onAddElementToForm callback', async () => {
+      const {result} = await renderUseNodeTypes();
 
       const ViewNodeType = result.current.nodeTypes[StepTypes.View];
 
@@ -475,12 +476,12 @@ describe('useNodeTypes', () => {
         data: {},
       } as unknown as NodeProps;
 
-      const {getByTestId} = render(<ViewNodeType {...mockNodeProps} />);
+      const {getByTestId} = await render(<ViewNodeType {...mockNodeProps} />);
       expect(getByTestId('step-factory')).toBeInTheDocument();
     });
 
-    it('should call onAddElementToView when onAddElement is triggered', () => {
-      const {result} = renderUseNodeTypes();
+    it('should call onAddElementToView when onAddElement is triggered', async () => {
+      const {result} = await renderUseNodeTypes();
 
       const ViewNodeType = result.current.nodeTypes[StepTypes.View];
       const mockNodeProps = {
@@ -489,17 +490,17 @@ describe('useNodeTypes', () => {
         data: {},
       } as unknown as NodeProps;
 
-      const {getByTestId} = render(<ViewNodeType {...mockNodeProps} />);
+      const {getByTestId} = await render(<ViewNodeType {...mockNodeProps} />);
 
       // Trigger the onAddElement callback through the mock
-      fireEvent.click(getByTestId('trigger-add-element'));
+      await userEvent.click(getByTestId('trigger-add-element'));
 
       // The onAddElementToView callback should be called with the element and node id
       expect(mockOnAddElementToView).toHaveBeenCalledWith({id: 'test-element', type: 'TEXT'}, 'test-node');
     });
 
-    it('should call onAddElementToForm when onAddElementToForm is triggered', () => {
-      const {result} = renderUseNodeTypes();
+    it('should call onAddElementToForm when onAddElementToForm is triggered', async () => {
+      const {result} = await renderUseNodeTypes();
 
       const ViewNodeType = result.current.nodeTypes[StepTypes.View];
       const mockNodeProps = {
@@ -508,10 +509,10 @@ describe('useNodeTypes', () => {
         data: {},
       } as unknown as NodeProps;
 
-      const {getByTestId} = render(<ViewNodeType {...mockNodeProps} />);
+      const {getByTestId} = await render(<ViewNodeType {...mockNodeProps} />);
 
       // Trigger the onAddElementToForm callback through the mock
-      fireEvent.click(getByTestId('trigger-add-element-to-form'));
+      await userEvent.click(getByTestId('trigger-add-element-to-form'));
 
       // The onAddElementToForm callback should be called with the element and form id
       expect(mockOnAddElementToForm).toHaveBeenCalledWith({id: 'test-element', type: 'TEXT'}, 'form-1');

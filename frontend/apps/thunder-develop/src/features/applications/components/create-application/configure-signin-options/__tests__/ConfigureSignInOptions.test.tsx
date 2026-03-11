@@ -17,34 +17,13 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import type {BasicFlowDefinition} from '@/features/flows/models/responses';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import findMatchingFlowForIntegrations from '@/features/flows/utils/findMatchingFlowForIntegrations';
 import ConfigureSignInOptions, {type ConfigureSignInOptionsProps} from '../ConfigureSignInOptions';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'applications:onboarding.configure.SignInOptions.title': 'Configure Sign-In Options',
-        'applications:onboarding.configure.SignInOptions.subtitle': 'Choose how users will sign in',
-        'applications:onboarding.configure.SignInOptions.error': 'Failed to load sign-in options',
-        'applications:onboarding.configure.SignInOptions.noSelectionWarning':
-          'Please select at least one sign-in option',
-        'applications:onboarding.configure.SignInOptions.hint': 'You can customize this later',
-        'applications:onboarding.configure.SignInOptions.usernamePassword': 'Username & Password',
-        'applications:onboarding.configure.SignInOptions.google': 'Google',
-        'applications:onboarding.configure.SignInOptions.github': 'GitHub',
-        'applications:onboarding.configure.SignInOptions.notConfigured': 'Not configured',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 // Mock useIdentityProviders
 interface MockIdentityProviderResponse {
@@ -162,129 +141,131 @@ describe('ConfigureSignInOptions', () => {
     });
   });
 
-  const renderComponent = (props: Partial<ConfigureSignInOptionsProps> = {}) =>
+  const renderComponent = async (props: Partial<ConfigureSignInOptionsProps> = {}) =>
     render(<ConfigureSignInOptions {...defaultProps} {...props} />);
 
   describe('rendering', () => {
-    it('should render title and subtitle', () => {
-      renderComponent();
+    it('should render title and subtitle', async () => {
+      await renderComponent();
 
-      expect(screen.getByText('Configure Sign-In Options')).toBeInTheDocument();
-      expect(screen.getByText('Choose how users will sign in')).toBeInTheDocument();
+      await expect.element(page.getByText('Sign In Options')).toBeInTheDocument();
+      await expect.element(page.getByText('Choose how users will sign-in to your application')).toBeInTheDocument();
     });
 
-    it('should render IndividualMethodsToggleView', () => {
-      renderComponent();
+    it('should render IndividualMethodsToggleView', async () => {
+      await renderComponent();
 
-      expect(screen.getByTestId('individual-methods-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('individual-methods-view')).toBeInTheDocument();
     });
 
-    it('should render FlowsListView', () => {
-      renderComponent();
+    it('should render FlowsListView', async () => {
+      await renderComponent();
 
-      expect(screen.getByTestId('flows-list-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flows-list-view')).toBeInTheDocument();
     });
 
-    it('should render hint text', () => {
-      renderComponent();
+    it('should render hint text', async () => {
+      await renderComponent();
 
-      expect(screen.getByText('You can customize this later')).toBeInTheDocument();
+      await expect.element(page.getByText('You can always change these settings later in the application settings.')).toBeInTheDocument();
     });
   });
 
   describe('loading state', () => {
-    it('should show loading spinner when identity providers are loading', () => {
+    it('should show loading spinner when identity providers are loading', async () => {
       mockUseIdentityProviders.mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should show loading spinner when flows are loading', () => {
+    it('should show loading spinner when flows are loading', async () => {
       mockUseGetFlows.mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
     });
   });
 
   describe('error state', () => {
-    it('should show error alert when identity providers fetch fails', () => {
+    it('should show error alert when identity providers fetch fails', async () => {
       mockUseIdentityProviders.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to fetch providers'),
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(screen.getByText('Failed to load sign-in options')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByText('Failed to load authentication methods: Failed to fetch providers')).toBeInTheDocument();
     });
 
-    it('should show error alert when flows fetch fails', () => {
+    it('should show error alert when flows fetch fails', async () => {
       mockUseGetFlows.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to fetch flows'),
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
     });
   });
 
   describe('validation warning', () => {
-    it('should show warning when no options are selected', () => {
-      renderComponent({
+    it('should show warning when no options are selected', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
         },
       });
 
-      expect(screen.getByText('Please select at least one sign-in option')).toBeInTheDocument();
+      await expect.element(
+        page.getByText('At least one sign-in option is required. Please select at least one authentication method.'),
+      ).toBeInTheDocument();
     });
 
-    it('should not show warning when at least one option is selected', () => {
-      renderComponent({
+    it('should not show warning when at least one option is selected', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
       });
 
-      expect(screen.queryByText('Please select at least one sign-in option')).not.toBeInTheDocument();
+      await expect.element(
+        page.getByText('At least one sign-in option is required. Please select at least one authentication method.'),
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('integration toggle', () => {
     it('should call onIntegrationToggle when toggling an integration', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      await user.click(screen.getByTestId('toggle-basic-auth'));
+      await userEvent.click(page.getByTestId('toggle-basic-auth'));
 
       expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
     });
 
     it('should select matching flow when integration toggle matches a flow', async () => {
-      const user = userEvent.setup();
       const mockedFindMatchingFlow = vi.mocked(findMatchingFlowForIntegrations);
       mockedFindMatchingFlow.mockReturnValue(mockFlows[0]);
 
-      renderComponent();
+      await renderComponent();
 
-      await user.click(screen.getByTestId('toggle-basic-auth'));
+      await userEvent.click(page.getByTestId('toggle-basic-auth'));
 
       expect(mockSetSelectedAuthFlow).toHaveBeenCalledWith(mockFlows[0]);
     });
@@ -292,27 +273,25 @@ describe('ConfigureSignInOptions', () => {
 
   describe('flow selection', () => {
     it('should call setSelectedAuthFlow when selecting a flow', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      await user.click(screen.getByTestId('select-flow-btn'));
+      await userEvent.click(page.getByTestId('select-flow-btn'));
 
       expect(mockSetSelectedAuthFlow).toHaveBeenCalled();
     });
 
     it('should call setSelectedAuthFlow with null when clearing selection', async () => {
-      const user = userEvent.setup();
-      renderComponent();
+      await renderComponent();
 
-      await user.click(screen.getByTestId('clear-flow-btn'));
+      await userEvent.click(page.getByTestId('clear-flow-btn'));
 
       expect(mockSetSelectedAuthFlow).toHaveBeenCalledWith(null);
     });
   });
 
   describe('onReadyChange callback', () => {
-    it('should call onReadyChange with false when no options are selected', () => {
-      renderComponent({
+    it('should call onReadyChange with false when no options are selected', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
         },
@@ -321,8 +300,8 @@ describe('ConfigureSignInOptions', () => {
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
     });
 
-    it('should call onReadyChange with true when at least one option is selected', () => {
-      renderComponent({
+    it('should call onReadyChange with true when at least one option is selected', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
@@ -331,65 +310,64 @@ describe('ConfigureSignInOptions', () => {
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
 
-    it('should not throw when onReadyChange is not provided', () => {
-      expect(() => {
-        render(
-          <ConfigureSignInOptions
-            integrations={{[AuthenticatorTypes.BASIC_AUTH]: false}}
-            onIntegrationToggle={mockOnIntegrationToggle}
-          />,
-        );
-      }).not.toThrow();
+    it('should not throw when onReadyChange is not provided', async () => {
+      await render(
+        <ConfigureSignInOptions
+          integrations={{[AuthenticatorTypes.BASIC_AUTH]: false}}
+          onIntegrationToggle={mockOnIntegrationToggle}
+        />,
+      );
+      // If we get here without throwing, the test passes
     });
   });
 
   describe('empty data handling', () => {
-    it('should handle empty identity providers list', () => {
+    it('should handle empty identity providers list', async () => {
       mockUseIdentityProviders.mockReturnValue({
         data: [],
         isLoading: false,
         error: null,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByTestId('individual-methods-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('individual-methods-view')).toBeInTheDocument();
     });
 
-    it('should handle empty flows list', () => {
+    it('should handle empty flows list', async () => {
       mockUseGetFlows.mockReturnValue({
         data: {flows: []},
         isLoading: false,
         error: null,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByTestId('flows-list-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flows-list-view')).toBeInTheDocument();
     });
 
-    it('should handle null data from useIdentityProviders', () => {
+    it('should handle null data from useIdentityProviders', async () => {
       mockUseIdentityProviders.mockReturnValue({
         data: null,
         isLoading: false,
         error: null,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByTestId('individual-methods-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('individual-methods-view')).toBeInTheDocument();
     });
 
-    it('should handle null flows from useGetFlows', () => {
+    it('should handle null flows from useGetFlows', async () => {
       mockUseGetFlows.mockReturnValue({
         data: null,
         isLoading: false,
         error: null,
       });
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByTestId('flows-list-view')).toBeInTheDocument();
+      await expect.element(page.getByTestId('flows-list-view')).toBeInTheDocument();
     });
   });
 });

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {renderWithProviders} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import CreateOrganizationUnitPage from '../CreateOrganizationUnitPage';
 
 // Mock navigate and location
@@ -68,33 +69,6 @@ vi.mock('@thunder/utils', () => ({
   generateRandomHumanReadableIdentifiers: () => ['Suggested Name One', 'Suggested Name Two', 'Suggested Name Three'],
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:create.title': 'Create Organization Unit',
-        'organizationUnits:create.heading': 'Create a new organization unit',
-        'organizationUnits:create.suggestions.label': 'Try these suggestions:',
-        'organizationUnits:create.error': 'Failed to create organization unit',
-        'organizationUnits:edit.general.name.label': 'Name',
-        'organizationUnits:edit.general.name.placeholder': 'Enter organization unit name',
-        'organizationUnits:edit.general.handle.label': 'Handle',
-        'organizationUnits:edit.general.handle.placeholder': 'Enter handle',
-        'organizationUnits:edit.general.handle.hint': 'A unique identifier for this organization unit',
-        'organizationUnits:edit.general.description.label': 'Description',
-        'organizationUnits:edit.general.description.placeholder': 'Enter description',
-        'organizationUnits:edit.general.parent.label': 'Parent Organization Unit',
-        'organizationUnits:edit.general.parent.hint': 'The parent organization unit for this new unit',
-        'organizationUnits:edit.general.ou.noParent.label': 'Root Organization Unit',
-        'common:actions.create': 'Create',
-        'common:status.saving': 'Creating...',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
-
 describe('CreateOrganizationUnitPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -103,118 +77,118 @@ describe('CreateOrganizationUnitPage', () => {
     mockLocationState = null;
   });
 
-  it('should render page title and heading', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render page title and heading', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByText('Create Organization Unit')).toBeInTheDocument();
-    expect(screen.getByText('Create a new organization unit')).toBeInTheDocument();
+    await expect.element(page.getByText('Create Organization Unit')).toBeInTheDocument();
+    await expect.element(page.getByText("Let's set up your organization unit")).toBeInTheDocument();
   });
 
-  it('should render name input field', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render name input field', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByLabelText(/Name/i)).toBeInTheDocument();
+    await expect.element(page.getByLabelText(/Name/i)).toBeInTheDocument();
   });
 
-  it('should render handle input field', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render handle input field', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByLabelText(/Handle/i)).toBeInTheDocument();
+    await expect.element(page.getByLabelText(/Handle/i)).toBeInTheDocument();
   });
 
-  it('should render description input field', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render description input field', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
+    await expect.element(page.getByLabelText(/Description/i)).toBeInTheDocument();
   });
 
-  it('should render name suggestions', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render name suggestions', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByRole('button', {name: 'Suggested Name One'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Suggested Name Two'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Suggested Name Three'})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Suggested Name One'})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Suggested Name Two'})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Suggested Name Three'})).toBeInTheDocument();
   });
 
   it('should auto-generate handle from name', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
-    const handleInput = screen.getByLabelText(/Handle/i);
+    const handleInput = page.getByLabelText(/Handle/i);
     expect(handleInput).toHaveValue('test-organization');
   });
 
   it('should fill name when suggestion is clicked', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    fireEvent.click(screen.getByRole('button', {name: 'Suggested Name One'}));
+    await userEvent.click(page.getByRole('button', {name: 'Suggested Name One'}));
 
-    const nameInput = screen.getByLabelText(/Name/i);
+    const nameInput = page.getByLabelText(/Name/i);
     expect(nameInput).toHaveValue('Suggested Name One');
   });
 
   it('should auto-generate handle when suggestion is clicked', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    fireEvent.click(screen.getByRole('button', {name: 'Suggested Name One'}));
+    await userEvent.click(page.getByRole('button', {name: 'Suggested Name One'}));
 
-    const handleInput = screen.getByLabelText(/Handle/i);
+    const handleInput = page.getByLabelText(/Handle/i);
     expect(handleInput).toHaveValue('suggested-name-one');
   });
 
   it('should not auto-generate handle after manual edit', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const handleInput = screen.getByLabelText(/Handle/i);
-    fireEvent.change(handleInput, {target: {value: 'my-custom-handle'}});
+    const handleInput = page.getByLabelText(/Handle/i);
+    await userEvent.fill(handleInput, 'my-custom-handle');
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     expect(handleInput).toHaveValue('my-custom-handle');
   });
 
-  it('should disable create button when form is invalid', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should disable create button when form is invalid', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const createButton = screen.getByText('Create');
-    expect(createButton).toBeDisabled();
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await expect.element(createButton).toBeDisabled();
   });
 
   it('should enable create button when form is valid', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    const handleInput = screen.getByLabelText(/Handle/i);
+    const nameInput = page.getByLabelText(/Name/i);
+    const handleInput = page.getByLabelText(/Handle/i);
 
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
-    fireEvent.change(handleInput, {target: {value: 'test-org'}});
+    await userEvent.fill(nameInput, 'Test Organization');
+    await userEvent.fill(handleInput, 'test-org');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
   });
 
   it('should call mutate on form submit', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Test Organization',
@@ -226,13 +200,13 @@ describe('CreateOrganizationUnitPage', () => {
   });
 
   it('should navigate back when close button is clicked', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
     // Find the close button (X icon button)
-    const closeButton = screen.getByRole('button', {name: ''});
-    fireEvent.click(closeButton);
+    const closeButton = page.locator('button').first();
+    await userEvent.click(closeButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
     });
   });
@@ -242,21 +216,21 @@ describe('CreateOrganizationUnitPage', () => {
       options.onSuccess();
     });
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
     });
   });
@@ -266,22 +240,22 @@ describe('CreateOrganizationUnitPage', () => {
       options.onError(new Error('Network error'));
     });
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Network error')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText('Network error')).toBeInTheDocument();
     });
   });
 
@@ -290,52 +264,52 @@ describe('CreateOrganizationUnitPage', () => {
       options.onError(new Error('Network error'));
     });
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Network error')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText('Network error')).toBeInTheDocument();
     });
 
     // Close the alert
-    const alertCloseButton = screen.getByRole('button', {name: /close/i});
-    fireEvent.click(alertCloseButton);
+    const alertCloseButton = page.getByRole('button', {name: /close/i});
+    await userEvent.click(alertCloseButton);
 
-    await waitFor(() => {
-      expect(screen.queryByText('Network error')).not.toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByText('Network error')).not.toBeInTheDocument();
     });
   });
 
   it('should include description in request when provided', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    const descriptionInput = screen.getByLabelText(/Description/i);
+    const nameInput = page.getByLabelText(/Name/i);
+    const descriptionInput = page.getByLabelText(/Description/i);
 
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
-    fireEvent.change(descriptionInput, {target: {value: 'A test description'}});
+    await userEvent.fill(nameInput, 'Test Organization');
+    await userEvent.fill(descriptionInput, 'A test description');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           description: 'A test description',
@@ -346,21 +320,21 @@ describe('CreateOrganizationUnitPage', () => {
   });
 
   it('should set description to null when empty', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           description: null,
@@ -370,30 +344,30 @@ describe('CreateOrganizationUnitPage', () => {
     });
   });
 
-  it('should show "Root Organization Unit" in parent field when no parent is provided', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should show "Root Organization Unit" in parent field when no parent is provided', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
+    const parentInput = page.getByLabelText(/Parent Organization Unit/i);
     expect(parentInput).toHaveValue('Root Organization Unit');
     expect(parentInput).toHaveAttribute('readOnly');
   });
 
   it('should set parent to null when no parent is in navigation state', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           parent: null,
@@ -403,42 +377,42 @@ describe('CreateOrganizationUnitPage', () => {
     });
   });
 
-  it('should display parent name and handle when navigated with parent state', () => {
+  it('should display parent name and handle when navigated with parent state', async () => {
     mockLocationState = {parentId: 'ou-1', parentName: 'Engineering', parentHandle: 'engineering'};
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
+    const parentInput = page.getByLabelText(/Parent Organization Unit/i);
     expect(parentInput).toHaveValue('Engineering (engineering)');
     expect(parentInput).toHaveAttribute('readOnly');
   });
 
-  it('should display parent name without handle when handle is not provided', () => {
+  it('should display parent name without handle when handle is not provided', async () => {
     mockLocationState = {parentId: 'ou-1', parentName: 'Engineering'};
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
+    const parentInput = page.getByLabelText(/Parent Organization Unit/i);
     expect(parentInput).toHaveValue('Engineering');
   });
 
   it('should submit with parent ID from navigation state', async () => {
     mockLocationState = {parentId: 'ou-1', parentName: 'Engineering', parentHandle: 'engineering'};
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Child Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Child Organization');
 
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           parent: 'ou-1',
@@ -449,12 +423,12 @@ describe('CreateOrganizationUnitPage', () => {
   });
 
   it('should keep handle unchanged after manual edit when suggestion is clicked', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const handleInput = screen.getByLabelText(/Handle/i);
-    fireEvent.change(handleInput, {target: {value: 'my-custom-handle'}});
+    const handleInput = page.getByLabelText(/Handle/i);
+    await userEvent.fill(handleInput, 'my-custom-handle');
 
-    fireEvent.click(screen.getByRole('button', {name: 'Suggested Name Two'}));
+    await userEvent.click(page.getByRole('button', {name: 'Suggested Name Two'}));
 
     // Handle should not change after suggestion click since it was manually edited
     expect(handleInput).toHaveValue('my-custom-handle');
@@ -465,35 +439,35 @@ describe('CreateOrganizationUnitPage', () => {
       options.onError({});
     });
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+    await vi.waitFor(async () => {
+      await expect.element(page.getByRole('alert')).toBeInTheDocument();
     });
   });
 
   it('should handle close navigation error gracefully', async () => {
     mockNavigate.mockRejectedValue(new Error('Navigation failed'));
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const closeButton = screen.getByRole('button', {name: ''});
-    fireEvent.click(closeButton);
+    const closeButton = page.locator('button').first();
+    await userEvent.click(closeButton);
 
     // Should not throw - error is logged
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
     });
   });
@@ -504,47 +478,47 @@ describe('CreateOrganizationUnitPage', () => {
       options.onSuccess();
     });
 
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    const nameInput = page.getByLabelText(/Name/i);
+    await userEvent.fill(nameInput, 'Test Organization');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
     // Should not throw - error is logged
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
     });
   });
 
   it('should trim whitespace from inputs on submit', async () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    const handleInput = screen.getByLabelText(/Handle/i);
-    const descriptionInput = screen.getByLabelText(/Description/i);
+    const nameInput = page.getByLabelText(/Name/i);
+    const handleInput = page.getByLabelText(/Handle/i);
+    const descriptionInput = page.getByLabelText(/Description/i);
 
-    fireEvent.change(nameInput, {target: {value: '  Test Organization  '}});
-    fireEvent.change(handleInput, {target: {value: '  test-org  '}});
-    fireEvent.change(descriptionInput, {target: {value: '  A description  '}});
+    await userEvent.fill(nameInput, '  Test Organization  ');
+    await userEvent.fill(handleInput, '  test-org  ');
+    await userEvent.fill(descriptionInput, '  A description  ');
 
     // Wait for form validation to complete
-    await waitFor(() => {
-      const createButton = screen.getByText('Create');
+    await vi.waitFor(() => {
+      const createButton = page.getByRole('button', {name: 'Create'});
       expect(createButton).not.toBeDisabled();
     });
 
-    const createButton = screen.getByText('Create');
-    fireEvent.click(createButton);
+    const createButton = page.getByRole('button', {name: 'Create'});
+    await userEvent.click(createButton);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Test Organization',
@@ -556,15 +530,15 @@ describe('CreateOrganizationUnitPage', () => {
     });
   });
 
-  it('should render progress bar', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render progress bar', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should render suggestions label', () => {
-    renderWithProviders(<CreateOrganizationUnitPage />);
+  it('should render suggestions label', async () => {
+    await renderWithProviders(<CreateOrganizationUnitPage />);
 
-    expect(screen.getByText('Try these suggestions:')).toBeInTheDocument();
+    await expect.element(page.getByText('In a hurry? Pick a random name:')).toBeInTheDocument();
   });
 });

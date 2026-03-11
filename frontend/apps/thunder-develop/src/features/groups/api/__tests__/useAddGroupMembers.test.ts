@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 
 const mockHttpRequest = vi.fn();
 vi.mock('@asgardeo/react', () => ({
@@ -49,7 +48,7 @@ describe('useAddGroupMembers', () => {
 
   it('should add members successfully', async () => {
     mockHttpRequest.mockResolvedValue({});
-    const {result} = renderHook(() => useAddGroupMembers());
+    const {result} = await renderHook(() => useAddGroupMembers());
 
     result.current.mutate({
       groupId: 'g1',
@@ -59,7 +58,7 @@ describe('useAddGroupMembers', () => {
       ],
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -79,11 +78,11 @@ describe('useAddGroupMembers', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Failed to add'));
-    const {result} = renderHook(() => useAddGroupMembers());
+    const {result} = await renderHook(() => useAddGroupMembers());
 
     result.current.mutate({groupId: 'g1', members: [{id: 'u1', type: 'user'}]});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error?.message).toBe('Failed to add');
     });
   });

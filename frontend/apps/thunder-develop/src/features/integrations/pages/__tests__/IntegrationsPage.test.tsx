@@ -17,45 +17,46 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import IntegrationsPage from '../IntegrationsPage';
 
 describe('IntegrationsPage', () => {
-  it('renders page title', () => {
-    render(<IntegrationsPage />);
+  it('renders page title', async () => {
+    await render(<IntegrationsPage />);
 
-    expect(screen.getByText('Integrations')).toBeInTheDocument();
+    await expect.element(page.getByText('Integrations')).toBeInTheDocument();
   });
 
-  it('renders page description', () => {
-    render(<IntegrationsPage />);
+  it('renders page description', async () => {
+    await render(<IntegrationsPage />);
 
-    expect(screen.getByText('Manage your integrations and connections')).toBeInTheDocument();
+    await expect.element(page.getByText('Manage your integrations and connections')).toBeInTheDocument();
   });
 
-  it('displays coming soon message', () => {
-    render(<IntegrationsPage />);
+  it('displays coming soon message', async () => {
+    await render(<IntegrationsPage />);
 
-    expect(screen.getByText('Coming Soon')).toBeInTheDocument();
+    await expect.element(page.getByText('Coming Soon')).toBeInTheDocument();
   });
 
-  it('shows functionality message', () => {
-    render(<IntegrationsPage />);
+  it('shows functionality message', async () => {
+    await render(<IntegrationsPage />);
 
-    expect(screen.getByText('Integrations management functionality will be available soon.')).toBeInTheDocument();
+    await expect.element(page.getByText('Integrations management functionality will be available soon.')).toBeInTheDocument();
   });
 
-  it('renders with correct title hierarchy', () => {
-    render(<IntegrationsPage />);
+  it('renders with correct title hierarchy', async () => {
+    await render(<IntegrationsPage />);
 
-    const title = screen.getByText('Integrations');
-    expect(title.tagName).toBe('H1');
+    const title = page.getByText('Integrations');
+    expect(title.element().tagName).toBe('H1');
   });
 
-  it('renders coming soon with correct heading level', () => {
-    render(<IntegrationsPage />);
+  it('renders coming soon with correct heading level', async () => {
+    await render(<IntegrationsPage />);
 
-    const comingSoon = screen.getByText('Coming Soon');
-    expect(comingSoon.tagName).toBe('H4');
+    const comingSoon = page.getByText('Coming Soon');
+    expect(comingSoon.element().tagName).toBe('H4');
   });
 });

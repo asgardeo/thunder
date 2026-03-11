@@ -17,19 +17,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {ReactNode, ChangeEvent} from 'react';
 import {ValidationContext, type ValidationContextProps} from '@/features/flows/context/ValidationContext';
 import Notification from '@/features/flows/models/notification';
 import type {Resource} from '@/features/flows/models/resources';
 import RichTextWithTranslation from '../RichTextWithTranslation';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
 // Mock the RichText component
 vi.mock('../RichText', () => ({
@@ -54,20 +48,18 @@ vi.mock('../RichText', () => ({
   ),
 }));
 
-// Mock DynamicValuePopover
-vi.mock('../../DynamicValuePopover', () => ({
-  default: ({open, onClose, onChange, value}: {
+// Mock I18nConfigurationCard
+vi.mock('../../I18nConfigurationCard', () => ({
+  default: ({open, onClose, onChange, i18nKey}: {
     open: boolean;
     onClose: () => void;
-    onChange: (value: string) => void;
-    value: string;
-    anchorEl: HTMLElement | null;
-    propertyKey: string;
+    onChange: (key: string) => void;
+    i18nKey: string;
   }) => (open ? (
-    <div data-testid="dynamic-value-popover" data-value={value}>
-      <button type="button" onClick={onClose} data-testid="close-popover">Close</button>
-      <button type="button" onClick={() => onChange('new-test-value')} data-testid="change-value">Change Value</button>
-      <button type="button" onClick={() => onChange('')} data-testid="clear-value">Clear Value</button>
+    <div data-testid="i18n-config-card" data-i18n-key={i18nKey}>
+      <button type="button" onClick={onClose} data-testid="close-i18n-card">Close</button>
+      <button type="button" onClick={() => onChange('test.key')} data-testid="change-i18n-key">Change Key</button>
+      <button type="button" onClick={() => onChange('')} data-testid="clear-i18n-key">Clear Key</button>
     </div>
   ) : null),
 }));
@@ -141,37 +133,37 @@ describe('RichTextWithTranslation', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the RichText component', () => {
-      render(
+    it('should render the RichText component', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should pass resource to RichText component', () => {
+    it('should pass resource to RichText component', async () => {
       const resource = createMockResource({id: 'test-resource-id'});
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-resource-id', 'test-resource-id');
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute('data-resource-id', 'test-resource-id');
     });
 
-    it('should pass className to RichText component', () => {
-      render(
+    it('should pass className to RichText component', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} className="custom-class" />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-classname', 'custom-class');
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute('data-classname', 'custom-class');
     });
 
-    it('should pass ToolbarProps to RichText component', () => {
+    it('should pass ToolbarProps to RichText component', async () => {
       const toolbarProps = {bold: false, italic: true};
-      render(
+      await render(
         <RichTextWithTranslation
           onChange={mockOnChange}
           resource={createMockResource()}
@@ -180,57 +172,57 @@ describe('RichTextWithTranslation', () => {
         {wrapper: createWrapper()},
       );
 
-      const richText = screen.getByTestId('rich-text-component');
+      const richText = page.getByTestId('rich-text-component');
       expect(richText).toHaveAttribute('data-toolbar-props', JSON.stringify(toolbarProps));
     });
   });
 
   describe('Error Handling', () => {
-    it('should not show error message when there is no validation notification', () => {
-      render(
+    it('should not show error message when there is no validation notification', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
+      await expect.element(page.getByText(/error/i)).not.toBeInTheDocument();
     });
 
-    it('should show error message when validation notification exists for resource field', () => {
+    it('should show error message when validation notification exists for resource field', async () => {
       const notification = createMockNotification({
         hasResourceFieldNotification: (key: string) => key === 'resource-1_text',
         getResourceFieldNotification: () => 'This field has an error',
       });
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper(createValidationContext(notification))},
       );
 
-      expect(screen.getByText('This field has an error')).toBeInTheDocument();
+      await expect.element(page.getByText('This field has an error')).toBeInTheDocument();
     });
 
-    it('should not show error message when notification exists but for different field', () => {
+    it('should not show error message when notification exists but for different field', async () => {
       const notification = createMockNotification({
         hasResourceFieldNotification: (key: string) => key === 'other-resource_text',
         getResourceFieldNotification: () => 'Other error',
       });
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper(createValidationContext(notification))},
       );
 
-      expect(screen.queryByText('Other error')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Other error')).not.toBeInTheDocument();
     });
 
-    it('should use correct key format for field notification check', () => {
+    it('should use correct key format for field notification check', async () => {
       const hasResourceFieldNotification = vi.fn().mockReturnValue(false);
       const notification = createMockNotification({
         hasResourceFieldNotification,
         getResourceFieldNotification: () => '',
       });
 
-      render(
+      await render(
         <RichTextWithTranslation
           onChange={mockOnChange}
           resource={createMockResource({id: 'my-resource'})}
@@ -243,97 +235,97 @@ describe('RichTextWithTranslation', () => {
   });
 
   describe('Default Props', () => {
-    it('should default className to empty string', () => {
-      render(
+    it('should default className to empty string', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-classname', '');
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute('data-classname', '');
     });
 
-    it('should default ToolbarProps to empty object', () => {
-      render(
+    it('should default ToolbarProps to empty object', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-toolbar-props', '{}');
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute('data-toolbar-props', '{}');
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle resource without id gracefully', () => {
+    it('should handle resource without id gracefully', async () => {
       const resource = createMockResource({id: undefined as unknown as string});
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should handle null selectedNotification', () => {
-      render(
+    it('should handle null selectedNotification', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper(createValidationContext(null))},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
   });
 
   describe('onChange Callback', () => {
-    it('should call onChange when RichText content changes', () => {
-      render(
+    it('should call onChange when RichText content changes', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const richText = screen.getByTestId('rich-text-component');
-      richText.click();
+      const richText = page.getByTestId('rich-text-component');
+      await richText.click();
 
       expect(mockOnChange).toHaveBeenCalledWith('test-content');
     });
   });
 
   describe('Resource Label Handling', () => {
-    it('should pass resource label to RichText component', () => {
+    it('should pass resource label to RichText component', async () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Test Label Content';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
         'Test Label Content',
       );
     });
 
-    it('should handle resource without label', () => {
+    it('should handle resource without label', async () => {
       const resource = createMockResource();
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should handle i18n formatted label', () => {
+    it('should handle i18n formatted label', async () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(common.greeting)}}';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
         '{{t(common.greeting)}}',
       );
@@ -341,34 +333,34 @@ describe('RichTextWithTranslation', () => {
   });
 
   describe('Error Message Display', () => {
-    it('should display error message with correct styling', () => {
+    it('should display error message with correct styling', async () => {
       const notification = createMockNotification({
         hasResourceFieldNotification: (key: string) => key === 'resource-1_text',
         getResourceFieldNotification: () => 'Validation error message',
       });
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper(createValidationContext(notification))},
       );
 
-      const errorMessage = screen.getByText('Validation error message');
+      const errorMessage = page.getByText('Validation error message');
       expect(errorMessage).toBeInTheDocument();
     });
 
-    it('should not display empty error message', () => {
+    it('should not display empty error message', async () => {
       const notification = createMockNotification({
         hasResourceFieldNotification: () => false,
         getResourceFieldNotification: () => '',
       });
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper(createValidationContext(notification))},
       );
 
       // Should only have the rich text component, no error helper text
-      expect(screen.queryByRole('paragraph')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('paragraph')).not.toBeInTheDocument();
     });
   });
 });
@@ -424,120 +416,120 @@ describe('TranslationRichText Component', () => {
     vi.clearAllMocks();
   });
 
-  it('should capture LanguageTextField when component renders', () => {
-    render(
+  it('should capture LanguageTextField when component renders', async () => {
+    await render(
       <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
       {wrapper: createWrapper()},
     );
 
     // The I18nConfigurationCard is not open by default, but the component should still be defined
     // We need to verify the component structure is correct
-    expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+    await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
   });
 
   describe('TranslationRichText rendering and behavior', () => {
-    it('should create a resource object with label from value prop', () => {
+    it('should create a resource object with label from value prop', async () => {
       // Test the TranslationRichText logic by examining what gets passed to RichText
       // The RichText mock captures the resource-label attribute
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
       // The main RichText component receives the resource directly
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should handle value prop being null or undefined', () => {
+    it('should handle value prop being null or undefined', async () => {
       // TranslationRichText should handle null/undefined value gracefully
       // by defaulting to empty string in the resource label
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should pass disabled prop to RichText component', () => {
+    it('should pass disabled prop to RichText component', async () => {
       // Verify disabled handling in TranslationRichText
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should call onChange with ChangeEvent format when RichText changes', () => {
+    it('should call onChange with ChangeEvent format when RichText changes', async () => {
       // TranslationRichText wraps the onChange to convert string to ChangeEvent
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
       // Click to trigger onChange
-      const richText = screen.getByTestId('rich-text-component');
-      fireEvent.click(richText);
+      const richText = page.getByTestId('rich-text-component');
+      await userEvent.click(richText);
 
       expect(mockOnChange).toHaveBeenCalledWith('test-content');
     });
   });
 
   describe('I18nConfigurationCard i18nKey extraction', () => {
-    it('should extract i18n key from t() pattern in label', () => {
+    it('should extract i18n key from t() pattern in label', async () => {
       // Test the regex pattern: /^\{\{t\(([^)]+)\)\}\}$/
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(common.greeting)}}';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
         '{{t(common.greeting)}}',
       );
     });
 
-    it('should return empty string when label does not match t() pattern', () => {
+    it('should return empty string when label does not match t() pattern', async () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Plain text without i18n';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
         'Plain text without i18n',
       );
     });
 
-    it('should handle missing label gracefully', () => {
+    it('should handle missing label gracefully', async () => {
       const resource = createMockResource();
       // No label property set
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
-    it('should handle nested parentheses in i18n key', () => {
+    it('should handle nested parentheses in i18n key', async () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(namespace.key.with.dots)}}';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
+      await expect.element(page.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
         '{{t(namespace.key.with.dots)}}',
       );
@@ -545,154 +537,176 @@ describe('TranslationRichText Component', () => {
   });
 
   describe('I18nConfigurationCard onChange callback', () => {
-    it('should format i18n key with t() wrapper when key is provided', () => {
+    it('should format i18n key with t() wrapper when key is provided', async () => {
       // Test the onChange handler: (i18nKey: string) => onChange(i18nKey ? `{{t(${i18nKey})}}` : '')
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
       // Click the main rich text to verify it's working
-      const richText = screen.getByTestId('rich-text-component');
-      fireEvent.click(richText);
+      const richText = page.getByTestId('rich-text-component');
+      await userEvent.click(richText);
 
       expect(mockOnChange).toHaveBeenCalled();
     });
 
-    it('should pass empty string when i18n key is cleared', () => {
-      render(
+    it('should pass empty string when i18n key is cleared', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rich-text-component')).toBeInTheDocument();
     });
   });
 
-  describe('Dynamic Value Popover Toggle', () => {
-    it('should open dynamic value popover when configure button is clicked', () => {
-      render(
+  describe('I18n Configuration Card Toggle', () => {
+    it('should open I18n configuration card when language button is clicked', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // The language icon button
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
+      // The I18nConfigurationCard should now be open
+      await expect.element(page.getByTestId('i18n-config-card')).toBeInTheDocument();
     });
 
-    it('should close dynamic value popover when close button is clicked', () => {
-      render(
+    it('should close I18n configuration card when close button is clicked', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // Open the card
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
+      // Verify it's open
+      await expect.element(page.getByTestId('i18n-config-card')).toBeInTheDocument();
 
-      const closeButton = screen.getByTestId('close-popover');
-      fireEvent.click(closeButton);
+      // Click close button
+      const closeButton = page.getByTestId('close-i18n-card');
+      await userEvent.click(closeButton);
 
-      expect(screen.queryByTestId('dynamic-value-popover')).not.toBeInTheDocument();
+      // The card should be closed
+      await expect.element(page.getByTestId('i18n-config-card')).not.toBeInTheDocument();
     });
 
-    it('should toggle dynamic value popover on repeated button clicks', () => {
-      render(
+    it('should toggle I18n configuration card on repeated button clicks', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
 
-      fireEvent.click(configureButton);
-      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
+      // Open
+      await userEvent.click(languageButton);
+      await expect.element(page.getByTestId('i18n-config-card')).toBeInTheDocument();
 
-      const closeButton = screen.getByTestId('close-popover');
-      fireEvent.click(closeButton);
-      expect(screen.queryByTestId('dynamic-value-popover')).not.toBeInTheDocument();
+      // Toggle closed via close button (since card is a popover)
+      const closeButton = page.getByTestId('close-i18n-card');
+      await userEvent.click(closeButton);
+      await expect.element(page.getByTestId('i18n-config-card')).not.toBeInTheDocument();
 
-      fireEvent.click(configureButton);
-      expect(screen.getByTestId('dynamic-value-popover')).toBeInTheDocument();
+      // Open again
+      await userEvent.click(languageButton);
+      await expect.element(page.getByTestId('i18n-config-card')).toBeInTheDocument();
     });
 
-    it('should call onChange when DynamicValuePopover onChange is triggered', () => {
-      render(
+    it('should pass i18n key from change handler and call onChange with formatted value', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // Open the card
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      const changeButton = screen.getByTestId('change-value');
-      fireEvent.click(changeButton);
+      // Click the change key button in the mocked card
+      const changeKeyButton = page.getByTestId('change-i18n-key');
+      await userEvent.click(changeKeyButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('new-test-value');
+      // Should call onChange with formatted i18n pattern
+      expect(mockOnChange).toHaveBeenCalledWith('{{t(test.key)}}');
     });
 
-    it('should call onChange with empty string when value is cleared from popover', () => {
-      render(
+    it('should pass empty string when i18n key is cleared from card', async () => {
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // Open the card
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      const clearButton = screen.getByTestId('clear-value');
-      fireEvent.click(clearButton);
+      // Click the clear key button in the mocked card
+      const clearKeyButton = page.getByTestId('clear-i18n-key');
+      await userEvent.click(clearKeyButton);
 
+      // Should call onChange with empty string
       expect(mockOnChange).toHaveBeenCalledWith('');
     });
 
-    it('should pass resource label as value to DynamicValuePopover when label has t() pattern', () => {
+    it('should extract and display correct i18n key when resource has t() pattern label', async () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(flows.greeting.title)}}';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // Open the card
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      const popover = screen.getByTestId('dynamic-value-popover');
-      expect(popover).toHaveAttribute('data-value', '{{t(flows.greeting.title)}}');
+      // The mocked I18nConfigurationCard should have the extracted key
+      const card = page.getByTestId('i18n-config-card');
+      expect(card).toHaveAttribute('data-i18n-key', 'flows.greeting.title');
     });
 
-    it('should pass plain text label to DynamicValuePopover', () => {
+    it('should pass empty i18n key when resource label is plain text', async () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Plain text content';
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // Open the card
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      const popover = screen.getByTestId('dynamic-value-popover');
-      expect(popover).toHaveAttribute('data-value', 'Plain text content');
+      // The mocked I18nConfigurationCard should have empty key
+      const card = page.getByTestId('i18n-config-card');
+      expect(card).toHaveAttribute('data-i18n-key', '');
     });
 
-    it('should handle resource without label property', () => {
+    it('should handle resource without label property', async () => {
       const resource = createMockResource();
+      // Don't set label property
 
-      render(
+      await render(
         <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
         {wrapper: createWrapper()},
       );
 
-      const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
-      fireEvent.click(configureButton);
+      // Open the card
+      const languageButton = page.getByRole('button', {name: /configure translation/i});
+      await userEvent.click(languageButton);
 
-      const popover = screen.getByTestId('dynamic-value-popover');
-      expect(popover).toHaveAttribute('data-value', '');
+      // The mocked I18nConfigurationCard should have empty key
+      const card = page.getByTestId('i18n-config-card');
+      expect(card).toHaveAttribute('data-i18n-key', '');
     });
   });
 });

@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import {ElementTypes} from '@/features/flows/models/elements';
 import CaptchaAdapter from '../CaptchaAdapter';
@@ -50,29 +51,29 @@ describe('CaptchaAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the captcha SVG', () => {
+    it('should render the captcha SVG', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
     });
 
-    it('should render captcha with correct dimensions', () => {
+    it('should render captcha with correct dimensions', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('width', '276');
       expect(svg).toHaveAttribute('height', '80');
     });
 
-    it('should render centered in a flex container', () => {
+    it('should render centered in a flex container', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const box = container.firstChild;
       expect(box).toBeInTheDocument();
@@ -80,18 +81,18 @@ describe('CaptchaAdapter', () => {
   });
 
   describe('Alt Text', () => {
-    it('should render title with alt text from resource', () => {
+    it('should render title with alt text from resource', async () => {
       const resource = createMockElement({alt: 'Custom Captcha Title'});
 
-      render(<CaptchaAdapter resource={resource} />);
+      await render(<CaptchaAdapter resource={resource} />);
 
-      expect(screen.getByTitle('Custom Captcha Title')).toBeInTheDocument();
+      await expect.element(page.getByTitle('Custom Captcha Title')).toBeInTheDocument();
     });
 
-    it('should handle undefined alt text', () => {
+    it('should handle undefined alt text', async () => {
       const resource = createMockElement({alt: undefined});
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const title = container.querySelector('title');
       expect(title).toBeInTheDocument();
@@ -99,37 +100,37 @@ describe('CaptchaAdapter', () => {
   });
 
   describe('SVG Structure', () => {
-    it('should contain filter definitions', () => {
+    it('should contain filter definitions', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const defs = container.querySelector('defs');
       expect(defs).toBeInTheDocument();
     });
 
-    it('should contain clipPath', () => {
+    it('should contain clipPath', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const clipPath = container.querySelector('clipPath');
       expect(clipPath).toBeInTheDocument();
     });
 
-    it('should contain mask elements', () => {
+    it('should contain mask elements', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const mask = container.querySelector('mask');
       expect(mask).toBeInTheDocument();
     });
 
-    it('should have proper viewBox', () => {
+    it('should have proper viewBox', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<CaptchaAdapter resource={resource} />);
+      const {container} = await render(<CaptchaAdapter resource={resource} />);
 
       const svg = container.querySelector('svg');
       expect(svg).toHaveAttribute('viewBox', '0 0 276 80');
@@ -137,12 +138,12 @@ describe('CaptchaAdapter', () => {
   });
 
   describe('Different Resource IDs', () => {
-    it('should render with different resource IDs', () => {
+    it('should render with different resource IDs', async () => {
       const resource1 = createMockElement({id: 'captcha-1'});
       const resource2 = createMockElement({id: 'captcha-2'});
 
-      const {container: container1} = render(<CaptchaAdapter resource={resource1} />);
-      const {container: container2} = render(<CaptchaAdapter resource={resource2} />);
+      const {container: container1} = await render(<CaptchaAdapter resource={resource1} />);
+      const {container: container2} = await render(<CaptchaAdapter resource={resource2} />);
 
       expect(container1.querySelector('svg')).toBeInTheDocument();
       expect(container2.querySelector('svg')).toBeInTheDocument();

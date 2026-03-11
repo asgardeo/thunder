@@ -29,20 +29,20 @@ describe('generateResourceId', () => {
   });
 
   describe('Basic Functionality', () => {
-    it('should return a string with default prefix and character count', () => {
+    it('should return a string with default prefix and character count', async () => {
       const id = generateResourceId();
 
       expect(typeof id).toBe('string');
       expect(id.startsWith('resource_')).toBe(true);
     });
 
-    it('should use the provided prefix', () => {
+    it('should use the provided prefix', async () => {
       const id = generateResourceId('step');
 
       expect(id.startsWith('step_')).toBe(true);
     });
 
-    it('should use the provided character count', () => {
+    it('should use the provided character count', async () => {
       vi.mocked(Math.random).mockReturnValue(0.123456789);
 
       const id = generateResourceId('test', 6);
@@ -51,7 +51,7 @@ describe('generateResourceId', () => {
       expect(suffix).toHaveLength(6);
     });
 
-    it('should generate the correct format: prefix_randomChars', () => {
+    it('should generate the correct format: prefix_randomChars', async () => {
       const id = generateResourceId('element', 4);
       const parts = id.split('_');
 
@@ -62,20 +62,20 @@ describe('generateResourceId', () => {
   });
 
   describe('Random Generation', () => {
-    it('should use Math.random for generating the suffix', () => {
+    it('should use Math.random for generating the suffix', async () => {
       generateResourceId();
 
       expect(Math.random).toHaveBeenCalled();
     });
 
-    it('should generate different IDs on multiple calls', () => {
+    it('should generate different IDs on multiple calls', async () => {
       const id1 = generateResourceId();
       const id2 = generateResourceId();
 
       expect(id1).not.toBe(id2);
     });
 
-    it('should generate alphanumeric characters in the suffix', () => {
+    it('should generate alphanumeric characters in the suffix', async () => {
       const ids = Array.from({length: 10}, () => generateResourceId());
 
       ids.forEach((id) => {
@@ -84,7 +84,7 @@ describe('generateResourceId', () => {
       });
     });
 
-    it('should generate consistent output for mocked random value', () => {
+    it('should generate consistent output for mocked random value', async () => {
       vi.mocked(Math.random).mockReturnValue(0.5);
 
       const id1 = generateResourceId('test', 4);
@@ -98,13 +98,13 @@ describe('generateResourceId', () => {
   });
 
   describe('Default Parameters', () => {
-    it('should use "resource" as default prefix', () => {
+    it('should use "resource" as default prefix', async () => {
       const id = generateResourceId();
 
       expect(id.startsWith('resource_')).toBe(true);
     });
 
-    it('should use 4 as default character count', () => {
+    it('should use 4 as default character count', async () => {
       vi.mocked(Math.random).mockReturnValue(0.123456789);
 
       const id = generateResourceId();
@@ -113,7 +113,7 @@ describe('generateResourceId', () => {
       expect(suffix).toHaveLength(4);
     });
 
-    it('should allow overriding only the prefix', () => {
+    it('should allow overriding only the prefix', async () => {
       const id = generateResourceId('custom');
 
       expect(id.startsWith('custom_')).toBe(true);
@@ -122,19 +122,19 @@ describe('generateResourceId', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty string prefix', () => {
+    it('should handle empty string prefix', async () => {
       const id = generateResourceId('');
 
       expect(id.startsWith('_')).toBe(true);
     });
 
-    it('should handle zero character count', () => {
+    it('should handle zero character count', async () => {
       const id = generateResourceId('test', 0);
 
       expect(id).toBe('test_');
     });
 
-    it('should handle character count of 1', () => {
+    it('should handle character count of 1', async () => {
       vi.mocked(Math.random).mockReturnValue(0.123456789);
 
       const id = generateResourceId('test', 1);
@@ -143,7 +143,7 @@ describe('generateResourceId', () => {
       expect(suffix).toHaveLength(1);
     });
 
-    it('should handle large character counts', () => {
+    it('should handle large character counts', async () => {
       vi.mocked(Math.random).mockReturnValue(0.123456789);
 
       const id = generateResourceId('test', 10);
@@ -153,7 +153,7 @@ describe('generateResourceId', () => {
       expect(suffix.length).toBeLessThanOrEqual(10);
     });
 
-    it('should handle prefix with special characters', () => {
+    it('should handle prefix with special characters', async () => {
       const id = generateResourceId('my-prefix');
 
       expect(id.startsWith('my-prefix_')).toBe(true);

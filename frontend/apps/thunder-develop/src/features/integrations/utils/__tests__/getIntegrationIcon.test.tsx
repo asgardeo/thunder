@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import getIntegrationIcon from '../getIntegrationIcon';
 import {IdentityProviderTypes} from '../../models/identity-provider';
 
@@ -30,13 +31,13 @@ describe('getIntegrationIcon', () => {
       expect(icon?.type).toBeDefined();
     });
 
-    it('should render Google icon correctly', () => {
+    it('should render Google icon correctly', async () => {
       const icon = getIntegrationIcon(IdentityProviderTypes.GOOGLE);
 
-      const {container} = render(<div>{icon}</div>);
+      const {container} = await render(<div>{icon}</div>);
       const svgElement = container.querySelector('svg');
 
-      expect(svgElement).toBeInTheDocument();
+      expect(svgElement).not.toBeNull();
     });
 
     it('should return GitHub icon for GITHUB type', () => {
@@ -46,13 +47,13 @@ describe('getIntegrationIcon', () => {
       expect(icon?.type).toBeDefined();
     });
 
-    it('should render GitHub icon correctly', () => {
+    it('should render GitHub icon correctly', async () => {
       const icon = getIntegrationIcon(IdentityProviderTypes.GITHUB);
 
-      const {container} = render(<div>{icon}</div>);
+      const {container} = await render(<div>{icon}</div>);
       const svgElement = container.querySelector('svg');
 
-      expect(svgElement).toBeInTheDocument();
+      expect(svgElement).not.toBeNull();
     });
 
     it('should return different icons for different provider types', () => {
@@ -148,30 +149,30 @@ describe('getIntegrationIcon', () => {
       expect(typeof icon).toBe('object');
     });
 
-    it('should render Google icon in a container without errors', () => {
+    it('should render Google icon in a container without errors', async () => {
       const icon = getIntegrationIcon(IdentityProviderTypes.GOOGLE);
 
-      expect(() => render(<div data-testid="icon-container">{icon}</div>)).not.toThrow();
+      await render(<div data-testid="icon-container">{icon}</div>);
 
-      expect(screen.getByTestId('icon-container')).toBeInTheDocument();
+      await expect.element(page.getByTestId('icon-container')).toBeInTheDocument();
     });
 
-    it('should render GitHub icon in a container without errors', () => {
+    it('should render GitHub icon in a container without errors', async () => {
       const icon = getIntegrationIcon(IdentityProviderTypes.GITHUB);
 
-      expect(() => render(<div data-testid="icon-container">{icon}</div>)).not.toThrow();
+      await render(<div data-testid="icon-container">{icon}</div>);
 
-      expect(screen.getByTestId('icon-container')).toBeInTheDocument();
+      await expect.element(page.getByTestId('icon-container')).toBeInTheDocument();
     });
 
-    it('should not render anything when icon is null', () => {
+    it('should not render anything when icon is null', async () => {
       const icon = getIntegrationIcon('UNSUPPORTED');
 
-      render(<div data-testid="icon-container">{icon}</div>);
-      const iconContainer = screen.getByTestId('icon-container');
+      await render(<div data-testid="icon-container">{icon}</div>);
+      const iconContainer = page.getByTestId('icon-container');
 
       expect(icon).toBeNull();
-      expect(iconContainer).toBeEmptyDOMElement();
+      await expect.element(iconContainer).toHaveTextContent('');
     });
   });
 
@@ -280,31 +281,32 @@ describe('getIntegrationIcon', () => {
   });
 
   describe('Integration with React', () => {
-    it('should be renderable in a React component tree', () => {
+    it('should be renderable in a React component tree', async () => {
       function GoogleIconComponent() {
         const icon = getIntegrationIcon(IdentityProviderTypes.GOOGLE);
         return <div data-testid="google-wrapper">{icon}</div>;
       }
 
-      render(<GoogleIconComponent />);
+      await render(<GoogleIconComponent />);
 
-      expect(screen.getByTestId('google-wrapper')).toBeInTheDocument();
+      await expect.element(page.getByTestId('google-wrapper')).toBeInTheDocument();
     });
 
-    it('should be conditionally renderable based on provider type', () => {
+    it('should be conditionally renderable based on provider type', async () => {
       function ConditionalIcon({type}: {type: string}) {
         const icon = getIntegrationIcon(type);
         return <div data-testid="conditional-wrapper">{icon ?? <span>No icon</span>}</div>;
       }
 
-      const {rerender} = render(<ConditionalIcon type={IdentityProviderTypes.GOOGLE} />);
-      expect(screen.getByTestId('conditional-wrapper').querySelector('svg')).toBeInTheDocument();
+      const {rerender} = await render(<ConditionalIcon type={IdentityProviderTypes.GOOGLE} />);
+      const wrapper = page.getByTestId('conditional-wrapper');
+      expect(wrapper.element().querySelector('svg')).not.toBeNull();
 
-      rerender(<ConditionalIcon type="UNSUPPORTED" />);
-      expect(screen.getByText('No icon')).toBeInTheDocument();
+      await rerender(<ConditionalIcon type="UNSUPPORTED" />);
+      await expect.element(page.getByText('No icon')).toBeInTheDocument();
     });
 
-    it('should handle multiple icons in the same component', () => {
+    it('should handle multiple icons in the same component', async () => {
       function MultiIconComponent() {
         const googleIcon = getIntegrationIcon(IdentityProviderTypes.GOOGLE);
         const githubIcon = getIntegrationIcon(IdentityProviderTypes.GITHUB);
@@ -317,10 +319,10 @@ describe('getIntegrationIcon', () => {
         );
       }
 
-      render(<MultiIconComponent />);
+      await render(<MultiIconComponent />);
 
-      expect(screen.getByTestId('google-icon').querySelector('svg')).toBeInTheDocument();
-      expect(screen.getByTestId('github-icon').querySelector('svg')).toBeInTheDocument();
+      expect(page.getByTestId('google-icon').element().querySelector('svg')).not.toBeNull();
+      expect(page.getByTestId('github-icon').element().querySelector('svg')).not.toBeNull();
     });
   });
 });

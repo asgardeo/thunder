@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 
 const mockHttpRequest = vi.fn();
 vi.mock('@asgardeo/react', () => ({
@@ -49,14 +48,14 @@ describe('useRemoveGroupMembers', () => {
 
   it('should remove members successfully', async () => {
     mockHttpRequest.mockResolvedValue({});
-    const {result} = renderHook(() => useRemoveGroupMembers());
+    const {result} = await renderHook(() => useRemoveGroupMembers());
 
     result.current.mutate({
       groupId: 'g1',
       members: [{id: 'u1', type: 'user'}],
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -71,11 +70,11 @@ describe('useRemoveGroupMembers', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Failed to remove'));
-    const {result} = renderHook(() => useRemoveGroupMembers());
+    const {result} = await renderHook(() => useRemoveGroupMembers());
 
     result.current.mutate({groupId: 'g1', members: [{id: 'u1', type: 'user'}]});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error?.message).toBe('Failed to remove');
     });
   });

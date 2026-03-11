@@ -33,6 +33,8 @@ const external = [
   /^@tanstack\//,
   /^@testing-library\//,
   'vitest',
+  'vitest-browser-react',
+  /^vitest\//,
   'i18next',
   'react-i18next',
   'react-router',
@@ -41,7 +43,9 @@ const external = [
 const commonOptions = {
   input: {
     index: join('src', 'index.ts'),
+    'index-browser': join('src', 'index-browser.ts'),
     setup: join('src', 'setup.ts'),
+    'setup-browser': join('src', 'setup-browser.ts'),
     'mocks/index': join('src', 'mocks', 'index.ts'),
   },
   external,

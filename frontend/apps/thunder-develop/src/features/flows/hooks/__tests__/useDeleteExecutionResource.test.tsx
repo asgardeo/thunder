@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
@@ -157,8 +157,8 @@ describe('useDeleteExecutionResource', () => {
   });
 
   describe('Plugin Registration', () => {
-    it('should register event handlers on mount', () => {
-      renderHook(() => useDeleteExecutionResource(), {
+    it('should register event handlers on mount', async () => {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -168,12 +168,12 @@ describe('useDeleteExecutionResource', () => {
       expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_EDGE_DELETE, expect.any(Function));
     });
 
-    it('should unregister event handlers on unmount', () => {
-      const {unmount} = renderHook(() => useDeleteExecutionResource(), {
+    it('should unregister event handlers on unmount', async () => {
+      const {unmount} = await renderHook(() => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
-      unmount();
+      await unmount();
 
       // Check that handlers are unregistered
       expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_DELETE, 'deleteExecutionActionNode');
@@ -183,8 +183,8 @@ describe('useDeleteExecutionResource', () => {
   });
 
   describe('deleteExecutionActionNode', () => {
-    it('should register the handler with correct function identifier', () => {
-      renderHook(() => useDeleteExecutionResource(), {
+    it('should register the handler with correct function identifier', async () => {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -192,7 +192,7 @@ describe('useDeleteExecutionResource', () => {
       expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_DELETE, expect.any(Function));
     });
 
-    it('should set up nodes and edges getters for the handler', () => {
+    it('should set up nodes and edges getters for the handler', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: 'TASK_EXECUTION',
@@ -215,7 +215,7 @@ describe('useDeleteExecutionResource', () => {
       mockGetNodes.mockReturnValue([actionNode, executionNode] as Node[]);
       mockGetEdges.mockReturnValue([]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -225,8 +225,8 @@ describe('useDeleteExecutionResource', () => {
   });
 
   describe('deleteExecutionNode', () => {
-    it('should register the handler for element deletion', () => {
-      renderHook(() => useDeleteExecutionResource(), {
+    it('should register the handler for element deletion', async () => {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -235,15 +235,15 @@ describe('useDeleteExecutionResource', () => {
   });
 
   describe('deleteComponentAndNode', () => {
-    it('should register the handler for edge deletion', () => {
-      renderHook(() => useDeleteExecutionResource(), {
+    it('should register the handler for edge deletion', async () => {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
       expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_EDGE_DELETE, expect.any(Function));
     });
 
-    it('should set up nodes getter for edge deletion handler', () => {
+    it('should set up nodes getter for edge deletion handler', async () => {
       const executionNode: Node = {
         id: 'execution-1',
         type: 'TASK_EXECUTION',
@@ -262,7 +262,7 @@ describe('useDeleteExecutionResource', () => {
 
       mockGetNodes.mockReturnValue([actionNode, executionNode] as Node[]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -272,8 +272,8 @@ describe('useDeleteExecutionResource', () => {
   });
 
   describe('Context Integration', () => {
-    it('should use setIsOpenResourcePropertiesPanel from context', () => {
-      renderHook(() => useDeleteExecutionResource(), {
+    it('should use setIsOpenResourcePropertiesPanel from context', async () => {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -294,7 +294,7 @@ describe('useDeleteExecutionResource', () => {
       mockGetNodes.mockReturnValue([viewNode]);
       mockGetEdges.mockReturnValue([]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -336,7 +336,7 @@ describe('useDeleteExecutionResource', () => {
         },
       ]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -360,7 +360,7 @@ describe('useDeleteExecutionResource', () => {
       mockGetNodes.mockReturnValue([executionNode]);
       mockGetEdges.mockReturnValue([]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -374,7 +374,7 @@ describe('useDeleteExecutionResource', () => {
     it('should return true for non-action elements', async () => {
       mockGetNodes.mockReturnValue([]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -401,7 +401,7 @@ describe('useDeleteExecutionResource', () => {
 
       mockGetNodes.mockReturnValue([executionNode]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -426,7 +426,7 @@ describe('useDeleteExecutionResource', () => {
     it('should not delete execution node when action has different type', async () => {
       mockGetNodes.mockReturnValue([]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -457,7 +457,7 @@ describe('useDeleteExecutionResource', () => {
 
       mockGetNodes.mockReturnValue([viewNode]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -496,7 +496,7 @@ describe('useDeleteExecutionResource', () => {
 
       mockGetNodes.mockReturnValue([actionNode, executionNode]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -548,7 +548,7 @@ describe('useDeleteExecutionResource', () => {
 
       mockGetNodes.mockReturnValue([actionNode, executionNode1, executionNode2]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -584,7 +584,7 @@ describe('useDeleteExecutionResource', () => {
 
       mockGetNodes.mockReturnValue([executionNode]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -631,7 +631,7 @@ describe('useDeleteExecutionResource', () => {
         capturedCallback = callback;
       });
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -693,7 +693,7 @@ describe('useDeleteExecutionResource', () => {
         capturedCallback = callback;
       });
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -735,7 +735,7 @@ describe('useDeleteExecutionResource', () => {
         },
       ]);
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -770,7 +770,7 @@ describe('useDeleteExecutionResource', () => {
         capturedCallback = callback;
       });
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 
@@ -821,7 +821,7 @@ describe('useDeleteExecutionResource', () => {
         capturedCallback = callback;
       });
 
-      renderHook(() => useDeleteExecutionResource(), {
+      await renderHook(()  => useDeleteExecutionResource(), {
         wrapper: createWrapper(),
       });
 

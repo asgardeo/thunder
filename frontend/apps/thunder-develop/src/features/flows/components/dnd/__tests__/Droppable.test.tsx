@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import Droppable from '../Droppable';
 
 // Mock refs
@@ -65,19 +66,19 @@ describe('Droppable', () => {
   });
 
   describe('Rendering', () => {
-    it('should render children', () => {
-      render(
+    it('should render children', async () => {
+      await render(
         <Droppable id="test-droppable">
           <div data-testid="child-content">Drop Content</div>
         </Droppable>,
       );
 
-      expect(screen.getByTestId('child-content')).toBeInTheDocument();
-      expect(screen.getByText('Drop Content')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-content')).toBeInTheDocument();
+      await expect.element(page.getByText('Drop Content')).toBeInTheDocument();
     });
 
-    it('should render multiple children', () => {
-      render(
+    it('should render multiple children', async () => {
+      await render(
         <Droppable id="test-droppable">
           <div data-testid="child-1">First</div>
           <div data-testid="child-2">Second</div>
@@ -85,19 +86,19 @@ describe('Droppable', () => {
         </Droppable>,
       );
 
-      expect(screen.getByTestId('child-1')).toBeInTheDocument();
-      expect(screen.getByTestId('child-2')).toBeInTheDocument();
-      expect(screen.getByTestId('child-3')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-1')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-2')).toBeInTheDocument();
+      await expect.element(page.getByTestId('child-3')).toBeInTheDocument();
     });
 
-    it('should render without children', () => {
-      const {container} = render(<Droppable id="empty-droppable" />);
+    it('should render without children', async () => {
+      const {container} = await render(<Droppable id="empty-droppable" />);
 
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should render BottomZone for end insertion', () => {
-      const {container} = render(
+    it('should render BottomZone for end insertion', async () => {
+      const {container} = await render(
         <Droppable id="test-droppable">
           <div>Item 1</div>
           <div>Item 2</div>
@@ -114,7 +115,7 @@ describe('Droppable', () => {
     it('should call useDroppable with correct id', async () => {
       const {useDroppable} = await import('@dnd-kit/react');
 
-      render(
+      await render(
         <Droppable id="unique-drop-zone">
           <div>Content</div>
         </Droppable>,
@@ -130,7 +131,7 @@ describe('Droppable', () => {
     it('should pass accept prop to useDroppable', async () => {
       const {useDroppable} = await import('@dnd-kit/react');
 
-      render(
+      await render(
         <Droppable id="test-drop" accept={['TYPE_A', 'TYPE_B']}>
           <div>Content</div>
         </Droppable>,
@@ -147,7 +148,7 @@ describe('Droppable', () => {
       const {useDroppable} = await import('@dnd-kit/react');
 
       const customData = {zone: 'main', allowReorder: true};
-      render(
+      await render(
         <Droppable id="test-drop" data={customData}>
           <div>Content</div>
         </Droppable>,
@@ -162,8 +163,8 @@ describe('Droppable', () => {
   });
 
   describe('Custom Styling', () => {
-    it('should apply custom sx styles', () => {
-      const {container} = render(
+    it('should apply custom sx styles', async () => {
+      const {container} = await render(
         <Droppable id="styled-drop" sx={{padding: '20px', backgroundColor: 'blue'}}>
           <div>Content</div>
         </Droppable>,
@@ -172,8 +173,8 @@ describe('Droppable', () => {
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should apply custom className', () => {
-      const {container} = render(
+    it('should apply custom className', async () => {
+      const {container} = await render(
         <Droppable id="test-drop" className="custom-droppable-class">
           <div>Content</div>
         </Droppable>,
@@ -184,8 +185,8 @@ describe('Droppable', () => {
   });
 
   describe('Drop Target States', () => {
-    it('should render without drag over styles when not a drop target', () => {
-      const {container} = render(
+    it('should render without drag over styles when not a drop target', async () => {
+      const {container} = await render(
         <Droppable id="test-drop">
           <div>Content</div>
         </Droppable>,
@@ -209,7 +210,7 @@ describe('Droppable', () => {
         isDropTarget: true,
       } as unknown as ReturnType<typeof useDroppable>);
 
-      const {container} = render(
+      const {container} = await render(
         <Droppable id="test-drop" accept={['VALID_TYPE']}>
           <div>Content</div>
         </Droppable>,
@@ -232,7 +233,7 @@ describe('Droppable', () => {
         isDropTarget: true,
       } as unknown as ReturnType<typeof useDroppable>);
 
-      const {container} = render(
+      const {container} = await render(
         <Droppable id="test-drop" accept={['VALID_TYPE']}>
           <div>Content</div>
         </Droppable>,
@@ -254,7 +255,7 @@ describe('Droppable', () => {
         isDropTarget: false,
       } as unknown as ReturnType<typeof useDroppable>);
 
-      const {container} = render(
+      const {container} = await render(
         <Droppable id="test-drop">
           <div>Content</div>
         </Droppable>,
@@ -277,7 +278,7 @@ describe('Droppable', () => {
         isDropTarget: true,
       } as unknown as ReturnType<typeof useDroppable>);
 
-      render(
+      await render(
         <Droppable id="test-drop">
           <div>Content</div>
         </Droppable>,
@@ -292,7 +293,7 @@ describe('Droppable', () => {
     it('should create BottomZone with correct id', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
 
-      render(
+      await render(
         <Droppable id="main-zone">
           <div>Item 1</div>
         </Droppable>,
@@ -309,7 +310,7 @@ describe('Droppable', () => {
     it('should pass correct index based on children count', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
 
-      render(
+      await render(
         <Droppable id="test-zone">
           <div>Item 1</div>
           <div>Item 2</div>
@@ -328,7 +329,7 @@ describe('Droppable', () => {
     it('should pass accept prop to BottomZone', async () => {
       const {useSortable} = await import('@dnd-kit/react/sortable');
 
-      render(
+      await render(
         <Droppable id="test-zone" accept={['STEP', 'WIDGET']}>
           <div>Item</div>
         </Droppable>,

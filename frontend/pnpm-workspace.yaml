@@ -50,4 +50,5 @@ catalog:
   typescript-eslint: 8.45.0
   vite: npm:rolldown-vite@7.1.14
   vitest: 4.0.17
+  vitest-browser-react: 2.0.5
   zod: 4.3.6

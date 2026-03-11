@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {GroupListResponse} from '../../models/group';
 
 const mockHttpRequest = vi.fn();
@@ -61,9 +60,9 @@ describe('useGetGroups', () => {
 
   it('should fetch groups with default pagination', async () => {
     mockHttpRequest.mockResolvedValue({data: mockGroupsData});
-    const {result} = renderHook(() => useGetGroups());
+    const {result} = await renderHook(() => useGetGroups());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockGroupsData);
     });
 
@@ -77,9 +76,9 @@ describe('useGetGroups', () => {
 
   it('should fetch groups with custom pagination', async () => {
     mockHttpRequest.mockResolvedValue({data: mockGroupsData});
-    renderHook(() => useGetGroups({limit: 10, offset: 20}));
+    await renderHook(() => useGetGroups({limit: 10, offset: 20}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'https://localhost:8090/groups?limit=10&offset=20',
@@ -90,17 +89,17 @@ describe('useGetGroups', () => {
 
   it('should set loading state', async () => {
     mockHttpRequest.mockImplementation(() => new Promise(() => {}));
-    const {result, unmount} = renderHook(() => useGetGroups());
+    const {result, unmount} = await renderHook(() => useGetGroups());
 
     expect(result.current.isLoading).toBe(true);
-    unmount();
+    await unmount();
   });
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Network error'));
-    const {result} = renderHook(() => useGetGroups());
+    const {result} = await renderHook(() => useGetGroups());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).toBeTruthy();
       expect(result.current.error?.message).toBe('Network error');
     });

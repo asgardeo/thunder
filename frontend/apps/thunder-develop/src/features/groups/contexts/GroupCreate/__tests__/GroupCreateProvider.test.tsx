@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import GroupCreateProvider from '../GroupCreateProvider';
 import useGroupCreate from '../useGroupCreate';
 import {GroupCreateFlowStep} from '../../../models/group-create-flow';
@@ -61,125 +61,113 @@ describe('GroupCreateProvider', () => {
     vi.clearAllMocks();
   });
 
-  it('provides initial state values', () => {
-    render(
+  it('provides initial state values', async () => {
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.NAME);
-    expect(screen.getByTestId('name')).toHaveTextContent('empty');
-    expect(screen.getByTestId('description')).toHaveTextContent('empty');
-    expect(screen.getByTestId('organization-unit-id')).toHaveTextContent('empty');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.NAME);
+    await expect.element(page.getByTestId('name')).toHaveTextContent('empty');
+    await expect.element(page.getByTestId('description')).toHaveTextContent('empty');
+    await expect.element(page.getByTestId('organization-unit-id')).toHaveTextContent('empty');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
   it('updates current step when setCurrentStep is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set OU Step'));
+    await userEvent.click(page.getByText('Set OU Step'));
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.ORGANIZATION_UNIT);
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.ORGANIZATION_UNIT);
   });
 
   it('updates name when setName is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Name'));
+    await userEvent.click(page.getByText('Set Name'));
 
-    expect(screen.getByTestId('name')).toHaveTextContent('Test Group');
+    await expect.element(page.getByTestId('name')).toHaveTextContent('Test Group');
   });
 
   it('updates description when setDescription is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Description'));
+    await userEvent.click(page.getByText('Set Description'));
 
-    expect(screen.getByTestId('description')).toHaveTextContent('A test description');
+    await expect.element(page.getByTestId('description')).toHaveTextContent('A test description');
   });
 
   it('updates organizationUnitId when setOrganizationUnitId is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set OU Id'));
+    await userEvent.click(page.getByText('Set OU Id'));
 
-    expect(screen.getByTestId('organization-unit-id')).toHaveTextContent('ou-123');
+    await expect.element(page.getByTestId('organization-unit-id')).toHaveTextContent('ou-123');
   });
 
   it('updates error when setError is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set Error'));
 
-    expect(screen.getByTestId('error')).toHaveTextContent('Test error');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Test error');
   });
 
   it('resets all state when reset is called', async () => {
-    const user = userEvent.setup();
-
-    render(
+    await renderWithProviders(
       <GroupCreateProvider>
         <TestConsumer />
       </GroupCreateProvider>,
     );
 
     // Set some values
-    await user.click(screen.getByText('Set OU Step'));
-    await user.click(screen.getByText('Set Name'));
-    await user.click(screen.getByText('Set Description'));
-    await user.click(screen.getByText('Set OU Id'));
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set OU Step'));
+    await userEvent.click(page.getByText('Set Name'));
+    await userEvent.click(page.getByText('Set Description'));
+    await userEvent.click(page.getByText('Set OU Id'));
+    await userEvent.click(page.getByText('Set Error'));
 
     // Verify values are set
-    expect(screen.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.ORGANIZATION_UNIT);
-    expect(screen.getByTestId('name')).toHaveTextContent('Test Group');
-    expect(screen.getByTestId('description')).toHaveTextContent('A test description');
-    expect(screen.getByTestId('organization-unit-id')).toHaveTextContent('ou-123');
-    expect(screen.getByTestId('error')).toHaveTextContent('Test error');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.ORGANIZATION_UNIT);
+    await expect.element(page.getByTestId('name')).toHaveTextContent('Test Group');
+    await expect.element(page.getByTestId('description')).toHaveTextContent('A test description');
+    await expect.element(page.getByTestId('organization-unit-id')).toHaveTextContent('ou-123');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Test error');
 
     // Reset
-    await user.click(screen.getByText('Reset'));
+    await userEvent.click(page.getByText('Reset'));
 
     // Verify back to initial state
-    expect(screen.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.NAME);
-    expect(screen.getByTestId('name')).toHaveTextContent('empty');
-    expect(screen.getByTestId('description')).toHaveTextContent('empty');
-    expect(screen.getByTestId('organization-unit-id')).toHaveTextContent('empty');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(GroupCreateFlowStep.NAME);
+    await expect.element(page.getByTestId('name')).toHaveTextContent('empty');
+    await expect.element(page.getByTestId('description')).toHaveTextContent('empty');
+    await expect.element(page.getByTestId('organization-unit-id')).toHaveTextContent('empty');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
-  it('memoizes context value to prevent unnecessary re-renders', () => {
+  it('memoizes context value to prevent unnecessary re-renders', async () => {
     const renderSpy = vi.fn();
 
     function TestRenderer() {
@@ -187,7 +175,7 @@ describe('GroupCreateProvider', () => {
       return <TestConsumer />;
     }
 
-    const {rerender} = render(
+    const {rerender} = await renderWithProviders(
       <GroupCreateProvider>
         <TestRenderer />
       </GroupCreateProvider>,
@@ -195,7 +183,7 @@ describe('GroupCreateProvider', () => {
 
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
-    rerender(
+    await rerender(
       <GroupCreateProvider>
         <TestRenderer />
       </GroupCreateProvider>,
@@ -204,12 +192,12 @@ describe('GroupCreateProvider', () => {
     expect(renderSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('throws error when useGroupCreate is used outside provider', () => {
+  it('throws error when useGroupCreate is used outside provider', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    expect(() => {
-      render(<TestConsumer />);
-    }).toThrow('useGroupCreate must be used within a GroupCreateProvider');
+    await expect(renderWithProviders(<TestConsumer />)).rejects.toThrow(
+      'useGroupCreate must be used within a GroupCreateProvider',
+    );
 
     consoleSpy.mockRestore();
   });

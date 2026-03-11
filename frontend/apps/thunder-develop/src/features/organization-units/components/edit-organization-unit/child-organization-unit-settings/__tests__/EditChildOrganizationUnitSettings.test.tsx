@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderWithProviders} from '@thunder/test-utils';
+import {page} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import EditChildOrganizationUnitSettings from '../EditChildOrganizationUnitSettings';
 
 // Mock child component
@@ -34,39 +35,39 @@ describe('EditChildOrganizationUnitSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('should render ManageChildOUsSection', () => {
-    renderWithProviders(
+  it('should render ManageChildOUsSection', async () => {
+    await renderWithProviders(
       <EditChildOrganizationUnitSettings organizationUnitId="ou-123" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByTestId('manage-child-ous-section')).toBeInTheDocument();
+    await expect.element(page.getByTestId('manage-child-ous-section')).toBeInTheDocument();
   });
 
-  it('should pass organizationUnitId to ManageChildOUsSection', () => {
-    renderWithProviders(
+  it('should pass organizationUnitId to ManageChildOUsSection', async () => {
+    await renderWithProviders(
       <EditChildOrganizationUnitSettings organizationUnitId="ou-456" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText(/ManageChildOUsSection - ou-456/)).toBeInTheDocument();
+    await expect.element(page.getByText(/ManageChildOUsSection - ou-456/)).toBeInTheDocument();
   });
 
-  it('should pass organizationUnitName to ManageChildOUsSection', () => {
-    renderWithProviders(
+  it('should pass organizationUnitName to ManageChildOUsSection', async () => {
+    await renderWithProviders(
       <EditChildOrganizationUnitSettings organizationUnitId="ou-123" organizationUnitName="Product Team" />,
     );
 
-    expect(screen.getByText(/Product Team/)).toBeInTheDocument();
+    await expect.element(page.getByText(/Product Team/)).toBeInTheDocument();
   });
 
-  it('should handle different organization unit IDs and names', () => {
-    const {rerender} = renderWithProviders(
+  it('should handle different organization unit IDs and names', async () => {
+    const {rerender} = await renderWithProviders(
       <EditChildOrganizationUnitSettings organizationUnitId="ou-123" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('ManageChildOUsSection - ou-123 - Engineering')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageChildOUsSection - ou-123 - Engineering')).toBeInTheDocument();
 
-    rerender(<EditChildOrganizationUnitSettings organizationUnitId="ou-789" organizationUnitName="Design" />);
+    await rerender(<EditChildOrganizationUnitSettings organizationUnitId="ou-789" organizationUnitName="Design" />);
 
-    expect(screen.getByText('ManageChildOUsSection - ou-789 - Design')).toBeInTheDocument();
+    await expect.element(page.getByText('ManageChildOUsSection - ou-789 - Design')).toBeInTheDocument();
   });
 });

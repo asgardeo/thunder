@@ -17,18 +17,9 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent, renderWithProviders} from '@thunder/test-utils/browser';
 import {useGetLanguages} from '@thunder/i18n';
 import TranslationsListPage from '../TranslationsListPage';
-
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
 
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -111,101 +102,105 @@ describe('TranslationsListPage', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the page title', () => {
-      render(<TranslationsListPage />);
+    it('renders the page title', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByText('page.title')).toBeInTheDocument();
+      await expect.element(page.getByText('Translations')).toBeInTheDocument();
     });
 
-    it('renders the page subtitle', () => {
-      render(<TranslationsListPage />);
+    it('renders the page subtitle', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByText('page.subtitle')).toBeInTheDocument();
+      await expect.element(
+        page.getByText('Manage and customize UI text and translations for your application.'),
+      ).toBeInTheDocument();
     });
 
-    it('renders the Add Language button', () => {
-      render(<TranslationsListPage />);
+    it('renders the Add Language button', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByRole('button', {name: /listing.addLanguage/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Add Language'})).toBeInTheDocument();
     });
 
-    it('renders the data grid', () => {
-      render(<TranslationsListPage />);
+    it('renders the data grid', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByTestId('data-grid')).toBeInTheDocument();
+      await expect.element(page.getByTestId('data-grid')).toBeInTheDocument();
     });
 
-    it('renders a row for each language', () => {
-      render(<TranslationsListPage />);
+    it('renders a row for each language', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByTestId('row-fr-FR')).toBeInTheDocument();
-      expect(screen.getByTestId('row-de-DE')).toBeInTheDocument();
+      await expect.element(page.getByTestId('row-fr-FR')).toBeInTheDocument();
+      await expect.element(page.getByTestId('row-de-DE')).toBeInTheDocument();
     });
 
-    it('passes loading=false to the grid when data has loaded', () => {
-      render(<TranslationsListPage />);
+    it('passes loading=false to the grid when data has loaded', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByTestId('data-grid')).toHaveAttribute('data-loading', 'false');
+      await expect.element(page.getByTestId('data-grid')).toHaveAttribute('data-loading', 'false');
     });
 
-    it('passes loading=true to the grid while data is loading', () => {
+    it('passes loading=true to the grid while data is loading', async () => {
       mockUseGetLanguages.mockReturnValue({
         data: undefined,
         isLoading: true,
       } as ReturnType<typeof useGetLanguages>);
 
-      render(<TranslationsListPage />);
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.getByTestId('data-grid')).toHaveAttribute('data-loading', 'true');
+      await expect.element(page.getByTestId('data-grid')).toHaveAttribute('data-loading', 'true');
     });
 
-    it('renders an empty grid when there are no languages', () => {
+    it('renders an empty grid when there are no languages', async () => {
       mockUseGetLanguages.mockReturnValue({
         data: {languages: []},
         isLoading: false,
       } as unknown as ReturnType<typeof useGetLanguages>);
 
-      render(<TranslationsListPage />);
+      await renderWithProviders(<TranslationsListPage />);
 
-      expect(screen.queryByRole('row')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('row')).not.toBeInTheDocument();
     });
   });
 
   describe('Navigation', () => {
     it('navigates to /translations/create when Add Language is clicked', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsListPage />);
+      await renderWithProviders(<TranslationsListPage />);
 
-      await user.click(screen.getByRole('button', {name: /listing.addLanguage/i}));
+      await userEvent.click(page.getByRole('button', {name: 'Add Language'}));
 
       expect(mockNavigate).toHaveBeenCalledWith('/translations/create');
     });
 
-    it('navigates to the language edit page when a row is clicked', () => {
-      render(<TranslationsListPage />);
+    it('navigates to the language edit page when a row is clicked', async () => {
+      await renderWithProviders(<TranslationsListPage />);
 
-      fireEvent.click(screen.getByTestId('row-fr-FR'));
+      await userEvent.click(page.getByTestId('row-fr-FR'));
 
-      expect(mockNavigate).toHaveBeenCalledWith('/translations/fr-FR');
+      await vi.waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/translations/fr-FR');
+      });
     });
   });
 
   describe('Actions menu', () => {
     it('opens the actions menu when the menu button for a row is clicked', async () => {
-      render(<TranslationsListPage />);
+      await renderWithProviders(<TranslationsListPage />);
 
-      const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
+      const editButtons = page.getByRole('button', {name: 'Edit'}).all();
       expect(editButtons.length).toBeGreaterThan(0);
     });
 
     it('navigates to the language edit page when Edit is clicked in the actions menu', async () => {
-      const user = userEvent.setup();
-      render(<TranslationsListPage />);
+      await renderWithProviders(<TranslationsListPage />);
 
-      const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});
-      await user.click(editButtons[0]);
+      const editButtons = page.getByRole('button', {name: 'Edit'}).all();
+      await editButtons[0].click();
 
-      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));
+      await vi.waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/translations\//));
+      });
     });
   });
 });

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetUsers from '../useGetUsers';
 import type {UserListResponse} from '../../types/users';
 import UserQueryKeys from '../../constants/user-query-keys';
@@ -71,10 +71,10 @@ describe('useGetUsers', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with loading state', () => {
+  it('should initialize with loading state', async () => {
     mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -86,9 +86,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -103,9 +103,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    renderHook(() => useGetUsers());
+    await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -120,9 +120,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    renderHook(() => useGetUsers({limit: 10, offset: 5}));
+    await renderHook(() => useGetUsers({limit: 10, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -139,9 +139,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    renderHook(() => useGetUsers({filter: 'name eq "John"'}));
+    await renderHook(() => useGetUsers({filter: 'name eq "John"'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -156,9 +156,9 @@ describe('useGetUsers', () => {
     const apiError = new Error('Failed to fetch users');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -170,9 +170,9 @@ describe('useGetUsers', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -184,9 +184,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    renderHook(() => useGetUsers());
+    await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
 
@@ -201,9 +201,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    renderHook(() => useGetUsers());
+    await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -220,9 +220,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    const {result, queryClient} = renderHook(() => useGetUsers({limit: 20, offset: 10}));
+    const {result, queryClient} = await renderHook(() => useGetUsers({limit: 20, offset: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -240,9 +240,9 @@ describe('useGetUsers', () => {
     });
 
     // First call - get the queryClient from the render result
-    const {result: result1, queryClient} = renderHook(() => useGetUsers({limit: 10, offset: 0}));
+    const {result: result1, queryClient} = await renderHook(() => useGetUsers({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -252,11 +252,11 @@ describe('useGetUsers', () => {
     });
 
     // Second call with same queryClient should use cache
-    const {result: result2} = renderHook(() => useGetUsers({limit: 10, offset: 0}), {
+    const {result: result2} = await renderHook(() => useGetUsers({limit: 10, offset: 0}), {
       queryClient,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.data).toEqual(mockUserListResponse);
     });
     expect(mockHttpRequest).toHaveBeenCalledTimes(1); // Should not make another request
@@ -267,16 +267,16 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    const {result: result1} = renderHook(() => useGetUsers({limit: 10, offset: 0}));
+    const {result: result1} = await renderHook(() => useGetUsers({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
     // Second call with different parameters should make new request
-    const {result: result2} = renderHook(() => useGetUsers({limit: 20, offset: 5}));
+    const {result: result2} = await renderHook(() => useGetUsers({limit: 20, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -288,9 +288,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -314,9 +314,9 @@ describe('useGetUsers', () => {
       data: emptyResponse,
     });
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -330,9 +330,9 @@ describe('useGetUsers', () => {
       data: mockUserListResponse,
     });
 
-    renderHook(() => useGetUsers({limit: 15, offset: 30, filter: 'type eq "admin"'}));
+    await renderHook(() => useGetUsers({limit: 15, offset: 30, filter: 'type eq "admin"'}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -354,7 +354,7 @@ describe('useGetUsers', () => {
 
     mockHttpRequest.mockReturnValueOnce(requestPromise);
 
-    const {result} = renderHook(() => useGetUsers());
+    const {result} = await renderHook(() => useGetUsers());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isFetching).toBe(true);
@@ -362,7 +362,7 @@ describe('useGetUsers', () => {
 
     resolveRequest!({data: mockUserListResponse});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

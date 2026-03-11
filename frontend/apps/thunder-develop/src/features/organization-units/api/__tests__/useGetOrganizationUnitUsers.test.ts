@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetOrganizationUnitUsers from '../useGetOrganizationUnitUsers';
 import type {UserListResponse} from '../../../users/types/users';
 
@@ -65,9 +65,9 @@ describe('useGetOrganizationUnitUsers', () => {
   it('should fetch organization unit users on mount', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUserList});
 
-    const {result} = renderHook(() => useGetOrganizationUnitUsers('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnitUsers('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockUserList);
       expect(result.current.error).toBeNull();
       expect(result.current.isLoading).toBe(false);
@@ -82,7 +82,7 @@ describe('useGetOrganizationUnitUsers', () => {
   });
 
   it('should not fetch when organizationUnitId is undefined', async () => {
-    const {result} = renderHook(() => useGetOrganizationUnitUsers(undefined));
+    const {result} = await renderHook(() => useGetOrganizationUnitUsers(undefined));
 
     // Wait a bit to ensure query doesn't execute
     await new Promise((resolve) => {
@@ -97,9 +97,9 @@ describe('useGetOrganizationUnitUsers', () => {
   it('should fetch with default pagination params', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUserList});
 
-    renderHook(() => useGetOrganizationUnitUsers('ou-123'));
+    await renderHook(() => useGetOrganizationUnitUsers('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringMatching(/limit=30.*offset=0|offset=0.*limit=30/) as unknown,
@@ -111,9 +111,9 @@ describe('useGetOrganizationUnitUsers', () => {
   it('should fetch with custom limit parameter', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUserList});
 
-    renderHook(() => useGetOrganizationUnitUsers('ou-123', {limit: 10}));
+    await renderHook(() => useGetOrganizationUnitUsers('ou-123', {limit: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('limit=10') as unknown,
@@ -125,9 +125,9 @@ describe('useGetOrganizationUnitUsers', () => {
   it('should fetch with custom offset parameter', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUserList});
 
-    renderHook(() => useGetOrganizationUnitUsers('ou-123', {offset: 20}));
+    await renderHook(() => useGetOrganizationUnitUsers('ou-123', {offset: 20}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining('offset=20') as unknown,
@@ -139,9 +139,9 @@ describe('useGetOrganizationUnitUsers', () => {
   it('should fetch with both limit and offset parameters', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUserList});
 
-    renderHook(() => useGetOrganizationUnitUsers('ou-123', {limit: 15, offset: 30}));
+    await renderHook(() => useGetOrganizationUnitUsers('ou-123', {limit: 15, offset: 30}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringMatching(/limit=15.*offset=30|offset=30.*limit=15/) as unknown,
@@ -158,19 +158,19 @@ describe('useGetOrganizationUnitUsers', () => {
         }),
     );
 
-    const {result, unmount} = renderHook(() => useGetOrganizationUnitUsers('ou-123'));
+    const {result, unmount} = await renderHook(() => useGetOrganizationUnitUsers('ou-123'));
 
     expect(result.current.isLoading).toBe(true);
 
-    unmount();
+    await unmount();
   });
 
   it('should handle API error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Failed to fetch users'));
 
-    const {result} = renderHook(() => useGetOrganizationUnitUsers('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnitUsers('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).not.toBeNull();
       expect(result.current.data).toBeUndefined();
       expect(result.current.isLoading).toBe(false);
@@ -186,9 +186,9 @@ describe('useGetOrganizationUnitUsers', () => {
     };
     mockHttpRequest.mockResolvedValue({data: emptyList});
 
-    const {result} = renderHook(() => useGetOrganizationUnitUsers('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnitUsers('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.users).toHaveLength(0);
       expect(result.current.data?.totalResults).toBe(0);
     });
@@ -197,9 +197,9 @@ describe('useGetOrganizationUnitUsers', () => {
   it('should refetch when refetch is called', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUserList});
 
-    const {result} = renderHook(() => useGetOrganizationUnitUsers('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnitUsers('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockUserList);
     });
 
@@ -209,7 +209,7 @@ describe('useGetOrganizationUnitUsers', () => {
 
     await result.current.refetch();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
     });
   });

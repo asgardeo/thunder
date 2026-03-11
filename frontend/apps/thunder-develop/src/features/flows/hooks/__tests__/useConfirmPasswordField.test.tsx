@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
@@ -105,8 +105,8 @@ describe('useConfirmPasswordField', () => {
   });
 
   describe('Plugin Registration', () => {
-    it('should register event handlers on mount', () => {
-      renderHook(() => useConfirmPasswordField(), {
+    it('should register event handlers on mount', async () => {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -116,12 +116,12 @@ describe('useConfirmPasswordField', () => {
       expect(mockRegisterAsync).toHaveBeenCalledWith(FlowEventTypes.ON_NODE_ELEMENT_DELETE, expect.any(Function));
     });
 
-    it('should unregister event handlers on unmount', () => {
-      const {unmount} = renderHook(() => useConfirmPasswordField(), {
+    it('should unregister event handlers on unmount', async () => {
+      const {unmount} = await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
-      unmount();
+      await unmount();
 
       expect(mockUnregister).toHaveBeenCalledWith(FlowEventTypes.ON_PROPERTY_CHANGE, 'addConfirmPasswordField');
       expect(mockUnregister).toHaveBeenCalledWith(
@@ -138,7 +138,7 @@ describe('useConfirmPasswordField', () => {
 
   describe('addConfirmPasswordField Handler', () => {
     it('should return true for non-password input types', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -159,7 +159,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should return true for properties other than requireConfirmation', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -195,7 +195,7 @@ describe('useConfirmPasswordField', () => {
 
       mockGetNode.mockReturnValue(stepNode);
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -237,7 +237,7 @@ describe('useConfirmPasswordField', () => {
 
       mockGetNode.mockReturnValue(stepNode);
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -262,7 +262,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -305,7 +305,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -338,7 +338,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -390,7 +390,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -431,7 +431,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -484,7 +484,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -526,8 +526,8 @@ describe('useConfirmPasswordField', () => {
   });
 
   describe('addConfirmPasswordFieldProperties Handler', () => {
-    it('should return true for non-password input types', () => {
-      renderHook(() => useConfirmPasswordField(), {
+    it('should return true for non-password input types', async () => {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -544,8 +544,8 @@ describe('useConfirmPasswordField', () => {
       expect(properties.requireConfirmation).toBeUndefined();
     });
 
-    it('should return true for password without PASSWORD_IDENTIFIER', () => {
-      renderHook(() => useConfirmPasswordField(), {
+    it('should return true for password without PASSWORD_IDENTIFIER', async () => {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -562,7 +562,7 @@ describe('useConfirmPasswordField', () => {
       expect(result).toBe(true);
     });
 
-    it('should add requireConfirmation property for password with PASSWORD_IDENTIFIER', () => {
+    it('should add requireConfirmation property for password with PASSWORD_IDENTIFIER', async () => {
       const stepNode: Node = {
         id: 'step-1',
         type: 'VIEW',
@@ -594,7 +594,7 @@ describe('useConfirmPasswordField', () => {
 
       mockGetNode.mockReturnValue(stepNode);
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -615,7 +615,7 @@ describe('useConfirmPasswordField', () => {
       expect(properties.confirmPlaceholder).toBe('Confirm placeholder');
     });
 
-    it('should set requireConfirmation to false when no confirm field exists', () => {
+    it('should set requireConfirmation to false when no confirm field exists', async () => {
       const stepNode: Node = {
         id: 'step-1',
         type: 'VIEW',
@@ -639,7 +639,7 @@ describe('useConfirmPasswordField', () => {
 
       mockGetNode.mockReturnValue(stepNode);
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -657,7 +657,7 @@ describe('useConfirmPasswordField', () => {
       expect(properties.requireConfirmation).toBe(false);
     });
 
-    it('should use resource requireConfirmation value when explicitly set', () => {
+    it('should use resource requireConfirmation value when explicitly set', async () => {
       const stepNode: Node = {
         id: 'step-1',
         type: 'VIEW',
@@ -681,7 +681,7 @@ describe('useConfirmPasswordField', () => {
 
       mockGetNode.mockReturnValue(stepNode);
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -703,7 +703,7 @@ describe('useConfirmPasswordField', () => {
 
   describe('updateConfirmPasswordFieldProperties Handler', () => {
     it('should return true for non-password input types', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -720,7 +720,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should update confirm password field properties', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -738,7 +738,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should update confirmLabel property', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -755,7 +755,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should update confirmPlaceholder property', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -772,7 +772,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should return true for required property (not return false)', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -790,7 +790,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should return true for other properties', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -814,7 +814,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -871,7 +871,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -925,7 +925,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -979,7 +979,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1033,7 +1033,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1066,7 +1066,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1100,7 +1100,7 @@ describe('useConfirmPasswordField', () => {
 
   describe('deleteConfirmPasswordField Handler', () => {
     it('should return true for non-password input types', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1116,7 +1116,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should return true for password without PASSWORD_IDENTIFIER', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1133,7 +1133,7 @@ describe('useConfirmPasswordField', () => {
     });
 
     it('should delete confirm password field when password field is deleted', async () => {
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1158,7 +1158,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1208,7 +1208,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1241,7 +1241,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1298,7 +1298,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 
@@ -1345,7 +1345,7 @@ describe('useConfirmPasswordField', () => {
         },
       );
 
-      renderHook(() => useConfirmPasswordField(), {
+      await renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
       });
 

@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {render, page, userEvent} from '@thunder/test-utils/browser';
 import SelectRow from '../SelectRow';
 
 const options = [
@@ -29,51 +28,48 @@ const options = [
 
 describe('SelectRow', () => {
   describe('Rendering', () => {
-    it('renders the label', () => {
+    it('renders the label', async () => {
       render(<SelectRow label="Color Scheme" value="light" options={options} onChange={vi.fn()} />);
-      expect(screen.getByText('Color Scheme')).toBeInTheDocument();
+      await expect.element(page.getByText('Color Scheme')).toBeInTheDocument();
     });
 
-    it('renders the currently selected value', () => {
+    it('renders the currently selected value', async () => {
       render(<SelectRow label="Color Scheme" value="dark" options={options} onChange={vi.fn()} />);
-      expect(screen.getByText('Dark')).toBeInTheDocument();
+      await expect.element(page.getByText('Dark')).toBeInTheDocument();
     });
 
     it('renders options in the dropdown when opened', async () => {
-      const user = userEvent.setup();
       render(<SelectRow label="Color Scheme" value="light" options={options} onChange={vi.fn()} />);
 
-      await user.click(screen.getByRole('combobox'));
+      await userEvent.click(page.getByRole('combobox'));
 
-      expect(screen.getByRole('option', {name: 'Dark'})).toBeInTheDocument();
-      expect(screen.getByRole('option', {name: 'System'})).toBeInTheDocument();
+      await expect.element(page.getByRole('option', {name: 'Dark'})).toBeInTheDocument();
+      await expect.element(page.getByRole('option', {name: 'System'})).toBeInTheDocument();
     });
 
-    it('renders a select element', () => {
+    it('renders a select element', async () => {
       render(<SelectRow label="Direction" value="ltr" options={[{label: 'LTR', value: 'ltr'}]} onChange={vi.fn()} />);
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      await expect.element(page.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
   describe('Interaction', () => {
     it('calls onChange with selected option value', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
       render(<SelectRow label="Color Scheme" value="light" options={options} onChange={onChange} />);
 
-      await user.click(screen.getByRole('combobox'));
-      await user.click(screen.getByRole('option', {name: 'Dark'}));
+      await userEvent.click(page.getByRole('combobox'));
+      await userEvent.click(page.getByRole('option', {name: 'Dark'}));
 
       expect(onChange).toHaveBeenCalledWith('dark');
     });
 
     it('calls onChange exactly once per selection', async () => {
       const onChange = vi.fn();
-      const user = userEvent.setup();
       render(<SelectRow label="Color Scheme" value="light" options={options} onChange={onChange} />);
 
-      await user.click(screen.getByRole('combobox'));
-      await user.click(screen.getByRole('option', {name: 'System'}));
+      await userEvent.click(page.getByRole('combobox'));
+      await userEvent.click(page.getByRole('option', {name: 'System'}));
 
       expect(onChange).toHaveBeenCalledOnce();
     });

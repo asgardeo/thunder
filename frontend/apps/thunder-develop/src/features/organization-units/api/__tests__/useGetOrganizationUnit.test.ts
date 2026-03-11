@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetOrganizationUnit from '../useGetOrganizationUnit';
 import type {OrganizationUnit} from '../../models/organization-unit';
 
@@ -62,9 +62,9 @@ describe('useGetOrganizationUnit', () => {
   it('should fetch organization unit by id', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnit});
 
-    const {result} = renderHook(() => useGetOrganizationUnit('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnit('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockOrganizationUnit);
       expect(result.current.error).toBeNull();
       expect(result.current.isLoading).toBe(false);
@@ -79,7 +79,7 @@ describe('useGetOrganizationUnit', () => {
   });
 
   it('should not fetch when id is undefined', async () => {
-    const {result} = renderHook(() => useGetOrganizationUnit(undefined));
+    const {result} = await renderHook(() => useGetOrganizationUnit(undefined));
 
     // Wait a bit to ensure query doesn't execute
     await new Promise((resolve) => {
@@ -92,7 +92,7 @@ describe('useGetOrganizationUnit', () => {
   });
 
   it('should not fetch when enabled is false', async () => {
-    const {result} = renderHook(() => useGetOrganizationUnit('ou-123', false));
+    const {result} = await renderHook(() => useGetOrganizationUnit('ou-123', false));
 
     // Wait a bit to ensure query doesn't execute
     await new Promise((resolve) => {
@@ -112,19 +112,19 @@ describe('useGetOrganizationUnit', () => {
         }),
     );
 
-    const {result, unmount} = renderHook(() => useGetOrganizationUnit('ou-123'));
+    const {result, unmount} = await renderHook(() => useGetOrganizationUnit('ou-123'));
 
     expect(result.current.isLoading).toBe(true);
 
-    unmount();
+    await unmount();
   });
 
   it('should handle API error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Organization unit not found'));
 
-    const {result} = renderHook(() => useGetOrganizationUnit('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnit('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error).not.toBeNull();
       expect(result.current.data).toBeUndefined();
       expect(result.current.isLoading).toBe(false);
@@ -138,9 +138,9 @@ describe('useGetOrganizationUnit', () => {
     };
     mockHttpRequest.mockResolvedValue({data: ouWithParent});
 
-    const {result} = renderHook(() => useGetOrganizationUnit('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnit('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(ouWithParent);
       expect(result.current.data?.parent).toBe('parent-ou-id');
     });
@@ -156,9 +156,9 @@ describe('useGetOrganizationUnit', () => {
     };
     mockHttpRequest.mockResolvedValue({data: ouWithoutDescription});
 
-    const {result} = renderHook(() => useGetOrganizationUnit('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnit('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(ouWithoutDescription);
       expect(result.current.data?.description).toBeNull();
     });
@@ -167,9 +167,9 @@ describe('useGetOrganizationUnit', () => {
   it('should refetch when refetch is called', async () => {
     mockHttpRequest.mockResolvedValue({data: mockOrganizationUnit});
 
-    const {result} = renderHook(() => useGetOrganizationUnit('ou-123'));
+    const {result} = await renderHook(() => useGetOrganizationUnit('ou-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockOrganizationUnit);
     });
 
@@ -179,7 +179,7 @@ describe('useGetOrganizationUnit', () => {
 
     await result.current.refetch();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
     });
   });

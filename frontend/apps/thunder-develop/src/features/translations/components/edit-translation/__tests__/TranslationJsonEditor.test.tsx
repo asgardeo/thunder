@@ -17,18 +17,10 @@
  */
 
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, act, fireEvent} from '@thunder/test-utils';
+import {page, renderWithProviders} from '@thunder/test-utils/browser';
 import TranslationJsonEditor from '../TranslationJsonEditor';
 
-vi.mock('react-i18next', async () => {
-  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
-  return {
-    ...actual,
-    useTranslation: () => ({t: (key: string) => key}),
-  };
-});
-
-// Monaco Editor is not available in jsdom; replace it with a plain textarea
+// Monaco Editor is not available in browser tests; replace it with a plain textarea
 // that mirrors the same value/onChange contract.
 vi.mock('@monaco-editor/react', () => ({
   default: ({value, onChange}: {value: string; onChange?: (v: string | undefined) => void}) => (
@@ -39,21 +31,10 @@ vi.mock('@monaco-editor/react', () => ({
 const sampleValues = {'actions.save': 'Save', 'actions.cancel': 'Cancel'};
 const sampleServerKeys = Object.keys(sampleValues);
 
-// Helper: fire a change event on the editor and advance the 400ms debounce.
-// userEvent.type() deadlocks under vi.useFakeTimers() because its internal
-// per-keystroke delays also use setTimeout; fireEvent.change() is synchronous
-// and avoids the issue entirely.
-function changeEditor(editor: HTMLElement, value: string) {
-  fireEvent.change(editor, {target: {value}});
-  act(() => {
-    vi.advanceTimersByTime(400);
-  });
-}
-
 describe('TranslationJsonEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
@@ -61,82 +42,176 @@ describe('TranslationJsonEditor', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the Monaco editor with the initial JSON value', () => {
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
+    it('renders the Monaco editor with the initial JSON value', async () => {
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
+      );
 
-      const editor = screen.getByTestId('monaco-editor');
-      const parsed = JSON.parse((editor as HTMLTextAreaElement).value) as Record<string, string>;
-
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      expect(editor).toBeTruthy();
+      const parsed = JSON.parse(editor!.value) as Record<string, string>;
       expect(parsed).toEqual(sampleValues);
     });
 
-    it('does not show the invalid-JSON warning on initial render', () => {
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
+    it('does not show the invalid-JSON warning on initial render', async () => {
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
+      );
 
-      expect(screen.queryByText('editor.jsonInvalid')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Invalid JSON — fix errors before saving.')).not.toBeInTheDocument();
     });
   });
 
   describe('Valid JSON changes', () => {
-    it('calls onChange with the parsed record after the debounce fires', () => {
+    it('calls onChange with the parsed record after the debounce fires', async () => {
       const onChange = vi.fn();
 
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={onChange} />);
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={onChange}
+        />,
+      );
 
-      changeEditor(screen.getByTestId('monaco-editor'), JSON.stringify({'actions.save': 'Enregistrer'}));
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      expect(editor).toBeTruthy();
+
+      // Dispatch a change event on the textarea
+      editor!.value = JSON.stringify({'actions.save': 'Enregistrer'});
+      editor!.dispatchEvent(new Event('change', {bubbles: true}));
+
+      // Advance the 400ms debounce
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(onChange).toHaveBeenCalledWith({'actions.save': 'Enregistrer'});
     });
 
-    it('does not show the invalid-JSON warning for valid JSON', () => {
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
+    it('does not show the invalid-JSON warning for valid JSON', async () => {
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
+      );
 
-      changeEditor(screen.getByTestId('monaco-editor'), '{"key": "value"}');
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      editor!.value = '{"actions.save": "value"}';
+      editor!.dispatchEvent(new Event('change', {bubbles: true}));
 
-      expect(screen.queryByText('editor.jsonInvalid')).not.toBeInTheDocument();
+      await vi.advanceTimersByTimeAsync(400);
+
+      await expect.element(page.getByText('Invalid JSON — fix errors before saving.')).not.toBeInTheDocument();
     });
   });
 
   describe('Invalid JSON handling', () => {
-    it('shows a warning alert when the editor contains invalid JSON', () => {
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
+    it('shows a warning alert when the editor contains invalid JSON', async () => {
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
+      );
 
-      changeEditor(screen.getByTestId('monaco-editor'), '{not valid json');
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      editor!.value = '{not valid json';
+      editor!.dispatchEvent(new Event('change', {bubbles: true}));
 
-      expect(screen.getByText('editor.jsonInvalid')).toBeInTheDocument();
+      await vi.advanceTimersByTimeAsync(400);
+
+      await expect.element(page.getByText('Invalid JSON — fix errors before saving.')).toBeInTheDocument();
     });
 
-    it('does not call onChange while JSON is invalid', () => {
+    it('does not call onChange while JSON is invalid', async () => {
       const onChange = vi.fn();
 
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={onChange} />);
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={onChange}
+        />,
+      );
 
-      changeEditor(screen.getByTestId('monaco-editor'), '{invalid');
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      editor!.value = '{invalid';
+      editor!.dispatchEvent(new Event('change', {bubbles: true}));
+
+      await vi.advanceTimersByTimeAsync(400);
 
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('does not show the warning alert when the editor is empty', () => {
-      render(<TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
+    it('does not show the warning alert when the editor is empty', async () => {
+      await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
+      );
 
-      changeEditor(screen.getByTestId('monaco-editor'), '');
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      editor!.value = '';
+      editor!.dispatchEvent(new Event('change', {bubbles: true}));
 
-      expect(screen.queryByText('editor.jsonInvalid')).not.toBeInTheDocument();
+      await vi.advanceTimersByTimeAsync(400);
+
+      await expect.element(page.getByText('Invalid JSON — fix errors before saving.')).not.toBeInTheDocument();
     });
   });
 
   describe('External value updates', () => {
-    it('syncs the editor when values prop changes to a new object reference', () => {
-      const {rerender} = render(
-        <TranslationJsonEditor values={sampleValues} serverKeys={sampleServerKeys} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />,
+    it('syncs the editor when values prop changes to a new object reference', async () => {
+      const {rerender} = await renderWithProviders(
+        <TranslationJsonEditor
+          values={sampleValues}
+          serverKeys={sampleServerKeys}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
       );
 
       const newValues = {'page.title': 'My Page'};
-      rerender(<TranslationJsonEditor values={newValues} serverKeys={Object.keys(newValues)} isCustomNamespace={false} colorMode="light" onChange={vi.fn()} />);
+      await rerender(
+        <TranslationJsonEditor
+          values={newValues}
+          serverKeys={Object.keys(newValues)}
+          isCustomNamespace={false}
+          colorMode="light"
+          onChange={vi.fn()}
+        />,
+      );
 
-      const editor = screen.getByTestId('monaco-editor');
-      const parsed = JSON.parse((editor as HTMLTextAreaElement).value) as Record<string, string>;
-
+      const editor = document.querySelector<HTMLTextAreaElement>('[data-testid="monaco-editor"]');
+      expect(editor).toBeTruthy();
+      const parsed = JSON.parse(editor!.value) as Record<string, string>;
       expect(parsed).toEqual(newValues);
     });
   });

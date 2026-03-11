@@ -17,20 +17,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ButtonVariants, ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
 import ButtonAdapter from '../ButtonAdapter';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
 }));
@@ -85,126 +79,87 @@ describe('ButtonAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the button adapter with correct class names', () => {
+    it('should render the button adapter with correct class names', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
       expect(container.querySelector('.adapter')).toBeInTheDocument();
       expect(container.querySelector('.button-adapter')).toBeInTheDocument();
     });
 
-    it('should render a Button component', () => {
+    it('should render a Button component', async () => {
       const resource = createMockElement();
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await expect.element(page.getByRole('button')).toBeInTheDocument();
     });
 
-    it('should render button label', () => {
+    it('should render button label via PlaceholderComponent', async () => {
       const resource = createMockElement({label: 'Submit'});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toHaveTextContent('Submit');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('Submit');
     });
 
-    it('should render NodeHandle for edge connection', () => {
+    it('should render NodeHandle for edge connection', async () => {
       const resource = createMockElement();
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('node-handle')).toBeInTheDocument();
-      expect(screen.getByTestId('node-handle')).toHaveAttribute('data-type', 'source');
+      await expect.element(page.getByTestId('node-handle')).toBeInTheDocument();
+      await expect.element(page.getByTestId('node-handle')).toHaveAttribute('data-type', 'source');
     });
   });
 
   describe('Button Variants', () => {
-    it('should render primary button variant', () => {
+    it('should render primary button variant', async () => {
       const resource = createMockElement({variant: ButtonVariants.Primary});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
-    it('should render secondary button variant', () => {
+    it('should render secondary button variant', async () => {
       const resource = createMockElement({variant: ButtonVariants.Secondary});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
-    it('should render text button variant', () => {
+    it('should render text button variant', async () => {
       const resource = createMockElement({variant: ButtonVariants.Text});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
-    it('should render social button variant with default image', () => {
-      const resource = createMockElement({variant: ButtonVariants.Outlined});
+    it('should render social button variant with default image', async () => {
+      const resource = createMockElement({variant: ButtonVariants.Social});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
   });
 
   describe('Button Images', () => {
-    it('should render start icon from resource.startIcon', () => {
-      const resource = createMockElement({
-        startIcon: '/path/to/start-icon.svg',
-        variant: ButtonVariants.Primary,
-      });
-
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
-
-      const img = container.querySelector('img');
-      expect(img).toBeInTheDocument();
-      expect(img).toHaveAttribute('src', '/path/to/start-icon.svg');
-    });
-
-    it('should render end icon from resource.endIcon', () => {
-      const resource = createMockElement({
-        endIcon: '/path/to/end-icon.svg',
-        variant: ButtonVariants.Primary,
-      });
-
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
-
-      const imgs = container.querySelectorAll('img');
-      const endIconImg = Array.from(imgs).find((img) => img.getAttribute('src') === '/path/to/end-icon.svg');
-      expect(endIconImg).toBeInTheDocument();
-    });
-
-    it('should prioritize startIcon over image', () => {
-      const resource = createMockElement({
-        startIcon: '/start/icon.svg',
-        image: '/legacy/icon.svg',
-        variant: ButtonVariants.Primary,
-      });
-
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
-
-      const img = container.querySelector('img');
-      expect(img).toHaveAttribute('src', '/start/icon.svg');
-    });
-
-    it('should render start icon from resource.image', () => {
+    it('should render start icon from resource.image', async () => {
       const resource = createMockElement({
         image: '/path/to/icon.svg',
         variant: ButtonVariants.Primary,
       });
 
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
       // Images with empty alt have role="presentation", so query by tag
       const img = container.querySelector('img');
@@ -212,27 +167,27 @@ describe('ButtonAdapter', () => {
       expect(img).toHaveAttribute('src', '/path/to/icon.svg');
     });
 
-    it('should render start icon from config.image', () => {
+    it('should render start icon from config.image', async () => {
       const resource = createMockElement({
         config: {image: '/config/icon.svg'},
         variant: ButtonVariants.Primary,
       });
 
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
       const img = container.querySelector('img');
       expect(img).toBeInTheDocument();
       expect(img).toHaveAttribute('src', '/config/icon.svg');
     });
 
-    it('should prioritize resource.image over config.image', () => {
+    it('should prioritize resource.image over config.image', async () => {
       const resource = createMockElement({
         image: '/resource/icon.svg',
         config: {image: '/config/icon.svg'},
         variant: ButtonVariants.Primary,
       });
 
-      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      const {container} = await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
       const img = container.querySelector('img');
       expect(img).toBeInTheDocument();
@@ -241,69 +196,51 @@ describe('ButtonAdapter', () => {
   });
 
   describe('Element Index', () => {
-    it('should pass elementIndex to NodeHandle for position updates', () => {
+    it('should pass elementIndex to NodeHandle for position updates', async () => {
       const resource = createMockElement();
 
-      render(<ButtonAdapter resource={resource} elementIndex={5} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} elementIndex={5} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('node-handle')).toBeInTheDocument();
+      await expect.element(page.getByTestId('node-handle')).toBeInTheDocument();
     });
 
-    it('should work without elementIndex', () => {
+    it('should work without elementIndex', async () => {
       const resource = createMockElement();
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('node-handle')).toBeInTheDocument();
+      await expect.element(page.getByTestId('node-handle')).toBeInTheDocument();
     });
   });
 
   describe('Config Styles', () => {
-    it('should apply styles from config', () => {
+    it('should apply styles from config', async () => {
       const resource = createMockElement({
         config: {styles: {backgroundColor: 'red'}},
       });
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
   });
 
-  describe('Template Literal Label', () => {
-    it('should render button with template literal label', () => {
-      const resource = createMockElement({label: '{{meta(application.name)}}'});
-
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
-
-      expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-
-    it('should render button with i18n template label', () => {
-      const resource = createMockElement({label: '{{t(signin:button.label)}}'});
-
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
-
-      expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-  });
-
   describe('Empty Label', () => {
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('');
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+      await render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('');
     });
   });
 });

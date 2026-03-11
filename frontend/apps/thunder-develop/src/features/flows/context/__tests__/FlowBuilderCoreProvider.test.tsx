@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {useContext} from 'react';
 import FlowBuilderCoreProvider from '../FlowBuilderCoreProvider';
 import FlowBuilderCoreContext from '../FlowBuilderCoreContext';
@@ -166,231 +167,215 @@ describe('FlowBuilderCoreProvider', () => {
   });
 
   describe('Provider Structure', () => {
-    it('should wrap children with ReactFlowProvider', () => {
-      render(
+    it('should wrap children with ReactFlowProvider', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <div data-testid="child">Child Content</div>
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('react-flow-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('react-flow-provider')).toBeInTheDocument();
     });
 
-    it('should include ValidationProvider', () => {
-      render(
+    it('should include ValidationProvider', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <div data-testid="child">Child Content</div>
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('validation-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('validation-provider')).toBeInTheDocument();
     });
 
-    it('should render children', () => {
-      render(
+    it('should render children', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <div data-testid="child">Child Content</div>
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('child')).toHaveTextContent('Child Content');
+      await expect.element(page.getByTestId('child')).toHaveTextContent('Child Content');
     });
   });
 
   describe('Initial Context State', () => {
-    it('should have resource panel open by default', () => {
-      render(
+    it('should have resource panel open by default', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('is-resource-panel-open')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('is-resource-panel-open')).toHaveTextContent('true');
     });
 
-    it('should have resource properties panel closed by default', () => {
-      render(
+    it('should have resource properties panel closed by default', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('false');
     });
 
-    it('should have version history panel closed by default', () => {
-      render(
+    it('should have version history panel closed by default', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('is-version-history-panel-open')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('is-version-history-panel-open')).toHaveTextContent('false');
     });
 
-    it('should have verbose mode enabled by default', () => {
-      render(
+    it('should have verbose mode enabled by default', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('is-verbose-mode')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('is-verbose-mode')).toHaveTextContent('true');
     });
 
-    it('should use SmoothStep edge style by default', () => {
-      render(
+    it('should use SmoothStep edge style by default', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('edge-style')).toHaveTextContent(EdgeStyleTypes.SmoothStep);
+      await expect.element(page.getByTestId('edge-style')).toHaveTextContent(EdgeStyleTypes.SmoothStep);
     });
 
-    it('should use first screen type as primary i18n screen', () => {
-      render(
+    it('should use first screen type as primary i18n screen', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('primary-i18n-screen')).toHaveTextContent(PreviewScreenType.LOGIN);
+      await expect.element(page.getByTestId('primary-i18n-screen')).toHaveTextContent(PreviewScreenType.LOGIN);
     });
   });
 
   describe('State Updates', () => {
-    it('should update resource panel state', () => {
-      render(
+    it('should update resource panel state', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-resource-panel-open').click();
-      });
+      await page.getByTestId('set-resource-panel-open').click();;
 
-      expect(screen.getByTestId('is-resource-panel-open')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('is-resource-panel-open')).toHaveTextContent('false');
     });
 
-    it('should update resource properties panel state', () => {
-      render(
+    it('should update resource properties panel state', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-resource-properties-panel-open').click();
-      });
+      await page.getByTestId('set-resource-properties-panel-open').click();;
 
-      expect(screen.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('true');
     });
 
-    it('should update version history panel state', () => {
-      render(
+    it('should update version history panel state', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-version-history-panel-open').click();
-      });
+      await page.getByTestId('set-version-history-panel-open').click();;
 
-      expect(screen.getByTestId('is-version-history-panel-open')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('is-version-history-panel-open')).toHaveTextContent('true');
     });
 
-    it('should update verbose mode', () => {
-      render(
+    it('should update verbose mode', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-verbose-mode').click();
-      });
+      await page.getByTestId('set-verbose-mode').click();;
 
-      expect(screen.getByTestId('is-verbose-mode')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('is-verbose-mode')).toHaveTextContent('false');
     });
 
-    it('should update edge style', () => {
-      render(
+    it('should update edge style', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-edge-style').click();
-      });
+      await page.getByTestId('set-edge-style').click();;
 
-      expect(screen.getByTestId('edge-style')).toHaveTextContent(EdgeStyleTypes.Bezier);
+      await expect.element(page.getByTestId('edge-style')).toHaveTextContent(EdgeStyleTypes.Bezier);
     });
   });
 
   describe('Resource Interaction', () => {
-    it('should set last interacted resource and open properties panel', () => {
-      render(
+    it('should set last interacted resource and open properties panel', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-last-interacted-resource').click();
-      });
+      await page.getByTestId('set-last-interacted-resource').click();;
 
-      expect(screen.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('true');
+      await expect.element(page.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('true');
     });
 
-    it('should set last interacted resource without opening properties panel when openPanel is false', () => {
-      render(
+    it('should set last interacted resource without opening properties panel when openPanel is false', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('set-last-interacted-resource-no-panel').click();
-      });
+      await page.getByTestId('set-last-interacted-resource-no-panel').click();;
 
-      expect(screen.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('false');
     });
 
-    it('should handle onResourceDropOnCanvas without opening properties panel', () => {
-      render(
+    it('should handle onResourceDropOnCanvas without opening properties panel', async () => {
+      await render(
         <FlowBuilderCoreProvider {...defaultProps}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      act(() => {
-        screen.getByTestId('on-resource-drop').click();
-      });
+      await page.getByTestId('on-resource-drop').click();;
 
       // When dropping from resource panel, properties panel should not open
-      expect(screen.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('false');
+      await expect.element(page.getByTestId('is-resource-properties-panel-open')).toHaveTextContent('false');
     });
   });
 
   describe('Default Screen Types', () => {
-    it('should use COMMON screen type when no screen types provided', () => {
-      render(
+    it('should use COMMON screen type when no screen types provided', async () => {
+      await render(
         <FlowBuilderCoreProvider ElementFactory={MockElementFactory} ResourceProperties={MockResourceProperties} screenTypes={[]}>
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('primary-i18n-screen')).toHaveTextContent(PreviewScreenType.COMMON);
+      await expect.element(page.getByTestId('primary-i18n-screen')).toHaveTextContent(PreviewScreenType.COMMON);
     });
   });
 
   describe('Validation Config', () => {
-    it('should pass validation config to ValidationProvider', () => {
-      render(
+    it('should pass validation config to ValidationProvider', async () => {
+      await render(
         <FlowBuilderCoreProvider
           {...defaultProps}
           validationConfig={{isOTPValidationEnabled: true, isRecoveryFactorValidationEnabled: false}}
@@ -399,7 +384,7 @@ describe('FlowBuilderCoreProvider', () => {
         </FlowBuilderCoreProvider>,
       );
 
-      expect(screen.getByTestId('validation-provider')).toBeInTheDocument();
+      await expect.element(page.getByTestId('validation-provider')).toBeInTheDocument();
     });
   });
 });

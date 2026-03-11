@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetApplications from '../useGetApplications';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
@@ -86,10 +86,10 @@ describe('useGetApplications', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with loading state', () => {
+  it('should initialize with loading state', async () => {
     mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -101,9 +101,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -118,9 +118,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications());
+    await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -137,9 +137,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications({limit: 10, offset: 5}));
+    await renderHook(() => useGetApplications({limit: 10, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -155,9 +155,9 @@ describe('useGetApplications', () => {
     const apiError = new Error('Failed to fetch applications');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -169,9 +169,9 @@ describe('useGetApplications', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -183,9 +183,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications());
+    await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
 
@@ -200,9 +200,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications());
+    await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -219,9 +219,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result, queryClient} = renderHook(() => useGetApplications({limit: 20, offset: 10}));
+    const {result, queryClient} = await renderHook(() => useGetApplications({limit: 20, offset: 10}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -239,9 +239,9 @@ describe('useGetApplications', () => {
     });
 
     // First call - get the queryClient from the render result
-    const {result: result1, queryClient} = renderHook(() => useGetApplications({limit: 10, offset: 0}));
+    const {result: result1, queryClient} = await renderHook(() => useGetApplications({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -251,11 +251,11 @@ describe('useGetApplications', () => {
     });
 
     // Second call with same queryClient should use cache
-    const {result: result2} = renderHook(() => useGetApplications({limit: 10, offset: 0}), {
+    const {result: result2} = await renderHook(() => useGetApplications({limit: 10, offset: 0}), {
       queryClient,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.data).toEqual(mockApplicationListResponse);
     });
     expect(mockHttpRequest).toHaveBeenCalledTimes(1); // Should not make another request
@@ -266,16 +266,16 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result: result1} = renderHook(() => useGetApplications({limit: 10, offset: 0}));
+    const {result: result1} = await renderHook(() => useGetApplications({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
     // Second call with different parameters should make new request
-    const {result: result2} = renderHook(() => useGetApplications({limit: 20, offset: 5}));
+    const {result: result2} = await renderHook(() => useGetApplications({limit: 20, offset: 5}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -287,9 +287,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -312,9 +312,9 @@ describe('useGetApplications', () => {
       data: emptyResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -332,9 +332,9 @@ describe('useGetApplications', () => {
       },
     });
 
-    const {result} = renderHook(() => useGetApplications({limit: 10, offset: 0}));
+    const {result} = await renderHook(() => useGetApplications({limit: 10, offset: 0}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -348,9 +348,9 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications({limit: 15, offset: 30}));
+    await renderHook(() => useGetApplications({limit: 15, offset: 30}));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -371,7 +371,7 @@ describe('useGetApplications', () => {
 
     mockHttpRequest.mockReturnValueOnce(requestPromise);
 
-    const {result} = renderHook(() => useGetApplications());
+    const {result} = await renderHook(() => useGetApplications());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isFetching).toBe(true);
@@ -379,7 +379,7 @@ describe('useGetApplications', () => {
 
     resolveRequest!({data: mockApplicationListResponse});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

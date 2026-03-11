@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent, type Locator} from 'vitest/browser';
 import ResourcePanel from '../ResourcePanel';
 import type {Resources} from '../../../models/resources';
 
@@ -25,32 +26,6 @@ import type {Resources} from '../../../models/resources';
 const mockNavigate = vi.fn();
 vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
-}));
-
-// Mock react-i18next
-const translations: Record<string, string> = {
-  'flows:core.resourcePanel.showResources': 'Show Resources',
-  'flows:core.resourcePanel.hideResources': 'Hide Resources',
-  'flows:core.headerPanel.goBack': 'Back',
-  'flows:core.headerPanel.editTitle': 'Edit Title',
-  'flows:core.headerPanel.saveTitle': 'Save Title',
-  'flows:core.headerPanel.cancelEdit': 'Cancel',
-  'flows:core.resourcePanel.starterTemplates.title': 'Starter Templates',
-  'flows:core.resourcePanel.starterTemplates.description': 'Quick start templates for your flow',
-  'flows:core.resourcePanel.widgets.title': 'Widgets',
-  'flows:core.resourcePanel.widgets.description': 'Configurable widgets',
-  'flows:core.resourcePanel.steps.title': 'Steps',
-  'flows:core.resourcePanel.steps.description': 'Flow step types',
-  'flows:core.resourcePanel.components.title': 'Components',
-  'flows:core.resourcePanel.components.description': 'UI components',
-  'flows:core.resourcePanel.executors.title': 'Executors',
-  'flows:core.resourcePanel.executors.description': 'Execution handlers',
-};
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => translations[key] || key,
-  }),
 }));
 
 // Mock useFlowBuilderCore
@@ -148,38 +123,38 @@ describe('ResourcePanel', () => {
   });
 
   describe('Panel Open/Close States', () => {
-    it('should render expand button when panel is closed', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open={false} />);
+    it('should render expand button when panel is closed', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open={false} />);
 
       // When closed, the expand button should be visible
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('should render drawer when panel is open', () => {
-      const {container} = render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render drawer when panel is open', async () => {
+      const {container} = await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
       // Drawer should be in the document when open
       const drawer = container.querySelector('.MuiDrawer-root');
       expect(drawer).toBeInTheDocument();
     });
 
-    it('should call setIsResourcePanelOpen when toggle button is clicked', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should call setIsResourcePanelOpen when toggle button is clicked', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
       // Find all buttons and check for collapse functionality
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button');
       // Try to find a collapse button with aria-label or specific icon
-      const collapseButton = buttons.find(
-        (btn) =>
-          btn.getAttribute('aria-label')?.toLowerCase().includes('hide') ??
-          btn.getAttribute('aria-label')?.toLowerCase().includes('collapse') ??
-          btn.getAttribute('aria-label')?.toLowerCase().includes('close'),
+      const collapseButton = buttons.all().find(
+        (btn: Locator) =>
+          btn.element().getAttribute('aria-label')?.toLowerCase().includes('hide') ??
+          btn.element().getAttribute('aria-label')?.toLowerCase().includes('collapse') ??
+          btn.element().getAttribute('aria-label')?.toLowerCase().includes('close'),
       );
       /* eslint-enable @typescript-eslint/prefer-nullish-coalescing */
 
       if (collapseButton) {
-        fireEvent.click(collapseButton);
+        await userEvent.click(collapseButton);
         expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
       } else {
         // If no specific collapse button found, the panel may use different mechanism
@@ -190,14 +165,14 @@ describe('ResourcePanel', () => {
   });
 
   describe('Flow Title', () => {
-    it('should display flow title when provided', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="My Test Flow" />);
+    it('should display flow title when provided', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="My Test Flow" />);
 
-      expect(screen.getByText('My Test Flow')).toBeInTheDocument();
+      await expect.element(page.getByText('My Test Flow')).toBeInTheDocument();
     });
 
-    it('should display flow handle when provided', () => {
-      render(
+    it('should display flow handle when provided', async () => {
+      await render(
         <ResourcePanel
           resources={createMockResources()}
           onAdd={vi.fn()}
@@ -207,25 +182,25 @@ describe('ResourcePanel', () => {
         />,
       );
 
-      expect(screen.getByText('my-test-flow')).toBeInTheDocument();
+      await expect.element(page.getByText('my-test-flow')).toBeInTheDocument();
     });
 
-    it('should not show edit button when onFlowTitleChange is not provided', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="My Test Flow" />);
+    it('should not show edit button when onFlowTitleChange is not provided', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="My Test Flow" />);
 
       // Edit button should not be present when onFlowTitleChange is not provided
-      const editButtons = screen.queryAllByRole('button').filter((btn) => {
-        const svg = btn.querySelector('svg');
-        return svg && btn.closest('[data-testid]')?.getAttribute('data-testid')?.includes('edit');
+      const editButtons = page.getByRole('button').all().filter((btn: Locator) => {
+        const svg = btn.element().querySelector('svg');
+        return svg && btn.element().closest('[data-testid]')?.getAttribute('data-testid')?.includes('edit');
       });
       expect(editButtons).toHaveLength(0);
     });
   });
 
   describe('Title Editing', () => {
-    it('should show text field when edit mode is active', () => {
+    it('should show text field when edit mode is active', async () => {
       const onFlowTitleChange = vi.fn();
-      render(
+      await render(
         <ResourcePanel
           resources={createMockResources()}
           onAdd={vi.fn()}
@@ -236,22 +211,23 @@ describe('ResourcePanel', () => {
       );
 
       // Find and click the edit button (the small icon button near the title)
-      const buttons = screen.getAllByRole('button');
-      const editButton = buttons.find(
-        (btn) =>
+      const buttons = page.getByRole('button');
+      const editButton = buttons.all().find(
+        (btn: Locator) =>
           // Look for small buttons that might be the edit button
-          btn.className.includes('small') || btn.getAttribute('size') === 'small',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          btn.element().className.includes('small') ?? btn.element().getAttribute('size') === 'small',
       );
 
       if (editButton) {
-        fireEvent.click(editButton);
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        await userEvent.click(editButton);
+        await expect.element(page.getByRole('textbox')).toBeInTheDocument();
       }
     });
 
-    it('should call onFlowTitleChange when title is saved', () => {
+    it('should call onFlowTitleChange when title is saved', async () => {
       const onFlowTitleChange = vi.fn();
-      render(
+      await render(
         <ResourcePanel
           resources={createMockResources()}
           onAdd={vi.fn()}
@@ -262,25 +238,27 @@ describe('ResourcePanel', () => {
       );
 
       // Find all buttons and click the edit button
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       // Click the first small button which should be edit
-      buttons.forEach((btn) => {
-        if (btn.querySelector('svg')) {
-          fireEvent.click(btn);
+      // eslint-disable-next-line no-restricted-syntax
+      for (const btn of buttons) {
+        if (btn.element().querySelector('svg')) {
+          // eslint-disable-next-line no-await-in-loop
+          await userEvent.click(btn);
         }
-      });
+      }
 
-      const textField = screen.queryByRole('textbox');
+      const textField = page.getByRole('textbox');
       if (textField) {
-        fireEvent.change(textField, {target: {value: 'New Title'}});
-        fireEvent.keyDown(textField, {key: 'Enter'});
+        await userEvent.fill(textField, 'New Title');
+        await userEvent.keyboard('{Enter}');
         expect(onFlowTitleChange).toHaveBeenCalledWith('New Title');
       }
     });
 
-    it('should cancel editing when Escape is pressed', () => {
+    it('should cancel editing when Escape is pressed', async () => {
       const onFlowTitleChange = vi.fn();
-      render(
+      await render(
         <ResourcePanel
           resources={createMockResources()}
           onAdd={vi.fn()}
@@ -291,17 +269,19 @@ describe('ResourcePanel', () => {
       );
 
       // Enter edit mode by clicking edit button
-      const buttons = screen.getAllByRole('button');
-      buttons.forEach((btn) => {
-        if (btn.querySelector('svg')) {
-          fireEvent.click(btn);
+      const buttons = page.getByRole('button').all();
+      // eslint-disable-next-line no-restricted-syntax
+      for (const btn of buttons) {
+        if (btn.element().querySelector('svg')) {
+          // eslint-disable-next-line no-await-in-loop
+          await userEvent.click(btn);
         }
-      });
+      }
 
-      const textField = screen.queryByRole('textbox');
+      const textField = page.getByRole('textbox');
       if (textField) {
-        fireEvent.change(textField, {target: {value: 'Changed Title'}});
-        fireEvent.keyDown(textField, {key: 'Escape'});
+        await userEvent.fill(textField, 'Changed Title');
+        await userEvent.keyboard('{Escape}');
         // Title should not be changed
         expect(onFlowTitleChange).not.toHaveBeenCalled();
       }
@@ -309,66 +289,66 @@ describe('ResourcePanel', () => {
   });
 
   describe('Navigation', () => {
-    it('should navigate to flows page when back button is clicked', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="Test" />);
+    it('should navigate to flows page when back button is clicked', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open flowTitle="Test" />);
 
-      const backButton = screen.getByText('Back');
-      fireEvent.click(backButton);
+      const backButton = page.getByText('Go back to Flows');
+      await userEvent.click(backButton);
 
       expect(mockNavigate).toHaveBeenCalledWith('/flows');
     });
   });
 
   describe('Resource Sections', () => {
-    it('should render Starter Templates accordion', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render Starter Templates accordion', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      expect(screen.getByText('Starter Templates')).toBeInTheDocument();
+      await expect.element(page.getByText('Starter Templates')).toBeInTheDocument();
     });
 
-    it('should render Widgets accordion', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render Widgets accordion', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      expect(screen.getByText('Widgets')).toBeInTheDocument();
+      await expect.element(page.getByText('Widgets')).toBeInTheDocument();
     });
 
-    it('should render Steps accordion', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render Steps accordion', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      expect(screen.getByText('Steps')).toBeInTheDocument();
+      await expect.element(page.getByText('Steps')).toBeInTheDocument();
     });
 
-    it('should render Components accordion', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render Components accordion', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      expect(screen.getByText('Components')).toBeInTheDocument();
+      await expect.element(page.getByText('Components')).toBeInTheDocument();
     });
 
-    it('should render Executors accordion', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render Executors accordion', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      expect(screen.getByText('Executors')).toBeInTheDocument();
+      await expect.element(page.getByText('Executors')).toBeInTheDocument();
     });
   });
 
   describe('Resource Items', () => {
-    it('should render static items for templates', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render static items for templates', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      const staticItems = screen.getAllByTestId('resource-panel-static');
+      const staticItems = page.getByTestId('resource-panel-static');
       expect(staticItems.length).toBeGreaterThan(0);
     });
 
-    it('should render draggable items for widgets, steps, elements, and executors', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should render draggable items for widgets, steps, elements, and executors', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
-      const draggableItems = screen.getAllByTestId('resource-panel-draggable');
+      const draggableItems = page.getByTestId('resource-panel-draggable');
       expect(draggableItems.length).toBeGreaterThan(0);
     });
   });
 
   describe('Resource Filtering', () => {
-    it('should filter out resources with showOnResourcePanel=false', () => {
+    it('should filter out resources with showOnResourcePanel=false', async () => {
       const resources = createMockResources({
         steps: [
           {
@@ -384,99 +364,104 @@ describe('ResourcePanel', () => {
         ],
       } as Partial<Resources>);
 
-      render(<ResourcePanel resources={resources} onAdd={vi.fn()} open />);
+      await render(<ResourcePanel resources={resources} onAdd={vi.fn()} open />);
 
-      expect(screen.getByText('Visible Step')).toBeInTheDocument();
-      expect(screen.queryByText('Hidden Step')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Visible Step')).toBeInTheDocument();
+      await expect.element(page.getByText('Hidden Step')).not.toBeInTheDocument();
     });
   });
 
   describe('Disabled State', () => {
-    it('should pass disabled prop to resource items', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open disabled />);
+    it('should pass disabled prop to resource items', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open disabled />);
 
-      const staticItems = screen.getAllByTestId('resource-panel-static');
-      staticItems.forEach((item) => {
+      const staticItems = page.getByTestId('resource-panel-static').all();
+      // eslint-disable-next-line no-restricted-syntax
+      for (const item of staticItems) {
         expect(item).toHaveAttribute('data-disabled', 'true');
-      });
+      }
     });
   });
 
   describe('Children Rendering', () => {
-    it('should render children in main content area', () => {
-      render(
+    it('should render children in main content area', async () => {
+      await render(
         <ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open>
           <div data-testid="canvas-content">Canvas Content</div>
         </ResourcePanel>,
       );
 
-      expect(screen.getByTestId('canvas-content')).toBeInTheDocument();
+      await expect.element(page.getByTestId('canvas-content')).toBeInTheDocument();
     });
   });
 
   describe('onAdd Callback', () => {
-    it('should call onAdd when static resource add button is clicked', () => {
+    it('should call onAdd when static resource add button is clicked', async () => {
       const onAdd = vi.fn();
-      render(<ResourcePanel resources={createMockResources()} onAdd={onAdd} open />);
+      await render(<ResourcePanel resources={createMockResources()} onAdd={onAdd} open />);
 
-      const addButtons = screen.getAllByText('Add Static');
-      fireEvent.click(addButtons[0]);
+      const addButtons = page.getByText('Add Static');
+      await userEvent.click(addButtons.all()[0]);
 
       expect(onAdd).toHaveBeenCalled();
     });
 
-    it('should call onAdd when draggable resource add button is clicked', () => {
+    it('should call onAdd when draggable resource add button is clicked', async () => {
       const onAdd = vi.fn();
-      render(<ResourcePanel resources={createMockResources()} onAdd={onAdd} open />);
+      await render(<ResourcePanel resources={createMockResources()} onAdd={onAdd} open />);
 
-      const addButtons = screen.getAllByText('Add Draggable');
-      fireEvent.click(addButtons[0]);
+      const addButtons = page.getByText('Add Draggable');
+      await userEvent.click(addButtons.all()[0]);
 
       expect(onAdd).toHaveBeenCalled();
     });
   });
 
   describe('Toggle Panel', () => {
-    it('should toggle panel state when expand button is clicked when closed', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open={false} />);
+    it('should toggle panel state when expand button is clicked when closed', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open={false} />);
 
       // Find the expand button (ChevronRightIcon button)
-      const buttons = screen.getAllByRole('button');
-      const expandButton = buttons[0]; // First button should be expand when closed
+      const buttons = page.getByRole('button');
+      const expandButton = buttons.all()[0]; // First button should be expand when closed
 
-      fireEvent.click(expandButton);
+      await userEvent.click(expandButton);
 
       expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
     });
 
-    it('should toggle panel state when collapse button is clicked when open', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should toggle panel state when collapse button is clicked when open', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
       // Find buttons and click the collapse (ChevronLeftIcon) button
-      const buttons = screen.getAllByRole('button');
+      const buttons = page.getByRole('button').all();
       // Find button that contains the collapse icon (look for one near the top of panel)
       let toggleFound = false;
-      buttons.forEach((btn) => {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const btn of buttons) {
         if (!toggleFound) {
-          fireEvent.click(btn);
+          // eslint-disable-next-line no-await-in-loop
+          await userEvent.click(btn);
           if (mockSetIsResourcePanelOpen.mock.calls.length > 0) {
             toggleFound = true;
           }
         }
-      });
+      }
 
       // Verify at least one call to toggle happened
       expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
     });
 
-    it('should call setIsResourcePanelOpen with toggle function', () => {
-      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+    it('should call setIsResourcePanelOpen with toggle function', async () => {
+      await render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
 
       // Trigger the toggle
-      const buttons = screen.getAllByRole('button');
-      buttons.forEach((btn) => {
-        fireEvent.click(btn);
-      });
+      const buttons = page.getByRole('button').all();
+      // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+      for (const btn of buttons) {
+        // eslint-disable-next-line no-await-in-loop
+        await userEvent.click(btn);
+      }
 
       if (mockSetIsResourcePanelOpen.mock.calls.length > 0) {
         // Verify it was called with a function that toggles the value

@@ -17,18 +17,17 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import type {ReactNode} from 'react';
+import {page} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import type {Theme} from '@thunder/shared-design';
-import {type RecursivePartial} from '@thunder/types';
+import type {ThemeConfig} from '@thunder/shared-design';
 import Preview, {type PreviewProps} from '../Preview';
 
 // Mock the @asgardeo/react module
 vi.mock('@asgardeo/react', () => ({
-  BaseSignIn: ({children}: {children: () => ReactNode}) => <div>{children()}</div>,
-  ThemeProvider: ({children}: {children: ReactNode}) => <div>{children}</div>,
+  BaseSignIn: ({children}: {children: () => React.ReactNode}) => <div>{children()}</div>,
+  ThemeProvider: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
 }));
 
 // Mock the useIdentityProviders hook
@@ -41,75 +40,48 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
   return {
     ...actual,
     useColorScheme: () => mockUseColorScheme(),
-    // Prevent OxygenUIThemeProvider from passing the partial test theme to MUI
-    // (which lacks typography and causes a crash)
-    OxygenUIThemeProvider: ({children}: {children: ReactNode}) => children,
   };
 });
 
 const {default: useIdentityProviders} = await import('@/features/integrations/api/useIdentityProviders');
 
-const mockTheme: RecursivePartial<Theme> = {
+const mockTheme: ThemeConfig = {
   direction: 'ltr',
   defaultColorScheme: 'light',
   colorSchemes: {
     light: {
-      palette: {
+      colors: {
         primary: {
           main: '#FF5733',
-          light: '#FF8A66',
           dark: '#CC4529',
           contrastText: '#FFFFFF',
-          mainChannel: '234 88 12',
-          lightChannel: '255 138 102',
-          darkChannel: '204 69 41',
-          contrastTextChannel: '255 255 255',
         },
         secondary: {
           main: '#0066CC',
-          light: '#3399FF',
           dark: '#004C99',
           contrastText: '#FFFFFF',
-          mainChannel: '0 102 204',
-          lightChannel: '51 153 255',
-          darkChannel: '0 76 153',
-          contrastTextChannel: '255 255 255',
         },
         background: {
           default: '#FFFFFF',
           paper: '#F5F5F5',
-          defaultChannel: '255 255 255',
-          paperChannel: '245 245 245',
         },
       },
     },
     dark: {
-      palette: {
+      colors: {
         primary: {
           main: '#00FF00',
           dark: '#00CC00',
           contrastText: '#000000',
-          mainChannel: '0 255 0',
-          darkChannel: '0 204 0',
-          contrastTextChannel: '0 0 0',
-          light: '#66FF66',
-          lightChannel: '102 255 102',
         },
         secondary: {
           main: '#0088FF',
           dark: '#0066CC',
           contrastText: '#FFFFFF',
-          mainChannel: '0 136 255',
-          darkChannel: '0 102 204',
-          contrastTextChannel: '255 255 255',
-          light: '#3399FF',
-          lightChannel: '51 153 255',
         },
         background: {
           default: '#121212',
           paper: '#1E1E1E',
-          defaultChannel: '18 18 18',
-          paperChannel: '30 30 30',
         },
       },
     },
@@ -152,56 +124,56 @@ describe('Preview', () => {
 
   const renderComponent = (props: Partial<PreviewProps> = {}) => render(<Preview {...defaultProps} {...props} />);
 
-  it('should render the preview title', () => {
-    renderComponent();
+  it('should render the preview title', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('Preview')).toBeInTheDocument();
+    await expect.element(page.getByText('Preview')).toBeInTheDocument();
   });
 
-  it('should render the application logo when provided', () => {
-    renderComponent();
+  it('should render the application logo when provided', async () => {
+    await renderComponent();
 
-    const logo = screen.getByRole('img');
+    const logo = page.getByRole('img');
     expect(logo).toBeInTheDocument();
     expect(logo).toHaveAttribute('src', 'https://example.com/logo.png');
   });
 
-  it('should not render logo when appLogo is null', () => {
-    renderComponent({appLogo: null});
+  it('should not render logo when appLogo is null', async () => {
+    await renderComponent({appLogo: null});
 
-    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    await expect.element(page.getByRole('img')).not.toBeInTheDocument();
   });
 
-  it('should render username and password fields when username/password is enabled', () => {
-    renderComponent();
+  it('should render username and password fields when username/password is enabled', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('Username')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter your Username')).toBeInTheDocument();
-    expect(screen.getByText('Password')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter your Password')).toBeInTheDocument();
+    await expect.element(page.getByText('Username')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter your Username')).toBeInTheDocument();
+    await expect.element(page.getByText('Password')).toBeInTheDocument();
+    await expect.element(page.getByPlaceholder('Enter your Password')).toBeInTheDocument();
   });
 
-  it('should render sign in button', () => {
-    renderComponent();
+  it('should render sign in button', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
   });
 
-  it('should not render username/password fields when disabled', () => {
-    renderComponent({
+  it('should not render username/password fields when disabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: false,
         'google-idp': true,
       },
     });
 
-    expect(screen.queryByText('Username')).not.toBeInTheDocument();
-    expect(screen.queryByText('Password')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Sign In'})).not.toBeInTheDocument();
+    await expect.element(page.getByText('Username')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Password')).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Sign In'})).not.toBeInTheDocument();
   });
 
-  it('should render social login buttons for enabled providers', () => {
-    renderComponent({
+  it('should render social login buttons for enabled providers', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -209,54 +181,54 @@ describe('Preview', () => {
       },
     });
 
-    expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
   });
 
-  it('should not render social login buttons when no providers are enabled', () => {
-    renderComponent({
+  it('should not render social login buttons when no providers are enabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
-    expect(screen.queryByRole('button', {name: /Continue with/i})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with/i})).not.toBeInTheDocument();
   });
 
-  it('should render divider when both username/password and social logins are enabled', () => {
-    renderComponent({
+  it('should render divider when both username/password and social logins are enabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
 
-    expect(screen.getByText('or')).toBeInTheDocument();
+    await expect.element(page.getByText('or')).toBeInTheDocument();
   });
 
-  it('should not render divider when only username/password is enabled', () => {
-    renderComponent({
+  it('should not render divider when only username/password is enabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
-    expect(screen.queryByText('or')).not.toBeInTheDocument();
+    await expect.element(page.getByText('or')).not.toBeInTheDocument();
   });
 
-  it('should not render divider when only social logins are enabled', () => {
-    renderComponent({
+  it('should not render divider when only social logins are enabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: false,
         'google-idp': true,
       },
     });
 
-    expect(screen.queryByText('or')).not.toBeInTheDocument();
+    await expect.element(page.getByText('or')).not.toBeInTheDocument();
   });
 
-  it('should render only selected social providers', () => {
-    renderComponent({
+  it('should render only selected social providers', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -264,75 +236,75 @@ describe('Preview', () => {
       },
     });
 
-    expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: /Continue with GitHub/i})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with GitHub/i})).not.toBeInTheDocument();
   });
 
-  it('should handle empty integrations object', () => {
-    renderComponent({
+  it('should handle empty integrations object', async () => {
+    await renderComponent({
       integrations: {},
     });
 
     // Username/password should not be shown when integrations is empty (defaults to false)
-    expect(screen.queryByText('Username')).not.toBeInTheDocument();
-    expect(screen.queryByText('Password')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Username')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Password')).not.toBeInTheDocument();
   });
 
-  it('should apply theme primary color to sign in button background', () => {
-    renderComponent();
+  it('should apply theme primary color to sign in button background', async () => {
+    await renderComponent();
 
-    const signInButton = screen.getByRole('button', {name: 'Sign In'});
+    const signInButton = page.getByRole('button', {name: 'Sign In'});
     // Buttons omit variant="contained" to avoid CSS-variable specificity issues with
     // the outer app's theme; visual styles are applied entirely through the sx prop.
     expect(signInButton).not.toHaveClass('MuiButton-containedPrimary');
     expect(signInButton).toHaveStyle({backgroundColor: '#FF5733'});
   });
 
-  it('should apply contrastText color to sign in button label', () => {
-    renderComponent();
+  it('should apply contrastText color to sign in button label', async () => {
+    await renderComponent();
 
-    const signInButton = screen.getByRole('button', {name: 'Sign In'});
+    const signInButton = page.getByRole('button', {name: 'Sign In'});
     expect(signInButton).toHaveStyle({color: '#FFFFFF'});
   });
 
-  it('should apply selected color to logo background', () => {
-    renderComponent();
+  it('should apply selected color to logo background', async () => {
+    await renderComponent();
 
-    const logo = screen.getByRole('img');
-    const avatarContainer = logo.closest('.MuiAvatar-root');
+    const logo = page.getByRole('img');
+    const avatarContainer = logo.element().closest('.MuiAvatar-root');
     expect(avatarContainer).toHaveStyle({backgroundColor: '#FF5733'});
   });
 
-  it('should render input fields as disabled', () => {
-    renderComponent();
+  it('should render input fields as disabled', async () => {
+    await renderComponent();
 
-    const usernameInput = screen.getByPlaceholderText('Enter your Username');
-    const passwordInput = screen.getByPlaceholderText('Enter your Password');
+    const usernameInput = page.getByPlaceholder('Enter your Username');
+    const passwordInput = page.getByPlaceholder('Enter your Password');
 
     expect(usernameInput).toBeDisabled();
     expect(passwordInput).toBeDisabled();
   });
 
-  it('should render social login buttons as disabled', () => {
-    renderComponent({
+  it('should render social login buttons as disabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
 
-    const googleButton = screen.getByRole('button', {name: /Continue with Google/i});
+    const googleButton = page.getByRole('button', {name: /Continue with Google/i});
     expect(googleButton).toBeDisabled();
   });
 
-  it('should handle when useIdentityProviders returns undefined data', () => {
+  it('should handle when useIdentityProviders returns undefined data', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -340,17 +312,17 @@ describe('Preview', () => {
     });
 
     // Should not crash, no social providers should be rendered (since data is undefined)
-    expect(screen.queryByRole('button', {name: /Continue with/i})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with/i})).not.toBeInTheDocument();
   });
 
-  it('should only show providers that exist in API and are selected', () => {
+  it('should only show providers that exist in API and are selected', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: [mockIdentityProviders[0]], // Only Google in API
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -359,18 +331,18 @@ describe('Preview', () => {
     });
 
     // Should only show Google (which exists in API)
-    expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: /Continue with GitHub/i})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with GitHub/i})).not.toBeInTheDocument();
   });
 
-  it('should not show providers that are not selected even if they exist in API', () => {
+  it('should not show providers that are not selected even if they exist in API', async () => {
     vi.mocked(useIdentityProviders).mockReturnValue({
       data: mockIdentityProviders,
       isLoading: false,
       error: null,
     } as ReturnType<typeof useIdentityProviders>);
 
-    renderComponent({
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -379,12 +351,12 @@ describe('Preview', () => {
     });
 
     // Should only show Google
-    expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: /Continue with GitHub/i})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with GitHub/i})).not.toBeInTheDocument();
   });
 
-  it('should render multiple social providers in order', () => {
-    renderComponent({
+  it('should render multiple social providers in order', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
@@ -392,27 +364,27 @@ describe('Preview', () => {
       },
     });
 
-    const buttons = screen.getAllByRole('button', {name: /Continue with/i});
+    const buttons = page.getByRole('button', {name: /Continue with/i}).all();
     expect(buttons).toHaveLength(2);
     expect(buttons[0]).toHaveTextContent('Continue with Google');
     expect(buttons[1]).toHaveTextContent('Continue with GitHub');
   });
 
-  it('should render sign in form when only username/password is enabled', () => {
-    renderComponent({
+  it('should render sign in form when only username/password is enabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
-    expect(screen.getByText('Username')).toBeInTheDocument();
-    expect(screen.getByText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
-    expect(screen.queryByText('or')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Username')).toBeInTheDocument();
+    await expect.element(page.getByText('Password')).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
+    await expect.element(page.getByText('or')).not.toBeInTheDocument();
   });
 
-  it('should render only social logins when username/password is disabled', () => {
-    renderComponent({
+  it('should render only social logins when username/password is disabled', async () => {
+    await renderComponent({
       integrations: {
         [AuthenticatorTypes.BASIC_AUTH]: false,
         'google-idp': true,
@@ -420,73 +392,73 @@ describe('Preview', () => {
       },
     });
 
-    expect(screen.queryByText('Username')).not.toBeInTheDocument();
-    expect(screen.queryByText('Password')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Sign In'})).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
+    await expect.element(page.getByText('Username')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Password')).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Sign In'})).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
   });
 
   describe('SMS OTP functionality', () => {
-    it('should render mobile number field when SMS OTP is enabled', () => {
-      renderComponent({
+    it('should render mobile number field when SMS OTP is enabled', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
         },
       });
 
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Enter your mobile number')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Enter your mobile number')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
     });
 
-    it('should not render mobile number field when SMS OTP is disabled', () => {
-      renderComponent({
+    it('should not render mobile number field when SMS OTP is disabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'sms-otp': false,
         },
       });
 
-      expect(screen.queryByText('Mobile Number')).not.toBeInTheDocument();
-      expect(screen.queryByPlaceholderText('Enter your mobile number')).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: 'Send OTP'})).not.toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).not.toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Enter your mobile number')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Send OTP'})).not.toBeInTheDocument();
     });
 
-    it('should render divider when SMS OTP and social logins are enabled', () => {
-      renderComponent({
+    it('should render divider when SMS OTP and social logins are enabled', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
           'google-idp': true,
         },
       });
 
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render divider when username/password and SMS OTP are enabled', () => {
-      renderComponent({
+    it('should render divider when username/password and SMS OTP are enabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'sms-otp': true,
         },
       });
 
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should not render divider when only SMS OTP is enabled', () => {
-      renderComponent({
+    it('should not render divider when only SMS OTP is enabled', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
         },
       });
 
-      expect(screen.queryByText('or')).not.toBeInTheDocument();
+      await expect.element(page.getByText('or')).not.toBeInTheDocument();
     });
 
-    it('should render divider when all authentication methods are enabled', () => {
-      renderComponent({
+    it('should render divider when all authentication methods are enabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'sms-otp': true,
@@ -494,34 +466,34 @@ describe('Preview', () => {
         },
       });
 
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should apply theme colors to Send OTP button', () => {
-      renderComponent({
+    it('should apply theme colors to Send OTP button', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
         },
         selectedTheme: mockTheme,
       });
 
-      const sendOtpButton = screen.getByRole('button', {name: 'Send OTP'});
+      const sendOtpButton = page.getByRole('button', {name: 'Send OTP'});
       expect(sendOtpButton).toHaveStyle({backgroundColor: '#FF5733'});
     });
 
-    it('should render mobile number input as disabled', () => {
-      renderComponent({
+    it('should render mobile number input as disabled', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
         },
       });
 
-      const mobileInput = screen.getByPlaceholderText('Enter your mobile number');
+      const mobileInput = page.getByPlaceholder('Enter your mobile number');
       expect(mobileInput).toBeDisabled();
     });
 
-    it('should render SMS OTP with username/password combination', () => {
-      renderComponent({
+    it('should render SMS OTP with username/password combination', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'sms-otp': true,
@@ -529,23 +501,23 @@ describe('Preview', () => {
       });
 
       // Username/password fields
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByText('Password')).toBeInTheDocument();
+      await expect.element(page.getByText('Username')).toBeInTheDocument();
+      await expect.element(page.getByText('Password')).toBeInTheDocument();
 
       // SMS OTP fields
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Enter your mobile number')).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByPlaceholder('Enter your mobile number')).toBeInTheDocument();
 
       // Both buttons
-      expect(screen.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
 
       // Divider should be present
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render SMS OTP with social logins combination', () => {
-      renderComponent({
+    it('should render SMS OTP with social logins combination', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
           'google-idp': true,
@@ -554,41 +526,41 @@ describe('Preview', () => {
       });
 
       // SMS OTP fields
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
 
       // Social login buttons
-      expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
 
       // Divider should be present
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
   });
 
   describe('Passkey functionality', () => {
-    it('should render passkey button when enabled', () => {
-      renderComponent({
+    it('should render passkey button when enabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
         },
       });
 
-      expect(screen.getByRole('button', {name: /Sign in with Passkey/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Sign in with Passkey/i})).toBeInTheDocument();
     });
 
-    it('should not render passkey button when disabled', () => {
-      renderComponent({
+    it('should not render passkey button when disabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: false,
         },
       });
 
-      expect(screen.queryByRole('button', {name: /Sign in with Passkey/i})).not.toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Sign in with Passkey/i})).not.toBeInTheDocument();
     });
 
-    it('should render passkey button with outlined variant when username/password is enabled', () => {
-      renderComponent({
+    it('should render passkey button with outlined variant when username/password is enabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           [AuthenticatorTypes.PASSKEY]: true,
@@ -596,13 +568,13 @@ describe('Preview', () => {
         selectedTheme: mockTheme,
       });
 
-      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      const passkeyButton = page.getByRole('button', {name: /Sign in with Passkey/i});
       expect(passkeyButton).toHaveClass('MuiButton-outlined');
       expect(passkeyButton).toHaveClass('MuiButton-colorPrimary');
     });
 
-    it('should apply theme primary color to passkey button background when username/password is disabled', () => {
-      renderComponent({
+    it('should apply theme primary color to passkey button background when username/password is disabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
           [AuthenticatorTypes.PASSKEY]: true,
@@ -610,15 +582,15 @@ describe('Preview', () => {
         selectedTheme: mockTheme,
       });
 
-      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      const passkeyButton = page.getByRole('button', {name: /Sign in with Passkey/i});
       // Without username/password, the passkey button acts as the primary action and omits
       // variant="contained" — styles come entirely from the sx prop.
       expect(passkeyButton).not.toHaveClass('MuiButton-contained');
       expect(passkeyButton).toHaveStyle({backgroundColor: '#FF5733'});
     });
 
-    it('should apply contrastText color to passkey button label when username/password is disabled', () => {
-      renderComponent({
+    it('should apply contrastText color to passkey button label when username/password is disabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
           [AuthenticatorTypes.PASSKEY]: true,
@@ -626,49 +598,49 @@ describe('Preview', () => {
         selectedTheme: mockTheme,
       });
 
-      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      const passkeyButton = page.getByRole('button', {name: /Sign in with Passkey/i});
       expect(passkeyButton).toHaveStyle({color: '#FFFFFF'});
     });
 
-    it('should render passkey button inside form container when social logins are present', () => {
-      renderComponent({
+    it('should render passkey button inside form container when social logins are present', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
           'google-idp': true,
         },
       });
 
-      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
-      const containerBox = passkeyButton.closest('form');
+      const passkeyButton = page.getByRole('button', {name: /Sign in with Passkey/i});
+      const containerBox = passkeyButton.element().closest('form');
       expect(containerBox).toBeInTheDocument();
     });
 
-    it('should render passkey button inside form container when social logins are absent', () => {
-      renderComponent({
+    it('should render passkey button inside form container when social logins are absent', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
           'google-idp': false,
         },
       });
 
-      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
-      const containerBox = passkeyButton.closest('form');
+      const passkeyButton = page.getByRole('button', {name: /Sign in with Passkey/i});
+      const containerBox = passkeyButton.element().closest('form');
       expect(containerBox).toBeInTheDocument();
     });
 
-    it('should render divider when passkey and social logins are enabled', () => {
-      renderComponent({
+    it('should render divider when passkey and social logins are enabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
           'google-idp': true,
         },
       });
 
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render divider when passkey and SMS OTP are enabled', () => {
-      renderComponent({
+    it('should render divider when passkey and SMS OTP are enabled', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
           'sms-otp': true,
@@ -678,105 +650,105 @@ describe('Preview', () => {
   });
 
   describe('dark mode', () => {
-    it('should render in dark mode', () => {
+    it('should render in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent();
+      await renderComponent();
 
       // Component should render without errors in dark mode
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      await expect.element(page.getByText('Preview')).toBeInTheDocument();
     });
 
-    it('should render with username/password in dark mode', () => {
+    it('should render with username/password in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent({
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
       });
 
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByText('Password')).toBeInTheDocument();
+      await expect.element(page.getByText('Username')).toBeInTheDocument();
+      await expect.element(page.getByText('Password')).toBeInTheDocument();
     });
 
-    it('should render with social logins in dark mode', () => {
+    it('should render with social logins in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent({
+      await renderComponent({
         integrations: {
           'google-idp': true,
         },
       });
 
-      expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
     });
 
-    it('should render logo in dark mode', () => {
+    it('should render logo in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent({
+      await renderComponent({
         appLogo: 'https://example.com/logo.png',
       });
 
-      const logo = screen.getByRole('img');
+      const logo = page.getByRole('img');
       expect(logo).toBeInTheDocument();
     });
   });
 
   describe('edge cases', () => {
-    it('should handle undefined integration values gracefully', () => {
-      renderComponent({
+    it('should handle undefined integration values gracefully', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: undefined as unknown as boolean,
         },
       });
 
       // Should not render username/password when value is undefined (falsy)
-      expect(screen.queryByText('Username')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Username')).not.toBeInTheDocument();
     });
 
-    it('should handle undefined sms-otp value gracefully', () => {
-      renderComponent({
+    it('should handle undefined sms-otp value gracefully', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': undefined as unknown as boolean,
         },
       });
 
       // Should not render SMS OTP when value is undefined
-      expect(screen.queryByText('Mobile Number')).not.toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).not.toBeInTheDocument();
     });
 
-    it('should render only username/password form with no margin when no social logins', () => {
-      renderComponent({
+    it('should render only username/password form with no margin when no social logins', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
         },
       });
 
       // Username/password should be present
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
+      await expect.element(page.getByText('Username')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Sign In'})).toBeInTheDocument();
       // No divider because no social logins
-      expect(screen.queryByText('or')).not.toBeInTheDocument();
+      await expect.element(page.getByText('or')).not.toBeInTheDocument();
     });
 
-    it('should render only SMS OTP form with no margin when no social logins', () => {
-      renderComponent({
+    it('should render only SMS OTP form with no margin when no social logins', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
         },
       });
 
       // SMS OTP should be present
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: 'Send OTP'})).toBeInTheDocument();
       // No divider because no social logins
-      expect(screen.queryByText('or')).not.toBeInTheDocument();
+      await expect.element(page.getByText('or')).not.toBeInTheDocument();
     });
 
-    it('should render username/password with margin when social logins exist', () => {
-      renderComponent({
+    it('should render username/password with margin when social logins exist', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'google-idp': true,
@@ -784,14 +756,14 @@ describe('Preview', () => {
       });
 
       // Both username/password and social login should be present
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+      await expect.element(page.getByText('Username')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
       // Divider should be present
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render SMS OTP with margin when social logins exist', () => {
-      renderComponent({
+    it('should render SMS OTP with margin when social logins exist', async () => {
+      await renderComponent({
         integrations: {
           'sms-otp': true,
           'google-idp': true,
@@ -799,14 +771,14 @@ describe('Preview', () => {
       });
 
       // Both SMS OTP and social login should be present
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
       // Divider should be present
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render all three auth methods with divider', () => {
-      renderComponent({
+    it('should render all three auth methods with divider', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'sms-otp': true,
@@ -815,15 +787,15 @@ describe('Preview', () => {
       });
 
       // All three should be present
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
+      await expect.element(page.getByText('Username')).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
       // Divider should be present
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
 
-    it('should render username/password and SMS OTP without social logins', () => {
-      renderComponent({
+    it('should render username/password and SMS OTP without social logins', async () => {
+      await renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           'sms-otp': true,
@@ -831,73 +803,41 @@ describe('Preview', () => {
       });
 
       // Both should be present
-      expect(screen.getByText('Username')).toBeInTheDocument();
-      expect(screen.getByText('Mobile Number')).toBeInTheDocument();
+      await expect.element(page.getByText('Username')).toBeInTheDocument();
+      await expect.element(page.getByText('Mobile Number')).toBeInTheDocument();
       // Divider should be present when both methods exist
-      expect(screen.getByText('or')).toBeInTheDocument();
+      await expect.element(page.getByText('or')).toBeInTheDocument();
     });
   });
 
   describe('high-contrast theme colors', () => {
-    const highContrastTheme: RecursivePartial<Theme> = {
+    const highContrastTheme: ThemeConfig = {
       colorSchemes: {
         light: {
-          palette: {
+          colors: {
             primary: {
               main: '#0000FF',
               dark: '#0000CC',
               contrastText: '#FFFFFF',
-              light: '#FF8A66',
-              mainChannel: '234 88 12',
-              lightChannel: '255 138 102',
-              darkChannel: '204 69 41',
-              contrastTextChannel: '255 255 255',
             },
             secondary: {
-              main: '#0066CC',
-              light: '#3399FF',
-              dark: '#004C99',
-              contrastText: '#FFFFFF',
-              mainChannel: '0 102 204',
-              lightChannel: '51 153 255',
-              darkChannel: '0 76 153',
-              contrastTextChannel: '255 255 255',
-            },
-            background: {
-              default: '#FFFFFF',
-              paper: '#F5F5F5',
-              defaultChannel: '255 255 255',
-              paperChannel: '245 245 245',
+              main: '#FFD700',
+              dark: '#CCB000',
+              contrastText: '#000000',
             },
           },
         },
         dark: {
-          palette: {
+          colors: {
             primary: {
-              main: '#FFD700',
-              dark: '#CCB000',
-              contrastText: '#000000',
-              mainChannel: '0 255 0',
-              darkChannel: '0 204 0',
-              contrastTextChannel: '0 0 0',
-              light: '#66FF66',
-              lightChannel: '102 255 102',
-            },
-            secondary: {
               main: '#00FFFF',
               dark: '#00CCCC',
               contrastText: '#000000',
-              mainChannel: '0 136 255',
-              darkChannel: '0 102 204',
-              contrastTextChannel: '255 255 255',
-              light: '#3399FF',
-              lightChannel: '51 153 255',
             },
-            background: {
-              default: '#121212',
-              paper: '#1E1E1E',
-              defaultChannel: '18 18 18',
-              paperChannel: '30 30 30',
+            secondary: {
+              main: '#FFFF00',
+              dark: '#CCCC00',
+              contrastText: '#000000',
             },
           },
         },
@@ -906,92 +846,92 @@ describe('Preview', () => {
       direction: 'ltr',
     };
 
-    it('should render sign in button with high-contrast primary background', () => {
-      renderComponent({
+    it('should render sign in button with high-contrast primary background', async () => {
+      await renderComponent({
         integrations: {[AuthenticatorTypes.BASIC_AUTH]: true},
         selectedTheme: highContrastTheme,
       });
 
-      const signInButton = screen.getByRole('button', {name: 'Sign In'});
+      const signInButton = page.getByRole('button', {name: 'Sign In'});
       expect(signInButton).toHaveStyle({backgroundColor: '#0000FF'});
     });
 
-    it('should render sign in button with white contrastText on high-contrast blue', () => {
-      renderComponent({
+    it('should render sign in button with white contrastText on high-contrast blue', async () => {
+      await renderComponent({
         integrations: {[AuthenticatorTypes.BASIC_AUTH]: true},
         selectedTheme: highContrastTheme,
       });
 
-      const signInButton = screen.getByRole('button', {name: 'Sign In'});
+      const signInButton = page.getByRole('button', {name: 'Sign In'});
       expect(signInButton).toHaveStyle({color: '#FFFFFF'});
     });
 
-    it('should render Send OTP button with high-contrast primary background', () => {
-      renderComponent({
+    it('should render Send OTP button with high-contrast primary background', async () => {
+      await renderComponent({
         integrations: {'sms-otp': true},
         selectedTheme: highContrastTheme,
       });
 
-      const sendOtpButton = screen.getByRole('button', {name: 'Send OTP'});
+      const sendOtpButton = page.getByRole('button', {name: 'Send OTP'});
       expect(sendOtpButton).toHaveStyle({backgroundColor: '#0000FF'});
       expect(sendOtpButton).toHaveStyle({color: '#FFFFFF'});
     });
 
-    it('should render passkey button with dark mode high-contrast colors', () => {
+    it('should render passkey button with dark mode high-contrast colors', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent({
+      await renderComponent({
         integrations: {[AuthenticatorTypes.PASSKEY]: true},
         selectedTheme: highContrastTheme,
       });
 
-      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
-      expect(passkeyButton).toHaveStyle({backgroundColor: '#FFD700'});
-      // Dark mode gold primary has black contrastText
+      const passkeyButton = page.getByRole('button', {name: /Sign in with Passkey/i});
+      expect(passkeyButton).toHaveStyle({backgroundColor: '#00FFFF'});
+      // Dark mode cyan primary has black contrastText
       expect(passkeyButton).toHaveStyle({color: '#000000'});
     });
   });
 
   describe('theme mode handling', () => {
-    it('should use normal blend mode in light mode', () => {
+    it('should use normal blend mode in light mode', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'light'});
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      await expect.element(page.getByText('Preview')).toBeInTheDocument();
     });
 
-    it('should use screen blend mode in dark mode', () => {
+    it('should use screen blend mode in dark mode', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      await expect.element(page.getByText('Preview')).toBeInTheDocument();
     });
 
-    it('should apply dark mode styles when mode is dark', () => {
+    it('should apply dark mode styles when mode is dark', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
-      renderComponent({
+      await renderComponent({
         appLogo: 'https://example.com/logo.png',
         selectedTheme: mockTheme,
       });
 
-      const logo = screen.getByRole('img');
-      const avatarContainer = logo.closest('.MuiAvatar-root');
+      const logo = page.getByRole('img');
+      const avatarContainer = logo.element().closest('.MuiAvatar-root');
       expect(avatarContainer).toBeInTheDocument();
     });
 
-    it('should apply light mode styles when mode is light', () => {
+    it('should apply light mode styles when mode is light', async () => {
       mockUseColorScheme.mockReturnValue({mode: 'light'});
 
-      renderComponent({
+      await renderComponent({
         appLogo: 'https://example.com/logo.png',
         selectedTheme: mockTheme,
       });
 
-      const logo = screen.getByRole('img');
-      const avatarContainer = logo.closest('.MuiAvatar-root');
+      const logo = page.getByRole('img');
+      const avatarContainer = logo.element().closest('.MuiAvatar-root');
       expect(avatarContainer).toHaveStyle({backgroundColor: '#FF5733'});
     });
   });

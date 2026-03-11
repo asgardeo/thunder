@@ -18,7 +18,7 @@
 
 import type React from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {Edge, Node} from '@xyflow/react';
 import {StaticStepTypes, StepTypes} from '@/features/flows/models/steps';
 import {TemplateTypes} from '@/features/flows/models/templates';
@@ -186,7 +186,7 @@ describe('useFlowInitialization', () => {
     vi.useRealTimers();
   });
 
-  const renderUseFlowInitialization = (overrides = {}) => {
+  const renderUseFlowInitialization = async (overrides = {}) => {
     const defaultProps = {
       resources: createMockResources(),
       flowId: undefined,
@@ -206,47 +206,45 @@ describe('useFlowInitialization', () => {
   };
 
   describe('Hook Interface', () => {
-    it('should return initialNodes', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should return initialNodes', async () => {
+      const {result} = await renderUseFlowInitialization();
       expect(result.current.initialNodes).toBeDefined();
       expect(Array.isArray(result.current.initialNodes)).toBe(true);
     });
 
-    it('should return generateSteps function', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should return generateSteps function', async () => {
+      const {result} = await renderUseFlowInitialization();
       expect(typeof result.current.generateSteps).toBe('function');
     });
 
-    it('should return getBlankTemplateComponents function', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should return getBlankTemplateComponents function', async () => {
+      const {result} = await renderUseFlowInitialization();
       expect(typeof result.current.getBlankTemplateComponents).toBe('function');
     });
 
-    it('should return updateAllNodeInternals function', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should return updateAllNodeInternals function', async () => {
+      const {result} = await renderUseFlowInitialization();
       expect(typeof result.current.updateAllNodeInternals).toBe('function');
     });
   });
 
   describe('updateAllNodeInternals', () => {
-    it('should call updateNodeInternals for each node', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should call updateNodeInternals for each node', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const nodes: Node[] = [
         {id: 'node-1', position: {x: 0, y: 0}, data: {}},
         {id: 'node-2', position: {x: 100, y: 0}, data: {}},
       ];
 
-      act(() => {
-        result.current.updateAllNodeInternals(nodes);
-      });
+      result.current.updateAllNodeInternals(nodes);
 
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-2');
     });
 
-    it('should call updateNodeInternals for node components', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should call updateNodeInternals for node components', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const nodes: Node[] = [
         {
@@ -261,17 +259,15 @@ describe('useFlowInitialization', () => {
         },
       ];
 
-      act(() => {
-        result.current.updateAllNodeInternals(nodes);
-      });
+      result.current.updateAllNodeInternals(nodes);
 
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('comp-1');
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('comp-2');
     });
 
-    it('should call updateNodeInternals for nested components', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should call updateNodeInternals for nested components', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const nodes: Node[] = [
         {
@@ -292,9 +288,7 @@ describe('useFlowInitialization', () => {
         },
       ];
 
-      act(() => {
-        result.current.updateAllNodeInternals(nodes);
-      });
+      result.current.updateAllNodeInternals(nodes);
 
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('form-1');
@@ -304,8 +298,8 @@ describe('useFlowInitialization', () => {
   });
 
   describe('getBlankTemplateComponents', () => {
-    it('should return components from blank template', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should return components from blank template', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const components = result.current.getBlankTemplateComponents();
 
@@ -313,7 +307,7 @@ describe('useFlowInitialization', () => {
       expect(Array.isArray(components)).toBe(true);
     });
 
-    it('should return empty array when blank template not found', () => {
+    it('should return empty array when blank template not found', async () => {
       const resourcesWithoutBlank = createMockResources({
         templates: [
           {
@@ -324,15 +318,15 @@ describe('useFlowInitialization', () => {
         ],
       } as unknown as Partial<Resources>);
 
-      const {result} = renderUseFlowInitialization({resources: resourcesWithoutBlank});
+      const {result} = await renderUseFlowInitialization({resources: resourcesWithoutBlank});
 
       const components = result.current.getBlankTemplateComponents();
 
       expect(components).toEqual([]);
     });
 
-    it('should set the first step ID to START_STEP_ID', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should set the first step ID to START_STEP_ID', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       // Call getBlankTemplateComponents to trigger the logic
       result.current.getBlankTemplateComponents();
@@ -343,8 +337,8 @@ describe('useFlowInitialization', () => {
   });
 
   describe('generateSteps', () => {
-    it('should add START node to step nodes', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should add START node to step nodes', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -362,8 +356,8 @@ describe('useFlowInitialization', () => {
       expect(startNode).toBeDefined();
     });
 
-    it('should use existing START step position if available', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should use existing START step position if available', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -386,8 +380,8 @@ describe('useFlowInitialization', () => {
       expect(startNode?.position).toEqual({x: 500, y: 500});
     });
 
-    it('should filter out existing START step and add new one', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should filter out existing START step and add new one', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -411,8 +405,8 @@ describe('useFlowInitialization', () => {
       expect(startNodes).toHaveLength(1);
     });
 
-    it('should set END step as non-deletable', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should set END step as non-deletable', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -435,8 +429,8 @@ describe('useFlowInitialization', () => {
       expect(endNode?.deletable).toBe(false);
     });
 
-    it('should set regular steps as deletable', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should set regular steps as deletable', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -453,8 +447,8 @@ describe('useFlowInitialization', () => {
       expect(viewNode?.deletable).toBe(true);
     });
 
-    it('should resolve component metadata for steps with components', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should resolve component metadata for steps with components', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -475,14 +469,14 @@ describe('useFlowInitialization', () => {
   });
 
   describe('initialNodes', () => {
-    it('should generate initial nodes from basic template', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should generate initial nodes from basic template', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       expect(result.current.initialNodes).toBeDefined();
       expect(result.current.initialNodes.length).toBeGreaterThan(0);
     });
 
-    it('should handle template without steps gracefully', () => {
+    it('should handle template without steps gracefully', async () => {
       const resourcesWithEmptyTemplate = createMockResources({
         templates: [
           {
@@ -493,12 +487,12 @@ describe('useFlowInitialization', () => {
         ],
       } as unknown as Partial<Resources>);
 
-      const {result} = renderUseFlowInitialization({resources: resourcesWithEmptyTemplate});
+      const {result} = await renderUseFlowInitialization({resources: resourcesWithEmptyTemplate});
 
       expect(result.current.initialNodes).toBeDefined();
     });
 
-    it('should apply template replacers when available', () => {
+    it('should apply template replacers when available', async () => {
       const resourcesWithReplacers = createMockResources({
         templates: [
           {
@@ -516,15 +510,15 @@ describe('useFlowInitialization', () => {
         ],
       } as unknown as Partial<Resources>);
 
-      const {result} = renderUseFlowInitialization({resources: resourcesWithReplacers});
+      const {result} = await renderUseFlowInitialization({resources: resourcesWithReplacers});
 
       expect(result.current.initialNodes).toBeDefined();
     });
   });
 
   describe('useLayoutEffect - Flow Initialization', () => {
-    it('should skip initialization when still loading existing flow', () => {
-      renderUseFlowInitialization({
+    it('should skip initialization when still loading existing flow', async () => {
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         isLoadingExistingFlow: true,
       });
@@ -536,7 +530,7 @@ describe('useFlowInitialization', () => {
     it('should load existing flow when flowId and existingFlowData are provided', async () => {
       const existingFlowData = createMockExistingFlowData();
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -556,7 +550,7 @@ describe('useFlowInitialization', () => {
         ],
       } as unknown as FlowDefinitionResponse;
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -568,7 +562,7 @@ describe('useFlowInitialization', () => {
     it('should not need auto layout when all nodes have position data', async () => {
       const existingFlowData = createMockExistingFlowData();
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -580,7 +574,7 @@ describe('useFlowInitialization', () => {
     it('should apply edge style to edges when loading existing flow', async () => {
       const existingFlowData = createMockExistingFlowData();
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -595,16 +589,14 @@ describe('useFlowInitialization', () => {
     });
 
     it('should load default template when no flowId is provided', async () => {
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         existingFlowData: undefined,
         isLoadingExistingFlow: false,
       });
 
       // Run all microtasks and RAF callbacks
-      await act(async () => {
-        vi.advanceTimersByTime(100);
-      });
+      vi.advanceTimersByTime(100);
 
       expect(mockSetNodes).toHaveBeenCalled();
     });
@@ -612,16 +604,14 @@ describe('useFlowInitialization', () => {
     it('should schedule updateAllNodeInternals after setting nodes for existing flow', async () => {
       const existingFlowData = createMockExistingFlowData();
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
       });
 
       // Wait for queueMicrotask to execute
-      await act(async () => {
-        vi.advanceTimersByTime(0);
-      });
+      vi.advanceTimersByTime(0);
 
       // The updateNodeInternals should have been called
       expect(mockUpdateNodeInternals).toHaveBeenCalled();
@@ -630,7 +620,7 @@ describe('useFlowInitialization', () => {
     it('should set deletable to false for END and START nodes in existing flow', async () => {
       const existingFlowData = createMockExistingFlowData();
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -663,7 +653,7 @@ describe('useFlowInitialization', () => {
 
       const existingFlowData = createMockExistingFlowData();
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -683,7 +673,7 @@ describe('useFlowInitialization', () => {
 
   describe('updateFlowWithSequence', () => {
     it('should prevent concurrent flow updates', async () => {
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
       });
@@ -691,9 +681,7 @@ describe('useFlowInitialization', () => {
       // This will be called by useLayoutEffect automatically
       // The initial call happens during hook initialization
 
-      await act(async () => {
-        vi.advanceTimersByTime(100);
-      });
+      vi.advanceTimersByTime(100);
 
       // setNodes should have been called at least once
       expect(mockSetNodes).toHaveBeenCalled();
@@ -704,20 +692,18 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
       });
 
       // Run RAF callbacks and microtasks multiple times to ensure async operations complete
-      await act(async () => {
-        vi.advanceTimersByTime(16); // one frame
-        await Promise.resolve(); // flush microtasks
-        vi.advanceTimersByTime(16); // another frame
-        await Promise.resolve();
-        vi.advanceTimersByTime(16);
-        await Promise.resolve();
-      });
+      vi.advanceTimersByTime(16); // one frame
+      await Promise.resolve(); // flush microtasks
+      vi.advanceTimersByTime(16); // another frame
+      await Promise.resolve();
+      vi.advanceTimersByTime(16);
+      await Promise.resolve();
 
       // The updateFlowWithSequence uses requestAnimationFrame internally
       // These should be called eventually
@@ -729,15 +715,13 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
         edgeStyle: 'smoothstep',
       });
 
-      await act(async () => {
-        vi.advanceTimersByTime(100);
-      });
+      vi.advanceTimersByTime(100);
 
       // setEdges should be called with styled edges
       if (mockSetEdges.mock.calls.length > 0) {
@@ -751,7 +735,7 @@ describe('useFlowInitialization', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle empty resources gracefully', () => {
+    it('should handle empty resources gracefully', async () => {
       const emptyResources = {
         templates: [],
         steps: [],
@@ -759,36 +743,34 @@ describe('useFlowInitialization', () => {
         widgets: [],
       } as unknown as Resources;
 
-      const {result} = renderUseFlowInitialization({resources: emptyResources});
+      const {result} = await renderUseFlowInitialization({resources: emptyResources});
 
       expect(result.current.initialNodes).toBeDefined();
       expect(result.current.getBlankTemplateComponents()).toEqual([]);
     });
 
-    it('should handle undefined resources gracefully', () => {
-      const {result} = renderUseFlowInitialization({
+    it('should handle undefined resources gracefully', async () => {
+      const {result} = await renderUseFlowInitialization({
         resources: undefined as unknown as Resources,
       });
 
       expect(result.current.getBlankTemplateComponents()).toEqual([]);
     });
 
-    it('should handle nodes without data property', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should handle nodes without data property', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const nodes: Node[] = [
         {id: 'node-1', position: {x: 0, y: 0}, data: undefined as unknown as Record<string, unknown>},
       ];
 
-      act(() => {
-        result.current.updateAllNodeInternals(nodes);
-      });
+      result.current.updateAllNodeInternals(nodes);
 
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
     });
 
-    it('should handle step with undefined data', () => {
-      const {result} = renderUseFlowInitialization();
+    it('should handle step with undefined data', async () => {
+      const {result} = await renderUseFlowInitialization();
 
       const stepNodes: Node[] = [
         {
@@ -814,39 +796,35 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
         edgeStyle: 'smoothstep',
       });
 
       // Advance through multiple RAF cycles to complete the sequence
-      await act(async () => {
-        // First RAF - updateSequence is called
-        vi.advanceTimersByTime(16);
-        await Promise.resolve();
-        // Second RAF - if nodesUpdatedRef is true, generate edges
-        vi.advanceTimersByTime(16);
-        await Promise.resolve();
-        // Third RAF - complete edge generation
-        vi.advanceTimersByTime(16);
-        await Promise.resolve();
-      });
+      // First RAF - updateSequence is called
+      vi.advanceTimersByTime(16);
+      await Promise.resolve();
+      // Second RAF - if nodesUpdatedRef is true, generate edges
+      vi.advanceTimersByTime(16);
+      await Promise.resolve();
+      // Third RAF - complete edge generation
+      vi.advanceTimersByTime(16);
+      await Promise.resolve();
 
       // setNodes should have been called to trigger the flow
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
     it('should execute setNodes callback which sets nodesUpdatedRef', async () => {
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
       });
 
-      await act(async () => {
-        vi.advanceTimersByTime(50);
-        await Promise.resolve();
-      });
+      vi.advanceTimersByTime(50);
+      await Promise.resolve();
 
       // setNodes should have been called with a callback function
       expect(mockSetNodes).toHaveBeenCalled();
@@ -862,17 +840,15 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
         edgeStyle: 'smoothstep',
       });
 
       // Run through multiple RAF cycles to trigger lines 240-254
-      await act(async () => {
-        vi.advanceTimersByTime(160);
-        await Promise.resolve();
-      });
+      vi.advanceTimersByTime(160);
+      await Promise.resolve();
 
       // generateEdges should be called (line 243)
       expect(mockGenerateEdges).toHaveBeenCalled();
@@ -888,17 +864,15 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
         edgeStyle: 'smoothstep',
       });
 
       // Run through multiple RAF cycles
-      await act(async () => {
-        vi.advanceTimersByTime(160);
-        await Promise.resolve();
-      });
+      vi.advanceTimersByTime(160);
+      await Promise.resolve();
 
       // setEdges should have been called (line 252)
       expect(mockSetEdges).toHaveBeenCalled();
@@ -908,16 +882,14 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue([]);
       mockValidateEdges.mockReturnValue([]);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
       });
 
       // Run through RAF cycles to trigger line 240
-      await act(async () => {
-        vi.advanceTimersByTime(160);
-        await Promise.resolve();
-      });
+      vi.advanceTimersByTime(160);
+      await Promise.resolve();
 
       // updateNodeInternals should have been called (via updateAllNodeInternals on line 240)
       expect(mockUpdateNodeInternals).toHaveBeenCalled();
@@ -943,7 +915,7 @@ describe('useFlowInitialization', () => {
         }),
       }));
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: 'flow-1',
         existingFlowData,
         isLoadingExistingFlow: false,
@@ -961,16 +933,14 @@ describe('useFlowInitialization', () => {
       mockGenerateEdges.mockReturnValue([]);
       mockValidateEdges.mockReturnValue([]);
 
-      renderUseFlowInitialization({
+      await renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
       });
 
       // Run through many RAF cycles to ensure completion
-      await act(async () => {
-        vi.advanceTimersByTime(320);
-        await Promise.resolve();
-      });
+      vi.advanceTimersByTime(320);
+      await Promise.resolve();
 
       // The flow should be updatable again (flowUpdatesInProgress reset to false)
       // This is indirectly tested by the fact that subsequent updates would work

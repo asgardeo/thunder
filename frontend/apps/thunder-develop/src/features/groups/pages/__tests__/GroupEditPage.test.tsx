@@ -16,11 +16,9 @@
  * under the License.
  */
 
-import type {ReactNode} from 'react';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {screen, waitFor, fireEvent} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import GroupEditPage from '../GroupEditPage';
 
 const mockNavigate = vi.fn();
@@ -30,18 +28,6 @@ vi.mock('react-router', async () => {
     ...actual,
     useNavigate: () => mockNavigate,
     useParams: () => ({groupId: 'g1'}),
-    Link: ({to, children = undefined, ...props}: {to: string; children?: ReactNode; [key: string]: unknown}) => (
-      <a
-        {...(props as Record<string, unknown>)}
-        href={to}
-        onClick={(e: {preventDefault: () => void}) => {
-          e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
-        }}
-      >
-        {children}
-      </a>
-    ),
   };
 });
 
@@ -118,6 +104,30 @@ const mockGroup = {
   members: [],
 };
 
+/**
+ * Helper to click the edit button adjacent to the name heading (h3).
+ * The name text appears in both the h3 heading and the mocked general-settings span,
+ * so we need to specifically find the h3 to locate the edit button next to it.
+ */
+async function clickNameEditButton() {
+  const nameHeadings = page.getByText('Test Group').all();
+  const h3Heading = nameHeadings.find((el) => el.element().tagName === 'H3');
+  expect(h3Heading).toBeTruthy();
+  const nameEditBtn = h3Heading!.element().parentElement?.querySelector('button');
+  expect(nameEditBtn).toBeTruthy();
+  await userEvent.click(nameEditBtn!);
+}
+
+/**
+ * Helper to click the edit button adjacent to the description text.
+ */
+async function clickDescriptionEditButton() {
+  const descText = page.getByText('A test group');
+  const descEditBtn = descText.element().parentElement?.querySelector('button');
+  expect(descEditBtn).toBeTruthy();
+  await userEvent.click(descEditBtn!);
+}
+
 describe('GroupEditPage', () => {
   let mockRefetch: ReturnType<typeof vi.fn>;
   let mockWriteText: ReturnType<typeof vi.fn>;
@@ -151,136 +161,127 @@ describe('GroupEditPage', () => {
     });
   });
 
-  it('should render loading state', () => {
+  it('should render loading state', async () => {
     mockUseGetGroup.mockReturnValue({
       data: null,
       isLoading: true,
       error: null,
       refetch: vi.fn(),
     });
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    await expect.element(page.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should render error state', () => {
+  it('should render error state', async () => {
     mockUseGetGroup.mockReturnValue({
       data: null,
       isLoading: false,
       error: new Error('Fetch failed'),
       refetch: vi.fn(),
     });
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('Fetch failed')).toBeInTheDocument();
-    expect(screen.getByText('Back to Groups')).toBeInTheDocument();
+    await expect.element(page.getByText('Fetch failed')).toBeInTheDocument();
+    await expect.element(page.getByText('Back to Groups')).toBeInTheDocument();
   });
 
-  it('should render not found state when no group', () => {
+  it('should render not found state when no group', async () => {
     mockUseGetGroup.mockReturnValue({
       data: null,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     });
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('Group not found')).toBeInTheDocument();
+    await expect.element(page.getByText('Group not found')).toBeInTheDocument();
   });
 
-  it('should render group name and description', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should render group name and description', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getAllByText('Test Group').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('A test group')).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Test Group', level: 3})).toBeInTheDocument();
+    await expect.element(page.getByText('A test group')).toBeInTheDocument();
   });
 
-  it('should render group ID', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should render group ID', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('g1')).toBeInTheDocument();
+    await expect.element(page.getByText('g1')).toBeInTheDocument();
   });
 
   it('should render back button and navigate on click', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('Back to Groups'));
+    // PageTitle.BackButton renders as a link element; use getByRole to avoid strict mode violation
+    // from multiple elements containing "Back to Groups" text
+    const backLinks = page.getByText('Back to Groups').all();
+    expect(backLinks.length).toBeGreaterThan(0);
+    await userEvent.click(backLinks[0]);
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups');
   });
 
-  it('should render tabs for general and members', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should render tabs for general and members', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('General')).toBeInTheDocument();
-    expect(screen.getByText('Members')).toBeInTheDocument();
+    await expect.element(page.getByRole('tab', {name: 'General'})).toBeInTheDocument();
+    await expect.element(page.getByRole('tab', {name: 'Members'})).toBeInTheDocument();
   });
 
-  it('should show general settings by default', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should show general settings by default', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByTestId('general-settings')).toBeInTheDocument();
+    await expect.element(page.getByTestId('general-settings')).toBeInTheDocument();
   });
 
   it('should switch to members tab', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('Members'));
+    await userEvent.click(page.getByRole('tab', {name: 'Members'}));
 
-    expect(screen.getByTestId('members-settings')).toBeInTheDocument();
+    await expect.element(page.getByTestId('members-settings')).toBeInTheDocument();
   });
 
   it('should open delete dialog from general settings', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByTestId('delete-click'));
+    await userEvent.click(page.getByTestId('delete-click'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
-    });
+    await expect.element(page.getByTestId('delete-dialog')).toBeInTheDocument();
   });
 
   it('should close delete dialog', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByTestId('delete-click'));
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByTestId('delete-click'));
+    await expect.element(page.getByTestId('delete-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByTestId('close-delete-dialog'));
-    await waitFor(() => {
-      expect(screen.queryByTestId('delete-dialog')).not.toBeInTheDocument();
-    });
+    await userEvent.click(page.getByTestId('close-delete-dialog'));
+    await expect.element(page.getByTestId('delete-dialog')).not.toBeInTheDocument();
   });
 
   it('should navigate on successful delete', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByTestId('delete-click'));
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-dialog')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByTestId('delete-click'));
+    await expect.element(page.getByTestId('delete-dialog')).toBeInTheDocument();
 
-    await user.click(screen.getByTestId('delete-success'));
-    await waitFor(() => {
+    await userEvent.click(page.getByTestId('delete-success'));
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups');
     });
   });
 
-  it('should not show floating action bar initially', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should not show floating action bar initially', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+    await expect.element(page.getByText('You have unsaved changes')).not.toBeInTheDocument();
   });
 
-  it('should call useGetGroup with the groupId from params', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should call useGetGroup with the groupId from params', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
     expect(mockUseGetGroup).toHaveBeenCalledWith('g1');
   });
@@ -292,217 +293,191 @@ describe('GroupEditPage', () => {
       error: new Error('Fetch failed'),
       refetch: vi.fn(),
     });
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('Back to Groups'));
+    await userEvent.click(page.getByText('Back to Groups'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups');
   });
 
-  it('should show empty description placeholder when no description', () => {
+  it('should show empty description placeholder when no description', async () => {
     mockUseGetGroup.mockReturnValue({
       data: {...mockGroup, description: undefined},
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     });
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('No description')).toBeInTheDocument();
+    await expect.element(page.getByText('No description')).toBeInTheDocument();
   });
 
   it('should enter name editing mode and save on Enter', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    // Find the name heading (h3) and the adjacent edit button
-    const nameHeadings = screen.getAllByText('Test Group');
-    // The h3 heading is the one rendered by GroupEditPage (not the mock)
-    const h3Heading = nameHeadings.find((el) => el.tagName === 'H3');
-    expect(h3Heading).toBeTruthy();
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    expect(nameEditBtn).toBeTruthy();
-    await user.click(nameEditBtn!);
+    await clickNameEditButton();
 
-    // Should show a text field with the current name
-    const nameInput = screen.getByDisplayValue('Test Group');
-    expect(nameInput).toBeInTheDocument();
+    // The autoFocused textbox should appear with the current name
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
 
     // Clear and type new name
-    await user.clear(nameInput);
-    await user.type(nameInput, 'Updated Name');
-    await user.keyboard('{Enter}');
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'Updated Name');
+    await userEvent.keyboard('{Enter}');
 
     // Should show floating action bar
-    await waitFor(() => {
-      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('You have unsaved changes')).toBeInTheDocument();
   });
 
   it('should cancel name editing on Escape', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const h3Heading = screen.getAllByText('Test Group').find((el) => el.tagName === 'H3');
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    await user.click(nameEditBtn!);
+    await clickNameEditButton();
 
-    const nameInput = screen.getByDisplayValue('Test Group');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'Updated Name');
-    await user.keyboard('{Escape}');
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
+
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'Updated Name');
+    await userEvent.keyboard('{Escape}');
 
     // Should revert to original name and exit editing mode
-    expect(screen.queryByDisplayValue('Updated Name')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Test Group').length).toBeGreaterThanOrEqual(1);
+    await expect.element(page.getByRole('heading', {name: 'Test Group', level: 3})).toBeInTheDocument();
   });
 
   it('should save name on blur', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const h3Heading = screen.getAllByText('Test Group').find((el) => el.tagName === 'H3');
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    await user.click(nameEditBtn!);
+    await clickNameEditButton();
 
-    const nameInput = screen.getByDisplayValue('Test Group');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'Blur Name');
-    await user.tab(); // trigger blur
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-    });
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'Blur Name');
+    await userEvent.tab(); // trigger blur
+
+    await expect.element(page.getByText('You have unsaved changes')).toBeInTheDocument();
   });
 
   it('should enter description editing mode and save on Ctrl+Enter', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const descText = screen.getByText('A test group');
-    const descEditBtn = descText.parentElement?.querySelector('button');
-    expect(descEditBtn).toBeTruthy();
-    await user.click(descEditBtn!);
+    await clickDescriptionEditButton();
 
-    const descInput = screen.getByDisplayValue('A test group');
-    expect(descInput).toBeInTheDocument();
+    // The autoFocused multiline textbox should appear with the current description
+    const descInput = page.getByRole('textbox');
+    await expect.element(descInput).toBeInTheDocument();
 
-    await user.clear(descInput);
-    await user.type(descInput, 'Updated description');
+    await userEvent.clear(descInput);
+    await userEvent.fill(descInput, 'Updated description');
 
-    fireEvent.keyDown(descInput, {key: 'Enter', ctrlKey: true});
+    // Focus the input and press Ctrl+Enter
+    await userEvent.click(descInput);
+    await userEvent.keyboard('{Control>}{Enter}{/Control}');
 
-    await waitFor(() => {
-      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-    });
+    await expect.element(page.getByText('You have unsaved changes')).toBeInTheDocument();
   });
 
   it('should cancel description editing on Escape', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const descText = screen.getByText('A test group');
-    const descEditBtn = descText.parentElement?.querySelector('button');
-    await user.click(descEditBtn!);
+    await clickDescriptionEditButton();
 
-    const descInput = screen.getByDisplayValue('A test group');
-    await user.clear(descInput);
-    await user.type(descInput, 'Some new text');
-    await user.keyboard('{Escape}');
+    const descInput = page.getByRole('textbox');
+    await expect.element(descInput).toBeInTheDocument();
 
-    expect(screen.queryByDisplayValue('Some new text')).not.toBeInTheDocument();
+    await userEvent.clear(descInput);
+    await userEvent.fill(descInput, 'Some new text');
+    await userEvent.keyboard('{Escape}');
+
+    // Should revert — the textbox should be gone and original text shown
+    await expect.element(page.getByText('A test group')).toBeInTheDocument();
   });
 
   it('should save description on blur', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const descText = screen.getByText('A test group');
-    const descEditBtn = descText.parentElement?.querySelector('button');
-    await user.click(descEditBtn!);
+    await clickDescriptionEditButton();
 
-    const descInput = screen.getByDisplayValue('A test group');
-    await user.clear(descInput);
-    await user.type(descInput, 'Blurred desc');
-    await user.tab();
+    const descInput = page.getByRole('textbox');
+    await expect.element(descInput).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-    });
+    await userEvent.clear(descInput);
+    await userEvent.fill(descInput, 'Blurred desc');
+    await userEvent.tab();
+
+    await expect.element(page.getByText('You have unsaved changes')).toBeInTheDocument();
   });
 
   it('should show empty placeholder after clearing description', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const descText = screen.getByText('A test group');
-    const descEditBtn = descText.parentElement?.querySelector('button');
-    await user.click(descEditBtn!);
+    await clickDescriptionEditButton();
 
-    const descInput = screen.getByDisplayValue('A test group');
-    await user.clear(descInput);
-    await user.tab();
+    const descInput = page.getByRole('textbox');
+    await expect.element(descInput).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('No description')).toBeInTheDocument();
-    });
+    await userEvent.clear(descInput);
+    await userEvent.tab();
+
+    await expect.element(page.getByText('No description')).toBeInTheDocument();
   });
 
   it('should copy group ID to clipboard on click', async () => {
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    const groupIdElement = screen.getByText('g1');
+    const groupIdElement = page.getByText('g1').element();
     const copyButton = groupIdElement.closest('[role="button"]');
     expect(copyButton).toBeTruthy();
-    fireEvent.click(copyButton!);
+    await userEvent.click(copyButton!);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockWriteText).toHaveBeenCalledWith('g1');
     });
   });
 
-  it('should copy group ID on keyboard Enter', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should copy group ID on keyboard Enter', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    const groupIdElement = screen.getByText('g1');
+    const groupIdElement = page.getByText('g1').element();
     const copyButton = groupIdElement.closest('[role="button"]');
-    fireEvent.keyDown(copyButton!, {key: 'Enter'});
+    await userEvent.click(copyButton!);
+    await userEvent.keyboard('{Enter}');
 
     expect(mockWriteText).toHaveBeenCalledWith('g1');
   });
 
-  it('should copy group ID on keyboard Space', () => {
-    renderWithProviders(<GroupEditPage />);
+  it('should copy group ID on keyboard Space', async () => {
+    await renderWithProviders(<GroupEditPage />);
 
-    const groupIdElement = screen.getByText('g1');
+    const groupIdElement = page.getByText('g1').element();
     const copyButton = groupIdElement.closest('[role="button"]');
-    fireEvent.keyDown(copyButton!, {key: ' '});
+    await userEvent.click(copyButton!);
+    await userEvent.keyboard(' ');
 
     expect(mockWriteText).toHaveBeenCalledWith('g1');
   });
 
   it('should save changes when save button is clicked', async () => {
     mockMutateAsync.mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
     // Edit the name to trigger hasChanges
-    const h3Heading = screen.getAllByText('Test Group').find((el) => el.tagName === 'H3');
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    await user.click(nameEditBtn!);
-    const nameInput = screen.getByDisplayValue('Test Group');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'New Name');
-    await user.keyboard('{Enter}');
+    await clickNameEditButton();
 
-    await waitFor(() => {
-      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-    });
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'New Name');
+    await userEvent.keyboard('{Enter}');
 
-    await user.click(screen.getByText('Save Changes'));
+    await expect.element(page.getByText('You have unsaved changes')).toBeInTheDocument();
 
-    await waitFor(() => {
+    await userEvent.click(page.getByText('Save Changes'));
+
+    await vi.waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
         groupId: 'g1',
         data: {
@@ -518,51 +493,41 @@ describe('GroupEditPage', () => {
 
   it('should show error snackbar when save fails', async () => {
     mockMutateAsync.mockRejectedValue(new Error('Save failed'));
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
     // Edit the name to trigger hasChanges
-    const h3Heading = screen.getAllByText('Test Group').find((el) => el.tagName === 'H3');
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    await user.click(nameEditBtn!);
-    const nameInput = screen.getByDisplayValue('Test Group');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'New Name');
-    await user.keyboard('{Enter}');
+    await clickNameEditButton();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
-    });
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'New Name');
+    await userEvent.keyboard('{Enter}');
 
-    await user.click(screen.getByText('Save Changes'));
+    await expect.element(page.getByText('Save Changes')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save failed')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Save Changes'));
+
+    await expect.element(page.getByText('Save failed')).toBeInTheDocument();
   });
 
   it('should reset changes when reset button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
     // Edit the name
-    const h3Heading = screen.getAllByText('Test Group').find((el) => el.tagName === 'H3');
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    await user.click(nameEditBtn!);
-    const nameInput = screen.getByDisplayValue('Test Group');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'New Name');
-    await user.keyboard('{Enter}');
+    await clickNameEditButton();
 
-    await waitFor(() => {
-      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-    });
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'New Name');
+    await userEvent.keyboard('{Enter}');
 
-    await user.click(screen.getByText('Reset'));
+    await expect.element(page.getByText('You have unsaved changes')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Reset'));
+
+    await expect.element(page.getByText('You have unsaved changes')).not.toBeInTheDocument();
   });
 
   it('should navigate back from not found state', async () => {
@@ -572,56 +537,48 @@ describe('GroupEditPage', () => {
       error: null,
       refetch: vi.fn(),
     });
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('Back to Groups'));
+    await userEvent.click(page.getByText('Back to Groups'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups');
   });
 
   it('should handle navigate rejection from back button gracefully', async () => {
     mockNavigate.mockRejectedValue(new Error('Nav failed'));
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('Back to Groups'));
+    const backLinks = page.getByText('Back to Groups').all();
+    expect(backLinks.length).toBeGreaterThan(0);
+    await userEvent.click(backLinks[0]);
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups');
     });
   });
 
   it('should close error snackbar when close button is clicked', async () => {
     mockMutateAsync.mockRejectedValue(new Error('Save failed'));
-    const user = userEvent.setup();
-    renderWithProviders(<GroupEditPage />);
+    await renderWithProviders(<GroupEditPage />);
 
     // Edit the name to trigger hasChanges
-    const h3Heading = screen.getAllByText('Test Group').find((el) => el.tagName === 'H3');
-    const nameEditBtn = h3Heading!.parentElement?.querySelector('button');
-    await user.click(nameEditBtn!);
-    const nameInput = screen.getByDisplayValue('Test Group');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'New Name');
-    await user.keyboard('{Enter}');
+    await clickNameEditButton();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
-    });
+    const nameInput = page.getByRole('textbox');
+    await expect.element(nameInput).toBeInTheDocument();
+    await userEvent.clear(nameInput);
+    await userEvent.fill(nameInput, 'New Name');
+    await userEvent.keyboard('{Enter}');
 
-    await user.click(screen.getByText('Save Changes'));
+    await expect.element(page.getByText('Save Changes')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save failed')).toBeInTheDocument();
-    });
+    await userEvent.click(page.getByText('Save Changes'));
+
+    await expect.element(page.getByText('Save failed')).toBeInTheDocument();
 
     // Close the snackbar via the Alert's close button
-    const closeButton = screen.getByRole('button', {name: /close/i});
-    await user.click(closeButton);
+    await userEvent.click(page.getByRole('button', {name: /close/i}));
 
-    await waitFor(() => {
-      expect(screen.queryByText('Save failed')).not.toBeInTheDocument();
-    });
+    await expect.element(page.getByText('Save failed')).not.toBeInTheDocument();
   });
 });

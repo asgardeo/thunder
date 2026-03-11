@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import useGetUserSchema from '../useGetUserSchema';
 import type {ApiUserSchema} from '../../types/users';
 import UserQueryKeys from '../../constants/user-query-keys';
@@ -71,10 +71,10 @@ describe('useGetUserSchema', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with loading state when id is provided', () => {
+  it('should initialize with loading state when id is provided', async () => {
     mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+    const {result} = await renderHook(() => useGetUserSchema('schema-1'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -87,9 +87,9 @@ describe('useGetUserSchema', () => {
     });
 
     const schemaId = 'schema-1';
-    const {result} = renderHook(() => useGetUserSchema(schemaId));
+    const {result} = await renderHook(() => useGetUserSchema(schemaId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -104,9 +104,9 @@ describe('useGetUserSchema', () => {
     });
 
     const schemaId = 'schema-1';
-    renderHook(() => useGetUserSchema(schemaId));
+    await renderHook(() => useGetUserSchema(schemaId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -127,9 +127,9 @@ describe('useGetUserSchema', () => {
     });
 
     const schemaId = 'schema-1';
-    const {result, queryClient} = renderHook(() => useGetUserSchema(schemaId));
+    const {result, queryClient} = await renderHook(() => useGetUserSchema(schemaId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -142,9 +142,9 @@ describe('useGetUserSchema', () => {
     const apiError = new Error('Failed to fetch user schema');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+    const {result} = await renderHook(() => useGetUserSchema('schema-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -156,24 +156,24 @@ describe('useGetUserSchema', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+    const {result} = await renderHook(() => useGetUserSchema('schema-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
     expect(result.current.error).toEqual(networkError);
   });
 
-  it('should not make API call when id is undefined', () => {
-    const {result} = renderHook(() => useGetUserSchema(undefined));
+  it('should not make API call when id is undefined', async () => {
+    const {result} = await renderHook(() => useGetUserSchema(undefined));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should not make API call when id is empty string', () => {
-    const {result} = renderHook(() => useGetUserSchema(''));
+  it('should not make API call when id is empty string', async () => {
+    const {result} = await renderHook(() => useGetUserSchema(''));
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -184,9 +184,9 @@ describe('useGetUserSchema', () => {
       data: mockSchema,
     });
 
-    renderHook(() => useGetUserSchema('schema-1'));
+    await renderHook(() => useGetUserSchema('schema-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
 
@@ -201,9 +201,9 @@ describe('useGetUserSchema', () => {
       data: mockSchema,
     });
 
-    renderHook(() => useGetUserSchema('schema-1'));
+    await renderHook(() => useGetUserSchema('schema-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
@@ -221,11 +221,11 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: schema1}).mockResolvedValueOnce({data: schema2});
 
-    const {result, rerender} = renderHook(({id}: {id: string}) => useGetUserSchema(id), {
+    const {result, rerender} = await renderHook((props?: {id: string}) => useGetUserSchema(props!.id), {
       initialProps: {id: 'schema-1'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -233,9 +233,9 @@ describe('useGetUserSchema', () => {
     expect(mockHttpRequest).toHaveBeenCalledTimes(1);
 
     // Change the schema ID
-    rerender({id: 'schema-2'});
+    await rerender({id: 'schema-2'});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.id).toBe('schema-2');
     });
 
@@ -250,9 +250,9 @@ describe('useGetUserSchema', () => {
     const schemaId = 'schema-1';
 
     // First call - get the queryClient from the render result
-    const {result: result1, queryClient} = renderHook(() => useGetUserSchema(schemaId));
+    const {result: result1, queryClient} = await renderHook(() => useGetUserSchema(schemaId));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -264,11 +264,11 @@ describe('useGetUserSchema', () => {
     });
 
     // Second call with same queryClient should use cache
-    const {result: result2} = renderHook(() => useGetUserSchema(schemaId), {
+    const {result: result2} = await renderHook(() => useGetUserSchema(schemaId), {
       queryClient,
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -282,9 +282,9 @@ describe('useGetUserSchema', () => {
       data: mockSchema,
     });
 
-    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+    const {result} = await renderHook(() => useGetUserSchema('schema-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -324,9 +324,9 @@ describe('useGetUserSchema', () => {
       data: complexSchema,
     });
 
-    const {result} = renderHook(() => useGetUserSchema('schema-complex'));
+    const {result} = await renderHook(() => useGetUserSchema('schema-complex'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -339,9 +339,9 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: schema1});
 
-    const {result: result1} = renderHook(() => useGetUserSchema('schema-1'));
+    const {result: result1} = await renderHook(() => useGetUserSchema('schema-1'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
@@ -349,9 +349,9 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: schema2});
 
-    const {result: result2} = renderHook(() => useGetUserSchema('schema-2'));
+    const {result: result2} = await renderHook(() => useGetUserSchema('schema-2'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
     });
 
@@ -366,7 +366,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockReturnValueOnce(requestPromise);
 
-    const {result} = renderHook(() => useGetUserSchema('schema-1'));
+    const {result} = await renderHook(() => useGetUserSchema('schema-1'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isFetching).toBe(true);
@@ -374,7 +374,7 @@ describe('useGetUserSchema', () => {
 
     resolveRequest!({data: mockSchema});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useGetFlowById from '../useGetFlowById';
@@ -92,9 +92,9 @@ describe('useGetFlowById', () => {
       data: mockFlowResponse,
     });
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'));
+    const {result} = await renderHook(() => useGetFlowById('flow-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -108,16 +108,16 @@ describe('useGetFlowById', () => {
     });
   });
 
-  it('should not fetch when flowId is undefined', () => {
-    const {result} = renderHook(() => useGetFlowById(undefined));
+  it('should not fetch when flowId is undefined', async () => {
+    const {result} = await renderHook(() => useGetFlowById(undefined));
 
     // Should not be loading or fetching when disabled
     expect(result.current.isFetching).toBe(false);
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should not fetch when enabled is false', () => {
-    const {result} = renderHook(() => useGetFlowById('flow-123', false));
+  it('should not fetch when enabled is false', async () => {
+    const {result} = await renderHook(() => useGetFlowById('flow-123', false));
 
     expect(result.current.isFetching).toBe(false);
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -128,15 +128,15 @@ describe('useGetFlowById', () => {
       data: mockFlowResponse,
     });
 
-    const {result, rerender} = renderHook(({flowId, enabled}) => useGetFlowById(flowId, enabled), {
+    const {result, rerender} = await renderHook((props?) => useGetFlowById(props!.flowId, props!.enabled), {
       initialProps: {flowId: 'flow-123', enabled: false},
     });
 
     expect(mockHttpRequest).not.toHaveBeenCalled();
 
-    rerender({flowId: 'flow-123', enabled: true});
+    await rerender({flowId: 'flow-123', enabled: true});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -150,12 +150,12 @@ describe('useGetFlowById', () => {
       }),
     );
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'));
+    const {result} = await renderHook(() => useGetFlowById('flow-123'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
@@ -166,9 +166,9 @@ describe('useGetFlowById', () => {
     const apiError = new Error('Flow not found');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetFlowById('non-existent-flow'));
+    const {result} = await renderHook(() => useGetFlowById('non-existent-flow'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
@@ -181,9 +181,9 @@ describe('useGetFlowById', () => {
       data: mockFlowResponse,
     });
 
-    const {queryClient} = renderHook(() => useGetFlowById('flow-123'));
+    const {queryClient} = await renderHook(() => useGetFlowById('flow-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
     });
 
@@ -200,19 +200,19 @@ describe('useGetFlowById', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse}).mockResolvedValueOnce({data: secondFlowResponse});
 
-    const {result, rerender} = renderHook(({flowId}) => useGetFlowById(flowId), {
+    const {result, rerender} = await renderHook((props?) => useGetFlowById(props!.flowId), {
       initialProps: {flowId: 'flow-123'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
     expect(result.current.data?.id).toBe('flow-123');
 
-    rerender({flowId: 'flow-456'});
+    await rerender({flowId: 'flow-456'});
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data?.id).toBe('flow-456');
     });
 
@@ -230,9 +230,9 @@ describe('useGetFlowById', () => {
       data: mockFlowResponse,
     });
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'));
+    const {result} = await renderHook(() => useGetFlowById('flow-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -260,9 +260,9 @@ describe('useGetFlowById', () => {
       data: flowWithAllNodeTypes,
     });
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'));
+    const {result} = await renderHook(() => useGetFlowById('flow-123'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 

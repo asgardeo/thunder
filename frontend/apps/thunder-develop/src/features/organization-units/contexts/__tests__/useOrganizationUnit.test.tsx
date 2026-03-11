@@ -16,21 +16,25 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import useOrganizationUnit from '../useOrganizationUnit';
 import OrganizationUnitProvider from '../OrganizationUnitProvider';
 
 describe('useOrganizationUnit', () => {
-  it('should throw when used outside of OrganizationUnitProvider', () => {
-    expect(() => {
-      renderHook(() => useOrganizationUnit());
-    }).toThrow('useOrganizationUnit must be used within an OrganizationUnitProvider');
+  it('should throw when used outside of OrganizationUnitProvider', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      renderHook(() => useOrganizationUnit()),
+    ).rejects.toThrow('useOrganizationUnit must be used within an OrganizationUnitProvider');
+
+    consoleSpy.mockRestore();
   });
 
-  it('should return context when used within OrganizationUnitProvider', () => {
-    const {result} = renderHook(() => useOrganizationUnit(), {
+  it('should return context when used within OrganizationUnitProvider', async () => {
+    const {result} = await renderHook(() => useOrganizationUnit(), {
       wrapper: ({children}: {children: ReactNode}) => (
         <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
       ),

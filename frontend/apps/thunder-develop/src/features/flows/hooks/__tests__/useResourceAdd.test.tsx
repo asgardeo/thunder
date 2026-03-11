@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, act, cleanup} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node, Edge} from '@xyflow/react';
@@ -137,24 +137,23 @@ describe('useResourceAdd', () => {
     vi.useFakeTimers();
     await vi.runAllTimersAsync();
     vi.useRealTimers();
-    cleanup();
   });
 
   describe('Hook Initialization', () => {
-    it('should return a stable function reference', () => {
-      const {result, rerender} = renderHook(() => useResourceAdd(defaultProps), {
+    it('should return a stable function reference', async () => {
+      const {result, rerender} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
       const firstRef = result.current;
-      rerender();
+      await rerender();
       const secondRef = result.current;
 
       expect(firstRef).toBe(secondRef);
     });
 
-    it('should return a function', () => {
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+    it('should return a function', async () => {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -163,7 +162,7 @@ describe('useResourceAdd', () => {
   });
 
   describe('Template Handling', () => {
-    it('should handle template resource type', () => {
+    it('should handle template resource type', async () => {
       const newNodes: Node[] = [
         {id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       ];
@@ -173,7 +172,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, newEdges]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -183,9 +182,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
       expect(mockExecuteSync).toHaveBeenCalled();
       expect(mockOnTemplateLoad).toHaveBeenCalledWith(expect.objectContaining({id: 'template-1'}));
@@ -193,7 +190,7 @@ describe('useResourceAdd', () => {
       expect(mockSetEdges).toHaveBeenCalledWith([...newEdges]);
     });
 
-    it('should apply auto-assign connections when metadata has executorConnections', () => {
+    it('should apply auto-assign connections when metadata has executorConnections', async () => {
       const newNodes: Node[] = [
         {id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
       ];
@@ -207,7 +204,7 @@ describe('useResourceAdd', () => {
         } as unknown as UseResourceAddProps['metadata'],
       };
 
-      const {result} = renderHook(() => useResourceAdd(propsWithMetadata), {
+      const {result} = await renderHook(() => useResourceAdd(propsWithMetadata), {
         wrapper: createWrapper(),
       });
 
@@ -217,9 +214,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
       expect(mockOnTemplateLoad).toHaveBeenCalled();
     });
@@ -246,7 +241,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -256,9 +251,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
       expect(mockSetNodes).toHaveBeenCalledWith(newNodes);
     });
@@ -287,7 +280,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -297,14 +290,12 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
       // Trigger the first requestAnimationFrame callback (updateAllNodeInternals)
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       // updateNodeInternals should be called for node, component, and nested component
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
@@ -323,7 +314,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -333,14 +324,12 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
       // Trigger both requestAnimationFrame callbacks
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       expect(mockFitView).toHaveBeenCalledWith({padding: 0.2, duration: 300});
 
@@ -358,7 +347,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -369,13 +358,11 @@ describe('useResourceAdd', () => {
       } as Template;
 
       // Should not throw
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       expect(mockFitView).toHaveBeenCalled();
 
@@ -392,7 +379,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -402,13 +389,11 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       // Should only call updateNodeInternals for node ids, not for undefined components
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
@@ -435,7 +420,7 @@ describe('useResourceAdd', () => {
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -445,13 +430,11 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('node-1');
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('component-1');
@@ -461,7 +444,7 @@ describe('useResourceAdd', () => {
   });
 
   describe('Widget Handling', () => {
-    it('should handle widget resource type with existing view step', () => {
+    it('should handle widget resource type with existing view step', async () => {
       const existingViewStep: Node = {
         id: 'view-1',
         type: StepTypes.View,
@@ -474,7 +457,7 @@ describe('useResourceAdd', () => {
       const newNodes: Node[] = [existingViewStep];
       mockOnWidgetLoad.mockReturnValue([newNodes, [], null, null]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -484,9 +467,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Widget,
       } as Widget;
 
-      act(() => {
-        result.current(widget);
-      });
+      result.current(widget);;
 
       expect(mockOnWidgetLoad).toHaveBeenCalledWith(
         expect.objectContaining({id: 'widget-1'}),
@@ -497,11 +478,11 @@ describe('useResourceAdd', () => {
       expect(mockSetNodes).toHaveBeenCalledWith(newNodes);
     });
 
-    it('should create new view step when no existing view step', () => {
+    it('should create new view step when no existing view step', async () => {
       mockGetNodes.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([[], [], null, null]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -511,9 +492,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Widget,
       } as Widget;
 
-      act(() => {
-        result.current(widget);
-      });
+      result.current(widget);;
 
       expect(mockScreenToFlowPosition).toHaveBeenCalled();
       expect(mockOnWidgetLoad).toHaveBeenCalledWith(
@@ -524,7 +503,7 @@ describe('useResourceAdd', () => {
       );
     });
 
-    it('should apply auto-assign connections for widgets when metadata exists', () => {
+    it('should apply auto-assign connections for widgets when metadata exists', async () => {
       mockGetNodes.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([[], [], null, null]);
 
@@ -535,7 +514,7 @@ describe('useResourceAdd', () => {
         } as unknown as UseResourceAddProps['metadata'],
       };
 
-      const {result} = renderHook(() => useResourceAdd(propsWithMetadata), {
+      const {result} = await renderHook(() => useResourceAdd(propsWithMetadata), {
         wrapper: createWrapper(),
       });
 
@@ -545,9 +524,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Widget,
       } as Widget;
 
-      act(() => {
-        result.current(widget);
-      });
+      result.current(widget);;
 
       expect(mockOnWidgetLoad).toHaveBeenCalled();
     });
@@ -577,7 +554,7 @@ describe('useResourceAdd', () => {
       mockGetNodes.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([newNodes, [], null, null]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -587,13 +564,11 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Widget,
       } as Widget;
 
-      act(() => {
-        result.current(widget);
-      });
+      result.current(widget);;
 
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       // updateNodeInternals should be called for node, component, and nested component
       expect(mockUpdateNodeInternals).toHaveBeenCalledWith('view-1');
@@ -613,7 +588,7 @@ describe('useResourceAdd', () => {
       mockGetNodes.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([newNodes, [], null, null]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -623,13 +598,11 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Widget,
       } as Widget;
 
-      act(() => {
-        result.current(widget);
-      });
+      result.current(widget);;
 
-      await act(async () => {
-        vi.runAllTimers();
-      });
+      
+      vi.runAllTimers();
+    
 
       expect(mockFitView).toHaveBeenCalledWith({padding: 0.2, duration: 300});
 
@@ -638,8 +611,8 @@ describe('useResourceAdd', () => {
   });
 
   describe('Step Handling', () => {
-    it('should handle step resource type', () => {
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+    it('should handle step resource type', async () => {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -649,9 +622,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Step,
       } as unknown as Step;
 
-      act(() => {
-        result.current(step);
-      });
+      result.current(step);;
 
       expect(mockScreenToFlowPosition).toHaveBeenCalled();
       expect(mockOnStepLoad).toHaveBeenCalled();
@@ -659,14 +630,14 @@ describe('useResourceAdd', () => {
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
     });
 
-    it('should set deletable to true for generated steps', () => {
+    it('should set deletable to true for generated steps', async () => {
       let capturedStep: Step | null = null;
       mockOnStepLoad.mockImplementation((step: Step) => {
         capturedStep = step;
         return step;
       });
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -677,9 +648,7 @@ describe('useResourceAdd', () => {
         data: {someData: 'value'},
       } as unknown as Step;
 
-      act(() => {
-        result.current(step);
-      });
+      result.current(step);;
 
       expect(capturedStep).not.toBeNull();
       expect(capturedStep!.deletable).toBe(true);
@@ -687,7 +656,7 @@ describe('useResourceAdd', () => {
   });
 
   describe('Element Handling', () => {
-    it('should handle element resource type with existing view step', () => {
+    it('should handle element resource type with existing view step', async () => {
       const existingViewStep: Node = {
         id: 'view-1',
         type: StepTypes.View,
@@ -697,7 +666,7 @@ describe('useResourceAdd', () => {
 
       mockGetNodes.mockReturnValue([existingViewStep]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -707,19 +676,17 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Element,
       } as unknown as Element;
 
-      act(() => {
-        result.current(element);
-      });
+      result.current(element);;
 
       expect(mockGenerateStepElement).toHaveBeenCalledWith(expect.objectContaining({type: 'INPUT'}));
       expect(mockUpdateNodeData).toHaveBeenCalledWith('view-1', expect.any(Function));
       expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
     });
 
-    it('should not add element when no view step exists', () => {
+    it('should not add element when no view step exists', async () => {
       mockGetNodes.mockReturnValue([]);
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -729,14 +696,12 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Element,
       } as unknown as Element;
 
-      act(() => {
-        result.current(element);
-      });
+      result.current(element);;
 
       expect(mockUpdateNodeData).not.toHaveBeenCalled();
     });
 
-    it('should execute updateNodeData callback correctly for elements', () => {
+    it('should execute updateNodeData callback correctly for elements', async () => {
       const existingViewStep: Node = {
         id: 'view-1',
         type: StepTypes.View,
@@ -753,7 +718,7 @@ describe('useResourceAdd', () => {
         },
       );
 
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -763,9 +728,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Element,
       } as unknown as Element;
 
-      act(() => {
-        result.current(element);
-      });
+      result.current(element);;
 
       expect(capturedCallback).not.toBeNull();
 
@@ -782,8 +745,8 @@ describe('useResourceAdd', () => {
   });
 
   describe('Unknown Resource Type', () => {
-    it('should not perform any action for unknown resource types', () => {
-      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+    it('should not perform any action for unknown resource types', async () => {
+      const {result} = await renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
       });
 
@@ -793,9 +756,7 @@ describe('useResourceAdd', () => {
         resourceType: 'UNKNOWN_TYPE',
       };
 
-      act(() => {
-        result.current(unknownResource as never);
-      });
+      result.current(unknownResource as never);;
 
       expect(mockOnTemplateLoad).not.toHaveBeenCalled();
       expect(mockOnWidgetLoad).not.toHaveBeenCalled();
@@ -805,9 +766,9 @@ describe('useResourceAdd', () => {
   });
 
   describe('Ref Updates', () => {
-    it('should use latest props values when handler is called', () => {
-      const {result, rerender} = renderHook(
-        ({props}: {props: UseResourceAddProps}) => useResourceAdd(props),
+    it('should use latest props values when handler is called', async () => {
+      const {result, rerender} = await renderHook(
+        (hookProps?) => useResourceAdd(hookProps!.props),
         {
           wrapper: createWrapper(),
           initialProps: {props: defaultProps},
@@ -820,7 +781,7 @@ describe('useResourceAdd', () => {
         onTemplateLoad: newOnTemplateLoad,
       };
 
-      rerender({props: newProps});
+      await rerender({props: newProps});
 
       const template = {
         id: 'template-1',
@@ -828,9 +789,7 @@ describe('useResourceAdd', () => {
         resourceType: ResourceTypes.Template,
       } as Template;
 
-      act(() => {
-        result.current(template);
-      });
+      result.current(template);;
 
       expect(newOnTemplateLoad).toHaveBeenCalled();
       expect(mockOnTemplateLoad).not.toHaveBeenCalled();

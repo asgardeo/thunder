@@ -24,7 +24,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type React from 'react';
 
 // Use vi.hoisted for mock functions
@@ -56,13 +57,6 @@ const {
     setRel: vi.fn(),
     type: 'text',
   })),
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
 }));
 
 // Mock the lexical composer context
@@ -148,7 +142,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   });
 
   describe('determineUrlType function behavior', () => {
-    it('should return CUSTOM for URLs not in PREDEFINED_URLS array', () => {
+    it('should return CUSTOM for URLs not in PREDEFINED_URLS array', async () => {
       // Since PREDEFINED_URLS is empty, any URL will return CUSTOM
       const mockLinkNode = {
         type: 'link',
@@ -181,14 +175,14 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The link should be displayed (determineUrlType returns CUSTOM for any URL)
       const link = document.querySelector('.MuiLink-root');
       expect(link).toBeInTheDocument();
     });
 
-    it('should exercise determineUrlType when URL matches no predefined option', () => {
+    it('should exercise determineUrlType when URL matches no predefined option', async () => {
       // This tests the behavior when find() returns undefined and returns 'CUSTOM'
       const mockLinkNode = {
         type: 'link',
@@ -201,14 +195,14 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
   });
 
   describe('getPlaceholderUrl function behavior', () => {
-    it('should return URL itself when selectedType is CUSTOM', () => {
+    it('should return URL itself when selectedType is CUSTOM', async () => {
       // This tests the behavior when selectedType is CUSTOM
       const testUrl = 'https://my-custom-placeholder.com';
       const mockLinkNode = {
@@ -242,7 +236,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as unknown as Selection);
       mockGetRootElement.mockReturnValue(rootElement);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // The link should display the URL itself as placeholder
       const link = document.querySelector('.MuiLink-root');
@@ -253,16 +247,16 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   describe('handleUrlTypeChange function behavior', () => {
     it('should set URL to https:// when switching to CUSTOM type', async () => {
       // This tests the else branch behavior when newType is CUSTOM
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByText('Edit');
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Edit Link')).toBeInTheDocument();
       });
 
       // Since PREDEFINED_URLS is empty, Select won't render
@@ -275,36 +269,36 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   describe('getCurrentUrl function behavior', () => {
     it('should return linkUrl when selectedUrlType is CUSTOM', async () => {
       // This tests the else branch that returns linkUrl
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByText('Edit');
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Edit Link')).toBeInTheDocument();
       });
 
       // Type a custom URL
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test-current-url.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://test-current-url.com');
+      
         expect(textField).toHaveValue('https://test-current-url.com');
 
         // Click save to trigger getCurrentUrl
-        const saveButton = screen.getByText('common:save');
-        await act(async () => {
-          fireEvent.click(saveButton);
-        });
+        const saveButton = page.getByText('Save');
+        
+        await userEvent.click(saveButton);
+      
       }
 
       // Should exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Link')).toBeInTheDocument();
       });
     });
   });
@@ -312,16 +306,16 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   describe('Select component rendering', () => {
     it('should not render Select when PREDEFINED_URLS is empty', async () => {
       // This tests the conditional rendering when PREDEFINED_URLS is empty
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByText('Edit');
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Edit Link')).toBeInTheDocument();
       });
 
       // Select should NOT be rendered since PREDEFINED_URLS is empty
@@ -331,7 +325,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   });
 
   describe('URL detection with various URL formats', () => {
-    it('should handle empty string URL', () => {
+    it('should handle empty string URL', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -343,12 +337,12 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle URL with special characters', () => {
+    it('should handle URL with special characters', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -360,12 +354,12 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
 
-    it('should handle URL with unicode characters', () => {
+    it('should handle URL with unicode characters', async () => {
       const mockLinkNode = {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
@@ -377,7 +371,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       expect(mockGetEditorState).toHaveBeenCalled();
     });
@@ -385,68 +379,68 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
 
   describe('Edge cases for URL type selection', () => {
     it('should handle rapid URL type changes', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByText('Edit');
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Edit Link')).toBeInTheDocument();
       });
 
       // Type multiple URLs rapidly
       const textField = document.querySelector('input');
       if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://url1.com'}});
-        });
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://url2.com'}});
-        });
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://final-url.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://url1.com');
+      
+        
+        await userEvent.fill(textField, 'https://url2.com');
+      
+        
+        await userEvent.fill(textField, 'https://final-url.com');
+      
         expect(textField).toHaveValue('https://final-url.com');
       }
     });
 
     it('should handle save with valid URL after initially empty', async () => {
-      render(<CustomLinkPlugin />);
+      await render(<CustomLinkPlugin />);
 
       // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      const editButton = page.getByText('Edit');
+      
+      await userEvent.click(editButton);
+    
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Edit Link')).toBeInTheDocument();
       });
 
       const textField = document.querySelector('input');
       if (textField) {
         // Clear the field first
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
-        });
+        
+        await userEvent.fill(textField, '');
+      
         // Then add a valid URL
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://valid-url.com'}});
-        });
+        
+        await userEvent.fill(textField, 'https://valid-url.com');
+      
         expect(textField).toHaveValue('https://valid-url.com');
 
         // Save
-        const saveButton = screen.getByText('common:save');
-        await act(async () => {
-          fireEvent.click(saveButton);
-        });
+        const saveButton = page.getByText('Save');
+        
+        await userEvent.click(saveButton);
+      
       }
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      await vi.waitFor(async () => {
+        await expect.element(page.getByText('Link')).toBeInTheDocument();
       });
     });
   });

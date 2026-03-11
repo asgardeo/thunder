@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import {StepTypes} from '@/features/flows/models/steps';
 import type {Resource} from '@/features/flows/models/resources';
 import StepPropertyFactory from '../StepPropertyFactory';
@@ -49,10 +50,10 @@ describe('StepPropertyFactory', () => {
     }) as Resource;
 
   describe('Rule Step Type', () => {
-    it('should render RulesProperties for Rule step type', () => {
+    it('should render RulesProperties for Rule step type', async () => {
       const resource = createMockResource(StepTypes.Rule);
 
-      render(
+      await render(
         <StepPropertyFactory
           resource={resource}
           propertyKey="condition"
@@ -61,13 +62,13 @@ describe('StepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('rules-properties')).toBeInTheDocument();
+      await expect.element(page.getByTestId('rules-properties')).toBeInTheDocument();
     });
 
-    it('should not render CommonStepPropertyFactory for Rule step type', () => {
+    it('should not render CommonStepPropertyFactory for Rule step type', async () => {
       const resource = createMockResource(StepTypes.Rule);
 
-      render(
+      await render(
         <StepPropertyFactory
           resource={resource}
           propertyKey="condition"
@@ -76,15 +77,15 @@ describe('StepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.queryByTestId('common-step-property-factory')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-property-factory')).not.toBeInTheDocument();
     });
   });
 
   describe('Other Step Types', () => {
-    it('should render CommonStepPropertyFactory for View step type', () => {
+    it('should render CommonStepPropertyFactory for View step type', async () => {
       const resource = createMockResource(StepTypes.View);
 
-      render(
+      await render(
         <StepPropertyFactory
           resource={resource}
           propertyKey="name"
@@ -93,13 +94,13 @@ describe('StepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-step-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-property-factory')).toBeInTheDocument();
     });
 
-    it('should render CommonStepPropertyFactory for Execution step type', () => {
+    it('should render CommonStepPropertyFactory for Execution step type', async () => {
       const resource = createMockResource(StepTypes.Execution);
 
-      render(
+      await render(
         <StepPropertyFactory
           resource={resource}
           propertyKey="executor"
@@ -108,13 +109,13 @@ describe('StepPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-step-property-factory')).toBeInTheDocument();
+      await expect.element(page.getByTestId('common-step-property-factory')).toBeInTheDocument();
     });
 
-    it('should pass props to CommonStepPropertyFactory', () => {
+    it('should pass props to CommonStepPropertyFactory', async () => {
       const resource = createMockResource(StepTypes.View, {id: 'view-step-123'});
 
-      render(
+      await render(
         <StepPropertyFactory
           resource={resource}
           propertyKey="description"
@@ -123,9 +124,9 @@ describe('StepPropertyFactory', () => {
         />,
       );
 
-      const factory = screen.getByTestId('common-step-property-factory');
-      expect(factory).toHaveAttribute('data-resource-id', 'view-step-123');
-      expect(factory).toHaveAttribute('data-property-key', 'description');
+      const factory = page.getByTestId('common-step-property-factory');
+      await expect.element(factory).toHaveAttribute('data-resource-id', 'view-step-123');
+      await expect.element(factory).toHaveAttribute('data-property-key', 'description');
     });
   });
 });

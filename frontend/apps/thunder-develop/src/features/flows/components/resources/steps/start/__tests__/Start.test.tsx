@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import Start from '../Start';
 
 // Mock @xyflow/react
@@ -38,90 +39,90 @@ vi.mock('../Start.scss', () => ({}));
 
 describe('Start', () => {
   describe('Rendering', () => {
-    it('should render the Start node', () => {
-      render(<Start />);
+    it('should render the Start node', async () => {
+      await render(<Start />);
 
-      expect(screen.getByText('Start')).toBeInTheDocument();
+      await expect.element(page.getByText('Start')).toBeInTheDocument();
     });
 
-    it('should render a Fab button with start label', () => {
-      render(<Start />);
+    it('should render a Fab button with start label', async () => {
+      await render(<Start />);
 
-      const fab = screen.getByRole('button', {name: 'start'});
+      const fab = page.getByRole('button', {name: 'start'});
       expect(fab).toBeInTheDocument();
     });
 
-    it('should render with start class on Fab', () => {
-      render(<Start />);
+    it('should render with start class on Fab', async () => {
+      await render(<Start />);
 
-      const fab = screen.getByRole('button');
+      const fab = page.getByRole('button');
       expect(fab).toHaveClass('start');
     });
   });
 
   describe('React Flow Handle', () => {
-    it('should render a source handle', () => {
-      render(<Start />);
+    it('should render a source handle', async () => {
+      await render(<Start />);
 
-      const handle = screen.getByTestId('handle-source');
+      const handle = page.getByTestId('handle-source');
       expect(handle).toBeInTheDocument();
     });
 
-    it('should position handle on the right', () => {
-      render(<Start />);
+    it('should position handle on the right', async () => {
+      await render(<Start />);
 
-      const handle = screen.getByTestId('handle-source');
+      const handle = page.getByTestId('handle-source');
       expect(handle).toHaveAttribute('data-position', 'right');
     });
 
-    it('should have correct handle id with next suffix', () => {
-      render(<Start />);
+    it('should have correct handle id with next suffix', async () => {
+      await render(<Start />);
 
-      const handle = screen.getByTestId('handle-source');
+      const handle = page.getByTestId('handle-source');
       // Handle id should contain 'start' and '_NEXT' suffix
-      expect(handle.getAttribute('data-handle-id')).toContain('start');
-      expect(handle.getAttribute('data-handle-id')).toContain('_NEXT');
+      expect(handle.element().getAttribute('data-handle-id')).toContain('start');
+      expect(handle.element().getAttribute('data-handle-id')).toContain('_NEXT');
     });
 
-    it('should have hidden-handle class', () => {
+    it('should have hidden-handle class', async () => {
       // Note: Since we're mocking Handle, we can't directly test the class
       // but the component should pass the className prop
-      render(<Start />);
+      await render(<Start />);
 
-      const handle = screen.getByTestId('handle-source');
+      const handle = page.getByTestId('handle-source');
       expect(handle).toBeInTheDocument();
     });
   });
 
   describe('Fab Properties', () => {
-    it('should render extended variant Fab', () => {
-      render(<Start />);
+    it('should render extended variant Fab', async () => {
+      await render(<Start />);
 
-      const fab = screen.getByRole('button');
+      const fab = page.getByRole('button');
       // Extended variant Fab will have extended class
       expect(fab).toBeInTheDocument();
     });
 
-    it('should render small size Fab', () => {
-      render(<Start />);
+    it('should render small size Fab', async () => {
+      await render(<Start />);
 
-      const fab = screen.getByRole('button');
+      const fab = page.getByRole('button');
       expect(fab).toBeInTheDocument();
     });
   });
 
   describe('Structure', () => {
-    it('should be wrapped in a div', () => {
-      const {container} = render(<Start />);
+    it('should be wrapped in a div', async () => {
+      const {container} = await render(<Start />);
 
       expect(container.firstChild?.nodeName).toBe('DIV');
     });
 
-    it('should contain Fab and Handle as children', () => {
-      render(<Start />);
+    it('should contain Fab and Handle as children', async () => {
+      await render(<Start />);
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
-      expect(screen.getByTestId('handle-source')).toBeInTheDocument();
+      await expect.element(page.getByRole('button')).toBeInTheDocument();
+      await expect.element(page.getByTestId('handle-source')).toBeInTheDocument();
     });
   });
 });

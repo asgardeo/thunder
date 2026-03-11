@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ManageChildOrganizationUnitSection from '../ManageChildOrganizationUnitSection';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
 
@@ -49,21 +50,6 @@ vi.mock('@thunder/logger/react', () => ({
   }),
 }));
 
-// Mock translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'organizationUnits:edit.childOUs.sections.manage.title': 'Manage Child Organization Units',
-        'organizationUnits:edit.childOUs.sections.manage.description': 'View and manage child organization units',
-        'organizationUnits:listing.columns.name': 'Name',
-        'organizationUnits:listing.columns.handle': 'Handle',
-        'organizationUnits:listing.columns.description': 'Description',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
 
 describe('ManageChildOrganizationUnitSection', () => {
   const mockChildOUs: OrganizationUnit[] = [
@@ -95,148 +81,147 @@ describe('ManageChildOrganizationUnitSection', () => {
     mockNavigate.mockResolvedValue(undefined);
   });
 
-  it('should render the manage child OUs section', () => {
+  it('should render the manage child OUs section', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('Manage Child Organization Units')).toBeInTheDocument();
-    expect(screen.getByText('View and manage child organization units')).toBeInTheDocument();
+    await expect.element(page.getByText('Child Organization Units')).toBeInTheDocument();
+    await expect.element(page.getByText('View and manage child organization units under this OU')).toBeInTheDocument();
   });
 
-  it('should render data grid with child OUs', () => {
+  it('should render data grid with child OUs', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
-    expect(screen.getByText('Frontend Team')).toBeInTheDocument();
-    expect(screen.getByText('Backend Team')).toBeInTheDocument();
-    expect(screen.getByText('DevOps Team')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByText('Frontend Team')).toBeInTheDocument();
+    await expect.element(page.getByText('Backend Team')).toBeInTheDocument();
+    await expect.element(page.getByText('DevOps Team')).toBeInTheDocument();
   });
 
-  it('should render column headers', () => {
+  it('should render column headers', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('Handle')).toBeInTheDocument();
-    expect(screen.getByText('Description')).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'Name'})).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'Handle'})).toBeInTheDocument();
+    await expect.element(page.getByRole('columnheader', {name: 'Description'})).toBeInTheDocument();
   });
 
-  it('should show loading state', () => {
+  it('should show loading state', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: null,
       isLoading: true,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    const grid = screen.getByRole('grid');
-    expect(grid).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
     // DataGrid shows loading overlay when isLoading is true
   });
 
-  it('should handle empty child OUs list', () => {
+  it('should handle empty child OUs list', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: []},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
     // Grid should show "No rows" message
   });
 
-  it('should handle null child OUs data', () => {
+  it('should handle null child OUs data', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: null,
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByRole('grid')).toBeInTheDocument();
+    await expect.element(page.getByRole('grid')).toBeInTheDocument();
   });
 
-  it('should call useGetChildOrganizationUnits with correct ID', () => {
+  it('should call useGetChildOrganizationUnits with correct ID', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-456" organizationUnitName="Engineering" />,
     );
 
     expect(mockUseGetChildOrganizationUnits).toHaveBeenCalledWith('ou-456');
   });
 
-  it('should render handles correctly', () => {
+  it('should render handles correctly', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('frontend')).toBeInTheDocument();
-    expect(screen.getByText('backend')).toBeInTheDocument();
-    expect(screen.getByText('devops')).toBeInTheDocument();
+    await expect.element(page.getByText('frontend')).toBeInTheDocument();
+    await expect.element(page.getByText('backend')).toBeInTheDocument();
+    await expect.element(page.getByText('devops')).toBeInTheDocument();
   });
 
-  it('should render descriptions correctly', () => {
+  it('should render descriptions correctly', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    expect(screen.getByText('Frontend development team')).toBeInTheDocument();
-    expect(screen.getByText('Backend development team')).toBeInTheDocument();
+    await expect.element(page.getByText('Frontend development team')).toBeInTheDocument();
+    await expect.element(page.getByText('Backend development team')).toBeInTheDocument();
   });
 
-  it('should show "-" for null description', () => {
+  it('should show "-" for null description', async () => {
     mockUseGetChildOrganizationUnits.mockReturnValue({
       data: {organizationUnits: mockChildOUs},
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
     // The third OU has null description, should show "-"
-    const cells = screen.getAllByText('-');
-    expect(cells.length).toBeGreaterThan(0);
+    const cells = page.getByText('-').all();
+    expect((cells).length).toBeGreaterThan(0);
   });
 
   it('should navigate to child OU when row is clicked', async () => {
@@ -245,15 +230,14 @@ describe('ManageChildOrganizationUnitSection', () => {
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
     // Get the grid cell with the text "Frontend Team"
-    const cell = screen.getByText('Frontend Team');
-    fireEvent.click(cell);
+    await userEvent.click(page.getByText('Frontend Team'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(
         '/organization-units/ou-child-1',
         expect.objectContaining({
@@ -274,14 +258,13 @@ describe('ManageChildOrganizationUnitSection', () => {
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Product Team" />,
     );
 
-    const cell = screen.getByText('Backend Team');
-    fireEvent.click(cell);
+    await userEvent.click(page.getByText('Backend Team'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(
         '/organization-units/ou-child-2',
         expect.objectContaining({
@@ -303,14 +286,13 @@ describe('ManageChildOrganizationUnitSection', () => {
       isLoading: false,
     });
 
-    renderWithProviders(
+    await renderWithProviders(
       <ManageChildOrganizationUnitSection organizationUnitId="ou-parent" organizationUnitName="Engineering" />,
     );
 
-    const cell = screen.getByText('Frontend Team');
-    fireEvent.click(cell);
+    await userEvent.click(page.getByText('Frontend Team'));
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalled();
     });
 

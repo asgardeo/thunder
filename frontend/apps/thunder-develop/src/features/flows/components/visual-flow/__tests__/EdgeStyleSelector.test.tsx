@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page, userEvent} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import EdgeStyleMenu from '../EdgeStyleSelector';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
@@ -25,20 +26,6 @@ import {EdgeStyleTypes} from '../../../models/steps';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
 import type {Base} from '../../../models/base';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'flows:core.headerPanel.edgeStyles.bezier': 'Bezier',
-        'flows:core.headerPanel.edgeStyles.smoothStep': 'Smooth Step',
-        'flows:core.headerPanel.edgeStyles.step': 'Step',
-      };
-      return translations[key] || key;
-    },
-  }),
-}));
 
 describe('EdgeStyleMenu', () => {
   const mockSetEdgeStyle = vi.fn();
@@ -107,24 +94,24 @@ describe('EdgeStyleMenu', () => {
   });
 
   describe('Menu Visibility', () => {
-    it('should not render menu when anchorEl is null', () => {
-      render(<EdgeStyleMenu anchorEl={null} onClose={mockOnClose} />, {
+    it('should not render menu when anchorEl is null', async () => {
+      await render(<EdgeStyleMenu anchorEl={null} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
       // Menu should not be visible
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('should render menu when anchorEl is provided', () => {
+    it('should render menu when anchorEl is provided', async () => {
       const anchorEl = document.createElement('button');
       document.body.appendChild(anchorEl);
 
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByRole('menu')).toBeInTheDocument();
+      await expect.element(page.getByRole('menu')).toBeInTheDocument();
 
       document.body.removeChild(anchorEl);
     });
@@ -144,32 +131,32 @@ describe('EdgeStyleMenu', () => {
       }
     });
 
-    it('should render all three edge style options', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should render all three edge style options', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('Bezier')).toBeInTheDocument();
-      expect(screen.getByText('Smooth Step')).toBeInTheDocument();
-      expect(screen.getByText('Step')).toBeInTheDocument();
+      await expect.element(page.getByText('Bezier')).toBeInTheDocument();
+      await expect.element(page.getByText('Smooth Step')).toBeInTheDocument();
+      await expect.element(page.getByText('Step')).toBeInTheDocument();
     });
 
-    it('should render menu items as clickable', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should render menu items as clickable', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       expect(menuItems).toHaveLength(3);
     });
 
-    it('should render icons for each option', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should render icons for each option', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
       // Each menu item should have an icon (ListItemIcon)
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       expect(menuItems).toHaveLength(3);
     });
   });
@@ -188,46 +175,46 @@ describe('EdgeStyleMenu', () => {
       }
     });
 
-    it('should call setEdgeStyle with Bezier when Bezier option is clicked', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should call setEdgeStyle with Bezier when Bezier option is clicked', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      const bezierOption = screen.getByText('Bezier');
-      fireEvent.click(bezierOption);
+      const bezierOption = page.getByText('Bezier');
+      await userEvent.click(bezierOption);
 
       expect(mockSetEdgeStyle).toHaveBeenCalledWith(EdgeStyleTypes.Bezier);
     });
 
-    it('should call setEdgeStyle with SmoothStep when Smooth Step option is clicked', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should call setEdgeStyle with SmoothStep when Smooth Step option is clicked', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      const smoothStepOption = screen.getByText('Smooth Step');
-      fireEvent.click(smoothStepOption);
+      const smoothStepOption = page.getByText('Smooth Step');
+      await userEvent.click(smoothStepOption);
 
       expect(mockSetEdgeStyle).toHaveBeenCalledWith(EdgeStyleTypes.SmoothStep);
     });
 
-    it('should call setEdgeStyle with Step when Step option is clicked', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should call setEdgeStyle with Step when Step option is clicked', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      const stepOption = screen.getByText('Step');
-      fireEvent.click(stepOption);
+      const stepOption = page.getByText('Step');
+      await userEvent.click(stepOption);
 
       expect(mockSetEdgeStyle).toHaveBeenCalledWith(EdgeStyleTypes.Step);
     });
 
-    it('should call onClose after selecting an option', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should call onClose after selecting an option', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      const bezierOption = screen.getByText('Bezier');
-      fireEvent.click(bezierOption);
+      const bezierOption = page.getByText('Bezier');
+      await userEvent.click(bezierOption);
 
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -247,59 +234,59 @@ describe('EdgeStyleMenu', () => {
       }
     });
 
-    it('should render all edge style options with SmoothStep context', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should render all edge style options with SmoothStep context', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper({
           ...defaultContextValue,
           edgeStyle: EdgeStyleTypes.SmoothStep,
         }),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       expect(menuItems).toHaveLength(3);
-      expect(screen.getByText('Smooth Step')).toBeInTheDocument();
+      await expect.element(page.getByText('Smooth Step')).toBeInTheDocument();
     });
 
-    it('should render all edge style options with Bezier context', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should render all edge style options with Bezier context', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper({
           ...defaultContextValue,
           edgeStyle: EdgeStyleTypes.Bezier,
         }),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       expect(menuItems).toHaveLength(3);
-      expect(screen.getByText('Bezier')).toBeInTheDocument();
+      await expect.element(page.getByText('Bezier')).toBeInTheDocument();
     });
 
-    it('should render all edge style options with Step context', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should render all edge style options with Step context', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper({
           ...defaultContextValue,
           edgeStyle: EdgeStyleTypes.Step,
         }),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       expect(menuItems).toHaveLength(3);
-      expect(screen.getByText('Step')).toBeInTheDocument();
+      await expect.element(page.getByText('Step')).toBeInTheDocument();
     });
   });
 
   describe('Menu Props', () => {
-    it('should render menu with correct structure', () => {
+    it('should render menu with correct structure', async () => {
       const anchorEl = document.createElement('button');
       document.body.appendChild(anchorEl);
 
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
-      const menu = screen.getByRole('menu');
+      const menu = page.getByRole('menu');
       expect(menu).toBeInTheDocument();
       // The menu is rendered and accessible
-      expect(screen.getAllByRole('menuitem')).toHaveLength(3);
+      expect(page.getByRole('menuitem')).toHaveLength(3);
 
       document.body.removeChild(anchorEl);
     });
@@ -319,66 +306,66 @@ describe('EdgeStyleMenu', () => {
       }
     });
 
-    it('should mark Bezier as selected when edgeStyle is Bezier', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should mark Bezier as selected when edgeStyle is Bezier', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper({
           ...defaultContextValue,
           edgeStyle: EdgeStyleTypes.Bezier,
         }),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       // First item (Bezier) should be selected
-      expect(menuItems[0]).toHaveClass('Mui-selected');
+      expect((menuItems.all())[0]).toHaveClass('Mui-selected');
     });
 
-    it('should mark SmoothStep as selected when edgeStyle is SmoothStep', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should mark SmoothStep as selected when edgeStyle is SmoothStep', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper({
           ...defaultContextValue,
           edgeStyle: EdgeStyleTypes.SmoothStep,
         }),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       // Second item (SmoothStep) should be selected
-      expect(menuItems[1]).toHaveClass('Mui-selected');
+      expect((menuItems.all())[1]).toHaveClass('Mui-selected');
     });
 
-    it('should mark Step as selected when edgeStyle is Step', () => {
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+    it('should mark Step as selected when edgeStyle is Step', async () => {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper({
           ...defaultContextValue,
           edgeStyle: EdgeStyleTypes.Step,
         }),
       });
 
-      const menuItems = screen.getAllByRole('menuitem');
+      const menuItems = page.getByRole('menuitem');
       // Third item (Step) should be selected
-      expect(menuItems[2]).toHaveClass('Mui-selected');
+      expect((menuItems.all())[2]).toHaveClass('Mui-selected');
     });
   });
 
   describe('Boolean Conversion', () => {
-    it('should convert null anchorEl to false for open state', () => {
-      render(<EdgeStyleMenu anchorEl={null} onClose={mockOnClose} />, {
+    it('should convert null anchorEl to false for open state', async () => {
+      await render(<EdgeStyleMenu anchorEl={null} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
       // Menu should not be visible when anchorEl is null
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('menu')).not.toBeInTheDocument();
     });
 
-    it('should convert valid anchorEl to true for open state', () => {
+    it('should convert valid anchorEl to true for open state', async () => {
       const anchorEl = document.createElement('button');
       document.body.appendChild(anchorEl);
 
-      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+      await render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
         wrapper: createWrapper(),
       });
 
       // Menu should be visible when anchorEl is provided
-      expect(screen.getByRole('menu')).toBeInTheDocument();
+      await expect.element(page.getByRole('menu')).toBeInTheDocument();
 
       document.body.removeChild(anchorEl);
     });

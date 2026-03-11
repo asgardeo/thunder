@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {render} from '@thunder/test-utils/browser';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
 import useApplicationCreate from '../useApplicationCreate';
@@ -123,224 +123,212 @@ describe('ApplicationCreateProvider', () => {
 
   const renderWithQueryClient = (ui: React.ReactElement) => render(ui);
 
-  it('provides initial state values', () => {
-    renderWithQueryClient(
+  it('provides initial state values', async () => {
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.NAME);
-    expect(screen.getByTestId('app-name')).toHaveTextContent('');
-    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
-    expect(screen.getByTestId('app-logo')).toHaveTextContent('null');
-    expect(screen.getByTestId('integrations')).toHaveTextContent(
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.NAME);
+    await expect.element(page.getByTestId('app-name')).toHaveTextContent('');
+    await expect.element(page.getByTestId('selected-theme')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('app-logo')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('integrations')).toHaveTextContent(
       JSON.stringify({[AuthenticatorTypes.BASIC_AUTH]: true}),
     );
-    expect(screen.getByTestId('sign-in-approach')).toHaveTextContent(ApplicationCreateFlowSignInApproach.INBUILT);
-    expect(screen.getByTestId('selected-technology')).toHaveTextContent('null');
-    expect(screen.getByTestId('selected-platform')).toHaveTextContent('null');
-    expect(screen.getByTestId('hosting-url')).toHaveTextContent('');
-    expect(screen.getByTestId('callback-url')).toHaveTextContent('');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('sign-in-approach')).toHaveTextContent(ApplicationCreateFlowSignInApproach.INBUILT);
+    await expect.element(page.getByTestId('selected-technology')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('selected-platform')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('hosting-url')).toHaveTextContent('');
+    await expect.element(page.getByTestId('callback-url')).toHaveTextContent('');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
   });
 
   it('updates current step when setCurrentStep is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Design Step'));
+    await userEvent.click(page.getByText('Set Design Step'));
 
-    expect(screen.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.DESIGN);
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.DESIGN);
   });
 
   it('updates app name when setAppName is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set App Name'));
+    await userEvent.click(page.getByText('Set App Name'));
 
-    expect(screen.getByTestId('app-name')).toHaveTextContent('Test App');
+    await expect.element(page.getByTestId('app-name')).toHaveTextContent('Test App');
   });
 
   it('updates selected theme when setSelectedTheme is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Theme to null'));
+    await userEvent.click(page.getByText('Set Theme to null'));
 
-    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('selected-theme')).toHaveTextContent('null');
   });
 
   it('updates app logo when setAppLogo is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Logo'));
+    await userEvent.click(page.getByText('Set Logo'));
 
-    expect(screen.getByTestId('app-logo')).toHaveTextContent('test-logo.png');
+    await expect.element(page.getByTestId('app-logo')).toHaveTextContent('test-logo.png');
   });
 
   it('toggles integration state when toggleIntegration is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
     // Initial state should not have 'test-integration'
-    expect(screen.getByTestId('integrations')).not.toHaveTextContent('test-integration');
+    await expect.element(page.getByTestId('integrations')).not.toHaveTextContent('test-integration');
 
-    await user.click(screen.getByText('Toggle Integration'));
+    await userEvent.click(page.getByText('Toggle Integration'));
 
     // Should now have test-integration set to true
-    expect(screen.getByTestId('integrations')).toHaveTextContent('test-integration');
-    expect(screen.getByTestId('integrations')).toHaveTextContent('true');
+    await expect.element(page.getByTestId('integrations')).toHaveTextContent('test-integration');
+    await expect.element(page.getByTestId('integrations')).toHaveTextContent('true');
 
     // Toggle again to disable
-    await user.click(screen.getByText('Toggle Integration'));
+    await userEvent.click(page.getByText('Toggle Integration'));
 
     // Should now have test-integration set to false
-    expect(screen.getByTestId('integrations')).toHaveTextContent('test-integration');
-    expect(screen.getByTestId('integrations')).toHaveTextContent('false');
+    await expect.element(page.getByTestId('integrations')).toHaveTextContent('test-integration');
+    await expect.element(page.getByTestId('integrations')).toHaveTextContent('false');
   });
 
   it('updates sign-in approach when setSignInApproach is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Custom Approach'));
+    await userEvent.click(page.getByText('Set Custom Approach'));
 
-    expect(screen.getByTestId('sign-in-approach')).toHaveTextContent(ApplicationCreateFlowSignInApproach.EMBEDDED);
+    await expect.element(page.getByTestId('sign-in-approach')).toHaveTextContent(ApplicationCreateFlowSignInApproach.EMBEDDED);
   });
 
   it('updates selected technology when setSelectedTechnology is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set React Technology'));
+    await userEvent.click(page.getByText('Set React Technology'));
 
-    expect(screen.getByTestId('selected-technology')).toHaveTextContent(TechnologyApplicationTemplate.REACT);
+    await expect.element(page.getByTestId('selected-technology')).toHaveTextContent(TechnologyApplicationTemplate.REACT);
   });
 
   it('updates selected platform when setSelectedPlatform is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Browser Platform'));
+    await userEvent.click(page.getByText('Set Browser Platform'));
 
-    expect(screen.getByTestId('selected-platform')).toHaveTextContent(PlatformApplicationTemplate.BROWSER);
+    await expect.element(page.getByTestId('selected-platform')).toHaveTextContent(PlatformApplicationTemplate.BROWSER);
   });
 
   it('updates hosting URL when setHostingUrl is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Hosting URL'));
+    await userEvent.click(page.getByText('Set Hosting URL'));
 
-    expect(screen.getByTestId('hosting-url')).toHaveTextContent('https://example.com');
+    await expect.element(page.getByTestId('hosting-url')).toHaveTextContent('https://example.com');
   });
 
   it('updates callback URL when setCallbackUrlFromConfig is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Callback URL'));
+    await userEvent.click(page.getByText('Set Callback URL'));
 
-    expect(screen.getByTestId('callback-url')).toHaveTextContent('https://example.com/callback');
+    await expect.element(page.getByTestId('callback-url')).toHaveTextContent('https://example.com/callback');
   });
 
   it('updates error when setError is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set Error'));
 
-    expect(screen.getByTestId('error')).toHaveTextContent('Test error');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Test error');
   });
 
   it('resets all state when reset is called', async () => {
-    const user = userEvent.setup();
 
-    renderWithQueryClient(
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
     // Set some values
-    await user.click(screen.getByText('Set App Name'));
-    await user.click(screen.getByText('Set Theme to null'));
-    await user.click(screen.getByText('Set Error'));
+    await userEvent.click(page.getByText('Set App Name'));
+    await userEvent.click(page.getByText('Set Theme to null'));
+    await userEvent.click(page.getByText('Set Error'));
 
     // Verify values are set
-    expect(screen.getByTestId('app-name')).toHaveTextContent('Test App');
-    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
-    expect(screen.getByTestId('error')).toHaveTextContent('Test error');
+    await expect.element(page.getByTestId('app-name')).toHaveTextContent('Test App');
+    await expect.element(page.getByTestId('selected-theme')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('Test error');
 
     // Reset
-    await user.click(screen.getByText('Reset'));
+    await userEvent.click(page.getByText('Reset'));
 
     // Verify back to initial state
-    expect(screen.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.NAME);
-    expect(screen.getByTestId('app-name')).toHaveTextContent('');
-    expect(screen.getByTestId('error')).toHaveTextContent('null');
-    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.NAME);
+    await expect.element(page.getByTestId('app-name')).toHaveTextContent('');
+    await expect.element(page.getByTestId('error')).toHaveTextContent('null');
+    await expect.element(page.getByTestId('selected-theme')).toHaveTextContent('null');
   });
 
-  it('memoizes context value to prevent unnecessary re-renders', () => {
+  it('memoizes context value to prevent unnecessary re-renders', async () => {
     const renderSpy = vi.fn();
 
     function TestRenderer() {
@@ -348,7 +336,7 @@ describe('ApplicationCreateProvider', () => {
       return <TestConsumer />;
     }
 
-    const {rerender} = renderWithQueryClient(
+    const {rerender} = await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestRenderer />
       </ApplicationCreateProvider>,
@@ -357,7 +345,7 @@ describe('ApplicationCreateProvider', () => {
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
     // Re-render with same props
-    rerender(
+    await rerender(
       <ApplicationCreateProvider>
         <TestRenderer />
       </ApplicationCreateProvider>,
@@ -367,25 +355,26 @@ describe('ApplicationCreateProvider', () => {
     expect(renderSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('provides default integrations with basic auth enabled', () => {
-    renderWithQueryClient(
+  it('provides default integrations with basic auth enabled', async () => {
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    const integrations = JSON.parse(screen.getByTestId('integrations').textContent ?? '{}') as Record<string, boolean>;
+    const integrationsEl = page.getByTestId('integrations');
+    const integrations = JSON.parse(integrationsEl.element().textContent ?? '{}') as Record<string, boolean>;
     expect(integrations[AuthenticatorTypes.BASIC_AUTH]).toBe(true);
   });
 
-  it('initializes with a default primary color', () => {
-    renderWithQueryClient(
+  it('initializes with a default primary color', async () => {
+    await renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
     );
 
-    const color = screen.getByTestId('selected-color').textContent;
+    const color = page.getByTestId('selected-color').element().textContent;
     expect(color).toMatch(/^#[0-9a-fA-F]{6}$/); // Should be a valid hex color
   });
 });

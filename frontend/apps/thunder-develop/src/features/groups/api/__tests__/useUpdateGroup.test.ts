@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {Group} from '../../models/group';
 
 const mockHttpRequest = vi.fn();
@@ -57,14 +56,14 @@ describe('useUpdateGroup', () => {
 
   it('should update a group successfully', async () => {
     mockHttpRequest.mockResolvedValue({data: mockUpdatedGroup});
-    const {result} = renderHook(() => useUpdateGroup());
+    const {result} = await renderHook(() => useUpdateGroup());
 
     result.current.mutate({
       groupId: 'g1',
       data: {name: 'Updated Group', description: 'Updated desc', organizationUnitId: 'ou1'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.data).toEqual(mockUpdatedGroup);
       expect(result.current.isSuccess).toBe(true);
     });
@@ -79,14 +78,14 @@ describe('useUpdateGroup', () => {
 
   it('should handle error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Update failed'));
-    const {result} = renderHook(() => useUpdateGroup());
+    const {result} = await renderHook(() => useUpdateGroup());
 
     result.current.mutate({
       groupId: 'g1',
       data: {name: 'Updated', organizationUnitId: 'ou1'},
     });
 
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(result.current.error?.message).toBe('Update failed');
     });
   });

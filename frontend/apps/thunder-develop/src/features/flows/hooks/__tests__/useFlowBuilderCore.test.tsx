@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {renderHook} from '@thunder/test-utils/browser';
 import type {ReactNode} from 'react';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../context/FlowBuilderCoreContext';
 import useFlowBuilderCore from '../useFlowBuilderCore';
@@ -65,8 +65,8 @@ describe('useFlowBuilderCore', () => {
     return Wrapper;
   };
 
-  it('should return context values when used within provider', () => {
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+  it('should return context values when used within provider', async () => {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(mockContextValue),
     });
 
@@ -77,64 +77,64 @@ describe('useFlowBuilderCore', () => {
     expect(result.current.edgeStyle).toBe(EdgeStyleTypes.SmoothStep);
   });
 
-  it('should return default context values when used without explicit provider', () => {
+  it('should return default context values when used without explicit provider', async () => {
     // When no provider is present, React returns the default context value
     // The hook checks for undefined context, but createContext provides defaults
-    const {result} = renderHook(() => useFlowBuilderCore());
+    const {result} = await renderHook(() => useFlowBuilderCore());
 
     // Default context values should be returned
     expect(result.current.isResourcePanelOpen).toBe(true);
     expect(result.current.isResourcePropertiesPanelOpen).toBe(false);
   });
 
-  it('should return setLastInteractedResource function', () => {
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+  it('should return setLastInteractedResource function', async () => {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(mockContextValue),
     });
 
     expect(typeof result.current.setLastInteractedResource).toBe('function');
   });
 
-  it('should return setIsResourcePanelOpen function', () => {
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+  it('should return setIsResourcePanelOpen function', async () => {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(mockContextValue),
     });
 
     expect(typeof result.current.setIsResourcePanelOpen).toBe('function');
   });
 
-  it('should return onResourceDropOnCanvas function', () => {
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+  it('should return onResourceDropOnCanvas function', async () => {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(mockContextValue),
     });
 
     expect(typeof result.current.onResourceDropOnCanvas).toBe('function');
   });
 
-  it('should return ElementFactory component', () => {
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+  it('should return ElementFactory component', async () => {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(mockContextValue),
     });
 
     expect(result.current.ElementFactory).toBeDefined();
   });
 
-  it('should return ResourceProperties component', () => {
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+  it('should return ResourceProperties component', async () => {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(mockContextValue),
     });
 
     expect(result.current.ResourceProperties).toBeDefined();
   });
 
-  it('should return flow node and edge types', () => {
+  it('should return flow node and edge types', async () => {
     const contextWithTypes: FlowBuilderCoreContextProps = {
       ...mockContextValue,
       flowNodeTypes: {custom: () => null},
       flowEdgeTypes: {custom: () => null},
     };
 
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(contextWithTypes),
     });
 
@@ -142,7 +142,7 @@ describe('useFlowBuilderCore', () => {
     expect(result.current.flowEdgeTypes).toHaveProperty('custom');
   });
 
-  it('should return metadata when provided', () => {
+  it('should return metadata when provided', async () => {
     const contextWithMetadata: FlowBuilderCoreContextProps = {
       ...mockContextValue,
       metadata: {
@@ -158,7 +158,7 @@ describe('useFlowBuilderCore', () => {
       },
     };
 
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(contextWithMetadata),
     });
 
@@ -166,7 +166,7 @@ describe('useFlowBuilderCore', () => {
     expect(result.current.metadata?.flowType).toEqual('LOGIN');
   });
 
-  it('should return i18n text when provided', () => {
+  it('should return i18n text when provided', async () => {
     const contextWithI18n: FlowBuilderCoreContextProps = {
       ...mockContextValue,
       i18nText: {
@@ -177,7 +177,7 @@ describe('useFlowBuilderCore', () => {
       language: 'en',
     };
 
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(contextWithI18n),
     });
 
@@ -185,21 +185,21 @@ describe('useFlowBuilderCore', () => {
     expect(result.current.language).toBe('en');
   });
 
-  it('should return publishFlow function when provided', () => {
+  it('should return publishFlow function when provided', async () => {
     const mockPublishFlow = vi.fn().mockResolvedValue(true);
     const contextWithPublish: FlowBuilderCoreContextProps = {
       ...mockContextValue,
       publishFlow: mockPublishFlow,
     };
 
-    const {result} = renderHook(() => useFlowBuilderCore(), {
+    const {result} = await renderHook(() => useFlowBuilderCore(), {
       wrapper: createWrapper(contextWithPublish),
     });
 
     expect(result.current.publishFlow).toBe(mockPublishFlow);
   });
 
-  it('should throw an error when used outside of FlowBuilderCoreProvider with undefined context', () => {
+  it('should throw an error when used outside of FlowBuilderCoreProvider with undefined context', async () => {
     // Create a wrapper that provides undefined as the context value
     function UndefinedContextWrapper({children}: {children: ReactNode}) {
       return (
@@ -209,10 +209,10 @@ describe('useFlowBuilderCore', () => {
       );
     }
 
-    expect(() => {
-      renderHook(() => useFlowBuilderCore(), {
+    await expect(async () => {
+      await renderHook(()  => useFlowBuilderCore(), {
         wrapper: UndefinedContextWrapper,
       });
-    }).toThrow('useFlowBuilderCore must be used within a FlowBuilderCoreProvider');
+    }).rejects.toThrow('useFlowBuilderCore must be used within a FlowBuilderCoreProvider');
   });
 });

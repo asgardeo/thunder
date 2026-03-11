@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
-import userEvent from '@testing-library/user-event';
+import {page, userEvent} from 'vitest/browser';
+import {renderWithProviders} from '@thunder/test-utils/browser';
 import ConfigureDesign, {type ConfigureDesignProps} from '../ConfigureDesign';
 
 // Mock the utility functions
@@ -68,131 +68,127 @@ describe('ConfigureDesign', () => {
     } as ReturnType<typeof useGetTheme>);
   });
 
-  const renderComponent = (props: Partial<ConfigureDesignProps> = {}) =>
-    render(<ConfigureDesign {...defaultProps} {...props} />);
+  const renderComponent = async (props: Partial<ConfigureDesignProps> = {}) =>
+    renderWithProviders(<ConfigureDesign {...defaultProps} {...props} />);
 
-  it('should render the component with title', () => {
-    renderComponent();
+  it('should render the component with title', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
   });
 
-  it('should render subtitle with info icon', () => {
-    renderComponent();
+  it('should render subtitle with info icon', async () => {
+    await renderComponent();
 
-    expect(screen.getByText('Customize the appearance of your application')).toBeInTheDocument();
+    await expect.element(page.getByText('Customize the appearance of your application')).toBeInTheDocument();
   });
 
-  it('should render logo section title', () => {
-    renderComponent();
+  it('should render logo section title', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('heading', {name: 'Application Logo'})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Application Logo'})).toBeInTheDocument();
   });
 
-  it('should render shuffle button', () => {
-    renderComponent();
+  it('should render shuffle button', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('button', {name: 'Shuffle'})).toBeInTheDocument();
+    await expect.element(page.getByRole('button', {name: 'Shuffle'})).toBeInTheDocument();
   });
 
-  it('should call onInitialLogoLoad when component mounts', () => {
-    renderComponent({onInitialLogoLoad: mockOnInitialLogoLoad});
+  it('should call onInitialLogoLoad when component mounts', async () => {
+    await renderComponent({onInitialLogoLoad: mockOnInitialLogoLoad});
 
     expect(mockOnInitialLogoLoad).toHaveBeenCalledWith(mockLogoSuggestions[0]);
   });
 
-  it('should not call onInitialLogoLoad if not provided', () => {
-    renderComponent();
+  it('should not call onInitialLogoLoad if not provided', async () => {
+    await renderComponent();
 
     // Should not throw error
     expect(mockOnInitialLogoLoad).not.toHaveBeenCalled();
   });
 
-  it('should render all logo suggestions', () => {
-    renderComponent();
+  it('should render all logo suggestions', async () => {
+    await renderComponent();
 
-    const avatars = screen.getAllByRole('img');
+    const avatars = page.getByRole('img').all();
     expect(avatars.length).toBeGreaterThanOrEqual(mockLogoSuggestions.length);
   });
 
   it('should call onLogoSelect when clicking a logo', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const avatars = screen.getAllByRole('img');
-    await user.click(avatars[0]);
+    const avatars = page.getByRole('img').all();
+    await userEvent.click(avatars[0]);
 
     expect(mockOnLogoSelect).toHaveBeenCalledWith(mockLogoSuggestions[0]);
   });
 
-  it('should highlight selected logo', () => {
-    renderComponent({appLogo: mockLogoSuggestions[0]});
+  it('should highlight selected logo', async () => {
+    await renderComponent({appLogo: mockLogoSuggestions[0]});
 
-    const avatars = screen.getAllByRole('img');
+    const avatars = page.getByRole('img').all();
     // Selected logo should have different styling (width: 80 vs 56)
     expect(avatars[0]).toBeInTheDocument();
   });
 
   it('should regenerate logos when shuffle button is clicked', async () => {
-    const user = userEvent.setup();
     const newLogos = ['https://example.com/avatars/lion_lg.png', 'https://example.com/avatars/tiger_lg.png'];
 
     vi.mocked(generateAppLogoSuggestions).mockReturnValueOnce(mockLogoSuggestions).mockReturnValueOnce(newLogos);
 
-    renderComponent();
+    await renderComponent();
 
-    const shuffleButton = screen.getByRole('button', {name: 'Shuffle'});
-    await user.click(shuffleButton);
+    const shuffleButton = page.getByRole('button', {name: 'Shuffle'});
+    await userEvent.click(shuffleButton);
 
     // generateAppLogoSuggestions should be called again
     expect(generateAppLogoSuggestions).toHaveBeenCalledTimes(2);
   });
 
   it('should display animal name in tooltip', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const avatars = screen.getAllByRole('img');
-    await user.hover(avatars[0]);
+    const avatars = page.getByRole('img').all();
+    await userEvent.hover(avatars[0]);
 
     // Tooltip should show "Cat" from "cat_lg.png"
-    expect(await screen.findByRole('tooltip', {name: /Cat/i})).toBeInTheDocument();
+    expect(page.getByRole('tooltip', {name: /Cat/i})).toBeInTheDocument();
   });
 
-  it('should render theme section title', () => {
-    renderComponent();
+  it('should render theme section title', async () => {
+    await renderComponent();
 
-    expect(screen.getByRole('heading', {name: 'Theme'})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {name: 'Theme'})).toBeInTheDocument();
   });
 
-  it('should generate logos with correct count', () => {
-    renderComponent();
+  it('should generate logos with correct count', async () => {
+    await renderComponent();
 
     expect(generateAppLogoSuggestions).toHaveBeenCalledWith(8);
   });
 
-  it('should handle null appLogo prop', () => {
-    renderComponent({appLogo: null});
+  it('should handle null appLogo prop', async () => {
+    await renderComponent({appLogo: null});
 
     // Should render without errors
-    expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
+    await expect.element(page.getByRole('heading', {level: 1})).toBeInTheDocument();
   });
 
-  it('should display palette icon', () => {
-    renderComponent();
+  it('should display palette icon', async () => {
+    await renderComponent();
 
     // Palette icon should be present in the UI
-    const colorSection = screen.getByRole('heading', {name: 'Theme'});
+    const colorSection = page.getByRole('heading', {name: 'Theme'});
     expect(colorSection).toBeInTheDocument();
   });
 
   it('should handle rapid logo clicks', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+    await renderComponent();
 
-    const avatars = screen.getAllByRole('img');
-    await user.click(avatars[0]);
-    await user.click(avatars[1]);
+    const avatars = page.getByRole('img').all();
+    await userEvent.click(avatars[0]);
+    await userEvent.click(avatars[1]);
 
     expect(mockOnLogoSelect).toHaveBeenCalledTimes(2);
     expect(mockOnLogoSelect).toHaveBeenNthCalledWith(1, mockLogoSuggestions[0]);
@@ -200,25 +196,24 @@ describe('ConfigureDesign', () => {
   });
 
   it('should call onInitialLogoLoad again after shuffle', async () => {
-    const user = userEvent.setup();
     const newLogos = ['https://example.com/avatars/new_lg.png'];
     vi.mocked(generateAppLogoSuggestions).mockReturnValueOnce(mockLogoSuggestions).mockReturnValueOnce(newLogos);
 
-    renderComponent({onInitialLogoLoad: mockOnInitialLogoLoad});
+    await renderComponent({onInitialLogoLoad: mockOnInitialLogoLoad});
 
     expect(mockOnInitialLogoLoad).toHaveBeenCalledWith(mockLogoSuggestions[0]);
 
-    const shuffleButton = screen.getByRole('button', {name: 'Shuffle'});
-    await user.click(shuffleButton);
+    const shuffleButton = page.getByRole('button', {name: 'Shuffle'});
+    await userEvent.click(shuffleButton);
 
     expect(mockOnInitialLogoLoad).toHaveBeenCalledWith(newLogos[0]);
     expect(mockOnInitialLogoLoad).toHaveBeenCalledTimes(2);
   });
 
   describe('onReadyChange callback', () => {
-    it('should call onReadyChange with true on mount', () => {
+    it('should call onReadyChange with true on mount', async () => {
       const mockOnReadyChange = vi.fn();
-      renderComponent({onReadyChange: mockOnReadyChange});
+      await renderComponent({onReadyChange: mockOnReadyChange});
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });
@@ -246,7 +241,7 @@ describe('ConfigureDesign', () => {
       {id: 'theme-2', displayName: 'Sunset Orange'},
     ];
 
-    it('should render theme cards when themes are available', () => {
+    it('should render theme cards when themes are available', async () => {
       vi.mocked(useGetThemes).mockReturnValue({
         data: {themes: mockThemesList},
         isLoading: false,
@@ -257,15 +252,15 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useGetTheme>);
+      } as ReturnType<typeof useGetTheme>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByText('Corporate Blue')).toBeInTheDocument();
-      expect(screen.getByText('Sunset Orange')).toBeInTheDocument();
+      await expect.element(page.getByText('Corporate Blue')).toBeInTheDocument();
+      await expect.element(page.getByText('Sunset Orange')).toBeInTheDocument();
     });
 
-    it('should render a card for each theme', () => {
+    it('should render radio buttons for each theme card', async () => {
       vi.mocked(useGetThemes).mockReturnValue({
         data: {themes: mockThemesList},
         isLoading: false,
@@ -276,15 +271,15 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useGetTheme>);
+      } as ReturnType<typeof useGetTheme>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByTestId('theme-card-theme-1')).toBeInTheDocument();
-      expect(screen.getByTestId('theme-card-theme-2')).toBeInTheDocument();
+      const radios = page.getByRole('radio').all();
+      expect(radios).toHaveLength(2);
     });
 
-    it('should call onThemeSelect with theme details when theme is loaded', () => {
+    it('should call onThemeSelect with theme details when theme is loaded', async () => {
       vi.mocked(useGetThemes).mockReturnValue({
         data: {themes: mockThemesList},
         isLoading: false,
@@ -295,28 +290,27 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useGetTheme>);
+      } as ReturnType<typeof useGetTheme>);
 
-      renderComponent();
+      await renderComponent();
 
       expect(mockOnThemeSelect).toHaveBeenCalledWith('theme-1', mockThemeDetails.theme);
     });
 
-    it('should show empty state when no themes are configured', () => {
+    it('should show empty state when no themes are configured', async () => {
       vi.mocked(useGetThemes).mockReturnValue({
         data: {themes: []},
         isLoading: false,
         error: null,
       } as unknown as ReturnType<typeof useGetThemes>);
 
-      renderComponent();
+      await renderComponent();
 
-      expect(screen.getByText('No themes configured')).toBeInTheDocument();
-      expect(screen.getByText('You can configure themes later from the Design settings.')).toBeInTheDocument();
+      await expect.element(page.getByText('No themes configured')).toBeInTheDocument();
+      await expect.element(page.getByText('You can configure themes later from the Design settings.')).toBeInTheDocument();
     });
 
     it('should select a different theme when clicking its card', async () => {
-      const user = userEvent.setup();
       const mockOnThemeSelectLocal = vi.fn();
 
       vi.mocked(useGetThemes).mockReturnValue({
@@ -329,12 +323,12 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useGetTheme>);
+      } as ReturnType<typeof useGetTheme>);
 
-      renderComponent({onThemeSelect: mockOnThemeSelectLocal});
+      await renderComponent({onThemeSelect: mockOnThemeSelectLocal});
 
-      const secondThemeCard = screen.getByTestId('theme-card-theme-2');
-      await user.click(secondThemeCard);
+      const secondThemeCard = page.getByTestId('theme-card-theme-2');
+      await userEvent.click(secondThemeCard);
 
       // onThemeSelect should be called when theme details load
       expect(mockOnThemeSelectLocal).toHaveBeenCalledWith('theme-1', mockThemeDetails.theme);
@@ -342,22 +336,22 @@ describe('ConfigureDesign', () => {
   });
 
   describe('getAnimalName', () => {
-    it('should return "Unknown" for unmatched logo URL pattern', () => {
+    it('should return "Unknown" for unmatched logo URL pattern', async () => {
       const unmatchedLogos = ['https://example.com/avatars/invalid.jpg'];
       vi.mocked(generateAppLogoSuggestions).mockReturnValue(unmatchedLogos);
 
-      renderComponent();
+      await renderComponent();
 
       // Should render without errors - the tooltip would show "Unknown"
-      expect(screen.getAllByRole('img').length).toBeGreaterThan(0);
+      expect(page.getByRole('img').all().length).toBeGreaterThan(0);
     });
   });
 
   describe('Initial logo handling', () => {
-    it('should not call onInitialLogoLoad when appLogo is already in suggestions', () => {
+    it('should not call onInitialLogoLoad when appLogo is already in suggestions', async () => {
       vi.mocked(generateAppLogoSuggestions).mockReturnValue(mockLogoSuggestions);
 
-      renderComponent({
+      await renderComponent({
         appLogo: mockLogoSuggestions[1],
         onInitialLogoLoad: mockOnInitialLogoLoad,
       });

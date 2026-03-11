@@ -17,20 +17,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
 import ResendButtonAdapter from '../ResendButtonAdapter';
 
 // Mock dependencies
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  Trans: ({children}: {children: ReactNode}) => children,
-}));
-
 vi.mock('@/features/flows/hooks/useRequiredFields', () => ({
   default: vi.fn(),
 }));
@@ -80,10 +74,10 @@ describe('ResendButtonAdapter', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the resend button adapter with correct class names', () => {
+    it('should render the resend button adapter with correct class names', async () => {
       const resource = createMockElement();
 
-      const {container} = render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {
+      const {container} = await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {
         wrapper: createWrapper(),
       });
 
@@ -91,43 +85,43 @@ describe('ResendButtonAdapter', () => {
       expect(container.querySelector('.button-adapter')).toBeInTheDocument();
     });
 
-    it('should render a Button component', () => {
+    it('should render a Button component', async () => {
       const resource = createMockElement();
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await expect.element(page.getByRole('button')).toBeInTheDocument();
     });
 
-    it('should render button label', () => {
+    it('should render button label via PlaceholderComponent', async () => {
       const resource = createMockElement({label: 'Resend OTP'});
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toHaveTextContent('Resend OTP');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('Resend OTP');
     });
 
-    it('should render NodeHandle for edge connection', () => {
+    it('should render NodeHandle for edge connection', async () => {
       const resource = createMockElement();
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('node-handle')).toBeInTheDocument();
-      expect(screen.getByTestId('node-handle')).toHaveAttribute('data-type', 'source');
+      await expect.element(page.getByTestId('node-handle')).toBeInTheDocument();
+      await expect.element(page.getByTestId('node-handle')).toHaveAttribute('data-type', 'source');
     });
   });
 
   describe('Button Configuration', () => {
-    it('should render with secondary color', () => {
+    it('should render with secondary color', async () => {
       const resource = createMockElement();
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
-    it('should apply styles from config', () => {
+    it('should apply styles from config', async () => {
       const resource = createMockElement({
         config: {
           field: {name: 'resend', type: ElementTypes},
@@ -135,28 +129,28 @@ describe('ResendButtonAdapter', () => {
         },
       });
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      const button = screen.getByRole('button');
+      const button = page.getByRole('button');
       expect(button).toBeInTheDocument();
     });
   });
 
   describe('Empty Label', () => {
-    it('should handle empty label', () => {
+    it('should handle empty label', async () => {
       const resource = createMockElement({label: ''});
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('');
     });
 
-    it('should handle undefined label', () => {
+    it('should handle undefined label', async () => {
       const resource = createMockElement({label: undefined});
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
-      expect(screen.getByRole('button')).toHaveTextContent('');
+      await expect.element(page.getByTestId('placeholder')).toHaveTextContent('');
     });
   });
 
@@ -167,7 +161,7 @@ describe('ResendButtonAdapter', () => {
 
       const resource = createMockElement();
 
-      render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
+      await render(<ResendButtonAdapter resource={resource} stepId="step-1" />, {wrapper: createWrapper()});
 
       expect(mockUseRequiredFields).toHaveBeenCalled();
     });
