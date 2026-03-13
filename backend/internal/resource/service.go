@@ -234,12 +234,18 @@ func (rs *resourceService) GetResourceServerList(
 
 	totalCount, err := rs.resourceStore.GetResourceServerListCount(ctx)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrResultLimitExceededInCompositeMode
+		}
 		rs.logger.Error("Failed to get resource server count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	resourceServers, err := rs.resourceStore.GetResourceServerList(ctx, limit, offset)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrResultLimitExceededInCompositeMode
+		}
 		rs.logger.Error("Failed to list resource servers", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -542,12 +548,18 @@ func (rs *resourceService) GetResourceList(
 
 	totalCount, err := rs.resourceStore.GetResourceListCountByParent(ctx, resourceServerID, parentID)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrResultLimitExceededInCompositeMode
+		}
 		rs.logger.Error("Failed to get top-level resource count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	resources, err = rs.resourceStore.GetResourceListByParent(ctx, resourceServerID, parentID, limit, offset)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrResultLimitExceededInCompositeMode
+		}
 		rs.logger.Error("Failed to list resources", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -853,12 +865,18 @@ func (rs *resourceService) GetActionList(
 
 	totalCount, err := rs.resourceStore.GetActionListCount(ctx, resourceServerID, resID)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrResultLimitExceededInCompositeMode
+		}
 		rs.logger.Error("Failed to get action count", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	actions, err := rs.resourceStore.GetActionList(ctx, resourceServerID, resID, limit, offset)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrResultLimitExceededInCompositeMode
+		}
 		rs.logger.Error("Failed to list actions", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}

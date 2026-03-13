@@ -282,9 +282,8 @@ func (s *CompositeStoreTestSuite) TestGetFlowByID_DBErrorAndFileError() {
 
 	result, err := s.compositeStore.GetFlowByID(flowID)
 
-	// When both stores fail, CompositeGetHelper returns errFlowNotFound
 	assert.Error(s.T(), err)
-	assert.Equal(s.T(), errFlowNotFound, err)
+	assert.Equal(s.T(), fileError, err)
 	assert.Nil(s.T(), result)
 }
 
@@ -344,9 +343,8 @@ func (s *CompositeStoreTestSuite) TestGetFlowByHandle_DBAndFileError() {
 
 	result, err := s.compositeStore.GetFlowByHandle(handle, flowType)
 
-	// When both stores fail, CompositeGetHelper returns the not found error
 	s.Error(err)
-	s.Equal(errFlowNotFound, err)
+	s.Equal(fileError, err)
 	s.Nil(result)
 }
 

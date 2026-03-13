@@ -99,12 +99,18 @@ func (rs *roleService) GetRoleList(ctx context.Context, limit, offset int) (*Rol
 
 	totalCount, err := rs.roleStore.GetRoleListCount(ctx)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ResultLimitExceededInCompositeMode
+		}
 		logger.Error("Failed to get role count", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
 	roles, err := rs.roleStore.GetRoleList(ctx, limit, offset)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ResultLimitExceededInCompositeMode
+		}
 		logger.Error("Failed to list roles", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
@@ -332,6 +338,9 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 	// Check if role has any assignments before deleting
 	assignmentCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return &ResultLimitExceededInCompositeMode
+		}
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
@@ -376,12 +385,18 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 
 	totalCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ResultLimitExceededInCompositeMode
+		}
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
 	assignments, err := rs.roleStore.GetRoleAssignments(ctx, id, limit, offset)
 	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ResultLimitExceededInCompositeMode
+		}
 		logger.Error("Failed to get role assignments", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}

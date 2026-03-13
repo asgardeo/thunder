@@ -53,4 +53,9 @@ var (
 		ID:    "IPQ-IDP_MGT-06",
 		Query: "SELECT ID, NAME, DESCRIPTION, TYPE, PROPERTIES FROM IDP WHERE NAME = $1 AND DEPLOYMENT_ID = $2",
 	}
+	// queryGetIdentityProviderListCount is the query to get a count of IdPs.
+	queryGetIdentityProviderListCount = model.DBQuery{
+		ID:    "IPQ-IDP_MGT-07",
+		Query: "SELECT COUNT(*) AS count FROM IDP WHERE DEPLOYMENT_ID = $1",
+	}
 )

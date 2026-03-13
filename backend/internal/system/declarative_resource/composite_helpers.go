@@ -67,6 +67,9 @@ func CompositeGetHelper[T any](
 		if fileErr == nil {
 			return entity, nil
 		}
+		if !errors.Is(fileErr, notFoundError) {
+			return zero, fileErr
+		}
 		// Not found in either store
 		return zero, notFoundError
 	}

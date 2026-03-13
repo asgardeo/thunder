@@ -68,36 +68,44 @@ func (f *fileBasedStore) GetOrganizationUnit(ctx context.Context, id string) (Or
 	return *ou, nil
 }
 
-// GetOrganizationUnitByPath implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitByPath(ctx context.Context, handles []string) (OrganizationUnit, error) {
+// GetOrganizationUnitByHandle implements organizationUnitStoreInterface.
+func (f *fileBasedStore) GetOrganizationUnitByHandle(
+	ctx context.Context, handle string, parent *string,
+) (OrganizationUnit, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return OrganizationUnit{}, err
 	}
 
-	// Build the path by traversing the hierarchy
+	for _, item := range list {
+		ou, ok := item.Data.(*OrganizationUnit)
+		if !ok {
+			continue
+		}
+
+		parentMatch := (parent == nil && ou.Parent == nil) ||
+			(parent != nil && ou.Parent != nil && *parent == *ou.Parent)
+		if ou.Handle == handle && parentMatch {
+			return *ou, nil
+		}
+	}
+
+	return OrganizationUnit{}, ErrOrganizationUnitNotFound
+}
+
+// GetOrganizationUnitByPath implements organizationUnitStoreInterface.
+func (f *fileBasedStore) GetOrganizationUnitByPath(ctx context.Context, handles []string) (OrganizationUnit, error) {
 	var currentOU *OrganizationUnit
 	var currentParent *string
 
 	for _, handle := range handles {
-		found := false
-		for _, item := range list {
-			if ou, ok := item.Data.(*OrganizationUnit); ok {
-				// Check if this OU has the right handle and parent
-				parentMatch := (currentParent == nil && ou.Parent == nil) ||
-					(currentParent != nil && ou.Parent != nil && *currentParent == *ou.Parent)
-
-				if ou.Handle == handle && parentMatch {
-					currentOU = ou
-					currentParent = &ou.ID
-					found = true
-					break
-				}
-			}
-		}
-		if !found {
+		ou, err := f.GetOrganizationUnitByHandle(ctx, handle, currentParent)
+		if err != nil {
 			return OrganizationUnit{}, ErrOrganizationUnitNotFound
 		}
+
+		currentOU = &ou
+		currentParent = &ou.ID
 	}
 
 	if currentOU == nil {

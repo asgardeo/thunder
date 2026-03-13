@@ -21,6 +21,7 @@ package role
 import (
 	"context"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
@@ -42,67 +43,65 @@ func newCompositeRoleStore(fileStore, dbStore roleStoreInterface) roleStoreInter
 	}
 }
 
-// GetRoleListCount retrieves the total count of roles from both stores.
+// GetRoleListCount retrieves the total count of unique roles across both stores.
 func (c *compositeRoleStore) GetRoleListCount(ctx context.Context) (int, error) {
-	dbCount, err := c.dbStore.GetRoleListCount(ctx)
+	capCount := func(fn func(context.Context) (int, error)) func() (int, error) {
+		return func() (int, error) {
+			count, err := fn(ctx)
+			if err != nil {
+				return 0, err
+			}
+			return min(count, serverconst.MaxCompositeStoreRecords), nil
+		}
+	}
+	roles, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		capCount(c.dbStore.GetRoleListCount),
+		capCount(c.fileStore.GetRoleListCount),
+		func(count int) ([]Role, error) { return c.dbStore.GetRoleList(ctx, count, 0) },
+		func(count int) ([]Role, error) { return c.fileStore.GetRoleList(ctx, count, 0) },
+		mergeRoles,
+		serverconst.MaxCompositeStoreRecords+1,
+		0,
+		serverconst.MaxCompositeStoreRecords,
+	)
 	if err != nil {
 		return 0, err
 	}
-
-	fileCount, err := c.fileStore.GetRoleListCount(ctx)
-	if err != nil {
-		return 0, err
+	if limitExceeded {
+		return 0, errResultLimitExceededInCompositeMode
 	}
 
-	dbRoles, err := c.dbStore.GetRoleList(ctx, dbCount, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	fileRoles, err := c.fileStore.GetRoleList(ctx, fileCount, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	mergedRoles := mergeRoles(dbRoles, fileRoles)
-	return len(mergedRoles), nil
+	return len(roles), nil
 }
 
 // GetRoleList retrieves roles from both stores and merges them.
 func (c *compositeRoleStore) GetRoleList(ctx context.Context, limit, offset int) ([]Role, error) {
-	dbCount, err := c.dbStore.GetRoleListCount(ctx)
+	capCount := func(fn func(context.Context) (int, error)) func() (int, error) {
+		return func() (int, error) {
+			count, err := fn(ctx)
+			if err != nil {
+				return 0, err
+			}
+			return min(count, serverconst.MaxCompositeStoreRecords), nil
+		}
+	}
+	roles, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		capCount(c.dbStore.GetRoleListCount),
+		capCount(c.fileStore.GetRoleListCount),
+		func(count int) ([]Role, error) { return c.dbStore.GetRoleList(ctx, count, 0) },
+		func(count int) ([]Role, error) { return c.fileStore.GetRoleList(ctx, count, 0) },
+		mergeRoles,
+		limit,
+		offset,
+		serverconst.MaxCompositeStoreRecords,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	fileCount, err := c.fileStore.GetRoleListCount(ctx)
-	if err != nil {
-		return nil, err
+	if limitExceeded {
+		return nil, errResultLimitExceededInCompositeMode
 	}
-
-	dbRoles, err := c.dbStore.GetRoleList(ctx, dbCount, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	fileRoles, err := c.fileStore.GetRoleList(ctx, fileCount, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge roles from both stores
-	mergedRoles := mergeRoles(dbRoles, fileRoles)
-
-	start := offset
-	if start > len(mergedRoles) {
-		start = len(mergedRoles)
-	}
-	end := start + limit
-	if end > len(mergedRoles) {
-		end = len(mergedRoles)
-	}
-
-	return mergedRoles[start:end], nil
+	return roles, nil
 }
 
 // CreateRole creates a new role in the database store only.
@@ -144,65 +143,63 @@ func (c *compositeRoleStore) GetRoleAssignments(
 	id string,
 	limit, offset int,
 ) ([]RoleAssignment, error) {
-	dbCount, err := c.dbStore.GetRoleAssignmentsCount(ctx, id)
+	capCount := func(fn func(context.Context, string) (int, error)) func() (int, error) {
+		return func() (int, error) {
+			count, err := fn(ctx, id)
+			if err != nil {
+				return 0, err
+			}
+			return min(count, serverconst.MaxCompositeStoreRecords), nil
+		}
+	}
+	assignments, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		capCount(c.dbStore.GetRoleAssignmentsCount),
+		capCount(c.fileStore.GetRoleAssignmentsCount),
+		func(count int) ([]RoleAssignment, error) { return c.dbStore.GetRoleAssignments(ctx, id, count, 0) },
+		func(count int) ([]RoleAssignment, error) { return c.fileStore.GetRoleAssignments(ctx, id, count, 0) },
+		mergeAssignments,
+		limit,
+		offset,
+		serverconst.MaxCompositeStoreRecords,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	fileCount, err := c.fileStore.GetRoleAssignmentsCount(ctx, id)
-	if err != nil {
-		return nil, err
+	if limitExceeded {
+		return nil, errResultLimitExceededInCompositeMode
 	}
-
-	dbAssignments, err := c.dbStore.GetRoleAssignments(ctx, id, dbCount, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	fileAssignments, err := c.fileStore.GetRoleAssignments(ctx, id, fileCount, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge assignments from both stores
-	mergedAssignments := mergeAssignments(dbAssignments, fileAssignments)
-
-	start := offset
-	if start > len(mergedAssignments) {
-		start = len(mergedAssignments)
-	}
-	end := start + limit
-	if end > len(mergedAssignments) {
-		end = len(mergedAssignments)
-	}
-
-	return mergedAssignments[start:end], nil
+	return assignments, nil
 }
 
-// GetRoleAssignmentsCount retrieves the count of role assignments from both stores.
+// GetRoleAssignmentsCount retrieves the count of unique role assignments across both stores.
 func (c *compositeRoleStore) GetRoleAssignmentsCount(ctx context.Context, id string) (int, error) {
-	dbCount, err := c.dbStore.GetRoleAssignmentsCount(ctx, id)
+	capCount := func(fn func(context.Context, string) (int, error)) func() (int, error) {
+		return func() (int, error) {
+			count, err := fn(ctx, id)
+			if err != nil {
+				return 0, err
+			}
+			return min(count, serverconst.MaxCompositeStoreRecords), nil
+		}
+	}
+	assignments, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		capCount(c.dbStore.GetRoleAssignmentsCount),
+		capCount(c.fileStore.GetRoleAssignmentsCount),
+		func(count int) ([]RoleAssignment, error) { return c.dbStore.GetRoleAssignments(ctx, id, count, 0) },
+		func(count int) ([]RoleAssignment, error) { return c.fileStore.GetRoleAssignments(ctx, id, count, 0) },
+		mergeAssignments,
+		serverconst.MaxCompositeStoreRecords+1,
+		0,
+		serverconst.MaxCompositeStoreRecords,
+	)
 	if err != nil {
 		return 0, err
 	}
-
-	fileCount, err := c.fileStore.GetRoleAssignmentsCount(ctx, id)
-	if err != nil {
-		return 0, err
+	if limitExceeded {
+		return 0, errResultLimitExceededInCompositeMode
 	}
 
-	dbAssignments, err := c.dbStore.GetRoleAssignments(ctx, id, dbCount, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	fileAssignments, err := c.fileStore.GetRoleAssignments(ctx, id, fileCount, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	mergedAssignments := mergeAssignments(dbAssignments, fileAssignments)
-	return len(mergedAssignments), nil
+	return len(assignments), nil
 }
 
 // UpdateRole updates a role in the database store only.

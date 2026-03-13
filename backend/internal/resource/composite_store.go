@@ -20,9 +20,8 @@ package resource
 
 import (
 	"context"
-	"errors"
-	"math"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
@@ -51,69 +50,102 @@ func (c *compositeResourceStore) CreateResourceServer(ctx context.Context, id st
 }
 
 func (c *compositeResourceStore) GetResourceServer(ctx context.Context, id string) (ResourceServer, error) {
-	// Try DB store first
-	server, err := c.dbStore.GetResourceServer(ctx, id)
-	if err == nil {
-		server.IsReadOnly = false
-		return server, nil
-	}
-
-	// If not found in DB, try file store
-	if errors.Is(err, errResourceServerNotFound) {
-		server, err := c.fileStore.GetResourceServer(ctx, id)
-		if err == nil {
-			server.IsReadOnly = true
-			return server, nil
-		}
-		return ResourceServer{}, err
-	}
-
-	return ResourceServer{}, err
+	server, err := declarativeresource.CompositeGetHelper(
+		func() (ResourceServer, error) {
+			s, err := c.dbStore.GetResourceServer(ctx, id)
+			if err == nil {
+				s.IsReadOnly = false
+			}
+			return s, err
+		},
+		func() (ResourceServer, error) {
+			s, err := c.fileStore.GetResourceServer(ctx, id)
+			if err == nil {
+				s.IsReadOnly = true
+			}
+			return s, err
+		},
+		errResourceServerNotFound,
+	)
+	return server, err
 }
 
 func (c *compositeResourceStore) GetResourceServerList(
 	ctx context.Context, limit, offset int) ([]ResourceServer, error) {
-	// Fetch all servers from both stores using math.MaxInt to ensure no LIMIT 0 issue
-	dbServers, err := c.dbStore.GetResourceServerList(ctx, math.MaxInt, 0)
+	dbCount, err := c.dbStore.GetResourceServerListCount(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	fileServers, err := c.fileStore.GetResourceServerList(ctx, math.MaxInt, 0)
+	fileCount, err := c.fileStore.GetResourceServerListCount(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Merge and deduplicate
-	merged := mergeAndDeduplicateResourceServers(dbServers, fileServers)
-
-	// Apply pagination
-	start := offset
-	end := offset + limit
-	if start > len(merged) {
+	if dbCount == 0 && fileCount == 0 {
 		return []ResourceServer{}, nil
 	}
-	if end > len(merged) {
-		end = len(merged)
+
+	// Fetch all from both stores, then deduplicate before applying the cap.
+	// This avoids spurious limit errors when IDs overlap across the two stores.
+	dbServers, err := c.dbStore.GetResourceServerList(ctx, dbCount, 0)
+	if err != nil {
+		return nil, err
 	}
 
-	return merged[start:end], nil
+	fileServers, err := c.fileStore.GetResourceServerList(ctx, fileCount, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceServers := mergeAndDeduplicateResourceServers(dbServers, fileServers)
+	if len(resourceServers) > serverconst.MaxCompositeStoreRecords {
+		return nil, errResultLimitExceededInCompositeMode
+	}
+
+	// Apply pagination on the deduplicated slice.
+	start := offset
+	if start > len(resourceServers) {
+		return []ResourceServer{}, nil
+	}
+	end := start + limit
+	if end > len(resourceServers) {
+		end = len(resourceServers)
+	}
+	return resourceServers[start:end], nil
 }
 
 func (c *compositeResourceStore) GetResourceServerListCount(ctx context.Context) (int, error) {
-	// Fetch all servers from both stores using math.MaxInt to avoid LIMIT issues
-	dbServers, err := c.dbStore.GetResourceServerList(ctx, math.MaxInt, 0)
+	dbCount, err := c.dbStore.GetResourceServerListCount(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	fileServers, err := c.fileStore.GetResourceServerList(ctx, math.MaxInt, 0)
+	fileCount, err := c.fileStore.GetResourceServerListCount(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	// Merge and deduplicate, then return count
+	if dbCount == 0 && fileCount == 0 {
+		return 0, nil
+	}
+
+	// Fetch all from both stores, deduplicate, then apply the cap.
+	// Checking the raw sum before dedup would cause spurious errors when IDs overlap.
+	dbServers, err := c.dbStore.GetResourceServerList(ctx, dbCount, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	fileServers, err := c.fileStore.GetResourceServerList(ctx, fileCount, 0)
+	if err != nil {
+		return 0, err
+	}
+
 	merged := mergeAndDeduplicateResourceServers(dbServers, fileServers)
+	if len(merged) > serverconst.MaxCompositeStoreRecords {
+		return 0, errResultLimitExceededInCompositeMode
+	}
 	return len(merged), nil
 }
 
@@ -174,35 +206,20 @@ func (c *compositeResourceStore) CreateResource(
 
 func (c *compositeResourceStore) GetResource(
 	ctx context.Context, id string, resServerID string) (Resource, error) {
-	// Try DB store first
-	resource, err := c.dbStore.GetResource(ctx, id, resServerID)
-	if err == nil {
-		return resource, nil
-	}
-
-	// If not found in DB, try file store
-	if errors.Is(err, errResourceNotFound) {
-		return c.fileStore.GetResource(ctx, id, resServerID)
-	}
-
-	return Resource{}, err
+	resource, err := declarativeresource.CompositeGetHelper(
+		func() (Resource, error) { return c.dbStore.GetResource(ctx, id, resServerID) },
+		func() (Resource, error) { return c.fileStore.GetResource(ctx, id, resServerID) },
+		errResourceNotFound,
+	)
+	return resource, err
 }
 
 func (c *compositeResourceStore) GetResourceList(
 	ctx context.Context, resServerID string, limit, offset int) ([]Resource, error) {
-	// Fetch all resources from both stores using math.MaxInt to ensure no LIMIT 0 issue
-	dbResources, err := c.dbStore.GetResourceList(ctx, resServerID, math.MaxInt, 0)
+	merged, err := c.getMergedResources(ctx, resServerID)
 	if err != nil {
 		return nil, err
 	}
-
-	fileResources, err := c.fileStore.GetResourceList(ctx, resServerID, math.MaxInt, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge and deduplicate
-	merged := mergeAndDeduplicateResources(dbResources, fileResources)
 
 	// Apply pagination
 	start := offset
@@ -220,20 +237,10 @@ func (c *compositeResourceStore) GetResourceList(
 func (c *compositeResourceStore) GetResourceListByParent(
 	ctx context.Context, resServerID string, parentID *string, limit, offset int,
 ) ([]Resource, error) {
-	// Fetch all resources from both stores using math.MaxInt to ensure no LIMIT 0 issue
-	dbResources, err := c.dbStore.GetResourceListByParent(ctx, resServerID, parentID, math.MaxInt, 0)
+	merged, err := c.getMergedResourcesByParent(ctx, resServerID, parentID)
 	if err != nil {
 		return nil, err
 	}
-
-	fileResources, err := c.fileStore.GetResourceListByParent(
-		ctx, resServerID, parentID, math.MaxInt, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge and deduplicate
-	merged := mergeAndDeduplicateResources(dbResources, fileResources)
 
 	// Apply pagination
 	start := offset
@@ -249,38 +256,19 @@ func (c *compositeResourceStore) GetResourceListByParent(
 }
 
 func (c *compositeResourceStore) GetResourceListCount(ctx context.Context, resServerID string) (int, error) {
-	// Fetch all resources from both stores using math.MaxInt to avoid LIMIT issues
-	dbResources, err := c.dbStore.GetResourceList(ctx, resServerID, math.MaxInt, 0)
+	merged, err := c.getMergedResources(ctx, resServerID)
 	if err != nil {
 		return 0, err
 	}
-
-	fileResources, err := c.fileStore.GetResourceList(ctx, resServerID, math.MaxInt, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	// Merge and deduplicate, then return count
-	merged := mergeAndDeduplicateResources(dbResources, fileResources)
 	return len(merged), nil
 }
 
 func (c *compositeResourceStore) GetResourceListCountByParent(
 	ctx context.Context, resServerID string, parentID *string) (int, error) {
-	// Fetch all resources from both stores using math.MaxInt to avoid LIMIT issues
-	dbResources, err := c.dbStore.GetResourceListByParent(ctx, resServerID, parentID, math.MaxInt, 0)
+	merged, err := c.getMergedResourcesByParent(ctx, resServerID, parentID)
 	if err != nil {
 		return 0, err
 	}
-
-	fileResources, err := c.fileStore.GetResourceListByParent(
-		ctx, resServerID, parentID, math.MaxInt, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	// Merge and deduplicate, then return count
-	merged := mergeAndDeduplicateResources(dbResources, fileResources)
 	return len(merged), nil
 }
 
@@ -335,19 +323,10 @@ func (c *compositeResourceStore) GetAction(
 
 func (c *compositeResourceStore) GetActionList(
 	ctx context.Context, resServerID string, resID *string, limit, offset int) ([]Action, error) {
-	// Fetch all actions from both stores using math.MaxInt to ensure no LIMIT 0 issue
-	dbActions, err := c.dbStore.GetActionList(ctx, resServerID, resID, math.MaxInt, 0)
+	merged, err := c.getMergedActions(ctx, resServerID, resID)
 	if err != nil {
 		return nil, err
 	}
-
-	fileActions, err := c.fileStore.GetActionList(ctx, resServerID, resID, math.MaxInt, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge and deduplicate
-	merged := mergeAndDeduplicateActions(dbActions, fileActions)
 
 	// Apply pagination
 	start := offset
@@ -364,20 +343,121 @@ func (c *compositeResourceStore) GetActionList(
 
 func (c *compositeResourceStore) GetActionListCount(
 	ctx context.Context, resServerID string, resID *string) (int, error) {
-	// Fetch all actions from both stores using math.MaxInt to avoid LIMIT issues
-	dbActions, err := c.dbStore.GetActionList(ctx, resServerID, resID, math.MaxInt, 0)
+	merged, err := c.getMergedActions(ctx, resServerID, resID)
 	if err != nil {
 		return 0, err
 	}
-
-	fileActions, err := c.fileStore.GetActionList(ctx, resServerID, resID, math.MaxInt, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	// Merge and deduplicate, then return count
-	merged := mergeAndDeduplicateActions(dbActions, fileActions)
 	return len(merged), nil
+}
+
+func (c *compositeResourceStore) getMergedResources(ctx context.Context, resServerID string) ([]Resource, error) {
+	dbCount, err := c.dbStore.GetResourceListCount(ctx, resServerID)
+	if err != nil {
+		return nil, err
+	}
+
+	fileCount, err := c.fileStore.GetResourceListCount(ctx, resServerID)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		func() (int, error) { return dbCount, nil },
+		func() (int, error) { return fileCount, nil },
+		func(count int) ([]Resource, error) { return c.dbStore.GetResourceList(ctx, resServerID, count, 0) },
+		func(count int) ([]Resource, error) { return c.fileStore.GetResourceList(ctx, resServerID, count, 0) },
+		mergeAndDeduplicateResources,
+		dbCount+fileCount,
+		0,
+		serverconst.MaxCompositeStoreRecords,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if limitExceeded {
+		return nil, errResultLimitExceededInCompositeMode
+	}
+
+	return resources, nil
+}
+
+func (c *compositeResourceStore) getMergedResourcesByParent(
+	ctx context.Context,
+	resServerID string,
+	parentID *string,
+) ([]Resource, error) {
+	dbCount, err := c.dbStore.GetResourceListCountByParent(ctx, resServerID, parentID)
+	if err != nil {
+		return nil, err
+	}
+
+	fileCount, err := c.fileStore.GetResourceListCountByParent(ctx, resServerID, parentID)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergeCompositeListWithLimit(
+		dbCount,
+		fileCount,
+		func(count int) ([]Resource, error) {
+			return c.dbStore.GetResourceListByParent(ctx, resServerID, parentID, count, 0)
+		},
+		func(count int) ([]Resource, error) {
+			return c.fileStore.GetResourceListByParent(ctx, resServerID, parentID, count, 0)
+		},
+		mergeAndDeduplicateResources,
+	)
+}
+
+func (c *compositeResourceStore) getMergedActions(
+	ctx context.Context,
+	resServerID string,
+	resID *string,
+) ([]Action, error) {
+	dbCount, err := c.dbStore.GetActionListCount(ctx, resServerID, resID)
+	if err != nil {
+		return nil, err
+	}
+
+	fileCount, err := c.fileStore.GetActionListCount(ctx, resServerID, resID)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergeCompositeListWithLimit(
+		dbCount,
+		fileCount,
+		func(count int) ([]Action, error) { return c.dbStore.GetActionList(ctx, resServerID, resID, count, 0) },
+		func(count int) ([]Action, error) { return c.fileStore.GetActionList(ctx, resServerID, resID, count, 0) },
+		mergeAndDeduplicateActions,
+	)
+}
+
+func mergeCompositeListWithLimit[T any](
+	dbCount int,
+	fileCount int,
+	dbListFn func(count int) ([]T, error),
+	fileListFn func(count int) ([]T, error),
+	mergeFn func(dbList []T, fileList []T) []T,
+) ([]T, error) {
+	merged, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		func() (int, error) { return dbCount, nil },
+		func() (int, error) { return fileCount, nil },
+		dbListFn,
+		fileListFn,
+		mergeFn,
+		dbCount+fileCount,
+		0,
+		serverconst.MaxCompositeStoreRecords,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if limitExceeded {
+		return nil, errResultLimitExceededInCompositeMode
+	}
+
+	return merged, nil
 }
 
 func (c *compositeResourceStore) UpdateAction(

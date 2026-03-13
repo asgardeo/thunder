@@ -117,13 +117,47 @@ func (c *compositeOUStore) GetOrganizationUnit(ctx context.Context, id string) (
 	)
 }
 
-// GetOrganizationUnitByPath retrieves an organization unit by hierarchical path from either store.
-func (c *compositeOUStore) GetOrganizationUnitByPath(ctx context.Context, handles []string) (OrganizationUnit, error) {
+// GetOrganizationUnitByHandle retrieves an organization unit by handle and parent from either store.
+// Checks database store first, then falls back to file store.
+func (c *compositeOUStore) GetOrganizationUnitByHandle(
+	ctx context.Context, handle string, parent *string,
+) (OrganizationUnit, error) {
 	return declarativeresource.CompositeGetHelper(
-		func() (OrganizationUnit, error) { return c.dbStore.GetOrganizationUnitByPath(ctx, handles) },
-		func() (OrganizationUnit, error) { return c.fileStore.GetOrganizationUnitByPath(ctx, handles) },
+		func() (OrganizationUnit, error) { return c.dbStore.GetOrganizationUnitByHandle(ctx, handle, parent) },
+		func() (OrganizationUnit, error) { return c.fileStore.GetOrganizationUnitByHandle(ctx, handle, parent) },
 		ErrOrganizationUnitNotFound,
 	)
+}
+
+// GetOrganizationUnitByPath retrieves an organization unit by hierarchical path from either store.
+func (c *compositeOUStore) GetOrganizationUnitByPath(ctx context.Context, handles []string) (OrganizationUnit, error) {
+	if len(handles) == 0 {
+		return OrganizationUnit{}, ErrOrganizationUnitNotFound
+	}
+
+	current, err := c.findRootByHandle(ctx, handles[0])
+	if err != nil {
+		return OrganizationUnit{}, err
+	}
+
+	for i := 1; i < len(handles); i++ {
+		current, err = c.findChildByHandle(ctx, current.ID, handles[i])
+		if err != nil {
+			return OrganizationUnit{}, err
+		}
+	}
+
+	return current, nil
+}
+
+func (c *compositeOUStore) findRootByHandle(ctx context.Context, handle string) (OrganizationUnit, error) {
+	return c.GetOrganizationUnitByHandle(ctx, handle, nil)
+}
+
+func (c *compositeOUStore) findChildByHandle(
+	ctx context.Context, parentID, handle string,
+) (OrganizationUnit, error) {
+	return c.GetOrganizationUnitByHandle(ctx, handle, &parentID)
 }
 
 // IsOrganizationUnitExists checks if an organization unit exists in either store.

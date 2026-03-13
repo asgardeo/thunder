@@ -168,6 +168,8 @@ func (s *CompositeIDPStoreTestSuite) TestGetIdentityProviderList_MergesAndDedupl
 		{ID: "file-2", Name: "File IDP 2", Type: IDPTypeOIDC},
 	}
 
+	s.dbStore.On("GetIdentityProviderListCount", context.Background()).Return(len(dbIDPs), nil)
+	s.fileStore.On("GetIdentityProviderListCount", context.Background()).Return(len(fileIDPs), nil)
 	s.dbStore.On("GetIdentityProviderList", context.Background()).Return(dbIDPs, nil)
 	s.fileStore.On("GetIdentityProviderList", context.Background()).Return(fileIDPs, nil)
 
@@ -210,6 +212,8 @@ func (s *CompositeIDPStoreTestSuite) TestGetIdentityProviderList_DeduplicatesOnI
 		{ID: "file-2", Name: "File IDP 2", Type: IDPTypeOIDC},
 	}
 
+	s.dbStore.On("GetIdentityProviderListCount", context.Background()).Return(len(dbIDPs), nil)
+	s.fileStore.On("GetIdentityProviderListCount", context.Background()).Return(len(fileIDPs), nil)
 	s.dbStore.On("GetIdentityProviderList", context.Background()).Return(dbIDPs, nil)
 	s.fileStore.On("GetIdentityProviderList", context.Background()).Return(fileIDPs, nil)
 
@@ -245,18 +249,20 @@ func (s *CompositeIDPStoreTestSuite) TestGetIdentityProviderList_DeduplicatesOnI
 
 // TestGetIdentityProviderList_HandlesEmptyStores verifies empty results are handled
 func (s *CompositeIDPStoreTestSuite) TestGetIdentityProviderList_HandlesEmptyStores() {
-	s.dbStore.On("GetIdentityProviderList", context.Background()).Return([]BasicIDPDTO{}, nil)
-	s.fileStore.On("GetIdentityProviderList", context.Background()).Return([]BasicIDPDTO{}, nil)
+	s.dbStore.On("GetIdentityProviderListCount", context.Background()).Return(0, nil)
+	s.fileStore.On("GetIdentityProviderListCount", context.Background()).Return(0, nil)
 
 	result, err := s.compositeStore.GetIdentityProviderList(context.Background())
 
 	s.NoError(err)
 	s.Len(result, 0)
+	s.dbStore.AssertNotCalled(s.T(), "GetIdentityProviderList", context.Background())
+	s.fileStore.AssertNotCalled(s.T(), "GetIdentityProviderList", context.Background())
 }
 
 // TestGetIdentityProviderList_HandlesDBStoreError verifies error handling
 func (s *CompositeIDPStoreTestSuite) TestGetIdentityProviderList_HandlesDBStoreError() {
-	s.dbStore.On("GetIdentityProviderList", context.Background()).Return([]BasicIDPDTO{}, errors.New("DB error"))
+	s.dbStore.On("GetIdentityProviderListCount", context.Background()).Return(0, errors.New("DB error"))
 
 	result, err := s.compositeStore.GetIdentityProviderList(context.Background())
 
@@ -269,6 +275,8 @@ func (s *CompositeIDPStoreTestSuite) TestGetIdentityProviderList_HandlesFileStor
 	dbIDPs := []BasicIDPDTO{
 		{ID: "db-1", Name: "DB IDP 1", Type: IDPTypeOIDC},
 	}
+	s.dbStore.On("GetIdentityProviderListCount", context.Background()).Return(len(dbIDPs), nil)
+	s.fileStore.On("GetIdentityProviderListCount", context.Background()).Return(1, nil)
 	s.dbStore.On("GetIdentityProviderList", context.Background()).Return(dbIDPs, nil)
 	s.fileStore.On("GetIdentityProviderList", context.Background()).Return([]BasicIDPDTO{}, errors.New("File error"))
 

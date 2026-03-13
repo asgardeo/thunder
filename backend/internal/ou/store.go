@@ -21,6 +21,7 @@ package ou
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -38,6 +39,7 @@ type organizationUnitStoreInterface interface {
 	GetOrganizationUnitsByIDs(ctx context.Context, ids []string) ([]OrganizationUnitBasic, error)
 	CreateOrganizationUnit(ctx context.Context, ou OrganizationUnit) error
 	GetOrganizationUnit(ctx context.Context, id string) (OrganizationUnit, error)
+	GetOrganizationUnitByHandle(ctx context.Context, handle string, parent *string) (OrganizationUnit, error)
 	GetOrganizationUnitByPath(ctx context.Context, handles []string) (OrganizationUnit, error)
 	IsOrganizationUnitExists(ctx context.Context, id string) (bool, error)
 	IsOrganizationUnitDeclarative(ctx context.Context, id string) bool
@@ -206,6 +208,38 @@ func (s *organizationUnitStore) GetOrganizationUnit(ctx context.Context, id stri
 	return ou, nil
 }
 
+// GetOrganizationUnitByHandle retrieves an organization unit by handle and parent.
+// When parent is nil, only root organization units are considered.
+func (s *organizationUnitStore) GetOrganizationUnitByHandle(
+	ctx context.Context, handle string, parent *string,
+) (OrganizationUnit, error) {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	var results []map[string]interface{}
+	if parent == nil {
+		results, err = dbClient.QueryContext(ctx, queryGetRootOrganizationUnitByHandle, handle, s.deploymentID)
+	} else {
+		results, err = dbClient.QueryContext(ctx, queryGetOrganizationUnitByHandle, handle, *parent, s.deploymentID)
+	}
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to execute query for handle %s: %w", handle, err)
+	}
+
+	if len(results) == 0 {
+		return OrganizationUnit{}, ErrOrganizationUnitNotFound
+	}
+
+	ou, err := buildOrganizationUnitFromResultRow(results[0])
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to build organization unit for handle %s: %w", handle, err)
+	}
+
+	return ou, nil
+}
+
 // GetOrganizationUnitByPath retrieves an organization unit by its hierarchical handle path.
 func (s *organizationUnitStore) GetOrganizationUnitByPath(
 	ctx context.Context, handlePath []string,
@@ -227,21 +261,11 @@ func (s *organizationUnitStore) GetOrganizationUnitByPath(
 
 	for i, handle := range handlePath {
 		fullPath = fullPath + "/" + handle
-		var results []map[string]interface{}
-
-		if parentID == nil {
-			results, err = dbClient.QueryContext(ctx, queryGetRootOrganizationUnitByHandle, handle, s.deploymentID)
-		} else {
-			results, err = dbClient.QueryContext(
-				ctx, queryGetOrganizationUnitByHandle, handle, *parentID, s.deploymentID,
-			)
-		}
-
+		currentOU, err = s.getOrganizationUnitByHandleWithClient(ctx, dbClient, handle, parentID)
 		if err != nil {
-			return OrganizationUnit{}, fmt.Errorf("failed to execute query for handle %s: %w", handle, err)
-		}
-
-		if len(results) == 0 {
+			if !errors.Is(err, ErrOrganizationUnitNotFound) {
+				return OrganizationUnit{}, err
+			}
 			logger.Debug("Organization unit not found in path",
 				log.String("handle", handle),
 				log.Int("pathIndex", i),
@@ -249,15 +273,37 @@ func (s *organizationUnitStore) GetOrganizationUnitByPath(
 			return OrganizationUnit{}, ErrOrganizationUnitNotFound
 		}
 
-		currentOU, err = buildOrganizationUnitFromResultRow(results[0])
-		if err != nil {
-			return OrganizationUnit{}, fmt.Errorf("failed to build organization unit for handle %s: %w", handle, err)
-		}
-
 		parentID = &currentOU.ID
 	}
 
 	return currentOU, nil
+}
+
+func (s *organizationUnitStore) getOrganizationUnitByHandleWithClient(
+	ctx context.Context, dbClient provider.DBClientInterface, handle string, parent *string,
+) (OrganizationUnit, error) {
+	var results []map[string]interface{}
+	var err error
+
+	if parent == nil {
+		results, err = dbClient.QueryContext(ctx, queryGetRootOrganizationUnitByHandle, handle, s.deploymentID)
+	} else {
+		results, err = dbClient.QueryContext(ctx, queryGetOrganizationUnitByHandle, handle, *parent, s.deploymentID)
+	}
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to execute query for handle %s: %w", handle, err)
+	}
+
+	if len(results) == 0 {
+		return OrganizationUnit{}, ErrOrganizationUnitNotFound
+	}
+
+	ou, err := buildOrganizationUnitFromResultRow(results[0])
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to build organization unit for handle %s: %w", handle, err)
+	}
+
+	return ou, nil
 }
 
 // IsOrganizationUnitExists checks if an organization unit exists by ID.

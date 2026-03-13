@@ -33,6 +33,7 @@ import (
 type idpStoreInterface interface {
 	CreateIdentityProvider(ctx context.Context, idp IDPDTO) error
 	GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, error)
+	GetIdentityProviderListCount(ctx context.Context) (int, error)
 	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, error)
 	GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, error)
 	UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error
@@ -100,6 +101,39 @@ func (s *idpStore) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, 
 	}
 
 	return idpList, nil
+}
+
+// GetIdentityProviderListCount retrieves the total count of identity providers.
+func (s *idpStore) GetIdentityProviderListCount(ctx context.Context) (int, error) {
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryGetIdentityProviderListCount, s.deploymentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	if len(results) == 0 || len(results[0]) == 0 {
+		return 0, nil
+	}
+
+	countVal, ok := results[0]["count"]
+	if !ok {
+		return 0, fmt.Errorf("count field not found in result")
+	}
+
+	switch v := countVal.(type) {
+	case int:
+		return v, nil
+	case int64:
+		return int(v), nil
+	case float64:
+		return int(v), nil
+	default:
+		return 0, fmt.Errorf("unexpected count type: %T", countVal)
+	}
 }
 
 // GetIdentityProvider retrieves a specific idp by its ID from the database.

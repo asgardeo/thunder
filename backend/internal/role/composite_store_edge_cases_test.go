@@ -316,20 +316,17 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetRoleList_MergesAndPagin
 
 // Test GetRoleList returns empty when offset exceeds results
 func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetRoleList_OffsetBeyondResults() {
-	dbRoles := []Role{
-		{ID: "role1", Name: "Admin"},
-	}
-	fileRoles := []Role{}
-
 	suite.mockDBStore.On("GetRoleListCount", suite.ctx).Return(1, nil)
 	suite.mockFileStore.On("GetRoleListCount", suite.ctx).Return(0, nil)
-	suite.mockDBStore.On("GetRoleList", suite.ctx, 1, 0).Return(dbRoles, nil)
-	suite.mockFileStore.On("GetRoleList", suite.ctx, 0, 0).Return(fileRoles, nil)
+	// When offset (100) exceeds effectiveTotal (1), the implementation short-circuits
+	// and does not call GetRoleList on either store.
 
 	result, err := suite.store.GetRoleList(suite.ctx, 10, 100)
 
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), result, 0)
+	suite.mockDBStore.AssertNotCalled(suite.T(), "GetRoleList", mock.Anything, mock.Anything, mock.Anything)
+	suite.mockFileStore.AssertNotCalled(suite.T(), "GetRoleList", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // Test GetRoleAssignmentsCount merges and deduplicates

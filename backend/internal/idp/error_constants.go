@@ -27,6 +27,9 @@ import (
 // ErrIDPNotFound is returned when the IdP is not found in the system.
 var ErrIDPNotFound = errors.New("IdP not found")
 
+// ErrResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
+var ErrResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
+
 // Client errors for identity provider operations.
 var (
 	// ErrorIDPNotFound is the error returned when an identity provider is not found.
@@ -98,5 +101,12 @@ var (
 		Code:             "IDP-1010",
 		Error:            "Identity provider is immutable",
 		ErrorDescription: "The requested identity provider is declarative and cannot be modified or deleted",
+	}
+	// ErrorResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
+	ErrorResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "IDP-1011",
+		Error:            "Result limit exceeded in composite mode",
+		ErrorDescription: "The total number of records exceeds the maximum limit in composite mode",
 	}
 )

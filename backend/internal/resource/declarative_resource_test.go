@@ -326,7 +326,7 @@ func TestBuildPermissionString(t *testing.T) {
 			},
 			serverIdentifier: "api",
 			delimiter:        ":",
-			expected:         "api:users",
+			expected:         "users",
 		},
 		{
 			name: "nested resource with identifier",
@@ -337,7 +337,7 @@ func TestBuildPermissionString(t *testing.T) {
 			},
 			serverIdentifier: "api",
 			delimiter:        ":",
-			expected:         "api:users:profile",
+			expected:         "users:profile",
 		},
 		{
 			name: "root resource without identifier",
@@ -354,7 +354,7 @@ func TestBuildPermissionString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := buildPermissionString(tt.resource, resourceHandleMap, tt.serverIdentifier, tt.delimiter)
+			result, err := buildPermissionString(tt.resource, resourceHandleMap, tt.delimiter)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -387,9 +387,9 @@ func TestProcessResourceServer_SetsPermissionsAndDelimiter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, ":", rs.Delimiter)
-	assert.Equal(t, "api:users", rs.Resources[0].Permission)
-	assert.Equal(t, "api:users:read", rs.Resources[0].Actions[0].Permission)
-	assert.Equal(t, "api:users:profile", rs.Resources[1].Permission)
+	assert.Equal(t, "users", rs.Resources[0].Permission)
+	assert.Equal(t, "users:read", rs.Resources[0].Actions[0].Permission)
+	assert.Equal(t, "users:profile", rs.Resources[1].Permission)
 }
 
 func TestProcessResourceServer_DuplicateHandle(t *testing.T) {
@@ -423,18 +423,18 @@ func TestProcessResource_SetsPermissions(t *testing.T) {
 		"child": resource,
 	}
 
-	err := processResource(resource, resourceHandleMap, "api", ":")
+	err := processResource(resource, resourceHandleMap, ":")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "api:root:child", resource.Permission)
-	assert.Equal(t, "api:root:child:read", resource.Actions[0].Permission)
+	assert.Equal(t, "root:child", resource.Permission)
+	assert.Equal(t, "root:child:read", resource.Actions[0].Permission)
 }
 
 func TestProcessResource_MissingParent(t *testing.T) {
 	resource := &Resource{Handle: "child", ParentHandle: "missing"}
 	resourceHandleMap := map[string]*Resource{}
 
-	err := processResource(resource, resourceHandleMap, "api", ":")
+	err := processResource(resource, resourceHandleMap, ":")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "parent resource handle")
@@ -463,9 +463,9 @@ resources:
 	assert.NoError(t, err)
 	rs, ok := result.(*ResourceServer)
 	assert.True(t, ok)
-	assert.Equal(t, "api:users", rs.Resources[0].Permission)
-	assert.Equal(t, "api:users:read", rs.Resources[0].Actions[0].Permission)
-	assert.Equal(t, "api:users:profile", rs.Resources[1].Permission)
+	assert.Equal(t, "users", rs.Resources[0].Permission)
+	assert.Equal(t, "users:read", rs.Resources[0].Actions[0].Permission)
+	assert.Equal(t, "users:profile", rs.Resources[1].Permission)
 }
 
 func TestParseAndValidateResourceServerWrapper_InvalidYAML(t *testing.T) {

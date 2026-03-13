@@ -144,12 +144,23 @@ var (
 		Error:            "Internal server error",
 		ErrorDescription: "An unexpected error occurred while processing the request",
 	}
+	// ResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
+	// the maximum limit in composite mode (combining database and declarative resources).
+	ResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1016",
+		Error:            "Result limit exceeded in composite mode",
+		ErrorDescription: "The total number of records exceeds the maximum limit in composite mode",
+	}
 )
 
 // Internal error constants for role management operations.
 var (
 	// ErrRoleNotFound is returned when the role is not found in the system.
 	ErrRoleNotFound = errors.New("role not found")
+
+	// errResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 
 	// ErrRoleHasAssignments is returned when attempting to delete a role that has active assignments.
 	ErrRoleHasAssignments = errors.New("role has active assignments")

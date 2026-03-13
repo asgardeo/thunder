@@ -309,7 +309,7 @@ func processResourceServer(rs *ResourceServer) error {
 
 	// Process resources and compute permissions
 	for i := range rs.Resources {
-		if err := processResource(&rs.Resources[i], resourceHandleMap, rs.Identifier, delimiter); err != nil {
+		if err := processResource(&rs.Resources[i], resourceHandleMap, delimiter); err != nil {
 			return err
 		}
 	}
@@ -321,11 +321,10 @@ func processResourceServer(rs *ResourceServer) error {
 func processResource(
 	res *Resource,
 	resourceHandleMap map[string]*Resource,
-	serverIdentifier string,
 	delimiter string,
 ) error {
 	// Build permission string from parent chain
-	permission, err := buildPermissionString(res, resourceHandleMap, serverIdentifier, delimiter)
+	permission, err := buildPermissionString(res, resourceHandleMap, delimiter)
 	if err != nil {
 		return err
 	}
@@ -345,15 +344,9 @@ func processResource(
 func buildPermissionString(
 	res *Resource,
 	resourceHandleMap map[string]*Resource,
-	serverIdentifier string,
 	delimiter string,
 ) (string, error) {
 	var parts []string
-
-	// Add server identifier if present
-	if serverIdentifier != "" {
-		parts = append(parts, serverIdentifier)
-	}
 
 	// Build parent chain
 	parentChain := []string{}

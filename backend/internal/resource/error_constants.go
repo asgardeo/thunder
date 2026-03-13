@@ -167,6 +167,13 @@ var (
 		Error:            "Cannot modify declarative action",
 		ErrorDescription: "Action %s is defined in declarative configuration and cannot be modified",
 	}
+	// ErrResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
+	ErrResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1021",
+		Error:            "Result limit exceeded in composite mode",
+		ErrorDescription: "The total number of records exceeds the maximum limit in composite mode",
+	}
 )
 
 // Internal error constants.
@@ -179,4 +186,7 @@ var (
 
 	// errActionNotFound is returned when the action is not found.
 	errActionNotFound = errors.New("action not found")
+
+	// errResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )

@@ -93,6 +93,11 @@ func (f *idpFileBasedStore) GetIdentityProviderList(ctx context.Context) ([]Basi
 	return idpList, nil
 }
 
+// GetIdentityProviderListCount retrieves the total count of identity providers.
+func (f *idpFileBasedStore) GetIdentityProviderListCount(ctx context.Context) (int, error) {
+	return f.GenericFileBasedStore.Count()
+}
+
 // UpdateIdentityProvider implements idpStoreInterface.
 func (f *idpFileBasedStore) UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error {
 	return errors.New("UpdateIdentityProvider is not supported in file-based store")

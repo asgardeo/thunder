@@ -487,7 +487,11 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganization
 			Name:   "Level 2 OU",
 		}
 
-		suite.dbStoreMock.On("GetOrganizationUnitByPath", mock.Anything, handles).
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "level1", (*string)(nil)).
+			Return(OrganizationUnit{ID: "db-root", Handle: "level1", Name: "Root"}, nil).
+			Once()
+		parentID := "db-root"
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "level2", &parentID).
 			Return(expectedOU, nil).
 			Once()
 
@@ -497,6 +501,8 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganization
 	})
 
 	suite.Run("falls back to file store when not in DB", func() {
+		suite.SetupTest() // Fresh setup
+
 		// Create parent and child in file store
 		parentID := "file-parent"
 		err := suite.fileStore.CreateOrganizationUnit(context.Background(), OrganizationUnit{
@@ -514,7 +520,10 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganization
 		})
 		suite.NoError(err)
 
-		suite.dbStoreMock.On("GetOrganizationUnitByPath", mock.Anything, handles).
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "level1", (*string)(nil)).
+			Return(OrganizationUnit{}, ErrOrganizationUnitNotFound).
+			Once()
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "level2", &parentID).
 			Return(OrganizationUnit{}, ErrOrganizationUnitNotFound).
 			Once()
 
@@ -524,11 +533,40 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganization
 		suite.Equal("level2", result.Handle)
 	})
 
+	suite.Run("resolves mixed ancestry file parent and DB child", func() {
+		suite.SetupTest() // Fresh setup
+
+		// Root in file store
+		rootID := "file-root"
+		err := suite.fileStore.CreateOrganizationUnit(context.Background(), OrganizationUnit{
+			ID:     rootID,
+			Handle: "default",
+			Name:   "Default",
+		})
+		suite.NoError(err)
+
+		// Child in DB store under file root
+		dbChild := OrganizationUnit{ID: "db-child", Handle: "thin-ends-make", Name: "Thin Ends Make", Parent: &rootID}
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "default", (*string)(nil)).
+			Return(OrganizationUnit{}, ErrOrganizationUnitNotFound).
+			Once()
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "thin-ends-make", &rootID).
+			Return(dbChild, nil).
+			Once()
+
+		result, err := suite.compositeStore.GetOrganizationUnitByPath(
+			context.Background(), []string{"default", "thin-ends-make"},
+		)
+		suite.NoError(err)
+		suite.Equal("db-child", result.ID)
+		suite.Equal("thin-ends-make", result.Handle)
+	})
+
 	suite.Run("returns not found when in neither store", func() {
 		suite.SetupTest() // Fresh setup
 		handlesTest := []string{"nonexistent1", "nonexistent2"}
 
-		suite.dbStoreMock.On("GetOrganizationUnitByPath", mock.Anything, handlesTest).
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "nonexistent1", (*string)(nil)).
 			Return(OrganizationUnit{}, ErrOrganizationUnitNotFound).
 			Once()
 
@@ -540,7 +578,7 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganization
 
 	suite.Run("propagates DB errors other than not found", func() {
 		dbErr := errors.New("database connection error")
-		suite.dbStoreMock.On("GetOrganizationUnitByPath", mock.Anything, handles).
+		suite.dbStoreMock.On("GetOrganizationUnitByHandle", mock.Anything, "level1", (*string)(nil)).
 			Return(OrganizationUnit{}, dbErr).
 			Once()
 

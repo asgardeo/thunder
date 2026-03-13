@@ -350,6 +350,66 @@ func (_c *idpStoreInterfaceMock_GetIdentityProviderList_Call) RunAndReturn(run f
 	return _c
 }
 
+// GetIdentityProviderListCount provides a mock function for the type idpStoreInterfaceMock
+func (_mock *idpStoreInterfaceMock) GetIdentityProviderListCount(ctx context.Context) (int, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetIdentityProviderListCount")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// idpStoreInterfaceMock_GetIdentityProviderListCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetIdentityProviderListCount'
+type idpStoreInterfaceMock_GetIdentityProviderListCount_Call struct {
+	*mock.Call
+}
+
+// GetIdentityProviderListCount is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *idpStoreInterfaceMock_Expecter) GetIdentityProviderListCount(ctx interface{}) *idpStoreInterfaceMock_GetIdentityProviderListCount_Call {
+	return &idpStoreInterfaceMock_GetIdentityProviderListCount_Call{Call: _e.mock.On("GetIdentityProviderListCount", ctx)}
+}
+
+func (_c *idpStoreInterfaceMock_GetIdentityProviderListCount_Call) Run(run func(ctx context.Context)) *idpStoreInterfaceMock_GetIdentityProviderListCount_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *idpStoreInterfaceMock_GetIdentityProviderListCount_Call) Return(n int, err error) *idpStoreInterfaceMock_GetIdentityProviderListCount_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *idpStoreInterfaceMock_GetIdentityProviderListCount_Call) RunAndReturn(run func(ctx context.Context) (int, error)) *idpStoreInterfaceMock_GetIdentityProviderListCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateIdentityProvider provides a mock function for the type idpStoreInterfaceMock
 func (_mock *idpStoreInterfaceMock) UpdateIdentityProvider(ctx context.Context, idp1 *idp.IDPDTO) error {
 	ret := _mock.Called(ctx, idp1)

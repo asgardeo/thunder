@@ -362,6 +362,78 @@ func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnit_Call) RunAndRet
 	return _c
 }
 
+// GetOrganizationUnitByHandle provides a mock function for the type organizationUnitStoreInterfaceMock
+func (_mock *organizationUnitStoreInterfaceMock) GetOrganizationUnitByHandle(ctx context.Context, handle string, parent *string) (ou.OrganizationUnit, error) {
+	ret := _mock.Called(ctx, handle, parent)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOrganizationUnitByHandle")
+	}
+
+	var r0 ou.OrganizationUnit
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string) (ou.OrganizationUnit, error)); ok {
+		return returnFunc(ctx, handle, parent)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string) ou.OrganizationUnit); ok {
+		r0 = returnFunc(ctx, handle, parent)
+	} else {
+		r0 = ret.Get(0).(ou.OrganizationUnit)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string) error); ok {
+		r1 = returnFunc(ctx, handle, parent)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOrganizationUnitByHandle'
+type organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call struct {
+	*mock.Call
+}
+
+// GetOrganizationUnitByHandle is a helper method to define mock.On call
+//   - ctx context.Context
+//   - handle string
+//   - parent *string
+func (_e *organizationUnitStoreInterfaceMock_Expecter) GetOrganizationUnitByHandle(ctx interface{}, handle interface{}, parent interface{}) *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call {
+	return &organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call{Call: _e.mock.On("GetOrganizationUnitByHandle", ctx, handle, parent)}
+}
+
+func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call) Run(run func(ctx context.Context, handle string, parent *string)) *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 *string
+		if args[2] != nil {
+			arg2 = args[2].(*string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call) Return(organizationUnit ou.OrganizationUnit, err error) *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call {
+	_c.Call.Return(organizationUnit, err)
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string, parent *string) (ou.OrganizationUnit, error)) *organizationUnitStoreInterfaceMock_GetOrganizationUnitByHandle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetOrganizationUnitByPath provides a mock function for the type organizationUnitStoreInterfaceMock
 func (_mock *organizationUnitStoreInterfaceMock) GetOrganizationUnitByPath(ctx context.Context, handles []string) (ou.OrganizationUnit, error) {
 	ret := _mock.Called(ctx, handles)

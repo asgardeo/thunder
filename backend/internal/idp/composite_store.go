@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
@@ -55,17 +56,50 @@ func (c *compositeIDPStore) CreateIdentityProvider(ctx context.Context, idp IDPD
 // GetIdentityProviderList retrieves identity providers from both stores and merges the results.
 // Database IDPs are marked as mutable (IsReadOnly=false), file-based IDPs as immutable (IsReadOnly=true).
 func (c *compositeIDPStore) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, error) {
-	dbIDPs, err := c.dbStore.GetIdentityProviderList(ctx)
+	dbCount, err := c.dbStore.GetIdentityProviderListCount(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	fileIDPs, err := c.fileStore.GetIdentityProviderList(ctx)
+	fileCount, err := c.fileStore.GetIdentityProviderListCount(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return mergeAndDeduplicateIDPs(dbIDPs, fileIDPs), nil
+	totalCount := dbCount + fileCount
+	idps, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		func() (int, error) { return dbCount, nil },
+		func() (int, error) { return fileCount, nil },
+		func(count int) ([]BasicIDPDTO, error) { return c.dbStore.GetIdentityProviderList(ctx) },
+		func(count int) ([]BasicIDPDTO, error) { return c.fileStore.GetIdentityProviderList(ctx) },
+		mergeAndDeduplicateIDPs,
+		totalCount,
+		0,
+		serverconst.MaxCompositeStoreRecords,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if limitExceeded {
+		return nil, ErrResultLimitExceededInCompositeMode
+	}
+
+	return idps, nil
+}
+
+// GetIdentityProviderListCount retrieves the count of identity providers across both stores.
+func (c *compositeIDPStore) GetIdentityProviderListCount(ctx context.Context) (int, error) {
+	dbCount, err := c.dbStore.GetIdentityProviderListCount(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	fileCount, err := c.fileStore.GetIdentityProviderListCount(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return dbCount + fileCount, nil
 }
 
 // GetIdentityProvider retrieves an identity provider by ID from either store.

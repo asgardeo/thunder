@@ -458,13 +458,13 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			expectedErr: &ErrorInvalidOrganizationUnitID,
 		},
 		{
-			name:     "ReturnsErrorWhenIDInvalid",
+			name:     "ReturnsInternalErrorWhenOUServiceMissing",
 			userType: testUserType,
 			ouID:     "invalid-id",
 			setup: func(t *testing.T) (*userService, testMocks) {
 				return &userService{}, testMocks{}
 			},
-			expectedErr: &ErrorInvalidOrganizationUnitID,
+			expectedErr: &ErrorInternalServerError,
 		},
 		{
 			name:     "ReturnsErrorWhenOrganizationUnitMissing",
@@ -3188,15 +3188,16 @@ func TestNewFunctions(t *testing.T) {
 
 func TestUserService_Validation_EdgeCases(t *testing.T) {
 	service := &userService{}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserServiceTest"))
 
 	t.Run("ValidateOU_InvalidUUID", func(t *testing.T) {
-		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "invalid-uuid", nil)
+		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "invalid-uuid", logger)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
+		require.Equal(t, ErrorInternalServerError.Code, err.Code)
 	})
 
 	t.Run("ValidateOU_EmptyOU", func(t *testing.T) {
-		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "", nil)
+		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "", logger)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
 	})

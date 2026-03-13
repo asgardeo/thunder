@@ -21,7 +21,6 @@ package resource
 import (
 	"context"
 	"errors"
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -141,8 +140,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_MergesBothSt
 		{ID: "rs-file1", Name: "File Server 1"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	result, err := s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
@@ -161,8 +162,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_WithPaginati
 		{ID: "rs3", Name: "Server 3"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	// Get first page
 	result, err := s.compositeStore.GetResourceServerList(s.ctx, 2, 0)
@@ -185,8 +188,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_Deduplicates
 		{ID: "rs3", Name: "Server 3"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	result, err := s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
@@ -211,8 +216,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_VerifiesIsRe
 		{ID: "rs-file1", Name: "File Server 1"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	result, err := s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
@@ -242,8 +249,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_Deduplicates
 		{ID: "rs3", Name: "Server 3"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	result, err := s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
@@ -266,13 +275,15 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_Deduplicates
 
 func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_HandlesEmptyStoresAndSetsIsReadOnly() {
 	// Both stores empty
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return([]ResourceServer{}, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return([]ResourceServer{}, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(0, nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(0, nil)
 
 	result, err := s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), result)
+	s.dbStoreMock.AssertNotCalled(s.T(), "GetResourceServerList", s.ctx, mock.Anything, 0)
+	s.fileStoreMock.AssertNotCalled(s.T(), "GetResourceServerList", s.ctx, mock.Anything, 0)
 
 	// DB store has servers, file store is empty
 	s.dbStoreMock.ExpectedCalls = nil
@@ -282,8 +293,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_HandlesEmpty
 		{ID: "rs-db1", Name: "DB Server 1"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return([]ResourceServer{}, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(0, nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return([]ResourceServer{}, nil)
 
 	result, err = s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
@@ -299,8 +312,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerList_HandlesEmpty
 		{ID: "rs-file1", Name: "File Server 1"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return([]ResourceServer{}, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(0, nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return([]ResourceServer{}, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	result, err = s.compositeStore.GetResourceServerList(s.ctx, 10, 0)
 
@@ -319,8 +334,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceServerListCount_SumsBot
 		{ID: "rs3", Name: "Server 3"},
 	}
 
-	s.dbStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(dbServers, nil)
-	s.fileStoreMock.On("GetResourceServerList", s.ctx, math.MaxInt, 0).Return(fileServers, nil)
+	s.dbStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(dbServers), nil)
+	s.fileStoreMock.On("GetResourceServerListCount", s.ctx).Return(len(fileServers), nil)
+	s.dbStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(dbServers, nil)
+	s.fileStoreMock.On("GetResourceServerList", s.ctx, mock.Anything, 0).Return(fileServers, nil)
 
 	count, err := s.compositeStore.GetResourceServerListCount(s.ctx)
 
@@ -516,8 +533,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceList_MergesBothStores()
 		{ID: "res-file1", Name: "File Resource 1"},
 	}
 
-	s.dbStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return(dbResources, nil)
-	s.fileStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return(fileResources, nil)
+	s.dbStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(len(dbResources), nil)
+	s.fileStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(len(fileResources), nil)
+	s.dbStoreMock.On("GetResourceList", s.ctx, "rs1", mock.Anything, 0).Return(dbResources, nil)
+	s.fileStoreMock.On("GetResourceList", s.ctx, "rs1", mock.Anything, 0).Return(fileResources, nil)
 
 	result, err := s.compositeStore.GetResourceList(s.ctx, "rs1", 10, 0)
 
@@ -536,11 +555,13 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListByParent_MergesBoth
 		{ID: "res-file1", Name: "File Resource 1"},
 	}
 
+	s.dbStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(len(dbResources), nil)
+	s.fileStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(len(fileResources), nil)
 	s.dbStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
+		"GetResourceListByParent", s.ctx, "rs1", &parentID, mock.Anything, 0,
 	).Return(dbResources, nil)
 	s.fileStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
+		"GetResourceListByParent", s.ctx, "rs1", &parentID, mock.Anything, 0,
 	).Return(fileResources, nil)
 
 	result, err := s.compositeStore.GetResourceListByParent(s.ctx, "rs1", &parentID, 10, 0)
@@ -555,9 +576,7 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListByParent_DBError() 
 	parentID := testParentID
 	dbErr := errors.New("db error")
 
-	s.dbStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
-	).Return(nil, dbErr)
+	s.dbStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(0, dbErr)
 
 	result, err := s.compositeStore.GetResourceListByParent(s.ctx, "rs1", &parentID, 10, 0)
 
@@ -571,12 +590,8 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListByParent_FileError(
 	parentID := testParentID
 	fileErr := errors.New("file error")
 
-	s.dbStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
-	).Return([]Resource{}, nil)
-	s.fileStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
-	).Return(nil, fileErr)
+	s.dbStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(0, nil)
+	s.fileStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(0, fileErr)
 
 	result, err := s.compositeStore.GetResourceListByParent(s.ctx, "rs1", &parentID, 10, 0)
 
@@ -584,6 +599,8 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListByParent_FileError(
 	assert.Nil(s.T(), result)
 	s.dbStoreMock.AssertExpectations(s.T())
 	s.fileStoreMock.AssertExpectations(s.T())
+	s.dbStoreMock.AssertNotCalled(s.T(), "GetResourceListByParent")
+	s.fileStoreMock.AssertNotCalled(s.T(), "GetResourceListByParent")
 }
 
 func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_SumsBothStores() {
@@ -596,8 +613,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_SumsBothStore
 		{ID: "res3", Name: "Resource 3"},
 	}
 
-	s.dbStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return(dbResources, nil)
-	s.fileStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return(fileResources, nil)
+	s.dbStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(len(dbResources), nil)
+	s.fileStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(len(fileResources), nil)
+	s.dbStoreMock.On("GetResourceList", s.ctx, "rs1", mock.Anything, 0).Return(dbResources, nil)
+	s.fileStoreMock.On("GetResourceList", s.ctx, "rs1", mock.Anything, 0).Return(fileResources, nil)
 
 	count, err := s.compositeStore.GetResourceListCount(s.ctx, "rs1")
 
@@ -610,7 +629,7 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_SumsBothStore
 
 func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_DBError() {
 	dbErr := errors.New("db error")
-	s.dbStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return(nil, dbErr)
+	s.dbStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(0, dbErr)
 
 	count, err := s.compositeStore.GetResourceListCount(s.ctx, "rs1")
 
@@ -622,8 +641,8 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_DBError() {
 
 func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_FileError() {
 	fileErr := errors.New("file error")
-	s.dbStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return([]Resource{}, nil)
-	s.fileStoreMock.On("GetResourceList", s.ctx, "rs1", math.MaxInt, 0).Return(nil, fileErr)
+	s.dbStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(0, nil)
+	s.fileStoreMock.On("GetResourceListCount", s.ctx, "rs1").Return(0, fileErr)
 
 	count, err := s.compositeStore.GetResourceListCount(s.ctx, "rs1")
 
@@ -631,6 +650,8 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListCount_FileError() {
 	assert.Equal(s.T(), 0, count)
 	s.dbStoreMock.AssertExpectations(s.T())
 	s.fileStoreMock.AssertExpectations(s.T())
+	s.dbStoreMock.AssertNotCalled(s.T(), "GetResourceList")
+	s.fileStoreMock.AssertNotCalled(s.T(), "GetResourceList")
 }
 
 func (s *CompositeResourceStoreTestSuite) TestGetResourceListCountByParent_SumsBothStores() {
@@ -644,11 +665,13 @@ func (s *CompositeResourceStoreTestSuite) TestGetResourceListCountByParent_SumsB
 		{ID: "res3", Name: "Resource 3"},
 	}
 
+	s.dbStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(len(dbResources), nil)
+	s.fileStoreMock.On("GetResourceListCountByParent", s.ctx, "rs1", &parentID).Return(len(fileResources), nil)
 	s.dbStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
+		"GetResourceListByParent", s.ctx, "rs1", &parentID, mock.Anything, 0,
 	).Return(dbResources, nil)
 	s.fileStoreMock.On(
-		"GetResourceListByParent", s.ctx, "rs1", &parentID, math.MaxInt, 0,
+		"GetResourceListByParent", s.ctx, "rs1", &parentID, mock.Anything, 0,
 	).Return(fileResources, nil)
 
 	count, err := s.compositeStore.GetResourceListCountByParent(s.ctx, "rs1", &parentID)
@@ -812,8 +835,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionList_MergesBothStores() {
 		{ID: "act-file1", Name: "File Action 1"},
 	}
 
-	s.dbStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0).Return(dbActions, nil)
-	s.fileStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0).Return(fileActions, nil)
+	s.dbStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(len(dbActions), nil)
+	s.fileStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(len(fileActions), nil)
+	s.dbStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return(dbActions, nil)
+	s.fileStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return(fileActions, nil)
 
 	result, err := s.compositeStore.GetActionList(s.ctx, "rs1", nil, 10, 0)
 
@@ -825,9 +850,9 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionList_MergesBothStores() {
 
 func (s *CompositeResourceStoreTestSuite) TestGetActionList_DBError() {
 	dbErr := errors.New("db error")
-	s.dbStoreMock.On(
-		"GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0,
-	).Return(nil, dbErr)
+	s.dbStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(1, nil)
+	s.fileStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(0, nil)
+	s.dbStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return(nil, dbErr)
 
 	result, err := s.compositeStore.GetActionList(s.ctx, "rs1", nil, 10, 0)
 
@@ -839,12 +864,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionList_DBError() {
 
 func (s *CompositeResourceStoreTestSuite) TestGetActionList_FileError() {
 	fileErr := errors.New("file error")
-	s.dbStoreMock.On(
-		"GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0,
-	).Return([]Action{}, nil)
-	s.fileStoreMock.On(
-		"GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0,
-	).Return(nil, fileErr)
+	s.dbStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(0, nil)
+	s.fileStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(1, nil)
+	s.dbStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return([]Action{}, nil)
+	s.fileStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return(nil, fileErr)
 
 	result, err := s.compositeStore.GetActionList(s.ctx, "rs1", nil, 10, 0)
 
@@ -864,8 +887,10 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionListCount_SumsBothStores(
 		{ID: "act3", Name: "Action 3"},
 	}
 
-	s.dbStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0).Return(dbActions, nil)
-	s.fileStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0).Return(fileActions, nil)
+	s.dbStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(len(dbActions), nil)
+	s.fileStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(len(fileActions), nil)
+	s.dbStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return(dbActions, nil)
+	s.fileStoreMock.On("GetActionList", s.ctx, "rs1", (*string)(nil), mock.Anything, 0).Return(fileActions, nil)
 
 	count, err := s.compositeStore.GetActionListCount(s.ctx, "rs1", nil)
 
@@ -878,9 +903,7 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionListCount_SumsBothStores(
 
 func (s *CompositeResourceStoreTestSuite) TestGetActionListCount_DBError() {
 	dbErr := errors.New("db error")
-	s.dbStoreMock.On(
-		"GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0,
-	).Return(nil, dbErr)
+	s.dbStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(0, dbErr)
 
 	count, err := s.compositeStore.GetActionListCount(s.ctx, "rs1", nil)
 
@@ -892,12 +915,8 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionListCount_DBError() {
 
 func (s *CompositeResourceStoreTestSuite) TestGetActionListCount_FileError() {
 	fileErr := errors.New("file error")
-	s.dbStoreMock.On(
-		"GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0,
-	).Return([]Action{}, nil)
-	s.fileStoreMock.On(
-		"GetActionList", s.ctx, "rs1", (*string)(nil), math.MaxInt, 0,
-	).Return(nil, fileErr)
+	s.dbStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(0, nil)
+	s.fileStoreMock.On("GetActionListCount", s.ctx, "rs1", (*string)(nil)).Return(0, fileErr)
 
 	count, err := s.compositeStore.GetActionListCount(s.ctx, "rs1", nil)
 
@@ -905,6 +924,8 @@ func (s *CompositeResourceStoreTestSuite) TestGetActionListCount_FileError() {
 	assert.Equal(s.T(), 0, count)
 	s.dbStoreMock.AssertExpectations(s.T())
 	s.fileStoreMock.AssertExpectations(s.T())
+	s.dbStoreMock.AssertNotCalled(s.T(), "GetActionList")
+	s.fileStoreMock.AssertNotCalled(s.T(), "GetActionList")
 }
 
 func (s *CompositeResourceStoreTestSuite) TestUpdateAction_DelegatesToDB() {

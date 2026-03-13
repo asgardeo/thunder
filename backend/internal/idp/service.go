@@ -114,6 +114,9 @@ func (is *idpService) GetIdentityProviderList(ctx context.Context) ([]BasicIDPDT
 	logger := is.logger
 	idps, err := is.idpStore.GetIdentityProviderList(ctx)
 	if err != nil {
+		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
+			return nil, &ErrorResultLimitExceededInCompositeMode
+		}
 		logger.Error("Failed to get identity provider list", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
