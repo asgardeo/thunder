@@ -32,7 +32,7 @@ CREATE TABLE USER (
 CREATE INDEX idx_user_ou_deployment ON USER (DEPLOYMENT_ID, OU_ID);
 
 -- Table to store Groups
-CREATE TABLE "GROUP" (
+CREATE TABLE GROUP (
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     ID          VARCHAR(36)        PRIMARY KEY,
     OU_ID       VARCHAR(36)        NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE "GROUP" (
 );
 
 -- Composite index for name conflict checks within an OU (QueryCheckGroupNameConflict)
-CREATE INDEX idx_group_name_ou_deployment ON "GROUP" (DEPLOYMENT_ID, OU_ID, NAME);
+CREATE INDEX idx_group_name_ou_deployment ON GROUP (DEPLOYMENT_ID, OU_ID, NAME);
 
 -- Table to store Group member assignments
 CREATE TABLE GROUP_MEMBER_REFERENCE (
@@ -54,7 +54,7 @@ CREATE TABLE GROUP_MEMBER_REFERENCE (
     CREATED_AT  TEXT DEFAULT (datetime('now')),
     UPDATED_AT  TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID),
-    FOREIGN KEY (GROUP_ID) REFERENCES "GROUP" (ID) ON DELETE CASCADE
+    FOREIGN KEY (GROUP_ID) REFERENCES GROUP (ID) ON DELETE CASCADE
 );
 
 -- Table to store indexed user attributes for fast lookups

@@ -17,7 +17,7 @@ CREATE TABLE ORGANIZATION_UNIT (
 CREATE INDEX idx_ou_handle_parent ON ORGANIZATION_UNIT (DEPLOYMENT_ID, HANDLE, PARENT_ID);
 
 -- Table to store Users
-CREATE TABLE "USER" (
+CREATE TABLE USER (
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     ID          VARCHAR(36)        PRIMARY KEY,
     OU_ID       VARCHAR(36)        NOT NULL,
@@ -29,10 +29,10 @@ CREATE TABLE "USER" (
 );
 
 -- Composite index for OU-based user listing
-CREATE INDEX idx_user_ou_deployment ON "USER" (DEPLOYMENT_ID, OU_ID);
+CREATE INDEX idx_user_ou_deployment ON USER (DEPLOYMENT_ID, OU_ID);
 
 -- Table to store Groups
-CREATE TABLE "GROUP" (
+CREATE TABLE GROUP (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ID              VARCHAR(36)        PRIMARY KEY,
     OU_ID           VARCHAR(36)        NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE "GROUP" (
 );
 
 -- Composite index for name conflict checks within an OU
-CREATE INDEX idx_group_name_ou_deployment ON "GROUP" (DEPLOYMENT_ID, OU_ID, NAME);
+CREATE INDEX idx_group_name_ou_deployment ON GROUP (DEPLOYMENT_ID, OU_ID, NAME);
 
 -- Table to store Group member assignments
 CREATE TABLE GROUP_MEMBER_REFERENCE (
@@ -54,7 +54,7 @@ CREATE TABLE GROUP_MEMBER_REFERENCE (
     CREATED_AT  TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT  TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID),
-    FOREIGN KEY (GROUP_ID) REFERENCES "GROUP" (ID) ON DELETE CASCADE
+    FOREIGN KEY (GROUP_ID) REFERENCES GROUP (ID) ON DELETE CASCADE
 );
 
 -- Table to store indexed user attributes for fast lookups
@@ -65,7 +65,7 @@ CREATE TABLE USER_INDEXED_ATTRIBUTES (
     ATTRIBUTE_VALUE TEXT NOT NULL,
     CREATED_AT      TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (USER_ID, DEPLOYMENT_ID, ATTRIBUTE_NAME),
-    FOREIGN KEY (USER_ID) REFERENCES "USER" (ID) ON DELETE CASCADE
+    FOREIGN KEY (USER_ID) REFERENCES USER (ID) ON DELETE CASCADE
 );
 
 -- Index for fast attribute lookups (primary use case for authentication)
