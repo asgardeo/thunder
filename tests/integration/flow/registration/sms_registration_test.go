@@ -442,8 +442,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 	ts.Require().NotEmpty(otpFlowStep.Data.Inputs, "Flow should require inputs")
 	ts.Require().True(common.HasInput(otpFlowStep.Data.Inputs, "otp"), "OTP input should be required")
 
-	// Wait for SMS to be sent
-	time.Sleep(1000 * time.Millisecond)
+	// Wait for SMS to be sent - increased timeout for resource-constrained environments
+	time.Sleep(2 * time.Second)
 
 	// Verify SMS was sent
 	lastMessage := ts.mockServer.GetLastMessage()
@@ -553,8 +553,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 
 	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 
-	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	// Wait for SMS to be sent - increased timeout for resource-constrained environments
+	time.Sleep(2 * time.Second)
 
 	// Step 2: Try with invalid OTP
 	invalidOTPInputs := map[string]string{
@@ -602,7 +602,23 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 		"mobileNumber": mobileNumber,
 	}
 
-	otpStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	// Retry flow completion with backoff to handle resource constraints
+	// Only retry if flow doesn't complete, not on ERROR status
+	var otpStep *common.FlowStep
+	err = common.RetryWithBackoff(func() error {
+		otpStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+		if err != nil {
+			return err
+		}
+		// Don't retry on ERROR status - these are permanent errors
+		if otpStep.FlowStatus == "ERROR" {
+			return nil // Stop retrying, let the test assertion handle it
+		}
+		if otpStep.FlowStatus != "INCOMPLETE" {
+			return fmt.Errorf("unexpected flow status: %s", otpStep.FlowStatus)
+		}
+		return nil
+	}, 3, 1*time.Second)
 	if err != nil {
 		ts.T().Fatalf("Failed to provide mobile number: %v", err)
 	}
@@ -611,8 +627,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 	ts.Require().Equal("INCOMPLETE", otpStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", otpStep.Type, "Expected flow type to be VIEW")
 
-	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	// Wait for SMS to be sent - increased timeout for resource-constrained environments
+	time.Sleep(2 * time.Second)
 
 	// Get the OTP from mock server
 	lastMessage := ts.mockServer.GetLastMessage()

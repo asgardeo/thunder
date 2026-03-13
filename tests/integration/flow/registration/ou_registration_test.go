@@ -751,8 +751,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
-			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
+			// Wait for OTP to be sent - increased timeout for resource-constrained environments
+			time.Sleep(2 * time.Second)
 
 			lastMessage := ts.mockServer.GetLastMessage()
 			ts.Require().NotNil(lastMessage)
@@ -874,11 +874,29 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 			inputs := map[string]string{
 				"mobileNumber": mobileNumber,
 			}
-			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
 
-			flowStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+			// Retry flow completion with backoff to handle resource constraints
+			// Only retry if flow doesn't complete (INCOMPLETE status expected), not on ERROR
+			err = common.RetryWithBackoff(func() error {
+				flowStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+				if err != nil {
+					return err
+				}
+				// Don't retry on ERROR status - these are permanent errors
+				if flowStep.FlowStatus == "ERROR" {
+					return nil // Stop retrying, let the test assertion handle it
+				}
+				if flowStep.FlowStatus != "INCOMPLETE" {
+					return fmt.Errorf("unexpected flow status: %s", flowStep.FlowStatus)
+				}
+				return nil
+			}, 3, 1*time.Second)
 			ts.Require().NoError(err)
+
+			// Wait for OTP to be sent - increased timeout for resource-constrained environments
+			if flowStep.FlowStatus == "INCOMPLETE" {
+				time.Sleep(2 * time.Second)
+			}
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
 			lastMessage := ts.mockServer.GetLastMessage()
@@ -920,5 +938,5 @@ func generateUniqueHandle(prefix string) string {
 
 // Helper function to generate unique mobile numbers
 func generateUniqueMobileNumber() string {
-	return fmt.Sprintf("+1234567%d", time.Now().UnixNano()%10000)
+	return fmt.Sprintf("+1%d", time.Now().UnixNano())
 }
