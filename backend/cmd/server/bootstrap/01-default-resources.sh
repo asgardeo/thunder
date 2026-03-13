@@ -18,16 +18,16 @@
 # ----------------------------------------------------------------------------
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
+# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and Console application
 
 set -e
 
 # Parse command line arguments for custom redirect URIs
-CUSTOM_DEVELOP_REDIRECT_URIS=""
+CUSTOM_CONSOLE_REDIRECT_URIS=""
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --develop-redirect-uris)
-            CUSTOM_DEVELOP_REDIRECT_URIS="$2"
+        --console-redirect-uris)
+            CUSTOM_CONSOLE_REDIRECT_URIS="$2"
             shift 2
             ;;
         *)
@@ -1042,23 +1042,23 @@ fi
 echo ""
 
 # ============================================================================
-# Create DEVELOP Application
+# Create Console Application
 # ============================================================================
 
-log_info "Creating DEVELOP application..."
+log_info "Creating Console application..."
 
-# Get flow IDs for develop app from the APP_FLOW_IDS created/found during flow processing
+# Get flow IDs for console app from the APP_FLOW_IDS created/found during flow processing
 DEVELOP_AUTH_FLOW_ID=$(echo "$APP_FLOW_IDS" | grep "^develop|" | cut -d'|' -f2)
 DEVELOP_REG_FLOW_ID=$(echo "$APP_FLOW_IDS" | grep "^develop|" | cut -d'|' -f3)
 log_debug "Extracted flow IDs: auth=$DEVELOP_AUTH_FLOW_ID, reg=$DEVELOP_REG_FLOW_ID"
 
 # Validate that flow IDs are available
 if [[ -z "$DEVELOP_AUTH_FLOW_ID" ]]; then
-    log_error "Develop authentication flow ID not found, cannot create DEVELOP application"
+    log_error "Console authentication flow ID not found, cannot create Console application"
     exit 1
 fi
 if [[ -z "$DEVELOP_REG_FLOW_ID" ]]; then
-    log_error "Develop registration flow ID not found, cannot create DEVELOP application"
+    log_error "Console registration flow ID not found, cannot create Console application"
     exit 1
 fi
 
@@ -1066,11 +1066,11 @@ fi
 PUBLIC_URL="${THUNDER_PUBLIC_URL:-$THUNDER_API_BASE}"
 
 # Build redirect URIs array - default + custom if provided
-REDIRECT_URIS="\"${PUBLIC_URL}/develop\""
-if [[ -n "$CUSTOM_DEVELOP_REDIRECT_URIS" ]]; then
-    log_info "Adding custom redirect URIs: $CUSTOM_DEVELOP_REDIRECT_URIS"
+REDIRECT_URIS="\"${PUBLIC_URL}/console\""
+if [[ -n "$CUSTOM_CONSOLE_REDIRECT_URIS" ]]; then
+    log_info "Adding custom redirect URIs: $CUSTOM_CONSOLE_REDIRECT_URIS"
     # Split comma-separated URIs and append to array
-    IFS=',' read -ra URI_ARRAY <<< "$CUSTOM_DEVELOP_REDIRECT_URIS"
+    IFS=',' read -ra URI_ARRAY <<< "$CUSTOM_CONSOLE_REDIRECT_URIS"
     for uri in "${URI_ARRAY[@]}"; do
         # Trim whitespace
         uri=$(echo "$uri" | xargs)
@@ -1079,10 +1079,10 @@ if [[ -n "$CUSTOM_DEVELOP_REDIRECT_URIS" ]]; then
 fi
 
 RESPONSE=$(thunder_api_call POST "/applications" "{
-  \"name\": \"Develop\",
-  \"description\": \"Developer application for Thunder\",
-  \"url\": \"${PUBLIC_URL}/develop\",
-  \"logo_url\": \"${PUBLIC_URL}/develop/assets/images/logo-mini.svg\",
+  \"name\": \"Console\",
+  \"description\": \"Management application for Thunder\",
+  \"url\": \"${PUBLIC_URL}/console\",
+  \"logo_url\": \"${PUBLIC_URL}/console/assets/images/logo-mini.svg\",
   \"auth_flow_id\": \"${DEVELOP_AUTH_FLOW_ID}\",
   \"registration_flow_id\": \"${DEVELOP_REG_FLOW_ID}\",
   \"is_registration_flow_enabled\": false,
@@ -1091,7 +1091,7 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
   \"inbound_auth_config\": [{
     \"type\": \"oauth2\",
     \"config\": {
-      \"client_id\": \"DEVELOP\",
+      \"client_id\": \"CONSOLE\",
       \"redirect_uris\": [${REDIRECT_URIS}],
       \"grant_types\": [\"authorization_code\"],
       \"response_types\": [\"code\"],
@@ -1123,13 +1123,13 @@ HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "DEVELOP application created successfully"
+    log_success "Console application created successfully"
 elif [[ "$HTTP_CODE" == "409" ]]; then
-    log_warning "DEVELOP application already exists, skipping"
+    log_warning "Console application already exists, skipping"
 elif [[ "$HTTP_CODE" == "400" ]] && [[ "$BODY" =~ (Application already exists|APP-1022) ]]; then
-    log_warning "DEVELOP application already exists, skipping"
+    log_warning "Console application already exists, skipping"
 else
-    log_error "Failed to create DEVELOP application (HTTP $HTTP_CODE)"
+    log_error "Failed to create Console application (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi

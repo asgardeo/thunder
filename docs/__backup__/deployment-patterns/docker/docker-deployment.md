@@ -97,7 +97,7 @@ Follow these steps to run Thunder using Docker.
 
 - **Application**: https://localhost:8090
 - **Gate (Login/Register)**: https://localhost:8090/signin
-- **Develop (Admin Console)**: https://localhost:8090/develop
+- **Console (System Management)**: https://localhost:8090/console
 
 ## Database Setup
 

@@ -91,8 +91,8 @@ const (
 	schemaAdminUsername = "schema-authz-admin"
 	schemaAdminPassword = "SchemaAdmin@123"
 
-	schemaAuthzDevelopClientID    = "DEVELOP"
-	schemaAuthzDevelopRedirectURI = "https://localhost:8095/develop"
+	schemaAuthzDevelopClientID    = "CONSOLE"
+	schemaAuthzDevelopRedirectURI = "https://localhost:8095/console"
 
 	// Unique role name to avoid collisions across test runs.
 	schemaAdminRoleName = "User Schema Admin (authz-test)"

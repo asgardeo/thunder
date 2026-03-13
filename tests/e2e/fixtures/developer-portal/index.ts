@@ -24,8 +24,8 @@
  */
 
 import { mergeTests } from "@playwright/test";
-import { test as routesTest, routes, DeveloperPortalRoutes } from "./developer-portal-routes.fixture";
-import { test as pomTest } from "./developer-portal-pom.fixture";
+import { test as routesTest, routes, ConsoleRoutes } from "./console-routes.fixture";
+import { test as pomTest } from "./console-pom.fixture";
 
 /**
  * Combined test fixture.
@@ -35,8 +35,8 @@ export const test = mergeTests(routesTest, pomTest);
 export const setup = test;
 
 export { expect } from "@playwright/test";
-export { routes, DeveloperPortalRoutes };
+export { routes, ConsoleRoutes };
 
 // Re-export page objects
-export { DeveloperPortalSigninPage } from "../../pages/authentication";
+export { ConsoleSigninPage } from "../../pages/authentication";
 export { UsersPage, type UserFormData } from "../../pages/user-management";

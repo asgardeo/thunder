@@ -174,9 +174,9 @@ $SERVER_DB_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "dbscripts"
 $SECURITY_DIR = "repository/resources/security"
 $FRONTEND_BASE_DIR = "frontend"
 $GATE_APP_DIST_DIR = "apps/gate"
-$DEVELOP_APP_DIST_DIR = "apps/develop"
-$FRONTEND_GATE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-gate"
-$FRONTEND_DEVELOP_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-develop"
+$DEVELOP_APP_DIST_DIR = "apps/console"
+$FRONTEND_GATE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/gate"
+$FRONTEND_DEVELOP_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/console"
 $SAMPLE_BASE_DIR = "samples"
 $VANILLA_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-vanilla-sample"
 $VANILLA_SAMPLE_APP_SERVER_DIR = Join-Path $VANILLA_SAMPLE_APP_DIR "server"
@@ -572,13 +572,13 @@ function Prepare-Frontend-For-Packaging {
         Write-Host "Warning: Gate app build output not found at $((Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist"))"
     }
     
-    # Copy develop app build output
+    # Copy console app build output
     if (Test-Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist")) {
-        Write-Host "Copying Develop app build output..."
+        Write-Host "Copying Console app build output..."
         Copy-Item -Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist\*") -Destination (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -Recurse -Force
     }
     else {
-        Write-Host "Warning: Develop app build output not found at $((Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist"))"
+        Write-Host "Warning: Console app build output not found at $((Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist"))"
     }
 
     Write-Host "================================================================"
@@ -1514,7 +1514,7 @@ function Run {
     # Run the bootstrap script directly with environment variable and arguments
     $env:THUNDER_API_BASE = $BASE_URL
     $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
-    & $bootstrapScript -DevelopRedirectUris "https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
+    & $bootstrapScript -ConsoleRedirectUris "https://localhost:${DEVELOP_APP_DEFAULT_PORT}/console"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Initial data setup failed"
@@ -1538,7 +1538,7 @@ function Run {
     Write-Host "  👉 Backend : $BASE_URL"
     Write-Host "  📱 Frontend :"
     Write-Host "      🚪 Gate (Login/Register): https://localhost:${GATE_APP_DEFAULT_PORT}/gate"
-    Write-Host "      🛠️  Develop (Admin Console): https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
+    Write-Host "      🛠️  Console (System Management): https://localhost:${DEVELOP_APP_DEFAULT_PORT}/console"
     Write-Host ""
 
     Write-Host "Press Ctrl+C to stop."
@@ -1677,7 +1677,7 @@ function Run-Frontend {
         
         Write-Host "Starting frontend applications in the background..."
         # Start frontend processes in background
-        $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm", "-r", "--parallel", "--filter", "@thunder/develop", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
+        $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm", "-r", "--parallel", "--filter", "@thunder/console", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
         $script:FRONTEND_PID = $frontendProcess.Id
     }
     finally {

@@ -21,7 +21,7 @@ Flows are node-based graphs that control user interaction and backend processing
 
 ## Creating Flows with Visual Flow Builder
 
-The Develop App includes a visual flow builder for designing flows through a drag-and-drop interface.
+The Console App includes a visual flow builder for designing flows through a drag-and-drop interface.
 
 ### Canvas Overview
 

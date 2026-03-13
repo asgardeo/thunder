@@ -786,8 +786,8 @@ func (s *DeclarativeResourceTestSuite) TestCompleteFlowDefinition_MarshalUnmarsh
 	// Create a complete flow definition with complex meta
 	originalFlow := &CompleteFlowDefinition{
 		ID:            "019b4495-793d-7172-b3e5-ebc3d61afe36",
-		Handle:        "develop-app-flow",
-		Name:          "Develop App Authentication Flow",
+		Handle:        "console-app-flow",
+		Name:          "Console App Authentication Flow",
 		FlowType:      "AUTHENTICATION",
 		ActiveVersion: 1,
 		Nodes: []NodeDefinition{

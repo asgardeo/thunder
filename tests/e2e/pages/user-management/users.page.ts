@@ -28,7 +28,7 @@
  */
 
 import { Page, Locator, expect } from "@playwright/test";
-import { DeveloperPortalRoutes } from "../../configs/routes/developer-portal-routes";
+import { ConsoleRoutes } from "../../configs/routes/console-routes";
 import { BasePage } from "../base.page";
 import { Timeouts } from "../../constants/timeouts";
 
@@ -81,7 +81,7 @@ export class UsersPage extends BasePage {
     this.wizardHeading = page.locator("h1, h2, h3, h4, h5, h6").filter({ hasText: /select.*user.*type/i });
 
     // Wizard: User type dropdown
-    this.userTypeSelect = page.locator('[data-testid="user-type-select"]').or(page.locator('#user-type-select'));
+    this.userTypeSelect = page.locator('[data-testid="user-type-select"]').or(page.locator("#user-type-select"));
 
     // Wizard: Continue button
     this.continueButton = page.getByRole("button", { name: /continue/i });
@@ -97,20 +97,18 @@ export class UsersPage extends BasePage {
 
     this.emailInput = page.locator('input[name="email"]').or(page.getByLabel(/email/i));
 
-    this.givenNameInput = page
-      .locator('input[name="given_name"]')
-      .or(page.getByLabel(/first.*name|given.*name/i));
+    this.givenNameInput = page.locator('input[name="given_name"]').or(page.getByLabel(/first.*name|given.*name/i));
 
-    this.familyNameInput = page
-      .locator('input[name="family_name"]')
-      .or(page.getByLabel(/last.*name|family.*name/i));
+    this.familyNameInput = page.locator('input[name="family_name"]').or(page.getByLabel(/last.*name|family.*name/i));
 
     // Form buttons
     this.submitButton = page.getByRole("button", { name: /create.*user|add.*user|submit|save/i });
     this.cancelButton = page.getByRole("button", { name: /cancel|close/i });
 
     // Form heading (Step 2: "Enter user details")
-    this.formHeading = page.locator("h1, h2, h3, h4, h5, h6").filter({ hasText: /enter.*user.*details|user.*details/i });
+    this.formHeading = page
+      .locator("h1, h2, h3, h4, h5, h6")
+      .filter({ hasText: /enter.*user.*details|user.*details/i });
 
     // Messages
     this.successMessage = page.locator('[class*="success"], [role="status"]');
@@ -119,7 +117,7 @@ export class UsersPage extends BasePage {
 
   /** Navigate to users management page */
   async goto() {
-    await this.page.goto(`${this.baseUrl}${DeveloperPortalRoutes.users}`, {
+    await this.page.goto(`${this.baseUrl}${ConsoleRoutes.users}`, {
       waitUntil: "networkidle",
       timeout: Timeouts.PAGE_LOAD,
     });
@@ -128,16 +126,16 @@ export class UsersPage extends BasePage {
   /** Check if currently on users page */
   async isOnUsersPage(): Promise<boolean> {
     const url = this.page.url();
-    return url.includes(DeveloperPortalRoutes.users) && !url.includes(DeveloperPortalRoutes.signin);
+    return url.includes(ConsoleRoutes.users) && !url.includes(ConsoleRoutes.signin);
   }
 
   /** Verify page loaded successfully */
   async verifyPageLoaded() {
     const url = this.page.url();
-    if (url.includes(DeveloperPortalRoutes.signin)) {
+    if (url.includes(ConsoleRoutes.signin)) {
       throw new Error("Authentication failed: Redirected to signin page");
     }
-    expect(url).toContain(DeveloperPortalRoutes.users);
+    expect(url).toContain(ConsoleRoutes.users);
   }
 
   /** Click the Add User button */
@@ -173,16 +171,38 @@ export class UsersPage extends BasePage {
   /** Fill the user form (Step 2: User Details) */
   async fillUserForm(data: UserFormData) {
     // Fill known fields by name/label
-    if (await this.usernameInput.first().isVisible().catch(() => false)) {
+    if (
+      await this.usernameInput
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await this.usernameInput.first().fill(data.username);
     }
-    if (await this.emailInput.first().isVisible().catch(() => false)) {
+    if (
+      await this.emailInput
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await this.emailInput.first().fill(data.email);
     }
-    if (data.given_name && await this.givenNameInput.first().isVisible().catch(() => false)) {
+    if (
+      data.given_name &&
+      (await this.givenNameInput
+        .first()
+        .isVisible()
+        .catch(() => false))
+    ) {
       await this.givenNameInput.first().fill(data.given_name);
     }
-    if (data.family_name && await this.familyNameInput.first().isVisible().catch(() => false)) {
+    if (
+      data.family_name &&
+      (await this.familyNameInput
+        .first()
+        .isVisible()
+        .catch(() => false))
+    ) {
       await this.familyNameInput.first().fill(data.family_name);
     }
 
@@ -194,7 +214,7 @@ export class UsersPage extends BasePage {
       const input = requiredInputs.nth(i);
       const currentValue = await input.inputValue();
       if (!currentValue) {
-        const name = await input.getAttribute("name") ?? `field_${i}`;
+        const name = (await input.getAttribute("name")) ?? `field_${i}`;
         const type = await input.getAttribute("type");
         const value = type === "password" ? `Test@${Date.now()}` : `test_${name}_${Date.now()}`;
         await input.fill(value);

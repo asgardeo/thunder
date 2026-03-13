@@ -67,7 +67,7 @@ Choose the feature type:
 ```bash
 ◆  Feature type:
 │  ● Admin feature (thunder-admin-xxx)
-│  ○ Gate feature (thunder-gate-xxx)
+│  ○ Gate feature (gate-xxx)
 └
 ```
 

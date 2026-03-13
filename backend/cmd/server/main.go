@@ -94,7 +94,7 @@ func main() {
 	}
 
 	serverURL := config.GetServerURL(&cfg.Server)
-	consoleURL := fmt.Sprintf("%s/develop", strings.TrimSuffix(serverURL, "/"))
+	consoleURL := fmt.Sprintf("%s/console", strings.TrimSuffix(serverURL, "/"))
 	logger.Info("Thunder Server URL", log.String("url", serverURL))
 	logger.Info("Thunder Console URL", log.String("url", consoleURL))
 
@@ -269,14 +269,14 @@ func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, thunderH
 		logger.Warn("Gate application directory not found", log.String("directory", gateDir))
 	}
 
-	// Serve develop application from /develop
+	// Serve console application from /console
 	developDir := path.Join(thunderHome, "apps", "develop")
 	if directoryExists(developDir) {
-		logger.Debug("Registering static file handler for Develop application",
+		logger.Debug("Registering static file handler for Console application",
 			log.String("path", "/develop/"), log.String("directory", developDir))
 		mux.Handle("/develop/", createStaticFileHandler("/develop/", developDir, logger))
 	} else {
-		logger.Warn("Develop application directory not found", log.String("directory", developDir))
+		logger.Warn("Console application directory not found", log.String("directory", developDir))
 	}
 }
 

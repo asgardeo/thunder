@@ -17,7 +17,7 @@ Passkeys are a modern, secure alternative to passwords based on the WebAuthn sta
 
 Thunder supports passkeys through three approaches:
 
-1. **Thunder Gate (Hosted UI)**: Use Thunder's hosted authentication pages (`thunder-gate`) by configuring passkeys in your application settings—no custom UI or API calls needed
+1. **Thunder Gate (Hosted UI)**: Use Thunder's hosted authentication pages (`gate`) by configuring passkeys in your application settings—no custom UI or API calls needed
 2. **Atomic API approach**: Direct HTTP endpoints (`/register/passkey/*` and `/auth/passkey/*`) for full control over the registration and authentication flow
 3. **Flow-based approach**: Integrate passkeys into orchestrated authentication/registration flows via the `/flow/execute` API, combining passkeys with other authentication methods
 
@@ -44,7 +44,7 @@ passkey:
 
 The simplest way to enable passkeys is through Thunder Gate, Thunder's hosted authentication and registration UI. This approach uses OAuth2/OIDC authorization flow:
 
-1. **Create an application** in the Thunder Develop console (or via the Application API).
+1. **Create an application** in the Thunder Console (or via the Application API).
 2. **Configure authentication flows** for the application:
    - Navigate to **Applications** → Select your application → **Flows** tab
    - Select an **Authentication Flow** that includes passkey authentication (e.g., "Passkey Authentication" or "Basic + Passkey Authentication and Registration Flow")
@@ -59,7 +59,7 @@ The simplest way to enable passkeys is through Thunder Gate, Thunder's hosted au
    - Thunder Gate renders the authentication UI based on your selected flow, handling passkey WebAuthn ceremonies in the browser
    - After successful authentication, users are redirected back to your application with an authorization code (exchange it for tokens via `/oauth2/token`)
 
-This approach requires **no custom UI development** or direct WebAuthn API calls from your application. Thunder Gate (`thunder-gate`) handles:
+This approach requires **no custom UI development** or direct WebAuthn API calls from your application. Thunder Gate (`gate`) handles:
 - Rendering sign-in/registration prompts based on the configured flow
 - Passkey registration during user sign-up (if registration flow includes passkey executor)
 - Passkey authentication during sign-in

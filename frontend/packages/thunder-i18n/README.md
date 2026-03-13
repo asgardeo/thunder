@@ -407,9 +407,9 @@ pnpm lint
 
 ## Integration Guide
 
-### Thunder Develop App
+### Thunder Console App
 
-Complete integration example for `apps/thunder-develop/src/main.tsx`:
+Complete integration example for `apps/console/src/main.tsx`:
 
 ```tsx
 import * as ReactDOM from 'react-dom/client';
@@ -445,7 +445,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 ### Thunder Gate App
 
-Similar integration for `apps/thunder-gate/src/main.tsx`:
+Similar integration for `apps/gate/src/main.tsx`:
 
 ```tsx
 import { StrictMode } from 'react';

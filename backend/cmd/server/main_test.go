@@ -577,7 +577,7 @@ func TestRegisterStaticFileHandlers(t *testing.T) {
 		assert.Contains(t, rr.Body.String(), "gate app")
 
 		// Test develop handler
-		req = httptest.NewRequest(http.MethodGet, "/develop/", nil)
+		req = httptest.NewRequest(http.MethodGet, "/console/", nil)
 		rr = httptest.NewRecorder()
 		mux.ServeHTTP(rr, req)
 		assert.Equal(t, http.StatusOK, rr.Code)

@@ -135,7 +135,7 @@ Follow these steps to run WSO2 Thunder using Docker Compose.
 
 Follow these steps to access the Developer Console:
 
-1. Open your browser and navigate to [https://localhost:8090/develop](https://localhost:8090/develop).
+1. Open your browser and navigate to [https://localhost:8090/console](https://localhost:8090/console).
 
 2. Log in using the admin credentials created during the initial data setup (`admin` / `admin`).
 

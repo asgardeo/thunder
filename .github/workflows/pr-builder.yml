@@ -328,15 +328,15 @@ jobs:
           cd frontend
           pnpm build:packages
 
-      - name: 🧪 Run Thunder-Develop Tests with Coverage
+      - name: 🧪 Run Console Tests with Coverage
         run: |
-          cd frontend/apps/thunder-develop
+          cd frontend/apps/console
           pnpm vitest run --coverage --shard=${{ matrix.shard }}/4
 
-      - name: 🧪 Run Thunder-Gate Tests with Coverage
+      - name: 🧪 Run Gate Tests with Coverage
         if: matrix.shard == 1
         run: |
-          cd frontend/apps/thunder-gate
+          cd frontend/apps/gate
           pnpm test:coverage
 
       # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading.
@@ -346,25 +346,25 @@ jobs:
       # Line and function coverage remain unaffected and accurately reflect test quality.
       - name: 🧹 Strip branch data from frontend LCOV reports
         run: |
-          for lcov_file in frontend/apps/thunder-develop/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
+          for lcov_file in frontend/apps/console/coverage/lcov.info frontend/apps/gate/coverage/lcov.info; do
             if [ -f "$lcov_file" ]; then
               sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
             fi
           done
 
-      - name: 📦 Upload thunder-develop coverage artifact
+      - name: 📦 Upload console coverage artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: develop-coverage-shard-${{ matrix.shard }}
-          path: frontend/apps/thunder-develop/coverage/lcov.info
+          name: console-coverage-shard-${{ matrix.shard }}
+          path: frontend/apps/console/coverage/lcov.info
           if-no-files-found: error
 
-      - name: 📦 Upload thunder-gate coverage artifact
+      - name: 📦 Upload gate coverage artifact
         if: matrix.shard == 1
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gate-coverage
-          path: frontend/apps/thunder-gate/coverage/lcov.info
+          path: frontend/apps/gate/coverage/lcov.info
           if-no-files-found: error
 
   upload-frontend-coverage:
@@ -379,8 +379,8 @@ jobs:
       - name: 📥 Download all coverage artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          pattern: develop-coverage-shard-*
-          path: coverage/develop
+          pattern: console-coverage-shard-*
+          path: coverage/console
 
       - name: 📥 Download gate coverage artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -388,18 +388,18 @@ jobs:
           name: gate-coverage
           path: coverage/gate
 
-      - name: 🔀 Merge thunder-develop coverage from shards
+      - name: 🔀 Merge console coverage from shards
         run: |
-          cat coverage/develop/develop-coverage-shard-*/lcov.info > coverage/develop-merged-lcov.info
+          cat coverage/console/console-coverage-shard-*/lcov.info > coverage/console-merged-lcov.info
 
-      - name: 📊 Upload `@thunder/develop` Unit Test Coverage Report to Codecov
+      - name: 📊 Upload `@thunder/console` Unit Test Coverage Report to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/develop-merged-lcov.info
+          files: coverage/console-merged-lcov.info
           disable_search: true
-          flags: frontend-apps-develop-unit
-          name: Frontend Develop App Unit Tests
+          flags: frontend-apps-console-unit
+          name: Frontend Console App Unit Tests
           fail_ci_if_error: false
 
       - name: 📊 Upload `@thunder/gate` Unit Test Coverage Report to Codecov

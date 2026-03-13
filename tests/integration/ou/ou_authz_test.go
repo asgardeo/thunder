@@ -81,8 +81,8 @@ const (
 	ouAdminUsername = "ou-authz-admin"
 	ouAdminPassword = "OUAdmin@123"
 
-	developClientID    = "DEVELOP"
-	developRedirectURI = "https://localhost:8095/develop"
+	developClientID    = "CONSOLE"
+	developRedirectURI = "https://localhost:8095/console"
 
 	// Name of the role created in SetupSuite. Using a unique name avoids
 	// collisions when tests run multiple times without a clean DB.

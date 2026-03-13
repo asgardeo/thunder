@@ -210,7 +210,7 @@ try {
     Write-Host ""
     Write-Host "[INFO] Frontend Apps:"
     Write-Host "   [GATE] Gate (Login/Register): $BACKEND_PORT/gate"
-    Write-Host "   [DEV]  Develop (Admin Console): $BACKEND_PORT/develop"
+    Write-Host "   [DEV]  Console (System Management): $BACKEND_PORT/console"
     Write-Host ""
 
     Write-Host "Press Ctrl+C to stop the server."

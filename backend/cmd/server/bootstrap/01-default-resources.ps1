@@ -19,7 +19,7 @@
 
 # Parse command line arguments for custom redirect URIs
 param(
-    [string]$DevelopRedirectUris = ""
+    [string]$ConsoleRedirectUris = ""
 )
 
 # Check for PowerShell Version Compatibility
@@ -39,7 +39,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
+# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and Console application
 
 
 $ErrorActionPreference = 'Stop'
@@ -1077,12 +1077,12 @@ else {
 Write-Host ""
 
 # ============================================================================
-# Create DEVELOP Application
+# Create Console Application
 # ============================================================================
 
-Log-Info "Creating DEVELOP application..."
+Log-Info "Creating Console application..."
 
-# Get flow IDs for develop app from the APP_FLOW_IDS created/found during flow processing
+# Get flow IDs for console app from the APP_FLOW_IDS created/found during flow processing
 $DEVELOP_AUTH_FLOW_ID = ""
 $DEVELOP_REG_FLOW_ID = ""
 
@@ -1093,13 +1093,13 @@ if ($APP_FLOW_IDS.ContainsKey("develop")) {
 
 # Validate that flow IDs are available
 if (-not $DEVELOP_AUTH_FLOW_ID) {
-    Log-Error "Develop authentication flow ID not found, cannot create DEVELOP application"
-    Log-Error "Make sure flows/apps/develop/auth_flow_develop.json exists"
+    Log-Error "Console authentication flow ID not found, cannot create Console application"
+    Log-Error "Make sure flows/apps/develop/auth_flow_console.json exists"
     exit 1
 }
 if (-not $DEVELOP_REG_FLOW_ID) {
-    Log-Error "Develop registration flow ID not found, cannot create DEVELOP application"
-    Log-Error "Make sure flows/apps/develop/registration_flow_develop.json exists"
+    Log-Error "Console registration flow ID not found, cannot create Console application"
+    Log-Error "Make sure flows/apps/develop/registration_flow_console.json exists"
     exit 1
 }
 
@@ -1107,19 +1107,19 @@ if (-not $DEVELOP_REG_FLOW_ID) {
 $PUBLIC_URL = if ($env:THUNDER_PUBLIC_URL) { $env:THUNDER_PUBLIC_URL } else { $env:THUNDER_API_BASE }
 
 # Build redirect URIs array - default + custom if provided
-$redirectUrisList = @("$PUBLIC_URL/develop")
-if ($DevelopRedirectUris) {
-    Log-Info "Adding custom redirect URIs: $DevelopRedirectUris"
+$redirectUrisList = @("$PUBLIC_URL/console")
+if ($ConsoleRedirectUris) {
+    Log-Info "Adding custom redirect URIs: $ConsoleRedirectUris"
     # Split comma-separated URIs and append to array
-    $customUris = $DevelopRedirectUris -split ',' | ForEach-Object { $_.Trim() }
+    $customUris = $ConsoleRedirectUris -split ',' | ForEach-Object { $_.Trim() }
     $redirectUrisList += $customUris
 }
 
 $appData = @{
-    name = "Develop"
-    description = "Developer application for Thunder"
-    url = "$PUBLIC_URL/develop"
-    logo_url = "$PUBLIC_URL/develop/assets/images/logo-mini.svg"
+    name = "Console"
+    description = "Management application for Thunder"
+    url = "$PUBLIC_URL/console"
+    logo_url = "$PUBLIC_URL/console/assets/images/logo-mini.svg"
     auth_flow_id = $DEVELOP_AUTH_FLOW_ID
     registration_flow_id = $DEVELOP_REG_FLOW_ID
     is_registration_flow_enabled = $false
@@ -1129,7 +1129,7 @@ $appData = @{
         @{
             type = "oauth2"
             config = @{
-                client_id = "DEVELOP"
+                client_id = "CONSOLE"
                 redirect_uris = $redirectUrisList
                 grant_types = @("authorization_code")
                 response_types = @("code")
@@ -1161,16 +1161,16 @@ $appData = @{
 $response = Invoke-ThunderApi -Method POST -Endpoint "/applications" -Data $appData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "DEVELOP application created successfully"
+    Log-Success "Console application created successfully"
 }
 elseif ($response.StatusCode -eq 409) {
-    Log-Warning "DEVELOP application already exists, skipping"
+    Log-Warning "Console application already exists, skipping"
 }
 elseif ($response.StatusCode -eq 400 -and ($response.Body -match "Application already exists|APP-1022")) {
-    Log-Warning "DEVELOP application already exists, skipping"
+    Log-Warning "Console application already exists, skipping"
 }
 else {
-    Log-Error "Failed to create DEVELOP application (HTTP $($response.StatusCode))"
+    Log-Error "Failed to create Console application (HTTP $($response.StatusCode))"
     Write-Host "Response: $($response.Body)"
     exit 1
 }

@@ -51,6 +51,7 @@
   },
   "pnpm": {
     "overrides": {
+      "flatted@3.3.3": ">=3.4.0",
       "minimatch@10.1.1": ">=10.2.1",
       "vite": "catalog:",
       "nx>axios": ">=1.13.5",

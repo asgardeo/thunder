@@ -36,7 +36,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
  */
 export interface ThunderTestConfig {
   /**
-   * Base path for the application (e.g., '/develop', '/gate')
+   * Base path for the application (e.g., '/console', '/gate')
    */
   base: string;
   /**
@@ -66,10 +66,10 @@ interface ProvidersProps {
   config?: ThunderTestConfig;
 }
 
-// Default configuration for thunder-develop (backwards compatibility)
+// Default configuration for console (backwards compatibility)
 const defaultConfig: ThunderTestConfig = {
-  base: '/develop',
-  clientId: 'DEVELOP',
+  base: '/console',
+  clientId: 'CONSOLE',
 };
 
 // Store the current config

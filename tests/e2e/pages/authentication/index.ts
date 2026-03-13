@@ -20,4 +20,4 @@
  * Authentication Pages Index
  */
 
-export { DeveloperPortalSigninPage } from "./developer-portal-signin.page";
+export { ConsoleSigninPage } from "./console-signin.page";

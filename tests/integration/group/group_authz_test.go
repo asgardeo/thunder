@@ -87,8 +87,8 @@ const (
 	groupMgrRoleName  = "Group Admin (group-authz-test)"
 	userSchemaOU1Name = "authz-mgr-schema-ou1"
 
-	groupAuthzDevelopClientID    = "DEVELOP"
-	groupAuthzDevelopRedirectURI = "https://localhost:8095/develop"
+	groupAuthzDevelopClientID    = "CONSOLE"
+	groupAuthzDevelopRedirectURI = "https://localhost:8095/console"
 
 	memberSchemaOU2Name = "authz-member-schema-ou2"
 

@@ -21,7 +21,7 @@ cors:
 ```
 
 :::tip
-This configuration allows the Thunder Gate and Thunder Develop applications to communicate with the backend server during development.
+This configuration allows the Thunder Gate and Thunder Console applications to communicate with the backend server during development.
 :::
 
 **Configure the Gate client:**
@@ -53,14 +53,14 @@ This command will automatically set up your complete development environment:
 
 **What gets created:**
 
-- `Develop` application with redirect URI pointing to the local Thunder Develop application
+- `Develop` application with redirect URI pointing to the local Thunder Console application
 - Default admin user with credentials: `admin` / `admin`
 
 **Services that start:**
 
 - **Backend server**: [https://localhost:8090](https://localhost:8090)
 - **Thunder Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
-- **Thunder Develop** (Admin Console): [https://localhost:5191/develop](https://localhost:5191/develop)
+- **Thunder Console** (System Management): [https://localhost:5191/console](https://localhost:5191/console)
 :::
 
 💡 **Alternatively**, if you would rather run the backend and frontend servers separately, run the following commands in separate terminal windows:

@@ -55,11 +55,11 @@ flags:
   frontend-apps-develop-unit:
     carryforward: false
     paths:
-      - frontend/apps/thunder-develop/
+      - frontend/apps/console/
   frontend-apps-gate-unit:
     carryforward: false
     paths:
-      - frontend/apps/thunder-gate/
+      - frontend/apps/gate/
 
 coverage:
   status:

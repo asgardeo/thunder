@@ -16,5 +16,5 @@
  * under the License.
  */
 
-export { DeveloperPortalSigninPage } from "./authentication";
+export { ConsoleSigninPage } from "./authentication";
 export { UsersPage, type UserFormData } from "./user-management";

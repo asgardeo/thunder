@@ -120,9 +120,9 @@ SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
 SECURITY_DIR=repository/resources/security
 FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
-DEVELOP_APP_DIST_DIR=apps/develop
-FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-gate
-FRONTEND_DEVELOP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-develop
+DEVELOP_APP_DIST_DIR=apps/console
+FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/gate
+FRONTEND_DEVELOP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console
 SAMPLE_BASE_DIR=samples
 VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
 VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
@@ -429,14 +429,14 @@ function prepare_frontend_for_packaging() {
         echo "Warning: Gate app build output not found at $FRONTEND_GATE_APP_SOURCE_DIR/dist"
     fi
     
-    # Copy develop app build output
+    # Copy console app build output
     if [ -d "$FRONTEND_DEVELOP_APP_SOURCE_DIR/dist" ]; then
-        echo "Copying Develop app build output..."
+        echo "Copying Console app build output..."
         shopt -s dotglob
         cp -r "$FRONTEND_DEVELOP_APP_SOURCE_DIR/dist/"* "$DIST_DIR/$PRODUCT_FOLDER/$DEVELOP_APP_DIST_DIR"
         shopt -u dotglob
     else
-        echo "Warning: Develop app build output not found at $FRONTEND_DEVELOP_APP_SOURCE_DIR/dist"
+        echo "Warning: Console app build output not found at $FRONTEND_DEVELOP_APP_SOURCE_DIR/dist"
     fi
 
     echo "================================================================"
@@ -970,7 +970,7 @@ function run() {
     # Run the bootstrap script directly with environment variable and arguments
     THUNDER_API_BASE="$BASE_URL" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
-        --develop-redirect-uris "https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
+        --console-redirect-uris "https://localhost:$DEVELOP_APP_DEFAULT_PORT/console"
 
     if [ $? -ne 0 ]; then
         echo "❌ Initial data setup failed"
@@ -993,7 +993,7 @@ function run() {
     echo "  👉 Backend : $BASE_URL"
     echo "  📱 Frontend :"
     echo "      🚪 Gate (Login/Register): https://localhost:$GATE_APP_DEFAULT_PORT/gate"
-    echo "      🛠️  Develop (Admin Console): https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
+    echo "      🛠️  Console (System Management): https://localhost:$DEVELOP_APP_DEFAULT_PORT/console"
     echo ""
 
     echo "Press Ctrl+C to stop."
@@ -1106,7 +1106,7 @@ function run_frontend() {
     
     echo "Starting frontend applications in the background..."
     # Start frontend processes in background
-    pnpm -r --parallel --filter "@thunder/develop" --filter "@thunder/gate" dev &
+    pnpm -r --parallel --filter "@thunder/console" --filter "@thunder/gate" dev &
     FRONTEND_PID=$!
     
     # Return to script directory

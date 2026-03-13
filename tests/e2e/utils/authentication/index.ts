@@ -16,4 +16,4 @@
  * under the License.
  */
 
-export * from "../authentication/developer-portal-admin-auth-utils";
+export * from "../authentication/console-admin-auth-utils";

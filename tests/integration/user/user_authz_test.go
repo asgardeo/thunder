@@ -84,8 +84,8 @@ const (
 	userSchemaOU1Name = "authz-user-schema-ou1"
 	userSchemaOU2Name = "authz-user-schema-ou2"
 
-	userAuthzDevelopClientID    = "DEVELOP"
-	userAuthzDevelopRedirectURI = "https://localhost:8095/develop"
+	userAuthzDevelopClientID    = "CONSOLE"
+	userAuthzDevelopRedirectURI = "https://localhost:8095/console"
 )
 
 func TestUserAuthzTestSuite(t *testing.T) {

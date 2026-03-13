@@ -53,8 +53,8 @@
 
 ## frontend files
 
-/frontend/apps/thunder-develop/ @DonOmalVindula
-/frontend/apps/thunder-gate/ @brionmario
+/frontend/apps/console/ @DonOmalVindula
+/frontend/apps/gate/ @brionmario
 /frontend/packages/ @jeradrutnam @brionmario @DonOmalVindula
 
 

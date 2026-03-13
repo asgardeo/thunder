@@ -73,7 +73,7 @@ func isPublicEndpoint(path string) bool {
 		"/.well-known/openid-configuration",
 		"/.well-known/oauth-authorization-server",
 		"/gate/",    // Gate application (login UI)
-		"/develop/", // Develop application
+		"/console/", // Console application
 		"/error",
 	}
 
@@ -109,7 +109,7 @@ func GetHTTPClientWithToken(token string) *http.Client {
 	})
 }
 
-// GetHTTPClientForUser obtains a token using password grant (via DEVELOP app) and returns an HTTP client that
+// GetHTTPClientForUser obtains a token using password grant (via CONSOLE app) and returns an HTTP client that
 // injects that token. This keeps token generation out of individual tests.
 func GetHTTPClientForUser(username, password string) (*http.Client, error) {
 	if username == "" || password == "" {

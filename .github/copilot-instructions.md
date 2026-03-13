@@ -17,8 +17,8 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 
 - React with Vite and TypeScript is used for the frontend.
 - Frontend consists of two parts: 
-  - `thunder-gate`: The login, registration and recovery UI.
-  - `thunder-develop`: The main console application.
+  - `gate`: The login, registration and recovery UI.
+  - `console`: The main console application.
 
 ### Testing
 
@@ -42,8 +42,8 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   - .mockery.private.yml: Mockery configurations for private interfaces.
   - .mockery.public.yml: Mockery configurations for public interfaces.
 - frontend/: Individual frontend application code.
-  - apps/thunder-gate/: UIs for login, registration and recovery. 
-  - apps/thunder-develop/: UIs for the console application.
+  - apps/gate/: UIs for login, registration and recovery. 
+  - apps/console/: UIs for the console application.
   - packages/: Common frontend packages such as UI components, services, and contexts.
 - install/helm/: Helm charts for deployment.
 - samples/apps/: Sample applications demonstrating the usage of the product.

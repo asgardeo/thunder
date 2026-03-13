@@ -38,7 +38,7 @@ var testPublicPaths = []string{
 	"/.well-known/openid-configuration/**",
 	"/.well-known/oauth-authorization-server/**",
 	"/gate/**",
-	"/develop/**",
+	"/console/**",
 	"/error/**",
 	"/design/resolve/**",
 	"/i18n/languages",
@@ -105,12 +105,12 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPaths() {
 		{"Health check readiness", "/health/readiness"},
 		{"Signin path", "/gate/verify"},
 		{"Signin path with subpath", "/gate/forgot-password"},
-		{"Develop path", "/develop/dashboard"},
-		{"Develop path with subpath", "/develop/api/test"},
+		{"Console path", "/console/dashboard"},
+		{"Console path with subpath", "/console/api/test"},
 		{"Auth without trailing slash", "/auth"},
 		{"OAuth2 token without params", "/oauth2/token"},
 		{"Signin without trailing slash", "/gate/signin"},
-		{"Develop without trailing slash", "/develop"},
+		{"Console without trailing slash", "/console"},
 	}
 
 	for _, tc := range testCases {
@@ -281,15 +281,15 @@ func (suite *SecurityServiceTestSuite) TestIsPublicPath() {
 		{"Health check", "/health/liveness", true},
 		{"Signin root", "/gate/signin", true},
 		{"Signin logo", "/gate/signin/logo/123", true},
-		{"Develop root", "/develop/", true},
-		{"Develop dashboard", "/develop/dashboard", true},
+		{"Console root", "/console/", true},
+		{"Console dashboard", "/console/dashboard", true},
 		{"I18n languages", "/i18n/languages", true},
 
 		// Exact matches without trailing slash
 		{"Auth exact", "/auth", true},
 		{"OAuth2 token exact", "/oauth2/token", true},
 		{"Signin exact", "/gate/signin", true},
-		{"Develop exact", "/develop", true},
+		{"Console exact", "/console", true},
 
 		// Non-public paths - should return false
 		{"API users", "/api/users", false},
@@ -408,7 +408,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPathVariations() {
 		{"Auth with fragment", "/auth/login#section"},
 		{"Well-known with path", "/oauth2/.well-known/openid_configuration"},
 		{"Nested signin path", "/gate/forgot-password/confirm"},
-		{"Deep develop path", "/develop/api/v1/test"},
+		{"Deep console path", "/console/api/v1/test"},
 		{"Health check with query", "/health/liveness?detailed=true"},
 	}
 

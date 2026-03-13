@@ -45,7 +45,7 @@ async function createFeature(): Promise<void> {
     message: 'Feature type:',
     options: [
       {value: 'admin', label: 'Admin feature (thunder-admin-xxx)'},
-      {value: 'gate', label: 'Gate feature (thunder-gate-xxx)'},
+      {value: 'gate', label: 'Gate feature (gate-xxx)'},
     ],
   });
 

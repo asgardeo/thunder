@@ -17,4 +17,4 @@ Thunder provides a flexible flow engine for creating customizable authentication
 - [Flow Execution API](/api/flow-execution.yaml)
 
 > [!NOTE]
-> Legacy file-based flow configuration has been removed. Use the Flow Management API or the Visual Flow Builder in the Develop App to create flows.
+> Legacy file-based flow configuration has been removed. Use the Flow Management API or the Visual Flow Builder in the Console App to create flows.

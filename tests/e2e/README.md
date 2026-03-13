@@ -166,8 +166,8 @@ tests/e2e/
 │   └── test-data.ts      # Dynamic data generators
 ├── fixtures/             # Playwright Fixtures
 │   └── developer-portal/ # Developer Portal specific fixtures
-│       ├── developer-portal-auth.fixture.ts
-│       └── developer-portal-pom.fixture.ts
+│       ├── console-auth.fixture.ts
+│       └── console-pom.fixture.ts
 ├── pages/                # Page Object Models
 ├── tests/                # Test Specs
 ├── utils/                # Helper functions
@@ -185,7 +185,7 @@ Follow this workflow when adding new automation:
 
 Before writing test logic, define static values in the appropriate files:
 
-- **Routes**: Add UI paths to `configs/routes/developer-portal-routes.ts`.
+- **Routes**: Add UI paths to `configs/routes/console-routes.ts`.
 - **API Endpoints**: Add API paths to `configs/api/developer-portal-api-routes.ts`.
 - **UI Messages**: Add static text (labels, headers, success messages) to `constants/ui-messages.ts`.
 - **Status Codes**: Use `constants/http-status.ts` for response verification.
@@ -223,7 +223,7 @@ export class MyFeaturePage {
 
 ### Step 4: Register Fixture
 
-Add your new POM to `fixtures/developer-portal-pom.fixture.ts`:
+Add your new POM to `fixtures/console-pom.fixture.ts`:
 
 ```typescript
 import { MyFeaturePage } from "../pages/my-feature";
@@ -260,5 +260,5 @@ test("verify feature works", async ({ myFeaturePage }) => {
 
 ## 🔧 Troubleshooting
 
-- **"Tokens expired"**: The framework handles this automatically via `developer-portal-admin-auth-utils.ts`. It detects expired tokens and performs an inline login if necessary.
+- **"Tokens expired"**: The framework handles this automatically via `console-admin-auth-utils.ts`. It detects expired tokens and performs an inline login if necessary.
 - **Double Test Execution**: This happens if `playwright.config.ts` regex matches both setup and spec files. Ensure `setup` project only matches `**/*.setup.ts`.

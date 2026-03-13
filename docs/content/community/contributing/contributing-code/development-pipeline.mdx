@@ -168,7 +168,7 @@ If you have not already created the `Develop` application and the default admin 
 ```bash
 THUNDER_API_BASE="https://localhost:8090" \
   backend/cmd/server/bootstrap/01-default-resources.sh \
-  --develop-redirect-uris "https://localhost:5191/develop"
+  --console-redirect-uris "https://localhost:5191/console"
 ```
 
 ### Setting up the Thunder Gate Application
@@ -198,11 +198,11 @@ cd frontend
 pnpm --filter @thunder/gate dev
 ```
 
-### Setting up the Thunder Develop Application
+### Setting up the Thunder Console Application
 
 💡 **IMPORTANT**: This section assumes that you have already created the `Develop` application using the initial data setup script. If not, please refer to the [Seed Data](#seed-data-optional) section above.
 
-1. First, retrieve the application ID of the **Develop** application from the Thunder server. This will be the application with the `client_id` **DEVELOP**.
+1. First, retrieve the application ID of the **Console** application from the Thunder server. This will be the application with the `client_id` **CONSOLE**.
 
 ```bash
 curl -k -X GET "https://localhost:8090/applications"
@@ -216,12 +216,12 @@ curl -k -X GET "https://localhost:8090/applications/<develop-application-id>"
 
 💡 **Note**: Replace `<develop-application-id>` with the actual application ID (e.g., `6100bc91-ba99-4ce9-87dd-6d4d80178c38`) obtained from the previous step. The `-k` flag allows curl to work with self-signed SSL certificates in development.
 
-3. Copy the response from step 2 and update the `redirect_uris` in the JSON object to include the local development URL (ex: https://localhost:5191/develop). Locate the `inbound_auth_config > config` section and modify the `redirect_uris` array:
+3. Copy the response from step 2 and update the `redirect_uris` in the JSON object to include the local development URL (ex: https://localhost:5191/console). Locate the `inbound_auth_config > config` section and modify the `redirect_uris` array:
 
 ```json
 "redirect_uris": [
-  "https://localhost:8090/develop",
-  "https://localhost:5191/develop"
+  "https://localhost:8090/console",
+  "https://localhost:5191/console"
 ]
 ```
 
@@ -233,7 +233,7 @@ curl -k -X PUT "https://localhost:8090/applications/<develop-application-id>" \
   -d '<paste-the-modified-json-here>'
 ```
 
-5. Add the local development origin of the thunder-develop application (https://localhost:5191) to the CORS allowed origins in `<THUNDER_HOME>/repository/conf/deployment.yaml`.
+5. Add the local development origin of the console application (https://localhost:5191) to the CORS allowed origins in `<THUNDER_HOME>/repository/conf/deployment.yaml`.
 
 ```yaml
 cors:
@@ -241,13 +241,13 @@ cors:
     - "https://localhost:5191"
 ```
 
-6. Run the Thunder Develop application.
+6. Run the Thunder Console application.
 
 ```bash
-pnpm --filter @thunder/develop dev
+pnpm --filter @thunder/console dev
 ```
 
-This will run the Thunder Develop application on `https://localhost:5191/develop`.
+This will run the Thunder Console application on `https://localhost:5191/console`.
 
 </details>
 
