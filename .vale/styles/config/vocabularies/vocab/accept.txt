@@ -32,3 +32,9 @@ JWT
 SDKs
 Pardot
 Entra
+[Uu]nexported
+[Mm]ux
+DTOs
+[Mm]iddleware
+[Vv]itest
+ESLint
