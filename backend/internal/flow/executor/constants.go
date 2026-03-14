@@ -92,7 +92,9 @@ var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
 // nonUserAttributes contains the list of user attributes that do not belong to user entity.
 var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	"otp", "attemptCount", "expiryTimeInMillis", "otpSessionToken", "value",
-	"authorized_permissions", "requested_permissions", "required_attributes", "required_locales",
+	"authorized_permissions",
+	common.RuntimeKeyRequiredOptionalAttributes, common.RuntimeKeyRequiredEssentialAttributes,
+	common.RuntimeKeyRequestedPermissions, common.RuntimeKeyRequiredLocales,
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
 	common.RuntimeKeyUserAutoProvisioned, common.RuntimeKeyStoredInviteToken,

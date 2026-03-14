@@ -2079,7 +2079,8 @@ func wrapConsentServiceError(err *serviceerror.I18nServiceError) *serviceerror.S
 }
 
 // attributesToPurposeElements converts a list of user attribute names to consent PurposeElements.
-// TODO: Add support for passing mandatory property, when the support is implemented in the application model.
+// For the consent purpose, we assume all user attributes are optional. The mandatory attributes are
+// handled in the runtime when generating the consent form.
 func attributesToPurposeElements(attributes map[string]bool) []consent.PurposeElement {
 	elements := make([]consent.PurposeElement, 0, len(attributes))
 	for attr := range attributes {

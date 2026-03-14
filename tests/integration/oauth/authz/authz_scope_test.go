@@ -50,7 +50,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -563,8 +563,8 @@ func (ts *OAuthAuthzScopeTestSuite) createTestAuthenticationFlow() string {
 	return flowID
 }
 
-// TestOAuthAuthzFlow_WithRequiredAttributes tests that required_attributes from scopes and access token config
-// are correctly filtered in the auth assertion
+// TestOAuthAuthzFlow_WithRequiredAttributes tests that required_optional_attributes from scopes and
+// access token config are correctly filtered in the auth assertion
 func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() {
 	// Create OAuth app with IDToken and AccessToken configs
 	appConfig := map[string]interface{}{

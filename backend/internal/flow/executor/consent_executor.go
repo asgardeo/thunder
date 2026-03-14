@@ -123,21 +123,12 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Checking if user consent is required")
 
-	// Get user attributes from required_attributes in runtimeData if present,
-	// otherwise fallback to application token config
-	var userAttributes []string
-	if requiredAttrs, exists := ctx.RuntimeData[common.RuntimeKeyRequiredAttributes]; exists {
-		userAttributes = strings.Fields(requiredAttrs)
-	} else if ctx.Application.Assertion != nil {
-		// Fallback to application token user attributes
-		userAttributes = ctx.Application.Assertion.UserAttributes
-	}
+	essentialAttributes, optionalAttributes := e.getRequiredAttributes(ctx)
 
 	// Resolve consent to determine if any required consents are missing and need to be prompted
 	promptData, svcErr := e.consentEnforcer.ResolveConsent(
-		ctx.Context, ouID, appID, userID,
-		userAttributes, ctx.AuthenticatedUser.AvailableAttributes,
-	)
+		ctx.Context, ouID, appID, userID, essentialAttributes, optionalAttributes,
+		ctx.AuthenticatedUser.AvailableAttributes)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Client error while resolving user consent", log.Any("error", svcErr))
@@ -275,6 +266,33 @@ func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp
 	logger.Debug("Consent recorded successfully", log.String("consentID", consentRecord.ID))
 	execResp.Status = common.ExecComplete
 	return execResp, nil
+}
+
+// getRequiredAttributes retrieves the essential and optional attributes required for consent from the
+// runtime data or application assertion.
+func (e *consentExecutor) getRequiredAttributes(ctx *core.NodeContext) (
+	essentialAttributes, optionalAttributes []string) {
+	essentialAttributes = []string{}
+	optionalAttributes = []string{}
+	requiredAttributesProvided := false
+
+	// Get required attributes from essential and optional attributes if present in runtime data
+	if essentialAttrsStr, exists := ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes]; exists {
+		requiredAttributesProvided = true
+		essentialAttributes = strings.Fields(essentialAttrsStr)
+	}
+	if optionalAttrsStr, exists := ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes]; exists {
+		requiredAttributesProvided = true
+		optionalAttributes = strings.Fields(optionalAttrsStr)
+	}
+
+	// If neither runtime key was provided but the application has an assertion with user attributes,
+	// take those attributes. We treat all assertion attributes as optional
+	if !requiredAttributesProvided && ctx.Application.Assertion != nil {
+		optionalAttributes = ctx.Application.Assertion.UserAttributes
+	}
+
+	return essentialAttributes, optionalAttributes
 }
 
 // collectConsentedAttributes extracts all approved attribute names from a consent record.
