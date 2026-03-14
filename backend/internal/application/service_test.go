@@ -1373,7 +1373,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_EmptyAppID() {
 		Name: "Test App",
 	}
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), "", app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), "", app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1384,7 +1384,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_EmptyAppID() {
 func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NilApp() {
 	service, _, _, _ := suite.setupTestService()
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, nil)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, nil)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1399,7 +1399,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_EmptyName() {
 		Name: "",
 	}
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1426,7 +1426,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_DeclarativeResou
 
 	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(true)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1454,7 +1454,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ApplicationNotFo
 	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
 	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, model.ApplicationNotFoundError)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1482,7 +1482,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ApplicationNilFr
 	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
 	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, nil)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1510,7 +1510,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_StoreError() {
 	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
 	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, errors.New("database error"))
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1549,7 +1549,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameConflict() {
 	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
 	mockStore.On("GetApplicationByName", mock.Anything, "New Name").Return(conflictingApp, nil)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1583,7 +1583,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameCheckStoreEr
 	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
 	mockStore.On("GetApplicationByName", mock.Anything, "New Name").Return(nil, errors.New("database error"))
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1684,7 +1684,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_FieldValidationE
 
 			tt.setupMocks(mockThemeMgtService)
 
-			result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(
+			result, inboundAuth, svcErr := service.validateApplicationForUpdate(
 				context.Background(), testServiceAppID, tt.app)
 
 			assert.Nil(suite.T(), result)
@@ -1740,7 +1740,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_Success() {
 		Return(defaultRegFlow, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, mock.Anything).Return(true).Maybe()
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -6505,7 +6505,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-flow-id").Return(false)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -6544,7 +6544,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-reg-flow-id").Return(false)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -6607,7 +6607,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 		}, nil)
 	mockLayoutMgtService.EXPECT().IsLayoutExist("non-existent-layout-id").Return(false, nil)
 
-	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+	result, inboundAuth, svcErr := service.validateApplicationForUpdate(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)

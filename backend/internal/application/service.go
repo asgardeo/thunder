@@ -259,32 +259,9 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 		return nil, nil, svcErr
 	}
 
-	if svcErr := as.validateAuthFlowID(ctx, app); svcErr != nil {
+	if svcErr := as.validateApplicationFields(ctx, app); svcErr != nil {
 		return nil, nil, svcErr
 	}
-	if svcErr := as.validateRegistrationFlowID(ctx, app); svcErr != nil {
-		return nil, nil, svcErr
-	}
-
-	if svcErr := as.validateThemeID(app.ThemeID); svcErr != nil {
-		return nil, nil, svcErr
-	}
-	if svcErr := as.validateLayoutID(app.LayoutID); svcErr != nil {
-		return nil, nil, svcErr
-	}
-
-	if app.URL != "" && !sysutils.IsValidURI(app.URL) {
-		return nil, nil, &ErrorInvalidApplicationURL
-	}
-	if app.LogoURL != "" && !sysutils.IsValidURI(app.LogoURL) {
-		return nil, nil, &ErrorInvalidLogoURL
-	}
-
-	if svcErr := as.validateAllowedUserTypes(ctx, app.AllowedUserTypes); svcErr != nil {
-		return nil, nil, svcErr
-	}
-
-	as.validateConsentConfig(app)
 
 	appID := app.ID
 	if appID == "" {
@@ -349,7 +326,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 	return processedDTO, inboundAuthConfig, nil
 }
 
-func (as *applicationService) ValidateApplicationForUpdate(
+func (as *applicationService) validateApplicationForUpdate(
 	ctx context.Context, appID string, app *model.ApplicationDTO) (
 	*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
@@ -395,32 +372,9 @@ func (as *applicationService) ValidateApplicationForUpdate(
 		}
 	}
 
-	if svcErr := as.validateAuthFlowID(ctx, app); svcErr != nil {
+	if svcErr := as.validateApplicationFields(ctx, app); svcErr != nil {
 		return nil, nil, svcErr
 	}
-	if svcErr := as.validateRegistrationFlowID(ctx, app); svcErr != nil {
-		return nil, nil, svcErr
-	}
-
-	if svcErr := as.validateThemeID(app.ThemeID); svcErr != nil {
-		return nil, nil, svcErr
-	}
-	if svcErr := as.validateLayoutID(app.LayoutID); svcErr != nil {
-		return nil, nil, svcErr
-	}
-
-	if app.URL != "" && !sysutils.IsValidURI(app.URL) {
-		return nil, nil, &ErrorInvalidApplicationURL
-	}
-	if app.LogoURL != "" && !sysutils.IsValidURI(app.LogoURL) {
-		return nil, nil, &ErrorInvalidLogoURL
-	}
-
-	if svcErr := as.validateAllowedUserTypes(ctx, app.AllowedUserTypes); svcErr != nil {
-		return nil, nil, svcErr
-	}
-
-	as.validateConsentConfig(app)
 
 	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, existingApp)
 	if svcErr != nil {
@@ -616,7 +570,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	existingApp, inboundAuthConfig, svcErr := as.ValidateApplicationForUpdate(ctx, appID, app)
+	existingApp, inboundAuthConfig, svcErr := as.validateApplicationForUpdate(ctx, appID, app)
 
 	if svcErr != nil {
 		return nil, svcErr
@@ -1050,6 +1004,34 @@ func (as *applicationService) validateConsentConfig(appDTO *model.ApplicationDTO
 	if appDTO.LoginConsent.ValidityPeriod < 0 {
 		appDTO.LoginConsent.ValidityPeriod = 0
 	}
+}
+
+// validateApplicationFields validates application fields that are common to both create and update operations.
+func (as *applicationService) validateApplicationFields(
+	ctx context.Context, app *model.ApplicationDTO) *serviceerror.ServiceError {
+	if svcErr := as.validateAuthFlowID(ctx, app); svcErr != nil {
+		return svcErr
+	}
+	if svcErr := as.validateRegistrationFlowID(ctx, app); svcErr != nil {
+		return svcErr
+	}
+	if svcErr := as.validateThemeID(app.ThemeID); svcErr != nil {
+		return svcErr
+	}
+	if svcErr := as.validateLayoutID(app.LayoutID); svcErr != nil {
+		return svcErr
+	}
+	if app.URL != "" && !sysutils.IsValidURI(app.URL) {
+		return &ErrorInvalidApplicationURL
+	}
+	if app.LogoURL != "" && !sysutils.IsValidURI(app.LogoURL) {
+		return &ErrorInvalidLogoURL
+	}
+	if svcErr := as.validateAllowedUserTypes(ctx, app.AllowedUserTypes); svcErr != nil {
+		return svcErr
+	}
+	as.validateConsentConfig(app)
+	return nil
 }
 
 // validateOAuthParamsForCreateAndUpdate validates the OAuth parameters for creating or updating an application.
