@@ -159,8 +159,10 @@ const (
 	RuntimeKeySkipProvisioning = "skipProvisioning"
 	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
 	RuntimeKeyRequestedPermissions = "requested_permissions"
-	// RuntimeKeyRequiredAttributes holds the space-separated user attributes required for the flow.
-	RuntimeKeyRequiredAttributes = "required_attributes"
+	// RuntimeKeyRequiredEssentialAttributes holds the space-separated essential user attributes required for the flow.
+	RuntimeKeyRequiredEssentialAttributes = "required_essential_attributes"
+	// RuntimeKeyRequiredOptionalAttributes holds the space-separated optional user attributes required for the flow.
+	RuntimeKeyRequiredOptionalAttributes = "required_optional_attributes"
 	// RuntimeKeyRequiredLocales holds the space-separated locales requested for claims.
 	RuntimeKeyRequiredLocales = "required_locales"
 	// RuntimeKeyConsentID holds the consent record ID after consent has been recorded.

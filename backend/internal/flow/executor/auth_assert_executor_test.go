@@ -47,7 +47,10 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
-const testEmail = "test@example.com"
+const (
+	testEmail     = "test@example.com"
+	testNameValue = "Test"
+)
 
 type AuthAssertExecutorTestSuite struct {
 	suite.Suite
@@ -772,7 +775,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttributes() {
-	attrs := map[string]interface{}{"email": testEmail, "username": "testuser", "given_name": "Test"}
+	attrs := map[string]interface{}{"email": testEmail, "username": "testuser", "given_name": testNameValue}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
@@ -803,7 +806,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 			// Should contain the configured user attributes from the user store
 			hasEmail := claims["email"] == testEmail
 			hasUsername := claims["username"] == "testuser"
-			hasFirstName := claims["given_name"] == "Test"
+			hasFirstName := claims["given_name"] == testNameValue
 			return hasEmail && hasUsername && hasFirstName
 		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
@@ -1102,89 +1105,103 @@ func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmp
 	assert.Empty(suite.T(), metadata.Locale)
 }
 
-// ----- filterToConsentedAttributes Tests -----
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentRecordedWithoutConsentedKey() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		RuntimeData: map[string]string{
+			common.RuntimeKeyConsentID: "consent-123",
+		},
+	}
 
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_FiltersCorrectly() {
-	userAttributes := []string{"email", "phone", "name", "address"}
-	consentedAttrs := []string{"email", "name"}
-
-	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
-
-	assert.Len(suite.T(), result, 2)
-	assert.Contains(suite.T(), result, "email")
-	assert.Contains(suite.T(), result, "name")
-	assert.NotContains(suite.T(), result, "phone")
-	assert.NotContains(suite.T(), result, "address")
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_EmptyConsentedAttrs() {
-	userAttributes := []string{"email", "phone"}
-	consentedAttrs := []string{}
-
-	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+	result := suite.executor.getRequiredUserAttributes(ctx)
 
 	assert.Empty(suite.T(), result)
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_EmptyUserAttrs() {
-	userAttributes := []string{}
-	consentedAttrs := []string{"email", "phone"}
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentRecordedWithConsentedKey() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		RuntimeData: map[string]string{
+			common.RuntimeKeyConsentID:           "consent-123",
+			common.RuntimeKeyConsentedAttributes: "email name",
+		},
+	}
 
-	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+	result := suite.executor.getRequiredUserAttributes(ctx)
 
-	assert.Empty(suite.T(), result)
+	assert.Equal(suite.T(), []string{"email", "name"}, result)
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_NilUserAttrs() {
-	consentedAttrs := []string{"email", "phone"}
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeEssentialOnly() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequiredEssentialAttributes: "email name",
+		},
+	}
 
-	result := filterToConsentedAttributes(nil, consentedAttrs)
+	result := suite.executor.getRequiredUserAttributes(ctx)
 
-	assert.Empty(suite.T(), result)
+	assert.Equal(suite.T(), []string{"email", "name"}, result)
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_NilConsentedAttrs() {
-	userAttributes := []string{"email", "phone"}
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeOptionalOnly() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequiredOptionalAttributes: "email phone",
+		},
+	}
 
-	result := filterToConsentedAttributes(userAttributes, nil)
+	result := suite.executor.getRequiredUserAttributes(ctx)
 
-	assert.Empty(suite.T(), result)
-}
-
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_AllMatch() {
-	userAttributes := []string{"email", "phone"}
-	consentedAttrs := []string{"email", "phone"}
-
-	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
-
-	assert.Len(suite.T(), result, 2)
 	assert.Equal(suite.T(), []string{"email", "phone"}, result)
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_NoMatch() {
-	userAttributes := []string{"email", "phone"}
-	consentedAttrs := []string{"name", "address"}
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeEssentialAndOptional() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequiredEssentialAttributes: "email",
+			common.RuntimeKeyRequiredOptionalAttributes:  "phone name",
+		},
+	}
 
-	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+	result := suite.executor.getRequiredUserAttributes(ctx)
 
-	assert.Empty(suite.T(), result)
+	assert.Equal(suite.T(), []string{"email", "phone", "name"}, result)
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_PreservesOrder() {
-	userAttributes := []string{"phone", "email", "name"}
-	consentedAttrs := []string{"name", "phone"}
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_FallbackToAssertion() {
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		RuntimeData: map[string]string{},
+		Application: appmodel.Application{
+			Assertion: &appmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
+		},
+	}
 
-	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+	result := suite.executor.getRequiredUserAttributes(ctx)
 
-	assert.Len(suite.T(), result, 2)
-	assert.Equal(suite.T(), "phone", result[0], "Order should follow userAttributes")
-	assert.Equal(suite.T(), "name", result[1])
+	assert.Equal(suite.T(), []string{"email", "phone"}, result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_NoRuntimeOrAssertion() {
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		RuntimeData: map[string]string{},
+		Application: appmodel.Application{},
+	}
+
+	result := suite.executor.getRequiredUserAttributes(ctx)
+
+	assert.Empty(suite.T(), result)
 }
 
 // ----- Execute with Consented Attributes in RuntimeData -----
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_FiltersUserAttrs() {
-	attrs := map[string]interface{}{"email": testEmail, "phone": "1234567890", "name": "Test"}
+	attrs := map[string]interface{}{"email": testEmail, "phone": "1234567890", "name": testNameValue}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
@@ -1218,7 +1235,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 			// Should only have email and name (consented), NOT phone
 			_, hasPhone := claims["phone"]
 			hasEmail := claims["email"] == testEmail
-			hasName := claims["name"] == "Test"
+			hasName := claims["name"] == testNameValue
 			return hasEmail && hasName && !hasPhone
 		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
@@ -1274,6 +1291,47 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes
 
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssentialAndOptionalAttributes() {
+	attrs := map[string]interface{}{"email": testEmail, "phone": "1234567890", "name": testNameValue}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequiredEssentialAttributes: "email",
+			common.RuntimeKeyRequiredOptionalAttributes:  "name",
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application: appmodel.Application{
+			Assertion: &appmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
+		},
+	}
+
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
+		Attributes: attrsJSON,
+	}
+
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			_, hasPhone := claims["phone"]
+			return claims["email"] == testEmail && claims["name"] == testNameValue && !hasPhone
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 

@@ -164,33 +164,9 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		jwtClaims["authorized_permissions"] = permissions
 	}
 
-	// Get user attributes from required_attributes in runtimeData if present,
-	// otherwise fallback to application token config
-	var userAttributes []string
-	if requiredAttrs, exists := ctx.RuntimeData["required_attributes"]; exists {
-		userAttributes = strings.Fields(requiredAttrs)
-	} else if ctx.Application.Assertion != nil {
-		// Fallback to application token user attributes
-		userAttributes = ctx.Application.Assertion.UserAttributes
-	}
+	requiredAttributes := a.getRequiredUserAttributes(ctx)
 
-	// If consent has been collected in this flow, restrict user attributes to only those the user approved.
-	// We check RuntimeKeyConsentID to determine if the consent executor ran and recorded a consent.
-	// If consent was recorded but no attributes were approved, userAttributes is set to nil.
-	if _, consentRecorded := ctx.RuntimeData[common.RuntimeKeyConsentID]; consentRecorded {
-		consentedAttrsStr := ctx.RuntimeData[common.RuntimeKeyConsentedAttributes]
-		if consentedAttrsStr != "" {
-			userAttributes = filterToConsentedAttributes(userAttributes, strings.Fields(consentedAttrsStr))
-			logger.Debug("Filtered user attributes to consented set",
-				log.Any("consentedAttributes", strings.Fields(consentedAttrsStr)),
-				log.Any("filteredUserAttributes", userAttributes))
-		} else {
-			logger.Debug("Consent recorded but no attributes approved. Clearing user attributes")
-			userAttributes = nil
-		}
-	}
-
-	resolvedAttributes, attrErr := a.resolveUserAttributes(ctx, userAttributes)
+	resolvedAttributes, attrErr := a.resolveUserAttributes(ctx, requiredAttributes)
 	if attrErr != nil {
 		return "", attrErr
 	}
@@ -224,24 +200,24 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	}
 
 	// Handle groups if configured in user attributes
-	if slices.Contains(userAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
+	if slices.Contains(requiredAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
 		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, jwtClaims); err != nil {
 			return "", err
 		}
 	}
 
 	// Add user type to the claims
-	if slices.Contains(userAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
+	if slices.Contains(requiredAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
 		jwtClaims[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
 	}
 
 	// Add OU details to the claims
-	ouAttributesConfigured := slices.Contains(userAttributes, oauth2const.ClaimOUID) ||
-		slices.Contains(userAttributes, oauth2const.ClaimOUName) ||
-		slices.Contains(userAttributes, oauth2const.ClaimOUHandle)
+	ouAttributesConfigured := slices.Contains(requiredAttributes, oauth2const.ClaimOUID) ||
+		slices.Contains(requiredAttributes, oauth2const.ClaimOUName) ||
+		slices.Contains(requiredAttributes, oauth2const.ClaimOUHandle)
 	if ouAttributesConfigured && ctx.AuthenticatedUser.OrganizationUnitID != "" {
 		if err := a.appendOUDetailsToClaims(
-			ctx.Context, ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
+			ctx.Context, ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, requiredAttributes); err != nil {
 			return "", err
 		}
 	}
@@ -301,9 +277,57 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 	return refs
 }
 
+// getRequiredUserAttributes determines the list of user attribute keys that should be included in the
+// assertion based on runtime and application configuration.
+func (a *authAssertExecutor) getRequiredUserAttributes(ctx *core.NodeContext) (userAttributes []string) {
+	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	userAttributes = []string{}
+
+	// Check if consent was recorded in this flow. If recorded, we should only include consented attributes
+	// We check RuntimeKeyConsentID to determine if the consent executor ran and recorded a consent.
+	if _, consentRecorded := ctx.RuntimeData[common.RuntimeKeyConsentID]; consentRecorded {
+		// Get user attributes from consented attributes if consent was collected in this flow.
+		// If consent was recorded but no attributes were approved, userAttributes is set to empty
+		if consentedAttrsStr, exists := ctx.RuntimeData[common.RuntimeKeyConsentedAttributes]; exists {
+			logger.Debug("Consent recorded with approved attributes")
+			userAttributes = strings.Fields(consentedAttrsStr)
+		} else {
+			logger.Debug("Consent recorded but no attributes approved")
+		}
+	} else {
+		// If consent was not recorded in this flow, check for essential/ optional attributes in runtime data.
+		// If present, we should apply attribute filtering based on these attributes
+		_, essentialExists := ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes]
+		_, optionalExists := ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes]
+
+		if essentialExists || optionalExists {
+			logger.Debug("Essential/ optional attributes exists in runtime data. Applying attribute filtering")
+			if essentialExists {
+				logger.Debug("Adding required essential attributes to user attributes list")
+				userAttributes = append(userAttributes,
+					strings.Fields(ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes])...)
+			}
+			if optionalExists {
+				logger.Debug("Adding required optional attributes to user attributes list")
+				userAttributes = append(userAttributes,
+					strings.Fields(ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes])...)
+			}
+		} else {
+			// If consent was not recorded and no essential/ optional attributes specified,
+			// fallback to application token config
+			if ctx.Application.Assertion != nil {
+				logger.Debug("Adding application token attributes to user attributes list")
+				userAttributes = ctx.Application.Assertion.UserAttributes
+			}
+		}
+	}
+
+	return userAttributes
+}
+
 // resolveUserAttributes resolves the user attributes map from the requested attributes.
-func (a *authAssertExecutor) resolveUserAttributes(
-	ctx *core.NodeContext, requestedAttributes []string) (map[string]interface{}, error) {
+func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, requestedAttributes []string) (
+	map[string]interface{}, error) {
 	if len(requestedAttributes) == 0 {
 		return nil, nil
 	}
@@ -481,23 +505,6 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	}
 
 	return nil
-}
-
-// filterToConsentedAttributes returns only those attributes from userAttributes that the user consented to.
-func filterToConsentedAttributes(userAttributes []string, consentedAttrs []string) []string {
-	consentedSet := make(map[string]struct{}, len(consentedAttrs))
-	for _, attr := range consentedAttrs {
-		consentedSet[attr] = struct{}{}
-	}
-
-	filtered := make([]string, 0, len(userAttributes))
-	for _, attr := range userAttributes {
-		if _, consented := consentedSet[attr]; consented {
-			filtered = append(filtered, attr)
-		}
-	}
-
-	return filtered
 }
 
 // buildGetAttributesMetadata constructs the metadata for fetching user attributes.

@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -241,13 +242,14 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		oauthParams.RedirectURI = app.RedirectURIs[0]
 	}
 
-	requiredAttributes := getRequiredAttributes(oidcScopes, claimsRequest, responseType, app)
+	essentialAttributes, optionalAttributes := getRequiredAttributes(oidcScopes, claimsRequest, responseType, app)
 
 	// Initiate flow with OAuth context.
 	runtimeData := map[string]string{
-		flowcm.RuntimeKeyRequestedPermissions: utils.StringifyStringArray(nonOidcScopes, " "),
-		flowcm.RuntimeKeyRequiredAttributes:   requiredAttributes,
-		flowcm.RuntimeKeyRequiredLocales:      claimsLocales,
+		flowcm.RuntimeKeyRequestedPermissions:        utils.StringifyStringArray(nonOidcScopes, " "),
+		flowcm.RuntimeKeyRequiredEssentialAttributes: essentialAttributes,
+		flowcm.RuntimeKeyRequiredOptionalAttributes:  optionalAttributes,
+		flowcm.RuntimeKeyRequiredLocales:             claimsLocales,
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.AppID,
@@ -635,102 +637,71 @@ func createAuthorizationCode(
 	}, nil
 }
 
-// getRequiredAttributes computes the required attributes based on OIDC scopes, access token config,
-// and claims parameter.
-func getRequiredAttributes(oidcScopes []string, claimsRequest *oauth2model.ClaimsRequest,
-	responseType string, app *appmodel.OAuthAppConfigProcessedDTO) string {
-	requiredAttrsSet := make(map[string]bool)
-
-	accessTokenClaims, idTokenClaims, userInfoClaims :=
-		determineClaimsForTokens(oidcScopes, claimsRequest, responseType, app)
-
-	for claim := range accessTokenClaims {
-		requiredAttrsSet[claim] = true
-	}
-	for claim := range idTokenClaims {
-		requiredAttrsSet[claim] = true
-	}
-	for claim := range userInfoClaims {
-		requiredAttrsSet[claim] = true
-	}
-
-	return mapKeysToSpaceSeparatedString(requiredAttrsSet)
-}
-
-// mapKeysToSpaceSeparatedString converts map keys to a space-separated string.
-func mapKeysToSpaceSeparatedString(m map[string]bool) string {
-	if len(m) == 0 {
-		return ""
-	}
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	return strings.Join(keys, " ")
-}
-
-// determineClaimsForTokens determines which claims should be included in access token, ID token, and userinfo
-// based on OIDC scopes, claims parameter, response type, and app configuration.
-func determineClaimsForTokens(
-	oidcScopes []string,
-	claimsRequest *oauth2model.ClaimsRequest,
-	responseType string,
-	app *appmodel.OAuthAppConfigProcessedDTO,
-) (accessTokenClaims, idTokenClaims, userInfoClaims map[string]bool) {
-	accessTokenClaims = make(map[string]bool)
-	idTokenClaims = make(map[string]bool)
-	userInfoClaims = make(map[string]bool)
-
+// getRequiredAttributes determines the essential and optional user attributes required based on OIDC scopes,
+// claims parameter, response type, and app configuration.
+func getRequiredAttributes(oidcScopes []string, claimsRequest *oauth2model.ClaimsRequest, responseType string,
+	app *appmodel.OAuthAppConfigProcessedDTO) (essentialAttributes, optionalAttributes string) {
 	if app == nil {
-		return accessTokenClaims, idTokenClaims, userInfoClaims
+		return "", ""
 	}
 
-	// Add access token attributes from app config.
+	essentialAttributesMap := make(map[string]bool)
+	optionalAttributesMap := make(map[string]bool)
+
+	// Add access token attributes from app config
 	if app.Token != nil {
-		populateAccessTokenClaims(app, accessTokenClaims)
+		appendAccessTokenAttributes(app, optionalAttributesMap)
 	}
 
-	// Process OIDC-related claims only if openid scope is present.
+	// Process OIDC-related attributes only if openid scope is present
 	if slices.Contains(oidcScopes, oauth2const.ScopeOpenID) {
-		processOIDCClaims(oidcScopes, claimsRequest, responseType, app, idTokenClaims, userInfoClaims)
+		appendOIDCAttributes(oidcScopes, claimsRequest, responseType, app,
+			essentialAttributesMap, optionalAttributesMap)
 	}
 
-	return accessTokenClaims, idTokenClaims, userInfoClaims
+	// Remove any duplicates between essential and optional attributes, giving precedence to essential
+	if len(essentialAttributesMap) > 0 && len(optionalAttributesMap) > 0 {
+		for attr := range essentialAttributesMap {
+			if optionalAttributesMap[attr] {
+				delete(optionalAttributesMap, attr)
+			}
+		}
+	}
+
+	// Convert attribute maps to space-separated strings
+	essentialAttributes = strings.Join(slices.Collect(maps.Keys(essentialAttributesMap)), " ")
+	optionalAttributes = strings.Join(slices.Collect(maps.Keys(optionalAttributesMap)), " ")
+
+	return essentialAttributes, optionalAttributes
 }
 
-// populateAccessTokenClaims adds access token attributes from app configuration.
-func populateAccessTokenClaims(app *appmodel.OAuthAppConfigProcessedDTO, accessTokenClaims map[string]bool) {
+// appendAccessTokenAttributes appends access token attributes from app configuration.
+func appendAccessTokenAttributes(app *appmodel.OAuthAppConfigProcessedDTO, attributesMap map[string]bool) {
 	if app.Token.AccessToken != nil && len(app.Token.AccessToken.UserAttributes) > 0 {
 		for _, attr := range app.Token.AccessToken.UserAttributes {
-			accessTokenClaims[attr] = true
+			attributesMap[attr] = true
 		}
 	}
 }
 
-// processOIDCClaims processes OIDC-related claims from scopes and claims parameter.
-func processOIDCClaims(
-	oidcScopes []string,
-	claimsRequest *oauth2model.ClaimsRequest,
-	responseType string,
-	app *appmodel.OAuthAppConfigProcessedDTO,
-	idTokenClaims, userInfoClaims map[string]bool,
-) {
+// appendOIDCAttributes appends OIDC-related attributes from scopes and claims parameters.
+func appendOIDCAttributes(oidcScopes []string, claimsRequest *oauth2model.ClaimsRequest, responseType string,
+	app *appmodel.OAuthAppConfigProcessedDTO, essentialAttributes, optionalAttributes map[string]bool) {
 	var idTokenAllowedSet map[string]bool
 	if app.Token != nil {
-		idTokenAllowedSet = buildAllowedSet(app.Token.IDToken)
+		idTokenAllowedSet = buildIDTokenAllowedSet(app.Token.IDToken)
 	}
 	userInfoAllowedSet := buildUserInfoAllowedSet(app.UserInfo)
 
-	// Add claims from claims parameter.
-	addClaimsFromParameter(claimsRequest, idTokenAllowedSet, userInfoAllowedSet, idTokenClaims, userInfoClaims)
+	appendAttributesFromClaimsParameter(claimsRequest, idTokenAllowedSet, userInfoAllowedSet,
+		essentialAttributes, optionalAttributes)
 
-	// Add claims from OIDC scopes.
-	addClaimsFromScopes(oidcScopes, responseType, app, idTokenAllowedSet, userInfoAllowedSet, idTokenClaims,
-		userInfoClaims)
+	appendAttributesFromScopes(oidcScopes, responseType, app, idTokenAllowedSet, userInfoAllowedSet,
+		optionalAttributes)
 }
 
-// buildAllowedSet creates a set of allowed attributes for ID token.
-func buildAllowedSet(idTokenConfig *appmodel.IDTokenConfig) map[string]bool {
+// buildIDTokenAllowedSet creates a set of allowed attributes for ID token.
+func buildIDTokenAllowedSet(idTokenConfig *appmodel.IDTokenConfig) map[string]bool {
 	if idTokenConfig == nil || len(idTokenConfig.UserAttributes) == 0 {
 		return nil
 	}
@@ -753,60 +724,60 @@ func buildUserInfoAllowedSet(userInfoConfig *appmodel.UserInfoConfig) map[string
 	return allowedSet
 }
 
-// addClaimsFromParameter adds claims requested via the claims parameter.
-func addClaimsFromParameter(
-	claimsRequest *oauth2model.ClaimsRequest,
-	idTokenAllowedSet, userInfoAllowedSet map[string]bool,
-	idTokenClaims, userInfoClaims map[string]bool,
-) {
+// appendAttributesFromClaimsParameter appends user attributes requested via the claims parameter.
+func appendAttributesFromClaimsParameter(claimsRequest *oauth2model.ClaimsRequest,
+	idTokenAllowedSet, userInfoAllowedSet, essentialAttributes, optionalAttributes map[string]bool) {
 	if claimsRequest == nil {
 		return
 	}
 
-	// Add ID token claims.
+	// Append id token attributes
 	if claimsRequest.IDToken != nil && idTokenAllowedSet != nil {
-		for claimName := range claimsRequest.IDToken {
-			if idTokenAllowedSet[claimName] {
-				idTokenClaims[claimName] = true
+		for name, value := range claimsRequest.IDToken {
+			if idTokenAllowedSet[name] {
+				if value != nil && value.Essential {
+					essentialAttributes[name] = true
+				} else {
+					optionalAttributes[name] = true
+				}
 			}
 		}
 	}
 
-	// Add UserInfo claims.
+	// Append user info attributes
 	if claimsRequest.UserInfo != nil && userInfoAllowedSet != nil {
-		for claimName := range claimsRequest.UserInfo {
-			if userInfoAllowedSet[claimName] {
-				userInfoClaims[claimName] = true
+		for name, value := range claimsRequest.UserInfo {
+			if userInfoAllowedSet[name] {
+				if value != nil && value.Essential {
+					essentialAttributes[name] = true
+				} else {
+					optionalAttributes[name] = true
+				}
 			}
 		}
 	}
 }
 
-// addClaimsFromScopes adds claims from OIDC scopes based on response type.
-func addClaimsFromScopes(
-	oidcScopes []string,
-	responseType string,
-	app *appmodel.OAuthAppConfigProcessedDTO,
-	idTokenAllowedSet, userInfoAllowedSet map[string]bool,
-	idTokenClaims, userInfoClaims map[string]bool,
-) {
+// appendAttributesFromScopes appends user attributes based on OIDC scopes and app configuration.
+func appendAttributesFromScopes(oidcScopes []string, responseType string, app *appmodel.OAuthAppConfigProcessedDTO,
+	idTokenAllowedSet, userInfoAllowedSet map[string]bool, optionalAttributes map[string]bool) {
 	for _, scope := range oidcScopes {
-		scopeClaims := resolveScopeClaims(scope, app.ScopeClaims)
-		addScopeClaimsToTokens(scopeClaims, responseType, idTokenAllowedSet, userInfoAllowedSet, idTokenClaims,
-			userInfoClaims)
+		scopeAttributes := resolveScopeAttributes(scope, app.ScopeClaims)
+		appendAttributesForScope(scopeAttributes, responseType,
+			idTokenAllowedSet, userInfoAllowedSet, optionalAttributes)
 	}
 }
 
-// resolveScopeClaims resolves claims for a scope, checking app-specific mappings first.
-func resolveScopeClaims(scope string, scopeClaimsMapping map[string][]string) []string {
-	// Check app-specific scope claims first.
-	if scopeClaimsMapping != nil {
-		if appClaims, exists := scopeClaimsMapping[scope]; exists {
-			return appClaims
+// resolveScopeAttributes resolves attributes for a scope, checking app-specific mappings first.
+func resolveScopeAttributes(scope string, scopeAttributesMapping map[string][]string) []string {
+	// Check app-specific scope attributes mapping first
+	if scopeAttributesMapping != nil {
+		if appAttributes, exists := scopeAttributesMapping[scope]; exists {
+			return appAttributes
 		}
 	}
 
-	// Fall back to standard OIDC scopes.
+	// Fall back to standard OIDC scopes
 	if standardScope, exists := oauth2const.StandardOIDCScopes[scope]; exists {
 		return standardScope.Claims
 	}
@@ -814,23 +785,22 @@ func resolveScopeClaims(scope string, scopeClaimsMapping map[string][]string) []
 	return nil
 }
 
-// addScopeClaimsToTokens adds scope claims to either id_token or userinfo based on response type.
-func addScopeClaimsToTokens(
-	scopeClaims []string,
-	responseType string,
-	idTokenAllowedSet, userInfoAllowedSet map[string]bool,
-	idTokenClaims, userInfoClaims map[string]bool,
-) {
-	for _, claim := range scopeClaims {
+// appendAttributesForScope appends attributes for a particular scope based on response type and
+// allowed attributes in app config.
+// When using scopes, all attributes are treated as optional since there is no way to determine
+// which attributes are essential vs optional.
+func appendAttributesForScope(scopeAttributes []string, responseType string,
+	idTokenAllowedSet, userInfoAllowedSet, optionalAttributes map[string]bool) {
+	for _, attribute := range scopeAttributes {
 		if responseType == string(oauth2const.ResponseTypeIDToken) {
-			// If response type does not issue an access token, add claim to id token.
-			if idTokenAllowedSet != nil && idTokenAllowedSet[claim] {
-				idTokenClaims[claim] = true
+			// If response type does not issue an access token, add claim to id token
+			if idTokenAllowedSet != nil && idTokenAllowedSet[attribute] {
+				optionalAttributes[attribute] = true
 			}
 		} else {
-			// If response type issues an access token, add claim to userinfo.
-			if userInfoAllowedSet != nil && userInfoAllowedSet[claim] {
-				userInfoClaims[claim] = true
+			// If response type issues an access token, add claim to userinfo
+			if userInfoAllowedSet != nil && userInfoAllowedSet[attribute] {
+				optionalAttributes[attribute] = true
 			}
 		}
 	}

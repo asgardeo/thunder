@@ -42,7 +42,7 @@ type ConsentEnforcerServiceInterface interface {
 	// Returns nil if all required consents are active; otherwise returns ConsentPromptData
 	// describing which purposes/elements still need user consent.
 	ResolveConsent(ctx context.Context, ouID, appID, userID string,
-		requiredAttributes []string, availableAttributes *authnprovider.AvailableAttributes) (
+		essentialAttributes, optionalAttributes []string, availableAttributes *authnprovider.AvailableAttributes) (
 		*ConsentPromptData, *serviceerror.I18nServiceError)
 
 	// RecordConsent records the user's consent decisions and returns the persisted consent record.
@@ -74,7 +74,7 @@ func newConsentEnforcerService(consentSvc consent.ConsentServiceInterface,
 // filtering (availableAttributes), then checks existing consent records. Returns nil if
 // all required consents are active, or ConsentPromptData for purposes that still need consent.
 func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID, userID string,
-	requiredAttributes []string, availableAttributes *authnprovider.AvailableAttributes) (
+	essentialAttributes, optionalAttributes []string, availableAttributes *authnprovider.AvailableAttributes) (
 	*ConsentPromptData, *serviceerror.I18nServiceError) {
 	logger := s.logger.With(log.String("appID", appID), log.String("userID", userID))
 	logger.Debug("Resolving consent for user")
@@ -122,7 +122,8 @@ func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID
 	userAttributeSet := buildUserAttributeSet(availableAttributes)
 
 	// Determine which purposes/elements still require consent
-	promptPurposes := buildPurposePrompts(purposes, requiredAttributes, consentedElements, userAttributeSet)
+	promptPurposes := buildPurposePrompts(purposes, essentialAttributes, optionalAttributes,
+		consentedElements, userAttributeSet)
 	if len(promptPurposes) == 0 {
 		logger.Debug("All required consents are active; no prompt needed")
 		return nil, nil
@@ -449,7 +450,7 @@ func purposeElementKey(purposeName, elementName string) string {
 
 // buildPurposePrompts builds the list of ConsentPurposePrompt for the given purposes, applying attribute filtering,
 // user profile filtering, and consented element filtering.
-func buildPurposePrompts(purposes []consent.ConsentPurpose, requiredAttributes []string,
+func buildPurposePrompts(purposes []consent.ConsentPurpose, essentialAttributes, optionalAttributes []string,
 	consentedElements map[string]bool, userAttributeSet map[string]bool) []ConsentPurposePrompt {
 	// For each purpose, determine which required elements still need consent
 	var promptPurposes []ConsentPurposePrompt
@@ -457,8 +458,9 @@ func buildPurposePrompts(purposes []consent.ConsentPurpose, requiredAttributes [
 		essential := []string{}
 		optional := []string{}
 		for _, elem := range purpose.Elements {
-			// Skip non required elements if requiredAttributes is specified
-			if len(requiredAttributes) > 0 && !slices.Contains(requiredAttributes, elem.Name) {
+			// Skip non required elements if essential/ optional attributes are specified
+			if (len(essentialAttributes) > 0 || len(optionalAttributes) > 0) &&
+				(!slices.Contains(essentialAttributes, elem.Name) && !slices.Contains(optionalAttributes, elem.Name)) {
 				continue
 			}
 
@@ -473,7 +475,8 @@ func buildPurposePrompts(purposes []consent.ConsentPurpose, requiredAttributes [
 				continue
 			}
 
-			if elem.IsMandatory {
+			// Classify the element as essential or optional for prompting
+			if slices.Contains(essentialAttributes, elem.Name) {
 				essential = append(essential, elem.Name)
 			} else {
 				optional = append(optional, elem.Name)
