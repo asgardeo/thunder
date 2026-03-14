@@ -10,36 +10,74 @@ Thunder provides a Model Context Protocol (MCP) server that enables AI assistant
 
 ## Overview
 
-The Thunder MCP server provides the following capabilities as of now:
+The MCP server is available at the `/mcp` endpoint on your Thunder instance (default: `https://localhost:8090/mcp`). See [Available Tools](#available-tools) for the complete list of capabilities.
 
-- **Application Tools**: Create, list, update, and manage OAuth applications
-- **Flow Tools**: Create, list, update, and manage authentication and registration flows
-- **React SDK Integration**: Get integration instructions and code snippets for React applications
+### Authentication
 
-The MCP server is available at the `/mcp` endpoint on your Thunder instance (default: `https://localhost:8090/mcp`).
+The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. Thunder validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for setup instructions.
 
-> **Note**: Currently, the MCP endpoint is not secured by default and does not require authentication. This is suitable for local development but should be secured in production environments.
+## Available Tools
+
+### Application Tools
+
+| Tool Name | Description | Parameters |
+|---|---|---|
+| `thunder_list_applications` | List all registered applications. | None |
+| `thunder_get_application_by_id` | Retrieve full details of an application by ID including OAuth settings, customizations, and flow associations. | `id` (string, required) |
+| `thunder_get_application_by_client_id` | Retrieve full details of an application by `client_id` including OAuth settings, customizations, and flow associations. | `client_id` (string, required) |
+| `thunder_create_application` | Create a new application optionally with OAuth configuration. Use `thunder_get_application_templates` to get pre-configured minimal templates for common app types (SPA, Mobile, Server, M2M). | Application object (see schema) |
+| `thunder_update_application` | Update an existing application (full replacement). Provide the complete application object. | Application object with `id` (required) |
+| `thunder_get_application_templates` | Get minimal OAuth configuration templates for common application types (SPA, Mobile, Server, M2M). | None |
+
+### Flow Tools
+
+| Tool Name | Description | Parameters |
+|---|---|---|
+| `thunder_list_flows` | List available flows with optional filtering. | `limit` (int, default: 30), `offset` (int, default: 0), `flow_type` (`enum`: `AUTHENTICATION`, `REGISTRATION`) |
+| `thunder_get_flow_by_handle` | Retrieve a complete flow definition by its human-readable handle. | `handle` (string, required), `flow_type` (`enum`, required) |
+| `thunder_get_flow_by_id` | Retrieve a complete flow definition by its unique ID (UUID). | `id` (string, required) |
+| `thunder_create_flow` | Create a new authentication or registration flow. | Flow definition object (see schema) |
+| `thunder_update_flow` | Update an existing flow definition. | `id` (string, required), `name` (string, required), `nodes` (array, required) |
+
+### React SDK Tools
+
+| Tool Name | Description | Parameters |
+|---|---|---|
+| `thunder_integrate_react_sdk` | Provides instructions and code snippets for integrating Thunder authentication via the Asgardeo React SDK. Supports redirect-based (Mode 1) and self-hosted login (Mode 2). | `thunder_url` (string, optional) |
 
 ## Prerequisites
 
 - Thunder server running (default: `https://localhost:8090`)
-- VSCode with MCP support (or another MCP-compatible client)
+- VS Code with MCP support (or another MCP-compatible client)
+- Choose an authentication approach — see [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for detailed setup:
+  - **Option A**: Standard MCP authorization flow using DCR (recommended)
+  - **Option B**: Client credentials with a pre-registered application
 
 ## Step 1: Add Thunder Certificate to System Certificates
 
-Since Thunder uses HTTPS with a self-signed certificate by default, you need to add the Thunder certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates. Add it to your system's certificate store (Keychain on macOS, certificate store on Linux/Windows) and ensure VSCode is configured to trust system certificates.
+Thunder uses HTTPS with a self-signed certificate by default. Add the Thunder certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates (Keychain on macOS, certificate store on Linux/Windows).
 
 ## Step 2: Configure MCP Client to Trust System Certificates
 
-MCP Client (VSCode) needs to be configured to trust system certificates and should be restarted.
+The MCP client (VS Code) needs to be configured to trust system certificates and should be restarted.
 
-## Step 3: Add Thunder MCP Server to VSCode
+## Step 3: Add Thunder MCP Server to VS Code
 
-1. **Open VSCode Settings** and search for "MCP" or navigate to MCP settings
+Two approaches are available to authenticate with the Thunder MCP server: the standard MCP authorization flow using DCR (recommended), or client credentials with a pre-registered application.
 
-2. **Add MCP Server Configuration**:
+### Option A: Standard MCP Authorization Flow (DCR)
 
-   Add the following configuration to your VSCode settings (typically in `~/.vscode/settings.json` or workspace settings):
+This approach follows the MCP Authorization Specification. The MCP client handles the entire OAuth flow automatically.
+
+1. **Enable open DCR** by adding the following to your `deployment.yaml`. By default, the DCR endpoint requires a JWT with `system` permission, which creates a chicken-and-egg problem for new MCP clients — enabling open DCR allows them to register dynamically:
+
+   ```yaml
+   oauth:
+     dcr:
+       insecure: true
+   ```
+
+2. **Add MCP Server Configuration** to your VS Code settings (typically in `~/.vscode/settings.json` or workspace settings):
 
    ```json
    {
@@ -53,7 +91,66 @@ MCP Client (VSCode) needs to be configured to trust system certificates and shou
    }
    ```
 
-3. **Verify Connection**: Check the MCP server status in VSCode's MCP panel or output logs
+   When you first use the MCP server, VS Code automatically handles the OAuth authorization flow. It discovers the authorization server, registers via DCR, and prompts you to log in. After authentication, the access token is managed automatically.
+
+### Option B: Client Credentials with Pre-Registered Application
+
+If you prefer not to enable open DCR, you can pre-register an application and use client credentials to get a token manually.
+
+1. **Create an M2M application** via the Thunder REST API with the `client_credentials` grant type and `system` scope:
+
+   ```bash
+   curl -kL -X POST https://localhost:8090/applications \
+     -H 'Content-Type: application/json' \
+     -H 'Authorization: Bearer <ADMIN_TOKEN>' \
+     -d '{
+       "name": "MCP Access",
+       "inbound_auth_config": [
+         {
+           "type": "oauth2",
+           "config": {
+             "grant_types": ["client_credentials"],
+             "scope": "system"
+           }
+         }
+       ]
+     }'
+   ```
+
+   Note the `client_id` and `client_secret` from the response.
+
+2. **Get an access token** using the client credentials grant:
+
+   ```bash
+   curl -kL -X POST https://localhost:8090/oauth2/token \
+     -H 'Content-Type: application/x-www-form-urlencoded' \
+     -u '<CLIENT_ID>:<CLIENT_SECRET>' \
+     -d "grant_type=client_credentials" \
+     -d "scope=system"
+   ```
+
+3. **Add MCP Server Configuration** with the token in headers (typically in `~/.vscode/settings.json` or workspace settings) — replace `<ACCESS_TOKEN>` with the token from the previous step:
+
+   ```json
+   {
+     "servers": {
+       "thunder-mcp": {
+         "url": "https://localhost:8090/mcp",
+         "type": "http",
+         "headers": {
+           "Authorization": "Bearer <ACCESS_TOKEN>"
+         }
+       }
+     },
+     "inputs": []
+   }
+   ```
+
+   The token must be refreshed manually when it expires.
+
+### Verify Connection
+
+Check the MCP server status in VS Code's MCP panel or output logs.
 
 ## Sample Use Case: Integrating Login via React SDK
 
@@ -110,13 +207,26 @@ The assistant will:
 
 Common issues and solutions when setting up the Thunder MCP server:
 
+### Authentication Errors
+
+If you encounter 401 Unauthorized errors:
+
+1. **Complete the login flow**: When prompted by your MCP client, log in to Thunder to authorize access
+2. **Verify DCR is available**: Ensure the DCR endpoint is accessible at `/oauth2/dcr/register`
+3. **Check the scopes**: The MCP server requires the `system` scope. Verify that the authorization server metadata at `/.well-known/oauth-authorization-server` includes `system` in `scopes_supported`
+4. **Check the protected resource metadata**: Verify the discovery endpoint is accessible:
+
+   ```bash
+   curl -k https://localhost:8090/.well-known/oauth-protected-resource
+   ```
+
 ### Certificate Errors
 
 If you encounter certificate/TLS errors:
 
 1. **Verify certificate is trusted**: Ensure the certificate is properly added to your system's certificate store
 
-2. **Check VSCode certificate settings**: Ensure trusting of system certificates is enabled
+2. **Check VS Code certificate settings**: Ensure trusting of system certificates is enabled
 
 3. **Re-add certificate**: Follow Step 1 again to ensure the certificate is properly installed
 
@@ -134,11 +244,18 @@ If you encounter certificate/TLS errors:
    curl -k https://localhost:8090/mcp
    ```
 
-3. **Review VSCode MCP logs**: Check the output panel for MCP-related errors
+   You should receive a `401 Unauthorized` response with a `WWW-Authenticate` header — this confirms the MCP server is running and secured.
+
+3. **Check authorization server metadata**:
+
+   ```bash
+   curl -k https://localhost:8090/.well-known/oauth-authorization-server
+   ```
+
+4. **Review VS Code MCP logs**: Check the output panel for MCP-related errors
 
 ## Related Documentation
 
-- [MCP Server Securing](../standards-based/oauth2-oidc/features/mcp-server-securing.md) - Secure MCP servers with OAuth 2.0
-- [Application Management API](../../../api/application.yaml) - REST API documentation
-- [Flow Management API](../../../api/flow-management.yaml) - Flow API documentation
-- [React SDK Sample](../../../samples/apps/react-sdk-sample/) - Complete React SDK example
+- [API Reference](/docs/apis) - Application and Flow Management REST APIs
+- [React SDK](/docs/sdks/react/overview) - Asgardeo React SDK documentation
+- [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization) - MCP auth protocol details
