@@ -62,6 +62,24 @@ const CONVERT_OPTIONS = {
 };
 
 /**
+ * Replace hardcoded OAuth2 URLs with collection variable references.
+ */
+function replaceOAuth2Urls(obj) {
+    if (obj === null || typeof obj !== 'object') return;
+
+    if (Array.isArray(obj)) {
+        for (const item of obj) replaceOAuth2Urls(item);
+        return;
+    }
+
+    if ((obj.key === 'accessTokenUrl' || obj.key === 'authUrl') && typeof obj.value === 'string') {
+        obj.value = obj.value.replace(/https?:\/\/localhost:\d+/g, '{{baseUrl}}');
+    }
+
+    for (const value of Object.values(obj)) replaceOAuth2Urls(value);
+}
+
+/**
  * Convert a single OpenAPI spec file to a Postman collection.
  */
 async function convertSpec(specPath) {
@@ -72,7 +90,10 @@ async function convertSpec(specPath) {
         throw new Error(`Conversion failed for ${specPath}: ${result.reason}`);
     }
 
-    return result.output[0].data;
+    const collection = result.output[0].data;
+    replaceOAuth2Urls(collection);
+
+    return collection;
 }
 
 /**
@@ -115,11 +136,16 @@ function generateCombinedCollection(collections) {
         variable: [],
     };
 
-    // Use variables from the first collection as the base
     const first = collections[0]?.collection;
 
     if (first?.variable) {
         combined.variable = first.variable;
+    }
+
+    const authSource = collections.find(({collection}) => collection.auth)?.collection;
+
+    if (authSource?.auth) {
+        combined.auth = authSource.auth;
     }
 
     for (const {collection} of collections) {

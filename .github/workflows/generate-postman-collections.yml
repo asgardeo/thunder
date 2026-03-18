@@ -9,7 +9,7 @@ on:
     branches:
       - main
     paths:
-      - 'api/**/*.yaml'
+      - 'api/*.yaml'
   workflow_dispatch:
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           run_install: false
 
       - name: Install Dependencies
-        working-directory: docs
+        working-directory: frontend
         run: pnpm install --frozen-lockfile
 
       - name: Generate Postman Collections
@@ -55,5 +55,6 @@ jobs:
             Regenerated from OpenAPI specs by the generate-postman-collections workflow.
 
             [skip ci]"
+            git pull --rebase
             git push
           fi
