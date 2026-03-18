@@ -38,6 +38,7 @@ const (
 	TargetDir                   = "../../target/dist"
 	ExtractedDir                = "../../target/out/.test"
 	TestDeploymentYamlPath      = "./resources/deployment.yaml"
+	DefaultConfigJSONPath       = "../../backend/cmd/server/repository/resources/conf/default.json"
 	TestDatabaseSchemaDirectory = "resources/dbscripts"
 	DatabaseFileBasePath        = "repository/database/"
 )
@@ -287,6 +288,77 @@ func ReplaceResources(zipFilePattern string) error {
 	err = copyFile(TestDeploymentYamlPath, destPath)
 	if err != nil {
 		return fmt.Errorf("failed to replace deployment.yaml: %v", err)
+	}
+
+	defaultConfigDestPath := filepath.Join(extractedProductHome, "repository", "resources", "conf", "default.json")
+
+	if err := os.MkdirAll(filepath.Dir(defaultConfigDestPath), os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create resources conf directory: %v", err)
+	}
+
+	err = copyFile(DefaultConfigJSONPath, defaultConfigDestPath)
+	if err != nil {
+		return fmt.Errorf("failed to replace default.json: %v", err)
+	}
+
+	return nil
+}
+
+// CopyDeclarativeResources copies declarative resource fixtures from the test resources directory
+// into the extracted product's repository/resources directory.
+// This enables the server to load declarative resources on startup.
+func CopyDeclarativeResources(zipFilePattern string) error {
+	log.Println("Copying declarative resources...")
+
+	srcPath := "./resources/declarative_resources"
+	destPath := filepath.Join(extractedProductHome, "repository", "resources")
+
+	// Check if source directory exists
+	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
+		log.Println("No declarative resources directory found, skipping copy")
+		return nil
+	}
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destPath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create resources directory: %v", err)
+	}
+
+	// Copy each declarative resource subdirectory
+	resourceDirs := []string{
+		"applications",
+		"flows",
+		"identity_providers",
+		"layouts",
+		"organization_units",
+		"resource_servers",
+		"roles",
+		"themes",
+		"user_schemas",
+		"users",
+	}
+
+	for _, dir := range resourceDirs {
+		srcSubPath := filepath.Join(srcPath, dir)
+		destSubPath := filepath.Join(destPath, dir)
+
+		// Check if source subdirectory exists
+		if _, err := os.Stat(srcSubPath); os.IsNotExist(err) {
+			log.Printf("Declarative resource directory %s not found, skipping", dir)
+			continue
+		}
+
+		// Create destination subdirectory
+		if err := os.MkdirAll(destSubPath, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create declarative resource directory %s: %v", dir, err)
+		}
+
+		// Copy the directory contents
+		if err := copyDirectory(srcSubPath, destSubPath); err != nil {
+			return fmt.Errorf("failed to copy declarative resources for %s: %v", dir, err)
+		}
+
+		log.Printf("Copied declarative resources for %s", dir)
 	}
 
 	return nil

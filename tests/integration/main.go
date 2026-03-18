@@ -57,6 +57,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Step 2.5: Copy declarative resource fixtures for composite mode testing
+	err = testutils.CopyDeclarativeResources(zipFilePattern)
+	if err != nil {
+		fmt.Printf("Failed to copy declarative resources: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Step 3: Run the init script to create the SQLite database
 	err = testutils.RunInitScript(zipFilePattern)
 	if err != nil {

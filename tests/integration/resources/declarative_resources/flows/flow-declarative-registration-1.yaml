@@ -1,0 +1,12 @@
+id: decl-reg-flow-1
+handle: decl-reg-flow-1
+name: Declarative Test Registration Flow
+flowType: REGISTRATION
+activeVersion: 1
+nodes:
+  - id: start
+    type: START
+  - id: login
+    type: BASIC_AUTHENTICATION
+  - id: end
+    type: END

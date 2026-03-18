@@ -97,16 +97,20 @@
     "default_auth_flow_handle": "default-basic-flow",
     "user_onboarding_flow_handle": "default-user-onboarding",
     "max_version_history": 10,
-    "auto_infer_registration": true
+    "auto_infer_registration": true,
+    "store": "composite"
   },
   "user": {
-    "indexed_attributes": ["username", "email", "mobileNumber", "sub"]
+    "indexed_attributes": [
+      "username",
+      "email",
+      "mobileNumber",
+      "sub"
+    ],
+    "store": "composite"
   },
   "declarative_resources": {
     "enabled": false
-  },
-  "resource": {
-    "default_delimiter": ":"
   },
   "observability": {
     "enabled": false,
@@ -114,7 +118,9 @@
       "console": {
         "enabled": false,
         "format": "json",
-        "categories": ["observability.all"]
+        "categories": [
+          "observability.all"
+        ]
       }
     }
   },
@@ -147,6 +153,31 @@
         "key_file": "repository/resources/security/signing.key"
       }
     ]
+  },
+  "resource": {
+    "default_delimiter": ":",
+    "store": "composite"
+  },
+  "organization_unit": {
+    "store": "composite"
+  },
+  "identity_provider": {
+    "store": "composite"
+  },
+  "application": {
+    "store": "composite"
+  },
+  "user_schema": {
+    "store": "composite"
+  },
+  "role": {
+    "store": "composite"
+  },
+  "theme": {
+    "store": "composite"
+  },
+  "layout": {
+    "store": "composite"
   },
   "authn_provider": {
     "type": "default",
