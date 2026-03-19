@@ -70,7 +70,16 @@ Read the relevant guide before working in that area:
 | `cd frontend && pnpm build` | Build all frontend packages and apps |
 | `cd frontend && pnpm test` | Run frontend tests |
 
+# Agent Guidance Index
+
+Repository-level agent guidance lives under `.agents/`.
+
+- Database schema and query conventions: `.agents/db_skills.md`
+
+For any database-related work, follow `.agents/db_skills.md`.
+
 ## Additional References
 
 - REST API design: https://wso2.com/whitepapers/wso2-rest-apis-design-guidelines/
 - Secure coding: https://security.docs.wso2.com/en/latest/security-guidelines/secure-engineering-guidelines/secure-coding-guidlines/general-recommendations-for-secure-coding/
+

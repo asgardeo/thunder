@@ -38,3 +38,4 @@ DTOs
 [Mm]iddleware
 [Vv]itest
 ESLint
+DBQuery
