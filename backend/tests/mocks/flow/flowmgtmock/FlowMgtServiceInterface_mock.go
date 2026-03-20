@@ -519,6 +519,65 @@ func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// IsValidFlowOfType provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) IsValidFlowOfType(ctx context.Context, flowID string, flowType common.FlowType) bool {
+	ret := _mock.Called(ctx, flowID, flowType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsValidFlowOfType")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common.FlowType) bool); ok {
+		r0 = returnFunc(ctx, flowID, flowType)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsValidFlowOfType'
+type FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call struct {
+	*mock.Call
+}
+
+// IsValidFlowOfType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+//   - flowType common.FlowType
+func (_e *FlowMgtServiceInterfaceMock_Expecter) IsValidFlowOfType(ctx interface{}, flowID interface{}, flowType interface{}) *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call {
+	return &FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call{Call: _e.mock.On("IsValidFlowOfType", ctx, flowID, flowType)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call) Run(run func(ctx context.Context, flowID string, flowType common.FlowType)) *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 common.FlowType
+		if args[2] != nil {
+			arg2 = args[2].(common.FlowType)
+		}
+		run(arg0, arg1, arg2)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call) Return(b bool) *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call) RunAndReturn(run func(ctx context.Context, flowID string, flowType common.FlowType) bool) *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListFlowVersions provides a mock function for the type FlowMgtServiceInterfaceMock
 func (_mock *FlowMgtServiceInterfaceMock) ListFlowVersions(ctx context.Context, flowID string) (*flowmgt.FlowVersionListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, flowID)

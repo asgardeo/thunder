@@ -65,6 +65,7 @@ type FlowMgtServiceInterface interface {
 		*CompleteFlowDefinition, *serviceerror.ServiceError)
 	GetGraph(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError)
 	IsValidFlow(ctx context.Context, flowID string) bool
+	IsValidFlowOfType(ctx context.Context, flowID string, flowType common.FlowType) bool
 }
 
 // flowMgtService is the default implementation of the FlowMgtServiceInterface.
@@ -470,6 +471,20 @@ func (s *flowMgtService) IsValidFlow(ctx context.Context, flowID string) bool {
 	}
 
 	return exists
+}
+
+// IsValidFlowOfType checks if a valid flow exists for the given flow ID and matches the expected flow type.
+func (s *flowMgtService) IsValidFlowOfType(ctx context.Context, flowID string, flowType common.FlowType) bool {
+	if flowID == "" {
+		return false
+	}
+
+	flow, err := s.store.GetFlowByID(ctx, flowID)
+	if err != nil {
+		return false
+	}
+
+	return flow.FlowType == flowType
 }
 
 // Helper functions
