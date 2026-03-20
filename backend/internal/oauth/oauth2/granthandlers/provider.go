@@ -19,11 +19,11 @@
 package granthandlers
 
 import (
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // GrantHandlerProviderInterface defines the interface for the grant handler provider.
@@ -42,17 +42,17 @@ type GrantHandlerProvider struct {
 // newGrantHandlerProvider creates a new instance of GrantHandlerProvider.
 func newGrantHandlerProvider(
 	jwtService jwt.JWTServiceInterface,
-	userService user.UserServiceInterface,
 	authzService authz.AuthorizeServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
+	attrCacheService attributecache.AttributeCacheServiceInterface,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
 		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(tokenBuilder),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
-			userService, authzService, tokenBuilder),
+			authzService, tokenBuilder, attrCacheService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(
-			jwtService, userService, tokenBuilder, tokenValidator),
+			jwtService, tokenBuilder, tokenValidator, attrCacheService),
 		tokenExchangeGrantHandler: newTokenExchangeGrantHandler(tokenBuilder, tokenValidator),
 	}
 }

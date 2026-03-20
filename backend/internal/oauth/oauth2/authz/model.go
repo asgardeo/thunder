@@ -39,7 +39,7 @@ type AuthorizationCode struct {
 	ClientID            string
 	RedirectURI         string
 	AuthorizedUserID    string
-	UserAttributes      map[string]interface{}
+	AttributeCacheID    string
 	TimeCreated         time.Time
 	ExpiryTime          time.Time
 	Scopes              string
@@ -81,5 +81,5 @@ type AuthorizationError struct {
 type assertionClaims struct {
 	userID                string
 	authorizedPermissions string
-	userAttributes        map[string]interface{}
+	attributeCacheID      string
 }

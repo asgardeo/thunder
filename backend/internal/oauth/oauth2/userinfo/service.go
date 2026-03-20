@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
@@ -35,7 +36,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 const serviceLoggerComponentName = "UserInfoService"
@@ -50,8 +50,8 @@ type userInfoService struct {
 	jwtService         jwt.JWTServiceInterface
 	tokenValidator     tokenservice.TokenValidatorInterface
 	applicationService application.ApplicationServiceInterface
-	userService        user.UserServiceInterface
 	ouService          ou.OrganizationUnitServiceInterface
+	attributeCacheSvc  attributecache.AttributeCacheServiceInterface
 	transactioner      transaction.Transactioner
 	logger             *log.Logger
 }
@@ -61,16 +61,16 @@ func newUserInfoService(
 	jwtService jwt.JWTServiceInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	applicationService application.ApplicationServiceInterface,
-	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
 	return &userInfoService{
 		jwtService:         jwtService,
 		tokenValidator:     tokenValidator,
 		applicationService: applicationService,
-		userService:        userService,
 		ouService:          ouService,
+		attributeCacheSvc:  attributeCacheSvc,
 		transactioner:      transactioner,
 		logger:             log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName)),
 	}
@@ -111,9 +111,14 @@ func (s *userInfoService) GetUserInfo(
 		allowedUserAttributes = oauthApp.UserInfo.UserAttributes
 	}
 
+	attributeCacheID := ""
+	if val, ok := tokenClaims["aci"].(string); ok {
+		attributeCacheID = val
+	}
+
 	// Fetch user attributes with groups and default claims
-	userAttributes, err := tokenservice.FetchUserAttributes(ctx, s.userService, s.ouService,
-		sub, allowedUserAttributes)
+	userAttributes, err := tokenservice.FetchUserAttributes(ctx, s.attributeCacheSvc,
+		allowedUserAttributes, attributeCacheID)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))
 		return nil, &serviceerror.InternalServerError

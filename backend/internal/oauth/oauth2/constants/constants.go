@@ -339,6 +339,12 @@ const (
 	SupportedClientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 )
 
+const (
+	// AttributeCacheTTLBufferSeconds is a fixed buffer added to attribute cache TTL values to
+	// account for the gap between cache entry creation (end of authentication) and token issuance.
+	AttributeCacheTTLBufferSeconds = 60
+)
+
 // GetSupportedResponseTypes returns all supported OAuth2 response types.
 func GetSupportedResponseTypes() []string {
 	result := make([]string, len(supportedResponseTypes))

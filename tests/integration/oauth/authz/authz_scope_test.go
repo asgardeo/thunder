@@ -640,37 +640,73 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	ts.Require().NoError(err, "Failed to execute authentication flow")
 	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should be generated")
 
-	// Step 3: Verify assertion contains only required attributes
-	// Expected: sub (from openid), name (from profile scope, filtered by IDToken.UserAttributes),
-	// email (from email scope, filtered by IDToken.UserAttributes), groups, roles (from AccessToken.UserAttributes)
-	// Should NOT contain: phone, customAttr, email_verified (not in IDToken.UserAttributes)
+	// Step 3: Verify assertion structure for OAuth flow.
+	// In OAuth flows, user attributes are stored in the attribute cache and not embedded
+	// directly in the assertion JWT. Only the aci is included in the JWT claims.
 
 	// Decode JWT to verify claims
 	jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 	ts.Require().NoError(err, "Failed to decode JWT assertion")
 	claims := jwtClaims.Additional
 
-	// Verify required attributes are present
+	// Verify sub is present (standard JWT subject claim)
 	ts.Assert().NotNil(claims["sub"], "sub claim should be present")
 	ts.Assert().Equal(userID, claims["sub"], "sub should match user ID")
-	ts.Assert().NotNil(claims["name"], "name claim should be present (from profile scope)")
-	ts.Assert().Equal("Required Attrs", claims["name"], "name should match user attribute")
-	ts.Assert().NotNil(claims["email"], "email claim should be present (from email scope)")
-	ts.Assert().Equal("requiredattrs@test.com", claims["email"], "email should match user attribute")
-	ts.Assert().NotNil(claims["roles"], "roles claim should be present (from access token config)")
-	rolesValue, ok := claims["roles"].([]interface{})
-	ts.Assert().True(ok, "roles should be an array")
-	ts.Assert().Equal([]interface{}{"developer"}, rolesValue, "roles should match user attribute")
-	if claims["groups"] != nil {
-		groupsValue, ok := claims["groups"].([]interface{})
-		ts.Assert().True(ok, "groups should be an array if present")
-		ts.Assert().NotEmpty(groupsValue, "groups array should not be empty if present")
-	}
 
-	// Verify non-required attributes are NOT present
-	ts.Assert().Nil(claims["phone"], "phone should NOT be present (not in required attributes)")
-	ts.Assert().Nil(claims["customAttr"], "customAttr should NOT be present (not in required attributes)")
-	ts.Assert().Nil(claims["email_verified"], "email_verified should NOT be present (not in IDToken.UserAttributes)")
-	ts.Assert().Nil(claims["given_name"], "given_name should NOT be present (not in required attributes)")
-	ts.Assert().Nil(claims["family_name"], "family_name should NOT be present (not in required attributes)")
+	// Verify aci is present and is a non-empty string (OAuth flow caches user attributes)
+	ts.Assert().NotNil(claims["aci"], "aci should be present in OAuth assertion")
+	cacheID, ok := claims["aci"].(string)
+	ts.Require().True(ok, "aci should be a string")
+	ts.Assert().NotEmpty(cacheID, "aci should not be empty")
+
+	// Verify user attributes are NOT directly embedded in the assertion (they are in the cache)
+	ts.Assert().Nil(claims["name"], "name should NOT be directly in assertion (stored in attribute cache)")
+	ts.Assert().Nil(claims["email"], "email should NOT be directly in assertion (stored in attribute cache)")
+	ts.Assert().Nil(claims["roles"], "roles should NOT be directly in assertion (stored in attribute cache)")
+	ts.Assert().Nil(claims["groups"], "groups should NOT be directly in assertion (stored in attribute cache)")
+	ts.Assert().Nil(claims["phone"], "phone should NOT be present in assertion")
+	ts.Assert().Nil(claims["customAttr"], "customAttr should NOT be present in assertion")
+	ts.Assert().Nil(claims["email_verified"], "email_verified should NOT be present in assertion")
+	ts.Assert().Nil(claims["given_name"], "given_name should NOT be present in assertion")
+	ts.Assert().Nil(claims["family_name"], "family_name should NOT be present in assertion")
+
+	// Step 4: Complete the authorization flow and verify the attribute cache content via the access token.
+	// The access token is built directly from the attribute cache, so its claims reflect the filtered set of
+	// resolved attributes. This downstream check confirms that required-attribute filtering was applied.
+	authzResp, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to complete authorization")
+
+	code, err := testutils.ExtractAuthorizationCode(authzResp.RedirectURI)
+	ts.Require().NoError(err, "Failed to extract authorization code")
+	ts.Require().NotEmpty(code, "Authorization code should not be empty")
+
+	tokenResult, err := testutils.RequestToken(
+		"required_attrs_test_client", "required_attrs_test_secret",
+		code, scopeTestRedirectURI, "authorization_code",
+	)
+	ts.Require().NoError(err, "Failed to request access token")
+	ts.Require().Equal(http.StatusOK, tokenResult.StatusCode, "Token request should succeed")
+	ts.Require().NotNil(tokenResult.Token, "Token response should not be nil")
+
+	// Decode the access token JWT to inspect its resolved claims
+	accessTokenJWT, err := testutils.DecodeJWT(tokenResult.Token.AccessToken)
+	ts.Require().NoError(err, "Failed to decode access token")
+	atClaims := accessTokenJWT.Additional
+
+	// The access token must carry the same aci, confirming the cache ID is propagated
+	// from the assertion JWT through the authorization code to the issued token
+	ts.Assert().Equal(cacheID, atClaims["aci"],
+		"Access token aci must match the one from the assertion JWT")
+
+	// Required attribute (roles) must be resolved and present — it was included in access_token.user_attributes
+	ts.Assert().NotNil(atClaims["roles"], "roles should be present in access token (required access_token attribute)")
+
+	// Excluded attributes must NOT appear — they were never added to the attribute cache
+	ts.Assert().Nil(atClaims["name"], "name should NOT be in access token (not an access_token attribute)")
+	ts.Assert().Nil(atClaims["email"], "email should NOT be in access token (not an access_token attribute)")
+	ts.Assert().Nil(atClaims["phone"], "phone should NOT be in access token (excluded attribute)")
+	ts.Assert().Nil(atClaims["customAttr"], "customAttr should NOT be in access token (excluded attribute)")
+	ts.Assert().Nil(atClaims["email_verified"], "email_verified should NOT be in access token (excluded attribute)")
+	ts.Assert().Nil(atClaims["given_name"], "given_name should NOT be in access token (excluded attribute)")
+	ts.Assert().Nil(atClaims["family_name"], "family_name should NOT be in access token (excluded attribute)")
 }

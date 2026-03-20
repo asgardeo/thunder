@@ -53,7 +53,7 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2m
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
+	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
 
 	userAttributes := tb.buildAccessTokenUserAttributes(ctx.UserAttributes, ctx.OAuthApp)
 	jwtClaims, claimsErr := tb.buildAccessTokenClaims(ctx, userAttributes)
@@ -62,15 +62,16 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2m
 	}
 
 	tokenDTO := &oauth2model.TokenDTO{
-		TokenType:      constants.TokenTypeBearer,
-		ExpiresIn:      tokenConfig.ValidityPeriod,
-		Scopes:         ctx.Scopes,
-		ClientID:       ctx.ClientID,
-		UserAttributes: userAttributes,
-		Subject:        ctx.Subject,
-		Audience:       ctx.Audience,
-		ClaimsRequest:  ctx.ClaimsRequest,
-		ClaimsLocales:  ctx.ClaimsLocales,
+		TokenType:        constants.TokenTypeBearer,
+		ExpiresIn:        tokenConfig.ValidityPeriod,
+		Scopes:           ctx.Scopes,
+		ClientID:         ctx.ClientID,
+		UserAttributes:   userAttributes,
+		AttributeCacheID: ctx.AttributeCacheID,
+		Subject:          ctx.Subject,
+		Audience:         ctx.Audience,
+		ClaimsRequest:    ctx.ClaimsRequest,
+		ClaimsLocales:    ctx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
@@ -114,6 +115,11 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 	// Add filtered user attributes to claims
 	for key, value := range filteredAttributes {
 		claims[key] = value
+	}
+
+	// Set after merging user attributes to prevent user attributes from overwriting this system claim.
+	if ctx.AttributeCacheID != "" {
+		claims["aci"] = ctx.AttributeCacheID
 	}
 
 	if ctx.ActorClaims != nil {
@@ -160,6 +166,10 @@ func (tb *tokenBuilder) buildAccessTokenUserAttributes(
 		accessTokenUserAttributes = oauthApp.Token.AccessToken.UserAttributes
 	}
 
+	if accessTokenUserAttributes == nil {
+		accessTokenUserAttributes = []string{}
+	}
+
 	// If app config specifies which attributes to include, filter them
 	if len(accessTokenUserAttributes) > 0 {
 		for _, attr := range accessTokenUserAttributes {
@@ -196,7 +206,7 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeRefresh)
+	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeRefresh)
 
 	claims, claimsErr := tb.buildRefreshTokenClaims(ctx)
 	if claimsErr != nil {
@@ -243,12 +253,8 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) (
 	claims["access_token_aud"] = ctx.AccessTokenAudience
 	claims["grant_type"] = ctx.GrantType
 
-	if ctx.OAuthApp != nil &&
-		ctx.OAuthApp.Token != nil &&
-		ctx.OAuthApp.Token.AccessToken != nil &&
-		len(ctx.OAuthApp.Token.AccessToken.UserAttributes) > 0 &&
-		len(ctx.AccessTokenUserAttrs) > 0 {
-		claims["access_token_user_attributes"] = ctx.AccessTokenUserAttrs
+	if ctx.AttributeCacheID != "" {
+		claims["aci"] = ctx.AttributeCacheID
 	}
 
 	// Include claims request if present
@@ -276,7 +282,7 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.Tok
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeID)
+	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeID)
 
 	jwtClaims := tb.buildIDTokenClaims(ctx)
 

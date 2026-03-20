@@ -25,6 +25,7 @@ import (
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -32,26 +33,25 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // authorizationCodeGrantHandler handles the authorization code grant type.
 type authorizationCodeGrantHandler struct {
-	authzService authz.AuthorizeServiceInterface
-	userService  user.UserServiceInterface
-	tokenBuilder tokenservice.TokenBuilderInterface
+	authzService   authz.AuthorizeServiceInterface
+	tokenBuilder   tokenservice.TokenBuilderInterface
+	attributeCache attributecache.AttributeCacheServiceInterface
 }
 
 // newAuthorizationCodeGrantHandler creates a new instance of AuthorizationCodeGrantHandler.
 func newAuthorizationCodeGrantHandler(
-	userService user.UserServiceInterface,
 	authzService authz.AuthorizeServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
+	attributeCache attributecache.AttributeCacheServiceInterface,
 ) GrantHandlerInterface {
 	return &authorizationCodeGrantHandler{
-		authzService: authzService,
-		userService:  userService,
-		tokenBuilder: tokenBuilder,
+		authzService:   authzService,
+		tokenBuilder:   tokenBuilder,
+		attributeCache: attributeCache,
 	}
 }
 
@@ -127,25 +127,34 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	// Parse authorized scopes
 	authorizedScopes := tokenservice.ParseScopes(authCode.Scopes)
 
-	// Use user attributes from the authorization code
-	attrs := authCode.UserAttributes
-	if attrs == nil {
-		attrs = make(map[string]interface{})
+	// Get user attributes from attribute cache
+	attrs := make(map[string]interface{})
+	if authCode.AttributeCacheID != "" {
+		userAttributes, err := h.attributeCache.GetAttributeCache(ctx, authCode.AttributeCacheID)
+		if err != nil {
+			logger.Error("Failed to get user attributes from attribute cache. " + err.ErrorDescription.DefaultValue)
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to get user attributes from attribute cache",
+			}
+		}
+		attrs = userAttributes.Attributes
 	}
 
 	audience := tokenservice.DetermineAudience("", authCode.Resource, "", authCode.ClientID)
 
 	// Generate access token using tokenBuilder (attributes will be filtered in BuildAccessToken)
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Subject:        authCode.AuthorizedUserID,
-		Audience:       audience,
-		ClientID:       tokenRequest.ClientID,
-		Scopes:         authorizedScopes,
-		UserAttributes: attrs,
-		GrantType:      string(constants.GrantTypeAuthorizationCode),
-		OAuthApp:       oauthApp,
-		ClaimsRequest:  authCode.ClaimsRequest,
-		ClaimsLocales:  authCode.ClaimsLocales,
+		Subject:          authCode.AuthorizedUserID,
+		Audience:         audience,
+		ClientID:         tokenRequest.ClientID,
+		Scopes:           authorizedScopes,
+		UserAttributes:   attrs,
+		AttributeCacheID: authCode.AttributeCacheID,
+		GrantType:        string(constants.GrantTypeAuthorizationCode),
+		OAuthApp:         oauthApp,
+		ClaimsRequest:    authCode.ClaimsRequest,
+		ClaimsLocales:    authCode.ClaimsLocales,
 	})
 	if err != nil {
 		return nil, &model.ErrorResponse{

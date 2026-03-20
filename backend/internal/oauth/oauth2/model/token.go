@@ -53,17 +53,18 @@ type TokenResponse struct {
 
 // TokenDTO represents the data transfer object for tokens.
 type TokenDTO struct {
-	Token          string
-	TokenType      string
-	IssuedAt       int64
-	ExpiresIn      int64
-	Scopes         []string
-	ClientID       string
-	UserAttributes map[string]interface{}
-	Subject        string
-	Audience       string
-	ClaimsRequest  *ClaimsRequest
-	ClaimsLocales  string
+	Token            string
+	TokenType        string
+	IssuedAt         int64
+	ExpiresIn        int64
+	Scopes           []string
+	ClientID         string
+	UserAttributes   map[string]interface{}
+	AttributeCacheID string
+	Subject          string
+	Audience         string
+	ClaimsRequest    *ClaimsRequest
+	ClaimsLocales    string
 }
 
 // TokenResponseDTO represents the data transfer object for token responses.

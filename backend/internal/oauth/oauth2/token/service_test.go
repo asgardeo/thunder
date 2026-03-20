@@ -379,7 +379,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_WithRefreshToken() {
 
 	mockRefreshHandler.
 		On("IssueRefreshToken", mock.Anything, tokenRespDTO, app, "user123", "test-audience",
-			"authorization_code", []string{"openid"}, (*model.ClaimsRequest)(nil), "").
+			"authorization_code", []string{"openid"}, (*model.ClaimsRequest)(nil), "", "").
 		Return(nil)
 
 	svc := suite.newService()
@@ -434,7 +434,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenIssuance
 
 	mockRefreshHandler.
 		On("IssueRefreshToken", mock.Anything, tokenRespDTO, app, "user123", "test-audience",
-			"authorization_code", []string{"openid"}, (*model.ClaimsRequest)(nil), "").
+			"authorization_code", []string{"openid"}, (*model.ClaimsRequest)(nil), "", "").
 		Return(&model.ErrorResponse{
 			Error:            "server_error",
 			ErrorDescription: "Failed to issue refresh token",

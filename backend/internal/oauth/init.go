@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/oauth/jwks"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/dcr"
@@ -38,19 +39,18 @@ import (
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/observability"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes all OAuth-related services and registers their routes.
 func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
-	userService user.UserServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	pkiService pki.PKIServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 ) error {
 	// Fetch runtime transactioner for OAuth services.
 	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
@@ -61,7 +61,8 @@ func Initialize(
 	jwks.Initialize(mux, pkiService)
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	grantHandlerProvider, err := granthandlers.Initialize(
-		mux, jwtService, userService, applicationService, flowExecService, tokenBuilder, tokenValidator)
+		mux, jwtService, applicationService, flowExecService, tokenBuilder, tokenValidator,
+		attributeCacheSvc)
 	if err != nil {
 		return err
 	}
@@ -70,9 +71,8 @@ func Initialize(
 	token.Initialize(mux, jwtService, applicationService, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
 	introspect.Initialize(mux, jwtService, applicationService, discoveryService)
-	userinfo.Initialize(
-		mux, jwtService, tokenValidator, applicationService, userService, ouService, transactioner,
-	)
+	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, ouService, attributeCacheSvc,
+		transactioner)
 	dcr.Initialize(mux, applicationService, transactioner)
 	return nil
 }

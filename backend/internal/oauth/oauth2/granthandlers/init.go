@@ -22,28 +22,28 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes the grant handler provider with the given services.
 func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
-	userService user.UserServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
+	attrCacheService attributecache.AttributeCacheServiceInterface,
 ) (GrantHandlerProviderInterface, error) {
 	authzService, err := authz.Initialize(mux, applicationService, jwtService, flowExecService)
 	if err != nil {
 		return nil, err
 	}
 	grantHandlerProvider := newGrantHandlerProvider(
-		jwtService, userService, authzService, tokenBuilder, tokenValidator)
+		jwtService, authzService, tokenBuilder, tokenValidator, attrCacheService)
 	return grantHandlerProvider, nil
 }

@@ -197,10 +197,9 @@ func (suite *CompositeLayoutStoreTestSuite) TestCreateLayout_DBStoreError() {
 	suite.Equal(testErr, err)
 }
 
-// Test GetLayout - From DB store (fallback when not in file store)
+// Test GetLayout - From DB store (DB takes precedence)
 func (suite *CompositeLayoutStoreTestSuite) TestGetLayout_FromDBStore() {
 	expectedLayout := Layout{ID: "layout1", DisplayName: "DB Layout"}
-	suite.mockFileStore.On("GetLayout", "layout1").Return(Layout{}, errLayoutNotFound)
 	suite.mockDBStore.On("GetLayout", "layout1").Return(expectedLayout, nil)
 
 	layout, err := suite.store.GetLayout("layout1")
@@ -209,9 +208,10 @@ func (suite *CompositeLayoutStoreTestSuite) TestGetLayout_FromDBStore() {
 	suite.Equal(expectedLayout, layout)
 }
 
-// Test GetLayout - From file store (takes precedence)
+// Test GetLayout - From file store (fallback when not in DB store)
 func (suite *CompositeLayoutStoreTestSuite) TestGetLayout_FromFileStore() {
 	expectedLayout := Layout{ID: "layout1", DisplayName: "File Layout"}
+	suite.mockDBStore.On("GetLayout", "layout1").Return(Layout{}, errLayoutNotFound)
 	suite.mockFileStore.On("GetLayout", "layout1").Return(expectedLayout, nil)
 
 	layout, err := suite.store.GetLayout("layout1")

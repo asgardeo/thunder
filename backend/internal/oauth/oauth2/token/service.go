@@ -214,7 +214,7 @@ func (ts *tokenService) ProcessTokenRequest(
 			tokenRespDTO, oauthApp,
 			tokenRespDTO.AccessToken.Subject, tokenRespDTO.AccessToken.Audience,
 			grantTypeStr, tokenRespDTO.AccessToken.Scopes, tokenRespDTO.AccessToken.ClaimsRequest,
-			tokenRespDTO.AccessToken.ClaimsLocales,
+			tokenRespDTO.AccessToken.ClaimsLocales, tokenRespDTO.AccessToken.AttributeCacheID,
 		)
 		if refreshTokenError != nil && refreshTokenError.Error != "" {
 			publishTokenIssuanceFailedEvent(ts.observabilitySvc, ctx, clientID, grantTypeStr, scopeStr,

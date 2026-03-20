@@ -66,7 +66,7 @@ func (f *themeFileBasedStore) DeleteTheme(id string) error {
 func (f *themeFileBasedStore) GetTheme(id string) (Theme, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
-		return Theme{}, err
+		return Theme{}, errThemeNotFound
 	}
 	theme, ok := data.(*Theme)
 	if !ok {

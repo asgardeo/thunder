@@ -159,9 +159,14 @@ func (s *attributeCacheStore) buildAttributeCacheFromResultRow(row map[string]in
 		return AttributeCache{}, errors.New("failed to parse id as string")
 	}
 
-	attributesStr, ok := row["attributes"].(string)
-	if !ok {
-		return AttributeCache{}, errors.New("failed to parse attributes as string")
+	var attributesStr string
+	switch v := row["attributes"].(type) {
+	case string:
+		attributesStr = v
+	case []byte:
+		attributesStr = string(v)
+	default:
+		return AttributeCache{}, errors.New("failed to parse attributes: expected string or []byte")
 	}
 
 	var attributes map[string]interface{}

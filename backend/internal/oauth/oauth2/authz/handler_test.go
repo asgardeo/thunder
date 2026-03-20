@@ -621,14 +621,7 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Succes
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-user", clms.userID)
-	assert.Equal(suite.T(), "local", clms.userAttributes["userType"])
-	assert.Equal(suite.T(), "ou123", clms.userAttributes["ouId"])
-	assert.Equal(suite.T(), "Organization", clms.userAttributes["ouName"])
-	assert.Equal(suite.T(), "org-handle", clms.userAttributes["ouHandle"])
-	assert.Equal(suite.T(), "testuser", clms.userAttributes["username"])
-	assert.Equal(suite.T(), "test@example.com", clms.userAttributes["email"])
-	assert.Equal(suite.T(), "Test", clms.userAttributes["given_name"])
-	assert.Equal(suite.T(), "User", clms.userAttributes["family_name"])
+	assert.Equal(suite.T(), "", clms.attributeCacheID)
 	assert.Equal(suite.T(), "read write", clms.authorizedPermissions)
 }
 
@@ -664,10 +657,6 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_NonStr
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-user", clms.userID)
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["username"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["email"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["given_name"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["family_name"])
 	// Non-string authorized_permissions is ignored
 	assert.Equal(suite.T(), "", clms.authorizedPermissions)
 }
@@ -680,7 +669,6 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_UserTy
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-user", clms.userID)
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["userType"])
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_OUClaimsInUserAttributes() {
@@ -692,9 +680,30 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_OUClai
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-user", clms.userID)
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["ouId"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["ouName"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["ouHandle"])
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_WithAttributeCacheID() {
+	// JWT payload: {"sub":"test-user","aci":"cache-abc-123","authorized_permissions":"read write"}
+	jwtToken := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJhY2kiOiJjYWNoZS1hYmMtMTIzIiwiYXV0aG9yaXplZF9wZXJtaXNzaW9ucyI6InJlYWQgd3JpdGUifQ."
+
+	clms, _, err := decodeAttributesFromAssertion(jwtToken)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-user", clms.userID)
+	assert.Equal(suite.T(), "cache-abc-123", clms.attributeCacheID)
+	assert.Equal(suite.T(), "read write", clms.authorizedPermissions)
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_NonStringAttributeCacheID() {
+	// JWT payload: {"sub":"test-user","aci":12345}
+	jwtToken := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJhY2kiOjEyMzQ1fQ."
+
+	_, _, err := decodeAttributesFromAssertion(jwtToken)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "JWT 'aci' claim is not a string")
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestValidateSubClaimConstraint() {

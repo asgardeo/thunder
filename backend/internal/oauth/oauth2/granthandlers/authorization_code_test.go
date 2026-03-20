@@ -29,16 +29,18 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
-	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 const (
@@ -46,6 +48,7 @@ const (
 	testCodeChallenge           = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
 	testCodeChallengeMethodS256 = "S256"
 	testClientCallbackURL       = "https://client.example.com/callback"
+	testCacheID                 = "test-cache-id"
 )
 
 // convertToStringSlice converts groups from various formats to []string for testing.
@@ -71,14 +74,14 @@ func convertToStringSlice(groups interface{}) []string {
 
 type AuthorizationCodeGrantHandlerTestSuite struct {
 	suite.Suite
-	handler          *authorizationCodeGrantHandler
-	mockJWTService   *jwtmock.JWTServiceInterfaceMock
-	mockTokenBuilder *tokenservicemock.TokenBuilderInterfaceMock
-	mockAuthzService *authzmock.AuthorizeServiceInterfaceMock
-	mockUserService  *usersvcmock.UserServiceInterfaceMock
-	oauthApp         *appmodel.OAuthAppConfigProcessedDTO
-	testAuthzCode    authz.AuthorizationCode
-	testTokenReq     *model.TokenRequest
+	handler              *authorizationCodeGrantHandler
+	mockJWTService       *jwtmock.JWTServiceInterfaceMock
+	mockTokenBuilder     *tokenservicemock.TokenBuilderInterfaceMock
+	mockAuthzService     *authzmock.AuthorizeServiceInterfaceMock
+	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
+	oauthApp             *appmodel.OAuthAppConfigProcessedDTO
+	testAuthzCode        authz.AuthorizationCode
+	testTokenReq         *model.TokenRequest
 }
 
 func TestAuthorizationCodeGrantHandlerSuite(t *testing.T) {
@@ -97,12 +100,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
-	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
 	suite.handler = &authorizationCodeGrantHandler{
-		tokenBuilder: suite.mockTokenBuilder,
-		authzService: suite.mockAuthzService,
-		userService:  suite.mockUserService,
+		tokenBuilder:   suite.mockTokenBuilder,
+		authzService:   suite.mockAuthzService,
+		attributeCache: suite.mockAttrCacheService,
 	}
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
@@ -132,20 +135,17 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 		ClientID:         testClientID,
 		RedirectURI:      "https://client.example.com/callback",
 		AuthorizedUserID: testUserID,
-		UserAttributes: map[string]interface{}{
-			"email":    "test@example.com",
-			"username": "testuser",
-		},
-		TimeCreated: time.Now().Add(-5 * time.Minute),
-		ExpiryTime:  time.Now().Add(5 * time.Minute),
-		Scopes:      "read write",
-		State:       authz.AuthCodeStateActive,
+		AttributeCacheID: "",
+		TimeCreated:      time.Now().Add(-5 * time.Minute),
+		ExpiryTime:       time.Now().Add(5 * time.Minute),
+		Scopes:           "read write",
+		State:            authz.AuthCodeStateActive,
 	}
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestNewAuthorizationCodeGrantHandler() {
-	handler := newAuthorizationCodeGrantHandler(suite.mockUserService,
-		suite.mockAuthzService, suite.mockTokenBuilder)
+	handler := newAuthorizationCodeGrantHandler(
+		suite.mockAuthzService, suite.mockTokenBuilder, suite.mockAttrCacheService)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -434,7 +434,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 		includeOpenIDScope   bool
 		scopeClaimsForGroups bool
 		expectedGroups       []string
-		mockGroups           []user.UserGroup
 		description          string
 	}{
 		{
@@ -444,10 +443,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			includeOpenIDScope:   false,
 			scopeClaimsForGroups: false,
 			expectedGroups:       []string{"Admin", "Users"},
-			mockGroups: []user.UserGroup{
-				{ID: "group1", Name: "Admin"},
-				{ID: "group2", Name: "Users"},
-			},
 			description: "Should include groups in access token when configured (IDToken config " +
 				"present but openid scope not requested)",
 		},
@@ -458,11 +453,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			includeOpenIDScope:   true,
 			scopeClaimsForGroups: true,
 			expectedGroups:       []string{"Admin", "Users"},
-			mockGroups: []user.UserGroup{
-				{ID: "group1", Name: "Admin"},
-				{ID: "group2", Name: "Users"},
-			},
-			description: "Should include groups in both tokens when configured with openid scope and scope claims",
+			description: "Should include groups in both tokens when configured with openid scope and scope" +
+				"claims",
 		},
 	}
 
@@ -470,13 +462,13 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 		suite.Run(tc.name, func() {
 			// Reset mocks for each test case
 			suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
-			suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
+			suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 			suite.handler = &authorizationCodeGrantHandler{
-				tokenBuilder: suite.mockTokenBuilder,
-				authzService: suite.mockAuthzService,
-				userService:  suite.mockUserService,
+				tokenBuilder:   suite.mockTokenBuilder,
+				authzService:   suite.mockAuthzService,
+				attributeCache: suite.mockAttrCacheService,
 			}
 
 			accessTokenAttrs := []string{"email", "username"}
@@ -522,18 +514,20 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				authzCode.Scopes = oidcReadWriteScopes
 			}
 
-			// Add user attributes to authz code (including groups from assertion)
-			userGroups := make([]string, 0, len(tc.mockGroups))
-			for _, group := range tc.mockGroups {
-				userGroups = append(userGroups, group.Name)
-			}
-			authzCode.UserAttributes = map[string]interface{}{
+			// Add user attributes to authz code via attribute cache
+			authzCode.AttributeCacheID = testCacheID
+			expectedAttrs := map[string]interface{}{
 				"email":    "test@example.com",
 				"username": "testuser",
 			}
-			if len(userGroups) > 0 {
-				authzCode.UserAttributes[constants.UserAttributeGroups] = userGroups
+			if len(tc.expectedGroups) > 0 {
+				expectedAttrs[constants.UserAttributeGroups] = tc.expectedGroups
 			}
+			suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
+				Return(&attributecache.AttributeCache{
+					ID:         testCacheID,
+					Attributes: expectedAttrs,
+				}, (*serviceerror.I18nServiceError)(nil)).Once()
 
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 				Return(&authzCode, nil)
@@ -626,7 +620,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			}
 
 			suite.mockAuthzService.AssertExpectations(suite.T())
-			suite.mockUserService.AssertExpectations(suite.T())
 			suite.mockTokenBuilder.AssertExpectations(suite.T())
 		})
 	}
@@ -662,13 +655,13 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
-			suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
+			suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 			suite.handler = &authorizationCodeGrantHandler{
-				tokenBuilder: suite.mockTokenBuilder,
-				authzService: suite.mockAuthzService,
-				userService:  suite.mockUserService,
+				tokenBuilder:   suite.mockTokenBuilder,
+				authzService:   suite.mockAuthzService,
+				attributeCache: suite.mockAttrCacheService,
 			}
 
 			accessTokenAttrs := []string{"email", "username"}
@@ -713,12 +706,17 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				authzCode.Scopes = oidcReadWriteScopes
 			}
 
-			// Add user attributes to authz code (groups will be empty array or not present)
-			authzCode.UserAttributes = map[string]interface{}{
-				"email":    "test@example.com",
-				"username": "testuser",
-			}
-			// Empty groups - not added to UserAttributes (user has no groups)
+			// Add user attributes to authz code via attribute cache (groups will be empty/not present)
+			authzCode.AttributeCacheID = testCacheID
+			suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
+				Return(&attributecache.AttributeCache{
+					ID: testCacheID,
+					Attributes: map[string]interface{}{
+						"email":    "test@example.com",
+						"username": "testuser",
+					},
+				}, (*serviceerror.I18nServiceError)(nil)).Once()
+			// Empty groups - not added to Attributes (user has no groups)
 
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 				Return(&authzCode, nil)
@@ -791,7 +789,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			}
 
 			suite.mockAuthzService.AssertExpectations(suite.T())
-			suite.mockUserService.AssertExpectations(suite.T())
 			suite.mockTokenBuilder.AssertExpectations(suite.T())
 		})
 	}
@@ -917,7 +914,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 	assert.Equal(suite.T(), "Failed to generate token", err.ErrorDescription)
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
 }
 
@@ -969,13 +965,18 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 		},
 	}
 
-	// Add groups to auth code (from assertion)
+	// Add groups to auth code via attribute cache (from assertion)
 	authzCodeWithGroups := suite.testAuthzCode
-	authzCodeWithGroups.UserAttributes = map[string]interface{}{
-		"email":    "test@example.com",
-		"username": "testuser",
-		"groups":   []string{"Admin", "Users"},
-	}
+	authzCodeWithGroups.AttributeCacheID = testCacheID
+	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
+		Return(&attributecache.AttributeCache{
+			ID: testCacheID,
+			Attributes: map[string]interface{}{
+				"email":    "test@example.com",
+				"username": "testuser",
+				"groups":   []string{"Admin", "Users"},
+			},
+		}, (*serviceerror.I18nServiceError)(nil))
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithGroups, nil)
@@ -1009,8 +1010,26 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
-	// Verify GetUserGroups was NOT called
-	suite.mockUserService.AssertNotCalled(suite.T(), "GetUserGroups")
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_AttributeCacheFetchError() {
+	authzCodeWithCacheID := suite.testAuthzCode
+	authzCodeWithCacheID.AttributeCacheID = testCacheID
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
+		Return(&authzCodeWithCacheID, nil)
+
+	suite.mockAttrCacheService.On("GetAttributeCache", mock.Anything, testCacheID).
+		Return((*attributecache.AttributeCache)(nil), &serviceerror.I18nServiceError{
+			Type:  serviceerror.ServerErrorType,
+			Error: core.I18nMessage{DefaultValue: "cache error"},
+		})
+
+	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
 }
 
 // createPKCEApp creates a test OAuth app with PKCE required
@@ -1104,7 +1123,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	assert.NotNil(suite.T(), result)
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
 }
 

@@ -20,17 +20,15 @@ package tokenservice
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // ParseScopes parses a space-separated scope string into a slice of scope strings.
@@ -56,8 +54,8 @@ func JoinScopes(scopes []string) string {
 	return strings.Join(scopes, " ")
 }
 
-// resolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
-func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
+// ResolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
+func ResolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
 	conf := config.GetThunderRuntime().Config
 
 	tokenConfig := &TokenConfig{
@@ -199,7 +197,7 @@ func ExtractUserAttributes(claims map[string]interface{}) map[string]interface{}
 func getValidIssuers(oauthApp *appmodel.OAuthAppConfigProcessedDTO) map[string]bool {
 	validIssuers := make(map[string]bool)
 
-	tokenConfig := resolveTokenConfig(oauthApp, TokenTypeAccess)
+	tokenConfig := ResolveTokenConfig(oauthApp, TokenTypeAccess)
 	validIssuers[tokenConfig.Issuer] = true
 
 	// TODO: Add support for external issuers
@@ -219,26 +217,11 @@ func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO
 // Callers should log errors with their own context.
 func FetchUserAttributes(
 	ctx context.Context,
-	userService user.UserServiceInterface,
-	ouService ou.OrganizationUnitServiceInterface,
-	userID string,
+	attrCacheService attributecache.AttributeCacheServiceInterface,
 	allowedClaims []string,
+	attributeCacheKey string,
 ) (map[string]interface{}, error) {
-	userData, svcErr := userService.GetUser(ctx, userID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
-	}
-
-	// Parse user attributes from JSON
-	var attrs map[string]interface{}
-	if userData.Attributes != nil {
-		if err := json.Unmarshal(userData.Attributes, &attrs); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
-		}
-	}
-	if attrs == nil {
-		attrs = make(map[string]interface{})
-	}
+	attrs := make(map[string]interface{})
 
 	// Helper to check if a claim should be included
 	shouldInclude := func(claimName string) bool {
@@ -248,46 +231,18 @@ func FetchUserAttributes(
 		return slices.Contains(allowedClaims, claimName)
 	}
 
-	// Add default claim - user type
-	if userData.Type != "" && shouldInclude(constants.ClaimUserType) {
-		attrs[constants.ClaimUserType] = userData.Type
-	}
-
-	if userData.OUID != "" {
-		// Add default claim - ouId
-		if shouldInclude(constants.ClaimOUID) {
-			attrs[constants.ClaimOUID] = userData.OUID
+	if attributeCacheKey != "" {
+		attrCache, err := attrCacheService.GetAttributeCache(ctx, attributeCacheKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch attribute cache: %s", err.Error)
 		}
-
-		// Only fetch OU details if ouHandle or ouName are requested
-		needsOUDetails := shouldInclude(constants.ClaimOUHandle) || shouldInclude(constants.ClaimOUName)
-		if needsOUDetails && ouService != nil {
-			ouDetails, ouErr := ouService.GetOrganizationUnit(ctx, userData.OUID)
-			if ouErr != nil {
-				return nil, fmt.Errorf("failed to fetch organization unit details: %s", ouErr.Error)
-			}
-
-			if shouldInclude(constants.ClaimOUHandle) {
-				attrs[constants.ClaimOUHandle] = ouDetails.Handle
-			}
-			if shouldInclude(constants.ClaimOUName) {
-				attrs[constants.ClaimOUName] = ouDetails.Name
-			}
+		if attrCache == nil || attrCache.Attributes == nil {
+			return nil, fmt.Errorf("attribute cache not found for key: %s", attributeCacheKey)
 		}
-	}
-
-	// Fetch and add groups if requested
-	if shouldInclude(constants.UserAttributeGroups) {
-		groups, svcErr := userService.GetUserGroups(ctx, userID, constants.DefaultGroupListLimit, 0)
-		if svcErr != nil {
-			return nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
-		}
-		if len(groups.Groups) > 0 {
-			groupNames := make([]string, 0, len(groups.Groups))
-			for _, group := range groups.Groups {
-				groupNames = append(groupNames, group.Name)
+		for key, value := range attrCache.Attributes {
+			if shouldInclude(key) {
+				attrs[key] = value
 			}
-			attrs[constants.UserAttributeGroups] = groupNames
 		}
 	}
 

@@ -142,6 +142,27 @@ func (suite *AttributeCacheStoreTestSuite) TestGetAttributeCache_Success() {
 	assert.Less(suite.T(), result.TTLSeconds, 3700)
 }
 
+func (suite *AttributeCacheStoreTestSuite) TestGetAttributeCache_SuccessWithBytesAttributes() {
+	resultRow := map[string]interface{}{
+		"id":          suite.testCache.ID,
+		"attributes":  []byte(`{"key":"value"}`),
+		"expiry_time": suite.futureTime,
+	}
+
+	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
+	suite.mockDBClient.On("QueryContext", suite.ctx, queryGetAttributeCache,
+		suite.testCache.ID, suite.testDeploymentID).
+		Return([]map[string]interface{}{resultRow}, nil).Once()
+
+	result, err := suite.store.GetAttributeCache(suite.ctx, suite.testCache.ID)
+
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.testCache.ID, result.ID)
+	assert.Equal(suite.T(), suite.testCache.Attributes, result.Attributes)
+	assert.Greater(suite.T(), result.TTLSeconds, 3500)
+	assert.Less(suite.T(), result.TTLSeconds, 3700)
+}
+
 func (suite *AttributeCacheStoreTestSuite) TestGetAttributeCache_DBProviderError() {
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(nil, errors.New("db provider error")).Once()
 
@@ -236,7 +257,7 @@ func (suite *AttributeCacheStoreTestSuite) TestGetAttributeCache_InvalidAttribut
 	result, err := suite.store.GetAttributeCache(suite.ctx, suite.testCache.ID)
 
 	assert.NotNil(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to parse attributes as string")
+	assert.Contains(suite.T(), err.Error(), "failed to parse attributes: expected string or []byte")
 	assert.Equal(suite.T(), AttributeCache{}, result)
 }
 
@@ -375,6 +396,22 @@ func (suite *AttributeCacheStoreTestSuite) TestBuildAttributeCacheFromResultRow_
 	assert.Equal(suite.T(), suite.testCache.ID, result.ID)
 	assert.Equal(suite.T(), suite.testCache.Attributes, result.Attributes)
 	// TTL should be approximately 3600 seconds (allowing for small time differences)
+	assert.Greater(suite.T(), result.TTLSeconds, 3500)
+	assert.Less(suite.T(), result.TTLSeconds, 3700)
+}
+
+func (suite *AttributeCacheStoreTestSuite) TestBuildAttributeCacheFromResultRow_AttributesAsBytes() {
+	resultRow := map[string]interface{}{
+		"id":          suite.testCache.ID,
+		"attributes":  []byte(`{"key":"value"}`),
+		"expiry_time": suite.futureTime,
+	}
+
+	result, err := suite.store.buildAttributeCacheFromResultRow(resultRow)
+
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.testCache.ID, result.ID)
+	assert.Equal(suite.T(), suite.testCache.Attributes, result.Attributes)
 	assert.Greater(suite.T(), result.TTLSeconds, 3500)
 	assert.Less(suite.T(), result.TTLSeconds, 3700)
 }

@@ -466,7 +466,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOUIDIsEmpty(t *testing.T) {
 	require.Contains(t, err.ErrorDescription, "organization unit id must not be empty")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenOUIDIsNotUUID(t *testing.T) {
+func TestValidateUserSchemaDefinitionAllowsNonUUIDOUID(t *testing.T) {
 	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
 
 	schema := UserSchema{
@@ -477,9 +477,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOUIDIsNotUUID(t *testing.T)
 
 	err := validateUserSchemaDefinition(schema)
 
-	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
-	require.Contains(t, err.ErrorDescription, "organization unit id is not a valid UUID")
+	require.Nil(t, err)
 }
 
 func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T) {
@@ -654,13 +652,13 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 			expectedError: "user schema name must not be empty",
 		},
 		{
-			name: "Valid name but invalid OU ID format",
+			name: "Non-UUID OU ID still validates schema payload",
 			schema: UserSchema{
 				Name:   "test",
 				OUID:   "123",
-				Schema: json.RawMessage(`{"email":{"type":"string"}}`),
+				Schema: json.RawMessage{},
 			},
-			expectedError: "organization unit id is not a valid UUID",
+			expectedError: "schema definition must not be empty",
 		},
 		{
 			name: "Valid OU ID but empty schema",

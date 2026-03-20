@@ -599,16 +599,16 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
-		"sub":                          "test-client",
-		"iss":                          "https://thunder.io",
-		"aud":                          "test-client",
-		"exp":                          float64(now + 3600),
-		"iat":                          float64(now),
-		"scope":                        "read write",
-		"access_token_sub":             "user123",
-		"access_token_aud":             testAppID,
-		"grant_type":                   "authorization_code",
-		"access_token_user_attributes": map[string]interface{}{"name": "John Doe"},
+		"sub":              "test-client",
+		"iss":              "https://thunder.io",
+		"aud":              "test-client",
+		"exp":              float64(now + 3600),
+		"iat":              float64(now),
+		"scope":            "read write",
+		"access_token_sub": "user123",
+		"access_token_aud": testAppID,
+		"grant_type":       "authorization_code",
+		"aci":              "test-cache-id",
 	}
 	token := suite.createTestJWT(claims)
 
@@ -622,7 +622,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	assert.Equal(suite.T(), testAppID, result.Aud)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.Scopes)
-	assert.Equal(suite.T(), map[string]interface{}{"name": "John Doe"}, result.UserAttributes)
+	assert.Equal(suite.T(), "test-cache-id", result.AttributeCacheID)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -647,7 +647,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithoutUs
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Nil(suite.T(), result.UserAttributes)
+	assert.Equal(suite.T(), "", result.AttributeCacheID)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -951,17 +951,17 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingGran
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithClaimsLocales() {
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
-		"sub":                          "test-client",
-		"iss":                          "https://thunder.io",
-		"aud":                          "test-client",
-		"exp":                          float64(now + 3600),
-		"iat":                          float64(now),
-		"scope":                        "read write",
-		"access_token_sub":             "user123",
-		"access_token_aud":             testAppID,
-		"grant_type":                   "authorization_code",
-		"access_token_user_attributes": map[string]interface{}{"name": "John Doe"},
-		"access_token_claims_locales":  "en-US fr-CA ja",
+		"sub":                         "test-client",
+		"iss":                         "https://thunder.io",
+		"aud":                         "test-client",
+		"exp":                         float64(now + 3600),
+		"iat":                         float64(now),
+		"scope":                       "read write",
+		"access_token_sub":            "user123",
+		"access_token_aud":            testAppID,
+		"grant_type":                  "authorization_code",
+		"aci":                         "test-cache-id",
+		"access_token_claims_locales": "en-US fr-CA ja",
 	}
 	token := suite.createTestJWT(claims)
 
@@ -975,7 +975,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithClaim
 	assert.Equal(suite.T(), testAppID, result.Aud)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.Scopes)
-	assert.Equal(suite.T(), map[string]interface{}{"name": "John Doe"}, result.UserAttributes)
+	assert.Equal(suite.T(), "test-cache-id", result.AttributeCacheID)
 	assert.Equal(suite.T(), "en-US fr-CA ja", result.ClaimsLocales)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }

@@ -847,15 +847,14 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			errorContains: "organization unit id must not be empty",
 		},
 		{
-			name: "Invalid schema - malformed OU ID",
+			name: "Valid schema - non-UUID OU ID",
 			schema: UserSchema{
 				ID:     "invalid-003",
 				Name:   "Test Schema",
 				OUID:   "not-a-valid-uuid",
 				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
-			shouldBeValid: false,
-			errorContains: "organization unit id is not a valid UUID",
+			shouldBeValid: true,
 		},
 		{
 			name: "Invalid schema - empty schema definition",

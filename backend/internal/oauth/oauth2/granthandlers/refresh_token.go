@@ -20,39 +20,41 @@ package granthandlers
 
 import (
 	"slices"
+	"time"
 
 	"context"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // refreshTokenGrantHandler handles the refresh token grant type.
 type refreshTokenGrantHandler struct {
-	jwtService     jwt.JWTServiceInterface
-	userService    user.UserServiceInterface
-	tokenBuilder   tokenservice.TokenBuilderInterface
-	tokenValidator tokenservice.TokenValidatorInterface
+	jwtService       jwt.JWTServiceInterface
+	tokenBuilder     tokenservice.TokenBuilderInterface
+	tokenValidator   tokenservice.TokenValidatorInterface
+	attrCacheService attributecache.AttributeCacheServiceInterface
 }
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
 func newRefreshTokenGrantHandler(
 	jwtService jwt.JWTServiceInterface,
-	userService user.UserServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
+	attrCacheService attributecache.AttributeCacheServiceInterface,
 ) RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
-		jwtService:     jwtService,
-		userService:    userService,
-		tokenBuilder:   tokenBuilder,
-		tokenValidator: tokenValidator,
+		jwtService:       jwtService,
+		tokenBuilder:     tokenBuilder,
+		tokenValidator:   tokenValidator,
+		attrCacheService: attrCacheService,
 	}
 }
 
@@ -102,16 +104,43 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 		return nil, scopeErr
 	}
 
+	// Get user attributes from attribute cache.
+	// cacheEntry is kept so its current TTLSeconds can be compared later.
+	attrs := make(map[string]interface{})
+	var cacheEntry *attributecache.AttributeCache
+	var fetchErr *serviceerror.I18nServiceError
+	if refreshTokenClaims.AttributeCacheID != "" {
+		cacheEntry, fetchErr = h.attrCacheService.GetAttributeCache(ctx, refreshTokenClaims.AttributeCacheID)
+		if fetchErr != nil {
+			logger.Error("Failed to get user attributes from attribute cache",
+				log.String("error", fetchErr.ErrorDescription.DefaultValue))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to get user attributes from attribute cache",
+			}
+		}
+		if cacheEntry == nil {
+			logger.Error("Attribute cache entry not found for cache ID",
+				log.String("cache_id", refreshTokenClaims.AttributeCacheID))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to get user attributes from attribute cache",
+			}
+		}
+		attrs = cacheEntry.Attributes
+	}
+
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Subject:        refreshTokenClaims.Sub,
-		Audience:       refreshTokenClaims.Aud,
-		ClientID:       tokenRequest.ClientID,
-		Scopes:         newTokenScopes,
-		UserAttributes: refreshTokenClaims.UserAttributes,
-		GrantType:      refreshTokenClaims.GrantType,
-		OAuthApp:       oauthApp,
-		ClaimsRequest:  refreshTokenClaims.ClaimsRequest,
-		ClaimsLocales:  refreshTokenClaims.ClaimsLocales,
+		Subject:          refreshTokenClaims.Sub,
+		Audience:         refreshTokenClaims.Aud,
+		ClientID:         tokenRequest.ClientID,
+		Scopes:           newTokenScopes,
+		UserAttributes:   attrs,
+		AttributeCacheID: refreshTokenClaims.AttributeCacheID,
+		GrantType:        refreshTokenClaims.GrantType,
+		OAuthApp:         oauthApp,
+		ClaimsRequest:    refreshTokenClaims.ClaimsRequest,
+		ClaimsLocales:    refreshTokenClaims.ClaimsLocales,
 	})
 	if err != nil {
 		logger.Error("Failed to generate access token", log.Error(err))
@@ -132,7 +161,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 			Subject:        refreshTokenClaims.Sub,
 			Audience:       tokenRequest.ClientID,
 			Scopes:         newTokenScopes,
-			UserAttributes: refreshTokenClaims.UserAttributes,
+			UserAttributes: attrs,
 			OAuthApp:       oauthApp,
 			ClaimsRequest:  refreshTokenClaims.ClaimsRequest,
 		})
@@ -150,24 +179,28 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	conf := config.GetThunderRuntime().Config
 	renewRefreshToken := conf.OAuth.RefreshToken.RenewOnGrant
 
-	// Issue a new refresh token if renew_on_grant is enabled
+	// Issue a new refresh token if renew_on_grant is enabled; otherwise reuse the existing one.
 	if renewRefreshToken {
 		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
 		errResp := h.IssueRefreshToken(ctx, tokenResponse, oauthApp, refreshTokenClaims.Sub, refreshTokenClaims.Aud,
 			refreshTokenClaims.GrantType, newTokenScopes, refreshTokenClaims.ClaimsRequest,
-			refreshTokenClaims.ClaimsLocales)
+			refreshTokenClaims.ClaimsLocales, refreshTokenClaims.AttributeCacheID)
 		if errResp != nil && errResp.Error != "" {
 			logger.Error("Failed to issue refresh token", log.String("error", errResp.Error))
 			return nil, errResp
 		}
 	} else {
-		// Return the existing refresh token
 		tokenResponse.RefreshToken = model.TokenDTO{
 			Token:    tokenRequest.RefreshToken,
 			IssuedAt: refreshTokenClaims.Iat,
 			Scopes:   refreshTokenClaims.Scopes,
 			ClientID: tokenRequest.ClientID,
 		}
+	}
+
+	if errResp := h.extendCacheTTL(ctx, cacheEntry, oauthApp, refreshTokenClaims.Iat,
+		accessToken.ExpiresIn, renewRefreshToken, refreshTokenClaims.AttributeCacheID, logger); errResp != nil {
+		return nil, errResp
 	}
 
 	return tokenResponse, nil
@@ -182,17 +215,18 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	scopes []string,
 	claimsRequest *model.ClaimsRequest,
 	claimsLocales string,
+	attributeCacheID string,
 ) *model.ErrorResponse {
 	tokenCtx := &tokenservice.RefreshTokenBuildContext{
-		ClientID:             oauthApp.ClientID,
-		Scopes:               scopes,
-		GrantType:            grantType,
-		AccessTokenSubject:   subject,
-		AccessTokenAudience:  audience,
-		AccessTokenUserAttrs: tokenResponse.AccessToken.UserAttributes,
-		OAuthApp:             oauthApp,
-		ClaimsRequest:        claimsRequest,
-		ClaimsLocales:        claimsLocales,
+		ClientID:            oauthApp.ClientID,
+		Scopes:              scopes,
+		GrantType:           grantType,
+		AccessTokenSubject:  subject,
+		AccessTokenAudience: audience,
+		AttributeCacheID:    attributeCacheID,
+		OAuthApp:            oauthApp,
+		ClaimsRequest:       claimsRequest,
+		ClaimsLocales:       claimsLocales,
 	}
 
 	// Build refresh token using token builder
@@ -208,6 +242,51 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 		tokenResponse = &model.TokenResponseDTO{}
 	}
 	tokenResponse.RefreshToken = *refreshToken
+	return nil
+}
+
+// extendCacheTTL extends the attribute cache TTL when the desired lifetime exceeds what is already
+// stored. The desired TTL is the larger of:
+//   - the refresh token's actual expiry (iat + validity; for a renewed token, iat = now)
+//   - the newly issued access token's expiry (now + ExpiresIn)
+//
+// This ensures the cache outlives whichever token lives longest without needlessly
+// re-writing an already-sufficient entry.
+func (h *refreshTokenGrantHandler) extendCacheTTL(
+	ctx context.Context,
+	cacheEntry *attributecache.AttributeCache,
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	refreshIat, accessExpiresIn int64,
+	renewRefreshToken bool,
+	cacheID string,
+	logger *log.Logger,
+) *model.ErrorResponse {
+	if cacheEntry == nil {
+		return nil
+	}
+	now := time.Now().Unix()
+	refreshValidity := tokenservice.ResolveTokenConfig(oauthApp, tokenservice.TokenTypeRefresh).ValidityPeriod
+	if renewRefreshToken {
+		refreshIat = now // newly issued token starts from now
+	}
+	refreshExpiry := refreshIat + refreshValidity
+	accessExpiry := now + accessExpiresIn
+	maxExpiry := refreshExpiry
+	if accessExpiry > maxExpiry {
+		maxExpiry = accessExpiry
+	}
+	desiredTTL := int(maxExpiry-now) + constants.AttributeCacheTTLBufferSeconds
+	if desiredTTL > cacheEntry.TTLSeconds {
+		if extErr := h.attrCacheService.ExtendAttributeCacheTTL(ctx, cacheID, desiredTTL); extErr != nil {
+			logger.Error("Failed to extend attribute cache TTL",
+				log.String("cache_id", cacheID),
+				log.String("error", extErr.Error.String()))
+			return &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to extend attribute cache TTL",
+			}
+		}
+	}
 	return nil
 }
 

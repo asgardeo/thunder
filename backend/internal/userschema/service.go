@@ -757,12 +757,6 @@ func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError 
 		return invalidSchemaRequestError("organization unit id must not be empty")
 	}
 
-	if !utils.IsValidUUID(schema.OUID) {
-		logger.Debug("User schema validation failed: invalid organization unit ID format",
-			log.String("ouId", schema.OUID))
-		return invalidSchemaRequestError("organization unit id is not a valid UUID")
-	}
-
 	if len(schema.Schema) == 0 {
 		logger.Debug("User schema validation failed: schema definition is empty")
 		return invalidSchemaRequestError("schema definition must not be empty")

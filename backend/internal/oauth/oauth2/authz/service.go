@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
@@ -245,10 +246,11 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 
 	// Initiate flow with OAuth context.
 	runtimeData := map[string]string{
-		flowcm.RuntimeKeyRequestedPermissions:        utils.StringifyStringArray(nonOidcScopes, " "),
-		flowcm.RuntimeKeyRequiredEssentialAttributes: essentialAttributes,
-		flowcm.RuntimeKeyRequiredOptionalAttributes:  optionalAttributes,
-		flowcm.RuntimeKeyRequiredLocales:             claimsLocales,
+		flowcm.RuntimeKeyRequestedPermissions:          utils.StringifyStringArray(nonOidcScopes, " "),
+		flowcm.RuntimeKeyRequiredEssentialAttributes:   essentialAttributes,
+		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
+		flowcm.RuntimeKeyRequiredLocales:               claimsLocales,
+		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", resolveUserAttributesCacheTTL(app)),
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.AppID,
@@ -509,9 +511,7 @@ func (as *authorizeService) verifyAssertion(assertion string) error {
 
 // decodeAttributesFromAssertion decodes user attributes from the flow assertion JWT.
 func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time, error) {
-	claims := assertionClaims{
-		userAttributes: make(map[string]interface{}),
-	}
+	claims := assertionClaims{}
 
 	_, jwtPayload, err := jwt.DecodeJWT(assertion)
 	if err != nil {
@@ -533,14 +533,6 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 		}
 	}
 
-	// Standard JWT claims that should not be treated as user attributes.
-	standardClaims := map[string]bool{
-		"iss": true, "sub": true, "aud": true, "exp": true, "nbf": true, "iat": true, "jti": true,
-		"assurance":              true,
-		"authorized_permissions": true,
-	}
-
-	userAttributes := make(map[string]interface{})
 	for key, value := range jwtPayload {
 		// Extract sub claim.
 		if key == oauth2const.ClaimSub {
@@ -560,15 +552,15 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 			continue
 		}
 
-		// Skip standard JWT claims.
-		if standardClaims[key] {
+		if key == "aci" {
+			strValue, ok := value.(string)
+			if !ok {
+				return claims, time.Time{}, errors.New("JWT 'aci' claim is not a string")
+			}
+			claims.attributeCacheID = strValue
 			continue
 		}
-
-		// All other claims are treated as user attributes.
-		userAttributes[key] = value
 	}
-	claims.userAttributes = userAttributes
 
 	return claims, authTime, nil
 }
@@ -621,7 +613,7 @@ func createAuthorizationCode(
 		ClientID:            clientID,
 		RedirectURI:         redirectURI,
 		AuthorizedUserID:    claims.userID,
-		UserAttributes:      claims.userAttributes,
+		AttributeCacheID:    claims.attributeCacheID,
 		TimeCreated:         authTime,
 		ExpiryTime:          expiryTime,
 		Scopes:              utils.StringifyStringArray(allScopes, " "),
@@ -829,4 +821,22 @@ func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actual
 	}
 
 	return nil
+}
+
+// resolveUserAttributesCacheTTL determines the TTL for caching user attributes based on the
+// token validity configuration. The largest of the access and refresh token (if allowed) validity
+// periods is taken as the base, then the authorization code validity period is added to cover
+// the window between code issuance and token exchange.
+// A fixed buffer of attributeCacheTTLBufferSeconds is added to cover the window between
+// authentication completion and token issuance.
+func resolveUserAttributesCacheTTL(app *appmodel.OAuthAppConfigProcessedDTO) int64 {
+	maxTTL := tokenservice.ResolveTokenConfig(app, tokenservice.TokenTypeAccess).ValidityPeriod
+	if app.IsAllowedGrantType(oauth2const.GrantTypeRefreshToken) {
+		refreshTTL := tokenservice.ResolveTokenConfig(app, tokenservice.TokenTypeRefresh).ValidityPeriod
+		if refreshTTL > maxTTL {
+			maxTTL = refreshTTL
+		}
+	}
+	authCodeTTL := config.GetThunderRuntime().Config.OAuth.AuthorizationCode.ValidityPeriod
+	return maxTTL + authCodeTTL + oauth2const.AttributeCacheTTLBufferSeconds
 }

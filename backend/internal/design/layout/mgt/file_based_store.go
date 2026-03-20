@@ -66,7 +66,7 @@ func (f *layoutFileBasedStore) DeleteLayout(id string) error {
 func (f *layoutFileBasedStore) GetLayout(id string) (Layout, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
-		return Layout{}, err
+		return Layout{}, errLayoutNotFound
 	}
 	layout, ok := data.(*Layout)
 	if !ok {

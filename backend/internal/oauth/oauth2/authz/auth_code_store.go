@@ -44,7 +44,7 @@ const (
 	jsonDataKeyCodeChallenge       = "code_challenge"
 	jsonDataKeyCodeChallengeMethod = "code_challenge_method"
 	jsonDataKeyResource            = "resource"
-	jsonDataKeyUserAttributes      = "user_attributes"
+	jsonDataKeyAttributeCacheID    = "attribute_cache_id"
 	jsonDataKeyClaimsRequest       = "claims_request"
 	jsonDataKeyClaimsLocales       = "claims_locales"
 	jsonDataKeyNonce               = "nonce"
@@ -147,8 +147,8 @@ func (acs *authorizationCodeStore) getJSONDataBytes(authzCode AuthorizationCode)
 	}
 
 	// Include user attributes if present
-	if len(authzCode.UserAttributes) > 0 {
-		jsonData[jsonDataKeyUserAttributes] = authzCode.UserAttributes
+	if len(authzCode.AttributeCacheID) > 0 {
+		jsonData[jsonDataKeyAttributeCacheID] = authzCode.AttributeCacheID
 	}
 
 	// Include claims request if present
@@ -261,9 +261,8 @@ func appendAuthzDataJSON(row map[string]interface{}, authzCode *AuthorizationCod
 	if nonce, ok := authzData[jsonDataKeyNonce].(string); ok {
 		authzCode.Nonce = nonce
 	}
-
-	if userAttrs, ok := authzData[jsonDataKeyUserAttributes].(map[string]interface{}); ok && userAttrs != nil {
-		authzCode.UserAttributes = userAttrs
+	if attributeCacheID, ok := authzData[jsonDataKeyAttributeCacheID].(string); ok {
+		authzCode.AttributeCacheID = attributeCacheID
 	}
 
 	if claimsData, ok := authzData[jsonDataKeyClaimsRequest]; ok && claimsData != nil {

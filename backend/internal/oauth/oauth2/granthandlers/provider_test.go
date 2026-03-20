@@ -25,20 +25,20 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
-	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 type GrantHandlerProviderTestSuite struct {
 	suite.Suite
-	provider           GrantHandlerProviderInterface
-	mockJWTService     *jwtmock.JWTServiceInterfaceMock
-	mockUserService    *usersvcmock.UserServiceInterfaceMock
-	authzService       *authzmock.AuthorizeServiceInterfaceMock
-	mockTokenBuilder   *tokenservicemock.TokenBuilderInterfaceMock
-	mockTokenValidator *tokenservicemock.TokenValidatorInterfaceMock
+	provider             GrantHandlerProviderInterface
+	mockJWTService       *jwtmock.JWTServiceInterfaceMock
+	authzService         *authzmock.AuthorizeServiceInterfaceMock
+	mockTokenBuilder     *tokenservicemock.TokenBuilderInterfaceMock
+	mockTokenValidator   *tokenservicemock.TokenValidatorInterfaceMock
+	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
 }
 
 func TestGrantHandlerProviderSuite(t *testing.T) {
@@ -47,26 +47,26 @@ func TestGrantHandlerProviderSuite(t *testing.T) {
 
 func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 	suite.authzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
+	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
 		suite.mockJWTService,
-		suite.mockUserService,
 		suite.authzService,
 		suite.mockTokenBuilder,
 		suite.mockTokenValidator,
+		suite.mockAttrCacheService,
 	)
 }
 
 func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 	provider := newGrantHandlerProvider(
 		suite.mockJWTService,
-		suite.mockUserService,
 		suite.authzService,
 		suite.mockTokenBuilder,
 		suite.mockTokenValidator,
+		suite.mockAttrCacheService,
 	)
 	assert.NotNil(suite.T(), provider)
 	assert.Implements(suite.T(), (*GrantHandlerProviderInterface)(nil), provider)

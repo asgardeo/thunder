@@ -127,12 +127,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 	grantType, _ := extractStringClaim(claims, "grant_type")
 	iat, _ := extractInt64Claim(claims, "iat")
 	scopes := extractScopesFromClaims(claims, false)
-
-	// Extract user attributes if present
-	var userAttributes map[string]interface{}
-	if userAttrs, ok := claims["access_token_user_attributes"].(map[string]interface{}); ok {
-		userAttributes = userAttrs
-	}
+	attributeCacheID, _ := extractStringClaim(claims, "aci")
 
 	// Extract claims request if present
 	var claimsRequest *oauth2model.ClaimsRequest
@@ -150,14 +145,14 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
-		Sub:            sub,
-		Aud:            aud,
-		GrantType:      grantType,
-		Scopes:         scopes,
-		UserAttributes: userAttributes,
-		Iat:            iat,
-		ClaimsRequest:  claimsRequest,
-		ClaimsLocales:  claimsLocales,
+		Sub:              sub,
+		Aud:              aud,
+		GrantType:        grantType,
+		Scopes:           scopes,
+		AttributeCacheID: attributeCacheID,
+		Iat:              iat,
+		ClaimsRequest:    claimsRequest,
+		ClaimsLocales:    claimsLocales,
 	}, nil
 }
 

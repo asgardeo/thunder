@@ -39,6 +39,7 @@ const (
 	testIDToken      = "test-id-token"      //nolint:gosec // Test token, not a real credential
 	testUserName     = "John Doe"
 	testAppID        = "app123"
+	testCacheID      = "test-cache-id"
 )
 
 type TokenBuilderTestSuite struct {
@@ -437,13 +438,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 	}
 
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"read", "write"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{"name": testUserName},
-		OAuthApp:             oauthAppWithUserAttrs,
+		ClientID:            "test-client",
+		Scopes:              []string{"read", "write"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    testCacheID,
+		OAuthApp:            oauthAppWithUserAttrs,
 	}
 
 	expectedToken := testRefreshToken
@@ -459,7 +460,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 				claims["access_token_sub"] == "user123" &&
 				claims["access_token_aud"] == testAppID &&
 				claims["grant_type"] == string(constants.GrantTypeAuthorizationCode) &&
-				claims["access_token_user_attributes"].(map[string]interface{})["name"] == testUserName
+				claims["aci"] == testCacheID
 		}), mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
@@ -478,13 +479,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutUserAttributes() {
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"read"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{},
-		OAuthApp:             suite.oauthApp,
+		ClientID:            "test-client",
+		Scopes:              []string{"read"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    "",
+		OAuthApp:            suite.oauthApp,
 	}
 
 	expectedToken := testRefreshToken
@@ -496,8 +497,8 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutUserAtt
 		"https://thunder.io",
 		int64(3600),
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			_, hasUserAttrs := claims["access_token_user_attributes"]
-			return !hasUserAttrs
+			_, hasAttrCacheID := claims["aci"]
+			return !hasAttrCacheID
 		}), mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
@@ -510,13 +511,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutUserAtt
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilOAuthApp() {
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"read"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{"name": testUserName},
-		OAuthApp:             nil,
+		ClientID:            "test-client",
+		Scopes:              []string{"read"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    testCacheID,
+		OAuthApp:            nil,
 	}
 
 	expectedToken := testRefreshToken
@@ -528,8 +529,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilOAuthAp
 		"https://thunder.io",
 		int64(3600),
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			_, hasUserAttrs := claims["access_token_user_attributes"]
-			return !hasUserAttrs // Should not include user attrs when OAuthApp is nil
+			return claims["aci"] == testCacheID
 		}), mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
@@ -542,13 +542,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilOAuthAp
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_EmptyScopes() {
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{},
-		OAuthApp:             suite.oauthApp,
+		ClientID:            "test-client",
+		Scopes:              []string{},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    "",
+		OAuthApp:            suite.oauthApp,
 	}
 
 	expectedToken := testRefreshToken
@@ -581,13 +581,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithTokenConfi
 	}
 
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"read"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{},
-		OAuthApp:             customOAuthApp,
+		ClientID:            "test-client",
+		Scopes:              []string{"read"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    "",
+		OAuthApp:            customOAuthApp,
 	}
 
 	expectedToken := testRefreshToken
@@ -618,13 +618,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 	}
 
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"read"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{"name": testUserName},
-		OAuthApp:             oauthAppWithNilAccessToken,
+		ClientID:            "test-client",
+		Scopes:              []string{"read"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    testCacheID,
+		OAuthApp:            oauthAppWithNilAccessToken,
 	}
 
 	expectedToken := testRefreshToken
@@ -636,8 +636,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 		"https://thunder.io",
 		int64(3600),
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			_, hasUserAttrs := claims["access_token_user_attributes"]
-			return !hasUserAttrs // Should not include user attrs when AccessToken is nil
+			return claims["aci"] == testCacheID
 		}), mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
@@ -658,13 +657,13 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_NilContext() {
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFailed() {
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"read"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{},
-		OAuthApp:             suite.oauthApp,
+		ClientID:            "test-client",
+		Scopes:              []string{"read"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    "",
+		OAuthApp:            suite.oauthApp,
 	}
 
 	suite.mockJWTService.On("GenerateJWT",
@@ -690,14 +689,14 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithClaimsLocales() {
 	ctx := &RefreshTokenBuildContext{
-		ClientID:             "test-client",
-		Scopes:               []string{"openid", "profile"},
-		GrantType:            string(constants.GrantTypeAuthorizationCode),
-		AccessTokenSubject:   "user123",
-		AccessTokenAudience:  "app123",
-		AccessTokenUserAttrs: map[string]interface{}{"name": testUserName},
-		OAuthApp:             suite.oauthApp,
-		ClaimsLocales:        "en-US fr-CA ja",
+		ClientID:            "test-client",
+		Scopes:              []string{"openid", "profile"},
+		GrantType:           string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:  "user123",
+		AccessTokenAudience: "app123",
+		AttributeCacheID:    "",
+		OAuthApp:            suite.oauthApp,
+		ClaimsLocales:       "en-US fr-CA ja",
 	}
 
 	expectedToken := testRefreshToken

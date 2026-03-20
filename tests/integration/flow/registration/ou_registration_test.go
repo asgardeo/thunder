@@ -752,7 +752,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
 			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 
 			lastMessage := ts.mockServer.GetLastMessage()
 			ts.Require().NotNil(lastMessage)
@@ -875,7 +875,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 				"mobileNumber": mobileNumber,
 			}
 			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 
 			flowStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 			ts.Require().NoError(err)

@@ -443,7 +443,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 	ts.Require().True(common.HasInput(otpFlowStep.Data.Inputs, "otp"), "OTP input should be required")
 
 	// Wait for SMS to be sent
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Verify SMS was sent
 	lastMessage := ts.mockServer.GetLastMessage()
@@ -554,7 +554,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 
 	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Step 2: Try with invalid OTP
 	invalidOTPInputs := map[string]string{
@@ -612,7 +612,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 	ts.Require().Equal("VIEW", otpStep.Type, "Expected flow type to be VIEW")
 
 	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Get the OTP from mock server
 	lastMessage := ts.mockServer.GetLastMessage()

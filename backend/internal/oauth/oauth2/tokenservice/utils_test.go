@@ -20,7 +20,6 @@ package tokenservice
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,13 +27,12 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
 )
 
 type UtilsTestSuite struct {
@@ -618,467 +616,174 @@ func (suite *UtilsTestSuite) TestextractScopesFromClaims_ScopeTakesPriorityOverA
 	assert.Equal(suite.T(), []string{"openid", "profile"}, result)
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserError() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+func (suite *UtilsTestSuite) TestFetchUserAttributes_GetAttributeCacheError() {
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
-	// Mock GetUser to return error
-	serverErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "USER_NOT_FOUND",
-		ErrorDescription: "user not found",
+	// Mock GetAttributeCache to return error
+	serverErr := &serviceerror.I18nServiceError{
+		Type: serviceerror.ServerErrorType,
+		Code: "CACHE_NOT_FOUND",
+		Error: core.I18nMessage{
+			Key:          "cache_not_found",
+			DefaultValue: "Cache not found",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "cache_not_found_desc",
+			DefaultValue: "cache not found",
+		},
 	}
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(nil, serverErr)
+	mockAttrCacheService.On("GetAttributeCache", mock.Anything, "cache-key-123").
+		Return(nil, serverErr)
 
-	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to fetch user")
-
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_UnmarshalError() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return user with invalid JSON in attributes
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{invalid json}`), // Invalid JSON
-		Type:       "local",
-	}, nil)
-
-	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
+	_, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		[]string{constants.ClaimUserType}, "cache-key-123")
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to unmarshal user attributes")
+	assert.Contains(suite.T(), err.Error(), "failed to fetch attribute cache")
 
-	mockUserService.AssertExpectations(suite.T())
+	mockAttrCacheService.AssertExpectations(suite.T())
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAttributes() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyCacheKey() {
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
-	// Mock GetUser to return user with nil attributes
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: nil,
-		Type:       "local",
-	}, nil)
-
-	allowedClaims := []string{constants.ClaimUserType}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
+	// When cache key is empty, no cache lookup should happen
+	attrs, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		[]string{constants.ClaimUserType}, "")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
-	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
+	assert.Empty(suite.T(), attrs) // No attributes when cache key is empty and no claims allowed
 
-	mockUserService.AssertExpectations(suite.T())
+	// Verify GetAttributeCache was NOT called
+	mockAttrCacheService.AssertNotCalled(suite.T(), "GetAttributeCache", mock.Anything, mock.Anything)
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_NilCacheAttributes() {
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+
+	// Mock GetAttributeCache to return cache with nil attributes — must be treated as an error
+	mockAttrCacheService.On("GetAttributeCache", mock.Anything, "cache-key-123").
+		Return(&attributecache.AttributeCache{
+			ID:         "cache-key-123",
+			Attributes: nil,
+		}, nil)
+
+	allowedClaims := []string{constants.ClaimUserType}
+	_, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		allowedClaims, "cache-key-123")
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "attribute cache not found for key")
+
+	mockAttrCacheService.AssertExpectations(suite.T())
 }
 
 func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyAllowedClaims() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
-	// Mock GetUser to return user with full data
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
+	// Mock GetAttributeCache to return cached attributes
+	mockAttrCacheService.On("GetAttributeCache", mock.Anything, "cache-key-123").
+		Return(&attributecache.AttributeCache{
+			ID: "cache-key-123",
+			Attributes: map[string]interface{}{
+				"email":                 "test@example.com",
+				constants.ClaimUserType: "local",
+				constants.ClaimOUID:     "ou-123",
+			},
+		}, nil)
 
-	// Empty allowedClaims - no special claims should be added
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", []string{})
+	// Empty allowedClaims - no claims should be returned
+	attrs, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		[]string{}, "cache-key-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
-	// Only user attributes should be present, not default claims
-	assert.Equal(suite.T(), "test@example.com", attrs["email"])
-	assert.Nil(suite.T(), attrs[constants.ClaimUserType])
-	assert.Nil(suite.T(), attrs[constants.ClaimOUID])
-	assert.Nil(suite.T(), attrs[constants.UserAttributeGroups])
+	// No attributes should be present when allowedClaims is empty
+	assert.Empty(suite.T(), attrs)
 
-	mockUserService.AssertExpectations(suite.T())
+	mockAttrCacheService.AssertExpectations(suite.T())
 }
 
 func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAllowedClaims() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
-	// Mock GetUser to return user with full data
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
+	// Mock GetAttributeCache to return cached attributes
+	mockAttrCacheService.On("GetAttributeCache", mock.Anything, "cache-key-123").
+		Return(&attributecache.AttributeCache{
+			ID: "cache-key-123",
+			Attributes: map[string]interface{}{
+				"email":                 "test@example.com",
+				constants.ClaimUserType: "local",
+				constants.ClaimOUID:     "ou-123",
+			},
+		}, nil)
 
-	// Nil allowedClaims - no special claims should be added
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", nil)
+	// Nil allowedClaims - no claims should be returned
+	attrs, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		nil, "cache-key-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
-	// Only user attributes should be present
-	assert.Equal(suite.T(), "test@example.com", attrs["email"])
-	assert.Nil(suite.T(), attrs[constants.ClaimUserType])
-	assert.Nil(suite.T(), attrs[constants.ClaimOUID])
+	// No attributes should be present when allowedClaims is nil
+	assert.Empty(suite.T(), attrs)
 
-	mockUserService.AssertExpectations(suite.T())
+	mockAttrCacheService.AssertExpectations(suite.T())
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoType() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+func (suite *UtilsTestSuite) TestFetchUserAttributes_CacheWithoutUserType() {
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
-	// Mock GetUser to return user without type
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "", // Empty type
-		OUID:       "ou-123",
-	}, nil)
+	// Mock GetAttributeCache to return cache without userType
+	mockAttrCacheService.On("GetAttributeCache", mock.Anything, "cache-key-123").
+		Return(&attributecache.AttributeCache{
+			ID: "cache-key-123",
+			Attributes: map[string]interface{}{
+				"email":             "test@example.com",
+				constants.ClaimOUID: "ou-123",
+			},
+		}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		allowedClaims, "cache-key-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
-	// userType should not be present since it's empty
+	// userType should not be present since it's not in cache
 	assert.Nil(suite.T(), attrs[constants.ClaimUserType])
-	// ouId should still be present
+	// ouId should be present
 	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
 
-	mockUserService.AssertExpectations(suite.T())
+	mockAttrCacheService.AssertExpectations(suite.T())
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoOrganizationUnit() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+//nolint:dupl // Similar test structure but different scenario (cache without OUID)
+func (suite *UtilsTestSuite) TestFetchUserAttributes_CacheWithoutOUID() {
+	mockAttrCacheService := attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
-	// Mock GetUser to return user without organization unit
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "", // Empty OU
-	}, nil)
+	// Mock GetAttributeCache to return cache without OUID
+	mockAttrCacheService.On("GetAttributeCache", mock.Anything, "cache-key-123").
+		Return(&attributecache.AttributeCache{
+			ID: "cache-key-123",
+			Attributes: map[string]interface{}{
+				"email":                 "test@example.com",
+				constants.ClaimUserType: "local",
+			},
+		}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
+	attrs, err := FetchUserAttributes(context.Background(), mockAttrCacheService,
+		allowedClaims, "cache-key-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
 	// userType should be present
 	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
-	// ouId should not be present since OU is empty
+	// ouId should not be present since it's not in cache
 	assert.Nil(suite.T(), attrs[constants.ClaimOUID])
 
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user with OU
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
-
-	// Mock GetOrganizationUnit to return OU details
-	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{
-		ID:     "ou-123",
-		Handle: "test-org",
-		Name:   "Test Organization",
-	}, nil)
-
-	// Request all OU-related claims
-	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle, constants.ClaimOUName}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
-	assert.Equal(suite.T(), "test-org", attrs[constants.ClaimOUHandle])
-	assert.Equal(suite.T(), "Test Organization", attrs[constants.ClaimOUName])
-
-	mockUserService.AssertExpectations(suite.T())
-	mockOUService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceError() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user with OU
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
-
-	// Mock GetOrganizationUnit to return error
-	mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
-		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
-			Type:             serviceerror.ServerErrorType,
-			Code:             "OU_NOT_FOUND",
-			ErrorDescription: "organization unit not found",
-		})
-
-	// Request ouHandle which requires OU service
-	allowedClaims := []string{constants.ClaimOUHandle}
-	_, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to fetch organization unit details")
-
-	mockUserService.AssertExpectations(suite.T())
-	mockOUService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_OUDetailsNotRequestedSkipsOUService() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user with OU
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
-
-	// No mock for GetOrganizationUnit - it should NOT be called
-
-	// Request only ouId (not ouHandle or ouName)
-	allowedClaims := []string{constants.ClaimOUID}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, mockOUService, "test-user", allowedClaims)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
-	// ouHandle and ouName should not be present
-	assert.Nil(suite.T(), attrs[constants.ClaimOUHandle])
-	assert.Nil(suite.T(), attrs[constants.ClaimOUName])
-
-	// Verify GetOrganizationUnit was NOT called
-	mockOUService.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_NilOUServiceSkipsOUDetails() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user with OU
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
-
-	// Request ouHandle but pass nil ouService
-	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	// ouId should be present
-	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
-	// ouHandle should NOT be present since ouService is nil
-	assert.Nil(suite.T(), attrs[constants.ClaimOUHandle])
-
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_WithGroups() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-		Type:       "local",
-		OUID:       "ou-123",
-	}, nil)
-
-	// Mock GetUserGroups to return groups
-	mockGroups := &user.UserGroupListResponse{
-		TotalResults: 2,
-		StartIndex:   0,
-		Count:        2,
-		Groups: []user.UserGroup{
-			{ID: "group1", Name: "Admin"},
-			{ID: "group2", Name: "Users"},
-		},
-	}
-	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
-		Return(mockGroups, nil)
-
-	// Include default claims and groups in allowed list
-	allowedClaims := []string{
-		"email",
-		"username",
-		constants.ClaimUserType,
-		constants.ClaimOUID,
-		constants.UserAttributeGroups,
-	}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	assert.Equal(suite.T(), "test@example.com", attrs["email"])
-	assert.Equal(suite.T(), "testuser", attrs["username"])
-	// Verify groups are merged into attrs
-	assert.Equal(suite.T(), []string{"Admin", "Users"}, attrs[constants.UserAttributeGroups])
-	// Verify default claims are merged into attrs
-	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
-	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
-
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_WithEmptyGroups() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-	}, nil)
-
-	// Mock GetUserGroups to return empty groups
-	mockGroups := &user.UserGroupListResponse{
-		TotalResults: 0,
-		StartIndex:   0,
-		Count:        0,
-		Groups:       []user.UserGroup{},
-	}
-	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
-		Return(mockGroups, nil)
-
-	// Request groups
-	allowedClaims := []string{constants.UserAttributeGroups}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	// Groups should not be added when empty
-	assert.Nil(suite.T(), attrs[constants.UserAttributeGroups])
-
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserGroupsError() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-	}, nil)
-
-	// Mock GetUserGroups to return error
-	serverErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "INTERNAL_ERROR",
-		ErrorDescription: "failed to fetch groups",
-	}
-	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
-		Return(nil, serverErr)
-
-	// Request groups in allowed claims to trigger the error
-	allowedClaims := []string{constants.UserAttributeGroups}
-	_, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to fetch user groups")
-
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_WithoutGroups() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-		Type:       "local",
-	}, nil)
-
-	// Include userType but NOT groups - so GetUserGroups should not be called
-	allowedClaims := []string{"email", constants.ClaimUserType}
-	attrs, err := FetchUserAttributes(context.Background(), mockUserService, nil, "test-user", allowedClaims)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	// Verify userType is in attrs
-	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
-	// Verify groups is not present
-	assert.Nil(suite.T(), attrs[constants.UserAttributeGroups])
-
-	// Verify GetUserGroups was NOT called
-	mockUserService.AssertNotCalled(
-		suite.T(), "GetUserGroups", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributes_SingleOUClaim() {
-	// Test cases for requesting only one OU claim at a time
-	testCases := []struct {
-		name          string
-		allowedClaims []string
-		expectedClaim string
-		expectedValue string
-		absentClaim   string
-	}{
-		{
-			name:          "OnlyOUHandle",
-			allowedClaims: []string{constants.ClaimOUHandle},
-			expectedClaim: constants.ClaimOUHandle,
-			expectedValue: "test-org",
-			absentClaim:   constants.ClaimOUName,
-		},
-		{
-			name:          "OnlyOUName",
-			allowedClaims: []string{constants.ClaimOUName},
-			expectedClaim: constants.ClaimOUName,
-			expectedValue: "Test Organization",
-			absentClaim:   constants.ClaimOUHandle,
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.name, func() {
-			mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-			mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
-
-			mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-				ID:         "test-user",
-				Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-				OUID:       "ou-123",
-			}, nil)
-
-			mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{
-				ID:     "ou-123",
-				Handle: "test-org",
-				Name:   "Test Organization",
-			}, nil)
-
-			attrs, err := FetchUserAttributes(
-				context.Background(), mockUserService, mockOUService, "test-user", tc.allowedClaims)
-
-			assert.NoError(suite.T(), err)
-			assert.NotNil(suite.T(), attrs)
-			assert.Equal(suite.T(), tc.expectedValue, attrs[tc.expectedClaim])
-			assert.Nil(suite.T(), attrs[tc.absentClaim])
-
-			mockUserService.AssertExpectations(suite.T())
-			mockOUService.AssertExpectations(suite.T())
-		})
-	}
+	mockAttrCacheService.AssertExpectations(suite.T())
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithServerLevelConfig() {
@@ -1101,7 +806,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithServerLevel
 		ClientID: "test-client",
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeRefresh)
+	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(86400), result.ValidityPeriod)
@@ -1128,7 +833,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithoutServerLe
 		ClientID: "test-client",
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeRefresh)
+	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
 
 	assert.NotNil(suite.T(), result)
 	// Should fallback to default JWT validity period
@@ -1152,7 +857,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithNilOAuthApp
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// oauthApp is nil
-	result := resolveTokenConfig(nil, TokenTypeRefresh)
+	result := ResolveTokenConfig(nil, TokenTypeRefresh)
 
 	assert.NotNil(suite.T(), result)
 	// Should still use server-level refresh token config
@@ -1181,7 +886,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig
 		Token:    &appmodel.OAuthTokenConfig{},
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeRefresh)
+	result := ResolveTokenConfig(oauthApp, TokenTypeRefresh)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(86400), result.ValidityPeriod)
@@ -1199,7 +904,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilOAuthApp(
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// oauthApp is nil - should use default config
-	result := resolveTokenConfig(nil, TokenTypeAccess)
+	result := ResolveTokenConfig(nil, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -1222,7 +927,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithNilToken() {
 		Token:    nil,
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeAccess)
+	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -1248,7 +953,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_AccessToken_WithAppLevelConf
 		},
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeAccess)
+	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(7200), result.ValidityPeriod)
@@ -1265,7 +970,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilOAuthApp() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// oauthApp is nil - should use default config
-	result := resolveTokenConfig(nil, TokenTypeID)
+	result := ResolveTokenConfig(nil, TokenTypeID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -1288,7 +993,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithNilToken() {
 		Token:    nil,
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeID)
+	result := ResolveTokenConfig(oauthApp, TokenTypeID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(3600), result.ValidityPeriod)
@@ -1314,7 +1019,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_IDToken_WithAppLevelConfig()
 		},
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeID)
+	result := ResolveTokenConfig(oauthApp, TokenTypeID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), int64(1800), result.ValidityPeriod)
@@ -1331,7 +1036,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithCustomIssuer_NilOAuthApp
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	// With nil oauthApp, should use default issuer
-	result := resolveTokenConfig(nil, TokenTypeAccess)
+	result := ResolveTokenConfig(nil, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
@@ -1353,7 +1058,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithTokenConfig_UsesThunderI
 		Token:    &appmodel.OAuthTokenConfig{},
 	}
 
-	result := resolveTokenConfig(oauthApp, TokenTypeAccess)
+	result := ResolveTokenConfig(oauthApp, TokenTypeAccess)
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)

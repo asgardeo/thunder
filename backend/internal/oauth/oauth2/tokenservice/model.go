@@ -44,29 +44,30 @@ type TokenConfig struct {
 
 // AccessTokenBuildContext contains all the information needed to build an access token.
 type AccessTokenBuildContext struct {
-	Subject        string
-	Audience       string
-	ClientID       string
-	Scopes         []string
-	UserAttributes map[string]interface{}
-	GrantType      string
-	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
-	ActorClaims    *SubjectTokenClaims
-	ClaimsRequest  *oauth2model.ClaimsRequest
-	ClaimsLocales  string
+	Subject          string
+	Audience         string
+	ClientID         string
+	Scopes           []string
+	UserAttributes   map[string]interface{}
+	AttributeCacheID string
+	GrantType        string
+	OAuthApp         *appmodel.OAuthAppConfigProcessedDTO
+	ActorClaims      *SubjectTokenClaims
+	ClaimsRequest    *oauth2model.ClaimsRequest
+	ClaimsLocales    string
 }
 
 // RefreshTokenBuildContext contains all the information needed to build a refresh token.
 type RefreshTokenBuildContext struct {
-	ClientID             string
-	Scopes               []string
-	GrantType            string
-	AccessTokenSubject   string
-	AccessTokenAudience  string
-	AccessTokenUserAttrs map[string]interface{}
-	OAuthApp             *appmodel.OAuthAppConfigProcessedDTO
-	ClaimsRequest        *oauth2model.ClaimsRequest
-	ClaimsLocales        string
+	ClientID            string
+	Scopes              []string
+	GrantType           string
+	AccessTokenSubject  string
+	AccessTokenAudience string
+	AttributeCacheID    string
+	OAuthApp            *appmodel.OAuthAppConfigProcessedDTO
+	ClaimsRequest       *oauth2model.ClaimsRequest
+	ClaimsLocales       string
 }
 
 // IDTokenBuildContext contains all the information needed to build an ID token (OIDC).
@@ -83,14 +84,14 @@ type IDTokenBuildContext struct {
 
 // RefreshTokenClaims represents the validated claims from a refresh token.
 type RefreshTokenClaims struct {
-	Sub            string
-	Aud            string
-	GrantType      string
-	Scopes         []string
-	UserAttributes map[string]interface{}
-	Iat            int64
-	ClaimsRequest  *oauth2model.ClaimsRequest
-	ClaimsLocales  string
+	Sub              string
+	Aud              string
+	GrantType        string
+	Scopes           []string
+	AttributeCacheID string
+	Iat              int64
+	ClaimsRequest    *oauth2model.ClaimsRequest
+	ClaimsLocales    string
 }
 
 // SubjectTokenClaims represents the validated claims from a subject token (for token exchange).

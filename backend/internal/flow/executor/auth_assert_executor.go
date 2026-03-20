@@ -172,6 +172,7 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	}
 
 	if ttlSecondsStr, exists := ctx.RuntimeData[common.RuntimeKeyUserAttributesCacheTTLSeconds]; exists {
+		// We are not in an App Native flow, so we need to cache the user attributes
 		if len(resolvedAttributes) > 0 {
 			ttlSeconds, err := strconv.Atoi(ttlSecondsStr)
 			if err != nil {
@@ -191,34 +192,12 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 					log.String("error", creationErr.ErrorDescription.DefaultValue))
 				return "", errors.New("failed to create attribute cache")
 			}
-			jwtClaims["attribute_cache_id"] = result.ID
+			jwtClaims["aci"] = result.ID
 		}
 	} else {
+		// We are in an App Native flow, so we need to add user attributes to the assertion
 		for attrKey, attrVal := range resolvedAttributes {
 			jwtClaims[attrKey] = attrVal
-		}
-	}
-
-	// Handle groups if configured in user attributes
-	if slices.Contains(requiredAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
-		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, jwtClaims); err != nil {
-			return "", err
-		}
-	}
-
-	// Add user type to the claims
-	if slices.Contains(requiredAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
-		jwtClaims[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
-	}
-
-	// Add OU details to the claims
-	ouAttributesConfigured := slices.Contains(requiredAttributes, oauth2const.ClaimOUID) ||
-		slices.Contains(requiredAttributes, oauth2const.ClaimOUName) ||
-		slices.Contains(requiredAttributes, oauth2const.ClaimOUHandle)
-	if ouAttributesConfigured && ctx.AuthenticatedUser.OUID != "" {
-		if err := a.appendOUDetailsToClaims(
-			ctx.Context, ctx.AuthenticatedUser.OUID, jwtClaims, requiredAttributes); err != nil {
-			return "", err
 		}
 	}
 
@@ -390,6 +369,29 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 				attributes[attr] = val
 				continue
 			}
+		}
+	}
+
+	// Handle groups if configured in user attributes
+	if slices.Contains(requestedAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
+		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, attributes); err != nil {
+			return nil, err
+		}
+	}
+
+	// Add user type to the claims
+	if slices.Contains(requestedAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
+		attributes[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
+	}
+
+	// Add OU details to the claims
+	ouAttributesConfigured := slices.Contains(requestedAttributes, oauth2const.ClaimOUID) ||
+		slices.Contains(requestedAttributes, oauth2const.ClaimOUName) ||
+		slices.Contains(requestedAttributes, oauth2const.ClaimOUHandle)
+	if ouAttributesConfigured && ctx.AuthenticatedUser.OUID != "" {
+		if err := a.appendOUDetailsToClaims(
+			ctx.Context, ctx.AuthenticatedUser.OUID, attributes, requestedAttributes); err != nil {
+			return nil, err
 		}
 	}
 
