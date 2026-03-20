@@ -7,6 +7,7 @@ name: 👷🛠️ PR Builder
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   merge_group:
   workflow_dispatch:
 
@@ -119,7 +120,8 @@ jobs:
 
   verify-mocks:
     name: 🔍 Verify Mock Files
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
+    needs: detect-component-changes
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -204,9 +206,73 @@ jobs:
           cd frontend
           pnpm nx affected --target=lint --parallel=3 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
 
+  detect-component-changes:
+    name: 🔍 Detect Component Changes
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.resolve.outputs.frontend }}
+      backend: ${{ steps.resolve.outputs.backend }}
+      trigger_pr_builder: ${{ steps.resolve.outputs.trigger_pr_builder }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect Changed Files
+        id: filter
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'samples/**'
+              - 'tests/e2e/**'
+              - 'api/**'
+              - 'build.sh'
+              - 'build.ps1'
+              - 'setup.sh'
+              - 'setup.ps1'
+              - 'Makefile'
+              - 'version.txt'
+              - '.github/actions/**'
+              - '.github/workflows/**'
+              - '.audit-ignore.json'
+            backend:
+              - 'backend/**'
+              - 'samples/**'
+              - 'tests/e2e/**'
+              - 'api/**'
+              - 'build.sh'
+              - 'build.ps1'
+              - 'setup.sh'
+              - 'setup.ps1'
+              - 'Makefile'
+              - 'version.txt'
+              - '.github/actions/**'
+              - '.github/workflows/**'
+              - '.audit-ignore.json'
+
+      - name: 🔄 Resolve Change Flags
+        id: resolve
+        shell: bash
+        env:
+          FRONTEND_CHANGED: ${{ steps.filter.outputs.frontend }}
+          BACKEND_CHANGED: ${{ steps.filter.outputs.backend }}
+          IS_OVERRIDE: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'trigger-pr-builder')) }}
+        run: |
+          echo "frontend=${FRONTEND_CHANGED}" >> "$GITHUB_OUTPUT"
+          echo "backend=${BACKEND_CHANGED}" >> "$GITHUB_OUTPUT"
+          echo "trigger_pr_builder=${IS_OVERRIDE}" >> "$GITHUB_OUTPUT"
+
   build:
     name: 🛠️ Build Product
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.frontend == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
+    needs: detect-component-changes
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -261,10 +327,22 @@ jobs:
           pnpm build
 
       - name: 🔨 Build Product with Coverage
+        if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
         run: |
           set -e
           export LOG_LEVEL=debug
           make build_with_coverage_only OS=$(go env GOOS) ARCH=$(go env GOARCH)
+
+          # Find the built distribution
+          DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
+          echo "Built distribution: $DIST_PATH"
+
+      - name: 🔨 Build Backend for Distribution
+        if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder != 'true' && needs.detect-component-changes.outputs.backend != 'true' }}
+        run: |
+          set -e
+          export LOG_LEVEL=debug
+          make build_backend OS=$(go env GOOS) ARCH=$(go env GOARCH)
 
           # Find the built distribution
           DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
@@ -278,6 +356,7 @@ jobs:
           if-no-files-found: error
 
       - name: 📊 Upload Unit Test Coverage Report to Codecov
+        if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -288,6 +367,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: 📦 Archive Unit Coverage Report
+        if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: unit-coverage-report
@@ -296,7 +376,8 @@ jobs:
 
   test-frontend:
     name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.frontend == 'true' }}
+    needs: detect-component-changes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -414,7 +495,8 @@ jobs:
 
   build_samples:
     name: 🛠️ Build Sample Apps
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.frontend == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
+    needs: detect-component-changes
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -448,7 +530,8 @@ jobs:
 
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
-    needs: build
+    needs: [detect-component-changes, build]
+    if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -537,7 +620,8 @@ jobs:
 
   test-e2e:
     name: 🎭 Playwright E2E Tests
-    needs: [build, build_samples]
+    needs: [detect-component-changes, build, build_samples]
+    if: ${{ needs.detect-component-changes.outputs.trigger_pr_builder == 'true' || needs.detect-component-changes.outputs.frontend == 'true' || needs.detect-component-changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
