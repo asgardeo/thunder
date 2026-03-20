@@ -563,7 +563,11 @@ func (_c *FlowMgtServiceInterfaceMock_IsValidFlowOfType_Call) Run(run func(ctx c
 		if args[2] != nil {
 			arg2 = args[2].(common.FlowType)
 		}
-		run(arg0, arg1, arg2)
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
 	})
 	return _c
 }
