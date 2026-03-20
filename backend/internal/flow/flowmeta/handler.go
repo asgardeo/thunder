@@ -58,13 +58,8 @@ func (h *flowMetaHandler) HandleGetFlowMetadata(w http.ResponseWriter, r *http.R
 		namespace = &ns
 	}
 
-	// Validate required parameters
-	if metaType == "" {
-		handleServiceError(w, &ErrorMissingType)
-		return
-	}
-
-	if id == "" {
+	// If type is provided, id is also required
+	if metaType != "" && id == "" {
 		handleServiceError(w, &ErrorMissingID)
 		return
 	}

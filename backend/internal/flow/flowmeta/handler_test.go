@@ -180,20 +180,46 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_Success_OUType(
 	assert.Equal(suite.T(), expectedResponse.OU.Handle, response.OU.Handle)
 }
 
-func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_MissingType() {
-	// Arrange
-	req := httptest.NewRequest(http.MethodGet, "/flow/meta?id=some-id", nil)
+func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_SystemFlow_NoParams() {
+	// Arrange: no type or id — system flow, returns i18n only
+	expectedResponse := &FlowMetadataResponse{
+		IsRegistrationFlowEnabled: false,
+		Design: DesignMetadata{
+			Theme:  json.RawMessage(`{}`),
+			Layout: json.RawMessage(`{}`),
+		},
+		I18n: I18nMetadata{
+			Languages:    []string{"en-US"},
+			Language:     "en-US",
+			TotalResults: 5,
+			Translations: map[string]map[string]string{
+				"system": {"key": "value"},
+			},
+		},
+	}
+
+	suite.mockService.On("GetFlowMetadata", mock.Anything, MetaType(""), "", (*string)(nil), (*string)(nil)).
+		Return(expectedResponse, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/flow/meta", nil)
 	w := httptest.NewRecorder()
 
 	// Act
 	suite.handler.HandleGetFlowMetadata(w, req)
 
 	// Assert
-	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response FlowMetadataResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), response.IsRegistrationFlowEnabled)
+	assert.Nil(suite.T(), response.Application)
+	assert.Nil(suite.T(), response.OU)
 }
 
-func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_MissingID() {
-	// Arrange
+func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_MissingID_WhenTypeProvided() {
+	// Arrange: type is provided but id is missing — id is required when type is set
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP", nil)
 	w := httptest.NewRecorder()
 

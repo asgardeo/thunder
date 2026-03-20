@@ -1376,32 +1376,6 @@ const translations = {
     'errors.passkey.failed': 'Failed to create passkey. Please try again.',
   },
 
-  // This should be resolved from backend in future efforts
-  // ISSUE: https://github.com/asgardeo/thunder/issues/1724
-  // ============================================================================
-  // Onboarding namespace - User onboarding flow translation
-  // ============================================================================
-  onboarding: {
-    'forms.email.title': 'User Email',
-    'forms.email.fields.email.label': 'Email',
-    'forms.email.fields.email.placeholder': 'Enter email',
-    'forms.email.actions.next.label': 'Next',
-    'forms.user_details.title': 'User Details',
-    'forms.user_details.fields.username.label': 'Username',
-    'forms.user_details.fields.username.placeholder': 'Enter username',
-    'forms.user_details.fields.first_name.label': 'First Name',
-    'forms.user_details.fields.first_name.placeholder': 'Enter first name',
-    'forms.user_details.fields.last_name.label': 'Last Name',
-    'forms.user_details.fields.last_name.placeholder': 'Enter last name',
-    'forms.user_details.fields.phone_number.label': 'Phone Number',
-    'forms.user_details.fields.phone_number.placeholder': 'Enter phone number',
-    'forms.user_details.actions.next.label': 'Next',
-    'forms.credential.title': 'Set Password',
-    'forms.credential.fields.password.label': 'Password',
-    'forms.credential.fields.password.placeholder': 'Enter password',
-    'forms.credential.actions.submit.label': 'Set Password',
-  },
-
   // ============================================================================
   // Invite namespace - Invite acceptance feature translations (for Thunder Gate)
   // ============================================================================

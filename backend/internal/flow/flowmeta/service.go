@@ -93,11 +93,6 @@ func (fms *flowMetaService) GetFlowMetadata(
 	language *string,
 	namespace *string,
 ) (*FlowMetadataResponse, *serviceerror.ServiceError) {
-	// Validate type parameter
-	if !metaType.IsValid() {
-		return nil, &ErrorInvalidType
-	}
-
 	emptyJSON, _ := json.Marshal(map[string]interface{}{})
 	response := &FlowMetadataResponse{
 		Design: DesignMetadata{
@@ -107,6 +102,48 @@ func (fms *flowMetaService) GetFlowMetadata(
 		I18n: I18nMetadata{
 			Translations: make(map[string]map[string]string),
 		},
+	}
+
+	// System flow: no type/id provided — return only i18n
+	if metaType == "" {
+		lang := "en-US"
+		if language != nil && *language != "" {
+			lang = *language
+		}
+
+		ns := ""
+		if namespace != nil {
+			ns = *namespace
+		}
+
+		i18nResp, i18nErr := fms.i18nService.ResolveTranslations(lang, ns)
+		if i18nErr != nil {
+			fms.logger.Debug("Failed to get i18n translations",
+				log.String("language", lang),
+				log.String("namespace", ns),
+				log.String("error", i18nErr.Error.DefaultValue))
+		} else if i18nResp != nil {
+			response.I18n.Language = i18nResp.Language
+			response.I18n.TotalResults = i18nResp.TotalResults
+			response.I18n.Translations = i18nResp.Translations
+		}
+
+		languages, i18nErr := fms.i18nService.ListLanguages()
+		if i18nErr != nil {
+			fms.logger.Debug("Failed to list languages",
+				log.String("error", i18nErr.Error.DefaultValue))
+
+			response.I18n.Languages = []string{"en"}
+		} else {
+			response.I18n.Languages = languages
+		}
+
+		return response, nil
+	}
+
+	// Validate type parameter
+	if !metaType.IsValid() {
+		return nil, &ErrorInvalidType
 	}
 
 	var ouID string

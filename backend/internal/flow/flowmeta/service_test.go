@@ -320,3 +320,31 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_I18nError_ContinuesWi
 	assert.NotNil(suite.T(), result.I18n.Translations)
 	assert.Equal(suite.T(), 0, len(result.I18n.Translations))
 }
+
+func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_SystemFlow_NoTypeOrID() {
+	// Arrange: no type or id — system flow returns i18n only, skips app/OU/design
+	mockTranslations := &i18nmgt.LanguageTranslationsResponse{
+		Language:     "en-US",
+		TotalResults: 3,
+		Translations: map[string]map[string]string{
+			"system": {"error.internal": "Internal error"},
+		},
+	}
+
+	suite.mockI18nService.On("ResolveTranslations", "en-US", "").Return(mockTranslations, nil)
+	suite.mockI18nService.On("ListLanguages").Return([]string{"en-US"}, nil)
+
+	// Act
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, MetaType(""), "", nil, nil)
+
+	// Assert
+	assert.Nil(suite.T(), svcErr)
+	assert.NotNil(suite.T(), result)
+	assert.False(suite.T(), result.IsRegistrationFlowEnabled)
+	assert.Nil(suite.T(), result.Application)
+	assert.Nil(suite.T(), result.OU)
+	assert.Equal(suite.T(), "en-US", result.I18n.Language)
+	assert.Equal(suite.T(), 3, result.I18n.TotalResults)
+	assert.Equal(suite.T(), []string{"en-US"}, result.I18n.Languages)
+	assert.Contains(suite.T(), result.I18n.Translations, "system")
+}

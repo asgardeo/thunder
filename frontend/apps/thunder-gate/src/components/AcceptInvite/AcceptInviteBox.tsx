@@ -35,11 +35,10 @@ import {
   ColorSchemeImage,
   CircularProgress,
 } from '@wso2/oxygen-ui';
-import {AcceptInvite, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useNavigate} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {useConfig} from '@thunder/shared-contexts';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import ROUTES from '../../constants/routes';
 import FlowComponentRenderer from '../flow/FlowComponentRenderer';
 
@@ -57,7 +56,7 @@ const StyledPaper = styled(Paper)(({theme}) => ({
 
 export default function AcceptInviteBox(): JSX.Element {
   const navigate = useNavigate();
-  const {resolve} = useTemplateLiteralResolver();
+  const {resolveFlowTemplateLiterals} = useAsgardeo();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
   const [flowError, setFlowError] = useState<string | null>(null);
@@ -168,7 +167,7 @@ export default function AcceptInviteBox(): JSX.Element {
                         touched={touched}
                         fieldErrors={fieldErrors}
                         isLoading={isLoading}
-                        resolve={resolve}
+                        resolve={resolveFlowTemplateLiterals}
                         onInputChange={handleInputChange}
                         onSubmit={(action, inputs) => {
                           handleSubmit(action, inputs).catch(() => {});
