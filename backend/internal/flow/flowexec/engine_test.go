@@ -445,15 +445,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_AuthenticatedUserUpd
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 	}
 
 	nodeResp := &common.NodeResponse{
@@ -481,15 +481,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_MergesUserAttributes
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			Attributes: map[string]interface{}{
 				"existingAttr": "existingValue",
@@ -525,15 +525,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_PreservesExistingUse
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			"userID": "existing-user-id",
 		},
@@ -563,15 +563,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_PreviousAttrsNilNewA
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			Attributes: map[string]interface{}{
 				"prevAttr": "prevValue",
@@ -637,7 +637,6 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_NonExecutorBackedNod
 func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_NilExecutor() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(nil)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
@@ -656,12 +655,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_AuthFlowWithAuthExec
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 	}
 
 	result := fe.shouldUpdateAuthenticatedUser(ctx)
@@ -677,12 +676,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_AuthFlowWithProvisio
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			common.RuntimeKeyUserEligibleForProvisioning: "true",
 		},
@@ -700,12 +699,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_AuthFlowWithNonAuthE
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 	}
 
 	result := fe.shouldUpdateAuthenticatedUser(ctx)
@@ -720,12 +719,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_RegistrationFlowWith
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeRegistration,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeRegistration,
 	}
 
 	result := fe.shouldUpdateAuthenticatedUser(ctx)
@@ -740,12 +739,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_RegistrationFlowSkip
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeRegistration,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeRegistration,
 		RuntimeData: map[string]string{
 			common.RuntimeKeySkipProvisioning: "true",
 		},
@@ -929,12 +928,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_UserOnboardingFlowWi
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeUserOnboarding,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeUserOnboarding,
 	}
 
 	result := fe.shouldUpdateAuthenticatedUser(ctx)
@@ -950,12 +949,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_UserOnboardingFlowWi
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeUserOnboarding,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeUserOnboarding,
 	}
 
 	result := fe.shouldUpdateAuthenticatedUser(ctx)
@@ -971,12 +970,12 @@ func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_UserOnboardingFlowWi
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeUserOnboarding,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeUserOnboarding,
 	}
 
 	result := fe.shouldUpdateAuthenticatedUser(ctx)
@@ -990,7 +989,6 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesPassword() {
 		{Identifier: "username", Type: "TEXT_INPUT", Required: true},
 		{Identifier: "password", Type: common.InputTypePassword, Required: true},
 	})
-	mockNode.On("GetExecutor").Return(nil).Maybe()
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
@@ -1013,7 +1011,6 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesOTP() {
 	mockNode.On("GetInputs").Return([]common.Input{
 		{Identifier: "otp", Type: common.InputTypeOTP, Required: true},
 	})
-	mockNode.On("GetExecutor").Return(nil).Maybe()
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
@@ -1070,7 +1067,6 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NonSensitiveInputsRetained() 
 	mockNode.On("GetInputs").Return([]common.Input{
 		{Identifier: "username", Type: "TEXT_INPUT", Required: true},
 	})
-	mockNode.On("GetExecutor").Return(nil).Maybe()
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
@@ -1095,11 +1091,11 @@ func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputsUsesExecutorDefau
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
 	mockNode.On("GetInputs").Return([]common.Input{})
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{}
 	ctx := &EngineContext{
-		FlowType: common.FlowTypeAuthentication,
+		FlowType:        common.FlowTypeAuthentication,
+		CurrentExecutor: mockExecutor,
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"password": "secret123",
@@ -1144,7 +1140,6 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_RetainsTokenAndAvail
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
@@ -1168,8 +1163,9 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_RetainsTokenAndAvail
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
 			UserID:              "user-123",
@@ -1221,7 +1217,6 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_UpdatesTokenAndAvail
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
@@ -1257,8 +1252,9 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_UpdatesTokenAndAvail
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
 			UserID:              "user-123",
@@ -1300,15 +1296,15 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_EmptyPreviousTokenAn
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     false,
 			Token:               "", // No previous token
@@ -1346,7 +1342,6 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_TokenSetButAvailable
 
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
 	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
-	mockNode.On("GetExecutor").Return(mockExecutor)
 
 	fe := &flowEngine{
 		observabilitySvc: mockObservability,
@@ -1364,8 +1359,9 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_TokenSetButAvailable
 	}
 
 	ctx := &EngineContext{
-		CurrentNode: mockNode,
-		FlowType:    common.FlowTypeAuthentication,
+		CurrentNode:     mockNode,
+		CurrentExecutor: mockExecutor,
+		FlowType:        common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
 			Token:               "old-token",

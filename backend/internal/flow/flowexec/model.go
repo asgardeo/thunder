@@ -47,6 +47,7 @@ type EngineContext struct {
 	TraceID        string
 
 	CurrentNode         core.NodeInterface
+	CurrentExecutor     core.ExecutorInterface
 	CurrentNodeResponse *common.NodeResponse
 	CurrentAction       string
 

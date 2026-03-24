@@ -450,12 +450,6 @@ func (f *fakeExecutorBackedNode) GetExecutorName() string {
 
 func (f *fakeExecutorBackedNode) SetExecutorName(name string) {}
 
-func (f *fakeExecutorBackedNode) GetExecutor() ExecutorInterface {
-	return nil
-}
-
-func (f *fakeExecutorBackedNode) SetExecutor(executor ExecutorInterface) {}
-
 func (f *fakeExecutorBackedNode) GetOnSuccess() string {
 	return ""
 }

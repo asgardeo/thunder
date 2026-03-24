@@ -58,15 +58,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecutorMethods() {
 	s.True(ok)
 
 	s.Empty(execNode.GetExecutorName())
-	s.Nil(execNode.GetExecutor())
 
 	execNode.SetExecutorName("test-executor")
 	s.Equal("test-executor", execNode.GetExecutorName())
-
-	s.mockExecutor.On("GetName").Return("mock-executor")
-	execNode.SetExecutor(s.mockExecutor)
-	s.NotNil(execNode.GetExecutor())
-	s.Equal("mock-executor", execNode.GetExecutorName())
 }
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteNoExecutor() {
@@ -89,7 +83,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 		{
 			name: "Complete execution",
 			setupMock: func(m *ExecutorInterfaceMock) {
-				m.On("GetName").Return("test-executor").Once()
 				m.On("Execute", mock.Anything).Return(
 					&common.ExecutorResponse{
 						Status:         common.ExecComplete,
@@ -107,7 +100,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 		{
 			name: "User input required",
 			setupMock: func(m *ExecutorInterfaceMock) {
-				m.On("GetName").Return("test-executor").Once()
 				m.On("Execute", mock.Anything).Return(
 					&common.ExecutorResponse{
 						Status: common.ExecUserInputRequired,
@@ -121,7 +113,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 		{
 			name: "External redirection",
 			setupMock: func(m *ExecutorInterfaceMock) {
-				m.On("GetName").Return("test-executor").Once()
 				m.On("Execute", mock.Anything).Return(
 					&common.ExecutorResponse{
 						Status:      common.ExecExternalRedirection,
@@ -135,7 +126,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 		{
 			name: "Retry execution",
 			setupMock: func(m *ExecutorInterfaceMock) {
-				m.On("GetName").Return("test-executor").Once()
 				m.On("Execute", mock.Anything).Return(
 					&common.ExecutorResponse{Status: common.ExecRetry},
 					nil,
@@ -150,11 +140,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 		s.Run(tt.name, func() {
 			mockExec := NewExecutorInterfaceMock(s.T())
 			node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-			execNode, _ := node.(ExecutorBackedNodeInterface)
 			tt.setupMock(mockExec)
-			execNode.SetExecutor(mockExec)
 
-			ctx := &NodeContext{FlowID: "test-flow"}
+			ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 			resp, err := node.Execute(ctx)
 
 			s.Nil(err)
@@ -166,17 +154,14 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 }
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteFailure() {
-	s.mockExecutor.On("GetName").Return("test-executor").Once()
 	s.mockExecutor.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{Status: common.ExecFailure, FailureReason: "AUTH_FAILED"},
 		nil,
 	).Once()
 
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: s.mockExecutor}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -186,7 +171,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailure() {
 }
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureHandler() {
-	s.mockExecutor.On("GetName").Return("test-executor").Once()
 	s.mockExecutor.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{Status: common.ExecFailure, FailureReason: "AUTH_FAILED"},
 		nil,
@@ -195,9 +179,8 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureHandler() {
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
 	execNode, _ := node.(ExecutorBackedNodeInterface)
 	execNode.SetOnFailure("error-prompt")
-	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: s.mockExecutor}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -210,14 +193,11 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureHandler() {
 }
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteExecutorError() {
-	s.mockExecutor.On("GetName").Return("test-executor").Once()
 	s.mockExecutor.On("Execute", mock.Anything).Return(nil, assert.AnError).Once()
 
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: s.mockExecutor}
 	resp, err := node.Execute(ctx)
 
 	s.NotNil(err)
@@ -226,13 +206,10 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteExecutorError() {
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteNilExecutorResponse() {
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
 
-	s.mockExecutor.On("GetName").Return("test-executor").Once()
 	s.mockExecutor.On("Execute", mock.Anything).Return(nil, nil).Once()
-	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: s.mockExecutor}
 	resp, err := node.Execute(ctx)
 
 	s.NotNil(err)
@@ -244,16 +221,12 @@ func (s *TaskExecutionNodeTestSuite) TestExecutePopulatedNodeProperties() {
 
 	props := map[string]interface{}{"k": "v"}
 	node := newTaskExecutionNode("task-props", props, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -321,16 +294,13 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithMode() {
 	execNode.SetMode("send")
 
 	var capturedCtx *NodeContext
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Run(func(args mock.Arguments) {
 		capturedCtx = args.Get(0).(*NodeContext)
 	}).Return(
 		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -346,22 +316,19 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteEnrichesRuntimeData() {
 		"senderId": "sender-456",
 	}
 	node := newTaskExecutionNode("task-1", props, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
 
 	var capturedCtx *NodeContext
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Run(func(args mock.Arguments) {
 		capturedCtx = args.Get(0).(*NodeContext)
 	}).Return(
 		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
 	ctx := &NodeContext{
 		FlowID:      "test-flow",
 		AppID:       "app-789",
 		RuntimeData: map[string]string{"existing": "value"},
+		Executor:    mockExec,
 	}
 	resp, err := node.Execute(ctx)
 
@@ -417,14 +384,10 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithOnSuccess() {
 	// Set onSuccess handler
 	execNode.SetOnSuccess("success-node")
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -436,19 +399,14 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithOnSuccess() {
 func (s *TaskExecutionNodeTestSuite) TestExecuteWithEmptyNodeProperties() {
 	mockExec := NewExecutorInterfaceMock(s.T())
 	node := newTaskExecutionNode("task-1", nil, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
 
 	var capturedCtx *NodeContext
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Run(func(args mock.Arguments) {
 		capturedCtx = args.Get(0).(*NodeContext)
 	}).Return(
 		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -461,17 +419,12 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithEmptyNodeProperties() {
 func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithoutOnFailureHandler() {
 	mockExec := NewExecutorInterfaceMock(s.T())
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{Status: common.ExecFailure, FailureReason: "AUTH_FAILED"},
 		nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -484,16 +437,11 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithoutOnFailureHandler()
 func (s *TaskExecutionNodeTestSuite) TestExecuteCompleteWithoutOnSuccess() {
 	mockExec := NewExecutorInterfaceMock(s.T())
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -564,7 +512,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureStoresFailur
 
 	execNode.SetOnFailure("error-handler")
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecFailure,
@@ -573,10 +520,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureStoresFailur
 		},
 		nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -595,7 +539,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureInitializesR
 
 	execNode.SetOnFailure("error-handler")
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecFailure,
@@ -604,10 +547,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureInitializesR
 		},
 		nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -626,7 +566,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithEmptyFailureReasonAnd
 
 	execNode.SetOnFailure("error-handler")
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecFailure,
@@ -634,10 +573,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithEmptyFailureReasonAnd
 		},
 		nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -660,7 +596,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureClearsNodeIn
 	execNode.SetOnFailure("prompt-email")
 	execNode.(*taskExecutionNode).inputs = inputs
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecFailure,
@@ -668,10 +603,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureClearsNodeIn
 		}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		FlowID:   "test-flow",
+		Executor: mockExec,
 		UserInputs: map[string]string{
 			"email": "existing@example.com",
 		},
@@ -695,7 +629,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureNoNodeInputs
 	execNode.SetOnFailure("error-handler")
 	// No inputs configured on the node
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecFailure,
@@ -703,10 +636,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureNoNodeInputs
 		}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		FlowID:   "test-flow",
+		Executor: mockExec,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
@@ -745,17 +677,13 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteHandle
 
 	execNode.SetOnIncomplete("prompt-credentials")
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status: common.ExecUserInputRequired,
 			Inputs: []common.Input{{Identifier: "username", Required: true}},
 		}, nil,
 	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{FlowID: "test-flow", Executor: mockExec}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -778,7 +706,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 	execNode.SetOnIncomplete("prompt-credentials")
 	execNode.(*taskExecutionNode).inputs = inputs
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecUserInputRequired,
@@ -788,10 +715,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 		}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		FlowID:   "test-flow",
+		Executor: mockExec,
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"password": "wrongpassword",
@@ -826,7 +752,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 	execNode.SetOnIncomplete("prompt-credentials")
 	execNode.(*taskExecutionNode).inputs = inputs
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status:        common.ExecUserInputRequired,
@@ -836,10 +761,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 		}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		FlowID:   "test-flow",
+		Executor: mockExec,
 		UserInputs: map[string]string{
 			"username": "nonexistent",
 		},
@@ -866,7 +790,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteNoFail
 		{Identifier: "username", Required: true},
 	}
 
-	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status: common.ExecUserInputRequired,
@@ -875,10 +798,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteNoFail
 		}, nil,
 	).Once()
 
-	execNode.SetExecutor(mockExec)
-
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		FlowID:   "test-flow",
+		Executor: mockExec,
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},

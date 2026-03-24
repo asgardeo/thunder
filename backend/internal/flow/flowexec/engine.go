@@ -127,10 +127,12 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			continue
 		}
 
-		svcErr := fe.setNodeExecutor(currentNode, logger)
+		svcErr := fe.setNodeExecutor(ctx, currentNode, logger)
 		if svcErr != nil {
 			return flowStep, svcErr
 		}
+
+		nodeCtx.Executor = ctx.CurrentExecutor
 
 		executionStartTime := time.Now().UnixMilli()
 
@@ -233,8 +235,9 @@ func getNodeInputs(node core.NodeInterface) []common.Input {
 	return nil
 }
 
-// setNodeExecutor sets the executor for the given node if it is not already set.
-func (fe *flowEngine) setNodeExecutor(node core.NodeInterface, logger *log.Logger) *serviceerror.ServiceError {
+// setNodeExecutor resolves the executor for the given node and stores it in ctx.CurrentExecutor.
+func (fe *flowEngine) setNodeExecutor(ctx *EngineContext, node core.NodeInterface, logger *log.Logger) *serviceerror.ServiceError {
+	ctx.CurrentExecutor = nil
 	if node.GetType() != common.NodeTypeTaskExecution {
 		return nil
 	}
@@ -245,12 +248,7 @@ func (fe *flowEngine) setNodeExecutor(node core.NodeInterface, logger *log.Logge
 		return &serviceerror.InternalServerError
 	}
 
-	// Return if executor is already set
-	if executableNode.GetExecutor() != nil {
-		return nil
-	}
-
-	logger.Debug("Executor not set for the node. Constructing executor.", log.String("nodeID", node.GetID()))
+	logger.Debug("Resolving executor for node.", log.String("nodeID", node.GetID()))
 
 	executorName := executableNode.GetExecutorName()
 	if executorName == "" {
@@ -265,7 +263,7 @@ func (fe *flowEngine) setNodeExecutor(node core.NodeInterface, logger *log.Logge
 		return &serviceerror.InternalServerError
 	}
 
-	executableNode.SetExecutor(executor)
+	ctx.CurrentExecutor = executor
 	return nil
 }
 
@@ -295,8 +293,8 @@ func (fe *flowEngine) clearSensitiveInputs(ctx *EngineContext, node core.NodeInt
 	// fall back to the executor's default inputs.
 	inputs := execNode.GetInputs()
 	if len(inputs) == 0 {
-		if executor := execNode.GetExecutor(); executor != nil {
-			inputs = executor.GetDefaultInputs()
+		if ctx.CurrentExecutor != nil {
+			inputs = ctx.CurrentExecutor.GetDefaultInputs()
 		}
 	}
 
@@ -390,11 +388,10 @@ func (fe *flowEngine) shouldUpdateAuthenticatedUser(engineCtx *EngineContext) bo
 		return false
 	}
 
-	executableNode, ok := currentNode.(core.ExecutorBackedNodeInterface)
-	if !ok {
+	if _, ok := currentNode.(core.ExecutorBackedNodeInterface); !ok {
 		return false
 	}
-	executorInst := executableNode.GetExecutor()
+	executorInst := engineCtx.CurrentExecutor
 	if executorInst == nil {
 		return false
 	}
@@ -675,7 +672,7 @@ func recordNodeExecution(ctx *EngineContext, node core.NodeInterface, nodeResp *
 	// Create new record if it does not exist
 	if record == nil {
 		nextStep := len(ctx.ExecutionHistory) + 1
-		newRecord := createExecutionRecord(node, nextStep)
+		newRecord := createExecutionRecord(node, nextStep, ctx.CurrentExecutor)
 		ctx.ExecutionHistory[nodeID] = &newRecord
 		record = &newRecord
 	}
@@ -688,7 +685,7 @@ func recordNodeExecution(ctx *EngineContext, node core.NodeInterface, nodeResp *
 }
 
 // createExecutionRecord creates a new node execution record.
-func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecutionRecord {
+func createExecutionRecord(node core.NodeInterface, step int, executorInst core.ExecutorInterface) common.NodeExecutionRecord {
 	record := common.NodeExecutionRecord{
 		NodeID:     node.GetID(),
 		NodeType:   string(node.GetType()),
@@ -700,12 +697,11 @@ func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecuti
 
 	// Set executor details if applicable (only for executor-backed nodes)
 	if node.GetType() == common.NodeTypeTaskExecution {
+		if executorInst != nil {
+			record.ExecutorName = executorInst.GetName()
+			record.ExecutorType = executorInst.GetType()
+		}
 		if executableNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
-			executor := executableNode.GetExecutor()
-			if executor != nil {
-				record.ExecutorName = executor.GetName()
-				record.ExecutorType = executor.GetType()
-			}
 			record.ExecutorMode = executableNode.GetMode()
 		}
 	}

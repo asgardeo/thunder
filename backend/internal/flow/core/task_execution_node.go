@@ -30,8 +30,6 @@ type ExecutorBackedNodeInterface interface {
 	NodeInterface
 	GetExecutorName() string
 	SetExecutorName(name string)
-	GetExecutor() ExecutorInterface
-	SetExecutor(executor ExecutorInterface)
 	GetInputs() []common.Input
 	SetInputs(inputs []common.Input)
 	GetOnSuccess() string
@@ -48,7 +46,6 @@ type ExecutorBackedNodeInterface interface {
 type taskExecutionNode struct {
 	*node
 	executorName string
-	executor     ExecutorInterface
 	mode         string
 	inputs       []common.Input
 	onSuccess    string
@@ -74,7 +71,6 @@ func newTaskExecutionNode(id string, properties map[string]interface{}, isStartN
 			previousNodeList: []string{},
 		},
 		executorName: "",
-		executor:     nil,
 		inputs:       []common.Input{},
 		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TaskExecutionNode"),
 			log.String(log.LoggerKeyNodeID, id)),
@@ -86,7 +82,7 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 	logger := log.GetLogger().With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing task execution node")
 
-	if n.executor == nil {
+	if ctx.Executor == nil {
 		logger.Error("No executor configured for the node")
 		return nil, &serviceerror.InternalServerError
 	}
@@ -176,7 +172,7 @@ func (n *taskExecutionNode) enrichRuntimeData(ctx *NodeContext) {
 // triggerExecutor triggers the executor configured for the node.
 func (n *taskExecutionNode) triggerExecutor(ctx *NodeContext, logger *log.Logger) (
 	*common.ExecutorResponse, *serviceerror.ServiceError) {
-	execResp, err := n.executor.Execute(ctx)
+	execResp, err := ctx.Executor.Execute(ctx)
 	if err != nil {
 		logger.Error("Error executing node executor", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -249,19 +245,6 @@ func (n *taskExecutionNode) GetExecutorName() string {
 // SetExecutorName sets the executor name for the task execution node
 func (n *taskExecutionNode) SetExecutorName(name string) {
 	n.executorName = name
-}
-
-// GetExecutor returns the executor instance associated with the task execution node
-func (n *taskExecutionNode) GetExecutor() ExecutorInterface {
-	return n.executor
-}
-
-// SetExecutor sets the executor instance for the task execution node
-func (n *taskExecutionNode) SetExecutor(executor ExecutorInterface) {
-	n.executor = executor
-	if executor != nil {
-		n.executorName = executor.GetName()
-	}
 }
 
 // GetOnSuccess returns the onSuccess node ID
