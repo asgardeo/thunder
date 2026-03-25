@@ -532,6 +532,7 @@ export default function EditTokenSettings({
             updatedConfig = {
               ...updatedConfig,
               token: {
+                ...updatedConfig.token,
                 accessToken: {
                   ...currentAccessConfig,
                   userAttributes: nextAttrs,
@@ -552,6 +553,7 @@ export default function EditTokenSettings({
             updatedConfig = {
               ...updatedConfig,
               token: {
+                ...updatedConfig.token,
                 accessToken: currentAccessConfig,
                 idToken: {
                   ...currentIdConfig,

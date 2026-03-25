@@ -123,4 +123,71 @@ describe('ScopeSelector', () => {
 
     expect(screen.getByText('This scope is already added')).toBeInTheDocument();
   });
+
+  it('pressing Enter in the custom scope input triggers scope addition', () => {
+    vi.useFakeTimers();
+    const onScopesChange = vi.fn();
+
+    render(<ScopeSelector scopes={[]} onScopesChange={onScopesChange} />);
+
+    const input = screen.getByPlaceholderText('e.g. custom:read');
+    fireEvent.change(input, {target: {value: 'custom:write'}});
+    fireEvent.keyDown(input, {key: 'Enter', code: 'Enter'});
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(onScopesChange).toHaveBeenCalledWith(['custom:write']);
+    vi.useRealTimers();
+  });
+
+  it('canceling a pending addition chip removes it without calling onScopesChange', () => {
+    vi.useFakeTimers();
+    const onScopesChange = vi.fn();
+
+    render(<ScopeSelector scopes={[]} onScopesChange={onScopesChange} />);
+
+    const input = screen.getByPlaceholderText('e.g. custom:read');
+    fireEvent.change(input, {target: {value: 'custom:read'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Add'}));
+
+    // Chip is now in pending-addition state (outlined, primary color)
+    const pendingChip = screen.getByText('custom:read').closest('.MuiChip-root')!;
+    const deleteIcon = pendingChip.querySelector('.MuiChip-deleteIcon')!;
+    fireEvent.click(deleteIcon);
+
+    // Advance past the timer — it was cancelled, so onScopesChange should NOT be called
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(onScopesChange).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('removing a scope that already has a pending removal timer cancels the previous timer', () => {
+    vi.useFakeTimers();
+    const onScopesChange = vi.fn();
+
+    render(<ScopeSelector scopes={['openid']} onScopesChange={onScopesChange} />);
+
+    const activeSection = screen.getByText('Active').closest('div')!.parentElement!;
+    const openidChip = within(activeSection).getByText('openid').closest('.MuiChip-root')!;
+    const deleteIcon = openidChip.querySelector('.MuiChip-deleteIcon')!;
+
+    // First delete click — starts a timer
+    fireEvent.click(deleteIcon);
+    // Second delete click — cancels and restarts the timer
+    fireEvent.click(deleteIcon);
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    // Should only be called once (the second timer)
+    expect(onScopesChange).toHaveBeenCalledTimes(1);
+    expect(onScopesChange).toHaveBeenCalledWith([]);
+    vi.useRealTimers();
+  });
 });

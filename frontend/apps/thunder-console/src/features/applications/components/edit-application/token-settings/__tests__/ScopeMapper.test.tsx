@@ -17,7 +17,7 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, within, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ScopeMapper from '../ScopeMapper';
 
@@ -155,5 +155,43 @@ describe('ScopeMapper', () => {
     expect(
       screen.getByText('All available attributes are already mapped to this scope'),
     ).toBeInTheDocument();
+  });
+
+  it('pressing Enter on a scope in the left panel selects it', () => {
+    render(
+      <ScopeMapper
+        {...defaultProps}
+        scopes={['openid', 'profile']}
+        scopeClaims={{openid: ['email'], profile: ['given_name']}}
+      />,
+    );
+
+    const mappedSection = screen.getByText('Mapped Attributes').closest('div')!;
+    expect(within(mappedSection).getByText('email')).toBeInTheDocument();
+
+    const profileButton = screen.getByRole('button', {name: /profile/i});
+    fireEvent.keyDown(profileButton, {key: 'Enter'});
+
+    expect(within(mappedSection).queryByText('email')).not.toBeInTheDocument();
+    expect(within(mappedSection).getByText('given_name')).toBeInTheDocument();
+  });
+
+  it('pressing Space on a scope in the left panel selects it', () => {
+    render(
+      <ScopeMapper
+        {...defaultProps}
+        scopes={['openid', 'profile']}
+        scopeClaims={{openid: ['email'], profile: ['given_name']}}
+      />,
+    );
+
+    const mappedSection = screen.getByText('Mapped Attributes').closest('div')!;
+    expect(within(mappedSection).getByText('email')).toBeInTheDocument();
+
+    const profileButton = screen.getByRole('button', {name: /profile/i});
+    fireEvent.keyDown(profileButton, {key: ' '});
+
+    expect(within(mappedSection).queryByText('email')).not.toBeInTheDocument();
+    expect(within(mappedSection).getByText('given_name')).toBeInTheDocument();
   });
 });
