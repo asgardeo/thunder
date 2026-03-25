@@ -17,10 +17,12 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
+import userEvent from '@testing-library/user-event';
 import {render, screen} from '@testing-library/react';
 import EditAdvancedSettings from '../EditAdvancedSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
+import type {InboundAuthConfig} from '../../../../models/inbound-auth';
 import CertificateTypes from '../../../../constants/certificate-types';
 
 vi.mock('react-i18next', () => ({
@@ -193,6 +195,85 @@ describe('EditAdvancedSettings', () => {
       render(<EditAdvancedSettings application={minimalApp} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByText('applications:edit.advanced.labels.certificate')).toBeInTheDocument();
+    });
+  });
+
+  describe('OAuth2 Config Change Handler', () => {
+    it('should call onFieldChange with updated inboundAuthConfig when a toggle is changed', async () => {
+      const user = userEvent.setup();
+      const onFieldChange = vi.fn();
+
+      render(
+        <EditAdvancedSettings
+          application={mockApplication}
+          editedApp={{}}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={onFieldChange}
+        />,
+      );
+
+      // Change the PKCE switch to trigger onOAuth2ConfigChange → handleOAuth2ConfigChange
+      const pkceSwitch = screen.getByRole('switch', {
+        name: 'applications:edit.advanced.labels.pkceRequired',
+      });
+      await user.click(pkceSwitch);
+
+      expect(onFieldChange).toHaveBeenCalledWith('inboundAuthConfig', []);
+    });
+
+    it('should merge OAuth2 config updates into existing inboundAuthConfig', async () => {
+      const user = userEvent.setup();
+      const onFieldChange = vi.fn();
+      const appWithInbound: Application = {
+        ...mockApplication,
+        inboundAuthConfig: [
+          {type: 'oauth2', config: {grantTypes: ['authorization_code']} as OAuth2Config} as InboundAuthConfig,
+        ],
+      };
+
+      render(
+        <EditAdvancedSettings
+          application={appWithInbound}
+          editedApp={{}}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={onFieldChange}
+        />,
+      );
+
+      const pkceSwitch = screen.getByRole('switch', {
+        name: 'applications:edit.advanced.labels.pkceRequired',
+      });
+      await user.click(pkceSwitch);
+
+      expect(onFieldChange).toHaveBeenCalledWith('inboundAuthConfig', [
+        {type: 'oauth2', config: {grantTypes: ['authorization_code'], pkceRequired: false}},
+      ]);
+    });
+
+    it('should prefer editedApp.inboundAuthConfig over application.inboundAuthConfig', async () => {
+      const user = userEvent.setup();
+      const onFieldChange = vi.fn();
+      const editedInbound: InboundAuthConfig[] = [
+        {type: 'oauth2', config: {grantTypes: ['implicit']} as OAuth2Config} as InboundAuthConfig,
+      ];
+
+      render(
+        <EditAdvancedSettings
+          application={mockApplication}
+          editedApp={{inboundAuthConfig: editedInbound}}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={onFieldChange}
+        />,
+      );
+
+      const pkceSwitch = screen.getByRole('switch', {
+        name: 'applications:edit.advanced.labels.pkceRequired',
+      });
+      await user.click(pkceSwitch);
+
+      expect(onFieldChange).toHaveBeenCalledWith('inboundAuthConfig', [
+        {type: 'oauth2', config: {grantTypes: ['implicit'], pkceRequired: false}},
+      ]);
     });
   });
 });

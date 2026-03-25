@@ -16,15 +16,57 @@
  * under the License.
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import JwtPreview from '../JwtPreview';
 
+const deltaDecorationsSpy = vi.fn().mockReturnValue([]);
+const disposeSpy = vi.fn();
+const onDidChangeModelContentSpy = vi.fn().mockReturnValue({dispose: disposeSpy});
+
+// Mock Monaco editor to call onMount synchronously with stub editor/monaco objects so
+// that handleMount, applyDecorations, and the content-listener setup are exercised.
 vi.mock('@monaco-editor/react', () => ({
-  default: ({value}: {value: string}) => <pre data-testid="monaco-editor">{value}</pre>,
+  default: ({value, onMount}: {value: string; onMount?: (editor: unknown, monaco: unknown) => void}) => {
+    if (onMount) {
+      const mockModel = {getValue: () => value};
+      const mockEditor = {
+        getModel: () => mockModel,
+        deltaDecorations: deltaDecorationsSpy,
+        onDidChangeModelContent: onDidChangeModelContentSpy,
+      };
+      const mockMonaco = {
+        // eslint-disable-next-line @typescript-eslint/no-extraneous-class
+        Range: class Range {
+          startLine: number;
+
+          startCol: number;
+
+          endLine: number;
+
+          endCol: number;
+
+          constructor(startLine: number, startCol: number, endLine: number, endCol: number) {
+            this.startLine = startLine;
+            this.startCol = startCol;
+            this.endLine = endLine;
+            this.endCol = endCol;
+          }
+        },
+      };
+      onMount(mockEditor, mockMonaco);
+    }
+    return <pre data-testid="monaco-editor">{value}</pre>;
+  },
 }));
 
 describe('JwtPreview', () => {
+  beforeEach(() => {
+    deltaDecorationsSpy.mockClear();
+    disposeSpy.mockClear();
+    onDidChangeModelContentSpy.mockClear();
+  });
+
   it('renders the title text', () => {
     render(<JwtPreview title="Access Token" payload={{sub: 'user-123'}} />);
 
@@ -68,5 +110,39 @@ describe('JwtPreview', () => {
     const editor = screen.getByTestId('monaco-editor');
 
     expect(editor.textContent).toContain('{}');
+  });
+
+  it('calls deltaDecorations on mount', () => {
+    render(<JwtPreview title="Access Token" payload={{sub: 'user-123'}} defaultClaims={[]} />);
+
+    expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
+    expect(deltaDecorationsSpy).toHaveBeenCalled();
+  });
+
+  it('calls deltaDecorations again when defaultClaims prop changes', () => {
+    const {rerender} = render(
+      <JwtPreview title="Access Token" payload={{sub: 'user-123', iss: 'https://example.com'}} defaultClaims={[]} />,
+    );
+
+    const callsAfterInitialRender = deltaDecorationsSpy.mock.calls.length;
+
+    rerender(
+      <JwtPreview
+        title="Access Token"
+        payload={{sub: 'user-123', iss: 'https://example.com'}}
+        defaultClaims={['sub', 'iss']}
+      />,
+    );
+
+    expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
+    expect(deltaDecorationsSpy.mock.calls.length).toBeGreaterThan(callsAfterInitialRender);
+  });
+
+  it('disposes content listener on unmount', () => {
+    const {unmount} = render(<JwtPreview title="Access Token" payload={{sub: 'user-123'}} defaultClaims={['sub']} />);
+
+    unmount();
+
+    expect(disposeSpy).toHaveBeenCalled();
   });
 });
