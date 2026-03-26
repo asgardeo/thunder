@@ -1134,6 +1134,97 @@ func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_NoMatchingElem
 	s.Empty(result)
 }
 
+func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_SameElementInMultiplePurposes() {
+	// Same attribute 'givenName' is configured under two different purposes.
+	// It must only appear in the first purpose that claims it.
+	purposes := []consent.ConsentPurpose{
+		{
+			ID:   "p1",
+			Name: "purpose1",
+			Elements: []consent.PurposeElement{
+				{Name: "givenName"},
+				{Name: "lastName"},
+			},
+		},
+		{
+			ID:   "p2",
+			Name: "purpose2",
+			Elements: []consent.PurposeElement{
+				{Name: "givenName"}, // duplicate — must be dropped
+				{Name: "email"},
+			},
+		},
+	}
+
+	result := buildPurposePrompts(purposes, nil, nil, map[string]bool{}, nil)
+
+	s.Len(result, 2)
+
+	// givenName must appear in exactly one purpose across the entire result
+	givenNameCount := 0
+	for _, p := range result {
+		for _, e := range append(p.Essential, p.Optional...) {
+			if e == "givenName" {
+				givenNameCount++
+			}
+		}
+	}
+	s.Equal(1, givenNameCount, "givenName must not appear in more than one purpose")
+
+	// purpose1 gets givenName (first-wins), purpose2 keeps only email
+	s.Equal("purpose1", result[0].PurposeName)
+	s.Contains(result[0].Optional, "givenName")
+	s.Equal("purpose2", result[1].PurposeName)
+	s.Contains(result[1].Optional, "email")
+	s.NotContains(result[1].Optional, "givenName")
+}
+
+func (s *ConsentEnforcerServiceTestSuite) TestBuildPurposePrompts_EmptyNamedPurposeWithDuplicateElement() {
+	// Mirrors the exact issue scenario: purpose "" and "Brown Tools Write" both declare
+	// givenName. The consent service (CS-4002) rejects payloads with duplicate elements
+	// across purposes, so givenName must only be emitted once.
+	purposes := []consent.ConsentPurpose{
+		{
+			ID:   "p1",
+			Name: "",
+			Elements: []consent.PurposeElement{
+				{Name: "givenName"},
+				{Name: "lastName"},
+			},
+		},
+		{
+			ID:   "p2",
+			Name: "Brown Tools Write",
+			Elements: []consent.PurposeElement{
+				{Name: "givenName"},     // duplicate — must be dropped
+				{Name: "mobileNumber"},
+			},
+		},
+	}
+
+	result := buildPurposePrompts(purposes, nil, nil, map[string]bool{}, nil)
+
+	s.Len(result, 2)
+
+	givenNameCount := 0
+	for _, p := range result {
+		for _, e := range append(p.Essential, p.Optional...) {
+			if e == "givenName" {
+				givenNameCount++
+			}
+		}
+	}
+	s.Equal(1, givenNameCount, "givenName must not appear in more than one purpose")
+
+	// Empty-named purpose is first, so it claims givenName
+	s.Equal("", result[0].PurposeName)
+	s.ElementsMatch([]string{"givenName", "lastName"}, result[0].Optional)
+
+	// "Brown Tools Write" must only contain mobileNumber
+	s.Equal("Brown Tools Write", result[1].PurposeName)
+	s.Equal([]string{"mobileNumber"}, result[1].Optional)
+}
+
 // mergeConsentPurposes tests
 
 func (s *ConsentEnforcerServiceTestSuite) TestMergeConsentPurposes_NoExisting() {

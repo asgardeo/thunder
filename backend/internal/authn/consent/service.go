@@ -454,6 +454,10 @@ func buildPurposePrompts(purposes []consent.ConsentPurpose, essentialAttributes,
 	consentedElements map[string]bool, userAttributeSet map[string]bool) []ConsentPurposePrompt {
 	// For each purpose, determine which required elements still need consent
 	var promptPurposes []ConsentPurposePrompt
+	// Track elements already assigned to a prior purpose so the same element is never emitted
+	// in more than one purpose. The consent service rejects requests with duplicate elements
+	// across purposes (CS-4002).
+	globalSeen := make(map[string]bool)
 	for _, purpose := range purposes {
 		essential := []string{}
 		optional := []string{}
@@ -475,12 +479,18 @@ func buildPurposePrompts(purposes []consent.ConsentPurpose, essentialAttributes,
 				continue
 			}
 
+			// Skip elements already claimed by a previous purpose
+			if globalSeen[elem.Name] {
+				continue
+			}
+
 			// Classify the element as essential or optional for prompting
 			if slices.Contains(essentialAttributes, elem.Name) {
 				essential = append(essential, elem.Name)
 			} else {
 				optional = append(optional, elem.Name)
 			}
+			globalSeen[elem.Name] = true
 		}
 
 		if len(essential) > 0 || len(optional) > 0 {
