@@ -75,6 +75,7 @@ func (suite *InviteExecutorTestSuite) TearDownTest() {
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
+		AppID:        "test-app-id",
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),
@@ -85,11 +86,29 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyStoredInviteToken])
-	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], "inviteToken=")
-	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], "flowId=test-flow-id")
-	// Verify invite link is stored in runtime data for downstream executors
 	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink])
-	assert.Equal(suite.T(), resp.AdditionalData[common.DataInviteLink], resp.RuntimeData[common.RuntimeKeyInviteLink])
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "inviteToken=")
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "flowId=test-flow-id")
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "applicationId=test-app-id")
+	assert.Empty(suite.T(), resp.AdditionalData[common.DataInviteLink])
+}
+
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_UserOnboarding_ExposesInviteLink() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		AppID:        "test-app-id",
+		FlowType:     common.FlowTypeUserOnboarding,
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink])
+	assert.Equal(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], resp.AdditionalData[common.DataInviteLink])
 }
 
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
@@ -108,7 +127,8 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), existingToken, resp.RuntimeData[common.RuntimeKeyStoredInviteToken])
-	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], existingToken)
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], existingToken)
+	assert.Empty(suite.T(), resp.AdditionalData[common.DataInviteLink])
 }
 
 func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_NoTokenProvided() {

@@ -22,22 +22,95 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import type {JSX} from 'react';
+import {useState} from 'react';
 import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
-import {SignUp, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {SignUp, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useNavigate, useSearchParams} from 'react-router';
 import {Trans, useTranslation} from 'react-i18next';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
 import ROUTES from '../../constants/routes';
 
 export default function SignUpBox(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const {resolve} = useTemplateLiteralResolver();
+  const {resolveFlowTemplateLiterals: resolve} = useAsgardeo();
   const {t} = useTranslation();
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [flowError, setFlowError] = useState<string | null>(null);
 
   const currentParams = searchParams.toString();
   const signInUrl = currentParams ? `${ROUTES.AUTH.SIGN_IN}?${currentParams}` : ROUTES.AUTH.SIGN_IN;
+
+  const renderFlowContent = (
+    components: EmbeddedFlowComponent[],
+    error: any,
+    isLoading: boolean,
+    values: any,
+    touched: any,
+    fieldErrors: any,
+    handleInputChange: any,
+    handleSubmit: any,
+  ): JSX.Element | null => {
+    if (components.length > 0) {
+      return (
+        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+          {isLoading && (
+            <Typography sx={{textAlign: 'center'}}>
+              {t('signup:create_account.loading', 'Creating account...')}
+            </Typography>
+          )}
+          {components.map((component, index) => (
+            <FlowComponentRenderer
+              key={component.id ?? index}
+              component={component}
+              index={index}
+              values={values ?? {}}
+              touched={touched}
+              fieldErrors={fieldErrors}
+              isLoading={isLoading}
+              resolve={resolve}
+              onInputChange={handleInputChange}
+              onSubmit={(action, inputs) => {
+                setFlowError(null);
+                void handleSubmit(action, inputs);
+              }}
+            />
+          ))}
+        </Box>
+      );
+    }
+    if (emailSent === true) {
+      return (
+        <Alert severity="info" sx={{mb: 2}}>
+          <AlertTitle>{t('signup:email.sent.title', 'Check your email')}</AlertTitle>
+          {t(
+            'signup:email.sent.description',
+            'We sent you an invitation link. Please check your inbox and click the link to continue.',
+          )}
+        </Alert>
+      );
+    }
+    if (emailSent === false) {
+      return (
+        <Alert severity="warning" sx={{mb: 2}}>
+          <AlertTitle>{t('signup:email.not.sent.title', 'Email service unavailable')}</AlertTitle>
+          {t(
+            'signup:email.not.sent.description',
+            'Your registration was received but the verification email could not be sent. Please contact your administrator.',
+          )}
+        </Alert>
+      );
+    }
+    if (!error) {
+      return (
+        <Alert severity="error" sx={{mb: 2}}>
+          <AlertTitle>{t("Oops, that didn't work")}</AlertTitle>
+          {t("We're sorry, we ran into a problem. Please try again!")}
+        </Alert>
+      );
+    }
+    return null;
+  };
 
   return (
     <AuthCardLayout
@@ -50,7 +123,22 @@ export default function SignUpBox(): JSX.Element {
         alt: {light: '', dark: ''},
       }}
     >
-      <SignUp afterSignUpUrl={signInUrl}>
+      <SignUp
+        afterSignUpUrl={signInUrl}
+        onFlowChange={(response: any) => {
+          const emailSentValue = response?.data?.additionalData?.emailSent;
+          if (emailSentValue === 'true') {
+            setEmailSent(true);
+          } else if (emailSentValue === 'false') {
+            setEmailSent(false);
+          }
+          if (response?.failureReason) {
+            setFlowError(response.failureReason as string);
+          } else {
+            setFlowError(null);
+          }
+        }}
+      >
         {({values, fieldErrors, error, touched, handleInputChange, handleSubmit, isLoading, components}: any) => (
           <>
             {!components ? (
@@ -65,63 +153,51 @@ export default function SignUpBox(): JSX.Element {
                     {error.message ?? t('signup:errors.signup.failed.description')}
                   </Alert>
                 )}
-
-                {components && components.length > 0 ? (
-                  <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    {isLoading && (
-                      <Typography sx={{textAlign: 'center'}}>{t('signup:creating', 'Creating account...')}</Typography>
-                    )}
-                    {(components as EmbeddedFlowComponent[]).map((component, index) => (
-                      <FlowComponentRenderer
-                        key={component.id ?? index}
-                        component={component}
-                        index={index}
-                        values={values ?? {}}
-                        touched={touched}
-                        fieldErrors={fieldErrors}
-                        isLoading={isLoading}
-                        resolve={resolve}
-                        onInputChange={handleInputChange}
-                        onSubmit={(action, inputs) => {
-                          void handleSubmit(action, inputs);
-                        }}
-                      />
-                    ))}
-                  </Box>
-                ) : (
+                {flowError && (
                   <Alert severity="error" sx={{mb: 2}}>
-                    <AlertTitle>{t("Oops, that didn't work")}</AlertTitle>
-                    {t("We're sorry, we ran into a problem. Please try again!")}
+                    {flowError}
                   </Alert>
+                )}
+
+                {renderFlowContent(
+                  components as EmbeddedFlowComponent[],
+                  error,
+                  isLoading as boolean,
+                  values,
+                  touched,
+                  fieldErrors,
+                  handleInputChange,
+                  handleSubmit,
                 )}
               </>
             )}
 
-            <Typography sx={{textAlign: 'center', mt: 3}}>
-              <Trans i18nKey="signup:redirect.to.signin">
-                Already have an account?
-                <Button
-                  variant="text"
-                  onClick={() => {
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    navigate(signInUrl);
-                  }}
-                  sx={{
-                    p: 0,
-                    minWidth: 'auto',
-                    textTransform: 'none',
-                    color: 'primary.main',
-                    textDecoration: 'underline',
-                    '&:hover': {
+            {emailSent !== true && (
+              <Typography sx={{textAlign: 'center', mt: 3}}>
+                <Trans i18nKey="signup:redirect.to.signin">
+                  Already have an account?
+                  <Button
+                    variant="text"
+                    onClick={() => {
+                      void navigate(signInUrl);
+                    }}
+                    sx={{
+                      p: 0,
+                      minWidth: 'auto',
+                      textTransform: 'none',
+                      color: 'primary.main',
                       textDecoration: 'underline',
-                      backgroundColor: 'transparent',
-                    },
-                  }}
-                >
-                  Sign in
-                </Button>
-              </Trans>
-            </Typography>
+                      '&:hover': {
+                        textDecoration: 'underline',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </Trans>
+              </Typography>
+            )}
           </>
         )}
       </SignUp>

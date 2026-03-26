@@ -77,7 +77,8 @@ const (
 	defaultOUIDKey = "defaultOUID"
 	userTypeKey    = "userType"
 
-	dataValueTrue = "true"
+	dataValueTrue  = "true"
+	dataValueFalse = "false"
 )
 
 // Executor property keys

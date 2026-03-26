@@ -104,3 +104,38 @@ func (suite *TemplateServiceTestSuite) TestRender_UnknownPlaceholder() {
 	suite.Nil(err)
 	suite.Equal("Unknown: {{ctx(unknownKey)}}", res.Body)
 }
+
+func (suite *TemplateServiceTestSuite) TestRender_SubjectPlaceholderReplaced() {
+	dto := &TemplateDTO{
+		ID:          "1",
+		Scenario:    ScenarioSelfRegistration,
+		Subject:     "Complete your registration for {{ctx(appName)}}",
+		ContentType: "text/html",
+		Body:        "Click here: {{ctx(inviteLink)}}",
+	}
+	suite.mockStore.On("GetTemplateByScenario", mock.Anything, ScenarioSelfRegistration).Return(dto, nil)
+
+	res, err := suite.service.Render(context.Background(), ScenarioSelfRegistration,
+		TemplateData{"appName": "My App", "inviteLink": "https://example.com/invite"})
+	suite.Nil(err)
+	suite.Equal("Complete your registration for My App", res.Subject)
+	suite.Equal("Click here: https://example.com/invite", res.Body)
+}
+
+func (suite *TemplateServiceTestSuite) TestRender_SelfRegistrationScenario() {
+	dto := &TemplateDTO{
+		ID:          "2",
+		Scenario:    ScenarioSelfRegistration,
+		Subject:     "You're invited",
+		ContentType: "text/plain",
+		Body:        "Register at {{ctx(inviteLink)}}",
+	}
+	suite.mockStore.On("GetTemplateByScenario", mock.Anything, ScenarioSelfRegistration).Return(dto, nil)
+
+	res, err := suite.service.Render(context.Background(), ScenarioSelfRegistration,
+		TemplateData{"inviteLink": "https://example.com/invite"})
+	suite.Nil(err)
+	suite.Equal("You're invited", res.Subject)
+	suite.Equal("Register at https://example.com/invite", res.Body)
+	suite.False(res.IsHTML)
+}

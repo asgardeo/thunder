@@ -27,11 +27,14 @@ type ScenarioType string
 const (
 	// ScenarioUserInvite represents the user invitation scenario.
 	ScenarioUserInvite ScenarioType = "USER_INVITE"
+	// ScenarioSelfRegistration represents the self-registration via invite link scenario.
+	ScenarioSelfRegistration ScenarioType = "SELF_REGISTRATION"
 )
 
 // supportedScenarios contains all valid scenario types.
 var supportedScenarios = map[ScenarioType]bool{
-	ScenarioUserInvite: true,
+	ScenarioUserInvite:       true,
+	ScenarioSelfRegistration: true,
 }
 
 // IsValidScenario checks if the given scenario type is supported.

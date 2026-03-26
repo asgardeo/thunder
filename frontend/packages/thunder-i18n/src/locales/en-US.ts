@@ -1381,6 +1381,7 @@ const translations = {
   // Sign Up - Sign Up page translations
   // ============================================================================
   signup: {
+    'create_account.loading': 'Creating account...',
     'errors.signup.failed.message': 'Error',
     'errors.signup.failed.description': 'We are sorry, but we were unable to create your account. Please try again.',
     'redirect.to.signin': 'Already have an account? <1>Sign in</1>',

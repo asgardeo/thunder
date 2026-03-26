@@ -70,26 +70,28 @@ func (s *templateService) Render(
 		return nil, svcErr
 	}
 
-	body := ctxPlaceholderRegex.ReplaceAllStringFunc(tmpl.Body, func(match string) string {
-		// Extract the key from {{ctx(key)}}
-		submatches := ctxPlaceholderRegex.FindStringSubmatch(match)
-		if len(submatches) < 2 {
+	replacePlaceholders := func(s string) string {
+		return ctxPlaceholderRegex.ReplaceAllStringFunc(s, func(match string) string {
+			// Extract the key from {{ctx(key)}}
+			submatches := ctxPlaceholderRegex.FindStringSubmatch(match)
+			if len(submatches) < 2 {
+				return match
+			}
+			key := submatches[1]
+			if val, ok := data[key]; ok {
+				return val
+			}
 			return match
-		}
-		key := submatches[1]
-		if val, ok := data[key]; ok {
-			return val
-		}
-		return match
-	})
+		})
+	}
 
 	s.logger.Debug("Template rendered successfully",
 		log.String("scenario", string(scenario)),
 		log.String("templateID", tmpl.ID))
 
 	return &RenderedTemplate{
-		Subject: tmpl.Subject,
-		Body:    body,
+		Subject: replacePlaceholders(tmpl.Subject),
+		Body:    replacePlaceholders(tmpl.Body),
 		IsHTML:  tmpl.ContentType == "text/html",
 	}, nil
 }
