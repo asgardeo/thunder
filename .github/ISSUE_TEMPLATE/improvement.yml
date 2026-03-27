@@ -17,10 +17,3 @@ body:
       description: Describe the improvement you suggest.
     validations:
       required: true
-  - type: input
-    id: version
-    attributes:
-      label: Version
-      description: Enter product version or commit.
-    validations:
-      required: false
