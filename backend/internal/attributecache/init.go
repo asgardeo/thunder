@@ -18,9 +18,18 @@
 
 package attributecache
 
-// Initialize initializes the attribute cache service with a SQL store
-// and returns an instance of AttributeCacheServiceInterface.
+import (
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+)
+
+// Initialize initializes the attribute cache service and returns an instance of AttributeCacheServiceInterface.
 func Initialize() AttributeCacheServiceInterface {
-	store := newAttributeCacheStore()
+	var store attributeCacheStoreInterface
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == "redis" {
+		store = newRedisAttributeCacheStore(provider.GetRedisClientProvider())
+	} else {
+		store = newAttributeCacheStore()
+	}
 	return newAttributeCacheService(store)
 }

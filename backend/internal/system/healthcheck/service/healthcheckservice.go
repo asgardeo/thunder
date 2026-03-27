@@ -20,8 +20,10 @@
 package service
 
 import (
+	"context"
 	"sync"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
@@ -40,14 +42,16 @@ type HealthCheckServiceInterface interface {
 
 // HealthCheckService is the default implementation of the HealthCheckServiceInterface.
 type HealthCheckService struct {
-	DBProvider provider.DBProviderInterface
+	DBProvider    provider.DBProviderInterface
+	RedisProvider provider.RedisClientInterface
 }
 
 // GetHealthCheckService returns a singleton instance of HealthCheckService.
 func GetHealthCheckService() HealthCheckServiceInterface {
 	once.Do(func() {
 		instance = &HealthCheckService{
-			DBProvider: provider.GetDBProvider(),
+			DBProvider:    provider.GetDBProvider(),
+			RedisProvider: provider.GetRedisClientProvider(),
 		}
 	})
 	return instance
@@ -94,8 +98,35 @@ func (hcs *HealthCheckService) checkConfigDatabaseStatus(query dbmodel.DBQuery) 
 
 // checkRuntimeDatabaseStatus checks the status of the runtime database with the specified query.
 func (hcs *HealthCheckService) checkRuntimeDatabaseStatus(query dbmodel.DBQuery) model.Status {
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == "redis" {
+		return hcs.checkRedisRuntimeStatus()
+	}
+
 	dbClient, err := hcs.DBProvider.GetRuntimeDBClient()
 	return hcs.executeDatabaseHealthCheck("RuntimeDB", dbClient, err, query)
+}
+
+// checkRedisRuntimeStatus checks Redis runtime store status.
+func (hcs *HealthCheckService) checkRedisRuntimeStatus() model.Status {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "HealthCheckService"))
+
+	if hcs.RedisProvider == nil {
+		logger.Error("Failed to get Redis runtime provider")
+		return model.StatusDown
+	}
+
+	redisClient := hcs.RedisProvider.GetRedisClient()
+	if redisClient == nil {
+		logger.Error("Failed to get Redis runtime client")
+		return model.StatusDown
+	}
+
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		logger.Error("Failed to ping Redis runtime store", log.Error(err))
+		return model.StatusDown
+	}
+
+	return model.StatusUp
 }
 
 // checkUserDatabaseStatus checks the status of the runtime database with the specified query.

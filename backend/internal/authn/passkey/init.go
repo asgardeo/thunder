@@ -19,13 +19,19 @@
 package passkey
 
 import (
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes the WebAuthn authentication service.
 func Initialize(userSvc user.UserServiceInterface) PasskeyServiceInterface {
-	// Create the session store
-	sessionStore := newSessionStore()
+	var store sessionStoreInterface
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == "redis" {
+		store = newRedisSessionStore(provider.GetRedisClientProvider())
+	} else {
+		store = newSessionStore()
+	}
 
-	return newPasskeyService(userSvc, sessionStore)
+	return newPasskeyService(userSvc, store)
 }
