@@ -45,7 +45,9 @@ Authentication/registration are JSON node graphs (`START → PROMPT → TASK →
 
 `clientId` vs `applicationId` is the critical distinction. Common primitives: `useAsgardeo()`, `<SignedIn/Out>`, `<SignInButton/SignOutButton>`, `<ProtectedRoute>` (`@asgardeo/react-router@2.0`).
 
-## Auth Flow (Mode 1)
+## Auth Flow 
+
+### (Mode 1)
 
 ```text
 Client → GET /oauth2/authorize → 302 /gate?flowId=…
@@ -53,4 +55,6 @@ Gate SPA → POST /flow/execute (loop) → 302 redirect_uri?code=…
 Client → POST /oauth2/token → { access_token, id_token }
 ```
 
-Mode 2: client posts directly to `POST /flow/execute` with `applicationId` (first call) then `flowId` until `status: COMPLETE`.
+### Mode 2
+
+Client posts directly to `POST /flow/execute` with `applicationId` (first call) then `flowId` until `status: COMPLETE`.
