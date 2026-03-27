@@ -24,9 +24,11 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	"github.com/asgardeo/thunder/internal/system/config"
 	dbprovider "github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize creates and configures the flow execution service components.
@@ -39,11 +41,20 @@ func Initialize(
 	observabilitySvc observability.ObservabilityServiceInterface,
 ) (FlowExecServiceInterface, error) {
 	dbProvider := dbprovider.GetDBProvider()
-	transactioner, err := dbProvider.GetRuntimeDBTransactioner()
-	if err != nil {
-		return nil, err
+	var flowStore flowStoreInterface
+	var transactioner transaction.Transactioner
+
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == "redis" {
+		flowStore = newRedisFlowStore(dbprovider.GetRedisClientProvider())
+		transactioner = transaction.NewNoOpTransactioner()
+	} else {
+		var err error
+		transactioner, err = dbProvider.GetRuntimeDBTransactioner()
+		if err != nil {
+			return nil, err
+		}
+		flowStore = newFlowStore(dbProvider)
 	}
-	flowStore := newFlowStore(dbProvider)
 	flowEngine := newFlowEngine(executorRegistry, observabilitySvc)
 	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine, applicationService,
 		observabilitySvc, transactioner)

@@ -28,8 +28,15 @@ import (
 
 	dbprovidermock "github.com/asgardeo/thunder/tests/mocks/database/providermock"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+)
+
+const (
+	serviceConfigDB  = "ConfigDB"
+	serviceRuntimeDB = "RuntimeDB"
+	serviceUserDB    = "UserDB"
 )
 
 type HealthCheckServiceTestSuite struct {
@@ -39,6 +46,7 @@ type HealthCheckServiceTestSuite struct {
 	mockConfigDB   *dbprovidermock.DBClientInterfaceMock
 	mockRuntimeDB  *dbprovidermock.DBClientInterfaceMock
 	mockUserDB     *dbprovidermock.DBClientInterfaceMock
+	mockRedis      *dbprovidermock.RedisRuntimeProviderInterfaceMock
 }
 
 func TestHealthCheckServiceSuite(t *testing.T) {
@@ -46,6 +54,8 @@ func TestHealthCheckServiceSuite(t *testing.T) {
 }
 
 func (suite *HealthCheckServiceTestSuite) SetupTest() {
+	config.ResetThunderRuntime()
+
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
@@ -79,12 +89,16 @@ func (suite *HealthCheckServiceTestSuite) BeforeTest(suiteName, testName string)
 	dbClientUser := &dbprovidermock.DBClientInterfaceMock{}
 	suite.mockUserDB = dbClientUser
 
+	redisProvider := &dbprovidermock.RedisRuntimeProviderInterfaceMock{}
+	suite.mockRedis = redisProvider
+
 	dbProvider := &dbprovidermock.DBProviderInterfaceMock{}
 	dbProvider.On("GetConfigDBClient").Return(dbClientConfig, nil)
 	dbProvider.On("GetRuntimeDBClient").Return(dbClientRuntime, nil)
 	dbProvider.On("GetUserDBClient").Return(dbClientUser, nil)
 	suite.mockDBProvider = dbProvider
 	suite.service.(*HealthCheckService).DBProvider = dbProvider
+	suite.service.(*HealthCheckService).RedisProvider = suite.mockRedis
 }
 
 func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
@@ -213,14 +227,14 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			for _, status := range serverStatus.ServiceStatus {
 				serviceNames[status.ServiceName] = true
 			}
-			assert.True(t, serviceNames["ConfigDB"], "ConfigDB service status should be present")
-			assert.True(t, serviceNames["RuntimeDB"], "RuntimeDB service status should be present")
-			assert.True(t, serviceNames["UserDB"], "UserDB service status should be present")
+			assert.True(t, serviceNames[serviceConfigDB], "ConfigDB service status should be present")
+			assert.True(t, serviceNames[serviceRuntimeDB], "RuntimeDB service status should be present")
+			assert.True(t, serviceNames[serviceUserDB], "UserDB service status should be present")
 
 			// If config DB is expected down, verify it's reported as down
 			if tc.name == tcConfigDBDown || tc.name == "ConfigDBClientError" || tc.name == tcAllThreeDBDown {
 				for _, status := range serverStatus.ServiceStatus {
-					if status.ServiceName == "ConfigDB" {
+					if status.ServiceName == serviceConfigDB {
 						assert.Equal(t, model.StatusDown, status.Status, "ConfigDB should be DOWN")
 					}
 				}
@@ -229,7 +243,7 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			// If runtime DB is expected down, verify it's reported as down
 			if tc.name == tcRuntimeDBDown || tc.name == "RuntimeDBClientError" || tc.name == tcAllThreeDBDown {
 				for _, status := range serverStatus.ServiceStatus {
-					if status.ServiceName == "RuntimeDB" {
+					if status.ServiceName == serviceRuntimeDB {
 						assert.Equal(t, model.StatusDown, status.Status, "RuntimeDB should be DOWN")
 					}
 				}
@@ -238,7 +252,7 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			// If user DB is expected down, verify it's reported as down
 			if tc.name == tcUserDBDown || tc.name == "UserDBClientError" || tc.name == tcAllThreeDBDown {
 				for _, status := range serverStatus.ServiceStatus {
-					if status.ServiceName == "UserDB" {
+					if status.ServiceName == serviceUserDB {
 						assert.Equal(t, model.StatusDown, status.Status, "UserDB should be DOWN")
 					}
 				}
@@ -267,14 +281,63 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness_DBRetrievalError() 
 	assert.Len(suite.T(), serverStatus.ServiceStatus, 3, "There should be three service statuses reported")
 
 	for _, status := range serverStatus.ServiceStatus {
-		if status.ServiceName == "ConfigDB" {
+		if status.ServiceName == serviceConfigDB {
 			assert.Equal(suite.T(), model.StatusDown, status.Status, "ConfigDB should be DOWN")
-		} else if status.ServiceName == "RuntimeDB" {
+		} else if status.ServiceName == serviceRuntimeDB {
 			assert.Equal(suite.T(), model.StatusDown, status.Status, "RuntimeDB should be DOWN")
-		} else if status.ServiceName == "UserDB" {
+		} else if status.ServiceName == serviceUserDB {
 			assert.Equal(suite.T(), model.StatusDown, status.Status, "UserDB should be DOWN")
 		}
 	}
 
 	suite.mockDBProvider.AssertExpectations(suite.T())
+}
+
+func (suite *HealthCheckServiceTestSuite) TestCheckReadiness_RedisRuntimeConfiguredAndUnavailable() {
+	config.ResetThunderRuntime()
+
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type:    "redis",
+				Address: "127.0.0.1:0",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
+	_ = config.InitializeThunderRuntime("test", testConfig)
+
+	suite.mockConfigDB.ExpectedCalls = nil
+	suite.mockRuntimeDB.ExpectedCalls = nil
+	suite.mockUserDB.ExpectedCalls = nil
+	suite.mockRedis.ExpectedCalls = nil
+
+	suite.mockConfigDB.On("Query", queryConfigDBTable).Return([]map[string]interface{}{{"1": 1}}, nil)
+	suite.mockUserDB.On("Query", queryUserDBTable).Return([]map[string]interface{}{{"1": 1}}, nil)
+	suite.mockRedis.On("GetRedisClient").Return(redis.NewClient(&redis.Options{Addr: "127.0.0.1:0"}))
+
+	serverStatus := suite.service.CheckReadiness()
+
+	assert.Equal(suite.T(), model.StatusDown, serverStatus.Status,
+		"Server status should be DOWN when Redis runtime is unavailable")
+	assert.Len(suite.T(), serverStatus.ServiceStatus, 3, "There should be three service statuses reported")
+
+	for _, status := range serverStatus.ServiceStatus {
+		if status.ServiceName == serviceRuntimeDB {
+			assert.Equal(suite.T(), model.StatusDown, status.Status,
+				"RuntimeDB should be DOWN when Redis is unavailable")
+		}
+	}
+
+	suite.mockDBProvider.AssertNotCalled(suite.T(), "GetRuntimeDBClient")
+	suite.mockConfigDB.AssertExpectations(suite.T())
+	suite.mockUserDB.AssertExpectations(suite.T())
+	suite.mockRedis.AssertExpectations(suite.T())
 }

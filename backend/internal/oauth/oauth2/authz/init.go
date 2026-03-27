@@ -24,10 +24,12 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the authorization handler and registers its routes.
@@ -37,18 +39,28 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 ) (AuthorizeServiceInterface, error) {
-	authzCodeStore := newAuthorizationCodeStore()
-	authzReqStore := newAuthorizationRequestStore()
+	var authzCodeStore AuthorizationCodeStoreInterface
+	var authzReqStore authorizationRequestStoreInterface
+	var transactioner transaction.Transactioner
 
 	dbProvider := provider.GetDBProvider()
-	runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database client for authorization service")
-	}
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == "redis" {
+		redisProvider := provider.GetRedisClientProvider()
+		authzCodeStore = newRedisAuthorizationCodeStore(redisProvider)
+		authzReqStore = newRedisAuthorizationRequestStore(redisProvider)
+		transactioner = transaction.NewNoOpTransactioner()
+	} else {
+		authzCodeStore = newAuthorizationCodeStore()
+		authzReqStore = newAuthorizationRequestStore()
 
-	transactioner, err := runtimeDBClient.GetTransactioner()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
+		runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to initialize database client for authorization service")
+		}
+		transactioner, err = runtimeDBClient.GetTransactioner()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
+		}
 	}
 
 	authzService := newAuthorizeService(
