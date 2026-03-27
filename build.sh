@@ -201,6 +201,9 @@ read_config() {
 # Read configuration
 read_config
 
+# Read SKIP_CONSENT_SERVER from environment (default: false)
+SKIP_CONSENT_SERVER="${SKIP_CONSENT_SERVER:-false}"
+
 # Construct base URL (internal API endpoint)
 BASE_URL="${PROTOCOL}://${HOSTNAME}:${PORT}"
 
@@ -474,9 +477,13 @@ function package() {
         chmod +x "$DIST_DIR/$PRODUCT_FOLDER/setup.sh"
     fi
 
-    echo "Packaging consent server..."
-    bash "$SCRIPT_DIR/scripts/package-consent-server.sh" \
-            "$GO_OS" "$GO_ARCH" "$(cd "$DIST_DIR/$PRODUCT_FOLDER" && pwd)"
+    if [ "$SKIP_CONSENT_SERVER" = "true" ]; then
+        echo "Skipping consent server packaging (SKIP_CONSENT_SERVER=true)."
+    else
+        echo "Packaging consent server..."
+        bash "$SCRIPT_DIR/scripts/package-consent-server.sh" \
+                "$GO_OS" "$GO_ARCH" "$(cd "$DIST_DIR/$PRODUCT_FOLDER" && pwd)"
+    fi
 
     echo "Creating zip file..."
     (cd "$DIST_DIR" && zip -r "$PRODUCT_FOLDER.zip" "$PRODUCT_FOLDER")
