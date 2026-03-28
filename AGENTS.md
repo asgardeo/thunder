@@ -20,6 +20,8 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 
 ## Git and PR Conventions
 
+- Adhere to .github/pull_request_template.md
+
 ### Commit Messages
 - Use short imperative sentences without conventional commit prefixes (no `feat:`, `fix:`, etc.).
 - Reference the related issue or pull request when applicable (e.g., `Refs #123` or `Fixes #123`).
