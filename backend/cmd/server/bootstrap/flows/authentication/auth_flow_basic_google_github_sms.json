@@ -11,28 +11,135 @@
         {
             "id": "choose_auth",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_001",
+                        "label": "{{ t(signin:forms.choose_auth_method.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_basic",
+                        "components": [
+                            {
+                                "id": "input_username",
+                                "ref": "username",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(signin:forms.choose_auth_method.fields.username.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.choose_auth_method.fields.username.placeholder) }}"
+                            },
+                            {
+                                "id": "input_password",
+                                "ref": "password",
+                                "type": "PASSWORD_INPUT",
+                                "label": "{{ t(signin:forms.choose_auth_method.fields.password.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.choose_auth_method.fields.password.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_basic",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "DIVIDER",
+                        "id": "divider_001"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_google",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_google",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.google.label) }}",
+                                "variant": "SECONDARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_github",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_github",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.github.label) }}",
+                                "variant": "SECONDARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_sms",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_sms",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.sms.label) }}",
+                                "variant": "SECONDARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
+                    "inputs": [
+                        {
+                            "ref": "input_username",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_password",
+                            "identifier": "password",
+                            "type": "PASSWORD_INPUT",
+                            "required": true
+                        }
+                    ],
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_basic",
                         "nextNode": "basic_auth"
                     }
                 },
                 {
                     "action": {
-                        "ref": "action_002",
+                        "ref": "action_google",
                         "nextNode": "google_auth"
                     }
                 },
                 {
                     "action": {
-                        "ref": "action_003",
+                        "ref": "action_github",
                         "nextNode": "github_auth"
                     }
                 },
                 {
                     "action": {
-                        "ref": "action_004",
+                        "ref": "action_sms",
                         "nextNode": "prompt_mobile"
                     }
                 }
@@ -43,6 +150,15 @@
             "type": "TASK_EXECUTION",
             "executor": {
                 "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "authorization_check",
+            "onIncomplete": "choose_auth"
+        },
+        {
+            "id": "authorization_check",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthorizationExecutor"
             },
             "onSuccess": "send_sms"
         },
@@ -90,18 +206,60 @@
         {
             "id": "prompt_mobile",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_mobile",
+                        "label": "{{ t(signin:forms.mobile_number.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_mobile",
+                        "components": [
+                            {
+                                "id": "input_mobile",
+                                "ref": "mobileNumber",
+                                "type": "PHONE_INPUT",
+                                "label": "{{ t(signin:forms.mobile_number.fields.mobile.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.mobile_number.fields.mobile.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_send_sms",
+                                "label": "{{ t(signin:forms.mobile_number.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
                     "inputs": [
                         {
-                            "ref": "input_004",
+                            "ref": "input_mobile",
                             "identifier": "mobileNumber",
                             "type": "PHONE_INPUT",
                             "required": true
                         }
                     ],
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_send_sms",
                         "nextNode": "send_sms"
                     }
                 }
@@ -122,18 +280,60 @@
         {
             "id": "prompt_otp",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_otp",
+                        "label": "{{ t(signin:forms.otp.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_otp",
+                        "components": [
+                            {
+                                "id": "input_otp",
+                                "ref": "otp",
+                                "type": "OTP_INPUT",
+                                "label": "{{ t(signin:forms.otp.fields.otp.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.otp.fields.otp.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_verify_otp",
+                                "label": "{{ t(signin:forms.otp.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
                     "inputs": [
                         {
-                            "ref": "input_005",
+                            "ref": "input_otp",
                             "identifier": "otp",
                             "type": "OTP_INPUT",
                             "required": true
                         }
                     ],
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_verify_otp",
                         "nextNode": "verify_sms"
                     }
                 }

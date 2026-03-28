@@ -11,16 +11,63 @@
         {
             "id": "choose_auth",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_001",
+                        "label": "{{ t(signin:forms.choose_auth_method.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_google",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_google",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.google.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_github",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_github",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.github.label) }}",
+                                "variant": "SECONDARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_google",
                         "nextNode": "google_auth"
                     }
                 },
                 {
                     "action": {
-                        "ref": "action_002",
+                        "ref": "action_github",
                         "nextNode": "github_auth"
                     }
                 }
