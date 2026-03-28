@@ -238,3 +238,36 @@ func (s *SchemaValidateTestSuite) TestSchemaWithoutDisplayName_CompileSuccess() 
 	s.Require().NoError(err)
 	s.Require().NotNil(schema)
 }
+
+func (s *SchemaValidateTestSuite) TestValidateAsDisplayAttribute_RejectsCredential() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"email": {"type": "string", "required": true},
+		"password": {"type": "string", "required": true, "credential": true}
+	}`))
+	s.Require().NoError(err)
+
+	s.Require().Equal(DisplayAttributeIsCredential, schema.ValidateAsDisplayAttribute("password"))
+	s.Require().Equal(DisplayAttributeValid, schema.ValidateAsDisplayAttribute("email"))
+}
+
+func (s *SchemaValidateTestSuite) TestValidate_SkipCredentialRequired() {
+	emailAndPasswordSchema := json.RawMessage(`{
+		"email": {"type": "string", "required": true},
+		"password": {"type": "string", "required": true, "credential": true}
+	}`)
+
+	schema, err := CompileUserSchema(emailAndPasswordSchema)
+	s.Require().NoError(err)
+
+	ok, err := schema.Validate(json.RawMessage(`{"email":"user@example.com"}`), s.logger, true)
+	s.Require().NoError(err)
+	s.Require().True(ok, "missing credential should pass when skipCredentialRequired=true")
+
+	ok, err = schema.Validate(json.RawMessage(`{}`), s.logger, true)
+	s.Require().NoError(err)
+	s.Require().False(ok, "missing required non-credential should still fail when skipCredentialRequired=true")
+
+	ok, err = schema.Validate(json.RawMessage(`{"email":"user@example.com"}`), s.logger, false)
+	s.Require().NoError(err)
+	s.Require().False(ok, "missing required credential should fail when skipCredentialRequired=false")
+}
