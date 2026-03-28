@@ -37,6 +37,7 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
@@ -68,7 +69,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse() {
 		ClientID:                  "client-123",
 	}
 
-	result := buildBasicApplicationResponse(app)
+	result := buildApplicationListItem(app)
 
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "Test App", result.Name)
@@ -94,7 +95,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 		LogoURL:                   "https://example.com/logo.png",
 	}
 
-	result := buildBasicApplicationResponse(app)
+	result := buildApplicationListItem(app)
 
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "Test App", result.Name)
@@ -117,7 +118,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 		ClientID:                  "client-123",
 	}
 
-	result := buildBasicApplicationResponse(app)
+	result := buildApplicationListItem(app)
 
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "", result.Template)
@@ -448,11 +449,19 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod() {
 			expectError: false,
 		},
 		{
+			name: "Invalid none for non-public client",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+				PublicClient:            false,
+			},
+			expectError: true,
+		},
+		{
 			name: "Invalid none for client credentials grant",
 			oauthConfig: &model.OAuthAppConfigDTO{
 				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
 				GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-				PublicClient:            false,
+				PublicClient:            true,
 			},
 			expectError: true,
 		},
@@ -1127,6 +1136,7 @@ func (suite *ServiceTestSuite) setupTestService() (
 	// can override this via their own service instance.
 	mockConsentService.On("IsEnabled").Maybe().Return(false)
 	service := &applicationService{
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
@@ -1731,6 +1741,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_FieldValidationE
 			mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 			mockThemeMgtService := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
 			service := &applicationService{
+				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 				appStore:          mockStore,
 				certService:       mockCertService,
 				flowMgtService:    mockFlowMgtService,
@@ -3784,6 +3795,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 		Once()
 
 	serviceWithMock := &applicationService{
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
@@ -3822,6 +3834,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 		Once()
 
 	serviceWithMock := &applicationService{
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
@@ -3889,6 +3902,7 @@ func (suite *ServiceTestSuite) TestProcessUserInfoConfiguration() {
 			app: &model.ApplicationDTO{
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
 					{
+						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							UserInfo: &model.UserInfoConfig{
 								UserAttributes: []string{"email", "profile"},
@@ -3905,6 +3919,7 @@ func (suite *ServiceTestSuite) TestProcessUserInfoConfiguration() {
 			app: &model.ApplicationDTO{
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
 					{
+						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							UserInfo: nil,
 						},
@@ -3919,6 +3934,7 @@ func (suite *ServiceTestSuite) TestProcessUserInfoConfiguration() {
 			app: &model.ApplicationDTO{
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
 					{
+						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							UserInfo: &model.UserInfoConfig{
 								UserAttributes: nil,
@@ -3935,6 +3951,7 @@ func (suite *ServiceTestSuite) TestProcessUserInfoConfiguration() {
 			app: &model.ApplicationDTO{
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
 					{
+						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							UserInfo: &model.UserInfoConfig{
 								UserAttributes: []string{},
@@ -3968,6 +3985,7 @@ func (suite *ServiceTestSuite) TestProcessScopeClaimsConfiguration() {
 			app: &model.ApplicationDTO{
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
 					{
+						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							ScopeClaims: map[string][]string{
 								"profile": {"name", "email"},
@@ -3985,6 +4003,7 @@ func (suite *ServiceTestSuite) TestProcessScopeClaimsConfiguration() {
 			app: &model.ApplicationDTO{
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
 					{
+						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							ScopeClaims: nil,
 						},
@@ -4773,6 +4792,7 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 	existingApp := &model.ApplicationProcessedDTO{
 		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
 			{
+				Type: model.OAuthInboundAuthType,
 				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
 					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 					HashedClientSecret:      existingHashedSecret,
@@ -4855,6 +4875,7 @@ func (suite *ServiceTestSuite) setupConsentEnabledService() (
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	service := &applicationService{
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
@@ -6589,6 +6610,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateDesignID
 			mockThemeMgtService := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
 			mockLayoutMgtService := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
 			service := &applicationService{
+				logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 				appStore:          mockStore,
 				certService:       mockCertService,
 				flowMgtService:    mockFlowMgtService,
@@ -6644,6 +6666,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateAllowedU
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	service := &applicationService{
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
@@ -6791,6 +6814,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	mockLayoutMgtService := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
 	service := &applicationService{
+		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,

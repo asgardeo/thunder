@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 )
@@ -43,6 +44,7 @@ func TestApplicationServiceConsentTestSuite(t *testing.T) {
 // newTestApplicationServiceWithConsent creates a minimal applicationService with only the consentService field set.
 func newTestApplicationServiceWithConsent(consentSvc consent.ConsentServiceInterface) *applicationService {
 	return &applicationService{
+		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		consentService: consentSvc,
 		transactioner:  &fakeTransactioner{},
 	}
@@ -228,18 +230,23 @@ func (s *ApplicationServiceConsentTestSuite) TestAttributesToPurposeElements_Emp
 // ----- wrapConsentServiceError -----
 
 func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_NilReturnsNil() {
-	result := wrapConsentServiceError(nil)
+	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	svc := newTestApplicationServiceWithConsent(cMock)
+
+	result := svc.wrapConsentServiceError(nil)
 
 	s.Nil(result)
 }
 
 func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_ClientError_ReturnsConsentSyncFailed() {
+	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	svc := newTestApplicationServiceWithConsent(cMock)
 	clientErr := &serviceerror.I18nServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "CSE-1007",
 	}
 
-	result := wrapConsentServiceError(clientErr)
+	result := svc.wrapConsentServiceError(clientErr)
 
 	s.NotNil(result)
 	s.Equal(serviceerror.ClientErrorType, result.Type)
@@ -247,12 +254,14 @@ func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_ClientE
 }
 
 func (s *ApplicationServiceConsentTestSuite) TestWrapConsentServiceError_ServerError_ReturnsInternalServerError() {
+	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	svc := newTestApplicationServiceWithConsent(cMock)
 	serverErr := &serviceerror.I18nServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "CSE-500",
 	}
 
-	result := wrapConsentServiceError(serverErr)
+	result := svc.wrapConsentServiceError(serverErr)
 
 	s.NotNil(result)
 	s.Equal(serviceerror.ServerErrorType, result.Type)
