@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {render, screen} from '@thunder/test-utils';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -62,11 +62,13 @@ vi.mock('../TokenUserAttributesSection', () => ({
     idTokenAttributes,
     isUserInfoCustomAttributes,
     onToggleUserInfo,
+    userAttributes,
   }: {
     accessTokenAttributes?: string[];
     idTokenAttributes?: string[];
     isUserInfoCustomAttributes?: boolean;
     onToggleUserInfo?: (checked: boolean) => void;
+    userAttributes?: string[];
   }) => {
     const isOAuthMode = accessTokenAttributes !== undefined || idTokenAttributes !== undefined;
     if (isOAuthMode) {
@@ -74,6 +76,9 @@ vi.mock('../TokenUserAttributesSection', () => ({
         <div>
           <div data-testid="token-user-attributes-section-access">Access Token Attributes</div>
           <div data-testid="token-user-attributes-section-id">ID Token Attributes</div>
+          {userAttributes && (
+            <div data-testid="user-attributes-list">{userAttributes.join(',')}</div>
+          )}
           <label>
             <input
               type="checkbox"
@@ -86,7 +91,14 @@ vi.mock('../TokenUserAttributesSection', () => ({
         </div>
       );
     }
-    return <div data-testid="token-user-attributes-section-shared">Shared Token Attributes</div>;
+    return (
+      <div data-testid="token-user-attributes-section-shared">
+        Shared Token Attributes
+        {userAttributes && (
+          <div data-testid="user-attributes-list">{userAttributes.join(',')}</div>
+        )}
+      </div>
+    );
   },
 }));
 
@@ -378,6 +390,162 @@ describe('EditTokenSettings', () => {
 
       const checkbox = screen.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
       expect(checkbox).not.toBeChecked();
+    });
+  });
+
+  describe('Credential Attribute Filtering', () => {
+    const userTypesListResponse = {
+      data: {
+        totalResults: 1,
+        startIndex: 0,
+        count: 1,
+        schemas: [{id: 'schema-1', name: 'default'}],
+      },
+    };
+
+    const mockSchemaRequest = (schema: Record<string, unknown>) => {
+      mockHttp.request.mockImplementation(({url}: {url: string}) => {
+        if (url.includes('/user-schemas/schema-1')) {
+          return Promise.resolve({
+            data: {
+              id: 'schema-1',
+              name: 'default',
+              ouId: 'org-1',
+              allowSelfRegistration: false,
+              schema,
+            },
+          });
+        }
+
+        return Promise.resolve(userTypesListResponse);
+      });
+    };
+
+    const getRenderedAttributes = async (): Promise<string> => {
+      await waitFor(() => {
+        expect(screen.getByTestId('user-attributes-list').textContent).not.toBe('');
+      });
+
+      return screen.getByTestId('user-attributes-list').textContent!;
+    };
+
+    it('should exclude credential attributes (e.g., password) from user attributes list', async () => {
+      mockSchemaRequest({
+        email: {type: 'string', required: true, unique: true},
+        password: {type: 'string', required: true, credential: true},
+        username: {type: 'string', required: false},
+        pin: {type: 'number', credential: true},
+        age: {type: 'number', required: false},
+      });
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      const attributesList = await getRenderedAttributes();
+
+      expect(attributesList).not.toContain('password');
+      expect(attributesList).not.toContain('pin');
+      expect(attributesList).toContain('email');
+      expect(attributesList).toContain('username');
+      expect(attributesList).toContain('age');
+    });
+
+    it('should exclude nested credential attributes inside objects', async () => {
+      mockSchemaRequest({
+        email: {type: 'string', required: true},
+        security: {
+          type: 'object',
+          properties: {
+            secret: {type: 'string', credential: true},
+            question: {type: 'string'},
+          },
+        },
+      });
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      const attributesList = await getRenderedAttributes();
+
+      expect(attributesList).not.toContain('security.secret');
+      expect(attributesList).toContain('security.question');
+      expect(attributesList).toContain('email');
+    });
+
+    it('should include boolean attributes even when sibling credentials are excluded', async () => {
+      mockSchemaRequest({
+        password: {type: 'string', required: true, credential: true},
+        isActive: {type: 'boolean'},
+        email: {type: 'string', required: true},
+      });
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      const attributesList = await getRenderedAttributes();
+
+      expect(attributesList).not.toContain('password');
+      expect(attributesList).toContain('isActive');
+      expect(attributesList).toContain('email');
+    });
+
+    it('should return empty attributes when schema contains only credential fields', async () => {
+      mockSchemaRequest({
+        password: {type: 'string', required: true, credential: true},
+        pin: {type: 'number', credential: true},
+      });
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      // Wait for schema fetch to complete, then verify no attributes rendered
+      await waitFor(() => {
+        expect(mockHttp.request).toHaveBeenCalled();
+      });
+
+      // user-attributes-list should either not exist or be empty
+      const attrList = screen.queryByTestId('user-attributes-list');
+      if (attrList) {
+        expect(attrList.textContent).toBe('');
+      }
+    });
+
+    it('should include non-credential string attributes with credential flag explicitly false', async () => {
+      mockSchemaRequest({
+        password: {type: 'string', required: true, credential: true},
+        displayName: {type: 'string', credential: false},
+        username: {type: 'string'},
+      });
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      const attributesList = await getRenderedAttributes();
+
+      expect(attributesList).not.toContain('password');
+      expect(attributesList).toContain('displayName');
+      expect(attributesList).toContain('username');
+    });
+
+    it('should exclude credential attributes in deeply nested objects', async () => {
+      mockSchemaRequest({
+        profile: {
+          type: 'object',
+          properties: {
+            name: {type: 'string'},
+            auth: {
+              type: 'object',
+              properties: {
+                secret: {type: 'string', credential: true},
+                method: {type: 'string'},
+              },
+            },
+          },
+        },
+      });
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      const attributesList = await getRenderedAttributes();
+
+      expect(attributesList).not.toContain('profile.auth.secret');
+      expect(attributesList).toContain('profile.auth.method');
+      expect(attributesList).toContain('profile.name');
     });
   });
 });
