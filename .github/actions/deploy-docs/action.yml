@@ -40,7 +40,7 @@ runs:
       run: |
         make build_docs
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
 
     - name: 📥 Download Docs Artifact
       if: inputs.docs-artifact-name != ''

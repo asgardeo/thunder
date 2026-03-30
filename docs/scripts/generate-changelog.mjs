@@ -90,6 +90,18 @@ function sanitizeReleaseBody(body, releaseTag) {
         return match;
     });
 
+    // Escape curly braces that look like variables (e.g., {userId}) to prevent MDX ReferenceErrors.
+    // We only escape these if they are OUTSIDE of backticks (inline code blocks).
+    const segments = sanitized.split('`');
+    sanitized = segments.map((segment, index) => {
+        // Even indices are outside backticks, odd indices are inside (assuming balanced backticks)
+        if (index % 2 === 0) {
+            // Escape { and } using a backslash for MDX compatibility
+            return segment.replace(/\{([^}]+)\}/g, '\\{$1\\}');
+        }
+        return segment;
+    }).join('`');
+
     return sanitized;
 }
 
