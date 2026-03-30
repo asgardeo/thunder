@@ -318,6 +318,7 @@ const translations = {
     'pages.userTypes': 'User Types',
     'pages.organizationUnits': 'Organization Units',
     'pages.groups': 'Groups',
+    'pages.roles': 'Roles',
     'pages.integrations': 'Integrations',
     'pages.applications': 'Applications',
     'pages.dashboard': 'Dashboard',
@@ -732,6 +733,113 @@ const translations = {
     'delete.success': 'Group deleted successfully.',
     'addMember.success': 'Member added successfully.',
     'removeMember.success': 'Member removed successfully.',
+  },
+
+  // ============================================================================
+  // Roles namespace - Role management feature translations
+  // ============================================================================
+  roles: {
+    // List page
+    'listing.title': 'Roles',
+    'listing.subtitle': 'Manage roles and their permissions across organization units',
+    'listing.addRole': 'Add Role',
+    'listing.error': 'Failed to load roles',
+    'listing.search.placeholder': 'Search roles...',
+    'listing.columns.name': 'Name',
+    'listing.columns.description': 'Description',
+    'listing.columns.organizationUnit': 'Organization Unit',
+    'listing.columns.actions': 'Actions',
+
+    // Create page
+    'create.title': 'Create Role',
+    'create.error': 'Failed to create role. Please try again.',
+    'create.form.name.label': 'Role Name',
+    'create.form.name.placeholder': 'Enter role name',
+    'create.form.name.required': 'Role name is required',
+    'create.form.description.label': 'Description',
+    'create.form.description.placeholder': 'Enter role description',
+    'create.form.organizationUnit.label': 'Organization Unit',
+    'create.form.organizationUnit.required': 'Organization unit is required',
+
+    // Create wizard
+    'createWizard.steps.basicInfo': 'Create a Role',
+    'createWizard.steps.organizationUnit': 'Organization Unit',
+    'createWizard.basicInfo.title': "Let's give a name to your role",
+    'createWizard.basicInfo.suggestions.label': 'In a hurry? Pick a random name:',
+    'createWizard.organizationUnit.title': 'Select an organization unit',
+    'createWizard.organizationUnit.subtitle': 'Choose the organization unit this role will belong to.',
+
+    // Edit page
+    'edit.page.back': 'Back to Roles',
+    'edit.page.error': 'Failed to load role',
+    'edit.page.notFound': 'Role not found',
+    'edit.page.description.placeholder': 'Add a description...',
+    'edit.page.description.empty': 'No description',
+    'edit.page.tabs.general': 'General',
+    'edit.page.tabs.permissions': 'Permissions',
+    'edit.page.tabs.assignments': 'Assignments',
+    'edit.page.unsavedChanges': 'You have unsaved changes',
+    'edit.page.reset': 'Reset',
+    'edit.page.save': 'Save Changes',
+    'edit.page.saving': 'Saving...',
+    'edit.page.saveError': 'Failed to save role. Please try again.',
+
+    // General settings
+    'edit.general.sections.quickCopy.copyRoleId': 'Copy Role ID',
+    'edit.general.sections.organizationUnit.title': 'Organization Unit',
+    'edit.general.sections.organizationUnit.description': 'The organization unit this role belongs to.',
+    'edit.general.sections.organizationUnit.copyId': 'Copy Organization Unit ID',
+    'edit.general.sections.dangerZone.title': 'Danger Zone',
+    'edit.general.sections.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
+    'edit.general.sections.dangerZone.deleteRole': 'Delete this role',
+    'edit.general.sections.dangerZone.deleteRoleDescription': 'Deleting this role is permanent and cannot be undone.',
+
+    // Permissions settings
+    'edit.permissions.description': 'Select the permissions this role grants. Changes are saved when you click Save Changes.',
+    'edit.permissions.resourcesLabel': 'Resources',
+    'edit.permissions.actionsLabel': 'Actions',
+    'edit.permissions.noPermissions': 'No permissions defined for this resource server.',
+    'edit.permissions.noResourceServers': 'No resource servers found. Create a resource server first.',
+    'edit.permissions.loadError': 'Failed to load permissions for this resource server.',
+    'edit.permissions.loadResourceServersError': 'Failed to load resource servers.',
+    'edit.permissions.selectedCount': '{{count}} selected',
+
+    // Assignments settings
+    'edit.assignments.sections.manage.title': 'Assigned Users & Groups',
+    'edit.assignments.sections.manage.description': 'Manage users and groups assigned to this role',
+    'edit.assignments.sections.manage.tabs.users': 'Users',
+    'edit.assignments.sections.manage.tabs.groups': 'Groups',
+    'edit.assignments.sections.manage.listing.columns.name': 'Name',
+    'edit.assignments.sections.manage.listing.columns.id': 'ID',
+    'edit.assignments.sections.manage.listing.columns.type': 'Type',
+    'edit.assignments.sections.manage.addAssignment': 'Add',
+
+    // Add assignment dialog
+    'assignments.dialog.title': 'Add Assignment',
+    'assignments.dialog.tabs.users': 'Users',
+    'assignments.dialog.tabs.groups': 'Groups',
+    'assignments.dialog.columns.displayName': 'Display Name',
+    'assignments.dialog.columns.name': 'Name',
+    'assignments.dialog.columns.description': 'Description',
+    'assignments.dialog.columns.userType': 'User Type',
+    'assignments.dialog.add': 'Add Selected',
+    'assignments.dialog.fetchError': 'Failed to load data. Please try again.',
+    'assignments.add.error': 'Failed to add assignment. Please try again.',
+    'assignments.remove.error': 'Failed to remove assignment. Please try again.',
+
+    // Delete dialog
+    'delete.title': 'Delete Role',
+    'delete.message': 'Are you sure you want to delete this role?',
+    'delete.disclaimer': 'This action cannot be undone. All role assignments and permissions will be permanently removed.',
+    'delete.error': 'Failed to delete role. Please try again.',
+
+    // Success / error toasts
+    'create.success': 'Role created successfully.',
+    'update.success': 'Role updated successfully.',
+    'update.error': 'Failed to update role. Please try again.',
+    'delete.success': 'Role deleted successfully.',
+    'assignments.add.success': 'Assignment added successfully.',
+    'assignments.remove.success': 'Assignment removed successfully.',
   },
 
   // ============================================================================
