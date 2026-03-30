@@ -219,7 +219,7 @@ func handleUserRetrievalError(
 	svcErr *serviceerror.ServiceError, userID string, logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if svcErr.Type == serviceerror.ClientErrorType {
-		logger.Debug("User not found", log.String("userID", log.MaskString(userID)))
+		logger.Debug("User not found", log.MaskedString(log.LoggerKeyUserID, userID))
 		return &ErrorUserNotFound
 	}
 	logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))

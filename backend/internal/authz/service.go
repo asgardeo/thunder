@@ -59,7 +59,7 @@ func (s *authorizationService) GetAuthorizedPermissions(
 ) (*GetAuthorizedPermissionsResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Evaluating authorization request",
-		log.String("userID", request.UserID),
+		log.MaskedString(log.LoggerKeyUserID, request.UserID),
 		log.Int("groupCount", len(request.GroupIDs)),
 		log.Int("requestedPermissionCount", len(request.RequestedPermissions)))
 
@@ -84,14 +84,14 @@ func (s *authorizationService) GetAuthorizedPermissions(
 	)
 	if err != nil {
 		logger.Error("Authorization evaluation failed",
-			log.String("userID", request.UserID),
+			log.MaskedString(log.LoggerKeyUserID, request.UserID),
 			log.Int("groupCount", len(request.GroupIDs)),
 			log.Error(err))
 		return nil, &ErrorAuthorizationFailed
 	}
 
 	logger.Debug("Authorization evaluation completed",
-		log.String("userID", request.UserID),
+		log.MaskedString(log.LoggerKeyUserID, request.UserID),
 		log.Int("groupCount", len(request.GroupIDs)),
 		log.Int("requestedCount", len(request.RequestedPermissions)),
 		log.Int("authorizedCount", len(authorizedPerms)))

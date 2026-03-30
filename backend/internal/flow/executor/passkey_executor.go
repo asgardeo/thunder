@@ -182,7 +182,7 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	if userID == "" {
 		logger.Debug("Generating usernameless passkey authentication challenge")
 	} else {
-		logger.Debug("Generating passkey authentication challenge", log.String("userID", userID))
+		logger.Debug("Generating passkey authentication challenge", log.MaskedString(log.LoggerKeyUserID, userID))
 	}
 
 	// Get relying party ID from node properties or use a default
@@ -201,13 +201,13 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey authentication",
-				log.String("userID", userID), log.String("error", svcErr.ErrorDescription))
+				log.MaskedString(log.LoggerKeyUserID, userID), log.String("error", svcErr.ErrorDescription))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = svcErr.ErrorDescription
 			return execResp, nil
 		}
 		logger.Error("Failed to start passkey authentication",
-			log.String("userID", userID), log.Error(errors.New(svcErr.ErrorDescription)))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Error(errors.New(svcErr.ErrorDescription)))
 		return execResp, fmt.Errorf("failed to start passkey authentication: %s", svcErr.ErrorDescription)
 	}
 
@@ -228,7 +228,7 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	if userID == "" {
 		logger.Debug("Usernameless passkey challenge generated successfully")
 	} else {
-		logger.Debug("Passkey challenge generated successfully", log.String("userID", userID))
+		logger.Debug("Passkey challenge generated successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 	}
 	return execResp, nil
 }
@@ -285,12 +285,12 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 	signature := ctx.UserInputs[inputSignature]
 	userHandle := ctx.UserInputs[inputUserHandle]
 
-	logger.Debug("Validating passkey", log.String("userID", userID))
+	logger.Debug("Validating passkey", log.MaskedString(log.LoggerKeyUserID, userID))
 
 	// Get session token from runtime data
 	sessionToken := ctx.RuntimeData[runtimePasskeySessionToken]
 	if sessionToken == "" {
-		logger.Error("No session token found for passkey authentication", log.String("userID", userID))
+		logger.Error("No session token found for passkey authentication", log.MaskedString(log.LoggerKeyUserID, userID))
 		return fmt.Errorf("no session token found for passkey authentication")
 	}
 
@@ -307,14 +307,14 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 	authResp, svcErr := p.passkeyService.FinishAuthentication(ctx.Context, finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			logger.Debug("Passkey verification failed", log.String("userID", userID),
+			logger.Debug("Passkey verification failed", log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("error", svcErr.ErrorDescription))
 			// Return USER_INPUT_REQUIRED to allow retry on invalid passkey
 			execResp.Status = common.ExecUserInputRequired
 			execResp.FailureReason = errorInvalidPasskey
 			return nil
 		}
-		logger.Error("Failed to verify passkey", log.String("userID", userID),
+		logger.Error("Failed to verify passkey", log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.ErrorDescription))
 		return fmt.Errorf("failed to verify passkey: %s", svcErr.ErrorDescription)
 	}
@@ -327,7 +327,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 	// Clear session token after successful verification
 	execResp.RuntimeData[runtimePasskeySessionToken] = ""
 
-	logger.Debug("Passkey validated successfully", log.String("userID", userID))
+	logger.Debug("Passkey validated successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 	return nil
 }
 
@@ -404,13 +404,13 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey registration",
-				log.String("userID", userID), log.String("error", svcErr.ErrorDescription))
+				log.MaskedString(log.LoggerKeyUserID, userID), log.String("error", svcErr.ErrorDescription))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = svcErr.ErrorDescription
 			return execResp, nil
 		}
 		logger.Error("Failed to start passkey registration",
-			log.String("userID", userID), log.Error(errors.New(svcErr.ErrorDescription)))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Error(errors.New(svcErr.ErrorDescription)))
 		return execResp, fmt.Errorf("failed to start passkey registration: %s", svcErr.ErrorDescription)
 	}
 
@@ -428,7 +428,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	execResp.AdditionalData[runtimePasskeyCreationOptions] = string(creationJSON)
 	execResp.Status = common.ExecComplete
 
-	logger.Debug("Passkey registration options generated successfully", log.String("userID", userID))
+	logger.Debug("Passkey registration options generated successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 	return execResp, nil
 }
 

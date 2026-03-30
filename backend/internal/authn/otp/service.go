@@ -209,7 +209,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 		return nil, s.handleUserProviderError(upErr, logger)
 	}
 
-	logger.Debug("User resolved from recipient", log.String("userId", user.UserID))
+	logger.Debug("User resolved from recipient", log.MaskedString(log.LoggerKeyUserID, user.UserID))
 	return user, nil
 }
 

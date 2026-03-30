@@ -137,13 +137,13 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	// Update user credentials
 	svcErr := e.userProvider.UpdateUserCredentials(userID, credentials)
 	if svcErr != nil {
-		logger.Debug("Failed to update user credentials", log.String("userID", userID))
+		logger.Debug("Failed to update user credentials", log.MaskedString(log.LoggerKeyUserID, userID))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to set credentials"
 		return execResp, nil
 	}
 
-	logger.Debug("Successfully set credentials for user", log.String("userID", userID))
+	logger.Debug("Successfully set credentials for user", log.MaskedString(log.LoggerKeyUserID, userID))
 	execResp.Status = common.ExecComplete
 	return execResp, nil
 }

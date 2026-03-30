@@ -279,7 +279,7 @@ func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
 	if _, err := a.userProvider.UpdateUser(userID, updatedUser); err != nil {
 		return fmt.Errorf("failed to update user attributes: %s", err.Message)
 	}
-	logger.Debug("User attributes updated successfully", log.String("userID", userID))
+	logger.Debug("User attributes updated successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 
 	return nil
 }
