@@ -20,9 +20,11 @@ package executor
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -89,7 +91,10 @@ func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.Executo
 
 	execResp.RuntimeData[common.RuntimeKeyStoredInviteToken] = inviteToken
 	execResp.RuntimeData[common.RuntimeKeyInviteLink] = inviteLink
-	execResp.AdditionalData[common.DataInviteLink] = inviteLink
+
+	if ctx.FlowType == common.FlowTypeUserOnboarding {
+		execResp.AdditionalData[common.DataInviteLink] = inviteLink
+	}
 
 	execResp.Status = common.ExecComplete
 	return execResp, nil
@@ -151,6 +156,14 @@ func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken s
 		gateConfig.Hostname,
 		gateConfig.Port,
 		gateConfig.Path)
+	queryParams := url.Values{
+		"flowId":      []string{ctx.FlowID},
+		"inviteToken": []string{inviteToken},
+	}
 
-	return fmt.Sprintf("%s/invite?flowId=%s&inviteToken=%s", gateAppURL, ctx.FlowID, inviteToken)
+	if ctx.AppID != "" {
+		queryParams.Set(oauth2const.AppID, ctx.AppID)
+	}
+
+	return fmt.Sprintf("%s/invite?%s", gateAppURL, queryParams.Encode())
 }

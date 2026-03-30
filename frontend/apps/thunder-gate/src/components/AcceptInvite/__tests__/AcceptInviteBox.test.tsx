@@ -127,11 +127,16 @@ let mockAcceptInviteRenderProps: MockAcceptInviteRenderProps = createMockAcceptI
 // Track props passed to AcceptInvite
 let capturedOnGoToSignIn: (() => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
+const mockUseAsgardeo = vi.fn().mockReturnValue({
+  resolveFlowTemplateLiterals: (template: string) => template,
+  meta: undefined,
+});
 
 vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
+    useAsgardeo: () => mockUseAsgardeo() as {resolveFlowTemplateLiterals: (t: string) => string; meta: unknown},
     AcceptInvite: ({
       children,
       onGoToSignIn = undefined,
@@ -140,6 +145,7 @@ vi.mock('@asgardeo/react', async () => {
       children: (props: typeof mockAcceptInviteRenderProps) => React.ReactNode;
       onGoToSignIn?: () => void;
       onError?: (error: Error) => void;
+      onFlowChange?: (response: {failureReason?: string}) => void;
     }) => {
       capturedOnGoToSignIn = onGoToSignIn;
       capturedOnError = onError;
@@ -162,6 +168,10 @@ vi.mock('@asgardeo/react', async () => {
 describe('AcceptInviteBox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAsgardeo.mockReturnValue({
+      resolveFlowTemplateLiterals: (template: string) => template,
+      meta: undefined,
+    });
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
     });
@@ -205,6 +215,83 @@ describe('AcceptInviteBox', () => {
     });
     render(<AcceptInviteBox />);
     expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
+
+  it('renders without error when sdk has not produced a branch yet', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      isLoading: false,
+      components: [],
+      error: null,
+      isValidatingToken: false,
+      isTokenInvalid: false,
+      isComplete: false,
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
+
+  it('shows success message when invite flow completes', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      isComplete: true,
+    });
+
+    render(<AcceptInviteBox />);
+
+    expect(screen.getByText(/Your account has been successfully set up\. You can now sign in\./)).toBeInTheDocument();
+  });
+
+  it('shows success message with app name when meta has application name', () => {
+    mockUseAsgardeo.mockReturnValue({
+      resolveFlowTemplateLiterals: (template: string) => template,
+      meta: {application: {name: 'My Test App'}},
+    });
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
+
+    render(<AcceptInviteBox />);
+
+    expect(
+      screen.getByText(/Your account has been successfully set up for My Test App\. You can now sign in\./),
+    ).toBeInTheDocument();
+  });
+
+  it('shows back to app link with app name when meta has application name and url', () => {
+    mockUseAsgardeo.mockReturnValue({
+      resolveFlowTemplateLiterals: (template: string) => template,
+      meta: {application: {name: 'My Test App', url: 'https://myapp.example.com'}},
+    });
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
+
+    render(<AcceptInviteBox />);
+
+    const link = screen.getByRole('link', {name: /Back to My Test App/});
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', 'https://myapp.example.com');
+  });
+
+  it('shows generic back to application link when meta has url but no application name', () => {
+    mockUseAsgardeo.mockReturnValue({
+      resolveFlowTemplateLiterals: (template: string) => template,
+      meta: {application: {url: 'https://myapp.example.com'}},
+    });
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
+
+    render(<AcceptInviteBox />);
+
+    const link = screen.getByRole('link', {name: /Back to Application/});
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', 'https://myapp.example.com');
+  });
+
+  it('does not show back to app link when meta has no application url', () => {
+    mockUseAsgardeo.mockReturnValue({
+      resolveFlowTemplateLiterals: (template: string) => template,
+      meta: {application: {name: 'My Test App'}},
+    });
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({isComplete: true});
+
+    render(<AcceptInviteBox />);
+
+    expect(screen.queryByRole('link', {name: /Back to/})).not.toBeInTheDocument();
   });
 
   it('shows error alert when error is present', () => {

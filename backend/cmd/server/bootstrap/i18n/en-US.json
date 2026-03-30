@@ -145,7 +145,23 @@
       "forms.collect_user_info.fields.username.placeholder": "Enter your username",
       "forms.collect_user_info.fields.email.label": "Email",
       "forms.collect_user_info.fields.email.placeholder": "Enter your email",
-      "forms.collect_user_info.actions.submit.label": "Sign Up"
+      "forms.collect_user_info.actions.submit.label": "Sign Up",
+      "forms.email.title": "Sign Up",
+      "forms.email.fields.email.label": "Email",
+      "forms.email.fields.email.placeholder": "Enter your email",
+      "forms.email.actions.next.label": "Next",
+      "forms.user_details.title": "Sign Up",
+      "forms.user_details.fields.username.label": "Username",
+      "forms.user_details.fields.username.placeholder": "Enter your username",
+      "forms.user_details.fields.first_name.label": "First Name",
+      "forms.user_details.fields.first_name.placeholder": "Enter your first name",
+      "forms.user_details.fields.last_name.label": "Last Name",
+      "forms.user_details.fields.last_name.placeholder": "Enter your last name",
+      "forms.user_details.actions.next.label": "Next",
+      "forms.credential.title": "Create Password",
+      "forms.credential.fields.password.label": "Password",
+      "forms.credential.fields.password.placeholder": "Enter your password",
+      "forms.credential.actions.submit.label": "Sign Up"
     }
   }
 }

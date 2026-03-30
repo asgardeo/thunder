@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -31,8 +30,7 @@ import (
 )
 
 // emailExecutor sends emails based on the configured email template and runtime context data.
-// When email is not configured (emailClient is nil), the executor completes as a no-op
-// without setting the emailSent flag, allowing the SDK to fall back to displaying the invite link.
+// When email is not configured (emailClient is nil), it completes as a no-op with emailSent=false.
 type emailExecutor struct {
 	core.ExecutorInterface
 	logger          *log.Logger
@@ -41,7 +39,7 @@ type emailExecutor struct {
 }
 
 // newEmailExecutor creates a new instance of the email executor.
-// emailClient may be nil if SMTP is not configured; the executor will act as a no-op in that case.
+// emailClient may be nil if SMTP is not configured; the executor completes as a no-op in that case.
 func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.EmailClientInterface,
 	templateService template.TemplateServiceInterface) *emailExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EmailExecutor"))
@@ -83,8 +81,8 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	// If email client is not configured, complete as a no-op.
-	// The emailSent flag will NOT be set, so the SDK can fall back to showing the invite link.
 	if e.emailClient == nil {
+		execResp.AdditionalData[common.DataEmailSent] = dataValueFalse
 		logger.Debug("Email client not configured, skipping email send")
 		execResp.Status = common.ExecComplete
 		return execResp, nil
@@ -120,15 +118,16 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	inviteLink := ctx.RuntimeData[common.RuntimeKeyInviteLink]
-	if scenario == template.ScenarioUserInvite && inviteLink == "" {
+	if (scenario == template.ScenarioUserInvite || scenario == template.ScenarioSelfRegistration) && inviteLink == "" {
 		return nil, errors.New("invite link not found in runtime data")
 	}
 
 	templateData := template.TemplateData{
 		"inviteLink": inviteLink,
+		"appName":    ctx.Application.Name,
 	}
 
-	rendered, svcErr := e.templateService.Render(context.Background(), scenario, templateData)
+	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, templateData)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to render email template: %s", svcErr.Code)
 	}

@@ -24,7 +24,7 @@
 
 import type {JSX} from 'react';
 import {useState} from 'react';
-import {Box, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
+import {Box, Alert, Typography, AlertTitle, CircularProgress, Link} from '@wso2/oxygen-ui';
 import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useNavigate} from 'react-router';
 import {useTranslation} from 'react-i18next';
@@ -34,10 +34,13 @@ import ROUTES from '../../constants/routes';
 
 export default function AcceptInviteBox(): JSX.Element {
   const navigate = useNavigate();
-  const {resolveFlowTemplateLiterals} = useAsgardeo();
+  const {resolveFlowTemplateLiterals, meta} = useAsgardeo();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
   const [flowError, setFlowError] = useState<string | null>(null);
+
+  const appName = (meta as {application?: {name?: string}} | undefined)?.application?.name ?? null;
+  const appUrl = (meta as {application?: {url?: string}} | undefined)?.application?.url ?? null;
 
   const baseUrl = getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string);
 
@@ -107,8 +110,25 @@ export default function AcceptInviteBox(): JSX.Element {
             return (
               <Box sx={{textAlign: 'center', py: 2}}>
                 <Alert severity="success">
-                  {t('invite:complete.description', 'Your account has been successfully set up.')}
+                  {appName
+                    ? t(
+                        'invite:complete.description.withApp',
+                        'Your account has been successfully set up for {{appName}}. You can now sign in.',
+                        {appName},
+                      )
+                    : t(
+                        'invite:complete.description',
+                        'Your account has been successfully set up. You can now sign in.',
+                      )}
                 </Alert>
+                {appUrl && (
+                  <Link href={appUrl} sx={{display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 2}}>
+                    &#8592;{' '}
+                    {appName
+                      ? t('invite:complete.backToApp.withApp', 'Back to {{appName}}', {appName})
+                      : t('invite:complete.backToApp', 'Back to Application')}
+                  </Link>
+                )}
               </Box>
             );
           }

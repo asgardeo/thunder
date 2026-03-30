@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {act} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
@@ -107,14 +108,22 @@ const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> =
 });
 
 let mockSignUpRenderProps: MockSignUpRenderProps = createMockSignUpRenderProps();
+let capturedOnFlowChange: ((response: unknown) => void) | undefined;
 
 vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
-    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) => (
-      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>
-    ),
+    SignUp: ({
+      children,
+      onFlowChange = undefined,
+    }: {
+      children: (props: typeof mockSignUpRenderProps) => React.ReactNode;
+      onFlowChange?: (response: unknown) => void;
+    }) => {
+      capturedOnFlowChange = onFlowChange;
+      return <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>;
+    },
     EmbeddedFlowComponentType: {
       Text: 'TEXT',
       Block: 'BLOCK',
@@ -136,6 +145,7 @@ describe('SignUpBox', () => {
       isDesignEnabled: false,
     });
     mockSignUpRenderProps = createMockSignUpRenderProps();
+    capturedOnFlowChange = undefined;
   });
 
   it('renders without crashing', () => {
@@ -160,12 +170,120 @@ describe('SignUpBox', () => {
     expect(screen.getByText('Registration failed')).toBeInTheDocument();
   });
 
-  it('shows fallback error when no components available', () => {
+  it('shows fallback error when no components available and emailSent is unknown', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       components: [],
     });
     render(<SignUpBox />);
     expect(screen.getByText("Oops, that didn't work")).toBeInTheDocument();
+  });
+
+  it('shows check your email alert when onFlowChange reports emailSent true', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
+    render(<SignUpBox />);
+
+    act(() => {
+      capturedOnFlowChange?.({data: {additionalData: {emailSent: 'true'}}});
+    });
+
+    expect(screen.getByText('Check your email')).toBeInTheDocument();
+    expect(screen.queryByText("Oops, that didn't work")).not.toBeInTheDocument();
+  });
+
+  it('hides sign-in link when emailSent is true', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
+    render(<SignUpBox />);
+
+    expect(screen.getByText(/Already have an account/)).toBeInTheDocument();
+
+    act(() => {
+      capturedOnFlowChange?.({data: {additionalData: {emailSent: 'true'}}});
+    });
+
+    expect(screen.queryByText(/Already have an account/)).not.toBeInTheDocument();
+  });
+
+  it('shows email service unavailable warning when onFlowChange reports emailSent false', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
+    render(<SignUpBox />);
+
+    act(() => {
+      capturedOnFlowChange?.({data: {additionalData: {emailSent: 'false'}}});
+    });
+
+    expect(screen.getByText('Email service unavailable')).toBeInTheDocument();
+    expect(screen.queryByText("Oops, that didn't work")).not.toBeInTheDocument();
+  });
+
+  it('does not update emailSent state when onFlowChange has no emailSent field', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
+    render(<SignUpBox />);
+
+    act(() => {
+      capturedOnFlowChange?.({data: {additionalData: {otherField: 'value'}}});
+    });
+
+    expect(screen.getByText("Oops, that didn't work")).toBeInTheDocument();
+    expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+    expect(screen.queryByText('Email service unavailable')).not.toBeInTheDocument();
+  });
+
+  it('shows flowError alert when onFlowChange reports failureReason', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [{id: 'block', type: 'BLOCK', components: []}],
+    });
+    render(<SignUpBox />);
+
+    act(() => {
+      capturedOnFlowChange?.({
+        failureReason: 'A user with this email already exists. Please use a different value.',
+        data: {additionalData: {}},
+      });
+    });
+
+    expect(
+      screen.getByText('A user with this email already exists. Please use a different value.'),
+    ).toBeInTheDocument();
+  });
+
+  it('clears flowError when submit is triggered', async () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Register',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignUpBox />);
+
+    act(() => {
+      capturedOnFlowChange?.({
+        failureReason: 'A user with this email already exists. Please use a different value.',
+        data: {additionalData: {}},
+      });
+    });
+
+    expect(
+      screen.getByText('A user with this email already exists. Please use a different value.'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Register'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('A user with this email already exists. Please use a different value.'),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('renders TEXT component as heading', () => {
