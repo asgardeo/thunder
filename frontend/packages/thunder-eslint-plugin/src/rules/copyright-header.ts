@@ -49,7 +49,6 @@ const copyrightHeaderRule: Rule.RuleModule = {
     type: 'layout',
     docs: {
       description: 'Enforce WSO2 Apache 2.0 copyright header in all source files',
-      category: 'Stylistic Issues',
     },
     fixable: 'code',
     schema: [
@@ -76,7 +75,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
     const options: CopyrightHeaderOptions = (context.options?.[0] as CopyrightHeaderOptions) ?? {};
     const excludePatterns: string[] = options.excludePatterns ?? [];
     const template: string = options.template ?? REQUIRED_COPYRIGHT_HEADER;
-    const filename: string = context.getFilename();
+    const filename: string = context.filename;
 
     // Check if file should be excluded
     if (excludePatterns.some((pattern: string) => new RegExp(pattern).test(filename))) {
@@ -90,7 +89,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
 
     return {
       Program(node: unknown) {
-        const sourceCode: SourceCode = context.getSourceCode();
+        const sourceCode: SourceCode = context.sourceCode;
         const comments: Comment[] = sourceCode.getAllComments();
 
         // Check if first comment is the copyright header
@@ -115,7 +114,6 @@ const copyrightHeaderRule: Rule.RuleModule = {
 
         if (!normalizedComment.includes('WSO2 LLC') || !normalizedComment.includes('Apache License')) {
           context.report({
-            // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
             node: firstComment,
             messageId: 'incorrectHeader',
             fix(fixer: Rule.RuleFixer) {

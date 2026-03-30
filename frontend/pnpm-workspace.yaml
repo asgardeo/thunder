@@ -29,8 +29,7 @@ catalog:
   dompurify: 3.3.3
   esbuild: 0.25.10
   esbuild-plugin-preserve-directives: 0.0.11
-  eslint: 8.57.1
-  eslint-plugin-react-refresh: 0.4.23
+  eslint: 10.0.1
   globals: 16.4.0
   i18next: 25.6.0
   jsdom: 27.0.1
