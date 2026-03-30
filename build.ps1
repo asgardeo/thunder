@@ -33,8 +33,32 @@ param(
     [string]$TestRun,
     
     [Parameter(Position = 4)]
-    [string]$TestPackage
+    [string]$TestPackage,
+
+    [switch]$WithoutConsent
 )
+
+# Accept --without-consent anywhere in positional arguments.
+$positionalArgs = @($Command, $GO_OS, $GO_ARCH, $TestRun, $TestPackage) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+$normalizedArgs = @()
+$withoutConsentFromArgs = $false
+
+foreach ($arg in $positionalArgs) {
+    if ($arg -ceq "--without-consent") {
+        $withoutConsentFromArgs = $true
+        continue
+    }
+
+    $normalizedArgs += $arg
+}
+
+$Command = if ($normalizedArgs.Count -gt 0) { $normalizedArgs[0] } else { $null }
+$GO_OS = if ($normalizedArgs.Count -gt 1) { $normalizedArgs[1] } else { $null }
+$GO_ARCH = if ($normalizedArgs.Count -gt 2) { $normalizedArgs[2] } else { $null }
+$TestRun = if ($normalizedArgs.Count -gt 3) { $normalizedArgs[3] } else { $null }
+$TestPackage = if ($normalizedArgs.Count -gt 4) { $normalizedArgs[4] } else { $null }
+
+$skipConsent = $WithoutConsent.IsPresent -or $withoutConsentFromArgs -or ($env:WITHOUT_CONSENT -eq "true")
 
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -617,12 +641,34 @@ function Package {
         Copy-Item -Path "setup.sh" -Destination $package_folder -Force
     }
 
-    Write-Host "Packaging consent server..."
-    $packageFolderAbs = (Resolve-Path -Path $package_folder).Path
-    & (Join-Path $SCRIPT_DIR "scripts/package-consent-server.ps1") `
-        -GoOS $GO_OS -GoArch $GO_ARCH -DistOutputPath $packageFolderAbs
-    if ($LASTEXITCODE -ne 0) {
-        throw "Consent server packaging failed with exit code $LASTEXITCODE"
+    if (-not $skipConsent) {
+        Write-Host "Packaging consent server..."
+        $packageFolderAbs = (Resolve-Path -Path $package_folder).Path
+        & (Join-Path $SCRIPT_DIR "scripts/package-consent-server.ps1") `
+            -GoOS $GO_OS -GoArch $GO_ARCH -DistOutputPath $packageFolderAbs
+        if ($LASTEXITCODE -ne 0) {
+            throw "Consent server packaging failed with exit code $LASTEXITCODE"
+        }
+    } else {
+        Write-Host "Skipping consent server packaging (--without-consent)..."
+        $targetYaml = Join-Path $package_folder "repository/conf/deployment.yaml"
+        if (Get-Command yq -ErrorAction SilentlyContinue) {
+            & yq eval '.consent.enabled = false' -i $targetYaml
+        } else {
+            $content = Get-Content $targetYaml
+            $inConsent = $false
+            for ($i = 0; $i -lt $content.Length; $i++) {
+                if ($content[$i] -match '^consent:') {
+                    $inConsent = $true
+                } elseif ($inConsent -and $content[$i] -match '^\s*enabled:\s*true') {
+                    $content[$i] = $content[$i] -replace 'enabled:\s*true', 'enabled: false'
+                    $inConsent = $false
+                } elseif ($inConsent -and $content[$i] -match '^\S') {
+                    $inConsent = $false
+                }
+            }
+            $content | Set-Content $targetYaml
+        }
     }
 
     Write-Host "Creating zip file..."
@@ -1500,7 +1546,7 @@ function Run {
     Write-Host "Running frontend apps..."
     Run-Frontend
 
-    if ($script:CONSENT_ENABLED) {
+    if ($script:CONSENT_ENABLED -and -not $skipConsent) {
         Write-Host "Running consent server..."
         Run-Consent
     }

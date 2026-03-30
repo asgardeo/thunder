@@ -59,7 +59,10 @@ RUN if [ -n "$CERT_FILE" ] && [ -n "$KEY_FILE" ] && [ -f "$CERT_FILE" ] && [ -f 
 
 # Build both frontend and backend for the target architecture
 ARG TARGETARCH
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
+ARG WITH_CONSENT=true
+RUN WITHOUT_CONSENT=$([ "$WITH_CONSENT" = "false" ] && echo "true" || echo "false") && \
+    export WITHOUT_CONSENT && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
         ./build.sh build linux amd64; \
     else \
         ./build.sh build linux arm64; \
@@ -115,7 +118,8 @@ USER thunder
 
 # Set environment variables
 ENV BACKEND_PORT=8090
-ENV WITH_CONSENT=true
+ARG WITH_CONSENT=true
+ENV WITH_CONSENT=${WITH_CONSENT}
 
 # Start the application
 CMD ["./start.sh"]

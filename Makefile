@@ -21,6 +21,8 @@ VERSION_FILE=version.txt
 VERSION=$(shell cat $(VERSION_FILE))
 BINARY_NAME=thunder
 
+export WITHOUT_CONSENT ?= false
+
 # Tools
 PROJECT_DIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))/backend
 PROJECT_BIN_DIR := $(PROJECT_DIR)/bin
