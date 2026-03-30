@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {Accordion, AccordionDetails, AccordionSummary, Typography} from '@wso2/oxygen-ui';
+import {Accordion, AccordionDetails, AccordionSummary, Box, Typography} from '@wso2/oxygen-ui';
 import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
 import type {JSX, ReactNode} from 'react';
 
@@ -24,13 +24,14 @@ export interface ConfigCardProps {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  action?: ReactNode;
 }
 
 /**
  * ConfigCard - A collapsible card component for builder mode sections.
  * Used to group related configuration options within theme and layout editors.
  */
-export default function ConfigCard({title, children, defaultOpen = true}: ConfigCardProps): JSX.Element {
+export default function ConfigCard({title, children, defaultOpen = true, action = undefined}: ConfigCardProps): JSX.Element {
   return (
     <Accordion
       defaultExpanded={defaultOpen}
@@ -41,14 +42,15 @@ export default function ConfigCard({title, children, defaultOpen = true}: Config
         '&:before': {
           display: 'none',
         },
-        overflow: 'hidden',
+        overflow: 'visible',
         flexShrink: 0,
       }}
     >
       <AccordionSummary expandIcon={<ChevronDown size={16} />}>
-        <Typography variant="body2" sx={{fontWeight: 600, fontSize: '0.9375rem'}}>
+        <Typography variant="body2" sx={{fontWeight: 600, fontSize: '0.9375rem', flex: 1}}>
           {title}
         </Typography>
+        {action && <Box onClick={(e) => e.stopPropagation()}>{action}</Box>}
       </AccordionSummary>
       <AccordionDetails>{children}</AccordionDetails>
     </Accordion>

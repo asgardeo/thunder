@@ -17,7 +17,7 @@
  */
 
 import {LanguageSwitcher} from '@asgardeo/react';
-import {useDesign, StylesheetInjector, type Theme} from '@thunder/shared-design';
+import {useDesign, GoogleFontLoader, StylesheetInjector, type Theme} from '@thunder/shared-design';
 import {
   OxygenUIThemeProvider,
   ColorSchemeToggle,
@@ -39,6 +39,7 @@ export default function withTheme<P extends object>(WrappedComponent: ComponentT
     return (
       <OxygenUIThemeProvider theme={theme}>
         <StylesheetInjector />
+        <GoogleFontLoader />
         <ColorSchemeToggle
           sx={{
             position: 'fixed',

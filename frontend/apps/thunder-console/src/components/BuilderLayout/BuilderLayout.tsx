@@ -84,8 +84,8 @@ function BuilderLayout({
 }: BuilderLayoutProps): ReactElement {
   return (
     <Box width="100%" height="100%" display="flex" position="relative" {...rest}>
-      {/* Floating expand button — visible only when panel is collapsed */}
-      {!open && (
+      {/* Floating expand button — visible only when panel is collapsed and has content */}
+      {!open && panelContent && (
         <Tooltip title={expandTooltip} placement="right">
           <IconButton
             aria-label={expandTooltip}

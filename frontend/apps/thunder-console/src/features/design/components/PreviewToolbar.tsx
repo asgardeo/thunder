@@ -19,7 +19,7 @@
 import type {ColorSchemeOption} from '@thunder/shared-design';
 import {Box, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {Minus, Monitor, Plus, Smartphone, Tablet} from '@wso2/oxygen-ui-icons-react';
-import {type JSX} from 'react';
+import {type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {Viewport} from './ThemePreviewPanel';
 import {VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS} from './viewportConstants';
@@ -34,6 +34,8 @@ export interface PreviewToolbarProps {
   setZoom: (z: number) => void;
   zoomIdx: number;
   showDimensions?: boolean;
+  /** Extra content rendered at the end of the toolbar (after a divider). */
+  extraContent?: ReactNode;
 }
 
 const ZOOM_STEPS = [25, 50, 75, 100, 125, 150];
@@ -57,6 +59,7 @@ export default function PreviewToolbar({
   zoom,
   setZoom,
   zoomIdx,
+  extraContent = undefined,
 }: PreviewToolbarProps): JSX.Element {
   const {t} = useTranslation('design');
   const viewportOptions: {id: Viewport; label: string; icon: JSX.Element}[] = [
@@ -223,6 +226,13 @@ export default function PreviewToolbar({
           </IconButton>
         </span>
       </Tooltip>
+
+      {extraContent && (
+        <>
+          <ToolbarDivider />
+          {extraContent}
+        </>
+      )}
     </Box>
   );
 }

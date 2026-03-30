@@ -30,6 +30,7 @@ vi.mock('@thunder/shared-design', () => ({
   FlowComponentRenderer: () => <div data-testid="flow-component" />,
   AuthPageLayout: ({children}: {children: React.ReactNode}) => <div data-testid="auth-page-layout">{children}</div>,
   AuthCardLayout: ({children}: {children: React.ReactNode}) => <div data-testid="auth-card-layout">{children}</div>,
+  GoogleFontLoader: () => null,
   AcrylicOrangeTheme: {},
 }));
 

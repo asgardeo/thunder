@@ -46,9 +46,16 @@ export default function useDesign(baseTheme?: Theme): DesignContextType {
   // If a baseTheme is provided, override the transformedTheme
   const transformedTheme = useMemo(() => {
     if (baseTheme && !isEmpty(context.design?.theme)) {
-      return extendTheme(
-        merge(context.design?.theme as CssVarsThemeOptions, {colorSchemeSelector: 'data'}),
-      ) as unknown as Theme;
+      const themeOptions = merge(context.design?.theme as CssVarsThemeOptions, {colorSchemeSelector: 'data'});
+
+      // MUI's extendTheme only accepts 'light' or 'dark' for defaultColorScheme.
+      // 'system' is a Thunder-level runtime concept — remove it so MUI falls
+      // back to its default.
+      if ((themeOptions as Record<string, unknown>)['defaultColorScheme'] === 'system') {
+        delete (themeOptions as Record<string, unknown>)['defaultColorScheme'];
+      }
+
+      return extendTheme(themeOptions) as unknown as Theme;
     }
 
     return baseTheme;

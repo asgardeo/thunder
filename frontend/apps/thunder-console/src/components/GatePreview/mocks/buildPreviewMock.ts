@@ -35,6 +35,12 @@ const IDP_ICONS: Record<string, string> = {
   GITHUB: `${ICON_BASE}/github.svg`,
 };
 
+/** Template literal keys for social provider button labels. */
+const IDP_LABEL_KEYS: Record<string, string> = {
+  GOOGLE: '{{t(elements:buttons.google.text)}}',
+  GITHUB: '{{t(elements:buttons.github.text)}}',
+};
+
 /**
  * Builds a preview mock component list based on the enabled integrations and available identity providers.
  *
@@ -160,7 +166,7 @@ export default function buildPreviewMock(
           eventType: 'TRIGGER',
           id: `action_${provider.id}`,
           image: IDP_ICONS[provider.type] ?? '',
-          label: `Continue with ${provider.name}`,
+          label: IDP_LABEL_KEYS[provider.type] ?? `Continue with ${provider.name}`,
           resourceType: 'ELEMENT',
           type: 'ACTION',
           variant: 'SOCIAL',
@@ -179,7 +185,7 @@ export default function buildPreviewMock(
       category: 'ACTION',
       eventType: 'TRIGGER',
       id: 'action_passkey',
-      label: 'Use a Passkey',
+      label: '{{t(signin:passkey.button.use)}}',
       resourceType: 'ELEMENT',
       startIcon: `${ICON_BASE}/fingerprint.svg`,
       type: 'ACTION',

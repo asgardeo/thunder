@@ -125,7 +125,7 @@ export default function ThemeConfigPanel({
   const darkColors = draftTheme.colorSchemes?.dark?.palette as CssVarsPalette;
 
   return (
-    <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+    <Box sx={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
       {/* Light / Dark toggle — only for Colors section */}
       {activeSection === 'colors' && (
         <ToggleButtonGroup
@@ -152,7 +152,7 @@ export default function ThemeConfigPanel({
         </ToggleButtonGroup>
       )}
 
-      <Box sx={{flex: 1, overflowY: 'auto', mt: 2}}>
+      <Box sx={{flex: 1, minHeight: 0, overflowY: 'auto', mt: 2}}>
         {activeSection === 'colors' && colorSchemeTab === 'light' && lightColors && (
           <ColorBuilderContent colors={lightColors} onUpdate={(up) => updateColorScheme('light', up)} />
         )}

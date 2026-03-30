@@ -36,6 +36,9 @@ export {default as useGetDesignResolve} from './api/useGetDesignResolve';
 // Query keys
 export {default as DesignQueryKeys} from './constants/design-query-keys';
 
+// Font constants
+export {BROWSER_SAFE_FONTS} from './constants/fonts';
+
 // Context
 export {default as DesignContext} from './contexts/Design/DesignContext';
 export * from './contexts/Design/DesignContext';
@@ -54,6 +57,9 @@ export * from './models/responses';
 export * from './models/theme';
 
 // Components
+export {default as GoogleFontLoader} from './components/GoogleFontLoader';
+export type {GoogleFontLoaderProps} from './components/GoogleFontLoader';
+
 export {default as StylesheetInjector} from './components/StylesheetInjector';
 export type {StylesheetInjectorProps} from './components/StylesheetInjector';
 

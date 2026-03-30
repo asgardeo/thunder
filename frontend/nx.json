@@ -23,5 +23,6 @@
   },
   "sync": {
     "applyChanges": false
-  }
+  },
+  "analytics": false
 }

@@ -17,7 +17,7 @@
  */
 
 import {Box, Button, useColorScheme} from '@wso2/oxygen-ui';
-import {Save, Trash} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Save, Trash, Undo2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -35,7 +35,7 @@ export default function ThemeBuilderPage(): JSX.Element {
   const {mode, systemMode} = useColorScheme();
   const navigate = useNavigate();
 
-  const {themeId, displayName, activeSection, setActiveSection, isDirty, draftTheme, setDraftTheme, setIsDirty} =
+  const {themeId, displayName, activeSection, setActiveSection, isDirty, draftTheme, setDraftTheme, setIsDirty, resetDraft} =
     useThemeBuilder();
 
   const saveHandlerRef = useRef<() => void>(() => null);
@@ -58,9 +58,10 @@ export default function ThemeBuilderPage(): JSX.Element {
 
   const bgColor = (systemMode ?? mode) === 'dark' ? '#141414' : '#f6f7f9';
 
+  const [toolbarPortal, setToolbarPortal] = useState<HTMLDivElement | null>(null);
+
   const leftPanelContent = (
     <ThemeBuilderLeftPanel
-      onBack={handleBack}
       onPanelToggle={handleTogglePanel}
       draftTheme={draftTheme}
       setDraftTheme={setDraftTheme}
@@ -84,8 +85,49 @@ export default function ThemeBuilderPage(): JSX.Element {
           },
         }}
       >
+        {/* ── Top bar: back button | toolbar (portal target) | action buttons ── */}
+        <Box sx={{display: 'flex', alignItems: 'center', px: 2, py: 1, flexShrink: 0}}>
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<ArrowLeft size={14} />}
+            onClick={handleBack}
+            sx={{textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', whiteSpace: 'nowrap'}}
+          >
+            {t('themes.builder.actions.back_to_design.label', 'Back to Design')}
+          </Button>
+          {/* Portal target — the PreviewToolbar from GatePreview renders here */}
+          <Box ref={setToolbarPortal} sx={{flex: 1, display: 'flex', justifyContent: 'center'}} />
+          <Box sx={{display: 'flex', gap: 2}}>
+            <Button
+              variant="text"
+              color="error"
+              startIcon={<Trash size={18} />}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              {t('themes.builder.actions.delete.label', 'Delete')}
+            </Button>
+            <Button
+              variant="outlined"
+              disabled={!isDirty}
+              startIcon={<Undo2 size={18} />}
+              onClick={resetDraft}
+            >
+              {t('themes.builder.actions.revert.label', 'Revert')}
+            </Button>
+            <Button
+              variant="contained"
+              disabled={!isDirty}
+              startIcon={<Save size={18} />}
+              onClick={() => saveHandlerRef.current()}
+            >
+              {t('themes.builder.actions.save.label', 'Save')}
+            </Button>
+          </Box>
+        </Box>
+
         {/* ── Three-column builder area ──────────────────────────────────────── */}
-        <Box sx={{flex: 1, overflow: 'hidden', p: 1}}>
+        <Box sx={{flex: 1, overflow: 'hidden', p: 1, pt: 0}}>
           <BuilderLayout
             open={isPanelOpen}
             onPanelToggle={handleTogglePanel}
@@ -99,56 +141,31 @@ export default function ThemeBuilderPage(): JSX.Element {
               borderRight: '1px solid',
               borderColor: 'divider',
             }}
-          >
-            <Box sx={{display: 'flex', height: '100%', overflow: 'hidden', bgcolor: bgColor}}>
-              {/* ── Center: canvas preview ─────────────────────────────────── */}
-              <Box
-                component="main"
-                sx={{
-                  flexGrow: 1,
-                  height: '100%',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRadius: 1,
-                  mx: 2,
-                }}
+            rightPanel={
+              <BuilderStaticPanel
+                width={DesignUIConstants.RIGHT_PANEL_WIDTH}
+                header={activeSection ? t(`themes.builder.sections.${activeSection}.label`, activeSection) : t('themes.builder.config.label', 'Config')}
               >
-                <ThemePreviewPanel themeId={themeId ?? null} />
-              </Box>
-
-              <Box>
-                {/* Save */}
-                <Box sx={{mr: 1, mb: 1, p: 2, display: 'flex', justifyContent: 'flex-end', gap: 2}}>
-                  <Button
-                    variant="text"
-                    color="error"
-                    startIcon={<Trash size={18} />}
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    {t('themes.builder.actions.delete.label', 'Delete')}
-                  </Button>
-                  <Button
-                    variant="contained"
-                    disabled={!isDirty}
-                    startIcon={<Save size={18} />}
-                    onClick={() => saveHandlerRef.current()}
-                  >
-                    {t('themes.builder.actions.save.label', 'Save')}
-                  </Button>
-                </Box>
-                {/* ── Right panel: section config ────────────────────────────── */}
-                <BuilderStaticPanel
-                  width={DesignUIConstants.RIGHT_PANEL_WIDTH}
-                  header={activeSection ? t(`themes.builder.sections.${activeSection}.label`, activeSection) : 'Config'}
-                >
-                  <ThemeConfigPanel
-                    themeId={themeId ?? null}
-                    activeSection={activeSection}
-                    saveHandlerRef={saveHandlerRef}
-                  />
-                </BuilderStaticPanel>
-              </Box>
+                <ThemeConfigPanel
+                  themeId={themeId ?? null}
+                  activeSection={activeSection}
+                  saveHandlerRef={saveHandlerRef}
+                />
+              </BuilderStaticPanel>
+            }
+          >
+            {/* ── Center: canvas preview ─────────────────────────────────── */}
+            <Box
+              sx={{
+                height: '100%',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: 1,
+                bgcolor: bgColor,
+              }}
+            >
+              <ThemePreviewPanel themeId={themeId ?? null} toolbarPortal={toolbarPortal} />
             </Box>
           </BuilderLayout>
         </Box>
