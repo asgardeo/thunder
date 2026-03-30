@@ -119,7 +119,7 @@ describe('buildPreviewMock', () => {
 
       const passkey = getComponentById(result, 'action_passkey');
       expect(passkey).toBeDefined();
-      expect(passkey!.label).toBe('Use a Passkey');
+      expect(passkey!.label).toBe('{{t(signin:passkey.button.use)}}');
       expect(passkey!.variant).toBe('SOCIAL');
     });
 
@@ -172,7 +172,7 @@ describe('buildPreviewMock', () => {
       const googleBlock = getComponentById(result, 'block_google')!;
       const subComponents = googleBlock.components as MockComponent[];
       const action = subComponents.find((c) => c.id === 'action_google');
-      expect(action!.label).toBe('Continue with Google');
+      expect(action!.label).toBe('{{t(elements:buttons.google.text)}}');
     });
   });
 

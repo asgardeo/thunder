@@ -356,12 +356,12 @@ describe('CustomCSSEditor', () => {
   });
 
   describe('enable/disable toggle', () => {
-    it('toggles disabled state via the switch', () => {
+    it('toggles disabled state via the eye icon', () => {
       const onChange = vi.fn();
-      const {container} = renderWithTheme(<CustomCSSEditor stylesheets={[inlineSheet]} onChange={onChange} />);
+      renderWithTheme(<CustomCSSEditor stylesheets={[inlineSheet]} onChange={onChange} />);
 
-      // MUI Switch renders a hidden checkbox input
-      const toggle = container.querySelector('input[type="checkbox"]')!;
+      // The eye icon toggle has an aria-label "Hide from preview" when enabled
+      const toggle = screen.getByLabelText('Hide from preview');
       expect(toggle).toBeTruthy();
 
       act(() => {
@@ -371,13 +371,13 @@ describe('CustomCSSEditor', () => {
       expect(onChange).toHaveBeenCalledWith([expect.objectContaining({disabled: true})]);
     });
 
-    it('renders with unchecked switch when disabled', () => {
+    it('renders with eye-off icon when disabled', () => {
       const disabledSheet: Stylesheet = {...inlineSheet, disabled: true};
-      const {container} = renderWithTheme(<CustomCSSEditor stylesheets={[disabledSheet]} onChange={vi.fn()} />);
+      renderWithTheme(<CustomCSSEditor stylesheets={[disabledSheet]} onChange={vi.fn()} />);
 
-      const toggle = container.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+      // When disabled, the toggle shows "Show in preview"
+      const toggle = screen.getByLabelText('Show in preview');
       expect(toggle).toBeTruthy();
-      expect(toggle.checked).toBe(false);
     });
   });
 

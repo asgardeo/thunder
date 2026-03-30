@@ -17,21 +17,12 @@
  */
 
 import {useGetThemes, useGetTheme, type Stylesheet} from '@thunder/shared-design';
-import {
-  Autocomplete,
-  Box,
-  Button,
-  Drawer,
-  IconButton,
-  TextField,
-  Tooltip,
-  Typography,
-  useColorScheme,
-} from '@wso2/oxygen-ui';
+import {Autocomplete, Box, Button, IconButton, TextField, Tooltip, Typography, useColorScheme} from '@wso2/oxygen-ui';
 import {ArrowLeft, Crosshair, Layers, Save} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import BuilderLayout from '../../../components/BuilderLayout/BuilderLayout';
 import BuilderStaticPanel from '../../../components/BuilderLayout/BuilderStaticPanel';
 import GatePreview from '../../../components/GatePreview/GatePreview';
 import LayoutConfigPanel from '../components/LayoutConfigPanel';
@@ -68,7 +59,13 @@ export default function LayoutBuilderPage(): JSX.Element {
     /* no-op */
   });
   const cssEditorRef = useRef<CustomCSSEditorHandle>(null);
-  const [inspectorEnabled, setInspectorEnabled] = useState(false);
+  const [inspectorEnabled, setInspectorEnabled] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [toolbarPortal, setToolbarPortal] = useState<HTMLDivElement | null>(null);
+
+  const handleTogglePanel = useCallback(() => {
+    setIsPanelOpen((prev) => !prev);
+  }, []);
 
   // Theme selector for preview
   const {data: themesData} = useGetThemes();
@@ -139,209 +136,203 @@ export default function LayoutBuilderPage(): JSX.Element {
     addScreen(name, extendsBase);
   };
 
-  return (
-    <Box sx={{width: '100%', height: '100vh', display: 'flex', flexDirection: 'column'}}>
-      {/* ── Top bar ───────────────────────────────────────────────────────── */}
+  const bgColor = (systemMode ?? mode) === 'dark' ? '#141414' : '#f6f7f9';
+
+  const hasLeftPanel = handle !== 'centered';
+
+  const leftPanelContent = hasLeftPanel ? (
+    <>
       <Box
         sx={{
-          height: 48,
-          flexShrink: 0,
+          px: 1.25,
+          pt: 1.5,
+          pb: 0.75,
           display: 'flex',
           alignItems: 'center',
-          px: 1.5,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-          gap: 1,
+          gap: 0.75,
         }}
       >
-        <Tooltip title={t('layouts.builder.actions.back_to_design.tooltip', 'Back to Design')}>
-          <IconButton size="small" onClick={handleNavigateBack} sx={{mr: 0.5}}>
-            <ArrowLeft size={16} />
-          </IconButton>
-        </Tooltip>
-
-        <Box sx={{flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2}}>
-          <Typography variant="body2" sx={{fontWeight: 600, fontSize: '0.875rem', color: 'text.primary'}}>
-            {displayName ?? '—'}
-          </Typography>
-          {handle === 'centered' && (
-            <Tooltip title={inspectorEnabled ? 'Disable element inspector' : 'Inspect elements'}>
-              <IconButton
-                size="small"
-                onClick={() => setInspectorEnabled((prev) => !prev)}
-                sx={{
-                  bgcolor: inspectorEnabled ? 'primary.main' : 'transparent',
-                  color: inspectorEnabled ? 'primary.contrastText' : 'text.secondary',
-                  '&:hover': {
-                    bgcolor: inspectorEnabled ? 'primary.dark' : 'action.hover',
-                  },
-                }}
-              >
-                <Crosshair size={16} />
-              </IconButton>
-            </Tooltip>
-          )}
-          {handle === 'centered' && themeOptions.length > 0 && (
-            <Autocomplete
-              size="small"
-              options={themeOptions}
-              getOptionLabel={(option) => option.displayName}
-              value={themeOptions.find((opt) => opt.id === resolvedThemeId) ?? themeOptions[0] ?? null}
-              onChange={(_e, newValue) => setSelectedThemeId(newValue?.id ?? null)}
-              disableClearable
-              sx={{width: 200}}
-              renderInput={(params) => <TextField {...params} placeholder="Theme" variant="outlined" />}
-            />
-          )}
-        </Box>
+        <Layers size={14} style={{opacity: 0.5}} />
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            fontSize: '0.68rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            color: 'text.secondary',
+          }}
+        >
+          {t('layouts.builder.screens.label', 'Screens')}
+        </Typography>
+        <Box sx={{flex: 1}} />
+        <Typography variant="caption" sx={{fontSize: '0.65rem', color: 'text.disabled'}}>
+          {screenNames.length}
+        </Typography>
       </Box>
 
-      {/* ── Main area ─────────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          flex: 1,
-          display: 'flex',
-          overflow: 'hidden',
-          p: 1,
-          bgcolor: (systemMode ?? mode) === 'dark' ? '#141414' : '#f6f7f9',
-        }}
-      >
-        {/* ── Left panel: screen list (hidden for centered layout) ──────── */}
-        {handle !== 'centered' && (
-          <Drawer
-            variant="persistent"
-            anchor="left"
-            open
+      <Box sx={{flex: 1, overflowY: 'auto', px: 1.25, pb: 1, display: 'flex', flexDirection: 'column', gap: 0.5}}>
+        {screenNames.map((name) => (
+          <ScreenListItem
+            key={name}
+            name={name}
+            extendsBase={allScreens[name]?.extends as string | undefined}
+            isSelected={selectedScreen === name}
+            onClick={() => setSelectedScreen(name)}
+          />
+        ))}
+      </Box>
+
+      {/* Add screen */}
+      <Box sx={{px: 1.25, pb: 1.25, pt: 0.5, borderTop: '1px solid', borderColor: 'divider'}}>
+        <AddScreenRow baseScreens={baseScreenNames} onAdd={handleAddScreen} />
+      </Box>
+    </>
+  ) : undefined;
+
+  const toolbarEnd =
+    handle === 'centered' ? (
+      <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+        {themeOptions.length > 0 && (
+          <Autocomplete
+            size="small"
+            options={themeOptions}
+            getOptionLabel={(option) => option.displayName}
+            value={themeOptions.find((opt) => opt.id === resolvedThemeId) ?? themeOptions[0] ?? null}
+            onChange={(_e, newValue) => setSelectedThemeId(newValue?.id ?? null)}
+            disableClearable
+            sx={{width: 160, '& .MuiInputBase-root': {height: 28, fontSize: '0.75rem'}, '& .MuiAutocomplete-endAdornment': {top: '50%', transform: 'translateY(-50%)'}}}
+            renderInput={(params) => <TextField {...params} placeholder="Theme" variant="outlined" />}
+          />
+        )}
+        <Box sx={{width: '1px', height: 16, bgcolor: 'divider', mx: 0.5, flexShrink: 0}} />
+        <Tooltip title={inspectorEnabled ? 'Disable element inspector' : 'Inspect elements'}>
+          <IconButton
+            size="small"
+            onClick={() => setInspectorEnabled((prev) => !prev)}
             sx={{
-              width: DesignUIConstants.LEFT_PANEL_WIDTH,
-              flexShrink: 0,
-              '& .MuiDrawer-paper': {
-                width: DesignUIConstants.LEFT_PANEL_WIDTH,
-                position: 'relative',
-                border: 'none',
-                borderRight: '1px solid',
-                borderColor: 'divider',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
+              bgcolor: inspectorEnabled ? 'primary.main' : 'transparent',
+              color: inspectorEnabled ? 'primary.contrastText' : 'text.secondary',
+              '&:hover': {
+                bgcolor: inspectorEnabled ? 'primary.dark' : 'action.hover',
               },
             }}
           >
-            <Box
-              sx={{
-                px: 1.25,
-                pt: 1.5,
-                pb: 0.75,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.75,
-              }}
-            >
-              <Layers size={14} style={{opacity: 0.5}} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: '0.68rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  color: 'text.secondary',
-                }}
-              >
-                {t('layouts.builder.screens.label', 'Screens')}
-              </Typography>
-              <Box sx={{flex: 1}} />
-              <Typography variant="caption" sx={{fontSize: '0.65rem', color: 'text.disabled'}}>
-                {screenNames.length}
-              </Typography>
-            </Box>
+            <Crosshair size={16} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    ) : undefined;
 
-            <Box sx={{flex: 1, overflowY: 'auto', px: 1.25, pb: 1, display: 'flex', flexDirection: 'column', gap: 0.5}}>
-              {screenNames.map((name) => (
-                <ScreenListItem
-                  key={name}
-                  name={name}
-                  extendsBase={allScreens[name]?.extends as string | undefined}
-                  isSelected={selectedScreen === name}
-                  onClick={() => setSelectedScreen(name)}
-                />
-              ))}
-            </Box>
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        height: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'var(--flow-builder-background-color)',
+        '[data-color-scheme="dark"] &': {
+          bgcolor: 'var(--flow-builder-background-color-dark)',
+        },
+      }}
+    >
+      {/* ── Top bar: back button | toolbar (portal target) | save button ──── */}
+      <Box sx={{display: 'flex', alignItems: 'center', px: 2, py: 1, flexShrink: 0}}>
+        <Button
+          variant="text"
+          size="small"
+          startIcon={<ArrowLeft size={14} />}
+          onClick={handleNavigateBack}
+          sx={{textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', whiteSpace: 'nowrap'}}
+        >
+          {t('layouts.builder.actions.back_to_design.label', 'Back to Design')}
+        </Button>
+        {/* Portal target — the PreviewToolbar from GatePreview renders here */}
+        <Box ref={setToolbarPortal} sx={{flex: 1, display: 'flex', justifyContent: 'center'}} />
+        <Button
+          variant="contained"
+          // size="small"
+          disabled={!isDirty}
+          startIcon={<Save size={18} />}
+          onClick={() => saveHandlerRef.current()}
+        >
+          {t('layouts.builder.actions.save.label', 'Save')}
+        </Button>
+      </Box>
 
-            {/* Add screen */}
-            <Box sx={{px: 1.25, pb: 1.25, pt: 0.5, borderTop: '1px solid', borderColor: 'divider'}}>
-              <AddScreenRow baseScreens={baseScreenNames} onAdd={handleAddScreen} />
-            </Box>
-          </Drawer>
-        )}
-
-        {/* ── Center: canvas with rulers ────────────────────────────────── */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            height: '100%',
+      {/* ── Three-column builder area ──────────────────────────────────────── */}
+      <Box sx={{flex: 1, overflow: 'hidden', p: 1, pt: 0}}>
+        <BuilderLayout
+          open={hasLeftPanel && isPanelOpen}
+          onPanelToggle={handleTogglePanel}
+          panelWidth={DesignUIConstants.LEFT_PANEL_WIDTH}
+          panelContent={leftPanelContent}
+          expandTooltip={t('layouts.builder.tooltips.show_screens', 'Show screens')}
+          panelPaperSx={{
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            p: 0,
           }}
-        >
-          {handle === 'centered' ? (
-            <GatePreview
-              theme={previewTheme ?? undefined}
-              displayName={displayName ?? ''}
-              pageBackground={pageBackground}
-              stylesheets={stylesheets}
-              inspectorEnabled={inspectorEnabled}
-              onSelectSelector={handleSelectSelector}
-            />
-          ) : (
-            <LayoutPreviewPanel
-              layoutId={layoutId ?? null}
-              selectedScreen={selectedScreen}
-              screenDraft={screenDraft}
-              showRulers
-            />
-          )}
-        </Box>
-
-        {/* ── Right panel: save + config ─────────────────────────────────── */}
-        <Box>
-          {/* Save */}
-          <Box sx={{mr: 1, mb: 1, p: 2, display: 'flex', justifyContent: 'flex-end', gap: 2}}>
-            <Button
-              variant="contained"
-              disabled={!isDirty}
-              startIcon={<Save size={18} />}
-              onClick={() => saveHandlerRef.current()}
+          rightPanel={
+            <BuilderStaticPanel
+              width={DesignUIConstants.RIGHT_PANEL_WIDTH}
+              header={(() => {
+                if (handle === 'centered') return t('layouts.config.custom_css.title', 'Custom CSS');
+                if (selectedScreen) return `Screen — ${selectedScreen}`;
+                return t('layouts.builder.constraints.label', 'Constraints');
+              })()}
             >
-              {t('layouts.builder.actions.save.label', 'Save')}
-            </Button>
-          </Box>
-          {/* ── Right panel: screen config ────────────────────────────────── */}
-          <BuilderStaticPanel
-            width={DesignUIConstants.RIGHT_PANEL_WIDTH}
-            header={(() => {
-              if (handle === 'centered') return t('layouts.config.custom_css.title', 'Custom CSS');
-              if (selectedScreen) return `Screen — ${selectedScreen}`;
-              return t('layouts.builder.constraints.label', 'Constraints');
-            })()}
+              <LayoutConfigPanel
+                layoutId={layoutId ?? null}
+                selectedScreen={selectedScreen}
+                onScreenChange={setSelectedScreen}
+                screenDraft={screenDraft}
+                onScreenDraftChange={setScreenDraft}
+                onDirtyChange={setIsDirty}
+                saveHandlerRef={saveHandlerRef}
+                stylesheets={stylesheets}
+                onStylesheetsChange={handleStylesheetsChange}
+                cssEditorRef={cssEditorRef}
+              />
+            </BuilderStaticPanel>
+          }
+        >
+          {/* ── Center: canvas ─────────────────────────────────────────── */}
+          <Box
+            sx={{
+              height: '100%',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 1,
+              bgcolor: bgColor,
+            }}
           >
-            <LayoutConfigPanel
-              layoutId={layoutId ?? null}
-              selectedScreen={selectedScreen}
-              onScreenChange={setSelectedScreen}
-              screenDraft={screenDraft}
-              onScreenDraftChange={setScreenDraft}
-              onDirtyChange={setIsDirty}
-              saveHandlerRef={saveHandlerRef}
-              stylesheets={stylesheets}
-              onStylesheetsChange={handleStylesheetsChange}
-              cssEditorRef={cssEditorRef}
-            />
-          </BuilderStaticPanel>
-        </Box>
+            {handle === 'centered' ? (
+              <GatePreview
+                theme={previewTheme ?? undefined}
+                displayName={displayName ?? ''}
+                pageBackground={pageBackground}
+                stylesheets={stylesheets}
+                inspectorEnabled={inspectorEnabled}
+                onSelectSelector={handleSelectSelector}
+                toolbarEnd={toolbarEnd}
+                toolbarPortal={toolbarPortal}
+              />
+            ) : (
+              <LayoutPreviewPanel
+                layoutId={layoutId ?? null}
+                selectedScreen={selectedScreen}
+                screenDraft={screenDraft}
+                showRulers
+              />
+            )}
+          </Box>
+        </BuilderLayout>
       </Box>
     </Box>
   );

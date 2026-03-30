@@ -25,13 +25,14 @@ export type {Viewport} from '../../../components/GatePreview/GatePreview';
 
 interface ThemePreviewPanelProps {
   themeId: string | null;
+  toolbarPortal?: HTMLElement | null;
 }
 
-export default function ThemePreviewPanel({themeId}: ThemePreviewPanelProps): JSX.Element {
+export default function ThemePreviewPanel({themeId, toolbarPortal = undefined}: ThemePreviewPanelProps): JSX.Element {
   const {draftTheme, displayName} = useThemeBuilder();
 
   // undefined → no theme selected yet (show prompt), null → loading spinner
   const theme = themeId === null && draftTheme === null ? undefined : draftTheme;
 
-  return <GatePreview theme={theme} displayName={displayName ?? ''} />;
+  return <GatePreview theme={theme} displayName={displayName ?? ''} toolbarPortal={toolbarPortal} />;
 }

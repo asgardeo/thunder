@@ -21,18 +21,19 @@ import {
   Box,
   Divider,
   FormHelperText,
+  IconButton,
   ListItemIcon,
   ListItemText,
   MenuItem,
   Select,
   Stack,
+  Tooltip,
   Typography,
 } from '@wso2/oxygen-ui';
-import {Palette, Sliders, Type} from '@wso2/oxygen-ui-icons-react';
+import {ChevronLeftIcon, Palette, Sliders, Type} from '@wso2/oxygen-ui-icons-react';
 import {type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import SectionCard from './SectionCard';
-import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
 import ColorSchemeOptions from '../../constants/ColorSchemeOptions';
 import {type ThemeSection} from '../../models/theme-builder';
 
@@ -59,7 +60,6 @@ export {SECTIONS};
 export type {SectionDef};
 
 interface ThemeBuilderLeftPanelProps {
-  onBack: () => void;
   onPanelToggle: () => void;
   draftTheme: Theme | null | undefined;
   setDraftTheme: (theme: Theme) => void;
@@ -83,7 +83,6 @@ const SECTION_DESCRIPTION_KEYS: Record<ThemeSection, [string, string]> = {
 };
 
 export default function ThemeBuilderLeftPanel({
-  onBack,
   onPanelToggle,
   draftTheme,
   setDraftTheme,
@@ -94,21 +93,21 @@ export default function ThemeBuilderLeftPanel({
   const {t} = useTranslation('design');
 
   return (
-    <>
-      <BuilderPanelHeader
-        onBack={onBack}
-        backLabel={t('themes.builder.actions.back_to_design.label', 'Back to Design')}
-        onPanelToggle={onPanelToggle}
-        hidePanelTooltip={t('themes.builder.tooltips.hide_sections', 'Hide sections')}
-      />
-      <Stack gap={2}>
-        {/* Top-level global settings */}
-        {draftTheme && (
-          <>
-            <Box>
+    <Stack gap={2}>
+      {/* Top-level global settings */}
+      {draftTheme && (
+        <>
+          <Box>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
               <Typography variant="h6" gutterBottom>
                 {t('themes.forms.settings.fields.default_color_scheme.label', 'Default Color Scheme')}
               </Typography>
+              <Tooltip title={t('themes.builder.tooltips.hide_sections', 'Hide sections')} placement="right">
+                <IconButton onClick={onPanelToggle} size="small">
+                  <ChevronLeftIcon size={16} />
+                </IconButton>
+              </Tooltip>
+            </Box>
               <Select
                 value={draftTheme.defaultColorScheme ?? 'light'}
                 onChange={(e) => {
@@ -192,6 +191,5 @@ export default function ThemeBuilderLeftPanel({
           </Stack>
         </Box>
       </Stack>
-    </>
   );
 }

@@ -162,11 +162,15 @@ function BuilderPanelHeader({
       {(onBack !== undefined || onPanelToggle !== undefined) && (
         <Box display="flex" alignItems="center" justifyContent="space-between" sx={{mb: 1}}>
           {onBack !== undefined && (
-            <Tooltip title={backLabel} placement="right">
-              <Button onClick={onBack} size="small" startIcon={<ArrowLeft size={16} />}>
-                {backLabel}
-              </Button>
-            </Tooltip>
+            <Button
+              onClick={onBack}
+              variant="text"
+              size="small"
+              startIcon={<ArrowLeft size={14} />}
+              sx={{textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary', whiteSpace: 'nowrap'}}
+            >
+              {backLabel}
+            </Button>
           )}
           {onPanelToggle !== undefined && (
             <Tooltip title={hidePanelTooltip} placement="right">

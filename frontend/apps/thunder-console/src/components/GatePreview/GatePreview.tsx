@@ -17,18 +17,13 @@
  */
 
 import type {EmbeddedFlowComponent} from '@asgardeo/react';
-import createCache from '@emotion/cache';
-import {CacheProvider} from '@emotion/react';
-import {FlowComponentRenderer, DesignProvider, useDesign, AuthPageLayout, AuthCardLayout} from '@thunder/shared-design';
-import type {Theme, ColorSchemeOption, DesignResolveResponse, Stylesheet} from '@thunder/shared-design';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {TemplateLiteralType} from '@thunder/utils';
-import {AcrylicOrangeTheme, Box, CircularProgress, ThemeProvider, Typography, useColorScheme} from '@wso2/oxygen-ui';
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type JSX, type ReactNode} from 'react';
+import type {ColorSchemeOption, Stylesheet, Theme} from '@thunder/shared-design';
+import {Box, CircularProgress, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import {useCallback, useLayoutEffect, useRef, useState, type JSX, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
+import IframeContent from './IframeContent';
 import buildPreviewMock from './mocks/buildPreviewMock';
-import ElementInspector from '../../features/design/components/layouts/ElementInspector';
 import PreviewToolbar from '../../features/design/components/PreviewToolbar';
 import {VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS} from '../../features/design/components/viewportConstants';
 
@@ -42,14 +37,6 @@ const MIN_CONTENT_WIDTH = 520;
 /** Minimum height (px) the content needs so a typical sign-in form renders without clipping. */
 const MIN_CONTENT_HEIGHT = 700;
 
-/** No-op handlers for preview mode — the form is purely visual. */
-const noopSubmit = (): void => {
-  /* no-op */
-};
-const noopInputChange = (): void => {
-  /* no-op */
-};
-
 /**
  * Initial HTML written into the preview iframe. Sets up the full height chain
  * so AuthPageLayout's minHeight: 100% resolves correctly.
@@ -58,161 +45,9 @@ const IFRAME_INITIAL_HTML = [
   '<!DOCTYPE html><html style="height:100%"><head>',
   '<link rel="preconnect" href="https://fonts.googleapis.com">',
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
-  '<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">',
-  "<style>body{margin:0;height:100%;font-family:'Inter',sans-serif}#root,#root>*{height:100%}</style>",
+  '<style>body{margin:0;height:100%}#root,#root>*{height:100%}</style>',
   '</head><body><div id="root"></div></body></html>',
 ].join('');
-
-// ── Helper components ────────────────────────────────────────────────────────
-
-/** Syncs the nested ThemeProvider's mode with the preview's colorScheme prop. */
-function ColorSchemeSync({mode}: {mode: 'light' | 'dark'}): null {
-  const {setMode} = useColorScheme();
-  useEffect(() => {
-    setMode(mode);
-  }, [mode, setMode]);
-  return null;
-}
-
-/**
- * Wraps children in a ThemeProvider scoped to the preview iframe.
- *
- * Key: `colorSchemeNode` must point to the iframe's `<html>` element so MUI
- * sets `data-color-scheme` inside the iframe (not on the parent document).
- * Without this, the CSS-vars selectors like `[data-color-scheme="dark"]`
- * never match and the theme doesn't switch.
- */
-function PreviewThemeProvider({
-  colorScheme,
-  colorSchemeNode = undefined,
-  children,
-}: {
-  colorScheme: 'light' | 'dark';
-  colorSchemeNode?: HTMLElement | null;
-  children: ReactNode;
-}): JSX.Element {
-  const {theme} = useDesign(AcrylicOrangeTheme as Theme);
-
-  // MUI's ThemeProvider supports CSS-vars-specific props (colorSchemeNode,
-  // disableNestedContext, storageManager) at runtime, but the TypeScript types
-  // only expose them when the module-augmentation `CssThemeVariables` is set to
-  // `{ enabled: true }`.  We need these props to isolate the preview iframe's
-  // color-scheme attribute and prevent localStorage conflicts.
-  const cssVarsProps = {
-    storageManager: null,
-    disableNestedContext: true,
-    ...(colorSchemeNode ? {colorSchemeNode} : {}),
-  } as Record<string, unknown>;
-
-  return (
-    <ThemeProvider theme={theme ?? AcrylicOrangeTheme} defaultMode={colorScheme} {...cssVarsProps}>
-      <ColorSchemeSync mode={colorScheme} />
-      {children}
-    </ThemeProvider>
-  );
-}
-
-/**
- * Wraps preview content with an emotion CacheProvider that injects MUI styles
- * into the iframe's <head>, and injects custom stylesheets into the iframe document.
- */
-function IframeContent({
-  iframeDoc,
-  colorScheme,
-  theme,
-  stylesheets,
-  pageBackground,
-  mock,
-  inspectorEnabled,
-  onSelectSelector = undefined,
-}: {
-  iframeDoc: Document;
-  colorScheme: 'light' | 'dark';
-  theme: Theme | undefined;
-  stylesheets: Stylesheet[];
-  pageBackground: string | undefined;
-  mock: EmbeddedFlowComponent[];
-  inspectorEnabled: boolean;
-  onSelectSelector?: (selector: string) => void;
-}): JSX.Element {
-  // Resolve {{t(key)}} templates using the app's i18n catalog.
-  const {t} = useTranslation();
-  const {resolveAll} = useTemplateLiteralResolver();
-  const previewResolve = useMemo(
-    () =>
-      (template: string | undefined): string | undefined =>
-        resolveAll(template, {[TemplateLiteralType.TRANSLATION]: t}),
-    [resolveAll, t],
-  );
-
-  // Create an emotion cache that injects styles into the iframe's <head>.
-  const cache = useMemo(() => createCache({key: 'preview', container: iframeDoc.head}), [iframeDoc]);
-
-  // Inject custom stylesheets into the iframe document (not the parent).
-  const serializedSheets = JSON.stringify(stylesheets);
-  useEffect(() => {
-    const parsed: Stylesheet[] = JSON.parse(serializedSheets) as Stylesheet[];
-    const injectedIds: string[] = [];
-
-    parsed.forEach((sheet) => {
-      const elementId = `thunder-preview-${sheet.id}`;
-      iframeDoc.getElementById(elementId)?.remove();
-
-      if (sheet.disabled) return;
-
-      if (sheet.type === 'inline') {
-        const style = iframeDoc.createElement('style');
-        style.id = elementId;
-        style.textContent = sheet.content;
-        iframeDoc.head.appendChild(style);
-        injectedIds.push(elementId);
-      } else if (sheet.type === 'url') {
-        const link = iframeDoc.createElement('link');
-        link.id = elementId;
-        link.rel = 'stylesheet';
-        link.href = sheet.href;
-        iframeDoc.head.appendChild(link);
-        injectedIds.push(elementId);
-      }
-    });
-
-    return () => {
-      injectedIds.forEach((id) => iframeDoc.getElementById(id)?.remove());
-    };
-  }, [iframeDoc, serializedSheets]);
-
-  return (
-    <CacheProvider value={cache}>
-      <DesignProvider
-        shouldResolveDesignInternally={false}
-        design={theme ? ({theme} as DesignResolveResponse) : undefined}
-      >
-        <PreviewThemeProvider colorScheme={colorScheme} colorSchemeNode={iframeDoc.documentElement}>
-          <ElementInspector enabled={inspectorEnabled} onSelectSelector={onSelectSelector}>
-            <AuthPageLayout variant="SignIn" background={pageBackground}>
-              <AuthCardLayout variant="SignInBox" showLogo={false}>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                  {mock.map((component, index) => (
-                    <FlowComponentRenderer
-                      key={component.id ?? index}
-                      component={component}
-                      index={index}
-                      values={{}}
-                      isLoading={false}
-                      resolve={previewResolve}
-                      onInputChange={noopInputChange}
-                      onSubmit={noopSubmit}
-                    />
-                  ))}
-                </Box>
-              </AuthCardLayout>
-            </AuthPageLayout>
-          </ElementInspector>
-        </PreviewThemeProvider>
-      </DesignProvider>
-    </CacheProvider>
-  );
-}
 
 // ── Types & Props ────────────────────────────────────────────────────────────
 
@@ -239,6 +74,16 @@ export interface GatePreviewProps {
   inspectorEnabled?: boolean;
   /** Callback when a CSS selector is picked via the inspector. */
   onSelectSelector?: (selector: string) => void;
+  /** Content rendered to the left of the toolbar (e.g. back button, title). */
+  toolbarStart?: ReactNode;
+  /** Content rendered inside the toolbar pill on the right (e.g. inspector toggle, theme selector). */
+  toolbarEnd?: ReactNode;
+  /**
+   * When provided, the toolbar is portaled into this DOM element instead of being rendered inline.
+   * The parent is responsible for rendering the container and passing it here.
+   * Useful for placing the toolbar in a full-width top bar outside the preview area.
+   */
+  toolbarPortal?: HTMLElement | null;
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
@@ -255,7 +100,11 @@ export default function GatePreview({
   stylesheets = [],
   inspectorEnabled = false,
   onSelectSelector = undefined,
+  toolbarStart = undefined,
+  toolbarEnd = undefined,
+  toolbarPortal = undefined,
 }: GatePreviewProps): JSX.Element {
+  const {t} = useTranslation('design');
   const {mode, systemMode} = useColorScheme();
   const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>('light');
   const [viewportState, setViewport] = useState<Viewport>('desktop');
@@ -350,9 +199,9 @@ export default function GatePreview({
 
   return (
     <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-      {/* Toolbar */}
-      {showToolbar && (
-        <Box sx={{display: 'flex', justifyContent: 'center', py: 1.5, flexShrink: 0}}>
+      {/* Toolbar — portaled to external container when toolbarPortal is set, otherwise rendered inline */}
+      {showToolbar && (() => {
+        const toolbar = (
           <PreviewToolbar
             viewport={viewportState}
             setViewport={setViewport}
@@ -361,9 +210,23 @@ export default function GatePreview({
             zoom={zoom}
             setZoom={setZoom}
             zoomIdx={zoomIdx}
+            extraContent={toolbarEnd}
           />
-        </Box>
-      )}
+        );
+
+        if (toolbarPortal) {
+          return createPortal(toolbar, toolbarPortal);
+        }
+
+        return (
+          <Box sx={{display: 'flex', alignItems: 'center', py: 1.5, flexShrink: 0, px: 1}}>
+            {toolbarStart}
+            <Box sx={{flex: 1, display: 'flex', justifyContent: 'center'}}>
+              {toolbar}
+            </Box>
+          </Box>
+        );
+      })()}
 
       {/* Viewport container */}
       <Box
@@ -409,7 +272,7 @@ export default function GatePreview({
               }}
             >
               <Typography variant="caption" color="text.disabled" sx={{fontSize: 10}}>
-                {displayName ? `${displayName} — Preview` : 'Preview'}
+                {displayName ? `${displayName} — ${t('themes.builder.preview.label', 'Preview')}` : t('themes.builder.preview.label', 'Preview')}
               </Typography>
             </Box>
           </Box>
@@ -441,7 +304,7 @@ export default function GatePreview({
             />
             <iframe
               ref={iframeCallbackRef}
-              title="Gate Preview"
+              title={t('themes.builder.preview.iframe_title', 'Gate Preview')}
               style={{border: 'none', transformOrigin: 'top left', position: 'absolute', top: 0, left: 0}}
             />
             {iframeDoc?.getElementById('root') &&
