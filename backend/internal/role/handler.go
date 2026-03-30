@@ -195,7 +195,20 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 	// Parse include parameter to check if display names should be included
 	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
 
-	serviceResponse, svcErr := rh.roleService.GetRoleAssignments(ctx, id, limit, offset, includeDisplay)
+	// Parse optional type parameter to filter assignments by assignee type.
+	assigneeType := r.URL.Query().Get("type")
+	if assigneeType != "" && assigneeType != string(AssigneeTypeUser) && assigneeType != string(AssigneeTypeGroup) {
+		handleError(w, &ErrorInvalidAssigneeType)
+		return
+	}
+
+	var serviceResponse *AssignmentList
+	if assigneeType != "" {
+		serviceResponse, svcErr = rh.roleService.GetRoleAssignmentsByType(
+			ctx, id, limit, offset, includeDisplay, assigneeType)
+	} else {
+		serviceResponse, svcErr = rh.roleService.GetRoleAssignments(ctx, id, limit, offset, includeDisplay)
+	}
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -220,6 +233,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 	logger.Debug("Successfully retrieved role assignments", log.String("role id", id),
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Bool("includeDisplay", includeDisplay),
+		log.String("assigneeType", assigneeType),
 		log.Int("totalResults", assignmentListResponse.TotalResults),
 		log.Int("count", assignmentListResponse.Count))
 }

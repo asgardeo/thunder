@@ -124,6 +124,13 @@ var (
 		Error:            "Cannot modify declarative assignment",
 		ErrorDescription: "The assignment is defined in declarative configuration and cannot be modified",
 	}
+	// ErrorInvalidAssigneeType is the error returned when the assignee type query parameter is invalid.
+	ErrorInvalidAssigneeType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1017",
+		Error:            "Invalid assignee type",
+		ErrorDescription: "The type parameter must be either 'user' or 'group'",
+	}
 	// ErrorDeclarativeModeCreateNotAllowed is the error returned when attempting to create
 	// a role in declarative-only mode.
 	ErrorDeclarativeModeCreateNotAllowed = serviceerror.ServiceError{

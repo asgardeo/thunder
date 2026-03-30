@@ -143,6 +143,44 @@ func (c *compositeRoleStore) GetRoleAssignments(
 	id string,
 	limit, offset int,
 ) ([]RoleAssignment, error) {
+	return c.getCompositeAssignments(ctx, id, limit, offset,
+		c.dbStore.GetRoleAssignmentsCount, c.fileStore.GetRoleAssignmentsCount,
+		func(count int) ([]RoleAssignment, error) { return c.dbStore.GetRoleAssignments(ctx, id, count, 0) },
+		func(count int) ([]RoleAssignment, error) { return c.fileStore.GetRoleAssignments(ctx, id, count, 0) },
+	)
+}
+
+// GetRoleAssignmentsByType retrieves assignments filtered by assignee type across both stores.
+func (c *compositeRoleStore) GetRoleAssignmentsByType(
+	ctx context.Context,
+	id string,
+	limit, offset int,
+	assigneeType string,
+) ([]RoleAssignment, error) {
+	return c.getCompositeAssignments(ctx, id, limit, offset,
+		func(ctx context.Context, id string) (int, error) {
+			return c.dbStore.GetRoleAssignmentsCountByType(ctx, id, assigneeType)
+		},
+		func(ctx context.Context, id string) (int, error) {
+			return c.fileStore.GetRoleAssignmentsCountByType(ctx, id, assigneeType)
+		},
+		func(count int) ([]RoleAssignment, error) {
+			return c.dbStore.GetRoleAssignmentsByType(ctx, id, count, 0, assigneeType)
+		},
+		func(count int) ([]RoleAssignment, error) {
+			return c.fileStore.GetRoleAssignmentsByType(ctx, id, count, 0, assigneeType)
+		},
+	)
+}
+
+// getCompositeAssignments is the shared logic for merging assignments from both stores.
+func (c *compositeRoleStore) getCompositeAssignments(
+	ctx context.Context,
+	id string,
+	limit, offset int,
+	dbCountFn, fileCountFn func(context.Context, string) (int, error),
+	dbListFn, fileListFn func(int) ([]RoleAssignment, error),
+) ([]RoleAssignment, error) {
 	capCount := func(fn func(context.Context, string) (int, error)) func() (int, error) {
 		return func() (int, error) {
 			count, err := fn(ctx, id)
@@ -153,10 +191,10 @@ func (c *compositeRoleStore) GetRoleAssignments(
 		}
 	}
 	assignments, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
-		capCount(c.dbStore.GetRoleAssignmentsCount),
-		capCount(c.fileStore.GetRoleAssignmentsCount),
-		func(count int) ([]RoleAssignment, error) { return c.dbStore.GetRoleAssignments(ctx, id, count, 0) },
-		func(count int) ([]RoleAssignment, error) { return c.fileStore.GetRoleAssignments(ctx, id, count, 0) },
+		capCount(dbCountFn),
+		capCount(fileCountFn),
+		dbListFn,
+		fileListFn,
 		mergeAssignments,
 		limit,
 		offset,
@@ -173,6 +211,40 @@ func (c *compositeRoleStore) GetRoleAssignments(
 
 // GetRoleAssignmentsCount retrieves the count of unique role assignments across both stores.
 func (c *compositeRoleStore) GetRoleAssignmentsCount(ctx context.Context, id string) (int, error) {
+	return c.getCompositeAssignmentsCount(ctx, id,
+		c.dbStore.GetRoleAssignmentsCount, c.fileStore.GetRoleAssignmentsCount,
+		func(count int) ([]RoleAssignment, error) { return c.dbStore.GetRoleAssignments(ctx, id, count, 0) },
+		func(count int) ([]RoleAssignment, error) { return c.fileStore.GetRoleAssignments(ctx, id, count, 0) },
+	)
+}
+
+// GetRoleAssignmentsCountByType retrieves the count of unique role assignments filtered by type.
+func (c *compositeRoleStore) GetRoleAssignmentsCountByType(
+	ctx context.Context, id string, assigneeType string,
+) (int, error) {
+	return c.getCompositeAssignmentsCount(ctx, id,
+		func(ctx context.Context, id string) (int, error) {
+			return c.dbStore.GetRoleAssignmentsCountByType(ctx, id, assigneeType)
+		},
+		func(ctx context.Context, id string) (int, error) {
+			return c.fileStore.GetRoleAssignmentsCountByType(ctx, id, assigneeType)
+		},
+		func(count int) ([]RoleAssignment, error) {
+			return c.dbStore.GetRoleAssignmentsByType(ctx, id, count, 0, assigneeType)
+		},
+		func(count int) ([]RoleAssignment, error) {
+			return c.fileStore.GetRoleAssignmentsByType(ctx, id, count, 0, assigneeType)
+		},
+	)
+}
+
+// getCompositeAssignmentsCount is the shared logic for counting merged assignments.
+func (c *compositeRoleStore) getCompositeAssignmentsCount(
+	ctx context.Context,
+	id string,
+	dbCountFn, fileCountFn func(context.Context, string) (int, error),
+	dbListFn, fileListFn func(int) ([]RoleAssignment, error),
+) (int, error) {
 	capCount := func(fn func(context.Context, string) (int, error)) func() (int, error) {
 		return func() (int, error) {
 			count, err := fn(ctx, id)
@@ -183,10 +255,10 @@ func (c *compositeRoleStore) GetRoleAssignmentsCount(ctx context.Context, id str
 		}
 	}
 	assignments, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
-		capCount(c.dbStore.GetRoleAssignmentsCount),
-		capCount(c.fileStore.GetRoleAssignmentsCount),
-		func(count int) ([]RoleAssignment, error) { return c.dbStore.GetRoleAssignments(ctx, id, count, 0) },
-		func(count int) ([]RoleAssignment, error) { return c.fileStore.GetRoleAssignments(ctx, id, count, 0) },
+		capCount(dbCountFn),
+		capCount(fileCountFn),
+		dbListFn,
+		fileListFn,
 		mergeAssignments,
 		serverconst.MaxCompositeStoreRecords+1,
 		0,

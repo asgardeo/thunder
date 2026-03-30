@@ -150,6 +150,14 @@ func registerRoutes(mux *http.ServeMux, roleHandler *roleHandler) {
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /roles/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts2))
+	opts4 := middleware.CORSOptions{
+		AllowedMethods:   "GET",
+		AllowedHeaders:   "Content-Type, Authorization",
+		AllowCredentials: true,
+	}
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /roles/{id}/assignments", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, opts4))
 
 	opts3 := middleware.CORSOptions{
 		AllowedMethods:   "POST",

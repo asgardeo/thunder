@@ -1128,6 +1128,121 @@ func (suite *RoleAPITestSuite) TestCreateRole_MissingResourceServerID() {
 	// May return ROL-1012 or ROL-1001 depending on validation
 }
 
+// Test 31: Get Role Assignments - Filter by Type
+func (suite *RoleAPITestSuite) TestGetRoleAssignments_FilterByType() {
+	// Create a role with both user and group assignments
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for Type Filtering",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+		Assignments: []Assignment{
+			{ID: testUserID1, Type: AssigneeTypeUser},
+			{ID: testUserID2, Type: AssigneeTypeUser},
+			{ID: testGroupID, Type: AssigneeTypeGroup},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	// Verify no filter returns all assignments
+	allAssignments, err := suite.getRoleAssignments(role.ID, 0, 30)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(allAssignments)
+	suite.Equal(3, allAssignments.TotalResults, "Should return all 3 assignments without type filter")
+	suite.Equal(3, allAssignments.Count)
+
+	// Filter by user type
+	userAssignments, err := suite.getRoleAssignmentsByType(role.ID, 0, 30, "user")
+	suite.Require().NoError(err)
+	suite.Require().NotNil(userAssignments)
+	suite.Equal(2, userAssignments.TotalResults, "Should return 2 user assignments")
+	suite.Equal(2, userAssignments.Count)
+	for _, assignment := range userAssignments.Assignments {
+		suite.Equal(AssigneeTypeUser, assignment.Type, "All assignments should be of type 'user'")
+	}
+
+	// Filter by group type
+	groupAssignments, err := suite.getRoleAssignmentsByType(role.ID, 0, 30, "group")
+	suite.Require().NoError(err)
+	suite.Require().NotNil(groupAssignments)
+	suite.Equal(1, groupAssignments.TotalResults, "Should return 1 group assignment")
+	suite.Equal(1, groupAssignments.Count)
+	for _, assignment := range groupAssignments.Assignments {
+		suite.Equal(AssigneeTypeGroup, assignment.Type, "All assignments should be of type 'group'")
+	}
+	suite.Equal(testGroupID, groupAssignments.Assignments[0].ID)
+}
+
+// Test 32: Get Role Assignments - Filter by Type with Pagination
+func (suite *RoleAPITestSuite) TestGetRoleAssignments_FilterByTypeWithPagination() {
+	// Interleave group between users so a "paginate-then-filter" bug is caught.
+	// Wrong impl: offset=1,limit=1 on the raw list [user1, group, user2] gives [group] → filter → []
+	// Correct impl: filter first → [user1, user2], then offset=1,limit=1 → [user2]
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for Type Filter Pagination",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+		Assignments: []Assignment{
+			{ID: testUserID1, Type: AssigneeTypeUser},
+			{ID: testGroupID, Type: AssigneeTypeGroup},
+			{ID: testUserID2, Type: AssigneeTypeUser},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	// Get first page of user assignments (limit=1)
+	page1, err := suite.getRoleAssignmentsByType(role.ID, 0, 1, "user")
+	suite.Require().NoError(err)
+	suite.Require().NotNil(page1)
+	suite.Equal(2, page1.TotalResults, "TotalResults should reflect filtered count")
+	suite.Require().Equal(1, page1.Count, "Should return only 1 assignment per page")
+
+	// Get second page — must return a different user than page 1
+	page2, err := suite.getRoleAssignmentsByType(role.ID, 1, 1, "user")
+	suite.Require().NoError(err)
+	suite.Require().NotNil(page2)
+	suite.Equal(2, page2.TotalResults, "TotalResults should still be 2")
+	suite.Require().Equal(1, page2.Count, "Should return 1 assignment on second page")
+	suite.NotEqual(page1.Assignments[0].ID, page2.Assignments[0].ID,
+		"Page 1 and page 2 must return different user assignments")
+}
+
+// Test 33: Get Role Assignments - Invalid Type Parameter
+func (suite *RoleAPITestSuite) TestGetRoleAssignments_InvalidType() {
+	// Create a role
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for Invalid Type",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	// Request with invalid type should return error
+	_, err = suite.getRoleAssignmentsByType(role.ID, 0, 30, "invalid")
+	suite.Require().Error(err)
+	suite.Contains(err.Error(), "ROL-1017", "Should return invalid assignee type error")
+}
+
 // Helper methods
 
 func (suite *RoleAPITestSuite) createRole(request CreateRoleRequest) (*Role, error) {
@@ -1342,9 +1457,22 @@ func (suite *RoleAPITestSuite) getRoleAssignments(roleID string, offset, limit i
 
 func (suite *RoleAPITestSuite) getRoleAssignmentsWithInclude(roleID string, offset, limit int,
 	include string) (*AssignmentListResponse, error) {
+	return suite.getRoleAssignmentsWithParams(roleID, offset, limit, include, "")
+}
+
+func (suite *RoleAPITestSuite) getRoleAssignmentsByType(roleID string, offset, limit int,
+	assigneeType string) (*AssignmentListResponse, error) {
+	return suite.getRoleAssignmentsWithParams(roleID, offset, limit, "", assigneeType)
+}
+
+func (suite *RoleAPITestSuite) getRoleAssignmentsWithParams(roleID string, offset, limit int,
+	include, assigneeType string) (*AssignmentListResponse, error) {
 	url := fmt.Sprintf("%s%s/%s/assignments?offset=%d&limit=%d", testServerURL, rolesBasePath, roleID, offset, limit)
 	if include != "" {
 		url = fmt.Sprintf("%s&include=%s", url, include)
+	}
+	if assigneeType != "" {
+		url = fmt.Sprintf("%s&type=%s", url, assigneeType)
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
