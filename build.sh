@@ -21,6 +21,18 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Check if --without-consent is passed and remove it from args
+WITHOUT_CONSENT=${WITHOUT_CONSENT:-false}
+NEW_ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--without-consent" ]; then
+        WITHOUT_CONSENT="true"
+    else
+        NEW_ARGS+=("$arg")
+    fi
+done
+set -- "${NEW_ARGS[@]}"
+
 # --- Set Default OS and the architecture --- 
 # Auto-detect GO OS
 DEFAULT_OS=$(go env GOOS 2>/dev/null)
@@ -474,9 +486,20 @@ function package() {
         chmod +x "$DIST_DIR/$PRODUCT_FOLDER/setup.sh"
     fi
 
-    echo "Packaging consent server..."
-    bash "$SCRIPT_DIR/scripts/package-consent-server.sh" \
-            "$GO_OS" "$GO_ARCH" "$(cd "$DIST_DIR/$PRODUCT_FOLDER" && pwd)"
+    if [ "$WITHOUT_CONSENT" != "true" ]; then
+        echo "Packaging consent server..."
+        bash "$SCRIPT_DIR/scripts/package-consent-server.sh" \
+                "$GO_OS" "$GO_ARCH" "$(cd "$DIST_DIR/$PRODUCT_FOLDER" && pwd)"
+    else
+        echo "Skipping consent server packaging (--without-consent)..."
+        local target_yaml="$DIST_DIR/$PRODUCT_FOLDER/repository/conf/deployment.yaml"
+        if command -v yq >/dev/null 2>&1; then
+            yq eval '.consent.enabled = false' -i "$target_yaml" 2>/dev/null || sed -i.bak '/^consent:/ { n; s/enabled: true/enabled: false/; }' "$target_yaml" || true
+        else
+            sed -i.bak '/^consent:/ { n; s/enabled: true/enabled: false/; }' "$target_yaml" || true
+        fi
+        rm -f "${target_yaml}.bak" 2>/dev/null || true
+    fi
 
     echo "Creating zip file..."
     (cd "$DIST_DIR" && zip -r "$PRODUCT_FOLDER.zip" "$PRODUCT_FOLDER")
@@ -964,7 +987,7 @@ function run() {
     echo "Running frontend apps..."
     run_frontend
 
-    if [ "$CONSENT_ENABLED" = "true" ]; then
+    if [ "$CONSENT_ENABLED" = "true" ] && [ "$WITHOUT_CONSENT" != "true" ]; then
         echo "Running consent server..."
         run_consent
     fi
@@ -1267,6 +1290,8 @@ case "$1" in
         echo "  debug_backend            - Run the Thunder backend for development in debug mode"
         echo "  run_frontend             - Run the Thunder frontend for development"
         echo "  run_docs                 - Run the documentation development server with live reload"
+        echo ""
+        echo "  --without-consent        - Skip packaging/running the consent server"
         exit 1
         ;;
 esac
