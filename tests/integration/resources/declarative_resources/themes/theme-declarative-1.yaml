@@ -1,0 +1,7 @@
+id: decl-theme-1
+displayName: Declarative Test Theme
+description: A declarative test theme
+theme:
+  primaryColor: "#1976d2"
+  secondaryColor: "#dc004e"
+  fontFamily: "Roboto, sans-serif"

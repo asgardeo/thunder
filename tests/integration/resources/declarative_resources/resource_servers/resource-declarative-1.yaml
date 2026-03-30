@@ -1,0 +1,15 @@
+id: decl-rs-1
+name: Declarative Resource Server
+description: A declarative test resource server
+identifier: decl-rs-1
+ou_id: decl-ou-1
+delimiter: ":"
+resources:
+  - name: Test Resource
+    handle: test-resource
+    description: A test resource
+    actions:
+      - name: Read
+        handle: read
+      - name: Write
+        handle: write

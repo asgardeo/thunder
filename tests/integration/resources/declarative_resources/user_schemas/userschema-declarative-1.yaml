@@ -1,0 +1,15 @@
+id: decl-schema-1
+name: Declarative Test Schema
+organization_unit_id: decl-ou-1
+allow_self_registration: false
+system_attributes:
+  display: "username"
+schema: |
+  {
+    "email": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    }
+  }

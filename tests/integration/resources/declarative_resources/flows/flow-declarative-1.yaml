@@ -1,0 +1,12 @@
+id: decl-flow-1
+handle: decl-flow-1
+name: Declarative Test Flow
+flowType: AUTHENTICATION
+activeVersion: 1
+nodes:
+  - id: start
+    type: START
+  - id: login
+    type: BASIC_AUTHENTICATION
+  - id: end
+    type: END

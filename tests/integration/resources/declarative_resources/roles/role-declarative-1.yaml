@@ -1,0 +1,6 @@
+id: decl-role-1
+name: Declarative Test Role
+description: A declarative test role for integration testing
+ou_id: decl-ou-1
+permissions: []
+assignments: []

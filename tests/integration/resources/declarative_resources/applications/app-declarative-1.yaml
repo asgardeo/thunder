@@ -1,0 +1,9 @@
+id: decl-app-1
+name: Declarative Test Application
+description: A declarative test application for integration testing
+template: web
+auth_flow_id: decl-flow-1
+registration_flow_id: decl-reg-flow-1
+url: https://example.com
+contacts:
+  - test@example.com

@@ -1,0 +1,10 @@
+id: decl-user-1
+type: person
+ou_id: decl-ou-1
+attributes:
+  username: decl-user-1
+  email: decl-user-1@example.com
+  given_name: Declarative
+  family_name: User
+credentials:
+  password: "TempPassword123!"
