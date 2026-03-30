@@ -27,11 +27,14 @@ type ScenarioType string
 const (
 	// ScenarioUserInvite represents the user invitation scenario.
 	ScenarioUserInvite ScenarioType = "USER_INVITE"
+	// ScenarioMagicLink represents the magic link sign-in scenario.
+	ScenarioMagicLink ScenarioType = "MAGIC_LINK"
 )
 
 // supportedScenarios contains all valid scenario types.
 var supportedScenarios = map[ScenarioType]bool{
 	ScenarioUserInvite: true,
+	ScenarioMagicLink:  true,
 }
 
 // IsValidScenario checks if the given scenario type is supported.
