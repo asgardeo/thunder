@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies, import/extensions
+ 
 import type {Edge, Node} from '@xyflow/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 

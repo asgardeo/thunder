@@ -1176,7 +1176,6 @@ describe('ApplicationCreatePage', () => {
 
       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
 
           const handleSetup = () => {
@@ -1245,7 +1244,6 @@ describe('ApplicationCreatePage', () => {
 
       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
 
           const handleSetup = () => {

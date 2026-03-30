@@ -87,7 +87,7 @@ vi.mock('@wso2/oxygen-ui', async () => {
             >
               {row.code}
               {columns.map((col, i) => (
-                // eslint-disable-next-line react/no-array-index-key
+                 
                 <span key={i}>{col.renderCell?.({row})}</span>
               ))}
             </div>

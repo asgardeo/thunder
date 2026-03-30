@@ -104,7 +104,7 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
 
   useRequiredFields(resource, generalMessage, validationFields);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
+   
   const buttonConfig = resource.config as ButtonConfig | undefined;
 
   const {config, image} = useMemo(() => {

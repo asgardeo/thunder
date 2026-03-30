@@ -216,13 +216,16 @@ function ResourceProperties(): ReactElement {
   }, []);
 
   /**
-   * Create debounced handler using useMemo to maintain stable reference.
-   * Uses refs internally to access current values without stale closures.
+   * Create debounced handler using a ref initialized in an effect to avoid
+   * accessing refs during render.
    */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handlePropertyChangeDebounced = useMemo(
-    () =>
-      debounce(async (propertyKey: string, newValue: string | boolean | object, element: Element): Promise<void> => {
+  const handlePropertyChangeDebouncedRef = useRef<
+    ((propertyKey: string, newValue: string | boolean | object, element: Element) => Promise<void> | undefined) | null
+  >(null);
+
+  useEffect(() => {
+    const debouncedFn = debounce(
+      async (propertyKey: string, newValue: string | boolean | object, element: Element): Promise<void> => {
         const currentStepId = lastInteractedStepIdRef.current;
         const currentResource = lastInteractedResourceRef.current;
 
@@ -323,16 +326,22 @@ function ResourceProperties(): ReactElement {
           }
           setLastInteractedResourceRef.current(updatedResource);
         }
-      }, 300),
-    [],
-  );
+      },
+      300,
+    );
+
+    handlePropertyChangeDebouncedRef.current = debouncedFn;
+
+    return () => {
+      debouncedFn.cancel();
+    };
+  }, []);
 
   const handlePropertyChange = useCallback(
     (propertyKey: string, newValue: string | boolean | object, element: Element) => {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      handlePropertyChangeDebounced(propertyKey, newValue, element);
+      void handlePropertyChangeDebouncedRef.current?.(propertyKey, newValue, element);
     },
-    [handlePropertyChangeDebounced],
+    [],
   );
 
   if (!lastInteractedResource) {

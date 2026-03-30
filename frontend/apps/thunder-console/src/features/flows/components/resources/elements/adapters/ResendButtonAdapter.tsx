@@ -92,7 +92,7 @@ function ResendButtonAdapter({resource}: ResendButtonAdapterPropsInterface): Rea
     variant: 'contained',
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
+   
   const resendConfig = resource.config as ResendButtonConfig | undefined;
   const resendElement = resource as ResendButtonElement;
 

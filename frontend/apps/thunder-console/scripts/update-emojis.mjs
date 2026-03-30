@@ -18,7 +18,7 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header, no-underscore-dangle, @typescript-eslint/naming-convention */
+/* eslint-disable @thunder/copyright-header */
 
 /**
  * Fetches the Unicode emoji test file and regenerates

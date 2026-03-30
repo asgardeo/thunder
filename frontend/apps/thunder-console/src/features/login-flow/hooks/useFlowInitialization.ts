@@ -211,7 +211,7 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
     );
 
     const templateSteps: Step[] = basicTemplate?.config?.data?.steps ?? [];
-    // eslint-disable-next-line no-underscore-dangle
+     
     const replacers: TemplateReplacer[] | undefined = basicTemplate?.config?.data?.__generationMeta__?.replacers;
 
     // generateSteps handles {{ID}} placeholders via generateIdsForResources

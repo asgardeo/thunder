@@ -57,7 +57,7 @@ const EMPTY_CONTENT = '<p class="rich-text-paragraph"><br></p>';
  * Convert nodes tree to HTML string.
  */
 function HTMLPlugin({onChange, resource, disabled = false}: HTMLPluginProps): ReactElement | null {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+   
   const [editor] = useLexicalComposerContext();
   const updateType = useRef<UpdateType>(UPDATE_TYPES.NONE);
 

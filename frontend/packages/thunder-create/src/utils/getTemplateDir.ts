@@ -37,7 +37,7 @@ export default function getTemplateDir(): string {
 
   // Go up directories until we find package.json. Use a platform-neutral termination
   // condition to avoid infinite loops on Windows where the root isn't '/'.
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     if (existsSync(join(currentDir, 'package.json'))) {
       break;

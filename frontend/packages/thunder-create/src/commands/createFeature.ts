@@ -202,21 +202,20 @@ async function createFeature(): Promise<void> {
       } catch (error) {
         installBuildSpinner.stop(colors.red('❌ Failed to install dependencies or build'));
         logger.error('Install/build failed:', {error: error instanceof Error ? error.message : String(error)});
-        // eslint-disable-next-line no-console
+
         console.log();
-        // eslint-disable-next-line no-console
+
         console.log(colors.yellow(`You can manually run: cd ${featureDir} && pnpm install && pnpm build`));
       }
     } else {
-      // eslint-disable-next-line no-console
       console.log();
-      // eslint-disable-next-line no-console
+
       console.log(colors.cyan('Next steps:'));
-      // eslint-disable-next-line no-console
+
       console.log(colors.gray(`1. cd ${featureDir}`));
-      // eslint-disable-next-line no-console
+
       console.log(colors.gray('2. pnpm install'));
-      // eslint-disable-next-line no-console
+
       console.log(colors.gray('3. pnpm build'));
     }
   } catch (error) {

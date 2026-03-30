@@ -111,7 +111,7 @@ export default function TypographyBuilderContent({draft, onUpdate}: TypographyBu
           onChange={handleChange}
           onInputChange={handleInputChange}
           renderOption={(props, option: string) => (
-            // eslint-disable-next-line react/jsx-props-no-spreading
+             
             <Box component="li" {...props} key={option}>
               <Typography sx={{fontFamily: option, fontSize: '0.875rem'}}>{option}</Typography>
             </Box>

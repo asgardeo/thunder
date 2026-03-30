@@ -48,13 +48,11 @@ export default abstract class BaseTransport implements Transport {
 
   abstract write(entry: LogEntry): Promise<void>;
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async flush(): Promise<void> {
     // Default implementation does nothing
     // Subclasses can override for buffering support
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async close(): Promise<void> {
     // Default implementation does nothing
     // Subclasses can override for cleanup

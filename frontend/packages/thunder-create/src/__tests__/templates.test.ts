@@ -16,8 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable no-underscore-dangle,@typescript-eslint/naming-convention */
-
 import {readdir, readFile, stat} from 'fs/promises';
 import {join} from 'path';
 import Handlebars from 'handlebars';
@@ -64,7 +62,7 @@ describe('Template Validation', () => {
           Handlebars.compile(content);
         } catch (error: unknown) {
           const msg = error instanceof Error ? error.message : String(error);
-          throw new Error(`Handlebars syntax error in ${filePath}: ${msg}`);
+          throw new Error(`Handlebars syntax error in ${filePath}: ${msg}`, {cause: error});
         }
       }),
     );
@@ -95,7 +93,7 @@ describe('Template Validation', () => {
           expect(filePath.includes('gitkeep') || result.trim().length > 0).toBe(true);
         } catch (error: unknown) {
           const msg = error instanceof Error ? error.message : String(error);
-          throw new Error(`Template compilation error in ${filePath}: ${msg}`);
+          throw new Error(`Template compilation error in ${filePath}: ${msg}`, {cause: error});
         }
       }),
     );
@@ -226,7 +224,7 @@ describe('Template Validation', () => {
           expect(result.length).toBeGreaterThan(50); // Should have substantial content
         } catch (error: unknown) {
           const msg = error instanceof Error ? error.message : String(error);
-          throw new Error(`TypeScript template compilation error in ${filePath}: ${msg}`);
+          throw new Error(`TypeScript template compilation error in ${filePath}: ${msg}`, {cause: error});
         }
       }),
     );

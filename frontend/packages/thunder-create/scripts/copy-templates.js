@@ -27,7 +27,6 @@ import {createLogger} from '@thunder/logger';
 
 const logger = createLogger();
 
-// eslint-disable-next-line no-underscore-dangle, @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(__dirname, '..');
 

@@ -78,14 +78,14 @@ vi.mock('@/features/flows/hooks/useValidationStatus', () => ({
 // Mock useIdentityProviders
 const mockIdentityProviders = vi.fn<() => {data: unknown[]; isLoading: boolean}>();
 vi.mock('@/features/integrations/api/useIdentityProviders', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+   
   default: () => mockIdentityProviders(),
 }));
 
 // Mock useNotificationSenders
 const mockNotificationSenders = vi.fn<() => {data: unknown[]; isLoading: boolean}>();
 vi.mock('@/features/notification-senders/api/useNotificationSenders', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+   
   default: () => mockNotificationSenders(),
 }));
 

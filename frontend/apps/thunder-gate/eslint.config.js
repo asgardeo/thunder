@@ -24,7 +24,7 @@ export default [
   ...thunderPlugin.configs.vitest,
   {
     rules: {
-      'import/no-extraneous-dependencies': [
+      'import-x/no-extraneous-dependencies': [
         'error',
         {
           devDependencies: true,

@@ -18,18 +18,21 @@
 
 import eslint from '@eslint/js';
 import type {Linter} from 'eslint';
-import importPlugin from 'eslint-plugin-import';
+import {importX} from 'eslint-plugin-import-x';
 
 const javascriptConfig: Linter.Config[] = [
   eslint.configs.recommended,
-  importPlugin.flatConfigs.recommended,
+  importX.flatConfigs.recommended,
   {
     name: 'thunder/javascript-overrides',
     rules: {
+      // Disallow new operators outside of assignments or comparisons
+      // https://eslint.org/docs/latest/rules/no-new
+      'no-new': 'error',
       'object-curly-spacing': ['error', 'never'],
       // Modify the order a bit to make the imports more readable.
-      // https://github.com/import-js/eslint-plugin-import/blob/main/docs/rules/order.md
-      'import/order': [
+      // https://github.com/un-ts/eslint-plugin-import-x/blob/master/docs/rules/order.md
+      'import-x/order': [
         'warn',
         {
           alphabetize: {
@@ -41,7 +44,7 @@ const javascriptConfig: Linter.Config[] = [
       ],
       // Allow imports without file extensions for JavaScript files
       // This is especially useful for path aliases and modern module resolution
-      'import/extensions': [
+      'import-x/extensions': [
         'error',
         'ignorePackages',
         {

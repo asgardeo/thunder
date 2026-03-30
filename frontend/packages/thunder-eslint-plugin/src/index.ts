@@ -91,7 +91,7 @@ Object.assign(plugin.configs, {
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],
@@ -111,7 +111,7 @@ Object.assign(plugin.configs, {
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],
@@ -133,7 +133,7 @@ Object.assign(plugin.configs, {
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],
@@ -176,7 +176,7 @@ Object.assign(plugin.configs, {
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],

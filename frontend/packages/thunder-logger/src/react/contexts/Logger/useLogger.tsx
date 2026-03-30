@@ -17,7 +17,7 @@
  */
 
 import {useContext, useMemo} from 'react';
-// eslint-disable-next-line import/extensions
+ 
 import LoggerContext from './LoggerContext';
 import type Logger from '../../../core/Logger';
 

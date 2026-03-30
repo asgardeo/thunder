@@ -144,7 +144,7 @@ describe('useConfirmPasswordField', () => {
 
       const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
       const addConfirmPasswordFieldHandler = handlers?.find(
-        // eslint-disable-next-line no-underscore-dangle
+         
         (h) =>
           (h as unknown as Record<string, string>).__FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER ===
             'addConfirmPasswordField' || handlers.indexOf(h) === 0,

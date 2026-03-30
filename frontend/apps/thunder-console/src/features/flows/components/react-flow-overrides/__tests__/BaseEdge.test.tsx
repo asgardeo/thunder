@@ -99,7 +99,7 @@ interface MockBoxProps {
 
 // Mock @wso2/oxygen-ui
 vi.mock('@wso2/oxygen-ui', () => ({
-  // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+   
   Box: ({children, onClick, onKeyDown, onMouseEnter, onMouseLeave, role, ...props}: MockBoxProps) => (
     <div
       data-testid="box-component"
@@ -323,7 +323,7 @@ describe('BaseEdge', () => {
     it('should stop event propagation on delete click', () => {
       const parentClickHandler = vi.fn();
       const {container} = render(
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events
         <div onClick={parentClickHandler}>
           <BaseEdge {...defaultProps} />
         </div>,

@@ -41,7 +41,7 @@ export default function ColorBuilderContent({colors, onUpdate}: ColorBuilderCont
   const c = colors as any;
 
   const field = (path: string[], label: string): JSX.Element => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
     const value: string = path.reduce((obj: any, key) => obj?.[key], c) ?? '';
     return (
       <ColorEditRow
@@ -49,9 +49,9 @@ export default function ColorBuilderContent({colors, onUpdate}: ColorBuilderCont
         value={value}
         onChange={(v) => {
           onUpdate((palette) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, no-return-assign, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, no-param-reassign
-            const target = path.slice(0, -1).reduce((obj: any, key) => (obj[key] ??= {}), palette as any);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+            const target = path.slice(0, -1).reduce<any>((obj: any, key) => (obj[key] ??= {}), palette);
+
             target[path[path.length - 1]] = v;
           });
         }}

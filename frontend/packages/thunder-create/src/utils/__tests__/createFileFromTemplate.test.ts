@@ -73,7 +73,7 @@ describe('createFileFromTemplate', () => {
     const outputPath = join(testDir, 'output.sh');
 
     writeFileSync(templatePath, '#!/bin/bash\necho "{{message}}"');
-    // eslint-disable-next-line no-bitwise -- bitmask required for file permissions
+
     chmodSync(templatePath, 0o755); // Make executable
 
     createFileFromTemplate(templatePath, outputPath, {message: 'Hello'});
@@ -81,7 +81,7 @@ describe('createFileFromTemplate', () => {
     expect(existsSync(outputPath)).toBe(true);
     const outputStats = statSync(outputPath);
     const templateStats = statSync(templatePath);
-    // eslint-disable-next-line no-bitwise -- bitmask required to check permissions
+
     expect(outputStats.mode & 0o777).toBe(templateStats.mode & 0o777);
   });
 

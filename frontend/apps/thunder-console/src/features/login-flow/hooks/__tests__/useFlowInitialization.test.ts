@@ -53,7 +53,7 @@ vi.mock('@/features/flows/utils/updateTemplatePlaceholderReferences', () => ({
   default: (steps: unknown[]) => [steps],
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockTransformFlowToCanvas = vi.fn((flowData: FlowDefinitionResponse): any => ({
   nodes: flowData.nodes.map((node) => ({
     id: node.id,

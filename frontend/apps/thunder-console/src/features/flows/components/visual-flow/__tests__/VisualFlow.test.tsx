@@ -16,7 +16,7 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, react/button-has-type, react/require-default-props, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
 
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';

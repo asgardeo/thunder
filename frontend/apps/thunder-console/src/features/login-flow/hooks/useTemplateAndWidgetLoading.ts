@@ -132,7 +132,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
         return [[], [], {} as Resource, ''];
       }
 
-      // eslint-disable-next-line no-underscore-dangle
+       
       const replacers: TemplateReplacer[] | undefined = template?.config?.data?.__generationMeta__?.replacers;
 
       // Check for End steps and set flow completion configs before processing
@@ -183,7 +183,7 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
     ): [Node[], Edge[], Resource | null, string | null] => {
       const widgetFlow = widget.config.data as {
         steps?: Step[];
-        // eslint-disable-next-line no-underscore-dangle
+         
         __generationMeta__?: {
           replacers?: TemplateReplacer[];
           defaultPropertySelectorId?: string;
@@ -210,14 +210,14 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
       };
 
       widgetFlow.steps.forEach((step: Step) => {
-        /* eslint-disable no-underscore-dangle */
+         
         if (
           step.__generationMeta__ &&
           typeof step.__generationMeta__ === 'object' &&
           'strategy' in step.__generationMeta__
         ) {
           const {strategy} = step.__generationMeta__ as {strategy?: string};
-          /* eslint-enable no-underscore-dangle */
+           
 
           if (strategy === 'MERGE_WITH_DROP_POINT') {
             newNodes = newNodes.map((node: Node) => {
@@ -234,9 +234,9 @@ const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): U
         }
       });
 
-      // eslint-disable-next-line no-underscore-dangle
+       
       const replacers = widgetFlow.__generationMeta__?.replacers ?? [];
-      // eslint-disable-next-line no-underscore-dangle
+       
       const defaultPropertySelectorId = widgetFlow.__generationMeta__?.defaultPropertySelectorId;
       let defaultPropertySectorStepId: string | null = null;
       let defaultPropertySelector: Resource | null = null;

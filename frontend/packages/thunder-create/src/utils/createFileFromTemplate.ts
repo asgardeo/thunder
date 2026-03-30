@@ -52,7 +52,7 @@ export default function createFileFromTemplate(
   writeFileSync(outputPath, content, 'utf8');
   try {
     const templateStats = statSync(templatePath);
-    // eslint-disable-next-line no-bitwise -- bitmask required to preserve file permissions
+     
     const mode = templateStats.mode & 0o777;
     chmodSync(outputPath, mode);
   } catch (err) {

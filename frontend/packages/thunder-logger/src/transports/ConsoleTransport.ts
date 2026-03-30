@@ -23,7 +23,7 @@ import {hasConsole} from '../utils/detectEnvironment';
 import formatTimestamp from '../utils/formatTimestamp';
 import serializeError from '../utils/serializeError';
 
-/* eslint-disable no-console */
+ 
 
 /**
  * Options for configuring the console transport.
@@ -152,7 +152,7 @@ export default class ConsoleTransport extends BaseTransport {
     return Promise.resolve();
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+   
   private getConsoleMethod(level: string): (...args: unknown[]) => void {
     switch (level) {
       case 'debug':

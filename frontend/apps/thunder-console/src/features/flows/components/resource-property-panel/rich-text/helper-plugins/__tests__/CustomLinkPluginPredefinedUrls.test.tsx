@@ -116,7 +116,7 @@ vi.mock('react-dom', () => ({
   createPortal: (children: React.ReactNode) => children,
 }));
 
-// eslint-disable-next-line import/first -- Import after mocks are set up
+ 
 import CustomLinkPlugin from '../CustomLinkPlugin';
 
 describe('CustomLinkPlugin - URL Type Detection Functions', () => {

@@ -186,7 +186,9 @@ export default function ThemeBuilderLeftPanel({
                 description={t(...SECTION_DESCRIPTION_KEYS[id])}
                 icon={SECTION_ICONS[id]}
                 isSelected={activeSection === id}
-                onClick={() => setActiveSection(id)}
+                onClick={() => {
+                  setActiveSection(id);
+                }}
               />
             ))}
           </Stack>

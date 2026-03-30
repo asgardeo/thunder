@@ -16,8 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable no-console */
-
 import type RuntimeEnvironment from '../models/runtime-environment';
 
 interface ImportMetaEnv {

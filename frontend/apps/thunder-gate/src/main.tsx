@@ -28,7 +28,6 @@ import './index.css';
 
 // Initialize the class name prefix from runtime config (e.g., "Thunder" -> "ThunderSignIn--root")
 if (typeof window !== 'undefined') {
-  // eslint-disable-next-line no-underscore-dangle
   setCnPrefix(window.__THUNDER_RUNTIME_CONFIG__?.brand?.product_name ?? 'Thunder');
 }
 

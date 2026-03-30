@@ -126,7 +126,7 @@ export default function LayoutConfigPanel({
 
   useEffect(() => {
     if (saveHandlerRef) {
-      // eslint-disable-next-line no-param-reassign
+       
       saveHandlerRef.current = () => handleSaveLatest.current();
     }
   }, [saveHandlerRef]);

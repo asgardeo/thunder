@@ -17,7 +17,7 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme, Box} from '@wso2/oxygen-ui';
+import {IconButton, Typography, Tooltip, DataGrid, ListingTable, Box} from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -31,7 +31,6 @@ import type {GroupBasic} from '../models/group';
  * DataGrid component for displaying the list of groups.
  */
 export default function GroupsList(): JSX.Element {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('GroupsList');
@@ -135,7 +134,7 @@ export default function GroupsList(): JSX.Element {
         ),
       },
     ],
-    [handleDeleteClick, handleViewClick, t, theme],
+    [handleDeleteClick, handleViewClick, t],
   );
 
   if (error) {

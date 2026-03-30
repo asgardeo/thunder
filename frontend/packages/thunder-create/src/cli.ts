@@ -33,7 +33,6 @@ const logger = createLogger();
 const program: Command = new Command();
 
 async function main(): Promise<void> {
-  // eslint-disable-next-line no-console
   console.clear();
 
   intro(

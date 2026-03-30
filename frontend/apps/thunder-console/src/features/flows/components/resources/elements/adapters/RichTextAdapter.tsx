@@ -26,7 +26,7 @@ import type {Element as FlowElement} from '@/features/flows/models/elements';
 import './RichTextAdapter.scss';
 
 // Register DOMPurify hook once at module level to handle anchor tags.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- DOMPurify types issue
+ 
 (DOMPurify as unknown as {addHook: (name: string, fn: (node: globalThis.Element) => void) => void}).addHook(
   'afterSanitizeAttributes',
   (node: globalThis.Element) => {
@@ -108,7 +108,7 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
 
   return (
     <div className="rich-text-content">
-      {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- html-react-parser types issue */}
+      { }
       {parse(sanitizedHtml)}
     </div>
   );

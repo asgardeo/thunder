@@ -41,9 +41,13 @@ const reactConfig: Linter.Config[] = [
     name: 'thunder/react-settings',
     settings: {
       react: {
-        version: 'detect',
+        // TEMP WORKAROUND: Set React version to 19 since `eslint-plugin-react` does not yet support ESLint v10.
+        // `eslint-plugin-react` still uses some legacy APIs to detect React version that were deprecated in ESLint v10.
+        // Sticking the version solves as instructed in https://github.com/vercel/next.js/issues/89764#issuecomment-3928272828
+        // Also See https://github.com/jsx-eslint/eslint-plugin-react/issues/3977
+        version: '19',
       },
-      'import/resolver': {
+      'import-x/resolver': {
         typescript: {
           alwaysTryTypes: true,
         },
@@ -67,15 +71,18 @@ const reactConfig: Linter.Config[] = [
   {
     name: 'thunder/react-overrides',
     rules: {
+      // Enforce the use of fragments when a component returns multiple elements to avoid unnecessary wrapper nodes in the DOM.
+      // https://github.com/jsx-eslint/eslint-plugin-react/blob/master/docs/rules/jsx-no-useless-fragment.md
+      'react/jsx-no-useless-fragment': 'error',
+      // Turn on `react/no-array-index-key` to prevent potential issues with list rendering and reconciliation in React.
+      // https://github.com/jsx-eslint/eslint-plugin-react/blob/master/docs/rules/no-array-index-key.md
+      'react/no-array-index-key': 'error',
       // Turn off the requirement to have React in scope for JSX.
       // https://github.com/jsx-eslint/eslint-plugin-react/blob/c9f5eb264e881f7de66188cbb20904fa8edf3985/docs/rules/jsx-use-react.md
       'react/jsx-use-react': 'off',
       // Turn off the requirement to have React in scope for JSX.
       // https://github.com/jsx-eslint/eslint-plugin-react/blob/c9f5eb264e881f7de66188cbb20904fa8edf3985/docs/rules/react-in-jsx-scope.md
       'react/react-in-jsx-scope': 'off',
-      // Override the default `airbnb` rule to allow prop spreading in JSX.
-      // https://github.com/jsx-eslint/eslint-plugin-react/blob/958954de7422c5c78e8758fa02fc8b6aa2db67ec/docs/rules/jsx-props-no-spreading.md
-      'react/jsx-props-no-spreading': 'off',
       // Override the default `airbnb` rule to avoid the deprecated `defaultProps` usage.
       // https://github.com/jsx-eslint/eslint-plugin-react/blob/958954de7422c5c78e8758fa02fc8b6aa2db67ec/docs/rules/require-default-props.md
       'react/require-default-props': [
@@ -88,7 +95,7 @@ const reactConfig: Linter.Config[] = [
       ],
       // Allow imports without file extensions for TypeScript/JavaScript files
       // This is especially useful for path aliases like @/ that resolve to TypeScript files
-      'import/extensions': [
+      'import-x/extensions': [
         'error',
         'ignorePackages',
         {

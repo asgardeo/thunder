@@ -16,7 +16,7 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, no-underscore-dangle */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {type ReactElement, type ReactNode} from 'react';
@@ -169,7 +169,7 @@ vi.mock('../../api/useDeleteUserType', () => ({
 }));
 
 vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+   
   default: () => mockUseGetOrganizationUnits(),
 }));
 

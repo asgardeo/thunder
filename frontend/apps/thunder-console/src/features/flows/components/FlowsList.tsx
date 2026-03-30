@@ -17,7 +17,7 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
+import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid} from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -35,7 +35,6 @@ import type {BasicFlowDefinition} from '../models/responses';
 const HIDE_NON_EDITABLE_FLOWS = true;
 
 export default function FlowsList(): JSX.Element {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('FlowsList');
@@ -163,7 +162,7 @@ export default function FlowsList(): JSX.Element {
         },
       },
     ],
-    [handleDeleteClick, handleEditClick, t, theme],
+    [handleDeleteClick, handleEditClick, t],
   );
 
   if (error) {

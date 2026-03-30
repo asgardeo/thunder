@@ -56,13 +56,13 @@ const PREDEFINED_URLS: PredefinedUrlOption[] = [];
  */
 const positionEditorElement = (editorElement: HTMLDivElement, rect: DOMRect | null): void => {
   if (rect === null) {
-    /* eslint-disable no-param-reassign */
+     
     editorElement.style.opacity = '0';
     editorElement.style.top = '-1000px';
     editorElement.style.left = '-1000px';
-    /* eslint-enable no-param-reassign */
+     
   } else {
-    /* eslint-disable no-param-reassign */
+     
     editorElement.style.opacity = '1';
 
     // Get viewport dimensions.
@@ -99,7 +99,7 @@ const positionEditorElement = (editorElement: HTMLDivElement, rect: DOMRect | nu
 
     editorElement.style.top = `${top}px`;
     editorElement.style.left = `${left}px`;
-    /* eslint-enable no-param-reassign */
+     
   }
 };
 
@@ -144,7 +144,7 @@ const getPlaceholderUrl = (url: string): string => {
  * Link editor component for managing links in the rich text editor.
  */
 function LinkEditor(): ReactElement {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+   
   const [editor] = useLexicalComposerContext();
   const editorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -467,7 +467,7 @@ function LinkEditor(): ReactElement {
  * Custom link plugin that handles link editing in the rich text editor.
  */
 const CustomLinkPlugin = (): ReactElement => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+   
   const [editor] = useLexicalComposerContext();
 
   useEffect(

@@ -141,17 +141,17 @@ async function createPackage(): Promise<void> {
     s.stop(colors.green(`✅ Package '${packageName}' created successfully!`));
 
     logger.info(`Package '${packageName}' created at ${packageDir}`);
-    // eslint-disable-next-line no-console
+
     console.log();
-    // eslint-disable-next-line no-console
+
     console.log(colors.cyan('Next steps:'));
-    // eslint-disable-next-line no-console
+
     console.log(colors.gray('1. Install dependencies: cd to the package directory and run pnpm install'));
-    // eslint-disable-next-line no-console
+
     console.log(colors.gray('2. Start building your package functionality'));
-    // eslint-disable-next-line no-console
+
     console.log(colors.gray('3. Run tests: pnpm test'));
-    // eslint-disable-next-line no-console
+
     console.log(colors.gray('4. Build package: pnpm build'));
   } catch (error) {
     s.stop(colors.red('❌ Failed to create package'));

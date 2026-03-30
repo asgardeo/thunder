@@ -101,7 +101,7 @@ function ToolbarPlugin({
   disabled = false,
   className,
 }: ToolbarPluginProps): ReactElement {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+   
   const [editor] = useLexicalComposerContext();
 
   const [canUndo, setCanUndo] = useState(false);

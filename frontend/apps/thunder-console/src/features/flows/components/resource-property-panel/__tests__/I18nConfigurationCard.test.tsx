@@ -684,7 +684,7 @@ describe('I18nConfigurationCard', () => {
           key: 'my.new.key',
           value: 'My translation value',
         },
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+         
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           onSuccess: expect.any(Function),

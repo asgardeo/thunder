@@ -16,17 +16,15 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
-import type {JSX} from 'react';
-import {Box, Alert, CircularProgress} from '@wso2/oxygen-ui';
-import {useState} from 'react';
 import {EmbeddedFlowComponentType, SignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useDesign, FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {TemplateLiteralType} from '@thunder/utils';
-import {useSearchParams} from 'react-router';
+import {Box, Alert, CircularProgress} from '@wso2/oxygen-ui';
+import {useState} from 'react';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useSearchParams} from 'react-router';
 import generateFallbackSignUpUrl from '../../utils/generateFallbackSignUpUrl';
 
 export default function SignInBox(): JSX.Element {

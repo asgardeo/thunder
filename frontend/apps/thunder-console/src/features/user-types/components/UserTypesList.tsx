@@ -33,7 +33,6 @@ import {
   DialogActions,
   Button,
   DataGrid,
-  useTheme,
 } from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useState} from 'react';
@@ -50,7 +49,6 @@ type GridRenderCellParams<R extends DataGrid.GridValidRowModel = DataGrid.GridVa
   DataGrid.GridRenderCellParams<R>;
 
 export default function UserTypesList() {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UserTypesList');
@@ -230,7 +228,7 @@ export default function UserTypesList() {
         ),
       },
     ],
-    [organizationUnitMap, t, handleDeleteClick, handleViewClick, theme],
+    [organizationUnitMap, t, handleDeleteClick, handleViewClick],
   );
 
   return (

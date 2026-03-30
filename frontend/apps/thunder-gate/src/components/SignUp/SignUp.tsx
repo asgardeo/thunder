@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {AuthPageLayout} from '@thunder/shared-design';
+import type {JSX} from 'react';
 import SignUpBox from './SignUpBox';
 
 export default function SignUp(): JSX.Element {

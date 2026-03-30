@@ -250,9 +250,9 @@ export default class Logger {
         // Errors in transports should not affect the application
         transport.write(entry).catch((err) => {
           // Fallback error logging
-          // eslint-disable-next-line no-console
+           
           if (typeof console !== 'undefined' && typeof console.error === 'function') {
-            // eslint-disable-next-line no-console
+             
             console.error(`Transport ${transport.getName()} failed:`, err);
           }
         });

@@ -33,15 +33,15 @@ function primaryFromName(name: string): string {
   let h2 = 1779033703;
   for (let i = 0; i < name.length; i += 1) {
     const c = name.charCodeAt(i);
-    // eslint-disable-next-line no-bitwise
+     
     h1 = (((h1 << 5) + h1) ^ c) >>> 0;
-    // eslint-disable-next-line no-bitwise
+     
     h2 = Math.imul(h2 ^ c, 0x9e3779b9) >>> 0;
   }
   const hue = h1 % 360;
-  // eslint-disable-next-line no-bitwise
+   
   const sat = 52 + ((h1 >> 4) % 20);
-  // eslint-disable-next-line no-bitwise
+   
   const lig = 40 + ((h2 >> 12) % 12);
   return `hsl(${hue}, ${sat}%, ${lig}%)`;
 }

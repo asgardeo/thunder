@@ -109,7 +109,7 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
 
   useRequiredFields(resource, generalMessage, validationFields);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
+   
   const typographyConfig = resource.config as TypographyConfig | undefined;
   const typographyElement = resource as TypographyElement;
   const variantStr = resource?.variant as string | undefined;

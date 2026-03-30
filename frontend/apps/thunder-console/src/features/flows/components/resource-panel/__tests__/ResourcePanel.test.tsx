@@ -176,7 +176,7 @@ describe('ResourcePanel', () => {
           btn.getAttribute('aria-label')?.toLowerCase().includes('collapse') ??
           btn.getAttribute('aria-label')?.toLowerCase().includes('close'),
       );
-      /* eslint-enable @typescript-eslint/prefer-nullish-coalescing */
+       
 
       expect(buttons.length).toBeGreaterThan(0);
       expect(collapseButton).toBeDefined();

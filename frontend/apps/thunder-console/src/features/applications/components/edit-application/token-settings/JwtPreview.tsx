@@ -206,7 +206,6 @@ export default function JwtPreview({title, payload, defaultClaims = []}: JwtPrev
     if (editorRef.current && monacoRef.current) {
       applyDecorations();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultClaims]);
 
   const handleMount: OnMount = (editorInstance, monacoInstance) => {

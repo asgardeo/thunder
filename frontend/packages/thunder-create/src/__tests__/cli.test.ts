@@ -16,9 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable no-underscore-dangle */
-
 import {exec} from 'child_process';
 import {mkdir, rm, writeFile} from 'fs/promises';
 import {tmpdir} from 'os';
@@ -74,11 +71,11 @@ describe('CLI Integration', () => {
       return {stdout, stderr};
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`CLI execution failed: ${errorMessage}`);
+      throw new Error(`CLI execution failed: ${errorMessage}`, {cause: error});
     }
   };
 
-  it.skip('should show help when no command is provided', async () => {
+  it.todo('should show help when no command is provided', async () => {
     // Skipped: Requires full Thunder workspace setup
     const {stdout} = await runCLI('--help');
 
@@ -88,7 +85,7 @@ describe('CLI Integration', () => {
     expect(stdout).toContain('package');
   });
 
-  it.skip('should show feature command help', async () => {
+  it.todo('should show feature command help', async () => {
     // Skipped: Requires full Thunder workspace setup
     const {stdout} = await runCLI('feature --help');
 

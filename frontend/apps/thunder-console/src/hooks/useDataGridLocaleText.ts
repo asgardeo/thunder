@@ -56,7 +56,7 @@ function getTranslationFunction<T>(commonBundle: Record<string, unknown>, key: s
 
   // Log a warning in development if the key exists but is not a function
   if (import.meta.env.DEV && value !== undefined) {
-    // eslint-disable-next-line no-console
+     
     console.warn(`Translation key '${key}' exists but is not a function. Expected a function, got ${typeof value}.`);
   }
 
