@@ -48,6 +48,7 @@ func TestAuthenticationHandlerTestSuite(t *testing.T) {
 
 func (suite *AuthenticationHandlerTestSuite) SetupTest() {
 	suite.mockService = NewAuthenticationServiceInterfaceMock(suite.T())
+	suite.handler = newAuthenticationHandler(suite.mockService)
 	suite.handler = &authenticationHandler{
 		authService: suite.mockService,
 	}

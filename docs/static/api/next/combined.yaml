@@ -251,7 +251,7 @@ paths:
                   - type: oauth2
                     config:
                       clientId: myapp_client_id
-                      clientSecret: myapp_client_secret
+                      clientSecret: '{client_secret}'
                       redirectUris:
                         - https://myapp.example.com/callback
                         - https://myapp.example.com/oauth/callback
@@ -609,7 +609,7 @@ paths:
                   - type: oauth2
                     config:
                       clientId: myapp_client_id
-                      clientSecret: myapp_updated_secret
+                      clientSecret: '{client_secret_updated}'
                       redirectUris:
                         - https://myapp.example.com/callback
                         - https://myapp.example.com/oauth/callback
@@ -986,8 +986,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/IDPAuthInitResponse"
               example:
-                redirectUrl: https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user
-                sessionToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                redirectUrl: https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri=https://yourapp.com/callback&scope=user
+                sessionToken: '{jwt_session_token}'
         "400":
           description: "Bad Request: The request body is malformed or contains invalid
             data."

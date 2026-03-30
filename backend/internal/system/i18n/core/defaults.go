@@ -25,6 +25,8 @@ package core
 // This map is populated by the i18n extraction script at build time.
 // Helper functions for accessing these messages are in helpers.go.
 var defaultMessages = map[string]string{
+	"authn.error.user_not_found": "User not found",
+	"authn.error.user_not_found_description": "No user found with the provided attributes",
 	"error.attributecache.cache_not_found": "Attribute cache not found",
 	"error.attributecache.cache_not_found_description": "The attribute cache entry with the specified ID does not exist",
 	"error.attributecache.internal_server_error": "Internal server error",
@@ -113,4 +115,22 @@ var defaultMessages = map[string]string{
 	"error.internal_server_error_description": "An unexpected error occurred while processing the request",
 	"error.templateservice.template_not_found": "Template not found",
 	"error.templateservice.template_not_found_description": "The requested template does not exist for the given scenario",
+	"magiclink.error.email_send_failed": "Email send failed",
+	"magiclink.error.email_send_failed_description": "Failed to send the magic link email",
+	"magiclink.error.expired_token": "Expired token",
+	"magiclink.error.expired_token_description": "The magic link token has expired",
+	"magiclink.error.invalid_recipient": "Invalid recipient",
+	"magiclink.error.invalid_recipient_description": "The provided recipient email is invalid or empty",
+	"magiclink.error.invalid_token": "Invalid token",
+	"magiclink.error.invalid_token_description": "The provided magic link token is invalid",
+	"magiclink.error.malformed_token_claims": "Malformed token claims",
+	"magiclink.error.malformed_token_claims_description": "The magic link token contains invalid or missing claims",
+	"magiclink.error.not_configured": "Magic link authentication is not configured",
+	"magiclink.error.not_configured_description": "Magic link service is not available",
+	"magiclink.error.resolving_user": "Error resolving user",
+	"magiclink.error.resolving_user_description": "An error occurred while resolving the user for the recipient",
+	"magiclink.error.template_render_failed": "Template render failed",
+	"magiclink.error.template_render_failed_description": "Failed to render the magic link email template",
+	"magiclink.error.token_generation_failed": "Token generation failed",
+	"magiclink.error.token_generation_failed_description": "Failed to generate the magic link token",
 }
