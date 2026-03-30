@@ -48,3 +48,8 @@ func Any(key string, value interface{}) Field {
 func Error(value error) Field {
 	return Field{Key: "error", Value: value}
 }
+
+// MaskedString creates a Field with a masked string value.
+func MaskedString(key, value string) Field {
+	return Field{Key: key, Value: MaskString(value)}
+}

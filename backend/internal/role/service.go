@@ -522,7 +522,7 @@ func (rs *roleService) GetAuthorizedPermissions(
 	ctx context.Context, userID string, groups []string, requestedPermissions []string,
 ) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Authorizing permissions", log.String("userID", userID), log.Int("groupCount", len(groups)))
+	logger.Debug("Authorizing permissions", log.MaskedString(log.LoggerKeyUserID, userID), log.Int("groupCount", len(groups)))
 
 	// Handle nil groups slice
 	if groups == nil {
@@ -543,14 +543,14 @@ func (rs *roleService) GetAuthorizedPermissions(
 	authorizedPermissions, err := rs.roleStore.GetAuthorizedPermissions(ctx, userID, groups, requestedPermissions)
 	if err != nil {
 		logger.Error("Failed to get authorized permissions",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Int("groupCount", len(groups)),
 			log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
 	logger.Debug("Retrieved authorized permissions",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("groupCount", len(groups)),
 		log.Int("requestedCount", len(requestedPermissions)),
 		log.Int("authorizedCount", len(authorizedPermissions)))

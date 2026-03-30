@@ -158,7 +158,7 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 	execResp.Status = common.ExecComplete
 
 	logger.Debug("Identifying executor completed successfully",
-		log.String("userID", log.MaskString(*userID)))
+		log.MaskedString(log.LoggerKeyUserID, *userID))
 
 	return execResp, nil
 }

@@ -543,7 +543,7 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 
 	totalCount, err := as.userStore.GetGroupCountForUser(ctx, userID)
 	if err != nil {
-		logger.Error("Failed to get group count for user", log.String("userID", userID), log.Error(err))
+		logger.Error("Failed to get group count for user", log.MaskedString(log.LoggerKeyUserID, userID), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -818,7 +818,7 @@ func (us *userService) UpdateUserCredentials(
 	credentials json.RawMessage,
 ) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Updating user credentials", log.String("userID", userID))
+	logger.Debug("Updating user credentials", log.MaskedString(log.LoggerKeyUserID, userID))
 
 	if strings.TrimSpace(userID) == "" {
 		return &ErrorAuthenticationFailed
@@ -851,17 +851,17 @@ func (us *userService) batchUpdateUserCredentials(
 ) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Batch updating user credentials",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("credentialTypesCount", len(credentialsMap)))
 
 	// Fetch user outside the transaction to resolve the OU ID for the authorization check.
 	existingUser, err := us.userStore.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("userID", userID))
+			logger.Debug("User not found", log.MaskedString(log.LoggerKeyUserID, userID))
 			return &ErrorUserNotFound
 		}
-		return logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("userID", userID))
+		return logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.MaskedString(log.LoggerKeyUserID, userID))
 	}
 
 	// Check authz outside the transaction so a denial is returned directly without a rollback.
@@ -882,7 +882,7 @@ func (us *userService) batchUpdateUserCredentials(
 		existingUser, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
-				logger.Debug("User not found", log.String("userID", userID))
+				logger.Debug("User not found", log.MaskedString(log.LoggerKeyUserID, userID))
 				capturedSvcErr = &ErrorUserNotFound
 				return errors.New("rollback for user not found")
 			}
@@ -962,12 +962,12 @@ func (us *userService) batchUpdateUserCredentials(
 			logger,
 			"Failed to update user credentials",
 			err,
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 		)
 	}
 
 	logger.Debug("Successfully batch updated user credentials",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("credentialTypesCount", len(credentialsMap)))
 	return nil
 }
@@ -1181,7 +1181,7 @@ func (us *userService) VerifyUser(
 	}
 
 	if len(storedCredentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", log.MaskString(userID)))
+		logger.Debug("No credentials found for user", log.MaskedString(log.LoggerKeyUserID, userID))
 		return nil, &ErrorAuthenticationFailed
 	}
 
@@ -1201,7 +1201,7 @@ func (us *userService) VerifyUser(
 	}
 
 	if len(credentialsToVerify) == 0 {
-		logger.Debug("No valid credentials provided for verification", log.String("userID", log.MaskString(userID)))
+		logger.Debug("No valid credentials provided for verification", log.MaskedString(log.LoggerKeyUserID, userID))
 		return nil, &ErrorAuthenticationFailed
 	}
 
@@ -1224,7 +1224,7 @@ func (us *userService) VerifyUser(
 
 			if err == nil && hashVerified {
 				logger.Debug("Credential verified successfully",
-					log.String("userID", log.MaskString(userID)), log.String("credType", credType))
+					log.MaskedString(log.LoggerKeyUserID, userID), log.String("credType", credType))
 				verified = true
 				break
 			}
@@ -1232,7 +1232,7 @@ func (us *userService) VerifyUser(
 
 		if !verified {
 			logger.Debug("Credential verification failed",
-				log.String("userID", log.MaskString(userID)), log.String("credType", credType))
+				log.MaskedString(log.LoggerKeyUserID, userID), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
 		}
 	}
@@ -1272,7 +1272,7 @@ func (us *userService) AuthenticateUser(
 		return nil, svcErr
 	}
 
-	logger.Debug("User authenticated successfully", log.String("userID", *userID))
+	logger.Debug("User authenticated successfully", log.MaskedString(log.LoggerKeyUserID, *userID))
 	return &AuthenticateUserResponse{
 		ID:   user.ID,
 		Type: user.Type,
@@ -1380,7 +1380,7 @@ func (us *userService) GetUserCredentialsByType(
 ) ([]Credential, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving user credentials by type",
-		log.String("userID", log.MaskString(userID)),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("credentialType", credentialType))
 
 	if strings.TrimSpace(userID) == "" {
@@ -1396,14 +1396,14 @@ func (us *userService) GetUserCredentialsByType(
 	_, allCredentials, err := us.userStore.GetCredentials(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("userID", userID))
+			logger.Debug("User not found", log.MaskedString(log.LoggerKeyUserID, userID))
 			return nil, &ErrorUserNotFound
 		}
 		return nil, logErrorAndReturnServerError(
 			logger,
 			"Failed to retrieve user credentials",
 			err,
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 		)
 	}
 
@@ -1411,14 +1411,14 @@ func (us *userService) GetUserCredentialsByType(
 	credentials, exists := allCredentials[CredentialType(credentialType)]
 	if !exists || len(credentials) == 0 {
 		logger.Debug("No credentials found for type",
-			log.String("userID", log.MaskString(userID)),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("credentialType", credentialType))
 		// Return empty array
 		return []Credential{}, nil
 	}
 
 	logger.Debug("Retrieved credentials for type",
-		log.String("userID", log.MaskString(userID)),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("credentialType", credentialType),
 		log.Int("count", len(credentials)))
 
@@ -1436,7 +1436,7 @@ func (us *userService) IsUserDeclarative(ctx context.Context, userID string) (bo
 	isDeclarative, err := us.userStore.IsUserDeclarative(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("userID", userID))
+			logger.Debug("User not found", log.MaskedString(log.LoggerKeyUserID, userID))
 			return false, &ErrorUserNotFound
 		}
 		return false, logErrorAndReturnServerError(logger, "Failed to check if user is declarative", err)
@@ -1659,7 +1659,7 @@ func (us *userService) checkUserDeclarative(
 			return &ErrorUserNotFound
 		}
 		logger.Error("Failed to check if user is declarative",
-			log.String("userID", userID), log.Error(err))
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Error(err))
 		return &ErrorInternalServerError
 	}
 	if isDeclarative {
