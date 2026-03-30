@@ -99,10 +99,24 @@ var (
 			WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
 	}
 
+	// queryGetRoleAssignmentsByType retrieves assignments for a role filtered by assignee type with pagination.
+	queryGetRoleAssignmentsByType = dbmodel.DBQuery{
+		ID: "RLQ-ROLE_MGT-17",
+		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM ROLE_ASSIGNMENT
+			WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $5 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
+	}
+
 	// queryGetRoleAssignmentsCount retrieves the total count of assignments for a role.
 	queryGetRoleAssignmentsCount = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-12",
 		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+	}
+
+	// queryGetRoleAssignmentsCountByType retrieves the total count of assignments for a role filtered by type.
+	queryGetRoleAssignmentsCountByType = dbmodel.DBQuery{
+		ID: "RLQ-ROLE_MGT-18",
+		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT
+			WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $3 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryDeleteRoleAssignmentsByIDs deletes specific assignments for a role.

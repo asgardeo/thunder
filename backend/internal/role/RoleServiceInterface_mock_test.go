@@ -402,6 +402,100 @@ func (_c *RoleServiceInterfaceMock_GetRoleAssignments_Call) RunAndReturn(run fun
 	return _c
 }
 
+// GetRoleAssignmentsByType provides a mock function for the type RoleServiceInterfaceMock
+func (_mock *RoleServiceInterfaceMock) GetRoleAssignmentsByType(ctx context.Context, id string, limit int, offset int, includeDisplay bool, assigneeType string) (*AssignmentList, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, id, limit, offset, includeDisplay, assigneeType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRoleAssignmentsByType")
+	}
+
+	var r0 *AssignmentList
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool, string) (*AssignmentList, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, id, limit, offset, includeDisplay, assigneeType)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool, string) *AssignmentList); ok {
+		r0 = returnFunc(ctx, id, limit, offset, includeDisplay, assigneeType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AssignmentList)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, bool, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, id, limit, offset, includeDisplay, assigneeType)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRoleAssignmentsByType'
+type RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call struct {
+	*mock.Call
+}
+
+// GetRoleAssignmentsByType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+//   - limit int
+//   - offset int
+//   - includeDisplay bool
+//   - assigneeType string
+func (_e *RoleServiceInterfaceMock_Expecter) GetRoleAssignmentsByType(ctx interface{}, id interface{}, limit interface{}, offset interface{}, includeDisplay interface{}, assigneeType interface{}) *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call {
+	return &RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call{Call: _e.mock.On("GetRoleAssignmentsByType", ctx, id, limit, offset, includeDisplay, assigneeType)}
+}
+
+func (_c *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call) Run(run func(ctx context.Context, id string, limit int, offset int, includeDisplay bool, assigneeType string)) *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
+		var arg5 string
+		if args[5] != nil {
+			arg5 = args[5].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call) Return(assignmentList *AssignmentList, serviceError *serviceerror.ServiceError) *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call {
+	_c.Call.Return(assignmentList, serviceError)
+	return _c
+}
+
+func (_c *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call) RunAndReturn(run func(ctx context.Context, id string, limit int, offset int, includeDisplay bool, assigneeType string) (*AssignmentList, *serviceerror.ServiceError)) *RoleServiceInterfaceMock_GetRoleAssignmentsByType_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRoleList provides a mock function for the type RoleServiceInterfaceMock
 func (_mock *RoleServiceInterfaceMock) GetRoleList(ctx context.Context, limit int, offset int) (*RoleList, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, limit, offset)

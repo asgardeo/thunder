@@ -41,7 +41,10 @@ type roleStoreInterface interface {
 	GetRole(ctx context.Context, id string) (RoleWithPermissions, error)
 	IsRoleExist(ctx context.Context, id string) (bool, error)
 	GetRoleAssignments(ctx context.Context, id string, limit, offset int) ([]RoleAssignment, error)
+	GetRoleAssignmentsByType(ctx context.Context, id string,
+		limit, offset int, assigneeType string) ([]RoleAssignment, error)
 	GetRoleAssignmentsCount(ctx context.Context, id string) (int, error)
+	GetRoleAssignmentsCountByType(ctx context.Context, id string, assigneeType string) (int, error)
 	UpdateRole(ctx context.Context, id string, role RoleUpdateDetail) error
 	DeleteRole(ctx context.Context, id string) error
 	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
@@ -212,6 +215,29 @@ func (s *roleStore) GetRoleAssignments(ctx context.Context, id string, limit, of
 		return nil, fmt.Errorf("failed to get role assignments: %w", err)
 	}
 
+	return parseAssignmentResults(results)
+}
+
+// GetRoleAssignmentsByType retrieves assignments for a role filtered by assignee type with pagination.
+func (s *roleStore) GetRoleAssignmentsByType(
+	ctx context.Context, id string, limit, offset int, assigneeType string,
+) ([]RoleAssignment, error) {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := dbClient.QueryContext(
+		ctx, queryGetRoleAssignmentsByType, id, limit, offset, s.deploymentID, assigneeType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get role assignments: %w", err)
+	}
+
+	return parseAssignmentResults(results)
+}
+
+// parseAssignmentResults parses database query results into role assignments.
+func parseAssignmentResults(results []map[string]interface{}) ([]RoleAssignment, error) {
 	assignments := make([]RoleAssignment, 0)
 	for _, row := range results {
 		assigneeID, err := parseStringField(row, "assignee_id")
@@ -239,6 +265,22 @@ func (s *roleStore) GetRoleAssignmentsCount(ctx context.Context, id string) (int
 	}
 
 	countResults, err := dbClient.QueryContext(ctx, queryGetRoleAssignmentsCount, id, s.deploymentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get role assignments count: %w", err)
+	}
+
+	return parseCountResult(countResults)
+}
+
+// GetRoleAssignmentsCountByType retrieves the total count of assignments for a role filtered by type.
+func (s *roleStore) GetRoleAssignmentsCountByType(ctx context.Context, id string, assigneeType string) (int, error) {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return 0, err
+	}
+
+	countResults, err := dbClient.QueryContext(
+		ctx, queryGetRoleAssignmentsCountByType, id, s.deploymentID, assigneeType)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get role assignments count: %w", err)
 	}

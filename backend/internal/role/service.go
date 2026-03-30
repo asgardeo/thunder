@@ -49,6 +49,8 @@ type RoleServiceInterface interface {
 	DeleteRole(ctx context.Context, id string) *serviceerror.ServiceError
 	GetRoleAssignments(ctx context.Context, id string, limit, offset int,
 		includeDisplay bool) (*AssignmentList, *serviceerror.ServiceError)
+	GetRoleAssignmentsByType(ctx context.Context, id string, limit, offset int,
+		includeDisplay bool, assigneeType string) (*AssignmentList, *serviceerror.ServiceError)
 	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
 	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
 	IsRoleDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError)
@@ -363,6 +365,12 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 // GetRoleAssignments retrieves assignments for a role with pagination.
 func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit, offset int,
 	includeDisplay bool) (*AssignmentList, *serviceerror.ServiceError) {
+	return rs.GetRoleAssignmentsByType(ctx, id, limit, offset, includeDisplay, "")
+}
+
+// GetRoleAssignmentsByType retrieves assignments for a role filtered by assignee type with pagination.
+func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, limit, offset int,
+	includeDisplay bool, assigneeType string) (*AssignmentList, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
@@ -383,7 +391,13 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 		return nil, &ErrorRoleNotFound
 	}
 
-	totalCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
+	var totalCount int
+	var assignments []RoleAssignment
+	if assigneeType != "" {
+		totalCount, err = rs.roleStore.GetRoleAssignmentsCountByType(ctx, id, assigneeType)
+	} else {
+		totalCount, err = rs.roleStore.GetRoleAssignmentsCount(ctx, id)
+	}
 	if err != nil {
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ResultLimitExceededInCompositeMode
@@ -392,7 +406,11 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 		return nil, &ErrorInternalServerError
 	}
 
-	assignments, err := rs.roleStore.GetRoleAssignments(ctx, id, limit, offset)
+	if assigneeType != "" {
+		assignments, err = rs.roleStore.GetRoleAssignmentsByType(ctx, id, limit, offset, assigneeType)
+	} else {
+		assignments, err = rs.roleStore.GetRoleAssignments(ctx, id, limit, offset)
+	}
 	if err != nil {
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
 			return nil, &ResultLimitExceededInCompositeMode
@@ -413,7 +431,11 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 		}
 	}
 	baseURL := fmt.Sprintf("/roles/%s/assignments", id)
-	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, utils.DisplayQueryParam(includeDisplay))
+	extraQuery := utils.DisplayQueryParam(includeDisplay)
+	if assigneeType != "" {
+		extraQuery += "&type=" + assigneeType
+	}
+	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, extraQuery)
 
 	response := &AssignmentList{
 		TotalResults: totalCount,

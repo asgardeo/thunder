@@ -443,7 +443,7 @@ paths:
       tags:
         - roles
       summary: Get role assignments
-      description: Returns all user and group assignments for the role. Use include=display to get display names.
+      description: Returns user and group assignments for the role. Use type to filter by assignee type and include=display to get display names.
       parameters:
         - in: path
           name: id
@@ -451,6 +451,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/assigneeTypeQueryParam'
         - $ref: '#/components/parameters/includeQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
@@ -499,6 +500,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               examples:
+                invalid-type:
+                  summary: Invalid assignee type parameter
+                  value:
+                    code: "ROL-1017"
+                    message: "Invalid assignee type"
+                    description: "The type parameter must be either 'user' or 'group'"
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
@@ -706,6 +713,17 @@ components:
         type: integer
         minimum: 0
         default: 0
+    assigneeTypeQueryParam:
+      in: query
+      name: type
+      required: false
+      schema:
+        type: string
+        enum:
+          - user
+          - group
+      description: |
+        Filter assignments by assignee type. When omitted, assignments of all types are returned.
     includeQueryParam:
       in: query
       name: include
