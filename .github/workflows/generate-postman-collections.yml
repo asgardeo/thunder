@@ -1,0 +1,60 @@
+# This workflow auto-generates Postman collections from OpenAPI specs
+# and commits the result back to the repository.
+# Triggers on changes to any OpenAPI spec under api/ on the main branch.
+
+name: Generate Postman Collections
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/*.yaml'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    name: Generate Postman Collections
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: Install Dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Postman Collections
+        working-directory: docs
+        run: pnpm generate:postman-collections
+
+      - name: Commit Generated Collections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add samples/api/postman/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update auto-generated Postman collections
+
+            Regenerated from OpenAPI specs by the generate-postman-collections workflow.
+
+            [skip ci]"
+            git pull --rebase
+            git push
+          fi
