@@ -42,6 +42,10 @@ import OrganizationUnitProvider from './features/organization-units/contexts/Org
 import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
 import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
 import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
+import RoleCreateProvider from './features/roles/contexts/RoleCreate/RoleCreateProvider';
+import CreateRolePage from './features/roles/pages/CreateRolePage';
+import RoleEditPage from './features/roles/pages/RoleEditPage';
+import RolesListPage from './features/roles/pages/RolesListPage';
 import TranslationCreateProvider from './features/translations/contexts/TranslationCreate/TranslationCreateProvider';
 import TranslationCreatePage from './features/translations/pages/TranslationCreatePage';
 import TranslationsEditPage from './features/translations/pages/TranslationsEditPage';
@@ -80,6 +84,8 @@ export default function App(): JSX.Element {
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="groups" element={<GroupsListPage />} />
             <Route path="groups/:groupId" element={<GroupEditPage />} />
+            <Route path="roles" element={<RolesListPage />} />
+            <Route path="roles/:roleId" element={<RoleEditPage />} />
             <Route path="applications" element={<ApplicationsListPage />} />
             <Route path="applications/:applicationId" element={<ApplicationEditPage />} />
             <Route path="flows" element={<FlowsListPage />} />
@@ -112,6 +118,18 @@ export default function App(): JSX.Element {
             }
           >
             <Route index element={<CreateGroupPage />} />
+          </Route>
+          <Route
+            path="/roles/create"
+            element={
+              <ProtectedRoute>
+                <RoleCreateProvider>
+                  <FullScreenLayout />
+                </RoleCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<CreateRolePage />} />
           </Route>
           <Route
             path="/users/create"

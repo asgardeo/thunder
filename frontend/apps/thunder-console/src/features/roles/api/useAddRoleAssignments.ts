@@ -1,0 +1,61 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {useAsgardeo} from '@asgardeo/react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
+import {useConfig, useToast} from '@thunder/shared-contexts';
+import {useTranslation} from 'react-i18next';
+import RoleQueryKeys from '../constants/role-query-keys';
+import type {RoleAssignment} from '../models/role';
+
+export interface AddRoleAssignmentsVariables {
+  roleId: string;
+  assignments: RoleAssignment[];
+}
+
+/**
+ * Custom React hook to add user or group assignments to a role.
+ *
+ * @returns TanStack Query mutation object for adding role assignments
+ */
+export default function useAddRoleAssignments(): UseMutationResult<void, Error, AddRoleAssignmentsVariables> {
+  const {http} = useAsgardeo();
+  const {getServerUrl} = useConfig();
+  const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('roles');
+  const {showToast} = useToast();
+
+  return useMutation<void, Error, AddRoleAssignmentsVariables>({
+    mutationFn: async ({roleId, assignments}: AddRoleAssignmentsVariables): Promise<void> => {
+      const serverUrl: string = getServerUrl();
+      await http.request({
+        url: `${serverUrl}/roles/${roleId}/assignments/add`,
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        data: JSON.stringify({assignments}),
+      } as unknown as Parameters<typeof http.request>[0]);
+    },
+    onSuccess: (_data, {roleId}) => {
+      queryClient.invalidateQueries({queryKey: [RoleQueryKeys.ROLE_ASSIGNMENTS, roleId]}).catch(() => { /* noop */ });
+      showToast(t('assignments.add.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('assignments.add.error'), 'error');
+    },
+  });
+}

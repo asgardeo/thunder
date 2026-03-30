@@ -35,6 +35,7 @@ import {
   Layers,
   LayoutGrid,
   Palette,
+  ShieldCheck,
   UserRoundCog,
   UsersRound,
   Workflow,
@@ -94,6 +95,12 @@ export default function DashboardLayout(): ReactNode {
             text: t('navigation:pages.groups'),
             icon: <Group />,
             path: '/groups',
+          },
+          {
+            id: 'roles',
+            text: t('navigation:pages.roles'),
+            icon: <ShieldCheck />,
+            path: '/roles',
           },
           {
             id: 'user-types',
