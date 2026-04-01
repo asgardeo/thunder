@@ -53,35 +53,46 @@ export default function ApiVersionReference() {
 
   // Detect scroll inside the Scalar viewer to know when its toolbar is hidden.
   useEffect(() => {
+    let scalarContainer: Element | null = null;
+    let handleScroll: (() => void) | null = null;
+
     const timer = setTimeout(() => {
-      const scalarContainer = document.querySelector('.apis-page');
+      scalarContainer = document.querySelector('.apis-page');
       if (!scalarContainer) return;
 
-      const handleScroll = () => setScalarScrolled(scalarContainer.scrollTop > 10);
+      handleScroll = () => setScalarScrolled((scalarContainer as Element).scrollTop > 10);
       scalarContainer.addEventListener('scroll', handleScroll, {passive: true});
-      return () => scalarContainer.removeEventListener('scroll', handleScroll);
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (scalarContainer && handleScroll) {
+        scalarContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
   }, []);
 
   // Use IntersectionObserver to detect when Scalar's Test Request panel is visible.
   // #scalar-client is always in the DOM but only intersects the viewport when open.
   useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+
     const timer = setTimeout(() => {
       const clientEl = document.getElementById('scalar-client');
       if (!clientEl) return;
 
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         ([entry]) => setClientPanelOpen(entry.isIntersecting),
         {threshold: 0.1},
       );
 
       observer.observe(clientEl);
-      return () => observer.disconnect();
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      observer?.disconnect();
+    };
   }, []);
 
   const versionPath = version === 'current' ? 'next' : version;
