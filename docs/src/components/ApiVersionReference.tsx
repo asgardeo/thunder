@@ -16,14 +16,17 @@
  * under the License.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import {createPortal} from 'react-dom';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {useDocsVersion} from '@docusaurus/plugin-content-docs/client';
+import BrowserOnly from '@docusaurus/BrowserOnly';
+import {Button} from '@wso2/oxygen-ui';
 import ApiReference from './ApiReference';
 
 /**
  * Renders the API reference for the currently active Docusaurus doc version,
- * along with a toolbar containing a download link for the Postman collection.
+ * along with a download link for the generated Postman collection.
  *
  * The combined OpenAPI spec is expected to live at:
  *   static/api/<versionPath>/combined.yaml
@@ -38,70 +41,98 @@ import ApiReference from './ApiReference';
  * This matches both the `path` values in docusaurus.config.ts `versions` config
  * and the directory names under static/api/.
  */
+
+// Approximate height of Scalar's own toolbar row (Developer Tools / Configure / Share / Deploy).
+const SCALAR_TOOLBAR_HEIGHT = 52;
+
 export default function ApiVersionReference() {
   const {siteConfig} = useDocusaurusContext();
   const {version} = useDocsVersion();
+  const [scalarScrolled, setScalarScrolled] = useState(false);
+  const [clientPanelOpen, setClientPanelOpen] = useState(false);
 
-  // Map the Docusaurus internal version name to its URL path segment.
-  // 'current' is the unreleased (Next) version, served under the 'next' path.
+  // Detect scroll inside the Scalar viewer to know when its toolbar is hidden.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const scalarContainer = document.querySelector('.apis-page');
+      if (!scalarContainer) return;
+
+      const handleScroll = () => setScalarScrolled(scalarContainer.scrollTop > 10);
+      scalarContainer.addEventListener('scroll', handleScroll, {passive: true});
+      return () => scalarContainer.removeEventListener('scroll', handleScroll);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Use IntersectionObserver to detect when Scalar's Test Request panel is visible.
+  // #scalar-client is always in the DOM but only intersects the viewport when open.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const clientEl = document.getElementById('scalar-client');
+      if (!clientEl) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => setClientPanelOpen(entry.isIntersecting),
+        {threshold: 0.1},
+      );
+
+      observer.observe(clientEl);
+      return () => observer.disconnect();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const versionPath = version === 'current' ? 'next' : version;
   const specUrl = `${siteConfig.baseUrl}api/${versionPath}/combined.yaml`;
   const postmanCollectionUrl = `${siteConfig.baseUrl}api/${versionPath}/postman/thunder.json`;
 
+  const topOffset = scalarScrolled ? 8 : SCALAR_TOOLBAR_HEIGHT + 8;
+
   return (
-    <div style={{position: 'relative', height: '100%'}}>
-      <div
-        style={{
-          position: 'fixed',
-          top: 'calc(var(--ifm-navbar-height) + var(--docusaurus-announcement-bar-height) + 12px)',
-          right: '16px',
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <a
-          href={postmanCollectionUrl}
-          download="thunder.json"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '7px 14px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontWeight: 600,
-            lineHeight: 1,
-            textDecoration: 'none',
-            color: '#ffffff',
-            background: '#ff6c37',
-            border: 'none',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
-            transition: 'background 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.background = '#e5562a';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.background = '#ff6c37';
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M12 16l-6-6h4V4h4v6h4l-6 6zm6 2H6v2h12v-2z" />
-          </svg>
-          Download Postman Collection
-        </a>
-      </div>
+    <>
+      <BrowserOnly>
+        {() =>
+          createPortal(
+            <div
+              style={{
+                position: 'fixed',
+                top: `calc(var(--ifm-navbar-height) + var(--docusaurus-announcement-bar-height) + ${topOffset}px)`,
+                right: '40px',
+                zIndex: 9999,
+                transition: 'top 0.2s ease, opacity 0.15s ease',
+                opacity: clientPanelOpen ? 0 : 1,
+                pointerEvents: clientPanelOpen ? 'none' : 'auto',
+              }}
+            >
+              <Button
+                component="a"
+                href={postmanCollectionUrl}
+                download="thunder.json"
+                variant="contained"
+                size="small"
+                startIcon={
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 16l-6-6h4V4h4v6h4l-6 6zm6 2H6v2h12v-2z" />
+                  </svg>
+                }
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  background: '#ff6c37',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                  '&:hover': {background: '#e5562a'},
+                }}
+              >
+                Download Postman Collection
+              </Button>
+            </div>,
+            document.body,
+          )
+        }
+      </BrowserOnly>
       <ApiReference specUrl={specUrl} />
-    </div>
+    </>
   );
 }
