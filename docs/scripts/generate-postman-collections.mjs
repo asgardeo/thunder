@@ -18,15 +18,24 @@
  * under the License.
  */
 
+/* eslint-disable @thunder/copyright-header, import/no-extraneous-dependencies, no-underscore-dangle, @typescript-eslint/naming-convention */
+
 /**
  * Generates Postman collections from Thunder OpenAPI specifications.
  *
  * Usage:
- *   node scripts/generate-postman-collections.mjs
+ *   node scripts/generate-postman-collections.mjs [--version-path <path>]
+ *
+ * Options:
+ *   --version-path  The versioned subdirectory under static/api/ to write output into.
+ *                   Defaults to 'next' (the unreleased/current version).
  *
  * Output:
- *   samples/api/postman/<spec-name>.json  - one collection per OpenAPI spec
- *   samples/api/postman/thunder.json      - combined collection from all specs
+ *   static/api/<versionPath>/postman/<spec-name>.json  - one collection per OpenAPI spec
+ *   static/api/<versionPath>/postman/thunder.json      - combined collection from all specs
+ *
+ * Note: Only top-level YAML files in api/ are processed. Subdirectories (e.g. WIP/)
+ * are intentionally skipped to match the stable specs served in the docs.
  */
 
 import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'fs';
@@ -34,15 +43,23 @@ import {join, dirname, basename} from 'path';
 import {fileURLToPath} from 'url';
 import Converter from 'openapi-to-postmanv2';
 import {promisify} from 'util';
+import {createLogger} from '@thunder/logger';
 
 const convert = promisify(Converter.convert.bind(Converter));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const ROOT_DIR = join(__dirname, '..', '..');
-const API_DIR = join(ROOT_DIR, 'api');
-const OUTPUT_DIR = join(ROOT_DIR, 'samples', 'api', 'postman');
+const logger = createLogger('generate-postman-collections');
+
+const API_DIR = join(__dirname, '..', '..', 'api');
+const STATIC_DIR = join(__dirname, '..', 'static', 'api');
+
+// Resolve version path from --version-path <path> CLI arg, defaulting to 'next'
+const versionPathArgIndex = process.argv.indexOf('--version-path');
+const versionPath = versionPathArgIndex !== -1 ? process.argv[versionPathArgIndex + 1] : 'next';
+
+const OUTPUT_DIR = join(STATIC_DIR, versionPath, 'postman');
 
 // Spec files to skip (WIP / not yet stable)
 const SKIP_FILES = new Set(['design.yaml']);
@@ -107,11 +124,11 @@ async function generateIndividualCollections(specFiles) {
         const name = basename(file, '.yaml');
         const outputPath = join(OUTPUT_DIR, `${name}.json`);
 
-        console.log(`  Converting ${file}...`);
+        logger.info(`  Converting ${file}...`);
         const collection = await convertSpec(specPath);
 
         writeFileSync(outputPath, JSON.stringify(collection, null, 2), 'utf8');
-        console.log(`  Written to ${outputPath}`);
+        logger.info(`  Written to ${outputPath}`);
 
         collections.push({name, collection});
     }
@@ -124,6 +141,7 @@ async function generateIndividualCollections(specFiles) {
  *
  * Merges all items (folders/requests) from each individual collection
  * into one top-level collection named "Thunder API".
+ * Variables are merged and deduplicated across all collections (first occurrence wins).
  */
 function generateCombinedCollection(collections) {
     const combined = {
@@ -136,11 +154,18 @@ function generateCombinedCollection(collections) {
         variable: [],
     };
 
-    const first = collections[0]?.collection;
+    // Merge variables from all collections — deduplicate by key, first occurrence wins.
+    const mergedVariables = new Map();
 
-    if (first?.variable) {
-        combined.variable = first.variable;
+    for (const {collection} of collections) {
+        for (const variable of collection.variable ?? []) {
+            if (variable?.key && !mergedVariables.has(variable.key)) {
+                mergedVariables.set(variable.key, variable);
+            }
+        }
     }
+
+    combined.variable = Array.from(mergedVariables.values());
 
     const authSource = collections.find(({collection}) => collection.auth)?.collection;
 
@@ -158,8 +183,9 @@ function generateCombinedCollection(collections) {
 }
 
 async function main() {
-    console.log('Generating Postman collections from OpenAPI specs...');
+    logger.info(`Generating Postman collections (version path: ${versionPath})...`);
 
+    // Only top-level YAML files are processed — subdirectories are intentionally skipped.
     const specFiles = readdirSync(API_DIR)
         .filter((file) => file.endsWith('.yaml') && !SKIP_FILES.has(file))
         .sort();
@@ -168,7 +194,7 @@ async function main() {
         throw new Error('No OpenAPI spec files found in the api/ directory.');
     }
 
-    console.log(`Found ${specFiles.length} spec file(s)`);
+    logger.info(`Found ${specFiles.length} spec file(s)`);
 
     if (!existsSync(OUTPUT_DIR)) {
         mkdirSync(OUTPUT_DIR, {recursive: true});
@@ -176,17 +202,17 @@ async function main() {
 
     const collections = await generateIndividualCollections(specFiles);
 
-    console.log('Generating combined collection...');
+    logger.info('Generating combined collection...');
     const combined = generateCombinedCollection(collections);
     const combinedPath = join(OUTPUT_DIR, 'thunder.json');
 
     writeFileSync(combinedPath, JSON.stringify(combined, null, 2), 'utf8');
-    console.log(`Combined collection written to ${combinedPath}`);
+    logger.info(`Combined collection written to ${combinedPath}`);
 
-    console.log(`Done. ${collections.length} individual collection(s) + 1 combined collection generated.`);
+    logger.info(`Done. ${collections.length} individual collection(s) + 1 combined collection generated.`);
 }
 
 main().catch((error) => {
-    console.error('Error generating Postman collections:', error);
+    logger.error('Error generating Postman collections:', error);
     process.exit(1);
 });
