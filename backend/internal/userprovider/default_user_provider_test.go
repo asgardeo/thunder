@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
@@ -113,7 +114,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 	offset := 0
 
 	groupListResponse := &user.UserGroupListResponse{
-		Groups: []user.UserGroup{
+		Groups: []entity.EntityGroup{
 			{ID: "g1", Name: "Group 1", OUID: "ou1"},
 		},
 		Links: []utils.Link{
