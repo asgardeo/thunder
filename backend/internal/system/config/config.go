@@ -401,6 +401,17 @@ type ConsentConfig struct {
 	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
 }
 
+// EntityConfig holds the entity service configuration.
+type EntityConfig struct {
+	IndexedAttributes []string `yaml:"indexed_attributes" json:"indexed_attributes"`
+	// Store defines the storage mode for entities.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               ServerConfig           `yaml:"server" json:"server"`
@@ -413,6 +424,7 @@ type Config struct {
 	Flow                 FlowConfig             `yaml:"flow" json:"flow"`
 	Crypto               CryptoConfig           `yaml:"crypto" json:"crypto"`
 	CORS                 CORSConfig             `yaml:"cors" json:"cors"`
+	Entity               EntityConfig           `yaml:"entity" json:"entity"`
 	User                 UserConfig             `yaml:"user" json:"user"`
 	DeclarativeResources DeclarativeResources   `yaml:"declarative_resources" json:"declarative_resources"`
 	Resource             ResourceConfig         `yaml:"resource" json:"resource"`

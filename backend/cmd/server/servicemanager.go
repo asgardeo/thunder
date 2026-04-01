@@ -32,6 +32,7 @@ import (
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	"github.com/asgardeo/thunder/internal/design/resolve"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	"github.com/asgardeo/thunder/internal/entity"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
@@ -126,8 +127,14 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, userSchemaExporter)
 
+	// Initialize entity service
+	entityService, err := entity.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize EntityService", log.Error(err))
+	}
+
 	userService, ouUserResolver, userExporter, err := user.Initialize(
-		mux, ouService, userSchemaService, hashService, ouAuthzService,
+		mux, entityService, ouService, userSchemaService, hashService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))

@@ -148,6 +148,14 @@ packages:
       pkgname: discoverymock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/entity:
+    config:
+      all: true
+      dir: tests/mocks/entitymock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: entitymock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/asgardeo/thunder/internal/user:
     config:
       all: true

@@ -117,6 +117,14 @@ packages:
       pkgname: flowmeta
       filename: "{{.InterfaceName}}_mock_test.go"
 
+  github.com/asgardeo/thunder/internal/entity:
+    config:
+      all: true
+      dir: internal/entity
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: entity
+      filename: "{{.InterfaceName}}_mock_test.go"
+
   github.com/asgardeo/thunder/internal/user:
     config:
       all: true
