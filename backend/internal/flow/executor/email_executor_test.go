@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -452,6 +453,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SMTPConnectionError() 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
 	suite.Equal("Failed to send email", resp.FailureReason)
+	suite.Empty(resp.AdditionalData[common.DataEmailSent])
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SMTPAuthError() {
@@ -486,6 +488,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SMTPAuthError() {
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
 	suite.Equal("Failed to send email", resp.FailureReason)
+	suite.Empty(resp.AdditionalData[common.DataEmailSent])
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailSendFailedError() {
@@ -520,6 +523,40 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailSendFailedError()
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
 	suite.Equal("Failed to send email", resp.FailureReason)
+	suite.Empty(resp.AdditionalData[common.DataEmailSent])
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UnexpectedError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "USER_INVITE",
+		},
+	}
+
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		mock.Anything,
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
+	suite.mockEmailClient.On("Send", mock.Anything).Return(fmt.Errorf("unexpected internal error"))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.Error(err)
+	suite.Nil(resp)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() {

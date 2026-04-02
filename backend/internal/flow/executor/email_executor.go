@@ -142,6 +142,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 
 	if err := e.emailClient.Send(emailData); err != nil {
 		if isEmailError(err) {
+			logger.Error("Error sending mail : ", log.Error(err))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Failed to send email"
 			return execResp, nil
