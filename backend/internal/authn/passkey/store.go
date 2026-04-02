@@ -77,7 +77,7 @@ func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
 	if s.logger.IsDebugEnabled() {
 		s.logger.Debug("Storing session data",
 			log.String("sessionKey", log.MaskString(sessionKey)),
-			log.String("userID", log.MaskString(userID)),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("jsonDataLength", fmt.Sprintf("%d bytes", len(jsonDataBytes))))
 	}
 
@@ -90,7 +90,7 @@ func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
 
 	s.logger.Debug("WebAuthn session stored successfully",
 		log.String("sessionKey", log.MaskString(sessionKey)),
-		log.String("userID", log.MaskString(userID)))
+		log.MaskedString(log.LoggerKeyUserID, userID))
 
 	return nil
 }
@@ -137,7 +137,7 @@ func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, string,
 
 	s.logger.Debug("WebAuthn session retrieved successfully",
 		log.String("sessionKey", log.MaskString(sessionKey)),
-		log.String("userID", log.MaskString(userID)))
+		log.MaskedString(log.LoggerKeyUserID, userID))
 
 	return sessionData, userID, relyingPartyID, nil
 }

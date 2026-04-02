@@ -238,6 +238,28 @@ func (suite *LogTestSuite) TestMaskString() {
 	}
 }
 
+func (suite *LogTestSuite) TestMaskedString() {
+	testCases := []struct {
+		name     string
+		key      string
+		input    string
+		expected string
+	}{
+		{"Empty", LoggerKeyUserID, "", ""},
+		{"Short", LoggerKeyUserID, "ab", "**"},
+		{"UUID", LoggerKeyUserID, "019d3279-78bc-7af0-8ea8-979a9c9a8cb7", "0**********************************7"},
+		{"CustomKey", "email", "user@example.com", "u**************m"},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			field := MaskedString(tc.key, tc.input)
+			assert.Equal(t, tc.key, field.Key)
+			assert.Equal(t, tc.expected, field.Value)
+		})
+	}
+}
+
 func (suite *LogTestSuite) TestConvertFields() {
 	fields := []Field{
 		{Key: "string", Value: "value"},

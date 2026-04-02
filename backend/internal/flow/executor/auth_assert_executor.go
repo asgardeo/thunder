@@ -433,13 +433,13 @@ func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Cont
 // getUserAttributesFromUserProvider retrieves user attributes from the user provider.
 func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 	map[string]interface{}, error) {
-	logger := a.logger.With(log.String("userID", userID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
 
 	var jsonAttrs json.RawMessage
 	res, err := a.userProvider.GetUser(userID)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes",
-			log.String("userID", userID), log.Any("error", err))
+			log.Any("error", err))
 		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
 	}
 	jsonAttrs = res.Attributes
@@ -451,8 +451,7 @@ func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 
 	var attrs map[string]interface{}
 	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.String("userID", userID),
-			log.Error(err))
+		logger.Error("Failed to unmarshal user attributes", log.Error(err))
 		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
 	}
 
@@ -493,12 +492,12 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 // appendGroupsToClaims appends user groups to the JWT claims.
 func (a *authAssertExecutor) appendGroupsToClaims(
 	userID string, jwtClaims map[string]interface{}) error {
-	logger := a.logger.With(log.String("userID", userID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
 
 	groups, err := a.userProvider.GetUserGroups(userID, oauth2const.DefaultGroupListLimit, 0)
 	if err != nil {
 		logger.Error("Failed to fetch user groups",
-			log.String("userID", userID), log.Any("error", err))
+			log.Any("error", err))
 		return errors.New("something went wrong while fetching user groups: " + err.Description)
 	}
 

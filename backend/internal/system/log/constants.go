@@ -29,4 +29,6 @@ const (
 	LoggerKeyNodeID = "nodeId"
 	// LoggerKeyTraceID is the key used to identify the trace ID (correlation ID) in the logger.
 	LoggerKeyTraceID = "trace_id"
+	// LoggerKeyUserID is the key used to identify the user ID in the logger.
+	LoggerKeyUserID = "userID"
 )

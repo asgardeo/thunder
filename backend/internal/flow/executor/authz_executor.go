@@ -109,7 +109,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 	}
 
 	logger.Debug("Calling authorization service",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("groupCount", len(groupIDs)),
 		log.Int("permissionCount", len(requestedPerms)))
 
@@ -185,7 +185,7 @@ func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) ([]string
 	// If no groups found in context, fetch from user service
 	if a.userProvider != nil && ctx.AuthenticatedUser.UserID != "" {
 		a.logger.Debug("Groups not found in context, fetching from user service",
-			log.String("userID", ctx.AuthenticatedUser.UserID))
+			log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID))
 
 		groupsResp, err := a.userProvider.GetUserGroups(ctx.AuthenticatedUser.UserID,
 			oauth2const.DefaultGroupListLimit, 0)

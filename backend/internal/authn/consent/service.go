@@ -76,7 +76,7 @@ func newConsentEnforcerService(consentSvc consent.ConsentServiceInterface,
 func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID, userID string,
 	essentialAttributes, optionalAttributes []string, availableAttributes *authnprovider.AvailableAttributes) (
 	*ConsentPromptData, *serviceerror.I18nServiceError) {
-	logger := s.logger.With(log.String("appID", appID), log.String("userID", userID))
+	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug("Resolving consent for user")
 
 	if !s.consentService.IsEnabled() {
@@ -150,7 +150,7 @@ func (s *consentEnforcerService) ResolveConsent(ctx context.Context, ouID, appID
 func (s *consentEnforcerService) RecordConsent(ctx context.Context, ouID, appID, userID string,
 	decisions *ConsentDecisions, sessionToken string,
 	validityPeriod int64) (*consent.Consent, *serviceerror.I18nServiceError) {
-	logger := s.logger.With(log.String("appID", appID), log.String("userID", userID))
+	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug("Recording consent for user")
 
 	// Verify and decode the consent session token to retrieve the prompted purposes
@@ -218,7 +218,7 @@ func (s *consentEnforcerService) RecordConsent(ctx context.Context, ouID, appID,
 func (s *consentEnforcerService) updateExistingConsent(ctx context.Context, ouID, appID, userID string,
 	existingConsents []consent.Consent, newPurposeItems []consent.ConsentPurposeItem, validityTime int64,
 ) (*consent.Consent, *serviceerror.I18nServiceError) {
-	logger := s.logger.With(log.String("appID", appID), log.String("userID", userID),
+	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("existingConsentCount", len(existingConsents)))
 	logger.Debug("Existing consent record found; updating with new decisions")
 
@@ -258,7 +258,7 @@ func (s *consentEnforcerService) updateExistingConsent(ctx context.Context, ouID
 func (s *consentEnforcerService) createNewConsent(ctx context.Context, ouID, appID, userID string,
 	newPurposeItems []consent.ConsentPurposeItem, validityTime int64) (
 	*consent.Consent, *serviceerror.I18nServiceError) {
-	logger := s.logger.With(log.String("appID", appID), log.String("userID", userID))
+	logger := s.logger.With(log.String("appID", appID), log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug("Creating new consent record")
 
 	// Build the consent request payload
