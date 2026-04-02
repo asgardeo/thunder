@@ -90,7 +90,7 @@ func (w *passkeyService) StartRegistration(
 
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Starting passkey credential registration",
-		log.String("userID", log.MaskString(req.UserID)),
+		log.MaskedString(log.LoggerKeyUserID, req.UserID),
 		log.String("relyingPartyID", req.RelyingPartyID))
 
 	// Validate input
@@ -118,7 +118,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	logger.Debug("Retrieved existing credentials",
-		log.String("userID", req.UserID),
+		log.MaskedString(log.LoggerKeyUserID, req.UserID),
 		log.Int("credentialCount", len(credentials)))
 
 	// Create passkey user
@@ -151,7 +151,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	logger.Debug("Passkey credential creation options generated successfully",
-		log.String("userID", log.MaskString(req.UserID)),
+		log.MaskedString(log.LoggerKeyUserID, req.UserID),
 		log.Int("credentialsCount", len(credentials)))
 
 	// Convert to custom structure with properly encoded challenge
@@ -239,7 +239,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	}
 
 	logger.Debug("Retrieved existing credentials for user",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("credentialCount", len(credentials)))
 
 	// Create WebAuthn user from core user
@@ -304,7 +304,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 			log.String("relyingPartyID", req.RelyingPartyID))
 	} else {
 		logger.Debug("Starting passkey authentication",
-			log.String("userID", log.MaskString(req.UserID)),
+			log.MaskedString(log.LoggerKeyUserID, req.UserID),
 			log.String("relyingPartyID", req.RelyingPartyID))
 	}
 
@@ -347,11 +347,11 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 		}
 
 		logger.Debug("Retrieved credentials for authentication",
-			log.String("userID", log.MaskString(req.UserID)),
+			log.MaskedString(log.LoggerKeyUserID, req.UserID),
 			log.Int("credentialCount", len(credentials)))
 
 		if len(credentials) == 0 {
-			logger.Debug("No credentials found for user", log.String("userID", log.MaskString(req.UserID)))
+			logger.Debug("No credentials found for user", log.MaskedString(log.LoggerKeyUserID, req.UserID))
 			return nil, &ErrorNoCredentialsFound
 		}
 
@@ -433,12 +433,12 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 
 		userID = string(userHandleBytes)
 		logger.Debug("Resolved userID from userHandle for usernameless authentication",
-			log.String("userID", log.MaskString(userID)))
+			log.MaskedString(log.LoggerKeyUserID, userID))
 	} else {
 		// Username-based flow: Use userID from session
 		userID = sessionUserID
 		logger.Debug("Processing passkey authentication",
-			log.String("userID", log.MaskString(userID)),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("relyingPartyID", relyingPartyID))
 	}
 
@@ -457,11 +457,11 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	logger.Debug("Retrieved credentials for authentication verification",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("credentialCount", len(credentials)))
 
 	if len(credentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", userID))
+		logger.Debug("No credentials found for user", log.MaskedString(log.LoggerKeyUserID, userID))
 		return nil, &ErrorNoCredentialsFound
 	}
 
@@ -518,7 +518,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	logger.Debug("Updated credential sign count in database",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(credential.ID)),
 		log.Any("newSignCount", credential.Authenticator.SignCount))
 
@@ -533,7 +533,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	logger.Debug("Passkey authentication completed successfully",
-		log.String("userID", log.MaskString(userID)))
+		log.MaskedString(log.LoggerKeyUserID, userID))
 
 	return authResponse, nil
 }
@@ -555,7 +555,7 @@ func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context, userID
 		ctx, userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get passkey credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error))
 		return nil, fmt.Errorf("failed to get passkey credentials: %s", svcErr.Error)
 	}
@@ -578,7 +578,7 @@ func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context, userID
 		credValueStr, ok := storedCred["value"].(string)
 		if !ok {
 			logger.Error("Failed to get credential value",
-				log.String("userID", userID))
+				log.MaskedString(log.LoggerKeyUserID, userID))
 			continue
 		}
 
@@ -586,7 +586,7 @@ func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context, userID
 		if err := json.Unmarshal([]byte(credValueStr), &credential); err != nil {
 			// Log error but continue processing other credentials
 			logger.Error("Failed to unmarshal passkey credential",
-				log.String("userID", userID),
+				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.Error(err))
 			continue
 		}
@@ -594,7 +594,7 @@ func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context, userID
 	}
 
 	logger.Debug("Retrieved passkey credentials from database",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.Int("credentialCount", len(credentials)))
 
 	return credentials, nil
@@ -610,7 +610,7 @@ func (w *passkeyService) storePasskeyCredential(
 	credentialJSON, err := json.Marshal(credential)
 	if err != nil {
 		logger.Error("Failed to marshal credential",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Error(err))
 		return fmt.Errorf("failed to marshal credential: %w", err)
 	}
@@ -620,7 +620,7 @@ func (w *passkeyService) storePasskeyCredential(
 		ctx, userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing passkey credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error))
 		return fmt.Errorf("failed to get existing passkey credentials: %s", svcErr.Error)
 	}
@@ -640,7 +640,7 @@ func (w *passkeyService) storePasskeyCredential(
 	credentialsJSON, err := json.Marshal(credentialsMap)
 	if err != nil {
 		logger.Error("Failed to marshal credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Error(err))
 		return fmt.Errorf("failed to marshal credentials: %w", err)
 	}
@@ -650,13 +650,13 @@ func (w *passkeyService) storePasskeyCredential(
 		ctx, userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update passkey credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error))
 		return fmt.Errorf("failed to update passkey credentials: %s", svcErr.Error)
 	}
 
 	logger.Debug("Successfully stored passkey credential in database",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(credential.ID)))
 
 	return nil
@@ -673,7 +673,7 @@ func (w *passkeyService) updatePasskeyCredential(
 		ctx, userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error))
 		return fmt.Errorf("failed to get existing credentials: %s", svcErr.Error)
 	}
@@ -687,7 +687,7 @@ func (w *passkeyService) updatePasskeyCredential(
 		if err := json.Unmarshal([]byte(storedCred.Value), &credential); err != nil {
 			// Keep the credential as-is if we can't unmarshal it
 			logger.Warn("Failed to unmarshal credential, keeping original",
-				log.String("userID", userID),
+				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.Error(err))
 			updatedCredentials = append(updatedCredentials, storedCred)
 			continue
@@ -699,7 +699,7 @@ func (w *passkeyService) updatePasskeyCredential(
 			credentialJSON, err := json.Marshal(updatedCredential)
 			if err != nil {
 				logger.Error("Failed to marshal updated credential",
-					log.String("userID", userID),
+					log.MaskedString(log.LoggerKeyUserID, userID),
 					log.Error(err))
 				return fmt.Errorf("failed to marshal updated credential: %w", err)
 			}
@@ -715,7 +715,7 @@ func (w *passkeyService) updatePasskeyCredential(
 			found = true
 
 			logger.Debug("Updated credential in memory",
-				log.String("userID", userID),
+				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)),
 				log.Any("newSignCount", updatedCredential.Authenticator.SignCount))
 		} else {
@@ -726,7 +726,7 @@ func (w *passkeyService) updatePasskeyCredential(
 
 	if !found {
 		logger.Warn("Passkey credential not found for update",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)))
 		return fmt.Errorf("credential not found for update")
 	}
@@ -738,7 +738,7 @@ func (w *passkeyService) updatePasskeyCredential(
 	credentialsJSON, err := json.Marshal(credentialsMap)
 	if err != nil {
 		logger.Error("Failed to marshal credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Error(err))
 		return fmt.Errorf("failed to marshal credentials: %w", err)
 	}
@@ -748,13 +748,13 @@ func (w *passkeyService) updatePasskeyCredential(
 		ctx, userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update credentials",
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error))
 		return fmt.Errorf("failed to update credentials: %s", svcErr.Error)
 	}
 
 	logger.Debug("Successfully updated passkey credential in database",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)),
 		log.Any("newSignCount", updatedCredential.Authenticator.SignCount))
 
