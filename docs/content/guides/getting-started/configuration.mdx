@@ -121,16 +121,85 @@ Stores user profiles and credentials.
 
 ## Cache Configuration
 
-Thunder includes an in-memory caching layer to improve performance.
+Thunder includes both in-memory and Redis-backed caching to improve performance.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `cache.disabled` | `false` | If `true`, disables caching entirely |
-| `cache.type` | `inmemory` | Cache type (currently only `inmemory` is supported) |
+| `cache.type` | `inmemory` | Cache type (`inmemory` or `redis`). When `cache.type` is `redis`, Thunder does not use the periodic cleanup routine. |
 | `cache.size` | `1000` | Maximum number of cache entries |
 | `cache.ttl` | `3600` | Default time-to-live for cache entries in seconds |
 | `cache.eviction_policy` | `LRU` | Cache eviction policy (`LRU` - Least Recently Used) |
-| `cache.cleanup_interval` | `300` | Interval in seconds to clean up expired entries |
+| `cache.cleanup_interval` | `300` | In-memory only. Interval in seconds to clean up expired entries. Not used when `cache.type` is `redis`. |
+| `cache.properties[]` | `[]` | Per-cache overrides for `name`, `disabled`, `size`, `ttl`, and `eviction_policy` |
+| `cache.redis.address` | `""` | Redis server address in `host:port` format |
+| `cache.redis.username` | `""` | Redis username |
+| `cache.redis.password` | `""` | Redis password |
+| `cache.redis.db` | `0` | Redis database index |
+| `cache.redis.key_prefix` | `thunder` | Prefix added to all Redis cache keys |
+
+### Per-Cache Overrides with `cache.properties`
+
+Use `cache.properties` when you want to override cache behavior for a specific internal cache instead of changing the global cache settings for all caches.
+
+Each item in `cache.properties` supports these fields:
+
+| Field | Required | Description |
+|---------|---------|-------------|
+| `name` | Yes | Internal cache name to override. The value must match the cache name exactly. |
+| `disabled` | No | Disables only that cache when set to `true`. |
+| `size` | No | Maximum number of entries for that cache. This setting applies to in-memory caches only. |
+| `ttl` | No | Time-to-live for that cache in seconds. |
+| `eviction_policy` | No | Eviction policy for that cache. Supported values are `LRU` and `LFU`. This setting applies to in-memory caches only. |
+
+If you omit a field in a `cache.properties` entry, Thunder falls back to the corresponding global `cache.*` setting.
+
+That means you can override only the fields you need. Thunder continues to use the global cache settings for any fields you leave unset.
+
+Thunder currently uses cache names such as:
+
+- `ApplicationByIDCache`
+- `ApplicationByNameCache`
+- `OAuthAppCache`
+- `FlowByIDCache`
+- `FlowByHandleCache`
+- `CertificateByIDCache`
+- `CertificateByReferenceCache`
+- `UserSchemaByIDCache`
+- `UserSchemaByNameCache`
+- `FlowGraphCache`
+
+:::note
+`FlowGraphCache` is always in-memory. It caches process-local flow graph Go objects during flow execution, not shared system-level cache data.
+:::
+
+:::note
+When `cache.type` is `redis`, per-cache `ttl` and `disabled` remain useful. Per-cache `size` and `eviction_policy` do not affect Redis behavior because Redis manages memory and eviction independently.
+:::
+
+### Redis Cache Configuration
+
+Set `cache.type` to `redis` and configure `cache.redis.address` to enable Redis-backed cache storage.
+
+```yaml
+cache:
+  type: "redis"
+  ttl: 3600
+  redis:
+    address: "localhost:6379"
+    username: ""
+    password: ""
+    db: 0
+    key_prefix: "thunder"
+```
+
+:::note
+When Redis caching is enabled, Thunder uses Redis native key expiration for TTL handling.
+:::
+
+:::warning
+If Thunder cannot connect to Redis during startup, it disables the cache layer.
+:::
 
 ## JWT Configuration
 
