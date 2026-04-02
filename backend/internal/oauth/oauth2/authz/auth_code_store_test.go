@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
@@ -67,8 +68,9 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 
 	suite.store = &authorizationCodeStore{
-		dbProvider:   suite.mockdbProvider,
-		deploymentID: testDeploymentID,
+		dbProvider:    suite.mockdbProvider,
+		deploymentID:  testDeploymentID,
+		transactioner: transaction.NewNoOpTransactioner(),
 	}
 
 	suite.testAuthzCode = AuthorizationCode{
@@ -78,7 +80,6 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 		RedirectURI:         "https://client.example.com/callback",
 		AuthorizedUserID:    "test-user-id",
 		TimeCreated:         time.Now(),
-		ExpiryTime:          time.Now().Add(10 * time.Minute),
 		Scopes:              "read write",
 		State:               AuthCodeStateActive,
 		CodeChallenge:       "",
@@ -91,7 +92,13 @@ func (suite *AuthorizationCodeStoreTestSuite) TearDownTest() {
 }
 
 func (suite *AuthorizationCodeStoreTestSuite) TestnewAuthorizationCodeStore() {
-	store := newAuthorizationCodeStore()
+	// Verify that authorizationCodeStore satisfies the interface.
+	// Full factory initialization (which requires DB infrastructure) is covered by TestInitialize in init_test.go.
+	store := &authorizationCodeStore{
+		dbProvider:    suite.mockdbProvider,
+		deploymentID:  testDeploymentID,
+		transactioner: transaction.NewNoOpTransactioner(),
+	}
 	assert.NotNil(suite.T(), store)
 	assert.Implements(suite.T(), (*AuthorizationCodeStoreInterface)(nil), store)
 }
@@ -101,7 +108,7 @@ func (suite *AuthorizationCodeStoreTestSuite) TestInsertAuthorizationCode_Succes
 
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertAuthorizationCode,
 		suite.testAuthzCode.CodeID, suite.testAuthzCode.Code, suite.testAuthzCode.ClientID,
-		suite.testAuthzCode.State, mock.Anything, suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime,
+		suite.testAuthzCode.State, mock.Anything, suite.testAuthzCode.TimeCreated, mock.Anything,
 		testDeploymentID).
 		Return(int64(1), nil)
 
@@ -127,7 +134,7 @@ func (suite *AuthorizationCodeStoreTestSuite) TestInsertAuthorizationCode_ExecEr
 
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertAuthorizationCode,
 		suite.testAuthzCode.CodeID, suite.testAuthzCode.Code, suite.testAuthzCode.ClientID,
-		suite.testAuthzCode.State, mock.Anything, suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime,
+		suite.testAuthzCode.State, mock.Anything, suite.testAuthzCode.TimeCreated, mock.Anything,
 		testDeploymentID).
 		Return(int64(0), errors.New("execute error"))
 
@@ -250,14 +257,36 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_EmptyCode
 }
 
 func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_Success() {
+	authzData := map[string]interface{}{
+		"redirect_uri":       "https://client.example.com/callback",
+		"authorized_user_id": "test-user-id",
+		"scopes":             "read write",
+	}
+	authzDataJSON, _ := json.Marshal(authzData)
+
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryConsumeAuthorizationCode,
 		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
 		Return(int64(1), nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetAuthorizationCode,
+		"test-client-id", "test-code", testDeploymentID).
+		Return([]map[string]interface{}{
+			{
+				"code_id":            "test-code-id",
+				"authorization_code": "test-code",
+				"client_id":          "test-client-id",
+				"state":              AuthCodeStateInactive,
+				"authz_data":         string(authzDataJSON),
+				"time_created":       "2023-01-01 12:00:00",
+				"expiry_time":        "2023-01-01 12:10:00",
+			},
+		}, nil)
 
-	consumed, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
+	result, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
 	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), consumed)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "test-code-id", result.CodeID)
+	assert.Equal(suite.T(), AuthCodeStateInactive, result.State)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
@@ -268,10 +297,30 @@ func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_NotCo
 	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryConsumeAuthorizationCode,
 		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
 		Return(int64(0), nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetAuthorizationCode,
+		"test-client-id", "test-code", testDeploymentID).
+		Return([]map[string]interface{}{}, nil)
 
-	consumed, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
-	assert.NoError(suite.T(), err)
-	assert.False(suite.T(), consumed)
+	result, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
+	assert.ErrorIs(suite.T(), err, errAuthorizationCodeNotFound)
+	assert.Nil(suite.T(), result)
+
+	suite.mockdbProvider.AssertExpectations(suite.T())
+	suite.mockDBClient.AssertExpectations(suite.T())
+}
+
+func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_Replayed() {
+	suite.mockdbProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryConsumeAuthorizationCode,
+		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
+		Return(int64(0), nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetAuthorizationCode,
+		"test-client-id", "test-code", testDeploymentID).
+		Return([]map[string]interface{}{{"code_id": "test-code-id"}}, nil)
+
+	result, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
+	assert.EqualError(suite.T(), err, "authorization code already consumed")
+	assert.Nil(suite.T(), result)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
@@ -280,9 +329,9 @@ func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_NotCo
 func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_DBClientError() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(nil, errors.New("db client error"))
 
-	consumed, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
+	result, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
 	assert.Error(suite.T(), err)
-	assert.False(suite.T(), consumed)
+	assert.Nil(suite.T(), result)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 }
@@ -293,10 +342,10 @@ func (suite *AuthorizationCodeStoreTestSuite) TestConsumeAuthorizationCode_Execu
 		AuthCodeStateInactive, "test-client-id", "test-code", AuthCodeStateActive, testDeploymentID).
 		Return(int64(0), errors.New("execute error"))
 
-	consumed, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
+	result, err := suite.store.ConsumeAuthorizationCode(context.Background(), "test-client-id", "test-code")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "error consuming authorization code")
-	assert.False(suite.T(), consumed)
+	assert.Nil(suite.T(), result)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())

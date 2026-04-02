@@ -40,7 +40,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -61,7 +60,6 @@ type authorizeService struct {
 	authReqStore    authorizationRequestStoreInterface
 	jwtService      jwt.JWTServiceInterface
 	flowExecService flowexec.FlowExecServiceInterface
-	transactioner   transaction.Transactioner
 	logger          *log.Logger
 }
 
@@ -72,7 +70,6 @@ func newAuthorizeService(
 	flowExecService flowexec.FlowExecServiceInterface,
 	authCodeStore AuthorizationCodeStoreInterface,
 	authReqStore authorizationRequestStoreInterface,
-	transactioner transaction.Transactioner,
 ) AuthorizeServiceInterface {
 	return &authorizeService{
 		appService:      appService,
@@ -81,7 +78,6 @@ func newAuthorizeService(
 		authReqStore:    authReqStore,
 		jwtService:      jwtService,
 		flowExecService: flowExecService,
-		transactioner:   transactioner,
 		logger:          log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizeService")),
 	}
 }
@@ -90,38 +86,12 @@ func newAuthorizeService(
 func (as *authorizeService) GetAuthorizationCodeDetails(
 	ctx context.Context, clientID string, code string,
 ) (*AuthorizationCode, error) {
-	var authCode *AuthorizationCode
-	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
-		consumed, err := as.authCodeStore.ConsumeAuthorizationCode(ctx, clientID, code)
-		if err != nil {
-			return err
-		}
-
-		authCode, err = as.authCodeStore.GetAuthorizationCode(ctx, clientID, code)
-		if err != nil {
-			if errors.Is(err, errAuthorizationCodeNotFound) {
-				return errors.New("invalid authorization code")
-			}
-			return err
-		}
-
-		if consumed {
-			return nil
-		}
-
-		if authCode.State == AuthCodeStateInactive {
-			// TODO: Revoke all access tokens already granted for this authorization code.
-			return errors.New("authorization code already used")
-		}
-
-		return errors.New("invalid authorization code")
-	})
-
+	authCode, err := as.authCodeStore.ConsumeAuthorizationCode(ctx, clientID, code)
 	if err != nil {
 		as.logger.Error("Failed to get authorization code details", log.Error(err))
 		return nil, err
 	}
-
+	// TODO: Revoke all access tokens already granted for this authorization code.
 	return authCode, nil
 }
 
@@ -322,7 +292,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 	var redirectURI string
 	var authErr *AuthorizationError
 
-	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
+	err := func() error {
 		// Load the authorization request context.
 		authRequestCtx, err := as.loadAuthRequestContext(ctx, authID)
 		if err != nil {
@@ -463,7 +433,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 
 		return nil
-	})
+	}()
 
 	if authErr != nil {
 		if authErr.Code == oauth2const.ErrorServerError {

@@ -21,9 +21,9 @@ package passkey
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"time"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 const (
@@ -44,7 +44,7 @@ func generateSessionKey() (string, error) {
 
 // storeSessionData stores session data in the database and returns a session key.
 func (w *passkeyService) storeSessionData(
-	userID, relyingPartyID string, sessionData *sessionData,
+	sessionData *sessionData,
 ) (string, *serviceerror.ServiceError) {
 	// Generate a random session key
 	sessionKey, err := generateSessionKey()
@@ -52,10 +52,8 @@ func (w *passkeyService) storeSessionData(
 		return "", &serviceerror.InternalServerError
 	}
 
-	expiresAt := time.Now().Add(time.Duration(sessionTTLSeconds) * time.Second)
-
 	// Store session data in database
-	err = w.sessionStore.storeSession(sessionKey, userID, relyingPartyID, sessionData, expiresAt)
+	err = w.sessionStore.storeSession(sessionKey, sessionData, sessionTTLSeconds)
 	if err != nil {
 		return "", &serviceerror.InternalServerError
 	}
@@ -64,20 +62,22 @@ func (w *passkeyService) storeSessionData(
 }
 
 // retrieveSessionData retrieves the session data from the database using the session key.
+// userID and relyingPartyID are decoded from the embedded payload.
 func (w *passkeyService) retrieveSessionData(
 	sessionKey string,
 ) (*sessionData, string, string, *serviceerror.ServiceError) {
 	// Retrieve session data from database
-	sessionData, userID, relyingPartyID, err := w.sessionStore.retrieveSession(sessionKey)
+	session, err := w.sessionStore.retrieveSession(sessionKey)
 	if err != nil {
+		w.logger.Debug("Failed to retrieve passkey session", log.Error(err))
+		return nil, "", "", &serviceerror.InternalServerError
+	}
+
+	if session == nil {
 		return nil, "", "", &ErrorSessionExpired
 	}
 
-	if sessionData == nil {
-		return nil, "", "", &ErrorSessionExpired
-	}
-
-	return sessionData, userID, relyingPartyID, nil
+	return session, string(session.UserID), session.RelyingPartyID, nil
 }
 
 // clearSessionData removes the session data from the database.

@@ -28,6 +28,7 @@ import (
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 const (
@@ -53,26 +54,34 @@ const (
 // AuthorizationCodeStoreInterface defines the interface for managing authorization codes.
 type AuthorizationCodeStoreInterface interface {
 	InsertAuthorizationCode(ctx context.Context, authzCode AuthorizationCode) error
-	ConsumeAuthorizationCode(ctx context.Context, clientID, authCode string) (bool, error)
+	ConsumeAuthorizationCode(ctx context.Context, clientID, authCode string) (*AuthorizationCode, error)
 	GetAuthorizationCode(ctx context.Context, clientID, authCode string) (*AuthorizationCode, error)
 }
 
 // authorizationCodeStore implements the AuthorizationCodeStoreInterface for managing authorization codes.
 type authorizationCodeStore struct {
-	dbProvider   provider.DBProviderInterface
-	deploymentID string
+	dbProvider    provider.DBProviderInterface
+	deploymentID  string
+	transactioner transaction.Transactioner
 }
 
 // newAuthorizationCodeStore creates a new instance of authorizationCodeStore with injected dependencies.
-func newAuthorizationCodeStore() AuthorizationCodeStoreInterface {
-	return &authorizationCodeStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newAuthorizationCodeStore() (AuthorizationCodeStoreInterface, error) {
+	dbProvider := provider.GetDBProvider()
+	transactioner, err := dbProvider.GetRuntimeDBTransactioner()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get runtime DB transactioner for authorization code store: %w", err)
 	}
+	return &authorizationCodeStore{
+		dbProvider:    dbProvider,
+		deploymentID:  config.GetThunderRuntime().Config.Server.Identifier,
+		transactioner: transactioner,
+	}, nil
 }
 
 // InsertAuthorizationCode inserts a new authorization code into the database.
-func (acs *authorizationCodeStore) InsertAuthorizationCode(ctx context.Context, authzCode AuthorizationCode) error {
+func (acs *authorizationCodeStore) InsertAuthorizationCode(
+	ctx context.Context, authzCode AuthorizationCode) error {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -93,23 +102,51 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(ctx context.Context, 
 	return nil
 }
 
-// ConsumeAuthorizationCode atomically consumes an active authorization code (ACTIVE → INACTIVE).
-// Returns true if this call consumed the code, false if the code was not in ACTIVE state.
+// ConsumeAuthorizationCode transitions an ACTIVE authorization code to INACTIVE and returns the record.
+// Returns errAuthorizationCodeNotFound if the code does not exist or is not in ACTIVE state.
 func (acs *authorizationCodeStore) ConsumeAuthorizationCode(
 	ctx context.Context, clientID, authCode string,
-) (bool, error) {
+) (*AuthorizationCode, error) {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
-		return false, fmt.Errorf("failed to get database client: %w", err)
+		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.ExecuteContext(ctx, queryConsumeAuthorizationCode,
-		AuthCodeStateInactive, clientID, authCode, AuthCodeStateActive, acs.deploymentID)
+	var consumed *AuthorizationCode
+	err = acs.transactioner.Transact(ctx, func(ctx context.Context) error {
+		rowsAffected, err := dbClient.ExecuteContext(ctx, queryConsumeAuthorizationCode,
+			AuthCodeStateInactive, clientID, authCode, AuthCodeStateActive, acs.deploymentID)
+		if err != nil {
+			return fmt.Errorf("error consuming authorization code: %w", err)
+		}
+		if rowsAffected == 0 {
+			var lookupResults []map[string]interface{}
+			lookupResults, err = dbClient.QueryContext(ctx, queryGetAuthorizationCode,
+				clientID, authCode, acs.deploymentID)
+			if err != nil {
+				return fmt.Errorf("error checking authorization code existence: %w", err)
+			}
+			if len(lookupResults) > 0 {
+				return fmt.Errorf("authorization code already consumed")
+			}
+			return errAuthorizationCodeNotFound
+		}
+
+		results, err := dbClient.QueryContext(ctx, queryGetAuthorizationCode, clientID, authCode, acs.deploymentID)
+		if err != nil {
+			return fmt.Errorf("error retrieving authorization code after consume: %w", err)
+		}
+		if len(results) == 0 {
+			return fmt.Errorf("authorization code was updated but could not be reloaded")
+		}
+
+		consumed, err = buildAuthorizationCodeFromResultRow(results[0])
+		return err
+	})
 	if err != nil {
-		return false, fmt.Errorf("error consuming authorization code: %w", err)
+		return nil, err
 	}
-
-	return rowsAffected > 0, nil
+	return consumed, nil
 }
 
 // GetAuthorizationCode retrieves an authorization code by client Id and authorization code.

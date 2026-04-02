@@ -25,7 +25,6 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -37,26 +36,24 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 ) (AuthorizeServiceInterface, error) {
-	authzCodeStore := newAuthorizationCodeStore()
+	authzCodeStore, err := initializeAuthorizationCodeStore()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize authorization code store: %w", err)
+	}
+
 	authzReqStore := newAuthorizationRequestStore()
 
-	dbProvider := provider.GetDBProvider()
-	runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database client for authorization service")
-	}
-
-	transactioner, err := runtimeDBClient.GetTransactioner()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
-	}
-
 	authzService := newAuthorizeService(
-		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore, transactioner,
+		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore,
 	)
 	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)
 	return authzService, nil
+}
+
+// initializeAuthorizationCodeStore creates the authorization code store.
+func initializeAuthorizationCodeStore() (AuthorizationCodeStoreInterface, error) {
+	return newAuthorizationCodeStore()
 }
 
 // registerRoutes registers the routes for OAuth2 authorization operations.

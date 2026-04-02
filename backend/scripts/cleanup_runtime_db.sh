@@ -25,7 +25,7 @@ set -euo pipefail
 # manually (one-shot) or scheduled via cron for periodic cleanup.
 #
 # Tables cleaned (in order):
-#   1. FLOW_CONTEXT       - cascades to FLOW_USER_DATA via ON DELETE CASCADE
+#   1. FLOW_CONTEXT
 #   2. AUTHORIZATION_CODE
 #   3. AUTHORIZATION_REQUEST
 #   4. WEBAUTHN_SESSION

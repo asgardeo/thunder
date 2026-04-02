@@ -130,8 +130,6 @@ func (suite *SessionStoreTestSuite) TestNewSessionStore() {
 }
 
 func (suite *SessionStoreTestSuite) TestStoreSession_Success() {
-	expiryTime := time.Now().Add(5 * time.Minute)
-
 	sessionData := &sessionData{
 		Challenge:        "challenge123",
 		UserID:           []byte(testUserID),
@@ -141,10 +139,10 @@ func (suite *SessionStoreTestSuite) TestStoreSession_Success() {
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
 	suite.mockDBClient.On("Execute", mock.AnythingOfType("model.DBQuery"),
-		testSessionKey, testUserID, testRelyingPartyID, mock.Anything, expiryTime, "test-deployment-id").
+		testSessionKey, mock.Anything, mock.Anything, "test-deployment-id").
 		Return(int64(1), nil).Once()
 
-	err := suite.store.storeSession(testSessionKey, testUserID, testRelyingPartyID, sessionData, expiryTime)
+	err := suite.store.storeSession(testSessionKey, sessionData, int64(300))
 
 	suite.NoError(err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
@@ -152,33 +150,29 @@ func (suite *SessionStoreTestSuite) TestStoreSession_Success() {
 }
 
 func (suite *SessionStoreTestSuite) TestStoreSession_DBClientError() {
-	expiryTime := time.Now().Add(5 * time.Minute)
-
 	sessionData := &sessionData{
 		Challenge: "challenge123",
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(nil, assert.AnError).Once()
 
-	err := suite.store.storeSession(testSessionKey, testUserID, testRelyingPartyID, sessionData, expiryTime)
+	err := suite.store.storeSession(testSessionKey, sessionData, int64(300))
 
 	suite.Error(err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
 }
 
 func (suite *SessionStoreTestSuite) TestStoreSession_ExecuteError() {
-	expiryTime := time.Now().Add(5 * time.Minute)
-
 	sessionData := &sessionData{
 		Challenge: "challenge123",
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
 	suite.mockDBClient.On("Execute", mock.AnythingOfType("model.DBQuery"),
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(int64(0), assert.AnError).Once()
 
-	err := suite.store.storeSession(testSessionKey, testUserID, testRelyingPartyID, sessionData, expiryTime)
+	err := suite.store.storeSession(testSessionKey, sessionData, int64(300))
 
 	suite.Error(err)
 }
@@ -186,16 +180,14 @@ func (suite *SessionStoreTestSuite) TestStoreSession_ExecuteError() {
 func (suite *SessionStoreTestSuite) TestRetrieveSession_Success() {
 	sessionDataJSON := `{
 		"challenge": "challenge123",
-		"rpId": "example.com",
-		"userId": "` + base64.StdEncoding.EncodeToString([]byte(testUserID)) + `",
-		"userVerification": "preferred"
+		"rp_id": "` + testRelyingPartyID + `",
+		"user_id": "` + base64.StdEncoding.EncodeToString([]byte(testUserID)) + `",
+		"user_verification": "preferred"
 	}`
 
 	results := []map[string]interface{}{
 		{
-			dbColumnUserID:         testUserID,
-			dbColumnRelyingPartyID: testRelyingPartyID,
-			dbColumnSessionData:    sessionDataJSON,
+			dbColumnSessionData: sessionDataJSON,
 		},
 	}
 
@@ -204,22 +196,20 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_Success() {
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return(results, nil).Once()
 
-	sessionData, retrievedUserID, retrievedRPID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.NoError(err)
-	suite.NotNil(sessionData)
-	suite.Equal(testUserID, retrievedUserID)
-	suite.Equal(testRelyingPartyID, retrievedRPID)
-	suite.Equal("challenge123", sessionData.Challenge)
+	suite.NotNil(sd)
+	suite.Equal("challenge123", sd.Challenge)
+	suite.Equal(testRelyingPartyID, sd.RelyingPartyID)
+	suite.Equal([]byte(testUserID), sd.UserID)
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_EmptyKey() {
-	sessionData, userID, rpID, err := suite.store.retrieveSession("")
+	sd, err := suite.store.retrieveSession("")
 
 	suite.NoError(err)
-	suite.Nil(sessionData)
-	suite.Empty(userID)
-	suite.Empty(rpID)
+	suite.Nil(sd)
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_NotFound() {
@@ -228,23 +218,19 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_NotFound() {
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.NoError(err)
-	suite.Nil(sessionData)
-	suite.Empty(userID)
-	suite.Empty(rpID)
+	suite.Nil(sd)
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_DBClientError() {
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(nil, assert.AnError).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Empty(userID)
-	suite.Empty(rpID)
+	suite.Nil(sd)
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_QueryError() {
@@ -253,24 +239,22 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_QueryError() {
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return(nil, assert.AnError).Once()
 
-	sessionData, _, _, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
+	suite.Nil(sd)
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_SessionDataAsBytes() {
 	sessionDataJSON := []byte(`{
 		"challenge": "challenge123",
-		"rpId": "example.com",
-		"userVerification": "preferred"
+		"rp_id": "example.com",
+		"user_verification": "preferred"
 	}`)
 
 	results := []map[string]interface{}{
 		{
-			dbColumnUserID:         testUserID,
-			dbColumnRelyingPartyID: testRelyingPartyID,
-			dbColumnSessionData:    sessionDataJSON, // As bytes
+			dbColumnSessionData: sessionDataJSON,
 		},
 	}
 
@@ -279,12 +263,11 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_SessionDataAsBytes() {
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return(results, nil).Once()
 
-	sessionData, retrievedUserID, retrievedRPID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.NoError(err)
-	suite.NotNil(sessionData)
-	suite.Equal(testUserID, retrievedUserID)
-	suite.Equal(testRelyingPartyID, retrievedRPID)
+	suite.NotNil(sd)
+	suite.Equal("challenge123", sd.Challenge)
 }
 
 func (suite *SessionStoreTestSuite) TestDeleteSession_Success() {
@@ -410,19 +393,16 @@ func (suite *SessionStoreTestSuite) TestBuildSessionDataFromResultRow_Success() 
 	jsonBytes, _ := json.Marshal(sessionDataJSON)
 
 	row := map[string]interface{}{
-		dbColumnUserID:         userID,
-		dbColumnRelyingPartyID: relyingPartyID,
-		dbColumnSessionData:    string(jsonBytes),
+		dbColumnSessionData: string(jsonBytes),
 	}
 
-	sessionData, retrievedUserID, retrievedRPID, err := suite.store.buildSessionDataFromResultRow(row)
+	sd, err := suite.store.buildSessionDataFromResultRow(row)
 
 	suite.NoError(err)
-	suite.NotNil(sessionData)
-	suite.Equal(userID, retrievedUserID)
-	suite.Equal(relyingPartyID, retrievedRPID)
-	suite.Equal("challenge123", sessionData.Challenge)
-	suite.Equal(relyingPartyID, sessionData.RelyingPartyID)
+	suite.NotNil(sd)
+	suite.Equal("challenge123", sd.Challenge)
+	suite.Equal(relyingPartyID, sd.RelyingPartyID)
+	suite.Equal([]byte(userID), sd.UserID)
 }
 
 func (suite *SessionStoreTestSuite) TestBuildSessionDataFromResultRow_WithAllFields() {
@@ -449,60 +429,46 @@ func (suite *SessionStoreTestSuite) TestBuildSessionDataFromResultRow_WithAllFie
 	jsonBytes, _ := json.Marshal(sessionDataJSON)
 
 	row := map[string]interface{}{
-		dbColumnUserID:         testUserID,
-		dbColumnRelyingPartyID: testRelyingPartyID,
-		dbColumnSessionData:    string(jsonBytes),
+		dbColumnSessionData: string(jsonBytes),
 	}
 
-	sessionData, retrievedUserID, _, err := suite.store.buildSessionDataFromResultRow(row)
+	sd, err := suite.store.buildSessionDataFromResultRow(row)
 
 	suite.NoError(err)
-	suite.NotNil(sessionData)
-	suite.Equal(testUserID, retrievedUserID)
-	suite.Equal("challenge123", sessionData.Challenge)
-	suite.Len(sessionData.AllowedCredentialIDs, 2)
-	suite.NotNil(sessionData.Extensions)
-	suite.Len(sessionData.CredParams, 1)
-	suite.Equal(protocol.CredentialMediationRequirement("conditional"), sessionData.Mediation)
+	suite.NotNil(sd)
+	suite.Equal("challenge123", sd.Challenge)
+	suite.Len(sd.AllowedCredentialIDs, 2)
+	suite.NotNil(sd.Extensions)
+	suite.Len(sd.CredParams, 1)
+	suite.Equal(protocol.CredentialMediationRequirement("conditional"), sd.Mediation)
 }
 
 func (suite *SessionStoreTestSuite) TestBuildSessionDataFromResultRow_MissingSessionData() {
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
 		// Missing dbColumnSessionData
 	}
 
-	sessionData, userID, rpID, err := suite.store.buildSessionDataFromResultRow(row)
+	sd, err := suite.store.buildSessionDataFromResultRow(row)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Empty(userID)
-	suite.Empty(rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "SESSION_DATA is missing or invalid")
 }
 
 func (suite *SessionStoreTestSuite) TestBuildSessionDataFromResultRow_InvalidJSON() {
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    "invalid json",
+		dbColumnSessionData: "invalid json",
 	}
 
-	sessionData, _, _, err := suite.store.buildSessionDataFromResultRow(row)
+	sd, err := suite.store.buildSessionDataFromResultRow(row)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
+	suite.Nil(sd)
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_InvalidJSON() {
-	// Create invalid JSON that will fail to unmarshal
-	invalidJSON := "not-valid-json{{"
-
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    invalidJSON,
+		dbColumnSessionData: "not-valid-json{{",
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -510,19 +476,16 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_In
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "invalid character")
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_MissingSessionData() {
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
+		// Missing dbColumnSessionData
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -530,12 +493,10 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_Mi
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "SESSION_DATA is missing or invalid")
 }
 
@@ -548,9 +509,7 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_In
 	jsonBytes, _ := json.Marshal(sessionDataJSON)
 
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    string(jsonBytes),
+		dbColumnSessionData: string(jsonBytes),
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -558,12 +517,10 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_In
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "illegal base64 data")
 }
 
@@ -577,9 +534,7 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_In
 	jsonBytes, _ := json.Marshal(sessionDataJSON)
 
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    string(jsonBytes),
+		dbColumnSessionData: string(jsonBytes),
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -587,20 +542,16 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_In
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "illegal base64 data")
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_WrongSessionDataType() {
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    12345, // Invalid type: int instead of string or []byte
+		dbColumnSessionData: 12345, // Invalid type: int instead of string or []byte
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -608,20 +559,16 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_Wr
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "SESSION_DATA is missing or invalid")
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_EmptySessionData() {
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    "", // Empty string
+		dbColumnSessionData: "", // Empty string
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -629,20 +576,16 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_Em
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "SESSION_DATA is missing or invalid")
 }
 
 func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_EmptyByteArray() {
 	row := map[string]interface{}{
-		dbColumnUserID:         "user123",
-		dbColumnRelyingPartyID: "example.com",
-		dbColumnSessionData:    []byte{}, // Empty byte array
+		dbColumnSessionData: []byte{}, // Empty byte array
 	}
 
 	suite.mockDBProvider.On("GetRuntimeDBClient").Return(suite.mockDBClient, nil).Once()
@@ -650,11 +593,9 @@ func (suite *SessionStoreTestSuite) TestRetrieveSession_BuildSessionDataError_Em
 		testSessionKey, mock.AnythingOfType("time.Time"), "test-deployment-id").
 		Return([]map[string]interface{}{row}, nil).Once()
 
-	sessionData, userID, rpID, err := suite.store.retrieveSession(testSessionKey)
+	sd, err := suite.store.retrieveSession(testSessionKey)
 
 	suite.Error(err)
-	suite.Nil(sessionData)
-	suite.Equal("", userID)
-	suite.Equal("", rpID)
+	suite.Nil(sd)
 	suite.Contains(err.Error(), "SESSION_DATA is missing or invalid")
 }
