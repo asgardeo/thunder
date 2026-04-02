@@ -27,6 +27,12 @@ type SMSData struct {
 	Body string `json:"body"`
 }
 
+// NotificationData holds the channel-agnostic payload for sending a notification.
+type NotificationData struct {
+	Recipient string
+	Body      string
+}
+
 // OTP represents the data structure for an OTP (One-Time Password).
 type OTP struct {
 	Value                  string `json:"value"`

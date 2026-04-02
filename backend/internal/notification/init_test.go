@@ -81,7 +81,7 @@ func (suite *InitTestSuite) TearDownSuite() {
 }
 
 func (suite *InitTestSuite) TestInitialize() {
-	mgtService, otpService, _, err := Initialize(suite.mux, suite.mockJWTService)
+	mgtService, otpService, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	suite.NotNil(mgtService)
@@ -215,7 +215,7 @@ properties:
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/notification-senders/message", nil)
@@ -227,7 +227,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/notification-senders/message", nil)
@@ -239,7 +239,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/notification-senders/message/test-id", nil)
@@ -251,7 +251,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPut, "/notification-senders/message/test-id", nil)
@@ -263,7 +263,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/notification-senders/message/test-id", nil)
@@ -275,7 +275,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_SendOTPEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/notification-senders/otp/send", nil)
@@ -287,7 +287,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_SendOTPEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_VerifyOTPEndpoint() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/notification-senders/otp/verify", nil)
@@ -299,7 +299,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_VerifyOTPEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
-	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
 	paths := []string{
@@ -512,7 +512,7 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Inval
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid YAML
-	_, _, _, err = Initialize(mux, suite.mockJWTService)
+	_, _, _, _, err = Initialize(mux, suite.mockJWTService)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to load notification sender resources")
 
@@ -590,7 +590,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to validation failure
-	_, _, _, err = Initialize(mux, suite.mockJWTService)
+	_, _, _, _, err = Initialize(mux, suite.mockJWTService)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to load notification sender resources")
 

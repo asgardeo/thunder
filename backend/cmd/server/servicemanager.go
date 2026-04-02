@@ -165,7 +165,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, idpExporter)
 
-	_, otpService, notificationExporter, err := notification.Initialize(mux, jwtService)
+	_, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(mux, jwtService)
 	if err != nil {
 		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
 	}
@@ -202,8 +202,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize template service", log.Error(err))
 	}
 	execRegistry := executor.Initialize(flowFactory, ouService,
-		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
-		groupService, roleService, userProvider, attributeCacheService, emailClient, templateService)
+		idpService, otpService, notifSenderSvc, jwtService, authSvcRegistry, authZService, userSchemaService,
+		observabilitySvc, groupService, roleService, userProvider, attributeCacheService, emailClient, templateService)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

@@ -36,7 +36,7 @@ const (
 	sIDRegex                  = `^AC[0-9a-fA-F]{32}$`
 )
 
-// TwilioClient implements the MessageClientInterface for sending messages via Twilio API.
+// TwilioClient implements the NotificationClientInterface for sending messages via Twilio API.
 type TwilioClient struct {
 	name       string
 	url        string
@@ -47,7 +47,7 @@ type TwilioClient struct {
 }
 
 // NewTwilioClient creates a new instance of TwilioClient.
-func NewTwilioClient(sender common.NotificationSenderDTO) (MessageClientInterface, error) {
+func NewTwilioClient(sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, twilioLoggerComponentName))
 
 	client := &TwilioClient{}
@@ -81,15 +81,30 @@ func (c *TwilioClient) GetName() string {
 	return c.name
 }
 
-// SendSMS sends an SMS using the Twilio API.
-func (c *TwilioClient) SendSMS(sms common.SMSData) error {
+// IsChannelSupported reports whether the given channel is supported by Twilio.
+func (c *TwilioClient) IsChannelSupported(channel common.ChannelType) bool {
+	return channel == common.ChannelTypeSMS
+}
+
+// Send dispatches a notification via the requested channel.
+func (c *TwilioClient) Send(channel common.ChannelType, data common.NotificationData) error {
+	switch channel {
+	case common.ChannelTypeSMS:
+		return c.sendSMS(data)
+	default:
+		return fmt.Errorf("unsupported channel: %s", channel)
+	}
+}
+
+// sendSMS sends an SMS via the Twilio API.
+func (c *TwilioClient) sendSMS(data common.NotificationData) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, twilioLoggerComponentName))
-	logger.Debug("Sending SMS via Twilio", log.String("to", log.MaskString(sms.To)))
+	logger.Debug("Sending SMS via Twilio", log.String("to", log.MaskString(data.Recipient)))
 
 	formData := url.Values{}
-	formData.Set("To", sms.To)
+	formData.Set("To", data.Recipient)
 	formData.Set("From", c.senderID)
-	formData.Set("Body", sms.Body)
+	formData.Set("Body", data.Body)
 
 	req, err := http.NewRequest(http.MethodPost, c.url, strings.NewReader(formData.Encode()))
 	if err != nil {
@@ -99,7 +114,6 @@ func (c *TwilioClient) SendSMS(sms common.SMSData) error {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(c.accountSID, c.authToken)
 
-	// Send the request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
@@ -112,12 +126,11 @@ func (c *TwilioClient) SendSMS(sms common.SMSData) error {
 
 	logger.Debug("Received response from Twilio", log.Int("statusCode", resp.StatusCode))
 
-	// Check the response status
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		logger.Error("Failed to send SMS", log.Int("statusCode", resp.StatusCode),
+		logger.Error("Failed to send SMS via Twilio", log.Int("statusCode", resp.StatusCode),
 			log.String("response", string(bodyBytes)))
-		return fmt.Errorf("failed to send SMS, status code: %d, response: %s", resp.StatusCode, string(bodyBytes))
+		return fmt.Errorf("twilio SMS send failed, status: %d, response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	return nil

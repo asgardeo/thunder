@@ -35,7 +35,7 @@ const (
 	vonageLoggerComponentName = "VonageClient"
 )
 
-// VonageClient implements the MessageClientInterface for sending messages via Vonage API.
+// VonageClient implements the NotificationClientInterface for sending messages via Vonage API.
 type VonageClient struct {
 	name       string
 	url        string
@@ -46,7 +46,7 @@ type VonageClient struct {
 }
 
 // NewVonageClient creates a new instance of VonageClient.
-func NewVonageClient(sender common.NotificationSenderDTO) (MessageClientInterface, error) {
+func NewVonageClient(sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, vonageLoggerComponentName))
 
 	client := &VonageClient{}
@@ -80,20 +80,34 @@ func (v *VonageClient) GetName() string {
 	return v.name
 }
 
-// SendSMS sends an SMS using the Vonage API.
-func (v *VonageClient) SendSMS(sms common.SMSData) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, vonageLoggerComponentName))
-	logger.Debug("Sending SMS via Vonage", log.String("to", log.MaskString(sms.To)))
+// IsChannelSupported reports whether the given channel is supported by Vonage.
+func (v *VonageClient) IsChannelSupported(channel common.ChannelType) bool {
+	return channel == common.ChannelTypeSMS
+}
 
-	// Format the phone number according to Vonage requirements
-	formattedPhoneNumber := v.formatPhoneNumber(sms.To)
+// Send dispatches a notification via the requested channel.
+func (v *VonageClient) Send(channel common.ChannelType, data common.NotificationData) error {
+	switch channel {
+	case common.ChannelTypeSMS:
+		return v.sendSMS(data)
+	default:
+		return fmt.Errorf("unsupported channel: %s", channel)
+	}
+}
+
+// sendSMS sends an SMS via the Vonage API.
+func (v *VonageClient) sendSMS(data common.NotificationData) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, vonageLoggerComponentName))
+	logger.Debug("Sending SMS via Vonage", log.String("to", log.MaskString(data.Recipient)))
+
+	formattedPhoneNumber := v.formatPhoneNumber(data.Recipient)
 
 	payload := map[string]interface{}{
 		"message_type": "text",
 		"channel":      "sms",
 		"from":         v.senderID,
 		"to":           formattedPhoneNumber,
-		"text":         sms.Body,
+		"text":         data.Body,
 		"sms": map[string]interface{}{
 			"encoding_type": "text",
 		},
@@ -113,7 +127,6 @@ func (v *VonageClient) SendSMS(sms common.SMSData) error {
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(v.apiKey, v.apiSecret)
 
-	// Send the HTTP request
 	resp, err := v.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
@@ -126,12 +139,11 @@ func (v *VonageClient) SendSMS(sms common.SMSData) error {
 
 	logger.Debug("Received response from Vonage", log.Int("statusCode", resp.StatusCode))
 
-	// Check the response status
 	if resp.StatusCode != http.StatusAccepted {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		logger.Error("Failed to send SMS", log.Int("statusCode", resp.StatusCode),
+		logger.Error("Failed to send SMS via Vonage", log.Int("statusCode", resp.StatusCode),
 			log.String("response", string(bodyBytes)))
-		return fmt.Errorf("failed to send SMS, status code: %d, response: %s", resp.StatusCode, string(bodyBytes))
+		return fmt.Errorf("vonage SMS send failed, status: %d, response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	return nil
