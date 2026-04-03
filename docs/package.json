@@ -61,7 +61,7 @@
     "@docusaurus/tsconfig": "3.9.2",
     "@docusaurus/types": "3.9.2",
     "typescript": "~5.6.2",
-    "openapi-to-postmanv2": "^4.23.0",
+    "openapi-to-postmanv2": "4.23.0",
     "yaml": "^2.8.2"
   },
   "browserslist": {
