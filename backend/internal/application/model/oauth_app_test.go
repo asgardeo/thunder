@@ -362,6 +362,95 @@ func (suite *OAuthAppConfigDTOTestSuite) TestValidateRedirectURI_NilRedirectURIs
 	suite.Equal(errRedirectURIRequired, err.Error())
 }
 
+func (suite *OAuthAppConfigDTOTestSuite) TestValidateRedirectURI_WildcardPatterns() {
+	tests := []struct {
+		name          string
+		registeredURIs []string
+		incoming      string
+		expectError   bool
+		errContains   string
+	}{
+		{
+			name:           "SingleStarMatchesOneSegment",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "https://example.com/callback/session",
+			expectError:    false,
+		},
+		{
+			name:           "SingleStarNoMatchTwoSegments",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "https://example.com/callback/a/b",
+			expectError:    true,
+			errContains:    "does not match",
+		},
+		{
+			name:           "DoubleStarMatchesZeroSegments",
+			registeredURIs: []string{"https://example.com/callback/**"},
+			incoming:       "https://example.com/callback",
+			expectError:    false,
+		},
+		{
+			name:           "DoubleStarMatchesMultipleSegments",
+			registeredURIs: []string{"https://example.com/callback/**"},
+			incoming:       "https://example.com/callback/a/b/c",
+			expectError:    false,
+		},
+		{
+			name:           "ExactMatchStillWorksWithWildcardAlsoRegistered",
+			registeredURIs: []string{"https://example.com/exact", "https://example.com/callback/*"},
+			incoming:       "https://example.com/exact",
+			expectError:    false,
+		},
+		{
+			name:           "FirstMatchWinsAcrossMultiplePatterns",
+			registeredURIs: []string{"https://example.com/a/*", "https://example.com/b/*"},
+			incoming:       "https://example.com/b/x",
+			expectError:    false,
+		},
+		{
+			name:           "NoMatchAcrossMultiplePatterns",
+			registeredURIs: []string{"https://example.com/a/*", "https://example.com/b/*"},
+			incoming:       "https://example.com/c/x",
+			expectError:    true,
+			errContains:    "does not match",
+		},
+		{
+			name:           "DeeplinkWildcardMatch",
+			registeredURIs: []string{"myapp://callback/*"},
+			incoming:       "myapp://callback/token",
+			expectError:    false,
+		},
+		{
+			name:           "EmptyIncomingWithSingleWildcardRegisteredRejected",
+			registeredURIs: []string{"https://example.com/callback/*"},
+			incoming:       "",
+			expectError:    true,
+			errContains:    errRedirectURIRequired,
+		},
+		{
+			name:           "EmptyIncomingWithSingleExactRegisteredStillWorks",
+			registeredURIs: []string{"https://example.com/callback"},
+			incoming:       "",
+			expectError:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			config := &OAuthAppConfigDTO{RedirectURIs: tt.registeredURIs}
+			err := config.ValidateRedirectURI(tt.incoming)
+			if tt.expectError {
+				suite.Error(err)
+				if tt.errContains != "" {
+					suite.Contains(err.Error(), tt.errContains)
+				}
+			} else {
+				suite.NoError(err)
+			}
+		})
+	}
+}
+
 type OAuthAppConfigProcessedDTOTestSuite struct {
 	suite.Suite
 }

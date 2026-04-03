@@ -9,7 +9,7 @@ Thunder currently validates redirect URIs with exact string matching only. This 
 - Support pattern for the URL path only.
 - Protocol and domain name cannot be given as pattern.
 - In the OIDC authorization call, redirect_uri must be absolute. It must match with at least one of the registered redirect uris
-- Only simple wildcard syntax (e.g., * for a single path segment and ** for multiple path segment) is supported. Full regular expression syntax is out of scope.
+- Only simple wildcard syntax (e.g., * for a single path segment and ** for multiple path segment) is supported. Full regular expression syntax is out of scope. Using **, up to a maximum of 32 intermediate segments all allowed; paths exceeding this depth are not matched.
 - The redirect_uri in token requests is still validated with exact match logic per RFC 6749 §4.1.3; pattern matching is not applied there.
 - Invalid redirect_uri should inform the resource owner of the error and MUST NOT automatically redirect the user-agent to the invalid redirection URI
 - Support deeplinks for the mobile app redirections. wildcards are not allowed in the scheme part of the deeplink.
@@ -36,7 +36,7 @@ Thunder currently validates redirect URIs with exact string matching only. This 
 | AC-04 | Registration | Wildcard only in path (e.g., `https://example.com/callback/*`) is accepted and stored as-is |
 | AC-05 | Registration | Full regex syntax (e.g., `https://example.com/callback/[a-z]+`) is rejected; only `*` and `**` are supported |
 | AC-06 | Authorization | Single-segment wildcard `*` matches exactly one path segment (e.g., `callback/*` matches `callback/v1` but not `callback/v1/extra`) |
-| AC-07 | Authorization | Multi-segment wildcard `**` matches zero or more path segments (e.g., `app/**/callback` matches both `app/callback` and `app/tenant/region/callback`) |
+| AC-07 | Authorization | Multi-segment wildcard `**` matches zero or more (maximum 32) path segments (e.g., `app/**/callback` matches both `app/callback` and `app/tenant/region/callback`) |
 | AC-08 | Authorization | Exact redirect URI match succeeds when no wildcard is registered |
 | AC-09 | Authorization | Authorization request whose `redirect_uri` matches no registered URI returns `invalid_request` per RFC 6749 |
 | AC-10 | Authorization | Query strings must match exactly between the incoming `redirect_uri` and the registered uri. A mismatch in query parameters (present on one side but not the other, or differing values) causes the request to be rejected |
@@ -60,7 +60,7 @@ Method expectation:
 - Query string must match exactly; a mismatch in query parameters returns `(false, nil)`.
 - Wildcards (`*` and `**`) are supported only in the path component:
     - `*` matches exactly one path segment (no slashes).
-    - `**` matches zero or more path segments.
+    - `**` matches zero or more path segments. Matching uses a recursion call depth limit of 32. For a pattern like `prefix/**/suffix`, this allows up to 28 intermediate segments between the two fixed segments; paths exceeding this depth are not matched.
 
 ### Files to Modify
 
