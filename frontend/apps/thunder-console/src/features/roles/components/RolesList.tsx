@@ -110,10 +110,15 @@ export default function RolesList(): JSX.Element {
         valueGetter: (_value, row): string => row.description ?? '-',
       },
       {
-        field: 'ouId',
+        field: 'ouHandle',
         headerName: t('roles:listing.columns.organizationUnit'),
         flex: 1,
         minWidth: 200,
+        renderCell: (params: DataGrid.GridRenderCellParams<RoleSummary>) => (
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
+            {params.row.ouHandle ?? params.row.ouId ?? '-'}
+          </Typography>
+        ),
       },
       {
         field: 'actions',

@@ -58,41 +58,84 @@ export default function EditGeneralSettings({role, onDeleteClick}: EditGeneralSe
         title={t('roles:edit.general.sections.organizationUnit.title')}
         description={t('roles:edit.general.sections.organizationUnit.description')}
       >
-        <TextField
-          label={t('roles:edit.general.sections.organizationUnit.title')}
-          value={role.ouId}
-          fullWidth
-          size="small"
-          slotProps={{
-            input: {
-              readOnly: true,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip
-                    title={
-                      copiedField === 'ouId'
-                        ? t('common:actions.copied')
-                        : t('roles:edit.general.sections.organizationUnit.copyId')
-                    }
-                  >
-                    <IconButton
-                      aria-label={t('roles:edit.general.sections.organizationUnit.copyId')}
-                      onClick={() => {
-                        handleCopyToClipboard(role.ouId, 'ouId').catch(() => {
-                          /* noop */
-                        });
-                      }}
-                      edge="end"
+        <Stack spacing={2}>
+          <TextField
+            label={t('roles:edit.general.sections.organizationUnit.handleLabel', 'Handle')}
+            value={role.ouHandle ?? '-'}
+            fullWidth
+            size="small"
+            slotProps={{
+              input: {
+                readOnly: true,
+                endAdornment: role.ouHandle ? (
+                  <InputAdornment position="end">
+                    <Tooltip
+                      title={
+                        copiedField === 'ouHandle'
+                          ? t('common:actions.copied')
+                          : t(
+                              'roles:edit.general.sections.organizationUnit.copyHandle',
+                              'Copy Organization Unit Handle',
+                            )
+                      }
                     >
-                      {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
-        />
+                      <IconButton
+                        aria-label={t(
+                          'roles:edit.general.sections.organizationUnit.copyHandle',
+                          'Copy Organization Unit Handle',
+                        )}
+                        onClick={() => {
+                          handleCopyToClipboard(role.ouHandle!, 'ouHandle').catch(() => {
+                            /* noop */
+                          });
+                        }}
+                        edge="end"
+                      >
+                        {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ) : undefined,
+              },
+            }}
+            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+          />
+          <TextField
+            label={t('roles:edit.general.sections.organizationUnit.idLabel', 'ID')}
+            value={role.ouId}
+            fullWidth
+            size="small"
+            slotProps={{
+              input: {
+                readOnly: true,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip
+                      title={
+                        copiedField === 'ouId'
+                          ? t('common:actions.copied')
+                          : t('roles:edit.general.sections.organizationUnit.copyId')
+                      }
+                    >
+                      <IconButton
+                        aria-label={t('roles:edit.general.sections.organizationUnit.copyId')}
+                        onClick={() => {
+                          handleCopyToClipboard(role.ouId, 'ouId').catch(() => {
+                            /* noop */
+                          });
+                        }}
+                        edge="end"
+                      >
+                        {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+          />
+        </Stack>
       </SettingsCard>
 
       {/* Danger Zone */}

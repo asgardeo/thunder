@@ -28,11 +28,15 @@ import {
   Chip,
   Tabs,
   Tab,
+  TextField,
+  InputAdornment,
+  Tooltip,
+  IconButton,
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Save, X} from '@wso2/oxygen-ui-icons-react';
-import {useState, useEffect, useMemo, type SyntheticEvent, type ReactNode, type JSX} from 'react';
+import {ArrowLeft, Save, X, Copy, Check} from '@wso2/oxygen-ui-icons-react';
+import {useState, useEffect, useMemo, useCallback, useRef, type SyntheticEvent, type ReactNode, type JSX} from 'react';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
@@ -80,6 +84,8 @@ export default function UserEditPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {data: user, isLoading: isUserLoading, error: userError} = useGetUser(userId);
   const updateUserMutation = useUpdateUser();
@@ -121,6 +127,26 @@ export default function UserEditPage() {
       });
     }
   }, [user, userSchema, setValue]);
+
+  useEffect(
+    () => () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleCopyToClipboard = useCallback(async (text: string, fieldName: string): Promise<void> => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopiedField(null);
+    }, 2000);
+  }, []);
 
   const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -365,6 +391,93 @@ export default function UserEditPage() {
                   </Stack>
                 </Box>
               )}
+            </SettingsCard>
+
+            {/* Organization Unit */}
+            <SettingsCard
+              title={t('users:manageUser.sections.organizationUnit.title', 'Organization Unit')}
+              description={t(
+                'users:manageUser.sections.organizationUnit.description',
+                'The organization unit this user belongs to.',
+              )}
+            >
+              <Stack spacing={2}>
+                <TextField
+                  label={t('users:manageUser.sections.organizationUnit.handleLabel', 'Handle')}
+                  value={user.ouHandle ?? '-'}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                      endAdornment: user.ouHandle ? (
+                        <InputAdornment position="end">
+                          <Tooltip
+                            title={
+                              copiedField === 'ouHandle'
+                                ? t('common:actions.copied')
+                                : t(
+                                    'users:manageUser.sections.organizationUnit.copyHandle',
+                                    'Copy Organization Unit Handle',
+                                  )
+                            }
+                          >
+                            <IconButton
+                              aria-label={t(
+                                'users:manageUser.sections.organizationUnit.copyHandle',
+                                'Copy Organization Unit Handle',
+                              )}
+                              onClick={() => {
+                                handleCopyToClipboard(user.ouHandle!, 'ouHandle').catch(() => null);
+                              }}
+                              edge="end"
+                            >
+                              {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ) : undefined,
+                    },
+                  }}
+                  sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+                />
+                <TextField
+                  label={t('users:manageUser.sections.organizationUnit.idLabel', 'ID')}
+                  value={user.ouId}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip
+                            title={
+                              copiedField === 'ouId'
+                                ? t('common:actions.copied')
+                                : t('users:manageUser.sections.organizationUnit.copyId', 'Copy Organization Unit ID')
+                            }
+                          >
+                            <IconButton
+                              aria-label={t(
+                                'users:manageUser.sections.organizationUnit.copyId',
+                                'Copy Organization Unit ID',
+                              )}
+                              onClick={() => {
+                                handleCopyToClipboard(user.ouId, 'ouId').catch(() => null);
+                              }}
+                              edge="end"
+                            >
+                              {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                  sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+                />
+              </Stack>
             </SettingsCard>
 
             {/* Danger Zone */}

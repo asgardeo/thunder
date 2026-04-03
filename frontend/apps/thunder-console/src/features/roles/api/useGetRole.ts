@@ -38,7 +38,7 @@ export default function useGetRole(roleId: string): UseQueryResult<Role> {
       const serverUrl: string = getServerUrl();
 
       const response: {data: Role} = await http.request({
-        url: `${serverUrl}/roles/${roleId}`,
+        url: `${serverUrl}/roles/${roleId}?include=display`,
         method: 'GET',
       } as unknown as Parameters<typeof http.request>[0]);
 

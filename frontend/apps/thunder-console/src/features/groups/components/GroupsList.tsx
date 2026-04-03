@@ -86,13 +86,13 @@ export default function GroupsList(): JSX.Element {
         valueGetter: (_value, row): string => row.description ?? '-',
       },
       {
-        field: 'ouId',
-        headerName: t('groups:listing.columns.organizationUnit', 'Organization Unit ID'),
+        field: 'ouHandle',
+        headerName: t('groups:listing.columns.organizationUnit', 'Organization Unit'),
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<GroupBasic>) => (
           <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
-            {params.row.ouId ?? '-'}
+            {params.row.ouHandle ?? params.row.ouId ?? '-'}
           </Typography>
         ),
       },

@@ -40,6 +40,8 @@ export interface GroupBasic {
   description?: string;
   /** ID of the organization unit this group belongs to */
   ouId: string;
+  /** Handle of the organization unit, populated when include=display is used */
+  ouHandle?: string;
 }
 
 /**

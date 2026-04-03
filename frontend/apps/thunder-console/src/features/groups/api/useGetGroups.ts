@@ -41,6 +41,7 @@ export default function useGetGroups(params?: GroupListParams): UseQueryResult<G
       const queryParams: URLSearchParams = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
+        include: 'display',
       });
 
       const response: {

@@ -67,7 +67,7 @@ describe('useGetGroup', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/groups/g1',
+        url: 'https://localhost:8090/groups/g1?include=display',
         method: 'GET',
       }),
     );

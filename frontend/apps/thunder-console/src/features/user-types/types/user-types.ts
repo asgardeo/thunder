@@ -113,6 +113,7 @@ export interface ApiUserSchema {
   id: string;
   name: string;
   ouId: string;
+  ouHandle?: string;
   allowSelfRegistration: boolean;
   systemAttributes?: SystemAttributes;
   schema: UserSchemaDefinition;
@@ -125,6 +126,7 @@ export interface UserSchemaListItem {
   id: string;
   name: string;
   ouId: string;
+  ouHandle?: string;
   allowSelfRegistration: boolean;
   systemAttributes?: SystemAttributes;
 }

@@ -154,6 +154,17 @@ export default function UsersList() {
         ),
       },
       {
+        field: 'ouHandle',
+        headerName: t('users:listing.columns.organizationUnit', 'Organization Unit'),
+        flex: 0.5,
+        minWidth: 150,
+        renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
+            {params.row.ouHandle ?? params.row.ouId ?? '-'}
+          </Typography>
+        ),
+      },
+      {
         field: 'actions',
         headerName: t('users:listing.columns.actions', 'Actions'),
         width: 150,

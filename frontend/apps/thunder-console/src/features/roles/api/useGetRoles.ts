@@ -41,6 +41,7 @@ export default function useGetRoles(params?: RoleListParams): UseQueryResult<Rol
       const queryParams: URLSearchParams = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
+        include: 'display',
       });
 
       const response: {data: RoleListResponse} = await http.request({
