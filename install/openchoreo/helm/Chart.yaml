@@ -1,4 +1,4 @@
-# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,32 @@
 
 apiVersion: v2
 name: thunder
-description: A Helm chart for deploying WSO2 Thunder via OpenChoreo
+description: |
+  Umbrella Helm chart for the Thunder Identity Provider on OpenChoreo.
+
+  Sub-charts:
+    thunder-oc-componenttype  — Registers the ComponentType (or ClusterComponentType) once
+                             per cluster/namespace. Platform admins install this.
+    thunder-component      — Deploys the Component, Workload, Release, and platform
+                             resources for a Thunder instance. Teams install this.
+
+  Install both together (default):
+    helm install thunder .
+
+  Install only the ComponentType:
+    helm install thunder-type charts/thunder-oc-componenttype
+
+  Install only the Component (assumes ComponentType already exists):
+    helm install thunder-app charts/thunder-component -f my-values.yaml
 type: application
-version: 0.1.0
+version: 0.32.0
 appVersion: "latest"
+dependencies:
+  - name: thunder-oc-componenttype
+    version: "0.32.0"
+    repository: "file://charts/thunder-oc-componenttype"
+    condition: thunder-oc-componenttype.enabled
+  - name: thunder-component
+    version: "0.32.0"
+    repository: "file://charts/thunder-component"
+    condition: thunder-component.enabled

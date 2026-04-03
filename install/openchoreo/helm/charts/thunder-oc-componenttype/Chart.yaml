@@ -1,4 +1,4 @@
-# Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -14,13 +14,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
----
-apiVersion: openchoreo.dev/v1alpha1
-kind: ComponentType
-metadata:
-  name: thunder-idp
-  annotations:
-    openchoreo.dev/description: "Thunder Identity Provider ComponentType"
-    openchoreo.dev/display-name: "Thunder IDP"
-spec:
-  {{- include "thunder.componentTypeSpec" . | nindent 2 }}
+apiVersion: v2
+name: thunder-oc-componenttype
+description: |
+  ComponentType definition for the Thunder Identity Provider.
+  Install this once per cluster (or namespace) to register the thunder
+  component type. The thunder-component chart depends on this type being present.
+type: application
+version: 0.33.0

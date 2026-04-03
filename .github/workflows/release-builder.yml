@@ -175,6 +175,14 @@ jobs:
           sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/helm/Chart.yaml
           sed -i -E "s/^appVersion: .*/appVersion: \"${SEMVER_VERSION}\"/" install/helm/Chart.yaml
 
+          echo "📝 Updating OpenChoreo Helm chart versions to $SEMVER_VERSION"
+          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/Chart.yaml
+          sed -i -E "s/^appVersion: .*/appVersion: \"${SEMVER_VERSION}\"/" install/openchoreo/helm/Chart.yaml
+          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/charts/thunder-oc-componenttype/Chart.yaml
+          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/charts/thunder-component/Chart.yaml
+          # Update sub-chart dependency versions in the umbrella chart (indented version: entries)
+          sed -i -E "s/(^[[:space:]]+version: \")[^\"]*/\1${SEMVER_VERSION}/" install/openchoreo/helm/Chart.yaml
+
           echo "📝 Updating sample app package versions to $SEMVER_VERSION"
           cd samples/apps/react-api-based-sample
           npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
@@ -203,6 +211,9 @@ jobs:
             version.txt \
             README.md \
             install/helm/Chart.yaml \
+            install/openchoreo/helm/Chart.yaml \
+            install/openchoreo/helm/charts/thunder-oc-componenttype/Chart.yaml \
+            install/openchoreo/helm/charts/thunder-component/Chart.yaml \
             samples/apps/react-api-based-sample/package-lock.json \
             samples/apps/react-api-based-sample/package.json \
             samples/apps/react-sdk-sample/package-lock.json \
@@ -469,6 +480,10 @@ jobs:
           
           # Update values.yaml with the new image tag
           sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/helm/values.yaml
+
+          echo "📝 Updating OpenChoreo Helm values with image tag ${CHART_VERSION}"
+          sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/openchoreo/helm/values.yaml
+          sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/openchoreo/helm/charts/thunder-component/values.yaml
           
           # Verify the replacement was successful
           if ! grep -q "tag: \"${CHART_VERSION}\"" install/helm/values.yaml; then
@@ -522,6 +537,29 @@ jobs:
           
           echo "✅ Helm chart pushed successfully!"
           echo "📦 Helm chart available at: oci://${HELM_REGISTRY}/helm-charts"
+
+      - name: 📦 Package and Push OpenChoreo Helm Charts to GHCR
+        run: |
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          HELM_REGISTRY="ghcr.io/${OWNER_NAME}/helm-charts"
+
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
+          if [[ $CHART_VERSION == v* ]]; then
+            CHART_VERSION="${CHART_VERSION#v}"
+          fi
+
+          mkdir -p target/dist/openchoreo
+
+          # Authenticate Helm to GHCR
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Package and push thunder-oc-componenttype
+          echo "📦 Packaging thunder-oc-componenttype ${CHART_VERSION}"
+          helm package install/openchoreo/helm/charts/thunder-oc-componenttype \
+            --version "${CHART_VERSION}" --app-version "${CHART_VERSION}" \
+            --destination target/dist/openchoreo/
+          helm push "target/dist/openchoreo/thunder-oc-componenttype-${CHART_VERSION}.tgz" "oci://${HELM_REGISTRY}"
+          echo "✅ thunder-oc-componenttype pushed to oci://${HELM_REGISTRY}"
 
       - name: 📝 Calculate Next Version
         id: next_version

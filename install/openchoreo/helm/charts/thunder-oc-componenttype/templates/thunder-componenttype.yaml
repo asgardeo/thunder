@@ -1,0 +1,470 @@
+# Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: {{ if .Values.componentType.cluster }}ClusterComponentType{{ else }}ComponentType{{ end }}
+metadata:
+  name: thunder
+  annotations:
+    openchoreo.dev/description: "Thunder ComponentType"
+    openchoreo.dev/display-name: "Thunder"
+spec:
+  workloadType: deployment
+
+  # ─── Parameters (application configuration set at component creation) ────────
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        image:
+          type: string
+          default: "ghcr.io/asgardeo/thunder:latest"
+        runtime:
+          type: object
+          properties:
+            imagePullPolicy:
+              type: string
+              enum: [Always, IfNotPresent, Never]
+              default: "Always"
+            gate:
+              type: object
+              properties:
+                clientBase: { type: string, default: "/gate" }
+            console:
+              type: object
+              properties:
+                clientBase: { type: string, default: "/console" }
+                clientId: { type: string, default: "CONSOLE" }
+                scopes: { type: string, default: "[\"openid\", \"profile\", \"email\"]" }
+            dbType:
+              type: string
+              enum: [sqlite, postgres]
+              default: "sqlite"
+            dbStorageSize:
+              type: string
+              default: "1Gi"
+
+  # ─── EnvironmentConfigs (infra + per-environment config set via ReleaseBinding) ─
+  environmentConfigs:
+    openAPIV3Schema:
+      type: object
+      properties:
+        replicas:
+          type: integer
+          default: 1
+        endpointVisibility:
+          type: string
+          enum: [external, internal]
+          default: "external"
+        serverPublicUrl:
+          type: string
+          default: ""
+        gateClientHostname:
+          type: string
+          default: ""
+        # Infra resource configuration for the Thunder deployment container.
+        resourceRequestsCpu:
+          type: string
+          default: "100m"
+        resourceRequestsMemory:
+          type: string
+          default: "128Mi"
+        resourceLimitsCpu:
+          type: string
+          default: "500m"
+        resourceLimitsMemory:
+          type: string
+          default: "512Mi"
+
+  # ─── Resources (Kubernetes objects rendered by the OpenChoreo controller) ─────
+  resources:
+    # PVC for SQLite database files — shared between the setup job and the deployment.
+    # Always created; for postgres deployments the mount is present but unused.
+    - id: sqlite-pvc
+      template:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: "${metadata.componentName}-sqlite"
+          namespace: "${metadata.namespace}"
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: "${parameters.runtime.dbStorageSize}"
+
+    - id: setup-job
+      template:
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: "${metadata.componentName}-setup"
+          namespace: "${metadata.namespace}"
+        spec:
+          backoffLimit: 3
+          ttlSecondsAfterFinished: 300
+          template:
+            spec:
+              restartPolicy: OnFailure
+              initContainers:
+                - name: init-database
+                  image: "${parameters.image}"
+                  imagePullPolicy: "${parameters.runtime.imagePullPolicy}"
+                  command: ['sh', '-c']
+                  args:
+                    - |
+                      if [ ! -f /data/.initialized ]; then
+                        echo "Copying database directory from image..."
+                        cp -r /opt/thunder/repository/database/* /data/
+                        touch /data/.initialized
+                        echo "Database initialization complete"
+                      else
+                        echo "Database already initialized"
+                      fi
+                  volumeMounts:
+                    - name: sqlite-data
+                      mountPath: /data
+              containers:
+                - name: setup
+                  image: "${parameters.image}"
+                  imagePullPolicy: "${parameters.runtime.imagePullPolicy}"
+                  command: ["sh", "-c", "./setup.sh && touch /opt/thunder/repository/database/.setup-complete"]
+                  env: |
+                    ${configurations.configs.envs.map(e, {"name": e.name, "value": e.value}) + [
+                      {"name": "WITH_CONSENT", "value": "false"}
+                    ]}
+                  volumeMounts:
+                    - name: thunder-config
+                      mountPath: /opt/thunder/repository/conf/deployment.yaml
+                      subPath: deployment.yaml
+                    - name: sqlite-data
+                      mountPath: /opt/thunder/repository/database
+              volumes:
+                - name: thunder-config
+                  configMap:
+                    name: "${metadata.componentName}-config"
+                - name: sqlite-data
+                  persistentVolumeClaim:
+                    claimName: "${metadata.componentName}-sqlite"
+
+    - id: thunder-config
+      includeWhen: "${parameters.runtime.dbType == 'sqlite'}"
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: "${metadata.componentName}-config"
+          namespace: "${metadata.namespace}"
+        data:
+          deployment.yaml: |
+            server:
+              hostname: "0.0.0.0"
+              public_url: "${environmentConfigs.serverPublicUrl}"
+              port: ${workload.endpoints["api"].port}
+              http_only: true
+
+            gate_client:
+              hostname: "${environmentConfigs.gateClientHostname}"
+              port: {{ "{{.GATE_CLIENT_PORT}}" }}
+              scheme: "{{ "{{.GATE_CLIENT_SCHEME}}" }}"
+
+            crypto:
+              encryption:
+                key: "{{ "{{.CRYPTO_ENCRYPTION_KEY}}" }}"
+
+            database:
+              config:
+                type: "sqlite"
+                name: "{{ "{{.DB_CONFIG_PATH}}" }}"
+              runtime:
+                type: "sqlite"
+                name: "{{ "{{.DB_RUNTIME_PATH}}" }}"
+              user:
+                type: "sqlite"
+                name: "{{ "{{.DB_USER_PATH}}" }}"
+
+            cache:
+              disabled: false
+              type: "inmemory"
+              size: {{ "{{.CACHE_SIZE}}" }}
+              ttl: {{ "{{.CACHE_TTL}}" }}
+              eviction_policy: "LRU"
+              cleanup_interval: 600
+
+            jwt:
+              validity_period: {{ "{{.JWT_VALIDITY}}" }}
+
+            oauth:
+              refresh_token:
+                renew_on_grant: true
+                validity_period: {{ "{{.OAUTH_REFRESH_TOKEN_VALIDITY}}" }}
+
+            flow:
+              max_version_history: 3
+              auto_infer_registration: true
+
+            cors:
+              allowed_origins: {{ "{{.CORS_ALLOWED_ORIGINS}}" }}
+
+            consent:
+              enabled: {{ "{{.CONSENT_ENABLED}}" }}
+              base_url: "{{ "{{.CONSENT_BASE_URL}}" }}"
+
+    - id: thunder-config-pg
+      includeWhen: "${parameters.runtime.dbType == 'postgres'}"
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: "${metadata.componentName}-config"
+          namespace: "${metadata.namespace}"
+        data:
+          deployment.yaml: |
+            server:
+              hostname: "0.0.0.0"
+              public_url: "${environmentConfigs.serverPublicUrl}"
+              port: ${workload.endpoints["api"].port}
+              http_only: true
+
+            gate_client:
+              hostname: "${environmentConfigs.gateClientHostname}"
+              port: {{ "{{.GATE_CLIENT_PORT}}" }}
+              scheme: "{{ "{{.GATE_CLIENT_SCHEME}}" }}"
+
+            crypto:
+              encryption:
+                key: "{{ "{{.CRYPTO_ENCRYPTION_KEY}}" }}"
+
+            database:
+              config:
+                type: "postgres"
+                hostname: "{{ "{{.DB_CONFIG_HOSTNAME}}" }}"
+                port: {{ "{{.DB_PORT}}" }}
+                name: "{{ "{{.DB_CONFIG_NAME}}" }}"
+                username: "{{ "{{.DB_CONFIG_USERNAME}}" }}"
+                password: "{{ "{{.DB_CONFIG_PASSWORD}}" }}"
+                sslmode: "{{ "{{.DB_CONFIG_SSLMODE}}" }}"
+              runtime:
+                type: "postgres"
+                hostname: "{{ "{{.DB_RUNTIME_HOSTNAME}}" }}"
+                port: {{ "{{.DB_PORT}}" }}
+                name: "{{ "{{.DB_RUNTIME_NAME}}" }}"
+                username: "{{ "{{.DB_RUNTIME_USERNAME}}" }}"
+                password: "{{ "{{.DB_RUNTIME_PASSWORD}}" }}"
+                sslmode: "{{ "{{.DB_RUNTIME_SSLMODE}}" }}"
+              user:
+                type: "postgres"
+                hostname: "{{ "{{.DB_USER_HOSTNAME}}" }}"
+                port: {{ "{{.DB_PORT}}" }}
+                name: "{{ "{{.DB_USER_NAME}}" }}"
+                username: "{{ "{{.DB_USER_USERNAME}}" }}"
+                password: "{{ "{{.DB_USER_PASSWORD}}" }}"
+                sslmode: "{{ "{{.DB_USER_SSLMODE}}" }}"
+
+            cache:
+              disabled: false
+              type: "inmemory"
+              size: {{ "{{.CACHE_SIZE}}" }}
+              ttl: {{ "{{.CACHE_TTL}}" }}
+              eviction_policy: "LRU"
+              cleanup_interval: 600
+
+            jwt:
+              validity_period: {{ "{{.JWT_VALIDITY}}" }}
+
+            oauth:
+              refresh_token:
+                renew_on_grant: true
+                validity_period: {{ "{{.OAUTH_REFRESH_TOKEN_VALIDITY}}" }}
+
+            flow:
+              max_version_history: 3
+              auto_infer_registration: true
+
+            cors:
+              allowed_origins: {{ "{{.CORS_ALLOWED_ORIGINS}}" }}
+
+            consent:
+              enabled: {{ "{{.CONSENT_ENABLED}}" }}
+              base_url: "{{ "{{.CONSENT_BASE_URL}}" }}"
+
+    - id: gate-config
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: "${metadata.componentName}-gate-config"
+          namespace: "${metadata.namespace}"
+        data:
+          config.js: |
+            window.__THUNDER_RUNTIME_CONFIG__ = {
+              client: {
+                base: "${parameters.runtime.gate.clientBase}",
+              },
+              server: {
+                public_url: "${environmentConfigs.serverPublicUrl}",
+              },
+            };
+
+    - id: console-config
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: "${metadata.componentName}-console-config"
+          namespace: "${metadata.namespace}"
+        data:
+          config.js: |
+            window.__THUNDER_RUNTIME_CONFIG__ = {
+              client: {
+                base: "${parameters.runtime.console.clientBase}",
+                client_id: "${parameters.runtime.console.clientId}",
+                scopes: ${parameters.runtime.console.scopes},
+              },
+              server: {
+                public_url: "${environmentConfigs.serverPublicUrl}",
+              },
+            };
+
+    - id: file-config
+      forEach: ${configurations.toConfigFileList()}
+      var: config
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: ${config.resourceName}
+          namespace: ${metadata.namespace}
+        data:
+          ${config.name}: |
+            ${config.value}
+
+    - id: deployment
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "${metadata.componentName}"
+          namespace: "${metadata.namespace}"
+        spec:
+          replicas: ${environmentConfigs.replicas}
+          selector:
+            matchLabels:
+              app: "${metadata.componentName}"
+          template:
+            metadata:
+              labels:
+                app: "${metadata.componentName}"
+            spec:
+              initContainers:
+                - name: wait-for-setup
+                  image: "${parameters.image}"
+                  imagePullPolicy: "${parameters.runtime.imagePullPolicy}"
+                  command: ['sh', '-c']
+                  args:
+                    - |
+                      until [ -f /opt/thunder/repository/database/.setup-complete ]; do
+                        echo "Waiting for setup job to complete..."
+                        sleep 2
+                      done
+                      echo "Setup complete, starting Thunder..."
+                  volumeMounts:
+                    - name: sqlite-data
+                      mountPath: /opt/thunder/repository/database
+              containers:
+                - name: thunder
+                  image: "${parameters.image}"
+                  imagePullPolicy: "${parameters.runtime.imagePullPolicy}"
+                  command:
+                    - /opt/thunder/thunder
+                  ports:
+                    - containerPort: ${workload.endpoints["api"].port}
+                  env: |
+                    ${configurations.configs.envs.map(e, {"name": e.name, "value": e.value})}
+                  resources:
+                    requests:
+                      cpu: "${environmentConfigs.resourceRequestsCpu}"
+                      memory: "${environmentConfigs.resourceRequestsMemory}"
+                    limits:
+                      cpu: "${environmentConfigs.resourceLimitsCpu}"
+                      memory: "${environmentConfigs.resourceLimitsMemory}"
+                  volumeMounts: |
+                    ${[
+                      {"name": "thunder-config", "mountPath": "/opt/thunder/repository/conf/deployment.yaml", "subPath": "deployment.yaml"},
+                      {"name": "gate-config", "mountPath": "/opt/thunder/apps/gate/config.js", "subPath": "config.js"},
+                      {"name": "console-config", "mountPath": "/opt/thunder/apps/console/config.js", "subPath": "config.js"},
+                      {"name": "sqlite-data", "mountPath": "/opt/thunder/repository/database"}
+                    ] + configurations.toContainerVolumeMounts().map(m, {"name": m.name, "mountPath": m.mountPath, "subPath": m.subPath})}
+              volumes: |
+                ${[
+                  {"name": "thunder-config", "configMap": {"name": metadata.componentName + "-config"}},
+                  {"name": "gate-config", "configMap": {"name": metadata.componentName + "-gate-config"}},
+                  {"name": "console-config", "configMap": {"name": metadata.componentName + "-console-config"}},
+                  {"name": "sqlite-data", "persistentVolumeClaim": {"claimName": metadata.componentName + "-sqlite"}}
+                ] + configurations.toVolumes().map(v, {"name": v.name, "configMap": {"name": v.configMap.name}})}
+
+    - id: service
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: "${metadata.componentName}"
+          namespace: "${metadata.namespace}"
+        spec:
+          type: ClusterIP
+          selector:
+            app: "${metadata.componentName}"
+          ports:
+            - port: ${workload.endpoints["api"].port}
+              targetPort: ${workload.endpoints["api"].port}
+              protocol: TCP
+              name: http
+
+    - id: httproute-external
+      includeWhen: "${environmentConfigs.endpointVisibility == 'external'}"
+      forEach: '${workload.endpoints.transformMap(name, ep, ep.type in ["HTTP", "GraphQL", "Websocket"], ep)}'
+      var: endpoint
+      template:
+        apiVersion: gateway.networking.k8s.io/v1
+        kind: HTTPRoute
+        metadata:
+          name: ${oc_generate_name(metadata.componentName, endpoint.key)}
+          namespace: ${metadata.namespace}
+          labels: '${oc_merge(metadata.labels, {"openchoreo.dev/endpoint-name": endpoint.key, "openchoreo.dev/endpoint-visibility": "external"})}'
+        spec:
+          parentRefs:
+            - name: ${gateway.ingress.external.name}
+              namespace: ${gateway.ingress.external.namespace}
+          hostnames: |
+            ${[gateway.ingress.external.?http, gateway.ingress.external.?https]
+              .filter(g, g.hasValue()).map(g, g.value().host).distinct()
+              .map(h, metadata.environmentName + "-" + metadata.componentName + "-" + metadata.componentNamespace + "." + h)}
+          rules:
+            - matches:
+                - path:
+                    type: PathPrefix
+                    value: /
+              filters:
+                - type: URLRewrite
+                  urlRewrite:
+                    path:
+                      type: ReplacePrefixMatch
+                      replacePrefixMatch: '${endpoint.value.?basePath.orValue("/")}'
+              backendRefs:
+                - name: ${metadata.componentName}
+                  port: ${endpoint.value.port}
