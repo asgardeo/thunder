@@ -105,8 +105,6 @@ func dbEntityRowWithCreds() map[string]interface{} {
 	return row
 }
 
-// GetEntity
-
 func (s *DBStoreTestSuite) TestGetEntity_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntity(s.ctx, "e1")
@@ -142,8 +140,6 @@ func (s *DBStoreTestSuite) TestGetEntity_Success() {
 	s.NoError(err)
 	s.Equal("e1", e.ID)
 }
-
-// GetEntityWithCredentials
 
 func (s *DBStoreTestSuite) TestGetEntityWithCredentials_ProviderError() {
 	s.expectClientError()
@@ -184,8 +180,6 @@ func (s *DBStoreTestSuite) TestGetEntityWithCredentials_Success() {
 	s.NotNil(sysCreds)
 }
 
-// CreateEntity
-
 func (s *DBStoreTestSuite) TestCreateEntity_ProviderError() {
 	s.expectClientError()
 	e := Entity{ID: "e1", Attributes: json.RawMessage(`{}`)}
@@ -222,8 +216,6 @@ func (s *DBStoreTestSuite) TestCreateEntity_WithSystemAttrsAndCreds() {
 	err := s.store.CreateEntity(s.ctx, e, json.RawMessage(`{"p":"h"}`), json.RawMessage(`{"t":"t"}`))
 	s.NoError(err)
 }
-
-// UpdateEntity
 
 func (s *DBStoreTestSuite) TestUpdateEntity_ProviderError() {
 	s.expectClientError()
@@ -281,8 +273,6 @@ func (s *DBStoreTestSuite) TestUpdateEntity_Success() {
 	s.NoError(err)
 }
 
-// UpdateSystemAttributes
-
 func (s *DBStoreTestSuite) TestUpdateSystemAttributes_ProviderError() {
 	s.expectClientError()
 	err := s.store.UpdateSystemAttributes(s.ctx, "e1", json.RawMessage(`{}`))
@@ -310,8 +300,6 @@ func (s *DBStoreTestSuite) TestUpdateSystemAttributes_Success() {
 	s.NoError(err)
 }
 
-// UpdateCredentials
-
 func (s *DBStoreTestSuite) TestUpdateCredentials_ProviderError() {
 	s.expectClientError()
 	err := s.store.UpdateCredentials(s.ctx, "e1", json.RawMessage(`{}`))
@@ -332,8 +320,6 @@ func (s *DBStoreTestSuite) TestUpdateCredentials_Success() {
 	s.NoError(err)
 }
 
-// UpdateSystemCredentials
-
 func (s *DBStoreTestSuite) TestUpdateSystemCredentials_ProviderError() {
 	s.expectClientError()
 	err := s.store.UpdateSystemCredentials(s.ctx, "e1", json.RawMessage(`{}`))
@@ -353,8 +339,6 @@ func (s *DBStoreTestSuite) TestUpdateSystemCredentials_Success() {
 	err := s.store.UpdateSystemCredentials(s.ctx, "e1", json.RawMessage(`{}`))
 	s.NoError(err)
 }
-
-// DeleteEntity
 
 func (s *DBStoreTestSuite) TestDeleteEntity_ProviderError() {
 	s.expectClientError()
@@ -382,8 +366,6 @@ func (s *DBStoreTestSuite) TestDeleteEntity_Success() {
 	err := s.store.DeleteEntity(s.ctx, "e1")
 	s.NoError(err)
 }
-
-// IdentifyEntity
 
 func (s *DBStoreTestSuite) TestIdentifyEntity_ProviderError() {
 	s.expectClientError()
@@ -450,8 +432,6 @@ func (s *DBStoreTestSuite) TestIdentifyEntity_HybridQuery_IndexedAndNonIndexed()
 	s.Equal("e1", *got)
 }
 
-// GetEntityListCount
-
 func (s *DBStoreTestSuite) TestGetEntityListCount_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntityListCount(s.ctx, "user", nil)
@@ -473,8 +453,6 @@ func (s *DBStoreTestSuite) TestGetEntityListCount_BadTotalType() {
 	s.Error(err)
 }
 
-// GetEntityList
-
 func (s *DBStoreTestSuite) TestGetEntityList_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntityList(s.ctx, "user", 10, 0, nil)
@@ -488,8 +466,6 @@ func (s *DBStoreTestSuite) TestGetEntityList_Success() {
 	s.NoError(err)
 	s.Len(list, 1)
 }
-
-// GetEntityListCountByOUIDs
 
 func (s *DBStoreTestSuite) TestGetEntityListCountByOUIDs_EmptyOUIDs() {
 	count, err := s.store.GetEntityListCountByOUIDs(s.ctx, "user", []string{}, nil)
@@ -511,8 +487,6 @@ func (s *DBStoreTestSuite) TestGetEntityListCountByOUIDs_Success() {
 	s.Equal(2, count)
 }
 
-// GetEntityListByOUIDs
-
 func (s *DBStoreTestSuite) TestGetEntityListByOUIDs_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntityListByOUIDs(s.ctx, "user", []string{"ou1"}, 10, 0, nil)
@@ -526,8 +500,6 @@ func (s *DBStoreTestSuite) TestGetEntityListByOUIDs_Success() {
 	s.NoError(err)
 	s.Len(list, 1)
 }
-
-// ValidateEntityIDs
 
 func (s *DBStoreTestSuite) TestValidateEntityIDs_Empty() {
 	invalid, err := s.store.ValidateEntityIDs(s.ctx, []string{})
@@ -549,8 +521,6 @@ func (s *DBStoreTestSuite) TestValidateEntityIDs_SomeInvalid() {
 	s.Equal([]string{"missing"}, invalid)
 }
 
-// GetEntitiesByIDs
-
 func (s *DBStoreTestSuite) TestGetEntitiesByIDs_Empty() {
 	list, err := s.store.GetEntitiesByIDs(s.ctx, []string{})
 	s.NoError(err)
@@ -570,8 +540,6 @@ func (s *DBStoreTestSuite) TestGetEntitiesByIDs_Success() {
 	s.NoError(err)
 	s.Len(list, 1)
 }
-
-// ValidateEntityIDsInOUs
 
 func (s *DBStoreTestSuite) TestValidateEntityIDsInOUs_EmptyEntityIDs() {
 	out, err := s.store.ValidateEntityIDsInOUs(s.ctx, []string{}, []string{"ou1"})
@@ -598,8 +566,6 @@ func (s *DBStoreTestSuite) TestValidateEntityIDsInOUs_Success() {
 	s.NoError(err)
 	s.Equal([]string{"e2"}, out)
 }
-
-// GetGroupCountForEntity
 
 func (s *DBStoreTestSuite) TestGetGroupCountForEntity_ProviderError() {
 	s.expectClientError()
@@ -630,8 +596,6 @@ func (s *DBStoreTestSuite) TestGetGroupCountForEntity_Success() {
 	s.Equal(3, count)
 }
 
-// GetEntityGroups
-
 func (s *DBStoreTestSuite) TestGetEntityGroups_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntityGroups(s.ctx, "e1", 10, 0)
@@ -656,8 +620,6 @@ func (s *DBStoreTestSuite) TestGetEntityGroups_BadGroupRow() {
 	s.Error(err)
 }
 
-// IsEntityDeclarative
-
 func (s *DBStoreTestSuite) TestIsEntityDeclarative_AlwaysFalse() {
 	s.expectClient()
 	s.onQueryAny([]map[string]interface{}{dbEntityRow()}, nil)
@@ -673,14 +635,10 @@ func (s *DBStoreTestSuite) TestIsEntityDeclarative_EntityError() {
 	s.ErrorIs(err, ErrEntityNotFound)
 }
 
-// GetIndexedAttributes
-
 func (s *DBStoreTestSuite) TestGetIndexedAttributes() {
 	s.store.indexedAttributes = map[string]bool{"email": true}
 	s.Equal(map[string]bool{"email": true}, s.store.GetIndexedAttributes())
 }
-
-// executeCountQuery
 
 func (s *DBStoreTestSuite) TestExecuteCountQuery_QueryError() {
 	s.onQueryAny(nil, s.testErr)
@@ -708,8 +666,6 @@ func (s *DBStoreTestSuite) TestExecuteCountQuery_Success() {
 	s.Equal(7, count)
 }
 
-// StoreHelpersTestSuite
-
 type StoreHelpersTestSuite struct {
 	suite.Suite
 }
@@ -729,8 +685,6 @@ func goodRow() map[string]interface{} {
 		"system_attributes": `{"key":"val"}`,
 	}
 }
-
-// buildEntityFromResultRow
 
 func (s *StoreHelpersTestSuite) TestBuildEntityFromResultRow_Success() {
 	e, err := buildEntityFromResultRow(goodRow())
@@ -802,8 +756,6 @@ func (s *StoreHelpersTestSuite) TestBuildEntityFromResultRow_InvalidAttributesJS
 	s.Error(err)
 }
 
-// buildGroupFromResultRow
-
 func (s *StoreHelpersTestSuite) TestBuildGroupFromResultRow_Success() {
 	row := map[string]interface{}{"id": "g1", "name": "GroupA", "ou_id": "ou1"}
 	g, err := buildGroupFromResultRow(row)
@@ -831,8 +783,6 @@ func (s *StoreHelpersTestSuite) TestBuildGroupFromResultRow_MissingOUID() {
 	s.Error(err)
 }
 
-// buildEntitiesFromResults
-
 func (s *StoreHelpersTestSuite) TestBuildEntitiesFromResults_Empty() {
 	entities, err := buildEntitiesFromResults([]map[string]interface{}{})
 	s.NoError(err)
@@ -851,8 +801,6 @@ func (s *StoreHelpersTestSuite) TestBuildEntitiesFromResults_Error() {
 	_, err := buildEntitiesFromResults([]map[string]interface{}{bad})
 	s.Error(err)
 }
-
-// parseJSONColumn
 
 func (s *StoreHelpersTestSuite) TestParseJSONColumn_String() {
 	row := map[string]interface{}{"col": `{"k":"v"}`}
@@ -907,8 +855,6 @@ func (s *StoreHelpersTestSuite) TestParseJSONColumn_UnknownType() {
 	s.Nil(v)
 }
 
-// maskMapValues
-
 func (s *StoreHelpersTestSuite) TestMaskMapValues_StringValues() {
 	input := map[string]interface{}{"email": "user@example.com", "name": "John"}
 	masked := maskMapValues(input)
@@ -924,8 +870,6 @@ func (s *StoreHelpersTestSuite) TestMaskMapValues_NonStringValues() {
 		s.Equal("***", v)
 	}
 }
-
-// prepareIdentifierQuery
 
 func (s *StoreHelpersTestSuite) TestPrepareIdentifierQuery_NoIndexedAttrs() {
 	attrs := json.RawMessage(`{"email":"a@b.com"}`)
@@ -982,8 +926,6 @@ func (s *StoreHelpersTestSuite) TestPrepareIdentifierQuery_NumericAndBoolValues(
 	_ = args
 }
 
-// attrValueToString
-
 func (s *StoreHelpersTestSuite) TestAttrValueToString() {
 	s.Equal("hello", attrValueToString("hello"))
 	s.Equal("3.14", attrValueToString(float64(3.14)))
@@ -992,8 +934,6 @@ func (s *StoreHelpersTestSuite) TestAttrValueToString() {
 	s.Equal("true", attrValueToString(true))
 	s.Equal("", attrValueToString([]string{"unsupported"}))
 }
-
-// validateIndexedAttributesConfig
 
 func (s *StoreHelpersTestSuite) TestValidateIndexedAttributesConfig_WithinLimit() {
 	attrs := make([]string, MaxIndexedAttributesCount)

@@ -55,16 +55,12 @@ func compEntity(id, ouID string) Entity {
 	return Entity{ID: id, Category: EntityCategoryUser, OrganizationUnitID: ouID}
 }
 
-// CreateEntity
-
 func (s *CompositeStoreTestSuite) TestCreateEntity_DelegatesToDB() {
 	e := compEntity("e1", "ou1")
 	s.dbStore.On("CreateEntity", mock.Anything, e, json.RawMessage(nil), json.RawMessage(nil)).Return(nil)
 	err := s.store.CreateEntity(s.ctx, e, nil, nil)
 	s.NoError(err)
 }
-
-// GetEntity
 
 func (s *CompositeStoreTestSuite) TestGetEntity_DBFound() {
 	e := compEntity("e1", "ou1")
@@ -96,8 +92,6 @@ func (s *CompositeStoreTestSuite) TestGetEntity_BothNotFound() {
 	_, err := s.store.GetEntity(s.ctx, "e4")
 	s.ErrorIs(err, ErrEntityNotFound)
 }
-
-// GetEntityWithCredentials
 
 func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_DBFound() {
 	e := compEntity("c1", "ou1")
@@ -135,8 +129,6 @@ func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_BothNotFound() {
 	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "c4")
 	s.ErrorIs(err, ErrEntityNotFound)
 }
-
-// Delegate-only methods
 
 func (s *CompositeStoreTestSuite) TestUpdateEntity_Delegates() {
 	e := compEntity("u1", "ou1")
@@ -185,8 +177,6 @@ func (s *CompositeStoreTestSuite) TestGetIndexedAttributes_Delegates() {
 	s.Equal(attrs, s.store.GetIndexedAttributes())
 }
 
-// IdentifyEntity
-
 func (s *CompositeStoreTestSuite) TestIdentifyEntity_DBFound() {
 	id := "found"
 	filters := map[string]interface{}{"email": "a@b.com"}
@@ -212,8 +202,6 @@ func (s *CompositeStoreTestSuite) TestIdentifyEntity_DBError() {
 	_, err := s.store.IdentifyEntity(s.ctx, filters)
 	s.Error(err)
 }
-
-// GetEntityListCount
 
 func (s *CompositeStoreTestSuite) TestGetEntityListCount_MergesStores() {
 	e1 := compEntity("e1", "ou1")
@@ -260,8 +248,6 @@ func (s *CompositeStoreTestSuite) TestGetEntityListCount_FileListError() {
 	s.Error(err)
 }
 
-// GetEntityList
-
 func (s *CompositeStoreTestSuite) TestGetEntityList_Success() {
 	e1 := compEntity("e1", "ou1")
 	e2 := compEntity("e2", "ou1")
@@ -293,8 +279,6 @@ func (s *CompositeStoreTestSuite) TestGetEntityList_Error() {
 	s.Error(err)
 }
 
-// GetEntityListCountByOUIDs
-
 func (s *CompositeStoreTestSuite) TestGetEntityListCountByOUIDs_MergesStores() {
 	e1 := compEntity("e1", "ou1")
 	e2 := compEntity("e2", "ou1")
@@ -308,8 +292,6 @@ func (s *CompositeStoreTestSuite) TestGetEntityListCountByOUIDs_MergesStores() {
 	s.NoError(err)
 	s.Equal(2, count)
 }
-
-// GetEntityListByOUIDs
 
 func (s *CompositeStoreTestSuite) TestGetEntityListByOUIDs_LimitExceeded() {
 	ouIDs := []string{"ou1"}
@@ -330,8 +312,6 @@ func (s *CompositeStoreTestSuite) TestGetEntityListByOUIDs_Error() {
 	_, err := s.store.GetEntityListByOUIDs(s.ctx, "user", ouIDs, 10, 0, nil)
 	s.Error(err)
 }
-
-// ValidateEntityIDs
 
 func (s *CompositeStoreTestSuite) TestValidateEntityIDs_AllValid() {
 	e1 := compEntity("v1", "ou1")
@@ -356,8 +336,6 @@ func (s *CompositeStoreTestSuite) TestValidateEntityIDs_StoreError() {
 	_, err := s.store.ValidateEntityIDs(s.ctx, []string{"err-id"})
 	s.Error(err)
 }
-
-// GetEntitiesByIDs
 
 func (s *CompositeStoreTestSuite) TestGetEntitiesByIDs_Empty() {
 	list, err := s.store.GetEntitiesByIDs(s.ctx, []string{})
@@ -389,8 +367,6 @@ func (s *CompositeStoreTestSuite) TestGetEntitiesByIDs_MergeDedup() {
 	s.NoError(err)
 	s.Len(list, 2)
 }
-
-// ValidateEntityIDsInOUs
 
 func (s *CompositeStoreTestSuite) TestValidateEntityIDsInOUs_EmptyEntityIDs() {
 	out, err := s.store.ValidateEntityIDsInOUs(s.ctx, []string{}, []string{"ou1"})
@@ -434,8 +410,6 @@ func (s *CompositeStoreTestSuite) TestValidateEntityIDsInOUs_StoreError() {
 	s.Error(err)
 }
 
-// IsEntityDeclarative
-
 func (s *CompositeStoreTestSuite) TestIsEntityDeclarative_TrueFromFile() {
 	s.fileStore.On("IsEntityDeclarative", mock.Anything, "decl1").Return(true, nil)
 	ok, err := s.store.IsEntityDeclarative(s.ctx, "decl1")
@@ -456,8 +430,6 @@ func (s *CompositeStoreTestSuite) TestIsEntityDeclarative_FileError() {
 	_, err := s.store.IsEntityDeclarative(s.ctx, "err1")
 	s.Error(err)
 }
-
-// mergeAndDeduplicateEntities
 
 func (s *CompositeStoreTestSuite) TestMergeAndDeduplicateEntities() {
 	db1 := Entity{ID: "shared", IsReadOnly: false}

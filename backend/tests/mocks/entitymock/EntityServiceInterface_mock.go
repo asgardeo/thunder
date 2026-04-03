@@ -1123,6 +1123,57 @@ func (_c *EntityServiceInterfaceMock_LoadDeclarativeResources_Call) RunAndReturn
 	return _c
 }
 
+// LoadIndexedAttributes provides a mock function for the type EntityServiceInterfaceMock
+func (_mock *EntityServiceInterfaceMock) LoadIndexedAttributes(attributes []string) error {
+	ret := _mock.Called(attributes)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadIndexedAttributes")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func([]string) error); ok {
+		r0 = returnFunc(attributes)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// EntityServiceInterfaceMock_LoadIndexedAttributes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadIndexedAttributes'
+type EntityServiceInterfaceMock_LoadIndexedAttributes_Call struct {
+	*mock.Call
+}
+
+// LoadIndexedAttributes is a helper method to define mock.On call
+//   - attributes []string
+func (_e *EntityServiceInterfaceMock_Expecter) LoadIndexedAttributes(attributes interface{}) *EntityServiceInterfaceMock_LoadIndexedAttributes_Call {
+	return &EntityServiceInterfaceMock_LoadIndexedAttributes_Call{Call: _e.mock.On("LoadIndexedAttributes", attributes)}
+}
+
+func (_c *EntityServiceInterfaceMock_LoadIndexedAttributes_Call) Run(run func(attributes []string)) *EntityServiceInterfaceMock_LoadIndexedAttributes_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 []string
+		if args[0] != nil {
+			arg0 = args[0].([]string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *EntityServiceInterfaceMock_LoadIndexedAttributes_Call) Return(err error) *EntityServiceInterfaceMock_LoadIndexedAttributes_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *EntityServiceInterfaceMock_LoadIndexedAttributes_Call) RunAndReturn(run func(attributes []string) error) *EntityServiceInterfaceMock_LoadIndexedAttributes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateAttributes provides a mock function for the type EntityServiceInterfaceMock
 func (_mock *EntityServiceInterfaceMock) UpdateAttributes(ctx context.Context, entityID string, attributes json.RawMessage) error {
 	ret := _mock.Called(ctx, entityID, attributes)

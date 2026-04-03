@@ -313,6 +313,11 @@ func (c *entityCompositeStore) GetIndexedAttributes() map[string]bool {
 	return c.dbStore.GetIndexedAttributes()
 }
 
+// LoadIndexedAttributes delegates to the database store.
+func (c *entityCompositeStore) LoadIndexedAttributes(attributes []string) error {
+	return c.dbStore.LoadIndexedAttributes(attributes)
+}
+
 // getDistinctEntityCount retrieves the count of distinct entities from both stores.
 func (c *entityCompositeStore) getDistinctEntityCount(
 	dbCount func() (int, error),

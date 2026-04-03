@@ -34,8 +34,6 @@ func TestStoreConstantsTestSuite(t *testing.T) {
 
 const testDeploymentID = "test-deployment"
 
-// appendOUIDsINClause
-
 func (s *StoreConstantsTestSuite) TestAppendOUIDsINClause_EmptyOUIDs() {
 	q, args := appendOUIDsINClause(QueryGetEntityByID, []interface{}{"e1", "dep1"}, []string{})
 	s.Contains(q.Query, "1=0")
@@ -47,8 +45,6 @@ func (s *StoreConstantsTestSuite) TestAppendOUIDsINClause_WithOUIDs() {
 	s.Contains(q.Query, "OU_ID IN")
 	s.Len(args, 4) // original 2 + 2 OU IDs
 }
-
-// buildEntityCountQueryByOUIDs
 
 func (s *StoreConstantsTestSuite) TestBuildEntityCountQueryByOUIDs_NoFilters() {
 	q, args, err := buildEntityCountQueryByOUIDs("user", []string{"ou1"}, nil, testDeploymentID)
@@ -65,8 +61,6 @@ func (s *StoreConstantsTestSuite) TestBuildEntityCountQueryByOUIDs_WithFilters()
 	s.NotEmpty(args)
 }
 
-// buildEntityListQueryByOUIDs
-
 func (s *StoreConstantsTestSuite) TestBuildEntityListQueryByOUIDs_NoFilters() {
 	q, args, err := buildEntityListQueryByOUIDs("user", []string{"ou1"}, nil, 10, 0, testDeploymentID)
 	s.NoError(err)
@@ -82,8 +76,6 @@ func (s *StoreConstantsTestSuite) TestBuildEntityListQueryByOUIDs_WithFilters() 
 	s.NotEmpty(args)
 }
 
-// buildIdentifyQuery
-
 func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_EmptyFilters() {
 	_, _, err := buildIdentifyQuery(map[string]interface{}{}, testDeploymentID)
 	s.Error(err)
@@ -95,8 +87,6 @@ func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_WithFilters() {
 	s.NotEmpty(q.Query)
 	s.NotEmpty(args)
 }
-
-// buildEntityINClauseQuery
 
 func (s *StoreConstantsTestSuite) TestBuildEntityINClauseQuery_EmptyIDs() {
 	baseQuery := "SELECT ID FROM ENTITY WHERE ID IN (%s) AND DEPLOYMENT_ID = %s"
@@ -112,16 +102,12 @@ func (s *StoreConstantsTestSuite) TestBuildEntityINClauseQuery_WithIDs() {
 	s.NotEmpty(args)
 }
 
-// buildBulkEntityExistsQuery
-
 func (s *StoreConstantsTestSuite) TestBuildBulkEntityExistsQuery_Success() {
 	q, args, err := buildBulkEntityExistsQuery([]string{"id1", "id2"}, testDeploymentID)
 	s.NoError(err)
 	s.NotEmpty(q.Query)
 	s.NotEmpty(args)
 }
-
-// buildBulkEntityExistsQueryInOUs
 
 func (s *StoreConstantsTestSuite) TestBuildBulkEntityExistsQueryInOUs_EmptyEntityIDs() {
 	_, _, err := buildBulkEntityExistsQueryInOUs([]string{}, []string{"ou1"}, testDeploymentID)
@@ -140,8 +126,6 @@ func (s *StoreConstantsTestSuite) TestBuildBulkEntityExistsQueryInOUs_WithBoth()
 	s.NotEmpty(args)
 }
 
-// buildEntityListQuery
-
 func (s *StoreConstantsTestSuite) TestBuildEntityListQuery_NoFilters() {
 	q, args, err := buildEntityListQuery("user", nil, 10, 0, testDeploymentID)
 	s.NoError(err)
@@ -157,8 +141,6 @@ func (s *StoreConstantsTestSuite) TestBuildEntityListQuery_WithFilters() {
 	s.NotEmpty(args)
 }
 
-// buildEntityCountQuery
-
 func (s *StoreConstantsTestSuite) TestBuildEntityCountQuery_NoFilters() {
 	q, args, err := buildEntityCountQuery("user", nil, testDeploymentID)
 	s.NoError(err)
@@ -173,8 +155,6 @@ func (s *StoreConstantsTestSuite) TestBuildEntityCountQuery_WithFilters() {
 	s.NotEmpty(q.Query)
 	s.NotEmpty(args)
 }
-
-// buildIdentifyQueryFromIdentifiers
 
 func (s *StoreConstantsTestSuite) TestBuildIdentifyQueryFromIdentifiers_EmptyFilters() {
 	_, _, err := buildIdentifyQueryFromIdentifiers(map[string]interface{}{}, testDeploymentID)
@@ -196,8 +176,6 @@ func (s *StoreConstantsTestSuite) TestBuildIdentifyQueryFromIdentifiers_Multiple
 	s.Contains(q.Query, "INNER JOIN")
 	s.NotEmpty(args)
 }
-
-// buildIdentifyQueryHybrid
 
 func (s *StoreConstantsTestSuite) TestBuildIdentifyQueryHybrid_EmptyIndexedFilters() {
 	_, _, err := buildIdentifyQueryHybrid(map[string]interface{}{}, map[string]interface{}{"k": "v"}, testDeploymentID)
@@ -222,16 +200,12 @@ func (s *StoreConstantsTestSuite) TestBuildIdentifyQueryHybrid_MultipleIndexed()
 	s.NotEmpty(args)
 }
 
-// buildGetEntitiesByIDsQuery
-
 func (s *StoreConstantsTestSuite) TestBuildGetEntitiesByIDsQuery_Success() {
 	q, args, err := buildGetEntitiesByIDsQuery([]string{"id1", "id2"}, testDeploymentID)
 	s.NoError(err)
 	s.NotEmpty(q.Query)
 	s.NotEmpty(args)
 }
-
-// buildPaginatedQuery
 
 func (s *StoreConstantsTestSuite) TestBuildPaginatedQuery_Success() {
 	base := "SELECT * FROM ENTITY WHERE DEPLOYMENT_ID = $1"
@@ -240,8 +214,6 @@ func (s *StoreConstantsTestSuite) TestBuildPaginatedQuery_Success() {
 	s.Contains(result, "LIMIT")
 	s.Contains(result, "OFFSET")
 }
-
-// buildFilterQueryWithOffset
 
 func (s *StoreConstantsTestSuite) TestBuildFilterQueryWithOffset_Success() {
 	base := "SELECT * FROM ENTITY WHERE CATEGORY = $1"

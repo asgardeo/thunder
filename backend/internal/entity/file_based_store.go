@@ -27,7 +27,6 @@ import (
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	entitystore "github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
-	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // entityFileBasedStore implements entityStoreInterface using an in-memory file-based store.
@@ -36,11 +35,11 @@ type entityFileBasedStore struct {
 }
 
 // newEntityFileBasedStore creates a new instance of a file-based entity store.
-func newEntityFileBasedStore() (*entityFileBasedStore, transaction.Transactioner) {
+func newEntityFileBasedStore() *entityFileBasedStore {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entitystore.KeyTypeEntity)
 	return &entityFileBasedStore{
 		GenericFileBasedStore: genericStore,
-	}, transaction.NewNoOpTransactioner()
+	}
 }
 
 // Create implements declarativeresource.Storer interface for resource loader.
@@ -355,6 +354,11 @@ func (f *entityFileBasedStore) IsEntityDeclarative(ctx context.Context, id strin
 
 // GetIndexedAttributes returns nil for file-based store (no indexed attributes).
 func (f *entityFileBasedStore) GetIndexedAttributes() map[string]bool {
+	return nil
+}
+
+// LoadIndexedAttributes is a no-op for the file-based store.
+func (f *entityFileBasedStore) LoadIndexedAttributes(_ []string) error {
 	return nil
 }
 

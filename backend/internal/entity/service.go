@@ -72,6 +72,9 @@ type EntityServiceInterface interface {
 	// Declarative
 	IsEntityDeclarative(ctx context.Context, entityID string) (bool, error)
 	LoadDeclarativeResources(config DeclarativeLoaderConfig) error
+
+	// Config
+	LoadIndexedAttributes(attributes []string) error
 }
 
 // entityService is the default implementation of EntityServiceInterface.
@@ -425,6 +428,16 @@ func (s *entityService) IsEntityDeclarative(ctx context.Context, entityID string
 func (s *entityService) LoadDeclarativeResources(config DeclarativeLoaderConfig) error {
 	if err := loadDeclarativeResources(s.store, s, config); err != nil {
 		s.logger.Error("Failed to load declarative resources", log.Error(err))
+		return err
+	}
+	return nil
+}
+
+// LoadIndexedAttributes loads attributes to be indexed for fast lookups.
+// Consumers call this at startup to declare which of their attributes should be indexed.
+func (s *entityService) LoadIndexedAttributes(attributes []string) error {
+	if err := s.store.LoadIndexedAttributes(attributes); err != nil {
+		s.logger.Error("Failed to load indexed attributes", log.Error(err))
 		return err
 	}
 	return nil

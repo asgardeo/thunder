@@ -61,8 +61,6 @@ func testEntity(id string) *Entity {
 	}
 }
 
-// CreateEntity
-
 func (s *ServiceTestSuite) TestCreateEntity_NilEntity() {
 	_, err := s.svc.CreateEntity(s.ctx, nil, nil, nil)
 	s.ErrorIs(err, ErrEntityNotFound)
@@ -95,8 +93,6 @@ func (s *ServiceTestSuite) TestCreateEntity_Success() {
 	s.Equal(e.ID, got.ID)
 }
 
-// GetEntity
-
 func (s *ServiceTestSuite) TestGetEntity_Success() {
 	e := testEntity("e4")
 	s.store.On("GetEntity", mock.Anything, e.ID).Return(*e, nil)
@@ -110,8 +106,6 @@ func (s *ServiceTestSuite) TestGetEntity_Error() {
 	_, err := s.svc.GetEntity(s.ctx, "bad")
 	s.Error(err)
 }
-
-// UpdateEntity
 
 func (s *ServiceTestSuite) TestUpdateEntity_NilEntity() {
 	_, err := s.svc.UpdateEntity(s.ctx, "id", nil)
@@ -142,22 +136,16 @@ func (s *ServiceTestSuite) TestUpdateEntity_Success() {
 	s.Equal(e.ID, got.ID)
 }
 
-// DeleteEntity
-
 func (s *ServiceTestSuite) TestDeleteEntity_Delegates() {
 	s.store.On("DeleteEntity", mock.Anything, "del1").Return(nil)
 	s.NoError(s.svc.DeleteEntity(s.ctx, "del1"))
 }
-
-// UpdateSystemCredentials
 
 func (s *ServiceTestSuite) TestUpdateSystemCredentials_Delegates() {
 	creds := json.RawMessage(`{"token":"x"}`)
 	s.store.On("UpdateSystemCredentials", mock.Anything, "e1", creds).Return(nil)
 	s.NoError(s.svc.UpdateSystemCredentials(s.ctx, "e1", creds))
 }
-
-// GetEntityWithCredentials
 
 func (s *ServiceTestSuite) TestGetEntityWithCredentials_Success() {
 	e := testEntity("ecreds")
@@ -178,8 +166,6 @@ func (s *ServiceTestSuite) TestGetEntityWithCredentials_Error() {
 	s.Error(err)
 }
 
-// IdentifyEntity
-
 func (s *ServiceTestSuite) TestIdentifyEntity_Delegates() {
 	filters := map[string]interface{}{"email": "x@y.com"}
 	id := "found-id"
@@ -189,16 +175,12 @@ func (s *ServiceTestSuite) TestIdentifyEntity_Delegates() {
 	s.Equal(&id, got)
 }
 
-// GetEntityListCount
-
 func (s *ServiceTestSuite) TestGetEntityListCount_Delegates() {
 	s.store.On("GetEntityListCount", mock.Anything, "user", mock.Anything).Return(5, nil)
 	count, err := s.svc.GetEntityListCount(s.ctx, EntityCategoryUser, nil)
 	s.NoError(err)
 	s.Equal(5, count)
 }
-
-// GetEntityList
 
 func (s *ServiceTestSuite) TestGetEntityList_Delegates() {
 	e := testEntity("le1")
@@ -208,8 +190,6 @@ func (s *ServiceTestSuite) TestGetEntityList_Delegates() {
 	s.Len(list, 1)
 }
 
-// GetEntityListCountByOUIDs
-
 func (s *ServiceTestSuite) TestGetEntityListCountByOUIDs_Delegates() {
 	s.store.On("GetEntityListCountByOUIDs", mock.Anything, "user", []string{"ou1"}, mock.Anything).
 		Return(3, nil)
@@ -217,8 +197,6 @@ func (s *ServiceTestSuite) TestGetEntityListCountByOUIDs_Delegates() {
 	s.NoError(err)
 	s.Equal(3, count)
 }
-
-// GetEntityListByOUIDs
 
 func (s *ServiceTestSuite) TestGetEntityListByOUIDs_Delegates() {
 	e := testEntity("ou-e1")
@@ -229,16 +207,12 @@ func (s *ServiceTestSuite) TestGetEntityListByOUIDs_Delegates() {
 	s.Len(list, 1)
 }
 
-// ValidateEntityIDs
-
 func (s *ServiceTestSuite) TestValidateEntityIDs_Delegates() {
 	s.store.On("ValidateEntityIDs", mock.Anything, []string{"id1", "id2"}).Return([]string{}, nil)
 	invalid, err := s.svc.ValidateEntityIDs(s.ctx, []string{"id1", "id2"})
 	s.NoError(err)
 	s.Empty(invalid)
 }
-
-// GetEntitiesByIDs
 
 func (s *ServiceTestSuite) TestGetEntitiesByIDs_Delegates() {
 	e := testEntity("bid1")
@@ -248,8 +222,6 @@ func (s *ServiceTestSuite) TestGetEntitiesByIDs_Delegates() {
 	s.Len(list, 1)
 }
 
-// ValidateEntityIDsInOUs
-
 func (s *ServiceTestSuite) TestValidateEntityIDsInOUs_Delegates() {
 	s.store.On("ValidateEntityIDsInOUs", mock.Anything, []string{"id1"}, []string{"ou1"}).
 		Return([]string{}, nil)
@@ -258,16 +230,12 @@ func (s *ServiceTestSuite) TestValidateEntityIDsInOUs_Delegates() {
 	s.Empty(out)
 }
 
-// GetGroupCountForEntity
-
 func (s *ServiceTestSuite) TestGetGroupCountForEntity_Delegates() {
 	s.store.On("GetGroupCountForEntity", mock.Anything, "e1").Return(2, nil)
 	count, err := s.svc.GetGroupCountForEntity(s.ctx, "e1")
 	s.NoError(err)
 	s.Equal(2, count)
 }
-
-// GetEntityGroups
 
 func (s *ServiceTestSuite) TestGetEntityGroups_Delegates() {
 	groups := []EntityGroup{{ID: "g1", Name: "Group1", OUID: "ou1"}}
@@ -277,16 +245,12 @@ func (s *ServiceTestSuite) TestGetEntityGroups_Delegates() {
 	s.Len(got, 1)
 }
 
-// IsEntityDeclarative
-
 func (s *ServiceTestSuite) TestIsEntityDeclarative_Delegates() {
 	s.store.On("IsEntityDeclarative", mock.Anything, "e1").Return(true, nil)
 	ok, err := s.svc.IsEntityDeclarative(s.ctx, "e1")
 	s.NoError(err)
 	s.True(ok)
 }
-
-// LoadDeclarativeResources
 
 func (s *ServiceTestSuite) TestLoadDeclarativeResources_MutableStore_NoOp() {
 	cfg := DeclarativeLoaderConfig{
@@ -300,8 +264,6 @@ func (s *ServiceTestSuite) TestLoadDeclarativeResources_MutableStore_NoOp() {
 	err := s.svc.LoadDeclarativeResources(cfg)
 	s.NoError(err)
 }
-
-// UpdateEntityWithCredentials
 
 func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_NilEntity() {
 	_, err := s.svc.UpdateEntityWithCredentials(s.ctx, "id", nil, nil)

@@ -62,7 +62,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_FileStore_Em
 
 	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
 
-	fileStore, _ := newEntityFileBasedStore()
+	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
 
 	cfg := DeclarativeLoaderConfig{
@@ -83,7 +83,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_CompositeSto
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
 	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
 
-	fileStore, _ := newEntityFileBasedStore()
+	fileStore := newEntityFileBasedStore()
 	dbStoreMock := newEntityStoreInterfaceMock(s.T())
 	compositeStore := newEntityCompositeStore(fileStore, dbStoreMock)
 	mockSvc := newEntityServiceMock(s.T())
@@ -125,7 +125,7 @@ attributes: {}
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "item1.yaml"), entityYAML, 0600))
 	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
 
-	fileStore, _ := newEntityFileBasedStore()
+	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
 
 	validatorCalled := false
@@ -158,7 +158,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_ParserError(
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "bad.yaml"), []byte("id: x"), 0600))
 	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
 
-	fileStore, _ := newEntityFileBasedStore()
+	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
 
 	cfg := DeclarativeLoaderConfig{
@@ -180,7 +180,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_ValidatorErr
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "item.yaml"), []byte("id: x"), 0600))
 	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
 
-	fileStore, _ := newEntityFileBasedStore()
+	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
 
 	cfg := DeclarativeLoaderConfig{

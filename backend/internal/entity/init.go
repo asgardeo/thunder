@@ -19,15 +19,15 @@
 package entity
 
 import (
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the entity service.
+// The entity store is always composite: a DB store backed by an in-memory file store.
+// Declarative resources are loaded on demand by consumer packages (e.g. user, application)
+// based on their own store mode configuration.
 func Initialize() (EntityServiceInterface, error) {
-	storeMode := getEntityStoreMode()
-
-	store, transactioner, err := initializeStore(storeMode)
+	store, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, err
 	}
@@ -36,28 +36,12 @@ func Initialize() (EntityServiceInterface, error) {
 	return svc, nil
 }
 
-// initializeStore creates the appropriate store based on the configured mode.
-func initializeStore(storeMode serverconst.StoreMode) (
-	entityStoreInterface, transaction.Transactioner, error,
-) {
-	switch storeMode {
-	case serverconst.StoreModeComposite:
-		fileStore, _ := newEntityFileBasedStore()
-		dbStore, transactioner, err := newEntityDBStore()
-		if err != nil {
-			return nil, nil, err
-		}
-		return newEntityCompositeStore(fileStore, dbStore), transactioner, nil
-
-	case serverconst.StoreModeDeclarative:
-		fileStore, transactioner := newEntityFileBasedStore()
-		return fileStore, transactioner, nil
-
-	default:
-		dbStore, transactioner, err := newEntityDBStore()
-		if err != nil {
-			return nil, nil, err
-		}
-		return dbStore, transactioner, nil
+// initializeStore always creates a composite store (DB + in-memory file store).
+func initializeStore() (entityStoreInterface, transaction.Transactioner, error) {
+	fileStore := newEntityFileBasedStore()
+	dbStore, transactioner, err := newEntityDBStore()
+	if err != nil {
+		return nil, nil, err
 	}
+	return newEntityCompositeStore(fileStore, dbStore), transactioner, nil
 }

@@ -24,6 +24,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
@@ -43,9 +45,17 @@ func Initialize(
 	// Step 1: Create service with entity service
 	userService := newUserService(authzService, entityService, ouService, userSchemaService, hashService)
 
-	// Step 2: Load declarative resources via entity service
-	if err := entityService.LoadDeclarativeResources(makeUserDeclarativeConfig()); err != nil {
+	// Step 2: Load user-specific indexed attributes into the entity store.
+	if err := entityService.LoadIndexedAttributes(getUserIndexedAttributes()); err != nil {
 		return nil, nil, nil, err
+	}
+
+	// Step 3: Load declarative resources if user store mode requires it.
+	storeMode := getUserStoreMode()
+	if storeMode == serverconst.StoreModeDeclarative || storeMode == serverconst.StoreModeComposite {
+		if err := entityService.LoadDeclarativeResources(makeUserDeclarativeConfig()); err != nil {
+			return nil, nil, nil, err
+		}
 	}
 
 	setUserService(userService) // Set the provider for backward compatibility
@@ -59,6 +69,24 @@ func Initialize(
 	// Create and return exporter
 	exporter := newUserExporter(userService)
 	return userService, ouUserResolver, exporter, nil
+}
+
+// getUserStoreMode determines the store mode for users from config.
+func getUserStoreMode() serverconst.StoreMode {
+	store := strings.ToLower(strings.TrimSpace(config.GetThunderRuntime().Config.User.Store))
+	switch serverconst.StoreMode(store) {
+	case serverconst.StoreModeMutable, serverconst.StoreModeDeclarative, serverconst.StoreModeComposite:
+		return serverconst.StoreMode(store)
+	}
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		return serverconst.StoreModeDeclarative
+	}
+	return serverconst.StoreModeMutable
+}
+
+// getUserIndexedAttributes returns the indexed attributes configured for users.
+func getUserIndexedAttributes() []string {
+	return config.GetThunderRuntime().Config.User.IndexedAttributes
 }
 
 // registerRoutes registers the routes for user management operations.

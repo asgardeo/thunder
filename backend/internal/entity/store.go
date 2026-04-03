@@ -63,7 +63,7 @@ type entityStoreInterface interface {
 	GetEntitiesByIDs(ctx context.Context, entityIDs []string) ([]Entity, error)
 	ValidateEntityIDsInOUs(ctx context.Context, entityIDs []string, ouIDs []string) ([]string, error)
 
-	// Groups (queries existing GROUP / GROUP_MEMBER_REFERENCE tables)
+	// Groups
 	GetGroupCountForEntity(ctx context.Context, entityID string) (int, error)
 	GetEntityGroups(ctx context.Context, entityID string, limit, offset int) ([]EntityGroup, error)
 	GetTransitiveEntityGroups(ctx context.Context, entityID string) ([]EntityGroup, error)
@@ -73,6 +73,7 @@ type entityStoreInterface interface {
 
 	// Config
 	GetIndexedAttributes() map[string]bool
+	LoadIndexedAttributes(attributes []string) error
 }
 
 var getDBProvider = provider.GetDBProvider
@@ -86,17 +87,9 @@ type entityDBStore struct {
 }
 
 // newEntityDBStore creates a new instance of entityDBStore.
+// Indexed attributes start empty; consumers must call LoadIndexedAttributes after init.
 func newEntityDBStore() (entityStoreInterface, transaction.Transactioner, error) {
 	runtime := config.GetThunderRuntime()
-
-	indexedAttributesFromConfig := getIndexedAttributes()
-	if err := validateIndexedAttributesConfig(indexedAttributesFromConfig); err != nil {
-		return nil, nil, fmt.Errorf("indexed attributes configuration validation failed: %w", err)
-	}
-	indexedAttributes := make(map[string]bool, len(indexedAttributesFromConfig))
-	for _, attr := range indexedAttributesFromConfig {
-		indexedAttributes[attr] = true
-	}
 
 	dbProvider := getDBProvider()
 	client, err := dbProvider.GetUserDBClient()
@@ -110,10 +103,31 @@ func newEntityDBStore() (entityStoreInterface, transaction.Transactioner, error)
 
 	return &entityDBStore{
 		deploymentID:      runtime.Config.Server.Identifier,
-		indexedAttributes: indexedAttributes,
+		indexedAttributes: make(map[string]bool),
 		dbProvider:        dbProvider,
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EntityStore")),
 	}, transactioner, nil
+}
+
+// LoadIndexedAttributes merges the given attributes into the indexed set.
+// The cumulative total must not exceed MaxIndexedAttributesCount.
+func (es *entityDBStore) LoadIndexedAttributes(attributes []string) error {
+	combined := make([]string, 0, len(es.indexedAttributes)+len(attributes))
+	for attr := range es.indexedAttributes {
+		combined = append(combined, attr)
+	}
+	for _, attr := range attributes {
+		if !es.indexedAttributes[attr] {
+			combined = append(combined, attr)
+		}
+	}
+	if err := validateIndexedAttributesConfig(combined); err != nil {
+		return fmt.Errorf("indexed attributes load failed: %w", err)
+	}
+	for _, attr := range attributes {
+		es.indexedAttributes[attr] = true
+	}
+	return nil
 }
 
 // CreateEntity creates a new entity in the database.
@@ -403,7 +417,7 @@ func (es *entityDBStore) DeleteEntity(ctx context.Context, id string) error {
 }
 
 // syncAttributeIdentifiers synchronizes indexed attributes from both Attributes and SystemAttributes
-// to the ENTITY_IDENTIFIER table. Schema attributes get source="attribute", system attributes get source="system".
+// to the identifier store. Schema attributes get source="attribute", system attributes get source="system".
 func (es *entityDBStore) syncAttributeIdentifiers(ctx context.Context, entityID string,
 	attributes json.RawMessage, systemAttributes json.RawMessage,
 	indexedAttrs map[string]bool) error {
@@ -436,9 +450,9 @@ func (es *entityDBStore) IdentifyEntity(ctx context.Context,
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	// Fast path: try ENTITY_IDENTIFIER table first for all lookups.
+	// Fast path: try indexed identifier store first for all lookups.
 	// This covers both schema-indexed attributes (email, username) and
-	// system identifiers (clientId, name) without requiring config.
+	// system identifiers without requiring config.
 	identifyQuery, args, err := buildIdentifyQueryFromIdentifiers(filters, es.deploymentID)
 	if err == nil {
 		results, qErr := dbClient.QueryContext(ctx, identifyQuery, args...)
@@ -801,7 +815,6 @@ func (es *entityDBStore) IsEntityDeclarative(ctx context.Context, id string) (bo
 }
 
 // Helper functions
-
 func buildEntityFromResultRow(row map[string]interface{}) (Entity, error) {
 	entityID, ok := row["id"].(string)
 	if !ok {
