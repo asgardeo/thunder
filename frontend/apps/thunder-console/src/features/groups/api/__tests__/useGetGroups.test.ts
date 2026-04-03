@@ -69,7 +69,7 @@ describe('useGetGroups', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/groups?limit=30&offset=0',
+        url: 'https://localhost:8090/groups?limit=30&offset=0&include=display',
         method: 'GET',
       }),
     );
@@ -82,7 +82,7 @@ describe('useGetGroups', () => {
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'https://localhost:8090/groups?limit=10&offset=20',
+          url: 'https://localhost:8090/groups?limit=10&offset=20&include=display',
         }),
       );
     });

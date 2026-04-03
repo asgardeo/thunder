@@ -653,7 +653,7 @@ const translations = {
     'listing.search.placeholder': 'Search groups...',
     'listing.columns.name': 'Name',
     'listing.columns.description': 'Description',
-    'listing.columns.organizationUnit': 'Organization Unit ID',
+    'listing.columns.organizationUnit': 'Organization Unit',
     'listing.columns.actions': 'Actions',
 
     // Create page

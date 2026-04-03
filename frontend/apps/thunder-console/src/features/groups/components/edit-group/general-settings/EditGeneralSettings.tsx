@@ -64,44 +64,80 @@ export default function EditGeneralSettings({group, onDeleteClick}: EditGeneralS
         title={t('groups:edit.general.sections.organizationUnit.title')}
         description={t('groups:edit.general.sections.organizationUnit.description')}
       >
-        <TextField
-          label={t('groups:edit.general.sections.organizationUnit.title')}
-          value={group.ouId}
-          fullWidth
-          size="small"
-          slotProps={{
-            input: {
-              readOnly: true,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip
-                    title={
-                      copiedField === 'ouId'
-                        ? t('common:actions.copied')
-                        : t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')
-                    }
-                  >
-                    <IconButton
-                      aria-label={t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')}
-                      onClick={() => {
-                        handleCopyToClipboard(group.ouId, 'ouId').catch(() => null);
-                      }}
-                      edge="end"
+        <Stack spacing={2}>
+          <TextField
+            label={t('groups:edit.general.sections.organizationUnit.handleLabel', 'Handle')}
+            value={group.ouHandle ?? '-'}
+            fullWidth
+            size="small"
+            slotProps={{
+              input: {
+                readOnly: true,
+                endAdornment: group.ouHandle ? (
+                  <InputAdornment position="end">
+                    <Tooltip
+                      title={
+                        copiedField === 'ouHandle'
+                          ? t('common:actions.copied')
+                          : t(
+                              'groups:edit.general.sections.quickCopy.copyOrganizationUnitHandle',
+                              'Copy Organization Unit Handle',
+                            )
+                      }
                     >
-                      {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            '& input': {
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-            },
-          }}
-        />
+                      <IconButton
+                        aria-label={t(
+                          'groups:edit.general.sections.quickCopy.copyOrganizationUnitHandle',
+                          'Copy Organization Unit Handle',
+                        )}
+                        onClick={() => {
+                          handleCopyToClipboard(group.ouHandle!, 'ouHandle').catch(() => null);
+                        }}
+                        edge="end"
+                      >
+                        {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ) : undefined,
+              },
+            }}
+            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+          />
+          <TextField
+            label={t('groups:edit.general.sections.organizationUnit.idLabel', 'ID')}
+            value={group.ouId}
+            fullWidth
+            size="small"
+            slotProps={{
+              input: {
+                readOnly: true,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip
+                      title={
+                        copiedField === 'ouId'
+                          ? t('common:actions.copied')
+                          : t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')
+                      }
+                    >
+                      <IconButton
+                        aria-label={t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')}
+                        onClick={() => {
+                          handleCopyToClipboard(group.ouId, 'ouId').catch(() => null);
+                        }}
+                        edge="end"
+                      >
+                        {copiedField === 'ouId' ? <Check size={16} /> : <Copy size={16} />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
+          />
+        </Stack>
       </SettingsCard>
 
       {/* Danger Zone */}

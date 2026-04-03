@@ -97,7 +97,7 @@ describe('StartBuildingSection', () => {
     it('navigates to /applications when the button is clicked', () => {
       render(<StartBuildingSection />);
       fireEvent.click(screen.getByRole('button', {name: 'Create Applications'}));
-      expect(mockNavigate).toHaveBeenCalledWith('/applications');
+      expect(mockNavigate).toHaveBeenCalledWith('/applications/create');
     });
 
     it('does not render the create-only button when apps exist', () => {

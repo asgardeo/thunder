@@ -50,6 +50,8 @@ export interface RoleSummary {
   description?: string;
   /** ID of the organization unit this role belongs to */
   ouId: string;
+  /** Handle of the organization unit (resolved when include=display is used) */
+  ouHandle?: string;
 }
 
 /**

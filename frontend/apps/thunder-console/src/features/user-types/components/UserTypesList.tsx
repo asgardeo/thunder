@@ -18,7 +18,6 @@
 
 import {useLogger} from '@thunder/logger/react';
 import {
-  Box,
   Chip,
   IconButton,
   Tooltip,
@@ -39,7 +38,6 @@ import {useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
-import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
 import useDeleteUserType from '../api/useDeleteUserType';
 import useGetUserTypes from '../api/useGetUserTypes';
 import type {UserSchemaListItem} from '../types/user-types';
@@ -54,27 +52,10 @@ export default function UserTypesList() {
   const logger = useLogger('UserTypesList');
   const dataGridLocaleText = useDataGridLocaleText();
 
-  const {data: userTypesData, isLoading: isUserTypesRequestLoading, error: userTypesRequestError} = useGetUserTypes();
+  const {data: userTypesData, isLoading, error: userTypesRequestError} = useGetUserTypes();
   const deleteUserTypeMutation = useDeleteUserType();
-  const {
-    data: organizationUnitsResponse,
-    isLoading: organizationUnitsLoading,
-    error: organizationUnitsError,
-  } = useGetOrganizationUnits();
 
-  const error = userTypesRequestError ?? organizationUnitsError;
-  const isLoading = isUserTypesRequestLoading || organizationUnitsLoading;
-  const organizationUnits = useMemo(
-    () => organizationUnitsResponse?.organizationUnits ?? [],
-    [organizationUnitsResponse],
-  );
-  const organizationUnitMap = useMemo(() => {
-    const map = new Map<string, string>();
-    organizationUnits.forEach((unit) => {
-      map.set(unit.id, unit.name);
-    });
-    return map;
-  }, [organizationUnits]);
+  const error = userTypesRequestError;
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [selectedUserTypeId, setSelectedUserTypeId] = useState<string | null>(null);
@@ -146,37 +127,15 @@ export default function UserTypesList() {
         ),
       },
       {
-        field: 'ou',
+        field: 'ouHandle',
         headerName: t('userTypes:listing.columns.organizationUnit', 'Organization Unit'),
         flex: 1,
         minWidth: 220,
-        renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => {
-          const resolvedUnitName = params.row.ouId ? organizationUnitMap.get(params.row.ouId) : undefined;
-          const content = (() => {
-            if (!params.row.ouId) {
-              return t('common:messages.noData');
-            }
-            if (!resolvedUnitName) {
-              return params.row.ouId;
-            }
-            return resolvedUnitName;
-          })();
-
-          return (
-            <Box sx={{display: 'flex', alignItems: 'center', width: '100%', height: '100%'}}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontFamily: !resolvedUnitName && params.row.ouId ? 'monospace' : undefined,
-                  fontSize: '0.875rem',
-                  width: '100%',
-                }}
-              >
-                {content}
-              </Typography>
-            </Box>
-          );
-        },
+        renderCell: (params: DataGrid.GridRenderCellParams<UserSchemaListItem>) => (
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
+            {params.row.ouHandle ?? params.row.ouId ?? t('common:messages.noData')}
+          </Typography>
+        ),
       },
       {
         field: 'allowSelfRegistration',
@@ -228,7 +187,7 @@ export default function UserTypesList() {
         ),
       },
     ],
-    [organizationUnitMap, t, handleDeleteClick, handleViewClick],
+    [t, handleDeleteClick, handleViewClick],
   );
 
   return (

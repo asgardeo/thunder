@@ -68,7 +68,7 @@ export default function StartBuildingSection(): JSX.Element {
                     variant="contained"
                     size="small"
                     onClick={() => {
-                      navigate('/applications')?.catch(() => undefined);
+                      navigate('/applications/create')?.catch(() => undefined);
                     }}
                     sx={{textTransform: 'none'}}
                   >

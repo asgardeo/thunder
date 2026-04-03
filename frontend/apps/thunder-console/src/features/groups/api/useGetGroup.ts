@@ -40,7 +40,7 @@ export default function useGetGroup(groupId: string): UseQueryResult<Group> {
       const response: {
         data: Group;
       } = await http.request({
-        url: `${serverUrl}/groups/${groupId}`,
+        url: `${serverUrl}/groups/${groupId}?include=display`,
         method: 'GET',
       } as unknown as Parameters<typeof http.request>[0]);
 

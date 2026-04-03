@@ -39,6 +39,7 @@ export interface ApiError {
 export interface ApiUser {
   id: string;
   ouId: string;
+  ouHandle?: string;
   type: string;
   attributes?: Record<string, unknown>;
   display?: string;

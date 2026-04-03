@@ -456,7 +456,7 @@ function InviteUserStepContent({
   // Invite link generated but email not sent
   if (isInviteGenerated && inviteLink) {
     return (
-      <Stack alignItems="center" spacing={3} sx={{py: 2}}>
+      <Stack alignItems="center" spacing={3} sx={{py: 2, flex: 1, justifyContent: 'center'}}>
         <Box
           sx={{
             width: 64,
@@ -856,13 +856,14 @@ export default function UserInvitePage(): JSX.Element {
               py: 8,
               px: 20,
               mx: 'auto',
-              alignItems: 'flex-start',
+              alignItems: 'center',
             }}
           >
             <Box
               sx={{
                 width: '100%',
                 maxWidth: 800,
+                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
               }}

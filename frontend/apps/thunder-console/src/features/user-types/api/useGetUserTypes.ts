@@ -47,6 +47,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams): UseQuery
       if (offset !== undefined) {
         queryParams.append('offset', offset.toString());
       }
+      queryParams.append('include', 'display');
 
       const queryString: string = queryParams.toString();
       const url = `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`;

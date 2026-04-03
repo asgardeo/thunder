@@ -113,7 +113,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas');
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas?include=display');
   });
 
   it('should build URL with limit parameter only', async () => {
@@ -130,7 +130,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas?limit=10');
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas?limit=10&include=display');
   });
 
   it('should build URL with offset parameter only', async () => {
@@ -147,7 +147,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas?offset=5');
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas?offset=5&include=display');
   });
 
   it('should build URL with both limit and offset parameters', async () => {
