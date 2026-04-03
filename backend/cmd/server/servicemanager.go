@@ -239,9 +239,6 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
 
-	// Initialize flow metadata service
-	_ = flowmeta.Initialize(mux, applicationService, ouService, designResolveService, i18nService)
-
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
 
@@ -250,6 +247,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	if err != nil {
 		logger.Fatal("Failed to initialize flow execution service", log.Error(err))
 	}
+
+	// Initialize flow metadata service (after flowExecService — needed for ui_locale resolution)
+	_ = flowmeta.Initialize(mux, applicationService, ouService, designResolveService, i18nService, flowExecService)
 
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, jwtService, flowExecService, observabilitySvc,

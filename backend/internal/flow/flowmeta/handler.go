@@ -47,8 +47,13 @@ func (h *flowMetaHandler) HandleGetFlowMetadata(w http.ResponseWriter, r *http.R
 	metaType := sysutils.SanitizeString(r.URL.Query().Get("type"))
 	id := sysutils.SanitizeString(r.URL.Query().Get("id"))
 
+	var flowID *string
 	var language *string
 	var namespace *string
+
+	if fid := sysutils.SanitizeString(r.URL.Query().Get("flowId")); fid != "" {
+		flowID = &fid
+	}
 
 	if lang := r.URL.Query().Get("language"); lang != "" {
 		language = &lang
@@ -78,7 +83,8 @@ func (h *flowMetaHandler) HandleGetFlowMetadata(w http.ResponseWriter, r *http.R
 	}
 
 	// Call service
-	metadata, svcErr := h.flowMetaService.GetFlowMetadata(r.Context(), MetaType(metaType), id, language, namespace)
+	metadata, svcErr := h.flowMetaService.GetFlowMetadata(
+		r.Context(), MetaType(metaType), id, flowID, language, namespace)
 	if svcErr != nil {
 		handleServiceError(w, svcErr)
 		return

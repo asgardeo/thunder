@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/design/resolve"
+	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/ou"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
@@ -35,9 +36,10 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 	designResolve resolve.DesignResolveServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
+	flowExecService flowexec.FlowExecServiceInterface,
 ) FlowMetaServiceInterface {
 	// Create service instance
-	flowMetaService := newFlowMetaService(applicationService, ouService, designResolve, i18nService)
+	flowMetaService := newFlowMetaService(applicationService, ouService, designResolve, i18nService, flowExecService)
 
 	// Create handler and register routes
 	handler := newFlowMetaHandler(flowMetaService)

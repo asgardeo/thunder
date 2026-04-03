@@ -151,6 +151,9 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 
 	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
 
+	// Extract ui_locales parameter (OIDC Core §3.1.2.1).
+	uiLocales := msg.RequestQueryParams[oauth2const.RequestParamUILocales]
+
 	if clientID == "" {
 		return nil, &AuthorizationError{
 			Code:    oauth2const.ErrorInvalidRequest,
@@ -226,6 +229,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		ClaimsRequest:       claimsRequest,
 		ClaimsLocales:       claimsLocales,
 		Nonce:               nonce,
+		UILocale:            uiLocales,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -251,6 +255,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		flowcm.RuntimeKeyRequiredEssentialAttributes:   essentialAttributes,
 		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
 		flowcm.RuntimeKeyRequiredLocales:               claimsLocales,
+		flowcm.RuntimeKeyUILocale:                      uiLocales,
 		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", resolveUserAttributesCacheTTL(app)),
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
