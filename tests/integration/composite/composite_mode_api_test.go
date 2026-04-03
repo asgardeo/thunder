@@ -114,31 +114,63 @@ func (suite *CompositeModeSuite) extractErrorCode(resp *http.Response) string {
 
 func (suite *CompositeModeSuite) getCollectionItems(path, field string) []map[string]interface{} {
 	client := testutils.GetHTTPClient()
-	resp, err := client.Get(fmt.Sprintf("%s%s", testutils.TestServerURL, path))
-	suite.Require().NoError(err)
-	suite.Require().Equal(http.StatusOK, resp.StatusCode, "collection endpoint should be accessible: %s", path)
-	defer resp.Body.Close()
 
 	if field == "" {
+		resp, err := client.Get(fmt.Sprintf("%s%s", testutils.TestServerURL, path))
+		suite.Require().NoError(err)
+		suite.Require().Equal(http.StatusOK, resp.StatusCode, "collection endpoint should be accessible: %s", path)
+		defer resp.Body.Close()
+
 		var items []map[string]interface{}
 		suite.Require().NoError(json.NewDecoder(resp.Body).Decode(&items))
 		return items
 	}
 
-	var listResp map[string]interface{}
-	suite.Require().NoError(json.NewDecoder(resp.Body).Decode(&listResp))
+	const pageLimit = 100
+	offset := 0
+	allItems := make([]map[string]interface{}, 0)
 
-	rawItems, ok := listResp[field].([]interface{})
-	suite.Require().True(ok, "collection response should include %s", field)
+	for {
+		resp, err := client.Get(fmt.Sprintf("%s%s?limit=%d&offset=%d", testutils.TestServerURL, path, pageLimit, offset))
+		suite.Require().NoError(err)
+		suite.Require().Equal(http.StatusOK, resp.StatusCode, "collection endpoint should be accessible: %s", path)
 
-	items := make([]map[string]interface{}, 0, len(rawItems))
-	for _, rawItem := range rawItems {
-		item, ok := rawItem.(map[string]interface{})
-		suite.Require().True(ok, "collection item should be an object in %s", path)
-		items = append(items, item)
+		var listResp map[string]interface{}
+		suite.Require().NoError(json.NewDecoder(resp.Body).Decode(&listResp))
+		resp.Body.Close()
+
+		rawItems, ok := listResp[field].([]interface{})
+		suite.Require().True(ok, "collection response should include %s", field)
+
+		pageItems := make([]map[string]interface{}, 0, len(rawItems))
+		for _, rawItem := range rawItems {
+			item, ok := rawItem.(map[string]interface{})
+			suite.Require().True(ok, "collection item should be an object in %s", path)
+			pageItems = append(pageItems, item)
+		}
+
+		allItems = append(allItems, pageItems...)
+
+		totalResultsValue, hasTotalResults := listResp["totalResults"]
+		if !hasTotalResults {
+			if len(pageItems) == 0 || len(pageItems) < pageLimit {
+				break
+			}
+			offset += len(pageItems)
+			continue
+		}
+
+		totalResults, ok := totalResultsValue.(float64)
+		suite.Require().True(ok, "collection response should include numeric totalResults for %s", path)
+
+		if len(pageItems) == 0 || len(allItems) >= int(totalResults) {
+			break
+		}
+
+		offset += len(pageItems)
 	}
 
-	return items
+	return allItems
 }
 
 func (suite *CompositeModeSuite) extractCollectionIDs(items []map[string]interface{}) []string {

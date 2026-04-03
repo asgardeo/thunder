@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
+	"github.com/asgardeo/thunder/internal/authn/magiclink"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
@@ -37,8 +38,10 @@ import (
 	consentmgt "github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
+	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
@@ -51,6 +54,7 @@ type AuthServiceRegistry struct {
 	OIDCAuthnService        oidc.OIDCAuthnServiceInterface
 	GithubOAuthAuthnService github.GithubOAuthAuthnServiceInterface
 	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
+	MagicLinkAuthnService   magiclink.MagicLinkAuthnServiceInterface
 	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
 	PasskeyService          passkey.PasskeyServiceInterface
 	ConsentEnforcerService  consent.ConsentEnforcerServiceInterface
@@ -67,9 +71,11 @@ func Initialize(
 	otpSvc notification.OTPServiceInterface,
 	authnProvider authnprovider.AuthnProviderInterface,
 	consentSvc consentmgt.ConsentServiceInterface,
+	emailClient email.EmailClientInterface,
+	templateService template.TemplateServiceInterface,
 ) (AuthenticationServiceInterface, *AuthServiceRegistry) {
 	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc,
-		userSvc, userProvider, otpSvc, authnProvider, consentSvc)
+		userSvc, userProvider, otpSvc, authnProvider, consentSvc, emailClient, templateService)
 	authnService := newAuthenticationService(
 		idpSvc,
 		jwtSvc,
@@ -103,8 +109,10 @@ func createAuthServiceRegistry(
 	otpSvc notification.OTPServiceInterface,
 	authnProvider authnprovider.AuthnProviderInterface,
 	consentSvc consentmgt.ConsentServiceInterface,
+	emailClient email.EmailClientInterface,
+	templateService template.TemplateServiceInterface,
 ) *AuthServiceRegistry {
-	return &AuthServiceRegistry{
+	registry := &AuthServiceRegistry{
 		CredentialsAuthnService: credentials.Initialize(authnProvider),
 		OTPAuthnService:         otp.Initialize(otpSvc, userProvider),
 		OAuthAuthnService:       oauth.Initialize(idpSvc, userProvider),
@@ -115,6 +123,13 @@ func createAuthServiceRegistry(
 		AuthAssertGenerator:     assert.Initialize(),
 		ConsentEnforcerService:  consent.Initialize(consentSvc, jwtSvc),
 	}
+
+	// Only register Magic Link authenticator if email client is configured.
+	if emailClient != nil {
+		registry.MagicLinkAuthnService = magiclink.Initialize(jwtSvc, emailClient, userProvider, templateService)
+	}
+
+	return registry
 }
 
 // registerRoutes registers the routes for the authentication.

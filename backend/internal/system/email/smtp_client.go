@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"mime"
 	"net"
-	"net/mail"
 	"net/smtp"
 	"strings"
 	"time"
@@ -43,7 +42,7 @@ func newSMTPClient(config smtpConfig) (EmailClientInterface, error) {
 	if config.from == "" {
 		return nil, ErrorInvalidSender
 	}
-	if _, error := mail.ParseAddress(config.from); error != nil {
+	if !IsValidEmail(config.from) {
 		return nil, ErrorInvalidSender
 	}
 	if strings.TrimSpace(config.host) == "" {
@@ -129,8 +128,8 @@ func (c *smtpClient) validateAndProcessRecipients(emailData *EmailData) ([]strin
 			if trimmed == "" {
 				return nil, fmt.Errorf("%w: recipient address cannot be empty", ErrorInvalidRecipient)
 			}
-			if _, error := mail.ParseAddress(trimmed); error != nil {
-				return nil, fmt.Errorf("%w: invalid recipient address '%s': %w", ErrorInvalidRecipient, trimmed, error)
+			if !IsValidEmail(trimmed) {
+				return nil, fmt.Errorf("%w: invalid recipient address '%s'", ErrorInvalidRecipient, trimmed)
 			}
 			cleaned = append(cleaned, trimmed)
 			allRecipients = append(allRecipients, trimmed)

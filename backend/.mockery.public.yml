@@ -220,6 +220,14 @@ packages:
       pkgname: githubmock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/authn/magiclink:
+    config:
+      all: true
+      dir: tests/mocks/authn/magiclinkmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: magiclinkmock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/asgardeo/thunder/internal/authn/passkey:
     interfaces:
       PasskeyServiceInterface:
