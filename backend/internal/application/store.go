@@ -381,7 +381,6 @@ func (st *applicationStore) IsApplicationDeclarative(_ context.Context, _ string
 }
 
 // --- Helper functions ---
-
 // buildAppConfigFromRow constructs an applicationConfigDAO from a database result row.
 func buildAppConfigFromRow(row map[string]interface{}) (*applicationConfigDAO, error) {
 	appID, ok := row["id"].(string)
@@ -442,6 +441,28 @@ func buildOAuthConfigFromRow(row map[string]interface{}) (*oauthConfigDAO, error
 	}
 
 	return dao, nil
+}
+
+// extractAssertionConfigFromJSON extracts assertion configuration from JSON data.
+func extractStringMapFromJSON(data map[string]interface{}, key string) map[string]string {
+	val, exists := data[key]
+	if !exists || val == nil {
+		return nil
+	}
+	raw, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	result := make(map[string]string, len(raw))
+	for k, v := range raw {
+		if s, ok := v.(string); ok {
+			result[k] = s
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 // marshalNullableJSON marshals a value to JSON, returning nil for nil/empty input.

@@ -21,6 +21,7 @@ package flowexec
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -43,6 +44,7 @@ type FlowExecServiceInterface interface {
 	Execute(ctx context.Context, appID, flowID, flowType string, verbose bool,
 		action string, inputs map[string]string) (*FlowStep, *serviceerror.ServiceError)
 	InitiateFlow(ctx context.Context, initContext *FlowInitContext) (string, *serviceerror.ServiceError)
+	GetFlowRuntimeData(ctx context.Context, flowID string) (map[string]string, *serviceerror.ServiceError)
 }
 
 const (
@@ -551,4 +553,29 @@ func (s *flowExecService) InitiateFlow(ctx context.Context,
 
 	logger.Debug("Flow initiated successfully", log.String("flowID", engineCtx.FlowID))
 	return engineCtx.FlowID, nil
+}
+
+// GetFlowRuntimeData returns the RuntimeData map for the given flow ID.
+// Returns nil, nil if the flow context does not exist.
+func (s *flowExecService) GetFlowRuntimeData(
+	ctx context.Context, flowID string) (map[string]string, *serviceerror.ServiceError) {
+	flowCtx, err := s.flowStore.GetFlowContext(ctx, flowID)
+	if err != nil {
+		return nil, &serviceerror.InternalServerError
+	}
+	if flowCtx == nil {
+		return nil, nil
+	}
+	var content flowContextContent
+	if jsonErr := json.Unmarshal([]byte(flowCtx.Context), &content); jsonErr != nil {
+		return nil, &serviceerror.InternalServerError
+	}
+	if content.RuntimeData == nil {
+		return nil, nil
+	}
+	var runtimeData map[string]string
+	if jsonErr := json.Unmarshal([]byte(*content.RuntimeData), &runtimeData); jsonErr != nil {
+		return nil, &serviceerror.InternalServerError
+	}
+	return runtimeData, nil
 }

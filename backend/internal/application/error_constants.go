@@ -263,6 +263,28 @@ var (
 		Error:            "Consent service not enabled",
 		ErrorDescription: "Cannot enable consent for the application as the consent service is not enabled",
 	}
+	// ErrorTooManyLocaleVariants is the error returned when more than the allowed number of locale
+	// variants are registered for a single localisable field.
+	ErrorTooManyLocaleVariants = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1033",
+		Error:            "Too many locale variants",
+		ErrorDescription: "A maximum of 20 locale variants are allowed per localisable field",
+	}
+	// ErrorInvalidLocaleTag is the error returned when a locale tag does not conform to BCP 47 syntax.
+	ErrorInvalidLocaleTag = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1034",
+		Error:            "Invalid locale tag",
+		ErrorDescription: "The locale tag must be a valid BCP 47 language tag (e.g. 'fr', 'en-US')",
+	}
+	// ErrorInvalidLocalisedURIValue is the error returned when a localized URI field value fails validation.
+	ErrorInvalidLocalisedURIValue = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1035",
+		Error:            "Invalid localized URI value",
+		ErrorDescription: "A localized URI variant failed URI validation; the same rules apply as for the base field",
+	}
 )
 
 // Server errors for application operations.

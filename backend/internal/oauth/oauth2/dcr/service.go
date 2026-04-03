@@ -192,15 +192,19 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	}
 
 	appDTO := &model.ApplicationDTO{
-		OUID:              request.OUID,
-		Name:              appName,
-		URL:               request.ClientURI,
-		LogoURL:           request.LogoURI,
-		InboundAuthConfig: inboundAuthConfig,
-		TosURI:            request.TosURI,
-		PolicyURI:         request.PolicyURI,
-		Contacts:          request.Contacts,
-		Certificate:       appCertificate,
+		OUID:                request.OUID,
+		Name:                appName,
+		URL:                 request.ClientURI,
+		LogoURL:             request.LogoURI,
+		InboundAuthConfig:   inboundAuthConfig,
+		TosURI:              request.TosURI,
+		PolicyURI:           request.PolicyURI,
+		Contacts:            request.Contacts,
+		Certificate:         appCertificate,
+		LocalisedClientName: request.LocalisedClientName,
+		LocalisedLogoURL:    request.LocalisedLogoURL,
+		LocalisedTosURI:     request.LocalisedTosURI,
+		LocalisedPolicyURI:  request.LocalisedPolicyURI,
 	}
 
 	return appDTO, nil
@@ -253,6 +257,10 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		PolicyURI:               appDTO.PolicyURI,
 		Contacts:                appDTO.Contacts,
 		AppID:                   oauthConfig.AppID,
+		LocalisedClientName:     appDTO.LocalisedClientName,
+		LocalisedLogoURL:        appDTO.LocalisedLogoURL,
+		LocalisedTosURI:         appDTO.LocalisedTosURI,
+		LocalisedPolicyURI:      appDTO.LocalisedPolicyURI,
 	}
 
 	return response, nil
@@ -273,6 +281,9 @@ func (ds *dcrService) mapApplicationErrorToDCRError(appErr *serviceerror.Service
 	// Server errors
 	case "APP-5001", "APP-5002":
 		dcrErr.Code = ErrorServerError.Code
+	// Localized metadata errors map to invalid_client_metadata
+	case "APP-1033", "APP-1034", "APP-1035":
+		dcrErr.Code = ErrorInvalidClientMetadata.Code
 	// Default fallback for all other client errors
 	default:
 		dcrErr.Code = ErrorInvalidClientMetadata.Code

@@ -1034,6 +1034,50 @@ func (as *applicationService) validateApplicationFields(
 		return svcErr
 	}
 	as.validateConsentConfig(app)
+	if svcErr := validateLocalisedMetadata(app); svcErr != nil {
+		return svcErr
+	}
+	return nil
+}
+
+// localisedField describes a localized variant map and the URI validation rules that apply to it.
+type localisedField struct {
+	m      map[string]string
+	isURI  bool
+	isLogo bool
+}
+
+// validateLocalisedMetadata validates localized variant maps on an ApplicationDTO.
+// It checks BCP 47 tag syntax, enforces a maximum of 20 variants per field, and validates
+// URI values for logo, tos, and policy localized fields.
+func validateLocalisedMetadata(app *model.ApplicationDTO) *serviceerror.ServiceError {
+	fields := []localisedField{
+		{app.LocalisedClientName, false, false},
+		{app.LocalisedLogoURL, true, true},
+		{app.LocalisedTosURI, true, false},
+		{app.LocalisedPolicyURI, true, false},
+	}
+	for _, f := range fields {
+		if len(f.m) > 20 {
+			return &ErrorTooManyLocaleVariants
+		}
+		for tag, val := range f.m {
+			if !sysutils.IsValidBCP47Tag(tag) {
+				return &ErrorInvalidLocaleTag
+			}
+			if f.isURI && val != "" {
+				var ok bool
+				if f.isLogo {
+					ok = sysutils.IsValidLogoURI(val)
+				} else {
+					ok = sysutils.IsValidURI(val)
+				}
+				if !ok {
+					return &ErrorInvalidLocalisedURIValue
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -1955,6 +1999,10 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *model.Applica
 		AllowedUserTypes:          dto.AllowedUserTypes,
 		LoginConsent:              dto.LoginConsent,
 		Metadata:                  dto.Metadata,
+		LocalisedClientName:       dto.LocalisedClientName,
+		LocalisedLogoURL:          dto.LocalisedLogoURL,
+		LocalisedTosURI:           dto.LocalisedTosURI,
+		LocalisedPolicyURI:        dto.LocalisedPolicyURI,
 	}
 	inboundAuthConfigs := make([]model.InboundAuthConfigComplete, 0, len(dto.InboundAuthConfig))
 	for _, config := range dto.InboundAuthConfig {
@@ -2045,6 +2093,10 @@ func buildBaseApplicationProcessedDTO(appID string, app *model.ApplicationDTO,
 		AllowedUserTypes:          app.AllowedUserTypes,
 		LoginConsent:              app.LoginConsent,
 		Metadata:                  app.Metadata,
+		LocalisedClientName:       app.LocalisedClientName,
+		LocalisedLogoURL:          app.LocalisedLogoURL,
+		LocalisedTosURI:           app.LocalisedTosURI,
+		LocalisedPolicyURI:        app.LocalisedPolicyURI,
 	}
 }
 
@@ -2055,6 +2107,9 @@ func (as *applicationService) buildProcessedDTOForUpdate(appID string, app *mode
 	finalOAuthIDToken *model.IDTokenConfig, userInfo *model.UserInfoConfig,
 	scopeClaims map[string][]string) *model.ApplicationProcessedDTO {
 	processedDTO := buildBaseApplicationProcessedDTO(appID, app, assertion)
+
+	// Localized variant maps from the PUT request completely replace the existing set (AC-02, AC-04).
+	// The base processedDTO already carries app.LocalisedClientName etc. from buildBaseApplicationProcessedDTO.
 
 	if inboundAuthConfig != nil {
 		processedInboundAuthConfig := buildOAuthInboundAuthConfigProcessedDTO(
@@ -2121,6 +2176,10 @@ func buildReturnApplicationDTO(
 		AllowedUserTypes:          app.AllowedUserTypes,
 		LoginConsent:              app.LoginConsent,
 		Metadata:                  metadata,
+		LocalisedClientName:       app.LocalisedClientName,
+		LocalisedLogoURL:          app.LocalisedLogoURL,
+		LocalisedTosURI:           app.LocalisedTosURI,
+		LocalisedPolicyURI:        app.LocalisedPolicyURI,
 	}
 	if inboundAuthConfig != nil {
 		returnInboundAuthConfig := model.InboundAuthConfigDTO{
