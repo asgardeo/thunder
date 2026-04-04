@@ -26,10 +26,13 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/design/common"
 	"github.com/asgardeo/thunder/internal/design/resolve"
+	flowcm "github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
+	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // MetaType represents the type of metadata being requested.
@@ -54,6 +57,7 @@ type FlowMetaServiceInterface interface {
 		ctx context.Context,
 		metaType MetaType,
 		id string,
+		flowID *string,
 		language *string,
 		namespace *string,
 	) (*FlowMetadataResponse, *serviceerror.ServiceError)
@@ -65,6 +69,7 @@ type flowMetaService struct {
 	ouService          ou.OrganizationUnitServiceInterface
 	designResolve      resolve.DesignResolveServiceInterface
 	i18nService        i18nmgt.I18nServiceInterface
+	flowExecService    flowexec.FlowExecServiceInterface
 	logger             *log.Logger
 }
 
@@ -74,6 +79,7 @@ func newFlowMetaService(
 	ouService ou.OrganizationUnitServiceInterface,
 	designResolve resolve.DesignResolveServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
+	flowExecService flowexec.FlowExecServiceInterface,
 ) FlowMetaServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	return &flowMetaService{
@@ -81,6 +87,7 @@ func newFlowMetaService(
 		ouService:          ouService,
 		designResolve:      designResolve,
 		i18nService:        i18nService,
+		flowExecService:    flowExecService,
 		logger:             logger,
 	}
 }
@@ -90,6 +97,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 	ctx context.Context,
 	metaType MetaType,
 	id string,
+	flowID *string,
 	language *string,
 	namespace *string,
 ) (*FlowMetadataResponse, *serviceerror.ServiceError) {
@@ -112,6 +120,12 @@ func (fms *flowMetaService) GetFlowMetadata(
 
 	if svcErr := fms.populateOUMetadata(ctx, ouID, response); svcErr != nil {
 		return nil, svcErr
+	}
+
+	// Resolve localized application metadata fields based on ui_locale from flow runtime data.
+	// AC-22: also surface the resolved ui_locale in the response.
+	if flowID != nil && *flowID != "" && response.Application != nil {
+		response.UILocale = fms.resolveLocalisedAppMetadata(ctx, *flowID, response.Application)
 	}
 
 	fms.populateDesignMetadata(ctx, metaType, id, ouID, response)
@@ -178,13 +192,17 @@ func (fms *flowMetaService) populateTypeMetadata(
 
 	response.IsRegistrationFlowEnabled = app.IsRegistrationFlowEnabled
 	response.Application = &ApplicationMetadata{
-		ID:          app.ID,
-		Name:        app.Name,
-		Description: app.Description,
-		LogoURL:     app.LogoURL,
-		URL:         app.URL,
-		TosURI:      app.TosURI,
-		PolicyURI:   app.PolicyURI,
+		ID:                  app.ID,
+		Name:                app.Name,
+		Description:         app.Description,
+		LogoURL:             app.LogoURL,
+		URL:                 app.URL,
+		TosURI:              app.TosURI,
+		PolicyURI:           app.PolicyURI,
+		localisedClientName: app.LocalisedClientName,
+		localisedLogoURL:    app.LocalisedLogoURL,
+		localisedTosURI:     app.LocalisedTosURI,
+		localisedPolicyURI:  app.LocalisedPolicyURI,
 	}
 
 	ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)
@@ -299,4 +317,34 @@ func (fms *flowMetaService) populateI18nMetadata(response *FlowMetadataResponse,
 	}
 
 	response.I18n.Languages = languages
+}
+
+// resolveLocalisedAppMetadata reads the ui_locale from the flow's RuntimeData, resolves
+// any localized variant fields on app in-place, and returns the active ui_locale value.
+// Returns an empty string when no resolution is performed (AC-22).
+func (fms *flowMetaService) resolveLocalisedAppMetadata(
+	ctx context.Context, flowID string, app *ApplicationMetadata) string {
+	if fms.flowExecService == nil {
+		return ""
+	}
+	runtimeData, svcErr := fms.flowExecService.GetFlowRuntimeData(ctx, flowID)
+	if svcErr != nil {
+		fms.logger.Debug("Failed to get flow runtime data for ui_locale resolution",
+			log.String("flowID", flowID))
+		return ""
+	}
+	if runtimeData == nil {
+		return ""
+	}
+
+	uiLocale := runtimeData[flowcm.RuntimeKeyUILocale]
+	if uiLocale == "" {
+		return ""
+	}
+
+	app.Name = sysutils.ResolveLocalisedValue(app.localisedClientName, app.Name, uiLocale)
+	app.LogoURL = sysutils.ResolveLocalisedValue(app.localisedLogoURL, app.LogoURL, uiLocale)
+	app.TosURI = sysutils.ResolveLocalisedValue(app.localisedTosURI, app.TosURI, uiLocale)
+	app.PolicyURI = sysutils.ResolveLocalisedValue(app.localisedPolicyURI, app.PolicyURI, uiLocale)
+	return uiLocale
 }

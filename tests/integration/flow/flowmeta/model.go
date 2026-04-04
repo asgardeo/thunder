@@ -27,6 +27,7 @@ type FlowMetadataResponse struct {
 	OU                        *OUMetadata          `json:"ou,omitempty"`
 	Design                    DesignMetadata       `json:"design"`
 	I18n                      I18nMetadata         `json:"i18n"`
+	UILocale                  string               `json:"uiLocale,omitempty"`
 }
 
 // ApplicationMetadata represents application-specific metadata.

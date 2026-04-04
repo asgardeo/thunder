@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -35,6 +36,7 @@ import (
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/design/resolvemock"
+	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
 	"github.com/asgardeo/thunder/tests/mocks/i18n/mgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
@@ -70,6 +72,7 @@ func (suite *FlowMetaServiceTestSuite) SetupTest() {
 		suite.mockOUService,
 		suite.mockDesignResolve,
 		suite.mockI18nService,
+		nil,
 	)
 	suite.ctx = context.Background()
 }
@@ -136,7 +139,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en", "es"}, nil)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, &language, &namespace)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, nil, &language, &namespace)
 
 	// Assert
 	assert.Nil(suite.T(), svcErr)
@@ -183,7 +186,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_OU_Success() {
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, ouID, nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, ouID, nil, nil, nil)
 
 	// Assert
 	assert.Nil(suite.T(), svcErr)
@@ -201,7 +204,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_InvalidType() {
 	id := "some-id"
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, id, nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, id, nil, nil, nil)
 
 	// Assert
 	assert.Nil(suite.T(), result)
@@ -218,7 +221,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_ApplicationNotFound()
 		Return(nil, &application.ErrorApplicationNotFound)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, nil, nil, nil)
 
 	// Assert
 	assert.Nil(suite.T(), result)
@@ -235,7 +238,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_OUNotFound() {
 		Return(ou.OrganizationUnit{}, &ou.ErrorOrganizationUnitNotFound)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, ouID, nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, ouID, nil, nil, nil)
 
 	// Assert
 	assert.Nil(suite.T(), result)
@@ -281,7 +284,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, nil, nil, nil)
 
 	// Assert - Should succeed with empty design
 	assert.Nil(suite.T(), svcErr)
@@ -312,7 +315,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_I18nError_ContinuesWi
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, ouID, nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, ouID, nil, nil, nil)
 
 	// Assert - Should succeed with empty translations
 	assert.Nil(suite.T(), svcErr)
@@ -335,7 +338,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_SystemFlow_NoTypeOrID
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en-US"}, nil)
 
 	// Act
-	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, MetaType(""), "", nil, nil)
+	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, MetaType(""), "", nil, nil, nil)
 
 	// Assert
 	assert.Nil(suite.T(), svcErr)
@@ -347,4 +350,107 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_SystemFlow_NoTypeOrID
 	assert.Equal(suite.T(), 3, result.I18n.TotalResults)
 	assert.Equal(suite.T(), []string{"en-US"}, result.I18n.Languages)
 	assert.Contains(suite.T(), result.I18n.Translations, "system")
+}
+
+// ---- ui_locale resolution tests ----
+
+func TestGetFlowMetadata_LocaleResolution(t *testing.T) {
+	mockApp := applicationmock.NewApplicationServiceInterfaceMock(t)
+	mockOU := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	mockDesign := resolvemock.NewDesignResolveServiceInterfaceMock(t)
+	mockI18n := mgtmock.NewI18nServiceInterfaceMock(t)
+	mockFlowExec := flowexecmock.NewFlowExecServiceInterfaceMock(t)
+
+	appID := "app-locale-1"
+	flowID := "flow-locale-1"
+
+	app := &appmodel.Application{
+		ID:      appID,
+		Name:    "Base App",
+		LogoURL: "https://example.com/logo.png",
+		TosURI:  "https://example.com/tos",
+		LocalisedClientName: map[string]string{
+			"fr": "Application Française",
+			"de": "Deutsche Anwendung",
+		},
+		LocalisedLogoURL: map[string]string{
+			"fr": "https://example.com/logo-fr.png",
+		},
+	}
+
+	mockApp.EXPECT().GetApplication(mock.Anything, appID).Return(app, nil)
+	mockOU.EXPECT().GetOrganizationUnitList(mock.Anything, 1, 0).Return(
+		&ou.OrganizationUnitListResponse{TotalResults: 0}, nil)
+	mockDesign.EXPECT().ResolveDesign(mock.Anything, common.DesignResolveTypeAPP, appID).
+		Return(nil, &serviceerror.ServiceError{Code: "DESIGN-404"})
+	mockI18n.EXPECT().ResolveTranslations(mock.Anything, "").
+		Return(nil, &serviceerror.I18nServiceError{Code: "I18N-5000", Type: serviceerror.ServerErrorType})
+	mockI18n.EXPECT().ListLanguages().Return([]string{"en"}, nil)
+
+	t.Run("resolves localized fields when flowId and ui_locale provided", func(t *testing.T) {
+		runtimeData := map[string]string{"ui_locale": "fr"}
+		mockFlowExec.EXPECT().GetFlowRuntimeData(mock.Anything, flowID).Return(runtimeData, nil)
+
+		svc := newFlowMetaService(mockApp, mockOU, mockDesign, mockI18n, mockFlowExec)
+		fid := flowID
+		result, svcErr := svc.GetFlowMetadata(context.Background(), MetaTypeAPP, appID, &fid, nil, nil)
+
+		assert.Nil(t, svcErr)
+		require.NotNil(t, result.Application)
+		assert.Equal(t, "Application Française", result.Application.Name)
+		assert.Equal(t, "https://example.com/logo-fr.png", result.Application.LogoURL)
+		// TosURI has no fr variant — stays as base
+		assert.Equal(t, "https://example.com/tos", result.Application.TosURI)
+		// AC-22: ui_locale returned in response
+		assert.Equal(t, "fr", result.UILocale)
+	})
+}
+
+func TestGetFlowMetadata_LocaleResolution_NoFlowID(t *testing.T) {
+	mockApp := applicationmock.NewApplicationServiceInterfaceMock(t)
+	mockOU := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	mockDesign := resolvemock.NewDesignResolveServiceInterfaceMock(t)
+	mockI18n := mgtmock.NewI18nServiceInterfaceMock(t)
+
+	appID := "app-locale-2"
+
+	app := &appmodel.Application{
+		ID:                  appID,
+		Name:                "Base App",
+		LocalisedClientName: map[string]string{"fr": "App FR"},
+	}
+
+	mockApp.EXPECT().GetApplication(mock.Anything, appID).Return(app, nil)
+	mockOU.EXPECT().GetOrganizationUnitList(mock.Anything, 1, 0).Return(
+		&ou.OrganizationUnitListResponse{TotalResults: 0}, nil)
+	mockDesign.EXPECT().ResolveDesign(mock.Anything, common.DesignResolveTypeAPP, appID).
+		Return(nil, &serviceerror.ServiceError{Code: "DESIGN-404"})
+	mockI18n.EXPECT().ResolveTranslations(mock.Anything, "").
+		Return(nil, &serviceerror.I18nServiceError{Code: "I18N-5000", Type: serviceerror.ServerErrorType})
+	mockI18n.EXPECT().ListLanguages().Return([]string{"en"}, nil)
+
+	t.Run("returns base values when no flowId provided", func(t *testing.T) {
+		svc := newFlowMetaService(mockApp, mockOU, mockDesign, mockI18n, nil)
+		result, svcErr := svc.GetFlowMetadata(context.Background(), MetaTypeAPP, appID, nil, nil, nil)
+
+		assert.Nil(t, svcErr)
+		require.NotNil(t, result.Application)
+		// No flowId → no resolution → base name
+		assert.Equal(t, "Base App", result.Application.Name)
+		// AC-22: uiLocale is empty when no flowId
+		assert.Empty(t, result.UILocale)
+	})
+
+	t.Run("does not panic when flowExecService is nil but flowId is provided", func(t *testing.T) {
+		svc := newFlowMetaService(mockApp, mockOU, mockDesign, mockI18n, nil)
+		fid := "some-flow-id"
+		// Should not panic — nil guard in resolveLocalisedAppMetadata returns early.
+		result, svcErr := svc.GetFlowMetadata(context.Background(), MetaTypeAPP, appID, &fid, nil, nil)
+
+		assert.Nil(t, svcErr)
+		require.NotNil(t, result.Application)
+		assert.Equal(t, "Base App", result.Application.Name)
+		// AC-22: uiLocale is empty when flowExecService is nil
+		assert.Empty(t, result.UILocale)
+	})
 }

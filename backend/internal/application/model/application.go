@@ -22,7 +22,12 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
 	"github.com/asgardeo/thunder/internal/cert"
+	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // AssertionConfig represents the assertion configuration structure for application-level (root) assertion configs.
@@ -60,6 +65,12 @@ type ApplicationDTO struct {
 	AllowedUserTypes  []string                `json:"allowedUserTypes,omitempty" jsonschema:"Allowed user types. Optional. Restricts which types of users can register to this application."`
 	LoginConsent      *LoginConsentConfig     `json:"loginConsent,omitempty" jsonschema:"Login consent configuration settings."`
 	Metadata          map[string]interface{}  `json:"metadata,omitempty" jsonschema:"Generic metadata. Optional arbitrary key-value pairs for consumer use."`
+
+	// Localized variant maps keyed by normalised BCP 47 tag (e.g. "fr", "en-us").
+	LocalisedClientName map[string]string `json:"client_name_localized,omitempty"`
+	LocalisedLogoURL    map[string]string `json:"logo_uri_localized,omitempty"`
+	LocalisedTosURI     map[string]string `json:"tos_uri_localized,omitempty"`
+	LocalisedPolicyURI  map[string]string `json:"policy_uri_localized,omitempty"`
 }
 
 // BasicApplicationDTO represents a simplified data transfer object for application service operations.
@@ -102,6 +113,11 @@ type Application struct {
 	AllowedUserTypes  []string                    `yaml:"allowed_user_types,omitempty" json:"allowedUserTypes,omitempty" jsonschema:"Allowed user types for registration."`
 	LoginConsent      *LoginConsentConfig         `yaml:"login_consent,omitempty" json:"loginConsent,omitempty" jsonschema:"Login consent configuration settings."`
 	Metadata          map[string]interface{}      `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"Generic metadata key-value pairs."`
+
+	LocalisedClientName map[string]string `yaml:"client_name_localized,omitempty" json:"client_name_localized,omitempty"`
+	LocalisedLogoURL    map[string]string `yaml:"logo_uri_localized,omitempty" json:"logo_uri_localized,omitempty"`
+	LocalisedTosURI     map[string]string `yaml:"tos_uri_localized,omitempty" json:"tos_uri_localized,omitempty"`
+	LocalisedPolicyURI  map[string]string `yaml:"policy_uri_localized,omitempty" json:"policy_uri_localized,omitempty"`
 }
 
 // ApplicationProcessedDTO represents the processed data transfer object for application service operations.
@@ -128,6 +144,11 @@ type ApplicationProcessedDTO struct {
 	AllowedUserTypes  []string                        `yaml:"allowed_user_types,omitempty"`
 	LoginConsent      *LoginConsentConfig             `yaml:"login_consent,omitempty"`
 	Metadata          map[string]interface{}          `yaml:"metadata,omitempty"`
+
+	LocalisedClientName map[string]string `yaml:"client_name_localized,omitempty"`
+	LocalisedLogoURL    map[string]string `yaml:"logo_uri_localized,omitempty"`
+	LocalisedTosURI     map[string]string `yaml:"tos_uri_localized,omitempty"`
+	LocalisedPolicyURI  map[string]string `yaml:"policy_uri_localized,omitempty"`
 }
 
 // InboundAuthConfigDTO represents the data transfer object for inbound authentication configuration.
@@ -173,6 +194,90 @@ type ApplicationRequest struct {
 	AllowedUserTypes          []string                    `json:"allowedUserTypes,omitempty" yaml:"allowed_user_types,omitempty"`
 	LoginConsent              *LoginConsentConfig         `json:"loginConsent,omitempty" yaml:"login_consent,omitempty"`
 	Metadata                  map[string]interface{}      `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+
+	// Localized variant maps — populated by UnmarshalJSON from field#tag keys; not in standard JSON output.
+	LocalisedClientName map[string]string `json:"-"`
+	LocalisedLogoURL    map[string]string `json:"-"`
+	LocalisedTosURI     map[string]string `json:"-"`
+	LocalisedPolicyURI  map[string]string `json:"-"`
+}
+
+// appRequestJSON is an alias used by UnmarshalJSON to decode fixed fields without recursion.
+type appRequestJSON ApplicationRequest
+
+// localisableAppFields is the set of application API field names that accept language-tagged variants.
+var localisableAppFields = map[string]bool{
+	"name": true, "logoUrl": true, "tosUri": true, "policyUri": true,
+}
+
+// UnmarshalJSON decodes an ApplicationRequest in a single JSON parse of the input bytes.
+// It separates language-tagged keys (field#tag convention, OIDC DCR §2) into the localized
+// variant maps, then decodes the remaining standard keys into the typed struct.
+// Localisable fields with a non-string tagged value are rejected; tagged variants on
+// non-localisable fields are silently ignored (AC-12).
+func (r *ApplicationRequest) UnmarshalJSON(data []byte) error {
+	// Single parse into a raw key-value map.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	// Separate tagged (#) keys from standard keys.
+	clean := make(map[string]json.RawMessage, len(raw))
+	for key, val := range raw {
+		field, tag, ok := strings.Cut(key, "#")
+		if !ok {
+			clean[key] = val
+			continue
+		}
+		// Multiple '#' in a key (e.g. "name#en#US") are invalid (AC-08).
+		// Reject if the base field is localisable; silently skip otherwise.
+		if strings.Contains(tag, "#") {
+			if localisableAppFields[field] {
+				return fmt.Errorf("invalid localized field key %q: tag must not contain '#'", key)
+			}
+			continue
+		}
+		var s string
+		if err := json.Unmarshal(val, &s); err != nil {
+			// Non-string value on a recognized localisable field is a client error.
+			if localisableAppFields[field] {
+				return err
+			}
+			continue
+		}
+		normTag := sysutils.NormaliseBCP47Tag(tag)
+		switch field {
+		case "name":
+			if r.LocalisedClientName == nil {
+				r.LocalisedClientName = make(map[string]string)
+			}
+			r.LocalisedClientName[normTag] = s
+		case "logoUrl":
+			if r.LocalisedLogoURL == nil {
+				r.LocalisedLogoURL = make(map[string]string)
+			}
+			r.LocalisedLogoURL[normTag] = s
+		case "tosUri":
+			if r.LocalisedTosURI == nil {
+				r.LocalisedTosURI = make(map[string]string)
+			}
+			r.LocalisedTosURI[normTag] = s
+		case "policyUri":
+			if r.LocalisedPolicyURI == nil {
+				r.LocalisedPolicyURI = make(map[string]string)
+			}
+			r.LocalisedPolicyURI[normTag] = s
+			// All other tagged fields are silently ignored (AC-12).
+		}
+	}
+
+	// Decode standard (non-tagged) keys using the alias to avoid infinite recursion.
+	cleanBytes, err := json.Marshal(clean)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(cleanBytes, (*appRequestJSON)(r))
 }
 
 // ApplicationRequestWithID represents the request structure for importing an application using file based runtime.
@@ -223,6 +328,25 @@ type ApplicationCompleteResponse struct {
 	AllowedUserTypes          []string                    `json:"allowedUserTypes,omitempty"`
 	LoginConsent              *LoginConsentConfig         `json:"loginConsent,omitempty"`
 	Metadata                  map[string]interface{}      `json:"metadata,omitempty"`
+
+	// Localized variant maps — emitted as field#tag keys by MarshalJSON; not decoded from standard JSON.
+	LocalisedClientName map[string]string `json:"-"`
+	LocalisedLogoURL    map[string]string `json:"-"`
+	LocalisedTosURI     map[string]string `json:"-"`
+	LocalisedPolicyURI  map[string]string `json:"-"`
+}
+
+// appCompleteResponseJSON is an alias used by MarshalJSON to avoid infinite recursion.
+type appCompleteResponseJSON ApplicationCompleteResponse
+
+// MarshalJSON serializes ApplicationCompleteResponse, injecting language-tagged variant keys
+// (e.g. "name#fr", "logoUrl#fr") as top-level JSON properties.
+func (r ApplicationCompleteResponse) MarshalJSON() ([]byte, error) {
+	base, err := json.Marshal(appCompleteResponseJSON(r))
+	if err != nil {
+		return nil, err
+	}
+	return injectLocalisedFields(base, r.LocalisedClientName, r.LocalisedLogoURL, r.LocalisedTosURI, r.LocalisedPolicyURI)
 }
 
 // ApplicationGetResponse represents the response structure for getting an application.
@@ -248,6 +372,53 @@ type ApplicationGetResponse struct {
 	AllowedUserTypes          []string                `json:"allowedUserTypes,omitempty"`
 	LoginConsent              *LoginConsentConfig     `json:"loginConsent,omitempty"`
 	Metadata                  map[string]interface{}  `json:"metadata,omitempty"`
+
+	// Localized variant maps — emitted as field#tag keys by MarshalJSON; not decoded from standard JSON.
+	LocalisedClientName map[string]string `json:"-"`
+	LocalisedLogoURL    map[string]string `json:"-"`
+	LocalisedTosURI     map[string]string `json:"-"`
+	LocalisedPolicyURI  map[string]string `json:"-"`
+}
+
+// appGetResponseJSON is an alias used by MarshalJSON to avoid infinite recursion.
+type appGetResponseJSON ApplicationGetResponse
+
+// MarshalJSON serializes ApplicationGetResponse, injecting language-tagged variant keys
+// (e.g. "name#fr", "logoUrl#fr") as top-level JSON properties.
+func (r ApplicationGetResponse) MarshalJSON() ([]byte, error) {
+	base, err := json.Marshal(appGetResponseJSON(r))
+	if err != nil {
+		return nil, err
+	}
+	return injectLocalisedFields(base, r.LocalisedClientName, r.LocalisedLogoURL, r.LocalisedTosURI, r.LocalisedPolicyURI)
+}
+
+// injectLocalisedFields merges language-tagged variant entries into a serialized JSON object.
+// The field names use the application endpoint JSON naming convention (name, logoUrl, tosUri, policyUri).
+func injectLocalisedFields(base []byte, clientName, logoURL, tosURI, policyURI map[string]string) ([]byte, error) {
+	if len(clientName) == 0 && len(logoURL) == 0 && len(tosURI) == 0 && len(policyURI) == 0 {
+		return base, nil
+	}
+
+	var m map[string]interface{}
+	if err := json.Unmarshal(base, &m); err != nil {
+		return nil, err
+	}
+
+	for tag, val := range clientName {
+		m["name#"+tag] = val
+	}
+	for tag, val := range logoURL {
+		m["logoUrl#"+tag] = val
+	}
+	for tag, val := range tosURI {
+		m["tosUri#"+tag] = val
+	}
+	for tag, val := range policyURI {
+		m["policyUri#"+tag] = val
+	}
+
+	return json.Marshal(m)
 }
 
 // BasicApplicationResponse represents a simplified response structure for an application.

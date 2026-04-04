@@ -27,6 +27,7 @@ type FlowMetadataResponse struct {
 	OU                        *OUMetadata          `json:"ou,omitempty"`
 	Design                    DesignMetadata       `json:"design"`
 	I18n                      I18nMetadata         `json:"i18n"`
+	UILocale                  string               `json:"uiLocale,omitempty"`
 }
 
 // ApplicationMetadata represents application-specific metadata.
@@ -38,6 +39,12 @@ type ApplicationMetadata struct {
 	URL         string `json:"url,omitempty"`
 	TosURI      string `json:"tosUri,omitempty"`
 	PolicyURI   string `json:"policyUri,omitempty"`
+
+	// Localized variant maps — used internally for ui_locale resolution; not serialized.
+	localisedClientName map[string]string
+	localisedLogoURL    map[string]string
+	localisedTosURI     map[string]string
+	localisedPolicyURI  map[string]string
 }
 
 // OUMetadata represents organization unit metadata.

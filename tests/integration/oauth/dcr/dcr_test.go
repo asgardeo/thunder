@@ -537,6 +537,47 @@ func (ts *DCRTestSuite) registerClientWithError(request DCRRegistrationRequest) 
 	return nil, resp.StatusCode, &errResp
 }
 
+// registerClientRaw sends a DCR registration request as a raw map (preserving #-keyed field names)
+// and returns the decoded response map, HTTP status code, and error response (if any).
+func (ts *DCRTestSuite) registerClientRaw(body map[string]interface{}) (map[string]interface{}, int, *DCRErrorResponse) {
+	requestJSON, err := json.Marshal(body)
+	if err != nil {
+		ts.T().Fatalf("Failed to marshal request: %v", err)
+	}
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+dcrEndpoint, bytes.NewReader(requestJSON))
+	if err != nil {
+		ts.T().Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	token, err := testutils.GetAccessToken()
+	if err != nil {
+		ts.T().Fatalf("Failed to obtain access token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		ts.T().Fatalf("Failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode == http.StatusCreated {
+		var successResp map[string]interface{}
+		json.Unmarshal(responseBody, &successResp)
+		return successResp, resp.StatusCode, nil
+	}
+
+	var errResp DCRErrorResponse
+	json.Unmarshal(responseBody, &errResp)
+	return nil, resp.StatusCode, &errResp
+}
+
 // TestDCRRegistrationWithJWKSURI tests OAuth client registration with JWKS_URI certificate.
 func (ts *DCRTestSuite) TestDCRRegistrationWithJWKSURI() {
 	request := DCRRegistrationRequest{
@@ -1420,4 +1461,226 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithEmptyJWKSAndJWKSUri() {
 	ts.Assert().Equal(http.StatusBadRequest, statusCode)
 	ts.Assert().NotNil(errResp)
 	ts.Assert().Contains(errResp.Error, "invalid_client_metadata")
+}
+
+// ─── Localised Client Metadata Tests (AC-03, AC-05–AC-14, AC-23–AC-25, AC-28) ────
+
+// TestDCRLocalisedClientName_RegistrationAndResponse verifies that client_name with language-tagged
+// variants (client_name#fr, client_name#de) are stored and echoed back in the DCR response (AC-03, AC-28).
+func (ts *DCRTestSuite) TestDCRLocalisedClientName_RegistrationAndResponse() {
+	body := map[string]interface{}{
+		"redirect_uris": []string{"https://locale-test.example.com/callback"},
+		"client_name":   "My App",
+		"client_name#fr": "Mon Application",
+		"client_name#de": "Meine Anwendung",
+		"grant_types":   []string{"authorization_code"},
+		"response_types": []string{"code"},
+	}
+
+	resp, statusCode, _ := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	ts.Assert().Equal("My App", resp["client_name"])
+	ts.Assert().Equal("Mon Application", resp["client_name#fr"])
+	ts.Assert().Equal("Meine Anwendung", resp["client_name#de"])
+
+	appID, _ := resp["app_id"].(string)
+	ts.registeredAppIDs = append(ts.registeredAppIDs, appID)
+}
+
+// TestDCRLocalisedAllFourFields_RegistrationAndResponse verifies all four localisable fields with
+// language-tagged variants round-trip correctly through DCR registration (AC-03, AC-28).
+func (ts *DCRTestSuite) TestDCRLocalisedAllFourFields_RegistrationAndResponse() {
+	body := map[string]interface{}{
+		"redirect_uris":  []string{"https://locale-all.example.com/callback"},
+		"client_name":    "All Four Fields App",
+		"client_name#fr": "App FR",
+		"logo_uri":       "https://example.com/logo.png",
+		"logo_uri#fr":    "https://example.com/logo-fr.png",
+		"tos_uri":        "https://example.com/tos",
+		"tos_uri#fr":     "https://example.com/tos-fr",
+		"policy_uri":     "https://example.com/policy",
+		"policy_uri#fr":  "https://example.com/policy-fr",
+		"grant_types":    []string{"authorization_code"},
+	}
+
+	resp, statusCode, _ := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	ts.Assert().Equal("All Four Fields App", resp["client_name"])
+	ts.Assert().Equal("App FR", resp["client_name#fr"])
+	ts.Assert().Equal("https://example.com/logo-fr.png", resp["logo_uri#fr"])
+	ts.Assert().Equal("https://example.com/tos-fr", resp["tos_uri#fr"])
+	ts.Assert().Equal("https://example.com/policy-fr", resp["policy_uri#fr"])
+
+	appID, _ := resp["app_id"].(string)
+	ts.registeredAppIDs = append(ts.registeredAppIDs, appID)
+}
+
+// TestDCRLocalisedTagNormalisation_Lowercase verifies that uppercase tags like FR-CA are normalised
+// to lowercase fr-ca on storage (AC-05, AC-11).
+func (ts *DCRTestSuite) TestDCRLocalisedTagNormalisation_Lowercase() {
+	body := map[string]interface{}{
+		"redirect_uris":    []string{"https://normalize-test.example.com/callback"},
+		"client_name":      "Normalisation App",
+		"client_name#FR-CA": "Québec",
+		"client_name#en-US": "English",
+		"grant_types":      []string{"authorization_code"},
+	}
+
+	resp, statusCode, _ := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	// Tags must be normalised to lowercase
+	ts.Assert().Equal("Québec", resp["client_name#fr-ca"], "FR-CA should be stored as fr-ca")
+	ts.Assert().Equal("English", resp["client_name#en-us"], "en-US should be stored as en-us")
+	// Uppercase keys must not appear
+	ts.Assert().Nil(resp["client_name#FR-CA"])
+	ts.Assert().Nil(resp["client_name#en-US"])
+
+	appID, _ := resp["app_id"].(string)
+	ts.registeredAppIDs = append(ts.registeredAppIDs, appID)
+}
+
+// TestDCRLocalisedBCP47Validation_EmptyTag verifies that client_name# (empty tag) is rejected (AC-06).
+func (ts *DCRTestSuite) TestDCRLocalisedBCP47Validation_EmptyTag() {
+	body := map[string]interface{}{
+		"redirect_uris": []string{"https://empty-tag.example.com/callback"},
+		"client_name":   "App",
+		"client_name#":  "value",
+	}
+
+	_, statusCode, errResp := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+	ts.Assert().NotNil(errResp)
+	ts.Assert().Equal("invalid_client_metadata", errResp.Error)
+}
+
+// TestDCRLocalisedBCP47Validation_IllegalCharInTag verifies that tags with illegal characters like
+// "en!" are rejected (AC-07).
+func (ts *DCRTestSuite) TestDCRLocalisedBCP47Validation_IllegalCharInTag() {
+	body := map[string]interface{}{
+		"redirect_uris":  []string{"https://illegal-char.example.com/callback"},
+		"client_name":    "App",
+		"client_name#en!": "value",
+	}
+
+	_, statusCode, errResp := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+	ts.Assert().NotNil(errResp)
+	ts.Assert().Equal("invalid_client_metadata", errResp.Error)
+}
+
+// TestDCRLocalisedBCP47Validation_MultipleHashOnLocalisableField verifies that client_name#fr#extra
+// is rejected for a localisable field (AC-08).
+func (ts *DCRTestSuite) TestDCRLocalisedBCP47Validation_MultipleHashOnLocalisableField() {
+	body := map[string]interface{}{
+		"redirect_uris":        []string{"https://multi-hash.example.com/callback"},
+		"client_name":          "App",
+		"client_name#fr#extra": "value",
+	}
+
+	_, statusCode, errResp := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+	ts.Assert().NotNil(errResp)
+	ts.Assert().Equal("invalid_client_metadata", errResp.Error)
+}
+
+// TestDCRLocalisedBCP47Validation_TagExceedsMaxLength verifies that a tag of 36+ characters is rejected (AC-09).
+func (ts *DCRTestSuite) TestDCRLocalisedBCP47Validation_TagExceedsMaxLength() {
+	longTag := "client_name#" + string(make([]byte, 36))
+	// Build a tag of 36 alphabetic characters
+	tag36 := "abcdefghijklmnopqrstuvwxyzabcdefghij" // 36 chars
+	body := map[string]interface{}{
+		"redirect_uris":       []string{"https://long-tag.example.com/callback"},
+		"client_name":         "App",
+		"client_name#" + tag36: "value",
+	}
+	_ = longTag
+
+	_, statusCode, errResp := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+	ts.Assert().NotNil(errResp)
+	ts.Assert().Equal("invalid_client_metadata", errResp.Error)
+}
+
+// TestDCRLocalisedBCP47Validation_UnsupportedFieldSilentlyIgnored verifies that a tagged variant
+// on a non-localisable field (redirect_uris#fr) is silently ignored and registration succeeds (AC-12).
+func (ts *DCRTestSuite) TestDCRLocalisedBCP47Validation_UnsupportedFieldSilentlyIgnored() {
+	body := map[string]interface{}{
+		"redirect_uris":    []string{"https://ignore-field.example.com/callback"},
+		"redirect_uris#fr": "https://example.com",
+		"client_name":      "Unsupported Field App",
+		"grant_types":      []string{"authorization_code"},
+	}
+
+	resp, statusCode, _ := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	ts.Assert().Nil(resp["redirect_uris#fr"], "non-localisable tagged field should be silently dropped")
+
+	appID, _ := resp["app_id"].(string)
+	ts.registeredAppIDs = append(ts.registeredAppIDs, appID)
+}
+
+// TestDCRLocalisedURIValidation_InvalidLogoURIVariant verifies that logo_uri#fr with a URL using an
+// invalid scheme (e.g. ftp://) is rejected with the same rules as the base logo_uri (AC-13).
+func (ts *DCRTestSuite) TestDCRLocalisedURIValidation_InvalidLogoURIVariant() {
+	body := map[string]interface{}{
+		"redirect_uris": []string{"https://uri-validation.example.com/callback"},
+		"client_name":   "URI Validation App",
+		"logo_uri":      "https://example.com/logo.png",
+		"logo_uri#fr":   "ftp://example.com/logo.png",
+	}
+
+	_, statusCode, errResp := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+	ts.Assert().NotNil(errResp)
+	ts.Assert().Equal("invalid_client_metadata", errResp.Error)
+}
+
+// TestDCRLocalisedStorageCap_ExceedsMaxVariants verifies that registering more than 20 locale variants
+// per field is rejected (AC-14).
+func (ts *DCRTestSuite) TestDCRLocalisedStorageCap_ExceedsMaxVariants() {
+	// Use 21 distinct ISO 639-1 language codes
+	langs := []string{"en", "fr", "de", "es", "it", "pt", "zh", "ja", "ko", "ar",
+		"ru", "nl", "sv", "pl", "tr", "cs", "da", "fi", "hu", "ro", "sk"}
+	body := map[string]interface{}{
+		"redirect_uris": []string{"https://storagecap.example.com/callback"},
+		"client_name":   "App",
+	}
+	for _, lang := range langs {
+		body["client_name#"+lang] = "App " + lang
+	}
+
+	_, statusCode, errResp := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+	ts.Assert().NotNil(errResp)
+	ts.Assert().Equal("invalid_client_metadata", errResp.Error)
+}
+
+// TestDCRLocalisedBackwardsCompatibility_NoTaggedVariants verifies that a client registered without
+// any tagged variants has no #-keyed fields in the response (AC-23, AC-24, AC-25).
+func (ts *DCRTestSuite) TestDCRLocalisedBackwardsCompatibility_NoTaggedVariants() {
+	body := map[string]interface{}{
+		"redirect_uris": []string{"https://compat.example.com/callback"},
+		"client_name":   "Compat App",
+		"grant_types":   []string{"authorization_code"},
+	}
+
+	resp, statusCode, _ := ts.registerClientRaw(body)
+
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	for key := range resp {
+		ts.Assert().NotContains(key, "#", "no #-keyed fields should appear for clients without localized variants")
+	}
+
+	appID, _ := resp["app_id"].(string)
+	ts.registeredAppIDs = append(ts.registeredAppIDs, appID)
 }

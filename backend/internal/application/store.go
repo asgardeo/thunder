@@ -545,6 +545,20 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 		jsonData["login_consent"] = loginConsentData
 	}
 
+	// Include localized variant maps if present.
+	if len(app.LocalisedClientName) > 0 {
+		jsonData["client_name_localized"] = app.LocalisedClientName
+	}
+	if len(app.LocalisedLogoURL) > 0 {
+		jsonData["logo_uri_localized"] = app.LocalisedLogoURL
+	}
+	if len(app.LocalisedTosURI) > 0 {
+		jsonData["tos_uri_localized"] = app.LocalisedTosURI
+	}
+	if len(app.LocalisedPolicyURI) > 0 {
+		jsonData["policy_uri_localized"] = app.LocalisedPolicyURI
+	}
+
 	jsonDataBytes, err := json.Marshal(jsonData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal application JSON: %w", err)
@@ -776,6 +790,27 @@ func extractStringArrayFromJSON(data map[string]interface{}, key string) ([]stri
 }
 
 // extractAssertionConfigFromJSON extracts assertion configuration from JSON data.
+func extractStringMapFromJSON(data map[string]interface{}, key string) map[string]string {
+	val, exists := data[key]
+	if !exists || val == nil {
+		return nil
+	}
+	raw, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	result := make(map[string]string, len(raw))
+	for k, v := range raw {
+		if s, ok := v.(string); ok {
+			result[k] = s
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
 func extractAssertionConfigFromJSON(data map[string]interface{}) *model.AssertionConfig {
 	assertionData, exists := data["assertion"]
 	if !exists || assertionData == nil {
@@ -914,6 +949,10 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		AllowedUserTypes:          allowedUserTypes,
 		LoginConsent:              extractLoginConsentConfigFromJSON(appJSONData),
 		Metadata:                  metadata,
+		LocalisedClientName:       extractStringMapFromJSON(appJSONData, "client_name_localized"),
+		LocalisedLogoURL:          extractStringMapFromJSON(appJSONData, "logo_uri_localized"),
+		LocalisedTosURI:           extractStringMapFromJSON(appJSONData, "tos_uri_localized"),
+		LocalisedPolicyURI:        extractStringMapFromJSON(appJSONData, "policy_uri_localized"),
 	}
 
 	if basicApp.ClientID != "" {
