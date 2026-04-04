@@ -1,0 +1,65 @@
+{
+    "name": "Default Magic Link Authentication Flow",
+    "handle": "default-magic-link-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "prompt_email"
+        },
+        {
+            "id": "prompt_email",
+            "type": "PROMPT",
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_001",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "magic_link_action",
+                        "nextNode": "send_magic_link"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "send_magic_link",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "magicLinkURL": "https://localhost:3000/signin"
+            },
+            "executor": {
+                "name": "MagicLinkAuthExecutor",
+                "mode": "send"
+            },
+            "onSuccess": "verify_magic_link"
+        },
+        {
+            "id": "verify_magic_link",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "MagicLinkAuthExecutor",
+                "mode": "verify"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

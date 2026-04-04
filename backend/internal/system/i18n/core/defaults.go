@@ -25,6 +25,8 @@ package core
 // This map is populated by the i18n extraction script at build time.
 // Helper functions for accessing these messages are in helpers.go.
 var defaultMessages = map[string]string{
+	"authn.error.user_not_found": "User not found",
+	"authn.error.user_not_found_description": "No user found with the provided attributes",
 	"error.attributecache.cache_not_found": "Attribute cache not found",
 	"error.attributecache.cache_not_found_description": "The attribute cache entry with the specified ID does not exist",
 	"error.attributecache.internal_server_error": "Internal server error",
@@ -111,6 +113,18 @@ var defaultMessages = map[string]string{
 	"error.i18nservice.translation_not_found_description": "The requested translation does not exist for the specified language, namespace, and key",
 	"error.internal_server_error": "Internal server error",
 	"error.internal_server_error_description": "An unexpected error occurred while processing the request",
+	"error.magiclinkservice.expired_token": "Expired token",
+	"error.magiclinkservice.expired_token_description": "The magic link token has expired",
+	"error.magiclinkservice.invalid_recipient": "Invalid recipient",
+	"error.magiclinkservice.invalid_recipient_description": "The provided recipient email is invalid or empty",
+	"error.magiclinkservice.invalid_token": "Invalid token",
+	"error.magiclinkservice.invalid_token_description": "The provided magic link token is invalid",
+	"error.magiclinkservice.malformed_token_claims": "Malformed token claims",
+	"error.magiclinkservice.malformed_token_claims_description": "The magic link token contains invalid or missing claims",
+	"error.magiclinkservice.resolving_user": "Error resolving user",
+	"error.magiclinkservice.resolving_user_description": "An error occurred while resolving the user for the recipient",
+	"error.magiclinkservice.token_generation_failed": "Token generation failed",
+	"error.magiclinkservice.token_generation_failed_description": "Failed to generate magic link token",
 	"error.templateservice.template_not_found": "Template not found",
 	"error.templateservice.template_not_found_description": "The requested template does not exist for the given scenario",
 }

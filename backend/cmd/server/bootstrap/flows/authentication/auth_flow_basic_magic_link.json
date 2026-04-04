@@ -1,0 +1,96 @@
+{
+    "name": "Default Basic + Magic Link Authentication Flow",
+    "handle": "default-basic-magic-link-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "prompt_credentials"
+        },
+        {
+            "id": "prompt_credentials",
+            "type": "PROMPT",
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_001",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_002",
+                            "identifier": "password",
+                            "type": "PASSWORD_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_001",
+                        "nextNode": "basic_auth"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "collect_email",
+            "onIncomplete": "prompt_credentials"
+        },
+        {
+            "id": "collect_email",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AttributeCollector",
+                "inputs": [
+                    {
+                        "ref": "input_003",
+                        "identifier": "email",
+                        "type": "EMAIL_INPUT",
+                        "required": false
+                    }
+                ]
+            },
+            "onSuccess": "send_magic_link"
+        },
+        {
+            "id": "send_magic_link",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "magicLinkURL": "https://localhost:3000/signin"
+            },
+            "executor": {
+                "name": "MagicLinkAuthExecutor",
+                "mode": "send"
+            },
+            "onSuccess": "verify_magic_link"
+        },
+        {
+            "id": "verify_magic_link",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "MagicLinkAuthExecutor",
+                "mode": "verify"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}
