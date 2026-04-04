@@ -318,6 +318,83 @@ func (suite *ServiceTestSuite) TestValidateRedirectURIs() {
 			},
 			expectError: true,
 		},
+		{
+			name: "Wildcard in scheme rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"myapp*://callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the scheme",
+		},
+		{
+			name: "Wildcard in protocol rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"http*://example.com/callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the scheme",
+		},
+		{
+			name: "Wildcard in host rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://*.example.com/callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the host",
+		},
+		{
+			name: "Wildcard in query string rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback?q=*"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the query string",
+		},
+		{
+			name: "Wildcard in path only accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback/*"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Double star wildcard in path accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/**/callback"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Regex bracket syntax in path rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/callback/[a-z]+"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Regex parenthesis in path rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"https://example.com/(foo|bar)"},
+			},
+			expectError: true,
+			errorMsg:    "regex syntax",
+		},
+		{
+			name: "Deeplink wildcard in path accepted",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"myapp://callback/*"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Deeplink wildcard in scheme rejected",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				RedirectURIs: []string{"my*app://callback"},
+			},
+			expectError: true,
+			errorMsg:    "wildcards in the scheme",
+		},
 	}
 
 	for _, tt := range tests {

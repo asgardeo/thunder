@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -885,6 +886,172 @@ func (suite *HTTPUtilTestSuite) TestDecodeJSONResponse() {
 		assert.Nil(t, result)
 		assert.Contains(t, err.Error(), "response or body is nil")
 	})
+}
+
+func (suite *HTTPUtilTestSuite) TestMatchRedirectURIPattern() {
+	tests := []struct {
+		name      string
+		pattern   string
+		incoming  string
+		wantMatch bool
+		wantErr   bool
+	}{
+		{
+			name:      "ExactMatchNoWildcard",
+			pattern:   "https://example.com/callback",
+			incoming:  "https://example.com/callback",
+			wantMatch: true,
+		},
+		{
+			name:      "ExactMismatch",
+			pattern:   "https://example.com/callback",
+			incoming:  "https://example.com/other",
+			wantMatch: false,
+		},
+		{
+			name:      "SingleStarMatchesOneSegment",
+			pattern:   "https://example.com/callback/*",
+			incoming:  "https://example.com/callback/abc",
+			wantMatch: true,
+		},
+		{
+			name:      "SingleStarNoMatchTwoSegments",
+			pattern:   "https://example.com/callback/*",
+			incoming:  "https://example.com/callback/a/b",
+			wantMatch: false,
+		},
+		{
+			name:      "SingleStarNoMatchEmptySegment",
+			pattern:   "https://example.com/*",
+			incoming:  "https://example.com/",
+			wantMatch: false,
+		},
+		{
+			name:      "DoubleStarMatchesZeroSegments",
+			pattern:   "https://example.com/callback/**",
+			incoming:  "https://example.com/callback",
+			wantMatch: true,
+		},
+		{
+			name:      "DoubleStarMatchesOneSegment",
+			pattern:   "https://example.com/callback/**",
+			incoming:  "https://example.com/callback/a",
+			wantMatch: true,
+		},
+		{
+			name:      "DoubleStarMatchesMultipleSegments",
+			pattern:   "https://example.com/callback/**",
+			incoming:  "https://example.com/callback/a/b/c",
+			wantMatch: true,
+		},
+		{
+			name:      "DoubleStarMidPathZeroSegments",
+			pattern:   "https://example.com/a/**/b",
+			incoming:  "https://example.com/a/b",
+			wantMatch: true,
+		},
+		{
+			name:      "DoubleStarMidPathMultipleSegments",
+			pattern:   "https://example.com/a/**/b",
+			incoming:  "https://example.com/a/x/y/b",
+			wantMatch: true,
+		},
+		{
+			// The recursion depth limit is 32 total calls. For /a/**/b, literal
+			// matches for "" and "a" consume 2 calls, and the final "b" match
+			// consumes 2 more, leaving 28 intermediate segments before the limit.
+			name:      "DoubleStarMatchesExactlyAtDepthLimit",
+			pattern:   "https://example.com/a/**/b",
+			incoming:  "https://example.com/a/" + strings.Repeat("x/", 28) + "b",
+			wantMatch: true,
+		},
+		{
+			// 29 intermediate segments pushes total recursion to depth 33, exceeding the limit.
+			name:      "DoubleStarExceedsDepthLimit",
+			pattern:   "https://example.com/a/**/b",
+			incoming:  "https://example.com/a/" + strings.Repeat("x/", 29) + "b",
+			wantMatch: false,
+		},
+		{
+			name:      "SchemeMismatch",
+			pattern:   "https://example.com/callback",
+			incoming:  "http://example.com/callback",
+			wantMatch: false,
+		},
+		{
+			name:      "HostMismatch",
+			pattern:   "https://example.com/callback",
+			incoming:  "https://other.com/callback",
+			wantMatch: false,
+		},
+		{
+			name:      "QueryMatchesExactly",
+			pattern:   "https://example.com/callback?foo=bar",
+			incoming:  "https://example.com/callback?foo=bar",
+			wantMatch: true,
+		},
+		{
+			name:      "QueryValueMismatch",
+			pattern:   "https://example.com/callback?foo=bar",
+			incoming:  "https://example.com/callback?foo=baz",
+			wantMatch: false,
+		},
+		{
+			name:      "QueryPresentOnPatternOnly",
+			pattern:   "https://example.com/callback?foo=bar",
+			incoming:  "https://example.com/callback",
+			wantMatch: false,
+		},
+		{
+			name:      "IncomingWithFragment",
+			pattern:   "https://example.com/callback",
+			incoming:  "https://example.com/callback#frag",
+			wantMatch: false,
+		},
+		{
+			name:      "DeeplinkExactMatch",
+			pattern:   "myapp://callback",
+			incoming:  "myapp://callback",
+			wantMatch: true,
+		},
+		{
+			name:      "DeeplinkSingleStarMatch",
+			pattern:   "myapp://callback/*",
+			incoming:  "myapp://callback/session",
+			wantMatch: true,
+		},
+		{
+			name:      "DeeplinkSingleStarNoMatchMultiSegment",
+			pattern:   "myapp://callback/*",
+			incoming:  "myapp://callback/a/b",
+			wantMatch: false,
+		},
+		{
+			name:    "MalformedPattern",
+			pattern: "://bad",
+			incoming: "https://example.com/callback",
+			wantErr: true,
+		},
+		{
+			name:    "MalformedIncoming",
+			pattern: "https://example.com/callback",
+			incoming: "://bad",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			matched, err := MatchRedirectURIPattern(tt.pattern, tt.incoming)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.False(t, matched)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantMatch, matched)
+			}
+		})
+	}
 }
 
 // failingResponseWriter is a test helper that simulates write failures

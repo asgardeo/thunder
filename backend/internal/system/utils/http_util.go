@@ -67,6 +67,97 @@ func ParseURL(urlStr string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
+// MatchRedirectURIPattern reports whether incoming matches pattern.
+// pattern may contain * (exactly one path segment) or ** (zero or more path segments)
+// only in the path component. Scheme, host, and query must match exactly (case-insensitive
+// scheme and host per RFC 3986). Returns (false, error) for malformed inputs,
+// (false, nil) for no match, (true, nil) for a match.
+func MatchRedirectURIPattern(pattern, incoming string) (bool, error) {
+	patternURL, err := url.Parse(pattern)
+	if err != nil || patternURL.Scheme == "" || patternURL.Host == "" {
+		return false, errors.New("invalid pattern URI: missing scheme or host")
+	}
+	incomingURL, err := url.Parse(incoming)
+	if err != nil || incomingURL.Scheme == "" || incomingURL.Host == "" {
+		return false, errors.New("invalid incoming URI: missing scheme or host")
+	}
+
+	if !strings.EqualFold(patternURL.Scheme, incomingURL.Scheme) {
+		return false, nil
+	}
+	if !strings.EqualFold(patternURL.Host, incomingURL.Host) {
+		return false, nil
+	}
+	if patternURL.RawQuery != incomingURL.RawQuery {
+		return false, nil
+	}
+	if incomingURL.Fragment != "" {
+		return false, nil
+	}
+	return matchPathPattern(patternURL.Path, incomingURL.Path, 0), nil
+}
+
+// matchPathPattern reports whether incomingPath matches patternPath.
+// Wildcards * (one segment) and ** (zero or more segments) are supported in patternPath.
+// depth guards against excessive recursion.
+func matchPathPattern(patternPath, incomingPath string, depth int) bool {
+	if depth > 32 {
+		return false
+	}
+	patSegs := strings.Split(patternPath, "/")
+	incSegs := strings.Split(incomingPath, "/")
+	return matchSegs(patSegs, incSegs, 0, 0, depth)
+}
+
+func matchSegs(patSegs, incSegs []string, i, j, depth int) bool {
+	if depth > 32 {
+		return false
+	}
+	// Both exhausted.
+	if i == len(patSegs) && j == len(incSegs) {
+		return true
+	}
+	// Pattern exhausted but incoming still has segments.
+	if i == len(patSegs) {
+		return false
+	}
+	// Incoming exhausted but pattern still has segments:
+	// only true if all remaining pattern segments are "**".
+	if j == len(incSegs) {
+		for k := i; k < len(patSegs); k++ {
+			if patSegs[k] != "**" {
+				return false
+			}
+		}
+		return true
+	}
+
+	pSeg := patSegs[i]
+
+	if pSeg == "**" {
+		// Try consuming zero incoming segments (advance pattern only).
+		if matchSegs(patSegs, incSegs, i+1, j, depth+1) {
+			return true
+		}
+		// Try consuming one incoming segment (keep pattern position).
+		return matchSegs(patSegs, incSegs, i, j+1, depth+1)
+	}
+
+	if pSeg == "*" {
+		// Must match exactly one non-empty segment.
+		if incSegs[j] == "" {
+			return false
+		}
+		return matchSegs(patSegs, incSegs, i+1, j+1, depth+1)
+	}
+
+	// Literal segment: must match exactly.
+	if pSeg != incSegs[j] {
+		return false
+	}
+	return matchSegs(patSegs, incSegs, i+1, j+1, depth+1)
+}
+
 // IsValidURI checks if the provided URI is valid.
 func IsValidURI(uri string) bool {
 	if uri == "" {
