@@ -77,6 +77,41 @@ func InitiateAuthorizationFlowWithNonce(
 	)
 }
 
+// InitiateAuthorizationFlowWithUILocale starts the OAuth2 authorization flow with ui_locales parameter.
+// The response is a redirect whose Location header contains the flowId needed for /flow/meta locale tests.
+func InitiateAuthorizationFlowWithUILocale(clientID, redirectURI, responseType, scope, state, uiLocales string) (*http.Response, error) {
+	authURL := TestServerURL + "/oauth2/authorize"
+	params := url.Values{}
+	params.Set("client_id", clientID)
+	params.Set("redirect_uri", redirectURI)
+	params.Set("response_type", responseType)
+	params.Set("scope", scope)
+	params.Set("state", state)
+	if uiLocales != "" {
+		params.Set("ui_locales", uiLocales)
+	}
+
+	req, err := http.NewRequest("GET", authURL+"?"+params.Encode(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create authorization request: %w", err)
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send authorization request: %w", err)
+	}
+	return resp, nil
+}
+
 // initiateAuthorizationFlow starts the OAuth2 authorization flow with all optional parameters.
 // clientID, redirectURI, responseType, scope, and state are required parameters.
 // resource, codeChallenge, codeChallengeMethod, claimsParam, and claimsLocales, and nonce are optional parameters.

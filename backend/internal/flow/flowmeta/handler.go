@@ -86,6 +86,12 @@ func (h *flowMetaHandler) HandleGetFlowMetadata(w http.ResponseWriter, r *http.R
 	metadata, svcErr := h.flowMetaService.GetFlowMetadata(
 		r.Context(), MetaType(metaType), id, flowID, language, namespace)
 	if svcErr != nil {
+		if svcErr.Type != serviceerror.ClientErrorType {
+			h.logger.Error("Failed to retrieve flow metadata",
+				log.String("type", metaType),
+				log.String("id", id),
+				log.String("error", svcErr.Error))
+		}
 		handleServiceError(w, svcErr)
 		return
 	}
