@@ -48,10 +48,33 @@ jwt:
 cors:
   allowed_origins:
     - "https://localhost:3000"
+    - "https://localhost:5190"
+    - "https://localhost:5191"
 
 passkey:
   allowed_origins:
     - "https://localhost:8090"
+    - "https://localhost:3000"
+    - "https://localhost:5190"
+    - "https://localhost:5191"
+
+gate_client:
+  port: 5190
+  scheme: "https"
+  login_path: "/gate/signin"
+
+# Cache configuration
+cache:
+  disabled: false
+  type: "redis"
+  size: 1000
+  ttl: 3600
+  eviction_policy: "LRU"
+  cleanup_interval: 300
+  redis:
+    address: "localhost:6379"
+    db: 0
+    key_prefix: ""
 
 consent:
   enabled: true

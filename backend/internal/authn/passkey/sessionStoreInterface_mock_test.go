@@ -5,8 +5,6 @@
 package passkey
 
 import (
-	"time"
-
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -89,7 +87,7 @@ func (_c *sessionStoreInterfaceMock_deleteSession_Call) RunAndReturn(run func(se
 }
 
 // retrieveSession provides a mock function for the type sessionStoreInterfaceMock
-func (_mock *sessionStoreInterfaceMock) retrieveSession(sessionKey string) (*sessionData, string, string, error) {
+func (_mock *sessionStoreInterfaceMock) retrieveSession(sessionKey string) (*sessionData, error) {
 	ret := _mock.Called(sessionKey)
 
 	if len(ret) == 0 {
@@ -97,10 +95,8 @@ func (_mock *sessionStoreInterfaceMock) retrieveSession(sessionKey string) (*ses
 	}
 
 	var r0 *sessionData
-	var r1 string
-	var r2 string
-	var r3 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*sessionData, string, string, error)); ok {
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (*sessionData, error)); ok {
 		return returnFunc(sessionKey)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string) *sessionData); ok {
@@ -110,22 +106,12 @@ func (_mock *sessionStoreInterfaceMock) retrieveSession(sessionKey string) (*ses
 			r0 = ret.Get(0).(*sessionData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) string); ok {
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
 		r1 = returnFunc(sessionKey)
 	} else {
-		r1 = ret.Get(1).(string)
+		r1 = ret.Error(1)
 	}
-	if returnFunc, ok := ret.Get(2).(func(string) string); ok {
-		r2 = returnFunc(sessionKey)
-	} else {
-		r2 = ret.Get(2).(string)
-	}
-	if returnFunc, ok := ret.Get(3).(func(string) error); ok {
-		r3 = returnFunc(sessionKey)
-	} else {
-		r3 = ret.Error(3)
-	}
-	return r0, r1, r2, r3
+	return r0, r1
 }
 
 // sessionStoreInterfaceMock_retrieveSession_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'retrieveSession'
@@ -152,27 +138,27 @@ func (_c *sessionStoreInterfaceMock_retrieveSession_Call) Run(run func(sessionKe
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_retrieveSession_Call) Return(v *sessionData, s string, s1 string, err error) *sessionStoreInterfaceMock_retrieveSession_Call {
-	_c.Call.Return(v, s, s1, err)
+func (_c *sessionStoreInterfaceMock_retrieveSession_Call) Return(v *sessionData, err error) *sessionStoreInterfaceMock_retrieveSession_Call {
+	_c.Call.Return(v, err)
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_retrieveSession_Call) RunAndReturn(run func(sessionKey string) (*sessionData, string, string, error)) *sessionStoreInterfaceMock_retrieveSession_Call {
+func (_c *sessionStoreInterfaceMock_retrieveSession_Call) RunAndReturn(run func(sessionKey string) (*sessionData, error)) *sessionStoreInterfaceMock_retrieveSession_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // storeSession provides a mock function for the type sessionStoreInterfaceMock
-func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, userID string, relyingPartyID string, session *sessionData, expiryTime time.Time) error {
-	ret := _mock.Called(sessionKey, userID, relyingPartyID, session, expiryTime)
+func (_mock *sessionStoreInterfaceMock) storeSession(sessionKey string, session *sessionData, expirySeconds int64) error {
+	ret := _mock.Called(sessionKey, session, expirySeconds)
 
 	if len(ret) == 0 {
 		panic("no return value specified for storeSession")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, *sessionData, time.Time) error); ok {
-		r0 = returnFunc(sessionKey, userID, relyingPartyID, session, expiryTime)
+	if returnFunc, ok := ret.Get(0).(func(string, *sessionData, int64) error); ok {
+		r0 = returnFunc(sessionKey, session, expirySeconds)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -186,42 +172,30 @@ type sessionStoreInterfaceMock_storeSession_Call struct {
 
 // storeSession is a helper method to define mock.On call
 //   - sessionKey string
-//   - userID string
-//   - relyingPartyID string
 //   - session *sessionData
-//   - expiryTime time.Time
-func (_e *sessionStoreInterfaceMock_Expecter) storeSession(sessionKey interface{}, userID interface{}, relyingPartyID interface{}, session interface{}, expiryTime interface{}) *sessionStoreInterfaceMock_storeSession_Call {
-	return &sessionStoreInterfaceMock_storeSession_Call{Call: _e.mock.On("storeSession", sessionKey, userID, relyingPartyID, session, expiryTime)}
+//   - expirySeconds int64
+func (_e *sessionStoreInterfaceMock_Expecter) storeSession(sessionKey interface{}, session interface{}, expirySeconds interface{}) *sessionStoreInterfaceMock_storeSession_Call {
+	return &sessionStoreInterfaceMock_storeSession_Call{Call: _e.mock.On("storeSession", sessionKey, session, expirySeconds)}
 }
 
-func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey string, userID string, relyingPartyID string, session *sessionData, expiryTime time.Time)) *sessionStoreInterfaceMock_storeSession_Call {
+func (_c *sessionStoreInterfaceMock_storeSession_Call) Run(run func(sessionKey string, session *sessionData, expirySeconds int64)) *sessionStoreInterfaceMock_storeSession_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 string
+		var arg1 *sessionData
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(*sessionData)
 		}
-		var arg2 string
+		var arg2 int64
 		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 *sessionData
-		if args[3] != nil {
-			arg3 = args[3].(*sessionData)
-		}
-		var arg4 time.Time
-		if args[4] != nil {
-			arg4 = args[4].(time.Time)
+			arg2 = args[2].(int64)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -232,7 +206,7 @@ func (_c *sessionStoreInterfaceMock_storeSession_Call) Return(err error) *sessio
 	return _c
 }
 
-func (_c *sessionStoreInterfaceMock_storeSession_Call) RunAndReturn(run func(sessionKey string, userID string, relyingPartyID string, session *sessionData, expiryTime time.Time) error) *sessionStoreInterfaceMock_storeSession_Call {
+func (_c *sessionStoreInterfaceMock_storeSession_Call) RunAndReturn(run func(sessionKey string, session *sessionData, expirySeconds int64) error) *sessionStoreInterfaceMock_storeSession_Call {
 	_c.Call.Return(run)
 	return _c
 }

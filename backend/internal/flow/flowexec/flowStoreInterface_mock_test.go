@@ -95,23 +95,23 @@ func (_c *flowStoreInterfaceMock_DeleteFlowContext_Call) RunAndReturn(run func(c
 }
 
 // GetFlowContext provides a mock function for the type flowStoreInterfaceMock
-func (_mock *flowStoreInterfaceMock) GetFlowContext(ctx context.Context, flowID string) (*FlowContextWithUserDataDB, error) {
+func (_mock *flowStoreInterfaceMock) GetFlowContext(ctx context.Context, flowID string) (*FlowContextDB, error) {
 	ret := _mock.Called(ctx, flowID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFlowContext")
 	}
 
-	var r0 *FlowContextWithUserDataDB
+	var r0 *FlowContextDB
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*FlowContextWithUserDataDB, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*FlowContextDB, error)); ok {
 		return returnFunc(ctx, flowID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *FlowContextWithUserDataDB); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *FlowContextDB); ok {
 		r0 = returnFunc(ctx, flowID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*FlowContextWithUserDataDB)
+			r0 = ret.Get(0).(*FlowContextDB)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -152,12 +152,12 @@ func (_c *flowStoreInterfaceMock_GetFlowContext_Call) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_GetFlowContext_Call) Return(flowContextWithUserDataDB *FlowContextWithUserDataDB, err error) *flowStoreInterfaceMock_GetFlowContext_Call {
-	_c.Call.Return(flowContextWithUserDataDB, err)
+func (_c *flowStoreInterfaceMock_GetFlowContext_Call) Return(flowContextDB *FlowContextDB, err error) *flowStoreInterfaceMock_GetFlowContext_Call {
+	_c.Call.Return(flowContextDB, err)
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_GetFlowContext_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*FlowContextWithUserDataDB, error)) *flowStoreInterfaceMock_GetFlowContext_Call {
+func (_c *flowStoreInterfaceMock_GetFlowContext_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*FlowContextDB, error)) *flowStoreInterfaceMock_GetFlowContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

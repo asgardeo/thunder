@@ -32,7 +32,7 @@ import (
 // flowStoreInterface defines the methods for flow context storage operations.
 type flowStoreInterface interface {
 	StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error
-	GetFlowContext(ctx context.Context, flowID string) (*FlowContextWithUserDataDB, error)
+	GetFlowContext(ctx context.Context, flowID string) (*FlowContextDB, error)
 	UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error
 	DeleteFlowContext(ctx context.Context, flowID string) error
 }
@@ -53,7 +53,6 @@ func newFlowStore(dbProvider provider.DBProviderInterface) flowStoreInterface {
 
 // StoreFlowContext stores the complete flow context in the database.
 func (s *flowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error {
-	// Convert engine context to database model
 	dbModel, err := FromEngineContext(engineCtx)
 	if err != nil {
 		return fmt.Errorf("failed to convert engine context to database model: %w", err)
@@ -62,26 +61,18 @@ func (s *flowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContex
 	expiryTime := time.Now().UTC().Add(time.Duration(expirySeconds) * time.Second)
 
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
-		if _, err := dbClient.ExecuteContext(ctx, QueryCreateFlowContext,
-			dbModel.FlowID, dbModel.AppID, dbModel.Verbose,
-			dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.GraphID,
-			dbModel.RuntimeData, dbModel.ExecutionHistory, expiryTime, s.deploymentID); err != nil {
-			return err
-		}
-		_, err := dbClient.ExecuteContext(ctx, QueryCreateFlowUserData, dbModel.FlowID,
-			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OUID,
-			dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
-			dbModel.AvailableAttributes, s.deploymentID)
+		_, err := dbClient.ExecuteContext(ctx, QueryCreateFlowContext,
+			dbModel.FlowID, s.deploymentID, dbModel.Context, expiryTime)
 		return err
 	})
 }
 
 // GetFlowContext retrieves the flow context from the database.
-func (s *flowStore) GetFlowContext(ctx context.Context, flowID string) (*FlowContextWithUserDataDB, error) {
-	var result *FlowContextWithUserDataDB
+func (s *flowStore) GetFlowContext(ctx context.Context, flowID string) (*FlowContextDB, error) {
+	var result *FlowContextDB
 
 	err := withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.QueryContext(ctx, QueryGetFlowContextWithUserData,
+		results, err := dbClient.QueryContext(ctx, QueryGetFlowContext,
 			flowID, s.deploymentID, time.Now().UTC())
 		if err != nil {
 			return fmt.Errorf("failed to execute query: %w", err)
@@ -109,22 +100,14 @@ func (s *flowStore) GetFlowContext(ctx context.Context, flowID string) (*FlowCon
 
 // UpdateFlowContext updates the flow context in the database.
 func (s *flowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error {
-	// Convert engine context to database model
 	dbModel, err := FromEngineContext(engineCtx)
 	if err != nil {
 		return fmt.Errorf("failed to convert engine context to database model: %w", err)
 	}
 
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
-		if _, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowContext, dbModel.FlowID,
-			dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.RuntimeData, dbModel.ExecutionHistory,
-			s.deploymentID); err != nil {
-			return err
-		}
-		_, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowUserData, dbModel.FlowID,
-			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OUID, dbModel.UserType,
-			dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
-			dbModel.AvailableAttributes, s.deploymentID)
+		_, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowContext,
+			dbModel.FlowID, dbModel.Context, s.deploymentID)
 		return err
 	})
 }
@@ -132,9 +115,6 @@ func (s *flowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineConte
 // DeleteFlowContext removes the flow context from the database.
 func (s *flowStore) DeleteFlowContext(ctx context.Context, flowID string) error {
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
-		if _, err := dbClient.ExecuteContext(ctx, QueryDeleteFlowUserData, flowID, s.deploymentID); err != nil {
-			return err
-		}
 		_, err := dbClient.ExecuteContext(ctx, QueryDeleteFlowContext, flowID, s.deploymentID)
 		return err
 	})
@@ -150,22 +130,16 @@ func withRuntimeDBClientContext(_ context.Context, dbProvider provider.DBProvide
 	return fn(dbClient)
 }
 
-// buildFlowContextFromResultRow builds a FlowContextWithUserDataDB from a database result row.
-func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*FlowContextWithUserDataDB, error) {
-	// Parse required fields
-	flowID, ok := row["flow_id"].(string)
+// buildFlowContextFromResultRow builds a FlowContextDB from a database result row.
+func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*FlowContextDB, error) {
+	id, ok := row["flow_id"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse flow_id as string")
+		return nil, errors.New("failed to parse id as string")
 	}
 
-	appID, ok := row["app_id"].(string)
-	if !ok {
-		return nil, errors.New("failed to parse app_id as string")
-	}
-
-	graphID, ok := row["graph_id"].(string)
-	if !ok {
-		return nil, errors.New("failed to parse graph_id as string")
+	contextStr := s.parseRequiredString(row["context"])
+	if contextStr == nil {
+		return nil, errors.New("failed to parse context as string")
 	}
 
 	expiryTime, err := s.parseTimeField(row["expiry_time"], "expiry_time")
@@ -173,53 +147,21 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		return nil, err
 	}
 
-	// Parse optional fields
-	currentNodeID := s.parseOptionalString(row["current_node_id"])
-	currentAction := s.parseOptionalString(row["current_action"])
-	userID := s.parseOptionalString(row["user_id"])
-	oUID := s.parseOptionalString(row["ou_id"])
-	userType := s.parseOptionalString(row["user_type"])
-	userInputs := s.parseOptionalString(row["user_inputs"])
-	runtimeData := s.parseOptionalString(row["runtime_data"])
-	userAttributes := s.parseOptionalString(row["user_attributes"])
-	token := s.parseOptionalString(row["token"])
-	availableAttributes := s.parseOptionalString(row["available_attributes"])
-	executionHistory := s.parseOptionalString(row["execution_history"])
-
-	// Parse boolean fields with type conversion support
-	isAuthenticated := s.parseBoolean(row["is_authenticated"])
-	verbose := s.parseBoolean(row["verbose"])
-
-	return &FlowContextWithUserDataDB{
-		FlowID:              flowID,
-		AppID:               appID,
-		CurrentNodeID:       currentNodeID,
-		CurrentAction:       currentAction,
-		GraphID:             graphID,
-		RuntimeData:         runtimeData,
-		Verbose:             verbose,
-		IsAuthenticated:     isAuthenticated,
-		UserID:              userID,
-		OUID:                oUID,
-		UserType:            userType,
-		UserInputs:          userInputs,
-		UserAttributes:      userAttributes,
-		Token:               token,
-		AvailableAttributes: availableAttributes,
-		ExecutionHistory:    executionHistory,
-		ExpiryTime:          expiryTime,
+	return &FlowContextDB{
+		FlowID:     id,
+		Context:    *contextStr,
+		ExpiryTime: expiryTime,
 	}, nil
 }
 
-// parseOptionalString safely parses an optional string field from the database row
-func (s *flowStore) parseOptionalString(value interface{}) *string {
+// parseRequiredString parses a required string field from the database row.
+func (s *flowStore) parseRequiredString(value interface{}) *string {
 	if value == nil {
 		return nil
 	}
 	if str, ok := value.(string); ok {
 		return &str
 	}
-	// Handle []byte type (PostgreSQL may return TEXT/JSON as []byte)
 	if bytes, ok := value.([]byte); ok {
 		str := string(bytes)
 		return &str
@@ -227,35 +169,15 @@ func (s *flowStore) parseOptionalString(value interface{}) *string {
 	return nil
 }
 
-// parseBoolean safely parses a boolean field from the database row with type conversion support
-func (s *flowStore) parseBoolean(value interface{}) bool {
-	if value == nil {
-		return false
-	}
-
-	if boolVal, ok := value.(bool); ok {
-		return boolVal
-	}
-
-	if intVal, ok := value.(int64); ok {
-		return intVal != 0
-	}
-
-	return false
-}
-
 // parseTimeField safely parses a time field from the database row handling multiple formats.
-// This follows the pattern used in other stores for consistency.
 func (s *flowStore) parseTimeField(field interface{}, fieldName string) (time.Time, error) {
 	const customTimeFormat = "2006-01-02 15:04:05.999999999"
 
 	switch v := field.(type) {
 	case string:
-		// Handle SQLite datetime strings
 		trimmedTime := s.trimTimeString(v)
 		parsedTime, err := time.Parse(customTimeFormat, trimmedTime)
 		if err != nil {
-			// Try alternative ISO 8601 format as fallback
 			parsedTime, err = time.Parse(time.RFC3339, v)
 			if err != nil {
 				return time.Time{}, fmt.Errorf("error parsing %s: %w", fieldName, err)

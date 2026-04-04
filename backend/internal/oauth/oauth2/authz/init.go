@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -37,26 +38,32 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 ) (AuthorizeServiceInterface, error) {
-	authzCodeStore := newAuthorizationCodeStore()
-	authzReqStore := newAuthorizationRequestStore()
-
-	dbProvider := provider.GetDBProvider()
-	runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
+	authzCodeStore, authzReqStore, err := initializeAuthorizationStores()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database client for authorization service")
-	}
-
-	transactioner, err := runtimeDBClient.GetTransactioner()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
+		return nil, fmt.Errorf("failed to initialize authorization stores: %w", err)
 	}
 
 	authzService := newAuthorizeService(
-		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore, transactioner,
+		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore,
 	)
 	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)
 	return authzService, nil
+}
+
+// initializeAuthorizationStores creates the authorization code and request stores.
+func initializeAuthorizationStores() (AuthorizationCodeStoreInterface, authorizationRequestStoreInterface, error) {
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
+		redisProvider := provider.GetRedisProvider()
+		return newRedisAuthorizationCodeStore(redisProvider),
+			newRedisAuthorizationRequestStore(redisProvider),
+			nil
+	}
+	codeStore, err := newAuthorizationCodeStore()
+	if err != nil {
+		return nil, nil, err
+	}
+	return codeStore, newAuthorizationRequestStore(), nil
 }
 
 // registerRoutes registers the routes for OAuth2 authorization operations.

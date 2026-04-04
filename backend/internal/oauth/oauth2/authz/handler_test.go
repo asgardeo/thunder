@@ -509,7 +509,6 @@ func (suite *AuthorizeHandlerTestSuite) TestGetAuthorizationCode_Success() {
 	assert.Equal(suite.T(), "openid profile read write", result.Scopes)
 	assert.Equal(suite.T(), AuthCodeStateActive, result.State)
 	assert.NotZero(suite.T(), result.TimeCreated)
-	assert.True(suite.T(), result.ExpiryTime.After(result.TimeCreated))
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestGetAuthorizationCode_MissingClientID() {
@@ -587,8 +586,6 @@ func (suite *AuthorizeHandlerTestSuite) TestGetAuthorizationCode_ZeroAuthTime() 
 	afterCreation := time.Now()
 	assert.True(suite.T(), result.TimeCreated.After(beforeCreation) || result.TimeCreated.Equal(beforeCreation))
 	assert.True(suite.T(), result.TimeCreated.Before(afterCreation) || result.TimeCreated.Equal(afterCreation))
-	assert.True(suite.T(), result.ExpiryTime.After(result.TimeCreated))
-	assert.WithinDuration(suite.T(), result.TimeCreated.Add(10*time.Minute), result.ExpiryTime, time.Second)
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestCreateAuthorizationCode_WithClaimsLocales() {

@@ -21,12 +21,12 @@ package passkey
 import (
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 type SessionUtilsTestSuite struct {
@@ -80,6 +80,7 @@ func (suite *SessionServiceTestSuite) SetupTest() {
 	suite.mockSessionStore = newSessionStoreInterfaceMock(suite.T())
 	suite.service = &passkeyService{
 		sessionStore: suite.mockSessionStore,
+		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
 
@@ -92,13 +93,11 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_Success() {
 	// Mock successful session storage
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"), // sessionKey (random)
-		testUserID,
-		testRelyingPartyID,
 		sessionData,
-		mock.AnythingOfType("time.Time"), // expiresAt
+		mock.AnythingOfType("int64"), // expirySeconds
 	).Return(nil).Once()
 
-	sessionKey, err := suite.service.storeSessionData(testUserID, testRelyingPartyID, sessionData)
+	sessionKey, err := suite.service.storeSessionData(sessionData)
 
 	suite.Nil(err)
 	suite.NotEmpty(sessionKey)
@@ -115,13 +114,11 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_StoreSessionError() {
 	storeError := errors.New("database error")
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"),
-		testUserID,
-		testRelyingPartyID,
 		sessionData,
-		mock.AnythingOfType("time.Time"),
+		mock.AnythingOfType("int64"),
 	).Return(storeError).Once()
 
-	sessionKey, err := suite.service.storeSessionData(testUserID, testRelyingPartyID, sessionData)
+	sessionKey, err := suite.service.storeSessionData(sessionData)
 
 	suite.NotNil(err)
 	suite.Equal(&serviceerror.InternalServerError, err)
@@ -135,22 +132,13 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_ExpiryCalculation() {
 		Challenge: "dGVzdC1jaGFsbGVuZ2U",
 	}
 
-	startTime := time.Now()
-
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"),
-		testUserID,
-		testRelyingPartyID,
 		sessionData,
-		mock.MatchedBy(func(expiresAt time.Time) bool {
-			// Verify expiry is approximately sessionTTLSeconds in the future
-			expectedExpiry := startTime.Add(time.Duration(sessionTTLSeconds) * time.Second)
-			diff := expiresAt.Sub(expectedExpiry).Abs()
-			return diff < 1*time.Second // Allow 1 second tolerance
-		}),
+		int64(sessionTTLSeconds),
 	).Return(nil).Once()
 
-	_, err := suite.service.storeSessionData(testUserID, testRelyingPartyID, sessionData)
+	_, err := suite.service.storeSessionData(sessionData)
 
 	suite.Nil(err)
 	suite.mockSessionStore.AssertExpectations(suite.T())
@@ -158,16 +146,18 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_ExpiryCalculation() {
 
 func (suite *SessionServiceTestSuite) TestRetrieveSessionData_Success() {
 	expectedSessionData := &sessionData{
-		Challenge: "dGVzdC1jaGFsbGVuZ2U",
+		Challenge:      "dGVzdC1jaGFsbGVuZ2U",
+		RelyingPartyID: testRelyingPartyID,
+		UserID:         []byte(testUserID),
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
-		Return(expectedSessionData, testUserID, testRelyingPartyID, nil).Once()
+		Return(expectedSessionData, nil).Once()
 
-	sessionData, userID, relyingPartyID, err := suite.service.retrieveSessionData(testSessionToken)
+	session, userID, relyingPartyID, err := suite.service.retrieveSessionData(testSessionToken)
 
 	suite.Nil(err)
-	suite.Equal(expectedSessionData, sessionData)
+	suite.Equal(expectedSessionData, session)
 	suite.Equal(testUserID, userID)
 	suite.Equal(testRelyingPartyID, relyingPartyID)
 	suite.mockSessionStore.AssertExpectations(suite.T())
@@ -178,13 +168,13 @@ func (suite *SessionServiceTestSuite) TestRetrieveSessionData_RetrieveError() {
 	retrieveError := errors.New("session not found")
 
 	suite.mockSessionStore.On("retrieveSession", sessionKey).
-		Return(nil, "", "", retrieveError).Once()
+		Return(nil, retrieveError).Once()
 
-	sessionData, userID, relyingPartyID, err := suite.service.retrieveSessionData(sessionKey)
+	session, userID, relyingPartyID, err := suite.service.retrieveSessionData(sessionKey)
 
 	suite.NotNil(err)
-	suite.Equal(&ErrorSessionExpired, err)
-	suite.Nil(sessionData)
+	suite.Equal(&serviceerror.InternalServerError, err)
+	suite.Nil(session)
 	suite.Empty(userID)
 	suite.Empty(relyingPartyID)
 	suite.mockSessionStore.AssertExpectations(suite.T())
@@ -193,13 +183,13 @@ func (suite *SessionServiceTestSuite) TestRetrieveSessionData_RetrieveError() {
 func (suite *SessionServiceTestSuite) TestRetrieveSessionData_NilSessionData() {
 	// Mock returns nil sessionData even though no error
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
-		Return(nil, testUserID, testRelyingPartyID, nil).Once()
+		Return(nil, nil).Once()
 
-	sessionData, userID, relyingPartyID, err := suite.service.retrieveSessionData(testSessionToken)
+	session, userID, relyingPartyID, err := suite.service.retrieveSessionData(testSessionToken)
 
 	suite.NotNil(err)
 	suite.Equal(&ErrorSessionExpired, err)
-	suite.Nil(sessionData)
+	suite.Nil(session)
 	suite.Empty(userID)
 	suite.Empty(relyingPartyID)
 	suite.mockSessionStore.AssertExpectations(suite.T())
@@ -211,13 +201,13 @@ func (suite *SessionServiceTestSuite) TestRetrieveSessionData_ExpiredSession() {
 	expiredError := errors.New("session expired")
 
 	suite.mockSessionStore.On("retrieveSession", sessionKey).
-		Return(nil, "", "", expiredError).Once()
+		Return(nil, expiredError).Once()
 
-	sessionData, userID, relyingPartyID, err := suite.service.retrieveSessionData(sessionKey)
+	session, userID, relyingPartyID, err := suite.service.retrieveSessionData(sessionKey)
 
 	suite.NotNil(err)
-	suite.Equal(&ErrorSessionExpired, err)
-	suite.Nil(sessionData)
+	suite.Equal(&serviceerror.InternalServerError, err)
+	suite.Nil(session)
 	suite.Empty(userID)
 	suite.Empty(relyingPartyID)
 	suite.mockSessionStore.AssertExpectations(suite.T())
@@ -270,10 +260,8 @@ func (suite *SessionServiceTestSuite) TestSessionRoundTrip() {
 	// Mock store
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"),
-		testUserID,
-		testRelyingPartyID,
 		sessionData,
-		mock.AnythingOfType("time.Time"),
+		mock.AnythingOfType("int64"),
 	).Run(func(args mock.Arguments) {
 		capturedSessionKey = args.Get(0).(string)
 	}).Return(nil).Once()
@@ -281,7 +269,7 @@ func (suite *SessionServiceTestSuite) TestSessionRoundTrip() {
 	// Mock retrieve with captured key
 	suite.mockSessionStore.On("retrieveSession", mock.MatchedBy(func(key string) bool {
 		return key == capturedSessionKey
-	})).Return(sessionData, testUserID, testRelyingPartyID, nil).Once()
+	})).Return(sessionData, nil).Once()
 
 	// Mock delete
 	suite.mockSessionStore.On("deleteSession", mock.MatchedBy(func(key string) bool {
@@ -289,7 +277,7 @@ func (suite *SessionServiceTestSuite) TestSessionRoundTrip() {
 	})).Return(nil).Once()
 
 	// Store
-	sessionKey, err := suite.service.storeSessionData(testUserID, testRelyingPartyID, sessionData)
+	sessionKey, err := suite.service.storeSessionData(sessionData)
 	suite.Nil(err)
 	suite.NotEmpty(sessionKey)
 
