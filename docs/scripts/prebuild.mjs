@@ -54,6 +54,9 @@ async function generateDocs() {
     // Generate OpenAPI specs
     executeScript('API Specs Generator', join(__dirname, 'merge-openapi-specs.mjs'));
 
+    // Generate Postman collections from OpenAPI specs
+    executeScript('Postman Collections Generator', join(__dirname, 'generate-postman-collections.mjs'));
+
     // Generate changelog
     executeScript('Changelog Generator', join(__dirname, 'generate-changelog.mjs'));
 

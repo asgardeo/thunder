@@ -28,6 +28,7 @@
     "docusaurus": "docusaurus",
     "generate:api-specs": "node ./scripts/merge-openapi-specs.mjs",
     "generate:changelog": "node ./scripts/generate-changelog.mjs",
+    "generate:postman-collections": "node ./scripts/generate-postman-collections.mjs",
     "prebuild": "node ./scripts/prebuild.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -60,6 +61,7 @@
     "@docusaurus/tsconfig": "3.9.2",
     "@docusaurus/types": "3.9.2",
     "typescript": "~5.6.2",
+    "openapi-to-postmanv2": "4.23.0",
     "yaml": "^2.8.2"
   },
   "browserslist": {
