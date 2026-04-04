@@ -144,7 +144,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Store session data in cache with TTL
-	sessionToken, svcErr := w.storeSessionData(req.UserID, req.RelyingPartyID, sessionData)
+	sessionToken, svcErr := w.storeSessionData(sessionData)
 	if svcErr != nil {
 		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
 		return nil, svcErr
@@ -297,9 +297,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 	// Check if this is usernameless flow
 	isUsernameless := strings.TrimSpace(req.UserID) == ""
 
-	userID := req.UserID
 	if isUsernameless {
-		userID = ""
 		logger.Debug("Starting usernameless passkey authentication",
 			log.String("relyingPartyID", req.RelyingPartyID))
 	} else {
@@ -367,8 +365,8 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 		}
 	}
 
-	// Store session data in cache with TTL using normalized userID
-	sessionToken, svcErr := w.storeSessionData(userID, req.RelyingPartyID, sessionData)
+	// Store session data in cache with TTL
+	sessionToken, svcErr := w.storeSessionData(sessionData)
 	if svcErr != nil {
 		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
 		return nil, svcErr

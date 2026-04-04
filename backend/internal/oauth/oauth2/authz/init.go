@@ -37,19 +37,15 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 ) (AuthorizeServiceInterface, error) {
-	authzCodeStore := newAuthorizationCodeStore()
-	authzReqStore := newAuthorizationRequestStore()
+	authzCodeStore := initializeAuthorizationCodeStore()
 
 	dbProvider := provider.GetDBProvider()
-	runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
+	transactioner, err := dbProvider.GetRuntimeDBTransactioner()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database client for authorization service")
+		return nil, fmt.Errorf("failed to get runtime DB transactioner: %w", err)
 	}
 
-	transactioner, err := runtimeDBClient.GetTransactioner()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
-	}
+	authzReqStore := newAuthorizationRequestStore()
 
 	authzService := newAuthorizeService(
 		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore, transactioner,
@@ -57,6 +53,11 @@ func Initialize(
 	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)
 	return authzService, nil
+}
+
+// initializeAuthorizationCodeStore creates the authorization code store.
+func initializeAuthorizationCodeStore() AuthorizationCodeStoreInterface {
+	return newAuthorizationCodeStore()
 }
 
 // registerRoutes registers the routes for OAuth2 authorization operations.

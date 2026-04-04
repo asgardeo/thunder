@@ -38,8 +38,8 @@ func (_m *AuthorizationCodeStoreInterfaceMock) EXPECT() *AuthorizationCodeStoreI
 }
 
 // ConsumeAuthorizationCode provides a mock function for the type AuthorizationCodeStoreInterfaceMock
-func (_mock *AuthorizationCodeStoreInterfaceMock) ConsumeAuthorizationCode(ctx context.Context, clientID string, authCode string) (bool, error) {
-	ret := _mock.Called(ctx, clientID, authCode)
+func (_mock *AuthorizationCodeStoreInterfaceMock) ConsumeAuthorizationCode(ctx context.Context, authCode string) (bool, error) {
+	ret := _mock.Called(ctx, authCode)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ConsumeAuthorizationCode")
@@ -47,16 +47,16 @@ func (_mock *AuthorizationCodeStoreInterfaceMock) ConsumeAuthorizationCode(ctx c
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (bool, error)); ok {
-		return returnFunc(ctx, clientID, authCode)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, authCode)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
-		r0 = returnFunc(ctx, clientID, authCode)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, authCode)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, clientID, authCode)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, authCode)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -70,13 +70,12 @@ type AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call struct {
 
 // ConsumeAuthorizationCode is a helper method to define mock.On call
 //   - ctx context.Context
-//   - clientID string
 //   - authCode string
-func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) ConsumeAuthorizationCode(ctx interface{}, clientID interface{}, authCode interface{}) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
-	return &AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call{Call: _e.mock.On("ConsumeAuthorizationCode", ctx, clientID, authCode)}
+func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) ConsumeAuthorizationCode(ctx interface{}, authCode interface{}) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
+	return &AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call{Call: _e.mock.On("ConsumeAuthorizationCode", ctx, authCode)}
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) Run(run func(ctx context.Context, clientID string, authCode string)) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
+func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) Run(run func(ctx context.Context, authCode string)) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -86,14 +85,9 @@ func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) Run
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -104,14 +98,14 @@ func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) Ret
 	return _c
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) RunAndReturn(run func(ctx context.Context, clientID string, authCode string) (bool, error)) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
+func (_c *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call) RunAndReturn(run func(ctx context.Context, authCode string) (bool, error)) *AuthorizationCodeStoreInterfaceMock_ConsumeAuthorizationCode_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetAuthorizationCode provides a mock function for the type AuthorizationCodeStoreInterfaceMock
-func (_mock *AuthorizationCodeStoreInterfaceMock) GetAuthorizationCode(ctx context.Context, clientID string, authCode string) (*AuthorizationCode, error) {
-	ret := _mock.Called(ctx, clientID, authCode)
+func (_mock *AuthorizationCodeStoreInterfaceMock) GetAuthorizationCode(ctx context.Context, authCode string) (*AuthorizationCode, error) {
+	ret := _mock.Called(ctx, authCode)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAuthorizationCode")
@@ -119,18 +113,18 @@ func (_mock *AuthorizationCodeStoreInterfaceMock) GetAuthorizationCode(ctx conte
 
 	var r0 *AuthorizationCode
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*AuthorizationCode, error)); ok {
-		return returnFunc(ctx, clientID, authCode)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*AuthorizationCode, error)); ok {
+		return returnFunc(ctx, authCode)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *AuthorizationCode); ok {
-		r0 = returnFunc(ctx, clientID, authCode)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *AuthorizationCode); ok {
+		r0 = returnFunc(ctx, authCode)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*AuthorizationCode)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, clientID, authCode)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, authCode)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -144,13 +138,12 @@ type AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call struct {
 
 // GetAuthorizationCode is a helper method to define mock.On call
 //   - ctx context.Context
-//   - clientID string
 //   - authCode string
-func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) GetAuthorizationCode(ctx interface{}, clientID interface{}, authCode interface{}) *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call {
-	return &AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call{Call: _e.mock.On("GetAuthorizationCode", ctx, clientID, authCode)}
+func (_e *AuthorizationCodeStoreInterfaceMock_Expecter) GetAuthorizationCode(ctx interface{}, authCode interface{}) *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call {
+	return &AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call{Call: _e.mock.On("GetAuthorizationCode", ctx, authCode)}
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call) Run(run func(ctx context.Context, clientID string, authCode string)) *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call {
+func (_c *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call) Run(run func(ctx context.Context, authCode string)) *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -160,14 +153,9 @@ func (_c *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call) Run(run
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -178,7 +166,7 @@ func (_c *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call) Return(
 	return _c
 }
 
-func (_c *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call) RunAndReturn(run func(ctx context.Context, clientID string, authCode string) (*AuthorizationCode, error)) *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call {
+func (_c *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call) RunAndReturn(run func(ctx context.Context, authCode string) (*AuthorizationCode, error)) *AuthorizationCodeStoreInterfaceMock_GetAuthorizationCode_Call {
 	_c.Call.Return(run)
 	return _c
 }

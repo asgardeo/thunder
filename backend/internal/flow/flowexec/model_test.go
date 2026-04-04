@@ -19,6 +19,7 @@
 package flowexec
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -54,6 +55,13 @@ func TestModelTestSuite(t *testing.T) {
 	}
 
 	suite.Run(t, new(ModelTestSuite))
+}
+
+func (s *ModelTestSuite) getContextContent(dbModel *FlowContextDB) flowContextContent {
+	var content flowContextContent
+	err := json.Unmarshal([]byte(dbModel.Context), &content)
+	s.NoError(err)
+	return content
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
@@ -92,18 +100,20 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.FlowID)
-	s.Equal("test-app-id", dbModel.AppID)
-	s.True(dbModel.Verbose)
-	s.True(dbModel.IsAuthenticated)
-	s.NotNil(dbModel.UserID)
-	s.Equal("user-123", *dbModel.UserID)
+
+	content := s.getContextContent(dbModel)
+	s.Equal("test-app-id", content.AppID)
+	s.True(content.Verbose)
+	s.True(content.IsAuthenticated)
+	s.NotNil(content.UserID)
+	s.Equal("user-123", *content.UserID)
 
 	// Verify token is encrypted (not equal to original)
-	s.NotNil(dbModel.Token)
-	s.NotEqual(testToken, *dbModel.Token)
+	s.NotNil(content.Token)
+	s.NotEqual(testToken, *content.Token)
 
 	// Verify token can be decrypted back
-	s.Greater(len(*dbModel.Token), 0)
+	s.Greater(len(*content.Token), 0)
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
@@ -137,10 +147,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.FlowID)
-	s.True(dbModel.IsAuthenticated)
+
+	content := s.getContextContent(dbModel)
+	s.True(content.IsAuthenticated)
 
 	// Verify token is nil when empty
-	s.Nil(dbModel.Token)
+	s.Nil(content.Token)
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_WithEmptyAuthenticatedUser() {
@@ -166,9 +178,11 @@ func (s *ModelTestSuite) TestFromEngineContext_WithEmptyAuthenticatedUser() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(dbModel)
-	s.False(dbModel.IsAuthenticated)
-	s.Nil(dbModel.UserID)
-	s.Nil(dbModel.Token)
+
+	content := s.getContextContent(dbModel)
+	s.False(content.IsAuthenticated)
+	s.Nil(content.UserID)
+	s.Nil(content.Token)
 }
 
 func (s *ModelTestSuite) TestToEngineContext_WithToken() {
@@ -199,7 +213,8 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
-	s.NotNil(dbModel.Token)
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.Token)
 
 	// Execute - Convert back to EngineContext
 	resultCtx, err := dbModel.ToEngineContext(mockGraph)
@@ -226,8 +241,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutToken() {
 	executionHistory := `{}`
 	userID := testUserID789
 
-	dbModel := &FlowContextWithUserDataDB{
-		FlowID:           "test-flow-id",
+	content := flowContextContent{
 		AppID:            "test-app-id",
 		Verbose:          true,
 		GraphID:          "test-graph-id",
@@ -238,6 +252,11 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutToken() {
 		UserAttributes:   &userAttributes,
 		ExecutionHistory: &executionHistory,
 		Token:            nil, // No token
+	}
+	contextJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		FlowID:  "test-flow-id",
+		Context: string(contextJSON),
 	}
 
 	// Execute
@@ -288,10 +307,11 @@ func (s *ModelTestSuite) TestTokenEncryptionDecryptionRoundTrip() {
 			// Convert to DB model (encrypts token)
 			dbModel, err := FromEngineContext(ctx)
 			s.NoError(err)
-			s.NotNil(dbModel.Token)
+			content := s.getContextContent(dbModel)
+			s.NotNil(content.Token)
 
 			// Verify token is encrypted
-			s.NotEqual(testToken, *dbModel.Token)
+			s.NotEqual(testToken, *content.Token)
 
 			// Convert back to EngineContext (decrypts token)
 			resultCtx, err := dbModel.ToEngineContext(mockGraph)
@@ -313,8 +333,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithInvalidEncryptedToken() {
 	userAttributes := `{}`
 	executionHistory := `{}`
 
-	dbModel := &FlowContextWithUserDataDB{
-		FlowID:           "test-flow-id",
+	content := flowContextContent{
 		AppID:            "test-app-id",
 		GraphID:          "test-graph-id",
 		IsAuthenticated:  true,
@@ -323,6 +342,11 @@ func (s *ModelTestSuite) TestToEngineContext_WithInvalidEncryptedToken() {
 		UserAttributes:   &userAttributes,
 		ExecutionHistory: &executionHistory,
 		Token:            &invalidToken,
+	}
+	contextJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		FlowID:  "test-flow-id",
+		Context: string(contextJSON),
 	}
 
 	// Execute
@@ -374,23 +398,25 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 	// Verify all fields are preserved
 	s.NoError(err)
 	s.Equal("flow-123", dbModel.FlowID)
-	s.Equal("app-123", dbModel.AppID)
-	s.True(dbModel.Verbose)
-	s.NotNil(dbModel.CurrentAction)
-	s.Equal(currentAction, *dbModel.CurrentAction)
-	s.Equal("graph-123", dbModel.GraphID)
-	s.True(dbModel.IsAuthenticated)
-	s.NotNil(dbModel.UserID)
-	s.Equal("user-abc", *dbModel.UserID)
-	s.NotNil(dbModel.OUID)
-	s.Equal("org-xyz", *dbModel.OUID)
-	s.NotNil(dbModel.UserType)
-	s.Equal("admin", *dbModel.UserType)
-	s.NotNil(dbModel.UserInputs)
-	s.NotNil(dbModel.RuntimeData)
-	s.NotNil(dbModel.UserAttributes)
-	s.NotNil(dbModel.ExecutionHistory)
-	s.NotNil(dbModel.Token)
+
+	content := s.getContextContent(dbModel)
+	s.Equal("app-123", content.AppID)
+	s.True(content.Verbose)
+	s.NotNil(content.CurrentAction)
+	s.Equal(currentAction, *content.CurrentAction)
+	s.Equal("graph-123", content.GraphID)
+	s.True(content.IsAuthenticated)
+	s.NotNil(content.UserID)
+	s.Equal("user-abc", *content.UserID)
+	s.NotNil(content.OUID)
+	s.Equal("org-xyz", *content.OUID)
+	s.NotNil(content.UserType)
+	s.Equal("admin", *content.UserType)
+	s.NotNil(content.UserInputs)
+	s.NotNil(content.RuntimeData)
+	s.NotNil(content.UserAttributes)
+	s.NotNil(content.ExecutionHistory)
+	s.NotNil(content.Token)
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
@@ -443,19 +469,21 @@ func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.FlowID)
-	s.Equal("test-app-id", dbModel.AppID)
-	s.True(dbModel.Verbose)
-	s.True(dbModel.IsAuthenticated)
-	s.NotNil(dbModel.UserID)
-	s.Equal("user-123", *dbModel.UserID)
+
+	content := s.getContextContent(dbModel)
+	s.Equal("test-app-id", content.AppID)
+	s.True(content.Verbose)
+	s.True(content.IsAuthenticated)
+	s.NotNil(content.UserID)
+	s.Equal("user-123", *content.UserID)
 
 	// Verify available attributes are serialized (not encrypted)
-	s.NotNil(dbModel.AvailableAttributes)
-	s.Greater(len(*dbModel.AvailableAttributes), 0)
+	s.NotNil(content.AvailableAttributes)
+	s.Greater(len(*content.AvailableAttributes), 0)
 
 	// Verify available attributes can be deserialized back
-	s.Contains(*dbModel.AvailableAttributes, "\"email\"")
-	s.Contains(*dbModel.AvailableAttributes, "\"phoneNumber\"")
+	s.Contains(*content.AvailableAttributes, "\"email\"")
+	s.Contains(*content.AvailableAttributes, "\"phoneNumber\"")
 }
 
 func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
@@ -489,10 +517,12 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 	s.NoError(err)
 	s.NotNil(dbModel)
 	s.Equal("test-flow-id", dbModel.FlowID)
-	s.True(dbModel.IsAuthenticated)
+
+	content := s.getContextContent(dbModel)
+	s.True(content.IsAuthenticated)
 
 	// Verify available attributes is nil when empty
-	s.Nil(dbModel.AvailableAttributes)
+	s.Nil(content.AvailableAttributes)
 }
 
 func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
@@ -537,7 +567,8 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
-	s.NotNil(dbModel.AvailableAttributes)
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.AvailableAttributes)
 
 	// Execute - Convert back to EngineContext
 	resultCtx, err := dbModel.ToEngineContext(mockGraph)
@@ -569,9 +600,8 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutAvailableAttributes() {
 	executionHistory := `{}`
 	userID := "user-987"
 
-	dbModel := &FlowContextWithUserDataDB{
-		FlowID:              "test-flow-id",
-		AppID:               "test-app-id",
+	content := flowContextContent{
+		AppID:               "test-flow-id",
 		Verbose:             true,
 		GraphID:             "test-graph-id",
 		IsAuthenticated:     true,
@@ -581,6 +611,11 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutAvailableAttributes() {
 		UserAttributes:      &userAttributes,
 		ExecutionHistory:    &executionHistory,
 		AvailableAttributes: nil, // No available attributes
+	}
+	contextJSON, _ := json.Marshal(content)
+	dbModel := &FlowContextDB{
+		FlowID:  "test-flow-id",
+		Context: string(contextJSON),
 	}
 
 	// Execute
@@ -684,7 +719,8 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 			// Convert to DB model (serializes available attributes)
 			dbModel, err := FromEngineContext(ctx)
 			s.NoError(err)
-			s.NotNil(dbModel.AvailableAttributes)
+			content := s.getContextContent(dbModel)
+			s.NotNil(content.AvailableAttributes)
 
 			// Convert back to EngineContext (deserializes available attributes)
 			resultCtx, err := dbModel.ToEngineContext(mockGraph)

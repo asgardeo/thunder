@@ -269,10 +269,17 @@ func (s *flowExecService) loadContextFromStore(ctx context.Context, flowID strin
 		return nil, &ErrorInvalidFlowID
 	}
 
-	graph, svcErr := s.flowMgtService.GetGraph(ctx, dbModel.GraphID)
+	graphID, err := dbModel.GetGraphID()
+	if err != nil {
+		logger.Error("Failed to extract graph ID from flow context",
+			log.String("flowID", flowID), log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	graph, svcErr := s.flowMgtService.GetGraph(ctx, graphID)
 	if svcErr != nil {
 		logger.Error("Error retrieving flow graph from flow management service",
-			log.String("graphID", dbModel.GraphID), log.String("error", svcErr.Error))
+			log.String("graphID", graphID), log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
 	}
 

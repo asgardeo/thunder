@@ -48,18 +48,18 @@ var queryInsertAuthorizationCode = dbmodel.DBQuery{
 		"TIME_CREATED, EXPIRY_TIME, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
 }
 
-// queryGetAuthorizationCode is the query to retrieve an authorization code by client ID and code.
+// queryGetAuthorizationCode is the query to retrieve an authorization code by code value.
 var queryGetAuthorizationCode = dbmodel.DBQuery{
 	ID: "AZQ-ACS-02",
 	Query: "SELECT CODE_ID, AUTHORIZATION_CODE, CLIENT_ID, STATE, AUTHZ_DATA, TIME_CREATED, " +
-		"EXPIRY_TIME FROM AUTHORIZATION_CODE WHERE CLIENT_ID = $1 AND AUTHORIZATION_CODE = $2 AND DEPLOYMENT_ID = $3",
+		"EXPIRY_TIME FROM AUTHORIZATION_CODE WHERE AUTHORIZATION_CODE = $1 AND DEPLOYMENT_ID = $2",
 }
 
 // queryConsumeAuthorizationCode atomically consumes an authorization code (ACTIVE → INACTIVE).
 var queryConsumeAuthorizationCode = dbmodel.DBQuery{
 	ID: "AZQ-ACS-04",
-	Query: "UPDATE AUTHORIZATION_CODE SET STATE = $1 WHERE CLIENT_ID = $2 AND AUTHORIZATION_CODE = $3 " +
-		"AND STATE = $4 AND DEPLOYMENT_ID = $5",
+	Query: "UPDATE AUTHORIZATION_CODE SET STATE = $1 WHERE AUTHORIZATION_CODE = $2 " +
+		"AND STATE = $3 AND DEPLOYMENT_ID = $4",
 }
 
 // queryInsertAuthRequest is the query to insert a new authorization request context.

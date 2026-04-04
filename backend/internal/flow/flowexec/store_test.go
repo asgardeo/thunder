@@ -20,6 +20,7 @@ package flowexec
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -60,6 +61,13 @@ func TestStoreTestSuite(t *testing.T) {
 	suite.Run(t, new(StoreTestSuite))
 }
 
+func (s *StoreTestSuite) getContextContent(dbModel *FlowContextDB) flowContextContent {
+	var content flowContextContent
+	err := json.Unmarshal([]byte(dbModel.Context), &content)
+	s.NoError(err)
+	return content
+}
+
 func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 	// Setup
 	testToken := "test-auth-token-12345" //nolint:gosec // G101: This is test data, not a real credential
@@ -71,16 +79,10 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
 
-	// Expect two ExecuteContext calls: one for FLOW_CONTEXT, one for FLOW_USER_DATA
+	// Expect one ExecuteContext call for FLOW_CONTEXT
 	// Use mock.Anything for pointer parameters since they're created inside FromEngineContext
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
-		mock.Anything, mock.Anything, "test-graph-id",
-		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(int64(0), nil)
-
-	// Token encryption/decryption is tested in model_test.go, so we just use mock.Anything here
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(int64(0), nil)
+	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowContext, "test-flow-id", "test-deployment",
+		mock.Anything, mock.Anything).Return(int64(0), nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -126,14 +128,8 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 
 	expirySeconds := int64(1800) // 30 minutes
 
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
-		mock.Anything, mock.Anything, "test-graph-id",
-		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(int64(0), nil)
-
-	// Token should be nil when not provided
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowUserData, "test-flow-id", false, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(int64(0), nil)
+	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowContext, "test-flow-id", "test-deployment",
+		mock.Anything, mock.Anything).Return(int64(0), nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -177,13 +173,7 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithToken() {
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
 
 	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryUpdateFlowContext,
-		"test-flow-id", mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, "test-deployment").Return(int64(0), nil)
-
-	// Token encryption/decryption is tested in model_test.go, so we just use mock.Anything here
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryUpdateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(int64(0), nil)
+		"test-flow-id", mock.Anything, "test-deployment").Return(int64(0), nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -243,36 +233,24 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
-	s.NotNil(dbModel.Token)
+
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.Token)
 
 	// Setup mocks
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
 
-	userID := "user-789"
 	results := []map[string]interface{}{
 		{
-			"flow_id":           "test-flow-id",
-			"app_id":            "test-app-id",
-			"verbose":           false,
-			"current_node_id":   nil,
-			"current_action":    nil,
-			"graph_id":          "test-graph-id",
-			"runtime_data":      "{}",
-			"execution_history": "{}",
-			"is_authenticated":  true,
-			"user_id":           userID,
-			"ou_id":             nil,
-			"user_type":         nil,
-			"user_inputs":       "{}",
-			"user_attributes":   "{}",
-			"token":             *dbModel.Token, // Use the encrypted token
-			"expiry_time":       expiryTime,
+			"flow_id":     "test-flow-id",
+			"context":     dbModel.Context,
+			"expiry_time": expiryTime,
 		},
 	}
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
-	mockDBClient.On("QueryContext", mock.Anything, QueryGetFlowContextWithUserData,
+	mockDBClient.On("QueryContext", mock.Anything, QueryGetFlowContext,
 		"test-flow-id", "test-deployment", mock.Anything).Return(results, nil)
 
 	store := &flowStore{
@@ -287,9 +265,11 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.FlowID)
-	s.True(result.IsAuthenticated)
-	s.NotNil(result.Token)
-	s.Equal(*dbModel.Token, *result.Token) // Encrypted token should match
+
+	content = s.getContextContent(result)
+	s.True(content.IsAuthenticated)
+	s.NotNil(content.Token)
+	s.Equal(dbModel.Context, result.Context) // JSON should match
 
 	// Verify we can decrypt it back to original
 	restoredCtx, err := result.ToEngineContext(mockGraph)
@@ -307,29 +287,24 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 
 	expiryTime := time.Now().Add(30 * time.Minute)
 
+	// Create serialized context
+	contextJSON, err := json.Marshal(flowContextContent{
+		AppID:           "test-app-id",
+		IsAuthenticated: false,
+		GraphID:         "test-graph-id",
+	})
+	s.NoError(err)
+
 	results := []map[string]interface{}{
 		{
-			"flow_id":           "test-flow-id",
-			"app_id":            "test-app-id",
-			"verbose":           false,
-			"current_node_id":   nil,
-			"current_action":    nil,
-			"graph_id":          "test-graph-id",
-			"runtime_data":      "{}",
-			"execution_history": "{}",
-			"is_authenticated":  false,
-			"user_id":           nil,
-			"ou_id":             nil,
-			"user_type":         nil,
-			"user_inputs":       "{}",
-			"user_attributes":   "{}",
-			"token":             nil, // No token
-			"expiry_time":       expiryTime,
+			"flow_id":     "test-flow-id",
+			"context":     string(contextJSON),
+			"expiry_time": expiryTime,
 		},
 	}
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
-	mockDBClient.On("QueryContext", mock.Anything, QueryGetFlowContextWithUserData,
+	mockDBClient.On("QueryContext", mock.Anything, QueryGetFlowContext,
 		"test-flow-id", "test-deployment", mock.Anything).Return(results, nil)
 
 	store := &flowStore{
@@ -344,8 +319,10 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.FlowID)
-	s.False(result.IsAuthenticated)
-	s.Nil(result.Token)
+
+	content := s.getContextContent(result)
+	s.False(content.IsAuthenticated)
+	s.Nil(content.Token)
 
 	mockDBProvider.AssertExpectations(s.T())
 	mockDBClient.AssertExpectations(s.T())
@@ -394,8 +371,10 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	dbModel, err := FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
-	s.NotNil(dbModel.Token)
-	s.NotEqual(originalToken, *dbModel.Token, "Token should be encrypted")
+
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.Token)
+	s.NotEqual(originalToken, *content.Token, "Token should be encrypted")
 
 	// Step 2: Simulate storing and retrieving from DB
 	// In a real scenario, this would be inserted into DB and read back
@@ -451,23 +430,11 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithToken() {
 	store := &flowStore{deploymentID: "test-deployment"}
 
 	userID := "user-123"
+	_ = userID
 	row := map[string]interface{}{
-		"flow_id":           "test-flow-id",
-		"app_id":            "test-app-id",
-		"verbose":           false,
-		"current_node_id":   nil,
-		"current_action":    nil,
-		"graph_id":          "test-graph-id",
-		"runtime_data":      "{}",
-		"execution_history": "{}",
-		"is_authenticated":  true,
-		"user_id":           userID,
-		"ou_id":             nil,
-		"user_type":         nil,
-		"user_inputs":       "{}",
-		"user_attributes":   "{}",
-		"token":             *dbModel.Token,
-		"expiry_time":       expiryTime,
+		"flow_id":     "test-flow-id",
+		"context":     dbModel.Context,
+		"expiry_time": expiryTime,
 	}
 
 	// Execute
@@ -476,8 +443,7 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithToken() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(result)
-	s.NotNil(result.Token)
-	s.Equal(*dbModel.Token, *result.Token)
+	s.Equal(dbModel.Context, result.Context)
 }
 
 func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
@@ -508,21 +474,10 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 
 	store := &flowStore{deploymentID: "test-deployment"}
 
-	// Simulate PostgreSQL returning the token as []byte
-	tokenBytes := []byte(*dbModel.Token)
-
 	row := map[string]interface{}{
-		"flow_id":           "test-flow-id",
-		"app_id":            "test-app-id",
-		"verbose":           false,
-		"graph_id":          "test-graph-id",
-		"runtime_data":      "{}",
-		"execution_history": "{}",
-		"is_authenticated":  false,
-		"user_inputs":       "{}",
-		"user_attributes":   "{}",
-		"token":             tokenBytes, // Token as []byte
-		"expiry_time":       expiryTime,
+		"flow_id":     "test-flow-id",
+		"context":     dbModel.Context,
+		"expiry_time": expiryTime,
 	}
 
 	// Execute
@@ -531,8 +486,7 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(result)
-	s.NotNil(result.Token)
-	s.Equal(*dbModel.Token, *result.Token)
+	s.Equal(dbModel.Context, result.Context)
 }
 
 func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
@@ -560,15 +514,9 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
 
-	// Expect two ExecuteContext calls: one for FLOW_CONTEXT, one for FLOW_USER_DATA
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
-		mock.Anything, mock.Anything, "test-graph-id",
-		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(int64(0), nil)
-
-	// Available attributes serialization is tested in model_test.go, so we just use mock.Anything here
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(int64(0), nil)
+	// Expect one ExecuteContext call for FLOW_CONTEXT
+	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryCreateFlowContext, "test-flow-id", "test-deployment",
+		mock.Anything, mock.Anything).Return(int64(0), nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -626,13 +574,7 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
 
 	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryUpdateFlowContext,
-		"test-flow-id", mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, "test-deployment").Return(int64(0), nil)
-
-	// Available attributes serialization is tested in model_test.go, so we just use mock.Anything here
-	mockDBClient.EXPECT().ExecuteContext(mock.Anything, QueryUpdateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(int64(0), nil)
+		"test-flow-id", mock.Anything, "test-deployment").Return(int64(0), nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -706,36 +648,24 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
-	s.NotNil(dbModel.AvailableAttributes)
+
+	content := s.getContextContent(dbModel)
+	s.NotNil(content.AvailableAttributes)
 
 	// Setup mocks
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
 
-	userID := "user-789"
 	results := []map[string]interface{}{
 		{
-			"flow_id":              "test-flow-id",
-			"app_id":               "test-app-id",
-			"verbose":              false,
-			"current_node_id":      nil,
-			"current_action":       nil,
-			"graph_id":             "test-graph-id",
-			"runtime_data":         "{}",
-			"execution_history":    "{}",
-			"is_authenticated":     true,
-			"user_id":              userID,
-			"ou_id":                nil,
-			"user_type":            nil,
-			"user_inputs":          "{}",
-			"user_attributes":      "{}",
-			"available_attributes": *dbModel.AvailableAttributes,
-			"expiry_time":          expiryTime,
+			"flow_id":     "test-flow-id",
+			"context":     dbModel.Context,
+			"expiry_time": expiryTime,
 		},
 	}
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
-	mockDBClient.On("QueryContext", mock.Anything, QueryGetFlowContextWithUserData,
+	mockDBClient.On("QueryContext", mock.Anything, QueryGetFlowContext,
 		"test-flow-id", "test-deployment", mock.Anything).Return(results, nil)
 
 	store := &flowStore{
@@ -750,9 +680,11 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.FlowID)
-	s.True(result.IsAuthenticated)
-	s.NotNil(result.AvailableAttributes)
-	s.Equal(*dbModel.AvailableAttributes, *result.AvailableAttributes) // Serialized attributes should match
+
+	content = s.getContextContent(result)
+	s.True(content.IsAuthenticated)
+	s.NotNil(content.AvailableAttributes)
+	s.Equal(dbModel.Context, result.Context) // Serialized context should match
 
 	// Verify we can deserialize it back to original
 	restoredCtx, err := result.ToEngineContext(mockGraph)

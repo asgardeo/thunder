@@ -42,6 +42,13 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
+// stubTransactioner is a no-op Transactioner for use in service tests.
+type stubTransactioner struct{}
+
+func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
+}
+
 // JWT constants used in service tests.
 const (
 	// Header: {"alg":"none","typ":"JWT"}   Payload: {"sub":"test-user","iat":1701421200}
@@ -94,13 +101,6 @@ func (suite *AuthorizeServiceTestSuite) SetupTest() {
 	suite.mockValidator = NewAuthorizationValidatorInterfaceMock(suite.T())
 }
 
-// MockTransactioner is a simple implementation of Transactioner for testing.
-type MockTransactioner struct{}
-
-func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
-	return txFunc(ctx)
-}
-
 // newService builds an authorizeService with all mocked dependencies.
 func (suite *AuthorizeServiceTestSuite) newService() *authorizeService {
 	return &authorizeService{
@@ -110,7 +110,7 @@ func (suite *AuthorizeServiceTestSuite) newService() *authorizeService {
 		authReqStore:    suite.mockAuthReqStore,
 		jwtService:      suite.mockJWTService,
 		flowExecService: suite.mockFlowExecService,
-		transactioner:   &MockTransactioner{},
+		transactioner:   &stubTransactioner{},
 		logger:          log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizeServiceTest")),
 	}
 }
@@ -606,9 +606,9 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_CreateAu
 	assert.Equal(suite.T(), oauth2const.ErrorServerError, authErr.Code)
 }
 
-func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ConsumeError() {
-	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "client-id", "code").
-		Return(false, errors.New("database error"))
+func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_GetError() {
+	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "code").
+		Return(nil, errors.New("database error"))
 
 	svc := suite.newService()
 	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "code")
@@ -619,45 +619,85 @@ func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ConsumeE
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_NotFound() {
-	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "client-id", "invalid-code").
-		Return(false, nil)
-	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "client-id", "invalid-code").
+	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "invalid-code").
 		Return(nil, errAuthorizationCodeNotFound)
 
 	svc := suite.newService()
 	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "invalid-code")
 
 	assert.Nil(suite.T(), result)
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "invalid authorization code")
+	assert.ErrorIs(suite.T(), err, errAuthorizationCodeNotFound)
 }
 
-func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_GetError() {
-	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "client-id", "code").
-		Return(true, nil)
-	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "client-id", "code").
-		Return(nil, errors.New("db error"))
+func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ClientIDMismatch() {
+	authCode := &AuthorizationCode{
+		CodeID:   "code-id-123",
+		Code:     "valid-code",
+		ClientID: "other-client-id",
+		State:    AuthCodeStateActive,
+	}
+	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "valid-code").
+		Return(authCode, nil)
+
+	svc := suite.newService()
+	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "valid-code")
+
+	assert.Nil(suite.T(), result)
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "client ID mismatch")
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ConsumeError() {
+	record := &AuthorizationCode{
+		CodeID:   "code-id-123",
+		Code:     "code",
+		ClientID: "client-id",
+		State:    AuthCodeStateActive,
+	}
+	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "code").
+		Return(record, nil)
+	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "code").
+		Return(false, errors.New("database error"))
 
 	svc := suite.newService()
 	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "code")
 
 	assert.Nil(suite.T(), result)
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "db error")
+	assert.Contains(suite.T(), err.Error(), "database error")
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_AlreadyConsumed() {
+	record := &AuthorizationCode{
+		CodeID:   "code-id-123",
+		Code:     "code",
+		ClientID: "client-id",
+		State:    AuthCodeStateInactive,
+	}
+	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "code").
+		Return(record, nil)
+	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "code").
+		Return(false, nil)
+
+	svc := suite.newService()
+	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "code")
+
+	assert.Nil(suite.T(), result)
+	assert.ErrorIs(suite.T(), err, errAuthorizationCodeAlreadyConsumed)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_Success() {
-	authCode := &AuthorizationCode{
+	record := &AuthorizationCode{
 		CodeID:           "code-id-123",
 		Code:             "valid-code",
 		ClientID:         "client-id",
 		AuthorizedUserID: "user-123",
-		State:            AuthCodeStateInactive,
+		State:            AuthCodeStateActive,
 	}
-	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "client-id", "valid-code").
+	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "valid-code").
+		Return(record, nil)
+	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "valid-code").
 		Return(true, nil)
-	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "client-id", "valid-code").
-		Return(authCode, nil)
 
 	svc := suite.newService()
 	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "valid-code")
@@ -666,46 +706,6 @@ func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_Success(
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "valid-code", result.Code)
 	assert.Equal(suite.T(), "user-123", result.AuthorizedUserID)
-}
-
-func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ReplayDetected() {
-	existingCode := &AuthorizationCode{
-		CodeID:   "code-id-123",
-		Code:     "used-code",
-		ClientID: "client-id",
-		State:    AuthCodeStateInactive,
-	}
-	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "client-id", "used-code").
-		Return(false, nil)
-	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "client-id", "used-code").
-		Return(existingCode, nil)
-
-	svc := suite.newService()
-	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "used-code")
-
-	assert.Nil(suite.T(), result)
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "authorization code already used")
-}
-
-func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ExpiredCode() {
-	existingCode := &AuthorizationCode{
-		CodeID:   "code-id-123",
-		Code:     "expired-code",
-		ClientID: "client-id",
-		State:    AuthCodeStateExpired,
-	}
-	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode(mock.Anything, "client-id", "expired-code").
-		Return(false, nil)
-	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode(mock.Anything, "client-id", "expired-code").
-		Return(existingCode, nil)
-
-	svc := suite.newService()
-	result, err := svc.GetAuthorizationCodeDetails(context.Background(), "client-id", "expired-code")
-
-	assert.Nil(suite.T(), result)
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "invalid authorization code")
 }
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilApp() {

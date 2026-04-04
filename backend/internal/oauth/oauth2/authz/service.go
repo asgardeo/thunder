@@ -86,43 +86,38 @@ func newAuthorizeService(
 	}
 }
 
-// GetAuthorizationCodeDetails atomically consumes and retrieves the authorization code.
+// GetAuthorizationCodeDetails retrieves and consumes the authorization code.
 func (as *authorizeService) GetAuthorizationCodeDetails(
 	ctx context.Context, clientID string, code string,
 ) (*AuthorizationCode, error) {
-	var authCode *AuthorizationCode
+	var record *AuthorizationCode
 	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
-		consumed, err := as.authCodeStore.ConsumeAuthorizationCode(ctx, clientID, code)
+		var err error
+		record, err = as.authCodeStore.GetAuthorizationCode(ctx, code)
 		if err != nil {
 			return err
 		}
 
-		authCode, err = as.authCodeStore.GetAuthorizationCode(ctx, clientID, code)
+		if record.ClientID != clientID {
+			return errors.New("client ID mismatch for authorization code")
+		}
+
+		consumed, err := as.authCodeStore.ConsumeAuthorizationCode(ctx, code)
 		if err != nil {
-			if errors.Is(err, errAuthorizationCodeNotFound) {
-				return errors.New("invalid authorization code")
-			}
 			return err
 		}
-
-		if consumed {
-			return nil
+		if !consumed {
+			// TODO: Revoke all access tokens already granted for this authorization code
+			// when the code has already been consumed (replay attack detected).
+			return errAuthorizationCodeAlreadyConsumed
 		}
-
-		if authCode.State == AuthCodeStateInactive {
-			// TODO: Revoke all access tokens already granted for this authorization code.
-			return errors.New("authorization code already used")
-		}
-
-		return errors.New("invalid authorization code")
+		return nil
 	})
-
 	if err != nil {
 		as.logger.Error("Failed to get authorization code details", log.Error(err))
 		return nil, err
 	}
-
-	return authCode, nil
+	return record, nil
 }
 
 // HandleInitialAuthorizationRequest processes an initial authorization request from the client.
@@ -322,7 +317,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 	var redirectURI string
 	var authErr *AuthorizationError
 
-	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
+	err := func() error {
 		// Load the authorization request context.
 		authRequestCtx, err := as.loadAuthRequestContext(ctx, authID)
 		if err != nil {
@@ -463,7 +458,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 
 		return nil
-	})
+	}()
 
 	if authErr != nil {
 		if authErr.Code == oauth2const.ErrorServerError {

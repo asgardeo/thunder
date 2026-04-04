@@ -23,5 +23,9 @@ import "errors"
 // errAuthorizationCodeNotFound is returned when an authorization code is not found in the database.
 var errAuthorizationCodeNotFound = errors.New("authorization code not found")
 
+// errAuthorizationCodeAlreadyConsumed is returned when an authorization code has already been consumed,
+// indicating a potential replay attack.
+var errAuthorizationCodeAlreadyConsumed = errors.New("authorization code already consumed")
+
 // errAuthRequestNotFound is returned when an authorization request context is not found in the store.
 var errAuthRequestNotFound = errors.New("authorization request context not found")

@@ -34,11 +34,11 @@ import (
 // sessionStoreInterface defines the interface for WebAuthn session storage.
 type sessionStoreInterface interface {
 	storeSession(
-		sessionKey, userID, relyingPartyID string,
+		sessionKey string,
 		session *sessionData,
-		expiryTime time.Time,
+		expirySeconds int64,
 	) error
-	retrieveSession(sessionKey string) (*sessionData, string, string, error)
+	retrieveSession(sessionKey string) (*sessionData, error)
 	deleteSession(sessionKey string) error
 }
 
@@ -59,8 +59,7 @@ func newSessionStore() sessionStoreInterface {
 }
 
 // storeSession stores a WebAuthn session in the database.
-func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
-	session *sessionData, expiryTime time.Time) error {
+func (s *sessionStore) storeSession(sessionKey string, session *sessionData, expirySeconds int64) error {
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		s.logger.Error("Failed to get database client", log.Error(err))
@@ -77,48 +76,46 @@ func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
 	if s.logger.IsDebugEnabled() {
 		s.logger.Debug("Storing session data",
 			log.String("sessionKey", log.MaskString(sessionKey)),
-			log.String("userID", log.MaskString(userID)),
 			log.String("jsonDataLength", fmt.Sprintf("%d bytes", len(jsonDataBytes))))
 	}
 
-	_, err = dbClient.Execute(queryInsertSession, sessionKey, userID, relyingPartyID,
-		jsonDataBytes, expiryTime, s.deploymentID)
+	expiryTime := time.Now().UTC().Add(time.Duration(expirySeconds) * time.Second)
+	_, err = dbClient.Execute(queryInsertSession, sessionKey, jsonDataBytes, expiryTime, s.deploymentID)
 	if err != nil {
 		s.logger.Error("Failed to insert WebAuthn session", log.Error(err))
 		return err
 	}
 
 	s.logger.Debug("WebAuthn session stored successfully",
-		log.String("sessionKey", log.MaskString(sessionKey)),
-		log.String("userID", log.MaskString(userID)))
+		log.String("sessionKey", log.MaskString(sessionKey)))
 
 	return nil
 }
 
 // retrieveSession retrieves a WebAuthn session from the database.
-func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, string, string, error) {
+func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, error) {
 	if sessionKey == "" {
-		return nil, "", "", nil
+		return nil, nil
 	}
 
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		s.logger.Error("Failed to get database client", log.Error(err))
-		return nil, "", "", err
+		return nil, err
 	}
 
 	// Check expiry by comparing with current time
-	now := time.Now()
+	now := time.Now().UTC()
 	results, err := dbClient.Query(queryGetSession, sessionKey, now, s.deploymentID)
 	if err != nil {
 		s.logger.Error("Failed to query WebAuthn session", log.Error(err))
-		return nil, "", "", err
+		return nil, err
 	}
 
 	if len(results) == 0 {
 		s.logger.Debug("WebAuthn session not found or expired",
 			log.String("sessionKey", log.MaskString(sessionKey)))
-		return nil, "", "", nil
+		return nil, nil
 	}
 
 	row := results[0]
@@ -129,17 +126,16 @@ func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, string,
 			log.String("rowKeys", fmt.Sprintf("%v", getMapKeys(row))))
 	}
 
-	sessionData, userID, relyingPartyID, err := s.buildSessionDataFromResultRow(row)
+	sessionData, err := s.buildSessionDataFromResultRow(row)
 	if err != nil {
 		s.logger.Error("Failed to build session data from result", log.Error(err))
-		return nil, "", "", err
+		return nil, err
 	}
 
 	s.logger.Debug("WebAuthn session retrieved successfully",
-		log.String("sessionKey", log.MaskString(sessionKey)),
-		log.String("userID", log.MaskString(userID)))
+		log.String("sessionKey", log.MaskString(sessionKey)))
 
-	return sessionData, userID, relyingPartyID, nil
+	return sessionData, nil
 }
 
 // deleteSession removes a specific WebAuthn session from the database.
@@ -218,28 +214,24 @@ func (s *sessionStore) serializeSessionData(sessionData *sessionData) ([]byte, e
 // buildSessionDataFromResultRow builds WebAuthn session data from database result row.
 func (s *sessionStore) buildSessionDataFromResultRow(
 	row map[string]interface{},
-) (*sessionData, string, string, error) {
-	userID, _ := row[dbColumnUserID].(string)
-	relyingPartyID, _ := row[dbColumnRelyingPartyID].(string)
-
-	// Handle SESSION_DATA as either string or []byte (depending on database driver)
-	var sessionDataJSON string
+) (*sessionData, error) {
+	// Handle PAYLOAD as either string or []byte (depending on database driver)
+	var payloadJSON string
 	if val, ok := row[dbColumnSessionData].(string); ok && val != "" {
-		sessionDataJSON = val
+		payloadJSON = val
 	} else if val, ok := row[dbColumnSessionData].([]byte); ok && len(val) > 0 {
-		sessionDataJSON = string(val)
+		payloadJSON = string(val)
 	} else {
 		s.logger.Error("SESSION_DATA is missing or of unexpected type",
 			log.String("type", fmt.Sprintf("%T", row[dbColumnSessionData])))
-		return nil, "", "", fmt.Errorf("SESSION_DATA is missing or invalid")
+		return nil, fmt.Errorf("SESSION_DATA is missing or invalid")
 	}
 
 	var jsonData map[string]interface{}
-	if err := json.Unmarshal([]byte(sessionDataJSON), &jsonData); err != nil {
-		s.logger.Error("Failed to unmarshal session data JSON",
-			log.Error(err),
-			log.String("jsonData", sessionDataJSON))
-		return nil, "", "", err
+	if err := json.Unmarshal([]byte(payloadJSON), &jsonData); err != nil {
+		s.logger.Error("Failed to unmarshal session payload JSON",
+			log.Error(err))
+		return nil, err
 	}
 
 	// Extract challenge
@@ -259,7 +251,7 @@ func (s *sessionStore) buildSessionDataFromResultRow(
 		userIDBytes, err := base64.StdEncoding.DecodeString(userIDStr)
 		if err != nil {
 			s.logger.Error("Failed to decode UserID from session data", log.Error(err))
-			return nil, "", "", err
+			return nil, err
 		}
 		sessionData.UserID = userIDBytes
 	}
@@ -286,7 +278,7 @@ func (s *sessionStore) buildSessionDataFromResultRow(
 			credStr, _ := credJSON.(string)
 			credBytes, err := base64.StdEncoding.DecodeString(credStr)
 			if err != nil {
-				return nil, "", "", err
+				return nil, err
 			}
 			allowedCreds[i] = credBytes
 		}
@@ -315,7 +307,7 @@ func (s *sessionStore) buildSessionDataFromResultRow(
 		sessionData.Mediation = credentialMediationRequirement(mediationStr)
 	}
 
-	return sessionData, userID, relyingPartyID, nil
+	return sessionData, nil
 }
 
 // getMapKeys returns the keys of a map for debugging.
