@@ -45,6 +45,7 @@ export type ApplicationCreateProviderProps = PropsWithChildren;
 const INITIAL_STATE: {
   currentStep: ApplicationCreateFlowStep;
   appName: string;
+  ouId: string;
   themeId: string | null;
   selectedTheme: Theme | null;
   appLogo: string | null;
@@ -63,6 +64,7 @@ const INITIAL_STATE: {
 } = {
   currentStep: ApplicationCreateFlowStep.NAME,
   appName: '',
+  ouId: '',
   themeId: null,
   selectedTheme: null,
   appLogo: null,
@@ -118,6 +120,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const {data: applicationsData} = useGetApplications({limit: 1, offset: 0});
   const [currentStep, setCurrentStep] = useState<ApplicationCreateFlowStep>(INITIAL_STATE.currentStep);
   const [appName, setAppName] = useState<string>(INITIAL_STATE.appName);
+  const [ouId, setOuId] = useState<string>(INITIAL_STATE.ouId);
   const [themeId, setThemeId] = useState<string | null>(INITIAL_STATE.themeId);
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(INITIAL_STATE.selectedTheme);
   const [appLogo, setAppLogo] = useState<string | null>(INITIAL_STATE.appLogo);
@@ -159,6 +162,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const reset = useCallback((): void => {
     setCurrentStep(INITIAL_STATE.currentStep);
     setAppName(INITIAL_STATE.appName);
+    setOuId(INITIAL_STATE.ouId);
     setThemeId(INITIAL_STATE.themeId);
     setSelectedTheme(INITIAL_STATE.selectedTheme);
     setAppLogo(INITIAL_STATE.appLogo);
@@ -181,6 +185,8 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       setCurrentStep,
       appName,
       setAppName,
+      ouId,
+      setOuId,
       themeId,
       setThemeId,
       selectedTheme,
@@ -219,6 +225,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
     [
       currentStep,
       appName,
+      ouId,
       themeId,
       selectedTheme,
       appLogo,

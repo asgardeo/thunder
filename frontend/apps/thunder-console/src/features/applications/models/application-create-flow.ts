@@ -42,6 +42,7 @@
  */
 export const ApplicationCreateFlowStep = {
   NAME: 'NAME',
+  ORGANIZATION_UNIT: 'ORGANIZATION_UNIT',
   DESIGN: 'DESIGN',
   OPTIONS: 'OPTIONS',
   EXPERIENCE: 'EXPERIENCE',
