@@ -103,13 +103,6 @@ type CreateUserByPathRequest struct {
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
-// AuthenticateUserResponse represents the response body for authenticating a user.
-type AuthenticateUserResponse struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
-	OUID string `json:"ouId"`
-}
-
 // entityToUser converts an Entity to a User.
 func entityToUser(e *entity.Entity) User {
 	return User{

@@ -109,8 +109,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 	}
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                testClientID,
-		HashedClientSecret:      "hashed-secret",
+		ClientID: testClientID,
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -494,8 +494,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			}
 
 			oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
-				ClientID:                testClientID,
-				HashedClientSecret:      "hashed-secret",
+				ClientID: testClientID,
+
 				RedirectURIs:            []string{"https://client.example.com/callback"},
 				GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 				ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -686,8 +686,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			}
 
 			oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
-				ClientID:                testClientID,
-				HashedClientSecret:      "hashed-secret",
+				ClientID: testClientID,
+
 				RedirectURIs:            []string{"https://client.example.com/callback"},
 				GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 				ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -952,8 +952,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 	// Test that groups are retrieved from authorization code (not fetched from DB)
 	// Create OAuth app with groups configured
 	oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                testClientID,
-		HashedClientSecret:      "hashed-secret",
+		ClientID: testClientID,
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -1035,8 +1035,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_AttributeCa
 // createPKCEApp creates a test OAuth app with PKCE required
 func (suite *AuthorizationCodeGrantHandlerTestSuite) createPKCEApp() *appmodel.OAuthAppConfigProcessedDTO {
 	return &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                testClientID,
-		HashedClientSecret:      "hashed-secret",
+		ClientID: testClientID,
+
 		RedirectURIs:            []string{testClientCallbackURL},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},

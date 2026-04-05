@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/attributecache"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/oauth/jwks"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/dcr"
@@ -45,6 +46,7 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
@@ -68,11 +70,11 @@ func Initialize(
 	}
 	scopeValidator := scope.Initialize()
 	discoveryService := discovery.Initialize(mux)
-	token.Initialize(mux, jwtService, applicationService, grantHandlerProvider,
+	token.Initialize(mux, jwtService, applicationService, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
-	introspect.Initialize(mux, jwtService, applicationService, discoveryService)
+	introspect.Initialize(mux, jwtService, applicationService, authnProvider, discoveryService)
 	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, ouService, attributeCacheSvc,
 		transactioner)
-	dcr.Initialize(mux, applicationService, transactioner)
+	dcr.Initialize(mux, applicationService, ouService, transactioner)
 	return nil
 }

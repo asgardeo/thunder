@@ -79,6 +79,7 @@ type ConsentAPITestSuite struct {
 	mockConsentServer         *testutils.MockConsentServer
 	consentAuthFlowID         string
 	consentRegistrationFlowID string
+	ouID                      string
 }
 
 func TestConsentAPITestSuite(t *testing.T) {
@@ -86,30 +87,39 @@ func TestConsentAPITestSuite(t *testing.T) {
 }
 
 func (ts *ConsentAPITestSuite) SetupSuite() {
-	// 1. Start the mock consent server
+	// 1. Create test organization unit
+	ouID, err := testutils.CreateOrganizationUnit(testutils.OrganizationUnit{
+		Handle:      "test_consent_ou",
+		Name:        "Test Organization Unit for Consent",
+		Description: "Organization unit created for consent API testing",
+		Parent:      nil,
+	})
+	ts.Require().NoError(err, "Failed to create consent test organization unit")
+	ts.ouID = ouID
+
+	// 2. Start the mock consent server
 	ts.mockConsentServer = testutils.NewMockConsentServer(mockConsentServerPort)
 	ts.Require().NoError(ts.mockConsentServer.Start(), "failed to start mock consent server")
 
-	// 2. Patch deployment config to enable consent
+	// 3. Patch deployment config to enable consent
 	ts.Require().NoError(
 		testutils.PatchDeploymentConfig(consentEnabledPatch),
 		"failed to patch deployment config to enable consent",
 	)
 
-	// 3. Restart Thunder and wait for it to be ready
+	// 4. Restart Thunder and wait for it to be ready
 	ts.Require().NoError(
 		testutils.RestartServer(),
 		"failed to restart Thunder with consent-enabled config",
 	)
 
-	// 4. Re-obtain admin token after restart
+	// 5. Re-obtain admin token after restart
 	ts.Require().NoError(
 		testutils.ObtainAdminAccessToken(),
 		"failed to obtain admin access token after restart",
 	)
 
-	// 5. Fetch flow IDs
-	var err error
+	// 6. Fetch flow IDs
 	ts.consentAuthFlowID, err = testutils.GetFlowIDByHandle("default-basic-flow", "AUTHENTICATION")
 	ts.Require().NoError(err, "failed to get default authentication flow ID")
 
@@ -133,6 +143,13 @@ func (ts *ConsentAPITestSuite) TearDownSuite() {
 		ts.T().Logf("teardown: failed to re-obtain admin token after config restore: %v", err)
 	}
 
+	// Delete the consent test organization unit
+	if ts.ouID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.ouID); err != nil {
+			ts.T().Logf("teardown: failed to delete consent test organization unit: %v", err)
+		}
+	}
+
 	// Stop the mock consent server
 	if err := ts.mockConsentServer.Stop(); err != nil {
 		ts.T().Logf("teardown: failed to stop mock consent server: %v", err)
@@ -141,6 +158,7 @@ func (ts *ConsentAPITestSuite) TearDownSuite() {
 
 func (ts *ConsentAPITestSuite) TestConsentPurposeCreatedOnApplicationCreate() {
 	app := Application{
+		OUID:               ts.ouID,
 		Name:               "Consent Create Test App",
 		Description:        "App to test consent purpose creation",
 		AuthFlowID:         ts.consentAuthFlowID,
@@ -184,6 +202,7 @@ func (ts *ConsentAPITestSuite) TestConsentPurposeCreatedOnApplicationCreate() {
 
 func (ts *ConsentAPITestSuite) TestConsentPurposeNotCreatedWhenNoUserAttributes() {
 	app := Application{
+		OUID:               ts.ouID,
 		Name:               "Consent No Attrs Test App",
 		Description:        "App to test consent with no user attributes",
 		AuthFlowID:         ts.consentAuthFlowID,
@@ -225,6 +244,7 @@ func (ts *ConsentAPITestSuite) TestConsentPurposeNotCreatedWhenNoUserAttributes(
 func (ts *ConsentAPITestSuite) TestConsentPurposeUpdatedOnApplicationUpdate() {
 	// Step 1: Create app with 1 attribute.
 	app := Application{
+		OUID:               ts.ouID,
 		Name:               "Consent Update Test App",
 		Description:        "App to test consent purpose update",
 		AuthFlowID:         ts.consentAuthFlowID,
@@ -283,6 +303,7 @@ func (ts *ConsentAPITestSuite) TestConsentPurposeUpdatedOnApplicationUpdate() {
 func (ts *ConsentAPITestSuite) TestConsentPurposeDeletedOnAttributeRemoval() {
 	// Step 1: Create app with login_consent.
 	app := Application{
+		OUID:               ts.ouID,
 		Name:               "Consent Disable Test App",
 		Description:        "App to test consent purpose deletion on attribute removal",
 		AuthFlowID:         ts.consentAuthFlowID,
@@ -339,6 +360,7 @@ func (ts *ConsentAPITestSuite) TestConsentPurposeDeletedOnAttributeRemoval() {
 
 func (ts *ConsentAPITestSuite) TestConsentPurposeDeletedOnApplicationDelete() {
 	app := Application{
+		OUID:               ts.ouID,
 		Name:               "Consent Delete Test App",
 		Description:        "App to test consent purpose deletion on app delete",
 		AuthFlowID:         ts.consentAuthFlowID,
@@ -385,6 +407,7 @@ func (ts *ConsentAPITestSuite) TestConsentPurposeDeletedOnApplicationDelete() {
 
 func (ts *ConsentAPITestSuite) TestLoginConsentEnabledFieldPersistedCorrectly() {
 	app := Application{
+		OUID:               ts.ouID,
 		Name:               "Consent Persist Test App",
 		Description:        "App to test login_consent field persistence",
 		AuthFlowID:         ts.consentAuthFlowID,

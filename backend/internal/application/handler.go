@@ -57,6 +57,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	}
 
 	appDTO := model.ApplicationDTO{
+		OUID:                      appRequest.OUID,
 		Name:                      appRequest.Name,
 		Description:               appRequest.Description,
 		AuthFlowID:                appRequest.AuthFlowID,
@@ -87,6 +88,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 
 	returnApp := model.ApplicationCompleteResponse{
 		ID:                        createdAppDTO.ID,
+		OUID:                      createdAppDTO.OUID,
 		Name:                      createdAppDTO.Name,
 		Description:               createdAppDTO.Description,
 		AuthFlowID:                createdAppDTO.AuthFlowID,
@@ -160,6 +162,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 
 	returnApp := model.ApplicationGetResponse{
 		ID:                        appDTO.ID,
+		OUID:                      appDTO.OUID,
 		Name:                      appDTO.Name,
 		Description:               appDTO.Description,
 		AuthFlowID:                appDTO.AuthFlowID,
@@ -279,6 +282,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 
 	updateReqAppDTO := model.ApplicationDTO{
 		ID:                        id,
+		OUID:                      appRequest.OUID,
 		Name:                      appRequest.Name,
 		Description:               appRequest.Description,
 		AuthFlowID:                appRequest.AuthFlowID,
@@ -309,6 +313,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 
 	returnApp := model.ApplicationCompleteResponse{
 		ID:                        updatedAppDTO.ID,
+		OUID:                      updatedAppDTO.OUID,
 		Name:                      updatedAppDTO.Name,
 		Description:               updatedAppDTO.Description,
 		AuthFlowID:                updatedAppDTO.AuthFlowID,

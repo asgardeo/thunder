@@ -96,7 +96,6 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                testRefreshTokenClientID,
-		HashedClientSecret:      "hashed-secret",
 		GrantTypes:              []constants.GrantType{constants.GrantTypeRefreshToken},
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
 		Token: &appmodel.OAuthTokenConfig{

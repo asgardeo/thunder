@@ -95,6 +95,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithAllFields() {
 // TestDCRRegistrationMinimalFields verifies registration with only redirect URIs and auto-generated client_name.
 func (ts *DCRTestSuite) TestDCRRegistrationMinimalFields() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://minimal.example.com/callback"},
 	}
 
@@ -116,6 +117,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationMinimalFields() {
 // TestDCRRegistrationPublicClient verifies public client registration with token_endpoint_auth_method=none.
 func (ts *DCRTestSuite) TestDCRRegistrationPublicClient() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://public.example.com/callback"},
 		ClientName:              "Public Client",
 		TokenEndpointAuthMethod: "none",
@@ -136,6 +138,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationPublicClient() {
 // TestDCRRegistrationWithClientCredentialsGrant verifies M2M client registration without redirect URIs.
 func (ts *DCRTestSuite) TestDCRRegistrationWithClientCredentialsGrant() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		GrantTypes:              []string{"client_credentials"},
 		ClientName:              "Client Credentials App",
 		TokenEndpointAuthMethod: "client_secret_post",
@@ -157,6 +160,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithClientCredentialsGrant() {
 // TestDCRRegistrationWithMultipleGrantTypes verifies registration with multiple OAuth grant types.
 func (ts *DCRTestSuite) TestDCRRegistrationWithMultipleGrantTypes() {
 	request := DCRRegistrationRequest{
+		OUID:          "decl-ou-1",
 		RedirectURIs:  []string{"https://multi.example.com/callback"},
 		GrantTypes:    []string{"authorization_code", "refresh_token", "client_credentials"},
 		ResponseTypes: []string{"code"},
@@ -175,6 +179,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithMultipleGrantTypes() {
 // TestDCRRegistrationWithScopes verifies registration with custom OAuth scopes.
 func (ts *DCRTestSuite) TestDCRRegistrationWithScopes() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://scopes.example.com/callback"},
 		ClientName:   "Scoped Client",
 		Scope:        "openid profile email address phone",
@@ -192,6 +197,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithScopes() {
 // TestDCRRegistrationWithMultipleContacts verifies registration with multiple contact email addresses.
 func (ts *DCRTestSuite) TestDCRRegistrationWithMultipleContacts() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://contacts.example.com/callback"},
 		ClientName:   "Multi Contact Client",
 		Contacts:     []string{"admin@example.com", "support@example.com", "security@example.com"},
@@ -209,6 +215,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithMultipleContacts() {
 // TestDCRRegistrationEmptyRedirectURIs verifies rejection when redirect URIs are required but empty.
 func (ts *DCRTestSuite) TestDCRRegistrationEmptyRedirectURIs() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{},
 		ClientName:   "No Redirect URI Client",
 	}
@@ -222,6 +229,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationEmptyRedirectURIs() {
 // TestDCRRegistrationInvalidRedirectURI verifies rejection of malformed redirect URI values.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidRedirectURI() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"not-a-valid-uri"},
 		ClientName:   "Invalid URI Client",
 	}
@@ -235,6 +243,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidRedirectURI() {
 // TestDCRRegistrationFragmentInRedirectURI verifies rejection of redirect URIs with fragments per RFC 6749.
 func (ts *DCRTestSuite) TestDCRRegistrationFragmentInRedirectURI() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://example.com/callback#fragment"},
 		ClientName:   "Fragment URI Client",
 	}
@@ -275,6 +284,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidJSON() {
 // TestDCRRegistrationInvalidTokenEndpointAuthMethod verifies rejection of unsupported auth methods.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidTokenEndpointAuthMethod() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://invalid-auth.example.com/callback"},
 		ClientName:              "Invalid Auth Method Client",
 		TokenEndpointAuthMethod: "invalid_method",
@@ -289,6 +299,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidTokenEndpointAuthMethod() {
 // TestDCRRegistrationWithPartialDefaults verifies correct default value application for omitted fields.
 func (ts *DCRTestSuite) TestDCRRegistrationWithPartialDefaults() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://partial.example.com/callback"},
 		ClientName:              "Partial Defaults Client",
 		GrantTypes:              []string{"authorization_code", "refresh_token"},
@@ -349,6 +360,7 @@ func (ts *DCRTestSuite) registerClient(request DCRRegistrationRequest) (*DCRRegi
 // TestDCRRegistrationInvalidGrantType verifies rejection of unknown OAuth grant type values.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidGrantType() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://example.com/callback"},
 		ClientName:   "Invalid Grant Type Client",
 		GrantTypes:   []string{"invalid_grant_type"},
@@ -363,6 +375,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidGrantType() {
 // TestDCRRegistrationInvalidResponseType verifies rejection of unknown OAuth response type values.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidResponseType() {
 	request := DCRRegistrationRequest{
+		OUID:          "decl-ou-1",
 		RedirectURIs:  []string{"https://example.com/callback"},
 		ClientName:    "Invalid Response Type Client",
 		ResponseTypes: []string{"invalid_response"},
@@ -377,6 +390,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidResponseType() {
 // TestDCRRegistrationJWKSAndJWKSUriConflict verifies rejection when both JWKS and JWKS URI are specified.
 func (ts *DCRTestSuite) TestDCRRegistrationJWKSAndJWKSUriConflict() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		ClientName:              "JWKS Conflict Client",
 		TokenEndpointAuthMethod: "private_key_jwt",
@@ -401,6 +415,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationJWKSAndJWKSUriConflict() {
 // TestDCRRegistrationJWKSUriNotHTTPS verifies rejection of non-HTTPS JWKS URI per RFC 7591.
 func (ts *DCRTestSuite) TestDCRRegistrationJWKSUriNotHTTPS() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		ClientName:              "Non-HTTPS JWKS URI Client",
 		TokenEndpointAuthMethod: "private_key_jwt",
@@ -416,6 +431,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationJWKSUriNotHTTPS() {
 // TestDCRRegistrationMultipleRedirectURIs verifies registration with multiple redirect URI values.
 func (ts *DCRTestSuite) TestDCRRegistrationMultipleRedirectURIs() {
 	request := DCRRegistrationRequest{
+		OUID: "decl-ou-1",
 		RedirectURIs: []string{
 			"https://example.com/callback1",
 			"https://example.com/callback2",
@@ -437,6 +453,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationMultipleRedirectURIs() {
 // TestDCRRegistrationRefreshTokenGrant verifies registration with refresh_token grant type.
 func (ts *DCRTestSuite) TestDCRRegistrationRefreshTokenGrant() {
 	request := DCRRegistrationRequest{
+		OUID:          "decl-ou-1",
 		RedirectURIs:  []string{"https://example.com/callback"},
 		ClientName:    "Refresh Token Client",
 		GrantTypes:    []string{"authorization_code", "refresh_token"},
@@ -455,6 +472,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationRefreshTokenGrant() {
 // TestDCRRegistrationInvalidClientURI verifies rejection of malformed client_uri values.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidClientURI() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://example.com/callback"},
 		ClientName:   "Invalid Client URI Client",
 		ClientURI:    "not-a-valid-uri",
@@ -469,6 +487,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidClientURI() {
 // TestDCRRegistrationInvalidLogoURI verifies rejection of malformed logo_uri values.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidLogoURI() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://example.com/callback"},
 		ClientName:   "Invalid Logo URI Client",
 		LogoURI:      "not-a-valid-uri",
@@ -483,6 +502,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidLogoURI() {
 // TestDCRRegistrationEmptyGrantTypesArray verifies default grant type application when array is empty.
 func (ts *DCRTestSuite) TestDCRRegistrationEmptyGrantTypesArray() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://example.com/callback"},
 		ClientName:   "Empty Grant Types Client",
 		GrantTypes:   []string{},
@@ -540,6 +560,7 @@ func (ts *DCRTestSuite) registerClientWithError(request DCRRegistrationRequest) 
 // TestDCRRegistrationWithJWKSURI tests OAuth client registration with JWKS_URI certificate.
 func (ts *DCRTestSuite) TestDCRRegistrationWithJWKSURI() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -573,6 +594,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithJWKS() {
 	}
 
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -603,6 +625,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithJWKS() {
 // TestDCRRegistrationWithJWKSURIAndRetrieve tests OAuth client registration with JWKS_URI and retrieves it to verify persistence.
 func (ts *DCRTestSuite) TestDCRRegistrationWithJWKSURIAndRetrieve() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://retrieve-test.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -657,6 +680,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationJWKSAndJWKSURIConflictNew() {
 	}
 
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -676,6 +700,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationJWKSAndJWKSURIConflictNew() {
 // TestDCRRegistrationClientNameFallback tests that client_id is used as client_name when omitted.
 func (ts *DCRTestSuite) TestDCRRegistrationClientNameFallback() {
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []string{"authorization_code"},
 	}
@@ -694,6 +719,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationScopeConversion() {
 	scopeString := "openid profile email address phone"
 
 	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []string{"authorization_code"},
 		ClientName:   "Scope Test Client",
@@ -711,6 +737,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationScopeConversion() {
 // TestDCRRegistrationInvalidJWKSURI2 tests DCR with invalid JWKS_URI.
 func (ts *DCRTestSuite) TestDCRRegistrationInvalidJWKSURI2() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -726,6 +753,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidJWKSURI2() {
 // TestDCRRegistrationRedirectURIWithFragment2 tests DCR rejects redirect URIs with fragments.
 func (ts *DCRTestSuite) TestDCRRegistrationRedirectURIWithFragment2() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback#fragment"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -740,6 +768,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationRedirectURIWithFragment2() {
 // TestDCRRegistrationClientCredentialsWithResponseTypes2 tests client_credentials cannot have response_types.
 func (ts *DCRTestSuite) TestDCRRegistrationClientCredentialsWithResponseTypes2() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"client_credentials"},
 		ResponseTypes:           []string{"code"},
@@ -754,6 +783,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationClientCredentialsWithResponseTypes2()
 // TestDCRRegistrationEmptyScope tests DCR with empty scope string.
 func (ts *DCRTestSuite) TestDCRRegistrationEmptyScope() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -774,6 +804,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationEmptyScope() {
 // TestDCRRegistrationMultipleScopesConversion tests scope array conversion.
 func (ts *DCRTestSuite) TestDCRRegistrationMultipleScopesConversion() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -796,6 +827,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationMultipleScopesConversion() {
 // TestDCRRegistrationPublicClientWithWrongGrant tests public client validation.
 func (ts *DCRTestSuite) TestDCRRegistrationPublicClientWithWrongGrant() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"client_credentials"},
 		ResponseTypes:           []string{},
@@ -810,6 +842,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationPublicClientWithWrongGrant() {
 // TestDCRRegistrationWithContacts tests DCR with contact information.
 func (ts *DCRTestSuite) TestDCRRegistrationWithContacts() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -831,6 +864,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithContacts() {
 // TestDCRRegistrationWithPolicyAndTos tests DCR with policy and TOS URIs.
 func (ts *DCRTestSuite) TestDCRRegistrationWithPolicyAndTos() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -863,6 +897,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithAllOptionalFields() {
 	}
 
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback1", "https://client.example.com/callback2"},
 		GrantTypes:              []string{"authorization_code", "refresh_token"},
 		ResponseTypes:           []string{"code"},
@@ -897,6 +932,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithAllOptionalFields() {
 // TestDCRRegistrationAuthorizationCodeWithPKCE tests DCR with authorization_code and PKCE.
 func (ts *DCRTestSuite) TestDCRRegistrationAuthorizationCodeWithPKCE() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"myapp://callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -918,6 +954,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationAuthorizationCodeWithPKCE() {
 // TestDCRRegistrationWithJWKSURIHTTPS tests JWKS_URI with HTTPS.
 func (ts *DCRTestSuite) TestDCRRegistrationWithJWKSURIHTTPS() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -940,6 +977,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithJWKSURIHTTPS() {
 // TestDCRRegistrationSingleRedirectURI tests DCR with single redirect URI.
 func (ts *DCRTestSuite) TestDCRRegistrationSingleRedirectURI() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://single.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -961,6 +999,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationSingleRedirectURI() {
 // TestDCRRegistrationClientSecretPost tests DCR with client_secret_post auth method.
 func (ts *DCRTestSuite) TestDCRRegistrationClientSecretPost() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -982,6 +1021,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationClientSecretPost() {
 // TestDCRRegistrationWithAllMetadata tests DCR with comprehensive metadata.
 func (ts *DCRTestSuite) TestDCRRegistrationWithAllMetadata() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://fullmeta.example.com/callback"},
 		GrantTypes:              []string{"authorization_code", "refresh_token"},
 		ResponseTypes:           []string{"code"},
@@ -1013,6 +1053,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithAllMetadata() {
 // TestDCRRegistrationWithOnlyClientURI tests DCR with only client URI metadata.
 func (ts *DCRTestSuite) TestDCRRegistrationWithOnlyClientURI() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://clienturi.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -1035,6 +1076,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithOnlyClientURI() {
 // TestDCRRegistrationPublicClientWithPKCE tests public client with PKCE.
 func (ts *DCRTestSuite) TestDCRRegistrationPublicClientWithPKCE() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://public-pkce.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -1057,6 +1099,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationPublicClientWithPKCE() {
 // TestDCRRegistrationWithRefreshToken tests DCR with refresh_token grant.
 func (ts *DCRTestSuite) TestDCRRegistrationWithRefreshToken() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://refresh.example.com/callback"},
 		GrantTypes:              []string{"authorization_code", "refresh_token"},
 		ResponseTypes:           []string{"code"},
@@ -1079,6 +1122,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithRefreshToken() {
 // TestDCRRegistrationClientCredentialsGrant tests DCR with client_credentials grant.
 func (ts *DCRTestSuite) TestDCRRegistrationClientCredentialsGrant() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		GrantTypes:              []string{"client_credentials"},
 		ResponseTypes:           []string{},
 		ClientName:              "Client Credentials Client",
@@ -1100,6 +1144,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationClientCredentialsGrant() {
 // TestDCRRegistrationWithEmptyScope tests DCR with empty scope.
 func (ts *DCRTestSuite) TestDCRRegistrationWithEmptyScope() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://noscope.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -1120,6 +1165,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithEmptyScope() {
 // TestDCRRegistrationWithMultipleRedirectURIs tests DCR with multiple redirect URIs.
 func (ts *DCRTestSuite) TestDCRRegistrationWithMultipleRedirectURIs() {
 	request := DCRRegistrationRequest{
+		OUID: "decl-ou-1",
 		RedirectURIs: []string{
 			"https://multi.example.com/callback1",
 			"https://multi.example.com/callback2",
@@ -1147,6 +1193,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithMultipleRedirectURIs() {
 // TestDCRRegistrationErrorInvalidGrantType tests error when invalid grant type is provided.
 func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidGrantType() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://invalidgrant.example.com/callback"},
 		GrantTypes:              []string{"invalid_grant_type"},
 		ResponseTypes:           []string{"code"},
@@ -1162,6 +1209,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidGrantType() {
 // TestDCRRegistrationErrorInvalidResponseType tests error when invalid response type is provided.
 func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidResponseType() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://invalidresponse.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"invalid_response_type"},
@@ -1177,6 +1225,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidResponseType() {
 // TestDCRRegistrationErrorInvalidTokenEndpointAuthMethod tests error when invalid token endpoint auth method is provided.
 func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidTokenEndpointAuthMethod() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://invalidauth.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -1192,6 +1241,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidTokenEndpointAuthMethod()
 // TestDCRRegistrationErrorRedirectURIWithFragment tests error when redirect URI contains fragment.
 func (ts *DCRTestSuite) TestDCRRegistrationErrorRedirectURIWithFragment() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://fragment.example.com/callback#fragment"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -1207,6 +1257,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorRedirectURIWithFragment() {
 // TestDCRRegistrationErrorInvalidJWKSURI tests error when invalid JWKS URI is provided.
 func (ts *DCRTestSuite) TestDCRRegistrationErrorInvalidJWKSURI() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://invalidjwks.example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -1279,6 +1330,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithDuplicateClientName() {
 
 	// First registration
 	request1 := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ClientName:              duplicateName,
@@ -1291,6 +1343,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithDuplicateClientName() {
 
 	// Second registration with same name should fail
 	request2 := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://example.com/callback2"},
 		GrantTypes:              []string{"authorization_code"},
 		ClientName:              duplicateName,
@@ -1307,6 +1360,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithDuplicateClientName() {
 func (ts *DCRTestSuite) TestDCRRegistrationWithInvalidScopeFormat() {
 	// Test with valid but minimal scope
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ClientName:              "Minimal Scope Client",
@@ -1331,6 +1385,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorResponseStructure() {
 		{
 			name: "Invalid Logo URI Format",
 			request: DCRRegistrationRequest{
+				OUID:         "decl-ou-1",
 				RedirectURIs: []string{"https://example.com/callback"},
 				GrantTypes:   []string{"authorization_code"},
 				ClientName:   "Invalid Logo URI Test",
@@ -1341,6 +1396,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorResponseStructure() {
 		{
 			name: "Missing Required Redirect URIs",
 			request: DCRRegistrationRequest{
+				OUID:                    "decl-ou-1",
 				ClientName:              "Missing Redirect URI Test",
 				GrantTypes:              []string{"authorization_code"},
 				TokenEndpointAuthMethod: "client_secret_basic",
@@ -1350,6 +1406,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorResponseStructure() {
 		{
 			name: "Invalid Grant Type",
 			request: DCRRegistrationRequest{
+				OUID:                    "decl-ou-1",
 				RedirectURIs:            []string{"https://example.com/callback"},
 				GrantTypes:              []string{"invalid_grant_type"},
 				ClientName:              "Invalid Grant Type Test",
@@ -1360,6 +1417,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorResponseStructure() {
 		{
 			name: "Invalid Response Type",
 			request: DCRRegistrationRequest{
+				OUID:                    "decl-ou-1",
 				RedirectURIs:            []string{"https://example.com/callback"},
 				GrantTypes:              []string{"authorization_code"},
 				ResponseTypes:           []string{"invalid_response_type"},
@@ -1384,6 +1442,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationErrorResponseStructure() {
 // TestDCRRegistrationWithClientCredentialsNoRedirects tests client_credentials without redirect URIs.
 func (ts *DCRTestSuite) TestDCRRegistrationWithClientCredentialsNoRedirects() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		GrantTypes:              []string{"client_credentials"},
 		ClientName:              "Client Credentials No Redirects",
 		TokenEndpointAuthMethod: "client_secret_basic",
@@ -1408,6 +1467,7 @@ func (ts *DCRTestSuite) TestDCRRegistrationWithEmptyJWKSAndJWKSUri() {
 	}
 
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ClientName:              "Empty JWKS Client",

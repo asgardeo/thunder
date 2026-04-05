@@ -1148,6 +1148,7 @@ fi
 RESPONSE=$(thunder_api_call POST "/applications" "{
   \"name\": \"Console\",
   \"description\": \"Management application for Thunder\",
+  \"ouId\": \"${DEFAULT_OU_ID}\",
   \"url\": \"${PUBLIC_URL}/console\",
     \"logoUrl\": \"emoji:👨‍💻\",
     \"authFlowId\": \"${CONSOLE_AUTH_FLOW_ID}\",

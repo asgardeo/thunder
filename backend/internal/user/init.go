@@ -26,7 +26,6 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
@@ -39,11 +38,10 @@ func Initialize(
 	entityService entity.EntityServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
-	hashService hash.HashServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (UserServiceInterface, oupkg.OUUserResolver, declarativeresource.ResourceExporter, error) {
 	// Step 1: Create service with entity service
-	userService := newUserService(authzService, entityService, ouService, userSchemaService, hashService)
+	userService := newUserService(authzService, entityService, ouService, userSchemaService)
 
 	// Step 2: Load user-specific indexed attributes into the entity store.
 	if err := entityService.LoadIndexedAttributes(getUserIndexedAttributes()); err != nil {

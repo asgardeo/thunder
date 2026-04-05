@@ -176,7 +176,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -246,6 +246,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, withoutPromptFlow)
 
 	// Create test application
+	testApp.OUID = ts.ouID
 	appID, err := testutils.CreateApplication(testApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
@@ -598,6 +599,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithoutTokenConfig() {
 	// Create a new application without TokenConfig
 	appWithoutTokenConfig := testutils.Application{
 		Name:                      "Flow Test Application Without Token Config",
+		OUID:                      ts.ouID,
 		Description:               "Application for testing default behavior without token config",
 		IsRegistrationFlowEnabled: false,
 		ClientID:                  "flow_test_client_no_token_config",
@@ -657,6 +659,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithEmptyUserAttributes() {
 	// Create a new application with empty user_attributes
 	appWithEmptyAttrs := testutils.Application{
 		Name:                      "Flow Test Application With Empty User Attributes",
+		OUID:                      ts.ouID,
 		Description:               "Application for testing behavior with empty user_attributes",
 		IsRegistrationFlowEnabled: false,
 		ClientID:                  "flow_test_client_empty_attrs",

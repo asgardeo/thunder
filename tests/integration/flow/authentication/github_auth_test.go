@@ -101,7 +101,7 @@ var githubUserSchema = testutils.UserSchema{
 			"type": "string",
 		},
 		"password": map[string]interface{}{
-			"type": "string",
+			"type":       "string",
 			"credential": true,
 		},
 		"sub": map[string]interface{}{
@@ -189,9 +189,9 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
-		Type:             githubUserSchema.Name,
-		OUID:             githubUserSchema.OUID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       githubUserSchema.Name,
+		OUID:       githubUserSchema.OUID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -263,6 +263,7 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	githubAuthTestApp.AuthFlowID = flowID
 
 	// Create test application for GitHub auth tests
+	githubAuthTestApp.OUID = githubAuthTestOU.ID
 	appID, err := testutils.CreateApplication(githubAuthTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

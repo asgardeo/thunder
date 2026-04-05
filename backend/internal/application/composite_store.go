@@ -20,23 +20,20 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
-// compositeApplicationStore implements a composite store that combines file-based (immutable) and
-// database (mutable) stores.
-// - Read operations query both stores and merge results
-// - Write operations (Create/Update/Delete) only affect the database store
-// - Declarative applications (from YAML files) cannot be modified or deleted
+// compositeApplicationStore combines file-based (immutable) and database (mutable) stores.
 type compositeApplicationStore struct {
 	fileStore applicationStoreInterface
 	dbStore   applicationStoreInterface
 }
 
-// newCompositeApplicationStore creates a new composite store with both file-based and database stores.
+// newCompositeApplicationStore creates a new composite store.
 func newCompositeApplicationStore(fileStore, dbStore applicationStoreInterface) *compositeApplicationStore {
 	return &compositeApplicationStore{
 		fileStore: fileStore,
@@ -44,7 +41,6 @@ func newCompositeApplicationStore(fileStore, dbStore applicationStoreInterface) 
 	}
 }
 
-// GetTotalApplicationCount retrieves the total count of applications from both stores.
 func (c *compositeApplicationStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
 	return declarativeresource.CompositeMergeCountHelper(
 		func() (int, error) { return c.dbStore.GetTotalApplicationCount(ctx) },
@@ -52,20 +48,14 @@ func (c *compositeApplicationStore) GetTotalApplicationCount(ctx context.Context
 	)
 }
 
-// GetApplicationList retrieves applications from both stores.
-// Note: Application list does not support pagination at the API level, so we don't apply pagination here.
-// However, we still apply the 1000-record limit in composite mode to prevent memory exhaustion.
-func (c *compositeApplicationStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
-	// Use the helper to fetch, merge, and check limits
-	// Since application list doesn't support pagination, we use a fixed limit of 100 and offset=0
+func (c *compositeApplicationStore) GetApplicationList(ctx context.Context) ([]applicationConfigDAO, error) {
 	apps, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
 		func() (int, error) { return c.dbStore.GetTotalApplicationCount(ctx) },
 		func() (int, error) { return c.fileStore.GetTotalApplicationCount(ctx) },
-		func(limit int) ([]model.BasicApplicationDTO, error) { return c.dbStore.GetApplicationList(ctx) },
-		func(limit int) ([]model.BasicApplicationDTO, error) { return c.fileStore.GetApplicationList(ctx) },
-		mergeAndDeduplicateApplications,
-		100, // Setting limit to 100 as pagination is not supported at API level.
-		0,   // offset 0 - start from beginning
+		func(limit int) ([]applicationConfigDAO, error) { return c.dbStore.GetApplicationList(ctx) },
+		func(limit int) ([]applicationConfigDAO, error) { return c.fileStore.GetApplicationList(ctx) },
+		mergeAndDeduplicateAppConfigs,
+		100, 0,
 		serverconst.MaxCompositeStoreRecords,
 	)
 	if err != nil {
@@ -77,66 +67,50 @@ func (c *compositeApplicationStore) GetApplicationList(ctx context.Context) ([]m
 	return apps, nil
 }
 
-// CreateApplication creates a new application in the database store only.
-// Conflict checking is handled at the service layer.
-func (c *compositeApplicationStore) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
+func (c *compositeApplicationStore) CreateApplication(ctx context.Context, app applicationConfigDAO) error {
 	return c.dbStore.CreateApplication(ctx, app)
 }
 
-// GetApplicationByID retrieves an application by ID from either store.
-// Checks database store first, then falls back to file store.
+func (c *compositeApplicationStore) CreateOAuthConfig(ctx context.Context, entityID string,
+	oauthConfigJSON json.RawMessage) error {
+	return c.dbStore.CreateOAuthConfig(ctx, entityID, oauthConfigJSON)
+}
+
 func (c *compositeApplicationStore) GetApplicationByID(
-	ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
-	app, err := declarativeresource.CompositeGetHelper(
-		func() (*model.ApplicationProcessedDTO, error) { return c.dbStore.GetApplicationByID(ctx, id) },
-		func() (*model.ApplicationProcessedDTO, error) { return c.fileStore.GetApplicationByID(ctx, id) },
+	ctx context.Context, id string) (*applicationConfigDAO, error) {
+	return declarativeresource.CompositeGetHelper(
+		func() (*applicationConfigDAO, error) { return c.dbStore.GetApplicationByID(ctx, id) },
+		func() (*applicationConfigDAO, error) { return c.fileStore.GetApplicationByID(ctx, id) },
 		model.ApplicationNotFoundError,
 	)
-	return app, err
 }
 
-// GetApplicationByName retrieves an application by name from either store.
-// Checks database store first, then falls back to file store.
-func (c *compositeApplicationStore) GetApplicationByName(
-	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
-	app, err := declarativeresource.CompositeGetHelper(
-		func() (*model.ApplicationProcessedDTO, error) { return c.dbStore.GetApplicationByName(ctx, name) },
-		func() (*model.ApplicationProcessedDTO, error) { return c.fileStore.GetApplicationByName(ctx, name) },
+func (c *compositeApplicationStore) GetOAuthConfigByEntityID(
+	ctx context.Context, entityID string) (*oauthConfigDAO, error) {
+	return declarativeresource.CompositeGetHelper(
+		func() (*oauthConfigDAO, error) { return c.dbStore.GetOAuthConfigByEntityID(ctx, entityID) },
+		func() (*oauthConfigDAO, error) { return c.fileStore.GetOAuthConfigByEntityID(ctx, entityID) },
 		model.ApplicationNotFoundError,
 	)
-	return app, err
 }
 
-// GetOAuthApplication retrieves an OAuth application by client ID from either store.
-// Checks database store first, then falls back to file store.
-func (c *compositeApplicationStore) GetOAuthApplication(
-	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
-	config, err := declarativeresource.CompositeGetHelper(
-		func() (*model.OAuthAppConfigProcessedDTO, error) { return c.dbStore.GetOAuthApplication(ctx, clientID) },
-		func() (*model.OAuthAppConfigProcessedDTO, error) {
-			return c.fileStore.GetOAuthApplication(ctx, clientID)
-		},
-		model.ApplicationNotFoundError,
-	)
-	return config, err
+func (c *compositeApplicationStore) UpdateApplication(ctx context.Context, app applicationConfigDAO) error {
+	return c.dbStore.UpdateApplication(ctx, app)
 }
 
-// UpdateApplication updates an application in the database store only.
-// Immutability checks are handled at the service layer.
-func (c *compositeApplicationStore) UpdateApplication(
-	ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO,
-) error {
-	return c.dbStore.UpdateApplication(ctx, existingApp, updatedApp)
+func (c *compositeApplicationStore) UpdateOAuthConfig(ctx context.Context, entityID string,
+	oauthConfigJSON json.RawMessage) error {
+	return c.dbStore.UpdateOAuthConfig(ctx, entityID, oauthConfigJSON)
 }
 
-// DeleteApplication deletes an application from the database store only.
-// Immutability checks are handled at the service layer.
 func (c *compositeApplicationStore) DeleteApplication(ctx context.Context, id string) error {
 	return c.dbStore.DeleteApplication(ctx, id)
 }
 
-// IsApplicationExists checks if an application exists in either store.
-// Checks file store first to prevent conflicts with immutable resources.
+func (c *compositeApplicationStore) DeleteOAuthConfig(ctx context.Context, entityID string) error {
+	return c.dbStore.DeleteOAuthConfig(ctx, entityID)
+}
+
 func (c *compositeApplicationStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
 	return declarativeresource.CompositeBooleanCheckHelper(
 		func() (bool, error) { return c.fileStore.IsApplicationExists(ctx, id) },
@@ -144,16 +118,6 @@ func (c *compositeApplicationStore) IsApplicationExists(ctx context.Context, id 
 	)
 }
 
-// IsApplicationExistsByName checks if an application with the given name exists in either store.
-// Checks file store first to prevent conflicts with immutable resources.
-func (c *compositeApplicationStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
-	return declarativeresource.CompositeBooleanCheckHelper(
-		func() (bool, error) { return c.fileStore.IsApplicationExistsByName(ctx, name) },
-		func() (bool, error) { return c.dbStore.IsApplicationExistsByName(ctx, name) },
-	)
-}
-
-// IsApplicationDeclarative checks if an application is immutable (exists in file store).
 func (c *compositeApplicationStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
 	return declarativeresource.CompositeIsDeclarativeHelper(
 		id,
@@ -161,30 +125,26 @@ func (c *compositeApplicationStore) IsApplicationDeclarative(ctx context.Context
 	)
 }
 
-// mergeAndDeduplicateApplications merges applications from both stores and removes duplicates by ID.
-// While duplicates shouldn't exist by design (an app exists in only one store), this provides
-// defensive programming against misconfigurations or bugs.
-func mergeAndDeduplicateApplications(dbApps, fileApps []model.BasicApplicationDTO) []model.BasicApplicationDTO {
+// mergeAndDeduplicateAppConfigs merges configs from both stores, deduplicating by ID.
+func mergeAndDeduplicateAppConfigs(dbApps, fileApps []applicationConfigDAO) []applicationConfigDAO {
 	seen := make(map[string]bool)
-	result := make([]model.BasicApplicationDTO, 0, len(dbApps)+len(fileApps))
+	result := make([]applicationConfigDAO, 0, len(dbApps)+len(fileApps))
 
-	// Add DB apps first (they take precedence) - mark as mutable (isReadOnly=false)
 	for i := range dbApps {
 		if !seen[dbApps[i].ID] {
 			seen[dbApps[i].ID] = true
-			appCopy := dbApps[i]
-			appCopy.IsReadOnly = false
-			result = append(result, appCopy)
+			app := dbApps[i]
+			app.IsReadOnly = false
+			result = append(result, app)
 		}
 	}
 
-	// Add file apps if not already present - mark as immutable (isReadOnly=true)
 	for i := range fileApps {
 		if !seen[fileApps[i].ID] {
 			seen[fileApps[i].ID] = true
-			appCopy := fileApps[i]
-			appCopy.IsReadOnly = true
-			result = append(result, appCopy)
+			app := fileApps[i]
+			app.IsReadOnly = true
+			result = append(result, app)
 		}
 	}
 

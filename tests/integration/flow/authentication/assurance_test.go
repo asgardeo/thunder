@@ -315,7 +315,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -442,6 +442,7 @@ func (ts *AssuranceTestSuite) SetupSuite() {
 
 	// Create test application
 	assuranceTestApp.AuthFlowID = smsOnlyFlowID
+	assuranceTestApp.OUID = assuranceTestOU.ID
 	appID, err := testutils.CreateApplication(assuranceTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application: %v", err)

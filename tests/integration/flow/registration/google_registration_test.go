@@ -203,7 +203,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"sub": map[string]interface{}{
@@ -385,6 +385,7 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowIDWithExisting)
 
 	// Create test application with the first flow
+	googleRegTestApp.OUID = googleRegTestOUID
 	appID, err := testutils.CreateApplication(googleRegTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

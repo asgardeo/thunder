@@ -289,6 +289,7 @@ func (suite *CompositeModeSuite) TestLayoutDeclarativeVisibility() {
 func (suite *CompositeModeSuite) TestApplicationCreate() {
 	app := map[string]interface{}{
 		"name":     "Test Runtime Application",
+		"ouId":     "decl-ou-1",
 		"template": "web",
 		"url":      "https://test.example.com",
 	}

@@ -20,22 +20,18 @@ package application
 
 import (
 	"context"
-
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/application/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
-	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
-// oAuthConfig is the structure for unmarshaling OAuth configuration JSON.
+// oAuthConfig is the internal structure for marshaling/unmarshaling the OAUTH_CONFIG JSON column.
 type oAuthConfig struct {
 	RedirectURIs            []string                      `json:"redirect_uris"`
 	GrantTypes              []string                      `json:"grant_types"`
@@ -50,46 +46,70 @@ type oAuthConfig struct {
 	Certificate             *model.ApplicationCertificate `json:"certificate,omitempty"`
 }
 
-// oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
+// oAuthTokenConfig represents the OAuth token configuration for JSON marshaling.
 type oAuthTokenConfig struct {
 	AccessToken *accessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *idTokenConfig     `json:"id_token,omitempty"`
 }
 
-// accessTokenConfig represents the access token configuration structure for JSON marshaling/unmarshaling.
+// accessTokenConfig represents access token configuration for JSON marshaling.
 type accessTokenConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
-// idTokenConfig represents the ID token configuration structure for JSON marshaling/unmarshaling.
+// idTokenConfig represents ID token configuration for JSON marshaling.
 type idTokenConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
-// userInfoConfig represents the user info endpoint configuration structure for JSON marshaling/unmarshaling.
+// userInfoConfig represents user info endpoint configuration for JSON marshaling.
 type userInfoConfig struct {
 	ResponseType   model.UserInfoResponseType `json:"response_type,omitempty"`
 	UserAttributes []string                   `json:"user_attributes,omitempty"`
 }
 
-// ApplicationStoreInterface defines the interface for application data persistence operations.
+// applicationConfigDAO represents the gateway configuration for an application (no identity data).
+// Identity data (name, description, clientId, credentials) is in the ENTITY table.
+type applicationConfigDAO struct {
+	ID                        string
+	AuthFlowID                string
+	RegistrationFlowID        string
+	IsRegistrationFlowEnabled bool
+	ThemeID                   string
+	LayoutID                  string
+	Assertion                 *model.AssertionConfig
+	LoginConsent              *model.LoginConsentConfig
+	AllowedEntityTypes        []string
+	Properties                map[string]interface{}
+	IsReadOnly                bool
+}
+
+// oauthConfigDAO represents the OAuth configuration for an application, keyed by entity ID.
+type oauthConfigDAO struct {
+	EntityID    string
+	OAuthConfig *oAuthConfig
+}
+
+// applicationStoreInterface defines the interface for application gateway config persistence.
+// Identity data (name, description, clientId, credentials) is NOT handled here — that's in the entity layer.
 type applicationStoreInterface interface {
-	CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error
+	CreateApplication(ctx context.Context, app applicationConfigDAO) error
+	CreateOAuthConfig(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage) error
+	GetApplicationByID(ctx context.Context, id string) (*applicationConfigDAO, error)
+	GetOAuthConfigByEntityID(ctx context.Context, entityID string) (*oauthConfigDAO, error)
+	GetApplicationList(ctx context.Context) ([]applicationConfigDAO, error)
 	GetTotalApplicationCount(ctx context.Context) (int, error)
-	GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error)
-	GetOAuthApplication(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error)
-	GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error)
-	GetApplicationByName(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error)
-	UpdateApplication(ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO) error
+	UpdateApplication(ctx context.Context, app applicationConfigDAO) error
+	UpdateOAuthConfig(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage) error
 	DeleteApplication(ctx context.Context, id string) error
+	DeleteOAuthConfig(ctx context.Context, entityID string) error
 	IsApplicationExists(ctx context.Context, id string) (bool, error)
-	IsApplicationExistsByName(ctx context.Context, name string) (bool, error)
 	IsApplicationDeclarative(ctx context.Context, id string) bool
 }
 
-// applicationStore implements the applicationStoreInterface for handling application data persistence.
+// applicationStore implements applicationStoreInterface for database persistence.
 type applicationStore struct {
 	dbProvider   provider.DBProviderInterface
 	deploymentID string
@@ -97,67 +117,169 @@ type applicationStore struct {
 
 var getDBProvider = provider.GetDBProvider
 
-// NewApplicationStore creates a new instance of applicationStore.
+// newApplicationStore creates a new database-backed application store.
 func newApplicationStore() (applicationStoreInterface, transaction.Transactioner, error) {
 	dbProvider := getDBProvider()
 	client, err := dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, nil, err
 	}
-	transactioner, err := client.GetTransactioner()
+
+	transactioner, err := dbProvider.GetConfigDBTransactioner()
 	if err != nil {
 		return nil, nil, err
 	}
+
+	deploymentID := config.GetThunderRuntime().Config.Server.Identifier
+	if _, err := client.QueryContext(context.Background(), queryGetApplicationCount, deploymentID); err != nil {
+		return nil, nil, fmt.Errorf("failed to verify application table: %w", err)
+	}
+
 	return &applicationStore{
 		dbProvider:   dbProvider,
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: deploymentID,
 	}, transactioner, nil
 }
 
-// CreateApplication creates a new application in the database.
-func (st *applicationStore) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
+// marshalApplicationConfigDAO marshals the JSON fields of an applicationConfigDAO and returns
+// the prepared values ready for a SQL statement.
+func marshalApplicationConfigDAO(app applicationConfigDAO) (
+	assertionJSON, loginConsentJSON, allowedTypesJSON, propertiesJSON interface{},
+	isRegistrationEnabledStr string,
+	themeID, layoutID interface{},
+	err error,
+) {
+	assertionJSON, err = marshalNullableJSON(app.Assertion)
+	if err != nil {
+		return nil, nil, nil, nil, "", nil, nil, fmt.Errorf("failed to marshal assertion: %w", err)
+	}
+
+	loginConsentJSON, err = marshalNullableJSON(app.LoginConsent)
+	if err != nil {
+		return nil, nil, nil, nil, "", nil, nil, fmt.Errorf("failed to marshal login consent: %w", err)
+	}
+
+	allowedTypesJSON, err = marshalNullableJSON(app.AllowedEntityTypes)
+	if err != nil {
+		return nil, nil, nil, nil, "", nil, nil, fmt.Errorf("failed to marshal allowed entity types: %w", err)
+	}
+
+	propertiesJSON, err = marshalNullableJSON(app.Properties)
+	if err != nil {
+		return nil, nil, nil, nil, "", nil, nil, fmt.Errorf("failed to marshal properties: %w", err)
+	}
+
+	isRegistrationEnabledStr = utils.BoolToNumString(app.IsRegistrationFlowEnabled)
+
+	if app.ThemeID != "" {
+		themeID = app.ThemeID
+	}
+	if app.LayoutID != "" {
+		layoutID = app.LayoutID
+	}
+
+	return assertionJSON, loginConsentJSON, allowedTypesJSON, propertiesJSON,
+		isRegistrationEnabledStr, themeID, layoutID, nil
+}
+
+// CreateApplication creates a new application gateway config entry.
+func (st *applicationStore) CreateApplication(ctx context.Context, app applicationConfigDAO) error {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	jsonDataBytes, err := getAppJSONDataBytes(&app)
-	if err != nil {
-		return err
+	assertionJSON, loginConsentJSON, allowedTypesJSON, propertiesJSON,
+		isRegistrationEnabledStr, themeID, layoutID, marshalErr := marshalApplicationConfigDAO(app)
+	if marshalErr != nil {
+		return marshalErr
 	}
 
-	isRegistrationEnabledStr := utils.BoolToNumString(app.IsRegistrationFlowEnabled)
-	var themeID interface{}
-	if app.ThemeID != "" {
-		themeID = app.ThemeID
-	} else {
-		themeID = nil
-	}
-	var layoutID interface{}
-	if app.LayoutID != "" {
-		layoutID = app.LayoutID
-	} else {
-		layoutID = nil
-	}
-
-	_, err = dbClient.ExecuteContext(ctx, queryCreateApplication, app.ID, app.Name, app.Description,
-		app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, themeID, layoutID,
-		jsonDataBytes, st.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryCreateApplication,
+		app.ID, app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr,
+		themeID, layoutID,
+		assertionJSON, loginConsentJSON, allowedTypesJSON, propertiesJSON,
+		st.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to insert application: %w", err)
 	}
-
-	// TODO: Need to refactor when supporting other/multiple inbound auth types.
-	if len(app.InboundAuthConfig) > 0 {
-		if err := st.createOAuthApp(ctx, dbClient, &app, queryCreateOAuthApplication); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-// GetTotalApplicationCount retrieves the total count of applications from the database.
+// CreateOAuthConfig creates a new OAuth config entry for an application.
+func (st *applicationStore) CreateOAuthConfig(ctx context.Context, entityID string,
+	oauthConfigJSON json.RawMessage) error {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	_, err = dbClient.ExecuteContext(ctx, queryCreateOAuthApplication, entityID, oauthConfigJSON, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to insert OAuth config: %w", err)
+	}
+	return nil
+}
+
+// GetApplicationByID retrieves application gateway config by entity ID.
+func (st *applicationStore) GetApplicationByID(ctx context.Context, id string) (*applicationConfigDAO, error) {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryGetApplicationByID, id, st.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	if len(results) == 0 {
+		return nil, model.ApplicationNotFoundError
+	}
+	return buildAppConfigFromRow(results[0])
+}
+
+// GetOAuthConfigByEntityID retrieves OAuth config by entity ID.
+func (st *applicationStore) GetOAuthConfigByEntityID(ctx context.Context,
+	entityID string) (*oauthConfigDAO, error) {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryGetOAuthConfigByEntityID, entityID, st.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	if len(results) == 0 {
+		return nil, model.ApplicationNotFoundError
+	}
+	return buildOAuthConfigFromRow(results[0])
+}
+
+// GetApplicationList retrieves all application gateway configs.
+func (st *applicationStore) GetApplicationList(ctx context.Context) ([]applicationConfigDAO, error) {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryGetApplicationList, st.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	apps := make([]applicationConfigDAO, 0, len(results))
+	for _, row := range results {
+		app, err := buildAppConfigFromRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build application from result row: %w", err)
+		}
+		apps = append(apps, *app)
+	}
+	return apps, nil
+}
+
+// GetTotalApplicationCount retrieves the total count of applications.
 func (st *applicationStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
@@ -169,877 +291,304 @@ func (st *applicationStore) GetTotalApplicationCount(ctx context.Context) (int, 
 		return 0, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	totalCount := 0
 	if len(results) > 0 {
 		if total, ok := results[0]["total"].(int64); ok {
-			totalCount = int(total)
-		} else {
-			return 0, fmt.Errorf("failed to parse total count from query result")
+			return int(total), nil
 		}
+		return 0, fmt.Errorf("failed to parse total count")
 	}
-
-	return totalCount, nil
+	return 0, nil
 }
 
-// GetApplicationList retrieves a list of applications from the database.
-func (st *applicationStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationPersistence"))
-
-	dbClient, err := st.dbProvider.GetConfigDBClient()
-	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
-		return nil, fmt.Errorf("failed to get database client: %w", err)
-	}
-
-	results, err := dbClient.QueryContext(ctx, queryGetApplicationList, st.deploymentID)
-	if err != nil {
-		logger.Error("Failed to execute query", log.Error(err))
-		return nil, fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	applications := make([]model.BasicApplicationDTO, 0)
-
-	for _, row := range results {
-		application, err := buildBasicApplicationFromResultRow(row)
-		if err != nil {
-			logger.Error("failed to build application from result row", log.Error(err))
-			return nil, fmt.Errorf("failed to build application from result row: %w", err)
-		}
-		applications = append(applications, application)
-	}
-
-	return applications, nil
-}
-
-// GetOAuthApplication retrieves an OAuth application by its client ID.
-func (st *applicationStore) GetOAuthApplication(
-	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-
-	dbClient, err := st.dbProvider.GetConfigDBClient()
-	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
-		return nil, fmt.Errorf("failed to get database client: %w", err)
-	}
-
-	results, err := dbClient.QueryContext(ctx, queryGetOAuthApplicationByClientID, clientID, st.deploymentID)
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, model.ApplicationNotFoundError
-	}
-
-	row := results[0]
-
-	appID, ok := row["app_id"].(string)
-	if !ok {
-		return nil, errors.New("failed to parse app_id as string")
-	}
-
-	hashedClientSecret, ok := row["client_secret"].(string)
-	if !ok {
-		return nil, errors.New("failed to parse client_secret as string")
-	}
-
-	// Extract OAuth JSON data
-	var oauthConfigJSON string
-	if row["oauth_config_json"] == nil {
-		oauthConfigJSON = "{}"
-	} else if v, ok := row["oauth_config_json"].(string); ok {
-		oauthConfigJSON = v
-	} else if v, ok := row["oauth_config_json"].([]byte); ok {
-		oauthConfigJSON = string(v)
-	} else {
-		return nil, fmt.Errorf("failed to parse oauth_config_json as string or []byte")
-	}
-
-	var oAuthConfig oAuthConfig
-	if err := json.Unmarshal([]byte(oauthConfigJSON), &oAuthConfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal oauth config JSON: %w", err)
-	}
-
-	// Convert the typed arrays to the required types
-	grantTypes := make([]oauth2const.GrantType, 0)
-	for _, gt := range oAuthConfig.GrantTypes {
-		grantTypes = append(grantTypes, oauth2const.GrantType(gt))
-	}
-
-	responseTypes := make([]oauth2const.ResponseType, 0)
-	for _, rt := range oAuthConfig.ResponseTypes {
-		responseTypes = append(responseTypes, oauth2const.ResponseType(rt))
-	}
-
-	tokenEndpointAuthMethod := oauth2const.TokenEndpointAuthMethod(oAuthConfig.TokenEndpointAuthMethod)
-
-	// Convert token config if present
-	var oauthTokenConfig *model.OAuthTokenConfig
-	if oAuthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{}
-		if oAuthConfig.Token.AccessToken != nil {
-			userAttributes := oAuthConfig.Token.AccessToken.UserAttributes
-			if userAttributes == nil {
-				userAttributes = make([]string, 0)
-			}
-			oauthTokenConfig.AccessToken = &model.AccessTokenConfig{
-				ValidityPeriod: oAuthConfig.Token.AccessToken.ValidityPeriod,
-				UserAttributes: userAttributes,
-			}
-		}
-		if oAuthConfig.Token.IDToken != nil {
-			userAttributes := oAuthConfig.Token.IDToken.UserAttributes
-			if userAttributes == nil {
-				userAttributes = make([]string, 0)
-			}
-			oauthTokenConfig.IDToken = &model.IDTokenConfig{
-				ValidityPeriod: oAuthConfig.Token.IDToken.ValidityPeriod,
-				UserAttributes: userAttributes,
-			}
-		}
-	}
-
-	// Handle UserInfo config
-	var userInfoConfig *model.UserInfoConfig
-	if oAuthConfig.UserInfo != nil {
-		userAttributes := oAuthConfig.UserInfo.UserAttributes
-		if userAttributes == nil {
-			userAttributes = make([]string, 0)
-		}
-		userInfoConfig = &model.UserInfoConfig{
-			ResponseType:   oAuthConfig.UserInfo.ResponseType,
-			UserAttributes: userAttributes,
-		}
-	}
-
-	// Handle ScopeClaims config
-	scopeClaims := oAuthConfig.ScopeClaims
-	if scopeClaims == nil {
-		scopeClaims = make(map[string][]string)
-	}
-
-	return &model.OAuthAppConfigProcessedDTO{
-		AppID:                   appID,
-		ClientID:                clientID,
-		HashedClientSecret:      hashedClientSecret,
-		RedirectURIs:            oAuthConfig.RedirectURIs,
-		GrantTypes:              grantTypes,
-		ResponseTypes:           responseTypes,
-		TokenEndpointAuthMethod: tokenEndpointAuthMethod,
-		PKCERequired:            oAuthConfig.PKCERequired,
-		PublicClient:            oAuthConfig.PublicClient,
-		Token:                   oauthTokenConfig,
-		Scopes:                  oAuthConfig.Scopes,
-		UserInfo:                userInfoConfig,
-		ScopeClaims:             scopeClaims,
-		Certificate:             oAuthConfig.Certificate,
-	}, nil
-}
-
-// GetApplicationByID retrieves a specific application by its ID from the database.
-func (st *applicationStore) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(ctx, queryGetApplicationByAppID, id, st.deploymentID)
-}
-
-// GetApplicationByName retrieves a specific application by its name from the database.
-func (st *applicationStore) GetApplicationByName(
-	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(ctx, queryGetApplicationByName, name, st.deploymentID)
-}
-
-// getApplicationByQuery retrieves a specific application from the database using the provided query and parameter.
-func (st *applicationStore) getApplicationByQuery(ctx context.Context, query dbmodel.DBQuery, params ...interface{}) (
-	*model.ApplicationProcessedDTO, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-
-	dbClient, err := st.dbProvider.GetConfigDBClient()
-	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
-		return nil, fmt.Errorf("failed to get database client: %w", err)
-	}
-
-	results, err := dbClient.QueryContext(ctx, query, params...)
-	if err != nil {
-		logger.Error("Failed to execute query", log.Error(err))
-		return nil, fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	if len(results) == 0 {
-		return nil, model.ApplicationNotFoundError
-	}
-	if len(results) != 1 {
-		logger.Error("unexpected number of results")
-		return nil, fmt.Errorf("unexpected number of results: %d", len(results))
-	}
-
-	row := results[0]
-	application, err := buildApplicationFromResultRow(row)
-	if err != nil {
-		logger.Error("failed to build application from result row", log.Error(err))
-		return nil, fmt.Errorf("failed to build application from result row: %w", err)
-	}
-
-	return &application, nil
-}
-
-// UpdateApplication updates an existing application in the database.
-func (st *applicationStore) UpdateApplication(
-	ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO) error {
+// UpdateApplication updates an application's gateway config.
+func (st *applicationStore) UpdateApplication(ctx context.Context, app applicationConfigDAO) error {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	jsonDataBytes, err := getAppJSONDataBytes(updatedApp)
-	if err != nil {
-		return err
+	assertionJSON, loginConsentJSON, allowedTypesJSON, propertiesJSON,
+		isRegistrationEnabledStr, themeID, layoutID, marshalErr := marshalApplicationConfigDAO(app)
+	if marshalErr != nil {
+		return marshalErr
 	}
 
-	isRegistrationEnabledStr := utils.BoolToNumString(updatedApp.IsRegistrationFlowEnabled)
-	var themeID interface{}
-	if updatedApp.ThemeID != "" {
-		themeID = updatedApp.ThemeID
-	} else {
-		themeID = nil
-	}
-	var layoutID interface{}
-	if updatedApp.LayoutID != "" {
-		layoutID = updatedApp.LayoutID
-	} else {
-		layoutID = nil
-	}
-	_, err = dbClient.ExecuteContext(ctx, queryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
-		updatedApp.Description, updatedApp.AuthFlowID, updatedApp.RegistrationFlowID,
-		isRegistrationEnabledStr, themeID, layoutID, jsonDataBytes, st.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryUpdateApplicationByID,
+		app.ID, app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr,
+		themeID, layoutID,
+		assertionJSON, loginConsentJSON, allowedTypesJSON, propertiesJSON,
+		st.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to update application: %w", err)
 	}
-
-	// TODO: Need to refactor when supporting other/multiple inbound auth types.
-	if len(updatedApp.InboundAuthConfig) > 0 && len(existingApp.InboundAuthConfig) > 0 {
-		if err := st.createOAuthApp(ctx, dbClient, updatedApp, queryUpdateOAuthApplicationByAppID); err != nil {
-			return err
-		}
-	} else if len(existingApp.InboundAuthConfig) > 0 {
-		clientID := ""
-		if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
-			clientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
-		}
-		if err := st.deleteOAuthApp(ctx, dbClient, clientID); err != nil {
-			return err
-		}
-	} else if len(updatedApp.InboundAuthConfig) > 0 {
-		if err := st.createOAuthApp(ctx, dbClient, updatedApp, queryCreateOAuthApplication); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-// DeleteApplication deletes an application from the database by its ID.
-func (st *applicationStore) DeleteApplication(ctx context.Context, id string) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-
+// UpdateOAuthConfig updates OAuth config for an application.
+func (st *applicationStore) UpdateOAuthConfig(ctx context.Context, entityID string,
+	oauthConfigJSON json.RawMessage) error {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.ExecuteContext(ctx, queryDeleteApplicationByAppID, id, st.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryUpdateOAuthConfigByEntityID,
+		entityID, oauthConfigJSON, st.deploymentID)
 	if err != nil {
-		logger.Error("Failed to execute query", log.Error(err))
-		return fmt.Errorf("failed to execute query: %w", err)
+		return fmt.Errorf("failed to update OAuth config: %w", err)
 	}
-
 	return nil
 }
 
-// IsApplicationExists checks if an application exists in the database by ID.
-func (st *applicationStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-
+// DeleteApplication deletes an application by entity ID. Cascades to OAuth config.
+func (st *applicationStore) DeleteApplication(ctx context.Context, id string) error {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteApplicationByID, id, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete application: %w", err)
+	}
+	return nil
+}
+
+// DeleteOAuthConfig deletes OAuth config for an application.
+func (st *applicationStore) DeleteOAuthConfig(ctx context.Context, entityID string) error {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteOAuthConfigByEntityID, entityID, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete OAuth config: %w", err)
+	}
+	return nil
+}
+
+// IsApplicationExists checks if an application exists by entity ID.
+func (st *applicationStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.QueryContext(ctx, queryCheckApplicationExistsByID, id, st.deploymentID)
 	if err != nil {
-		logger.Error("Failed to execute existence check query", log.Error(err))
 		return false, fmt.Errorf("failed to execute existence check query: %w", err)
 	}
 
 	return parseBoolFromCount(results)
 }
 
-// IsApplicationExistsByName checks if an application exists in the database by name.
-func (st *applicationStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-
-	dbClient, err := st.dbProvider.GetConfigDBClient()
-	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
-		return false, fmt.Errorf("failed to get database client: %w", err)
-	}
-
-	results, err := dbClient.QueryContext(ctx, queryCheckApplicationExistsByName, name, st.deploymentID)
-	if err != nil {
-		logger.Error("Failed to execute existence check query", log.Error(err))
-		return false, fmt.Errorf("failed to execute existence check query: %w", err)
-	}
-
-	return parseBoolFromCount(results)
-}
-
-// IsApplicationDeclarative checks if an application is immutable.
-// For database store, all applications are mutable (not declarative).
-func (st *applicationStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
+// IsApplicationDeclarative returns false for database store (all database applications are mutable).
+func (st *applicationStore) IsApplicationDeclarative(_ context.Context, _ string) bool {
 	return false
 }
 
-// getAppJSONDataBytes constructs the JSON data bytes for the application.
-func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
-	jsonData := map[string]interface{}{
-		"url":        app.URL,
-		"logo_url":   app.LogoURL,
-		"tos_uri":    app.TosURI,
-		"policy_uri": app.PolicyURI,
-		"contacts":   app.Contacts,
-	}
+// --- Helper functions ---
 
-	// Include template if present
-	if app.Template != "" {
-		jsonData["template"] = app.Template
-	}
-
-	// Include allowed_user_types if present (include even if empty to preserve the field)
-	if app.AllowedUserTypes != nil {
-		jsonData["allowed_user_types"] = app.AllowedUserTypes
-	}
-
-	// Include metadata if present
-	if app.Metadata != nil {
-		jsonData["metadata"] = app.Metadata
-	}
-
-	// Include assertion config if present
-	if app.Assertion != nil {
-		assertionData := map[string]interface{}{}
-		if app.Assertion.ValidityPeriod != 0 {
-			assertionData["validity_period"] = app.Assertion.ValidityPeriod
-		}
-		if len(app.Assertion.UserAttributes) > 0 {
-			assertionData["user_attributes"] = app.Assertion.UserAttributes
-		}
-		if len(assertionData) > 0 {
-			jsonData["assertion"] = assertionData
-		}
-	}
-
-	// Include login consent config if present
-	if app.LoginConsent != nil {
-		loginConsentData := map[string]interface{}{}
-		loginConsentData["validity_period"] = app.LoginConsent.ValidityPeriod
-		jsonData["login_consent"] = loginConsentData
-	}
-
-	jsonDataBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal application JSON: %w", err)
-	}
-
-	return jsonDataBytes, nil
-}
-
-// getOAuthConfigJSONBytes constructs the OAuth configuration JSON data bytes.
-func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedDTO) ([]byte, error) {
-	oauthConfig := oAuthConfig{
-		RedirectURIs:            inboundAuthConfig.OAuthAppConfig.RedirectURIs,
-		GrantTypes:              utils.ConvertToStringSlice(inboundAuthConfig.OAuthAppConfig.GrantTypes),
-		ResponseTypes:           utils.ConvertToStringSlice(inboundAuthConfig.OAuthAppConfig.ResponseTypes),
-		TokenEndpointAuthMethod: string(inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod),
-		PKCERequired:            inboundAuthConfig.OAuthAppConfig.PKCERequired,
-		PublicClient:            inboundAuthConfig.OAuthAppConfig.PublicClient,
-		Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
-	}
-
-	// Include token config if present
-	if inboundAuthConfig.OAuthAppConfig.Token != nil {
-		oauthConfig.Token = &oAuthTokenConfig{}
-		if inboundAuthConfig.OAuthAppConfig.Token.AccessToken != nil {
-			oauthConfig.Token.AccessToken = &accessTokenConfig{
-				ValidityPeriod: inboundAuthConfig.OAuthAppConfig.Token.AccessToken.ValidityPeriod,
-				UserAttributes: inboundAuthConfig.OAuthAppConfig.Token.AccessToken.UserAttributes,
-			}
-		}
-		if inboundAuthConfig.OAuthAppConfig.Token.IDToken != nil {
-			oauthConfig.Token.IDToken = &idTokenConfig{
-				ValidityPeriod: inboundAuthConfig.OAuthAppConfig.Token.IDToken.ValidityPeriod,
-				UserAttributes: inboundAuthConfig.OAuthAppConfig.Token.IDToken.UserAttributes,
-			}
-		}
-	}
-
-	// Handle UserInfo config
-	if inboundAuthConfig.OAuthAppConfig.UserInfo != nil {
-		oauthConfig.UserInfo = &userInfoConfig{
-			ResponseType:   inboundAuthConfig.OAuthAppConfig.UserInfo.ResponseType,
-			UserAttributes: inboundAuthConfig.OAuthAppConfig.UserInfo.UserAttributes,
-		}
-	}
-
-	// Handle ScopeClaims config
-	oauthConfig.ScopeClaims = inboundAuthConfig.OAuthAppConfig.ScopeClaims
-
-	oauthConfigJSONBytes, err := json.Marshal(oauthConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal OAuth configuration JSON: %w", err)
-	}
-	return oauthConfigJSONBytes, nil
-}
-
-// createOAuthApp creates or updates an OAuth application.
-func (st *applicationStore) createOAuthApp(ctx context.Context, dbClient provider.DBClientInterface,
-	app *model.ApplicationProcessedDTO, oauthAppMgtQuery dbmodel.DBQuery) error {
-	inboundAuthConfig := app.InboundAuthConfig[0]
-	clientID := inboundAuthConfig.OAuthAppConfig.ClientID
-	clientSecret := inboundAuthConfig.OAuthAppConfig.HashedClientSecret
-
-	// Generate the OAuth config JSON
-	oauthConfigJSON, err := getOAuthConfigJSONBytes(inboundAuthConfig)
-	if err != nil {
-		return err
-	}
-
-	_, err = dbClient.ExecuteContext(ctx, oauthAppMgtQuery, app.ID, clientID,
-		clientSecret, oauthConfigJSON, st.deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to create/update OAuth application: %w", err)
-	}
-	return nil
-}
-
-// deleteOAuthApp deletes an OAuth application by client ID.
-func (st *applicationStore) deleteOAuthApp(ctx context.Context, dbClient provider.DBClientInterface,
-	clientID string) error {
-	_, err := dbClient.ExecuteContext(ctx, queryDeleteOAuthApplicationByClientID, clientID, st.deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to delete OAuth application: %w", err)
-	}
-	return nil
-}
-
-// buildBasicApplicationFromResultRow constructs a BasicApplicationDTO from a database result row.
-func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.BasicApplicationDTO, error) {
+// buildAppConfigFromRow constructs an applicationConfigDAO from a database result row.
+func buildAppConfigFromRow(row map[string]interface{}) (*applicationConfigDAO, error) {
 	appID, ok := row["id"].(string)
 	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse id as string")
+		return nil, fmt.Errorf("failed to parse id as string")
 	}
 
-	appName, ok := row["app_name"].(string)
-	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse app_name as string")
+	authFlowID := parseStringColumn(row, "auth_flow_id")
+	regFlowID := parseStringColumn(row, "registration_flow_id")
+	themeID := parseStringColumn(row, "theme_id")
+	layoutID := parseStringColumn(row, "layout_id")
+
+	isRegistrationFlowEnabled := false
+	if val := parseStringOrBytesColumn(row, "is_registration_flow_enabled"); val != "" {
+		isRegistrationFlowEnabled = utils.NumStringToBool(val)
 	}
 
-	var description string
-	if row["description"] == nil {
-		description = ""
-	} else if desc, ok := row["description"].(string); ok {
-		description = desc
-	} else {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse description as string")
-	}
-
-	authFlowID, ok := row["auth_flow_id"].(string)
-	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse auth_flow_id as string")
-	}
-
-	regisFlowID, ok := row["registration_flow_id"].(string)
-	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse registration_flow_id as string")
-	}
-
-	var isRegistrationFlowEnabledStr string
-	switch v := row["is_registration_flow_enabled"].(type) {
-	case string:
-		isRegistrationFlowEnabledStr = v
-	case []byte:
-		isRegistrationFlowEnabledStr = string(v)
-	default:
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-		logger.Debug("Failed to parse is_registration_flow_enabled",
-			log.String("type", fmt.Sprintf("%T", row["is_registration_flow_enabled"])),
-			log.String("value", fmt.Sprintf("%v", row["is_registration_flow_enabled"])))
-		return model.BasicApplicationDTO{},
-			fmt.Errorf("failed to parse is_registration_flow_enabled as string or []byte")
-	}
-	isRegistrationFlowEnabled := utils.NumStringToBool(isRegistrationFlowEnabledStr)
-
-	var themeID string
-	if row["theme_id"] != nil {
-		if tid, ok := row["theme_id"].(string); ok {
-			themeID = tid
-		}
-	}
-
-	var layoutID string
-	if row["layout_id"] != nil {
-		if lid, ok := row["layout_id"].(string); ok {
-			layoutID = lid
-		}
-	}
-
-	application := model.BasicApplicationDTO{
+	app := &applicationConfigDAO{
 		ID:                        appID,
-		Name:                      appName,
-		Description:               description,
 		AuthFlowID:                authFlowID,
-		RegistrationFlowID:        regisFlowID,
+		RegistrationFlowID:        regFlowID,
 		IsRegistrationFlowEnabled: isRegistrationFlowEnabled,
 		ThemeID:                   themeID,
 		LayoutID:                  layoutID,
 	}
 
-	if row["client_id"] != nil {
-		clientID, ok := row["client_id"].(string)
-		if !ok {
-			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse client_id as string")
-		}
-		application.ClientID = clientID
-	}
-
-	// Extract logo_url and template from app_json if present.
-	if row["app_json"] != nil {
-		var appJSON string
-		if v, ok := row["app_json"].(string); ok {
-			appJSON = v
-		} else if v, ok := row["app_json"].([]byte); ok {
-			appJSON = string(v)
-		}
-
-		if appJSON != "" && appJSON != "{}" {
-			var appJSONData map[string]interface{}
-			if err := json.Unmarshal([]byte(appJSON), &appJSONData); err != nil {
-				return model.BasicApplicationDTO{}, fmt.Errorf("failed to unmarshal app JSON: %w", err)
-			}
-
-			logoURL, err := extractStringFromJSON(appJSONData, "logo_url")
-			if err != nil {
-				return model.BasicApplicationDTO{}, err
-			}
-			application.LogoURL = logoURL
-
-			template, err := extractStringFromJSON(appJSONData, "template")
-			if err != nil {
-				return model.BasicApplicationDTO{}, err
-			}
-			application.Template = template
+	// Parse ASSERTION column
+	if assertionStr := parseJSONColumnString(row, "assertion"); assertionStr != "" {
+		var assertion model.AssertionConfig
+		if err := json.Unmarshal([]byte(assertionStr), &assertion); err != nil {
+			log.GetLogger().Debug("Failed to unmarshal assertion JSON", log.Error(err))
+		} else {
+			app.Assertion = &assertion
 		}
 	}
 
-	return application, nil
+	// Parse LOGIN_CONSENT column
+	if consentStr := parseJSONColumnString(row, "login_consent"); consentStr != "" {
+		var consent model.LoginConsentConfig
+		if err := json.Unmarshal([]byte(consentStr), &consent); err != nil {
+			log.GetLogger().Debug("Failed to unmarshal login consent JSON", log.Error(err))
+		} else {
+			app.LoginConsent = &consent
+		}
+	}
+
+	// Parse ALLOWED_ENTITY_TYPES column
+	if typesStr := parseJSONColumnString(row, "allowed_entity_types"); typesStr != "" {
+		var types []string
+		if err := json.Unmarshal([]byte(typesStr), &types); err != nil {
+			log.GetLogger().Debug("Failed to unmarshal allowed entity types JSON", log.Error(err))
+		} else {
+			app.AllowedEntityTypes = types
+		}
+	}
+
+	// Parse PROPERTIES column
+	if propsStr := parseJSONColumnString(row, "properties"); propsStr != "" {
+		var props map[string]interface{}
+		if err := json.Unmarshal([]byte(propsStr), &props); err != nil {
+			log.GetLogger().Debug("Failed to unmarshal properties JSON", log.Error(err))
+		} else {
+			app.Properties = props
+		}
+	}
+
+	return app, nil
 }
 
-// extractStringFromJSON extracts a string value from JSON data, returns empty string if not found or invalid.
-func extractStringFromJSON(data map[string]interface{}, key string) (string, error) {
-	if data[key] == nil {
-		return "", nil
-	}
-	if str, ok := data[key].(string); ok {
-		return str, nil
-	}
-	return "", fmt.Errorf("failed to parse %s from app JSON", key)
-}
-
-// extractStringArrayFromJSON extracts a string array from JSON data.
-func extractStringArrayFromJSON(data map[string]interface{}, key string) ([]string, error) {
-	if data[key] == nil {
-		return []string{}, nil
-	}
-	if arr, ok := data[key].([]interface{}); ok {
-		result := make([]string, 0, len(arr))
-		for i, item := range arr {
-			if str, ok := item.(string); ok {
-				result = append(result, str)
-			} else {
-				return nil, fmt.Errorf(
-					"failed to parse %s from app JSON: item at index %d is not a string (type: %T, value: %v)",
-					key, i, item, item)
-			}
-		}
-		return result, nil
-	}
-	return nil, fmt.Errorf("failed to parse %s from app JSON", key)
-}
-
-// extractAssertionConfigFromJSON extracts assertion configuration from JSON data.
-func extractAssertionConfigFromJSON(data map[string]interface{}) *model.AssertionConfig {
-	assertionData, exists := data["assertion"]
-	if !exists || assertionData == nil {
-		return nil
-	}
-	assertionMap, ok := assertionData.(map[string]interface{})
+// buildOAuthConfigFromRow constructs an oauthConfigDAO from a database result row.
+func buildOAuthConfigFromRow(row map[string]interface{}) (*oauthConfigDAO, error) {
+	entityID, ok := row["entity_id"].(string)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("failed to parse entity_id as string")
 	}
 
-	config := &model.AssertionConfig{}
-	if validityPeriod, ok := assertionMap["validity_period"].(float64); ok {
-		config.ValidityPeriod = int64(validityPeriod)
-	}
-	if userAttrs, ok := assertionMap["user_attributes"].([]interface{}); ok {
-		for _, attr := range userAttrs {
-			if attrStr, ok := attr.(string); ok {
-				config.UserAttributes = append(config.UserAttributes, attrStr)
-			}
+	dao := &oauthConfigDAO{EntityID: entityID}
+
+	if configStr := parseJSONColumnString(row, "oauth_config"); configStr != "" {
+		var cfg oAuthConfig
+		if err := json.Unmarshal([]byte(configStr), &cfg); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal OAuth config JSON: %w", err)
 		}
+		dao.OAuthConfig = &cfg
 	}
-	return config
+
+	return dao, nil
 }
 
-// extractLoginConsentConfigFromJSON extracts login consent configuration from JSON data.
-func extractLoginConsentConfigFromJSON(data map[string]interface{}) *model.LoginConsentConfig {
-	consentData, exists := data["login_consent"]
-	if !exists || consentData == nil {
-		return nil
+// marshalNullableJSON marshals a value to JSON, returning nil for nil/empty input.
+func marshalNullableJSON(v interface{}) (interface{}, error) {
+	if v == nil {
+		return nil, nil
 	}
-
-	consentMap, ok := consentData.(map[string]interface{})
-	if !ok {
-		return nil
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
 	}
-
-	config := &model.LoginConsentConfig{
-		ValidityPeriod: 0, // default to indicate no expiry
+	if string(data) == "null" {
+		return nil, nil
 	}
-
-	if validityPeriod, ok := consentMap["validity_period"].(float64); ok {
-		config.ValidityPeriod = int64(validityPeriod)
-	}
-
-	return config
+	return data, nil
 }
 
-// buildApplicationFromResultRow constructs an Application object from a database result row.
-func buildApplicationFromResultRow(row map[string]interface{}) (model.ApplicationProcessedDTO, error) {
-	basicApp, err := buildBasicApplicationFromResultRow(row)
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
+// parseStringColumn safely extracts a string from a result row, returning "" for nil.
+func parseStringColumn(row map[string]interface{}, key string) string {
+	if row[key] == nil {
+		return ""
 	}
-
-	// Extract JSON data from the row.
-	var appJSON string
-	if row["app_json"] == nil {
-		appJSON = "{}"
-	} else if v, ok := row["app_json"].(string); ok {
-		appJSON = v
-	} else if v, ok := row["app_json"].([]byte); ok {
-		appJSON = string(v)
-	} else {
-		return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse app_json as string or []byte")
+	if s, ok := row[key].(string); ok {
+		return s
 	}
-
-	var appJSONData map[string]interface{}
-	if err := json.Unmarshal([]byte(appJSON), &appJSONData); err != nil {
-		return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to unmarshal app JSON: %w", err)
-	}
-
-	// Extract fields from JSON data using helper functions.
-	url, err := extractStringFromJSON(appJSONData, "url")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	logoURL, err := extractStringFromJSON(appJSONData, "logo_url")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	tosURI, err := extractStringFromJSON(appJSONData, "tos_uri")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	policyURI, err := extractStringFromJSON(appJSONData, "policy_uri")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	contacts, err := extractStringArrayFromJSON(appJSONData, "contacts")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	// Extract allowed_user_types from app JSON if present
-	allowedUserTypes, err := extractStringArrayFromJSON(appJSONData, "allowed_user_types")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	assertionConfig := extractAssertionConfigFromJSON(appJSONData)
-
-	// Extract metadata from app JSON if present
-	var metadata map[string]interface{}
-	if appJSONData["metadata"] != nil {
-		if m, ok := appJSONData["metadata"].(map[string]interface{}); ok {
-			metadata = m
-		}
-	}
-
-	// Extract template from app JSON if present
-	template, err := extractStringFromJSON(appJSONData, "template")
-	if err != nil {
-		return model.ApplicationProcessedDTO{}, err
-	}
-
-	application := model.ApplicationProcessedDTO{
-		ID:                        basicApp.ID,
-		Name:                      basicApp.Name,
-		Description:               basicApp.Description,
-		AuthFlowID:                basicApp.AuthFlowID,
-		RegistrationFlowID:        basicApp.RegistrationFlowID,
-		IsRegistrationFlowEnabled: basicApp.IsRegistrationFlowEnabled,
-		ThemeID:                   basicApp.ThemeID,
-		LayoutID:                  basicApp.LayoutID,
-		Template:                  template,
-		URL:                       url,
-		LogoURL:                   logoURL,
-		Assertion:                 assertionConfig,
-		TosURI:                    tosURI,
-		PolicyURI:                 policyURI,
-		Contacts:                  contacts,
-		AllowedUserTypes:          allowedUserTypes,
-		LoginConsent:              extractLoginConsentConfigFromJSON(appJSONData),
-		Metadata:                  metadata,
-	}
-
-	if basicApp.ClientID != "" {
-		inboundAuthConfig, err := buildOAuthInboundAuthConfig(row, basicApp)
-		if err != nil {
-			return model.ApplicationProcessedDTO{}, err
-		}
-		application.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{inboundAuthConfig}
-	}
-
-	return application, nil
+	return ""
 }
 
-// buildOAuthInboundAuthConfig builds OAuth inbound auth configuration from database row and basic app data.
-func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.BasicApplicationDTO) (
-	model.InboundAuthConfigProcessedDTO, error) {
-	hashedClientSecret, ok := row["client_secret"].(string)
-	if !ok {
-		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse client_secret as string")
+// parseStringOrBytesColumn handles columns that may come as string or []byte.
+func parseStringOrBytesColumn(row map[string]interface{}, key string) string {
+	if row[key] == nil {
+		return ""
 	}
-
-	// Extract OAuth JSON data from the row.
-	var oauthConfigJSON string
-	if row["oauth_config_json"] == nil {
-		oauthConfigJSON = "{}"
-	} else if v, ok := row["oauth_config_json"].(string); ok {
-		oauthConfigJSON = v
-	} else if v, ok := row["oauth_config_json"].([]byte); ok {
-		oauthConfigJSON = string(v)
-	} else {
-		return model.InboundAuthConfigProcessedDTO{},
-			fmt.Errorf("failed to parse oauth_config_json as string or []byte")
+	switch v := row[key].(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	default:
+		return ""
 	}
-
-	var oauthConfig oAuthConfig
-	if err := json.Unmarshal([]byte(oauthConfigJSON), &oauthConfig); err != nil {
-		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to unmarshal oauth config JSON: %w", err)
-	}
-
-	// Convert the typed arrays to the required types
-	grantTypes := make([]oauth2const.GrantType, 0, len(oauthConfig.GrantTypes))
-	for _, gt := range oauthConfig.GrantTypes {
-		grantTypes = append(grantTypes, oauth2const.GrantType(gt))
-	}
-
-	responseTypes := make([]oauth2const.ResponseType, 0, len(oauthConfig.ResponseTypes))
-	for _, rt := range oauthConfig.ResponseTypes {
-		responseTypes = append(responseTypes, oauth2const.ResponseType(rt))
-	}
-
-	tokenEndpointAuthMethod := oauth2const.TokenEndpointAuthMethod(oauthConfig.TokenEndpointAuthMethod)
-
-	// Extract token config from OAuth config if present
-	var oauthTokenConfig *model.OAuthTokenConfig
-	if oauthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{}
-		if oauthConfig.Token.AccessToken != nil {
-			userAttributes := oauthConfig.Token.AccessToken.UserAttributes
-			if userAttributes == nil {
-				userAttributes = make([]string, 0)
-			}
-			oauthTokenConfig.AccessToken = &model.AccessTokenConfig{
-				ValidityPeriod: oauthConfig.Token.AccessToken.ValidityPeriod,
-				UserAttributes: userAttributes,
-			}
-		}
-		if oauthConfig.Token.IDToken != nil {
-			userAttributes := oauthConfig.Token.IDToken.UserAttributes
-			if userAttributes == nil {
-				userAttributes = make([]string, 0)
-			}
-			oauthTokenConfig.IDToken = &model.IDTokenConfig{
-				ValidityPeriod: oauthConfig.Token.IDToken.ValidityPeriod,
-				UserAttributes: userAttributes,
-			}
-		}
-	}
-
-	// Handle UserInfo config
-	var userInfoConfig *model.UserInfoConfig
-	if oauthConfig.UserInfo != nil {
-		userAttributes := oauthConfig.UserInfo.UserAttributes
-		if userAttributes == nil {
-			userAttributes = make([]string, 0)
-		}
-		userInfoConfig = &model.UserInfoConfig{
-			ResponseType:   oauthConfig.UserInfo.ResponseType,
-			UserAttributes: userAttributes,
-		}
-	}
-
-	// Handle ScopeClaims config
-	scopeClaims := oauthConfig.ScopeClaims
-	if scopeClaims == nil {
-		scopeClaims = make(map[string][]string)
-	}
-
-	// TODO: Need to refactor when supporting other/multiple inbound auth types.
-	inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
-		Type: model.OAuthInboundAuthType,
-		OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
-			AppID:                   basicApp.ID,
-			ClientID:                basicApp.ClientID,
-			HashedClientSecret:      hashedClientSecret,
-			RedirectURIs:            oauthConfig.RedirectURIs,
-			GrantTypes:              grantTypes,
-			ResponseTypes:           responseTypes,
-			TokenEndpointAuthMethod: tokenEndpointAuthMethod,
-			PKCERequired:            oauthConfig.PKCERequired,
-			PublicClient:            oauthConfig.PublicClient,
-			Token:                   oauthTokenConfig,
-			Scopes:                  oauthConfig.Scopes,
-			UserInfo:                userInfoConfig,
-			ScopeClaims:             scopeClaims,
-		},
-	}
-	return inboundAuthConfig, nil
 }
 
-// parseBoolFromCount parses the count result from an existence check query.
+// parseJSONColumnString extracts a JSON column value as a string.
+func parseJSONColumnString(row map[string]interface{}, column string) string {
+	val, exists := row[column]
+	if !exists || val == nil {
+		return ""
+	}
+	switch v := val.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	default:
+		return ""
+	}
+}
+
+// parseBoolFromCount parses a boolean from a COUNT(*) query result.
 func parseBoolFromCount(results []map[string]interface{}) (bool, error) {
 	if len(results) == 0 {
 		return false, nil
 	}
-	if countVal, ok := results[0]["count"].(int64); ok {
-		return countVal > 0, nil
+	count, ok := results[0]["count"].(int64)
+	if !ok {
+		return false, fmt.Errorf("failed to parse count from query result")
 	}
-	return false, fmt.Errorf("failed to parse count from query result")
+	return count > 0, nil
+}
+
+// getOAuthConfigJSONBytes serializes an InboundAuthConfigProcessedDTO to the OAUTH_CONFIG JSON format.
+func getOAuthConfigJSONBytes(inboundAuth model.InboundAuthConfigProcessedDTO) (json.RawMessage, error) {
+	if inboundAuth.OAuthAppConfig == nil {
+		return nil, nil
+	}
+	oa := inboundAuth.OAuthAppConfig
+	cfg := oAuthConfig{
+		RedirectURIs:            oa.RedirectURIs,
+		GrantTypes:              utils.ConvertToStringSlice(oa.GrantTypes),
+		ResponseTypes:           utils.ConvertToStringSlice(oa.ResponseTypes),
+		TokenEndpointAuthMethod: string(oa.TokenEndpointAuthMethod),
+		PKCERequired:            oa.PKCERequired,
+		PublicClient:            oa.PublicClient,
+		Scopes:                  oa.Scopes,
+		ScopeClaims:             oa.ScopeClaims,
+		Certificate:             oa.Certificate,
+	}
+	if oa.Token != nil {
+		cfg.Token = &oAuthTokenConfig{}
+		if oa.Token.AccessToken != nil {
+			cfg.Token.AccessToken = &accessTokenConfig{
+				ValidityPeriod: oa.Token.AccessToken.ValidityPeriod,
+				UserAttributes: oa.Token.AccessToken.UserAttributes,
+			}
+		}
+		if oa.Token.IDToken != nil {
+			cfg.Token.IDToken = &idTokenConfig{
+				ValidityPeriod: oa.Token.IDToken.ValidityPeriod,
+				UserAttributes: oa.Token.IDToken.UserAttributes,
+			}
+		}
+	}
+	if oa.UserInfo != nil {
+		cfg.UserInfo = &userInfoConfig{
+			ResponseType:   oa.UserInfo.ResponseType,
+			UserAttributes: oa.UserInfo.UserAttributes,
+		}
+	}
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal OAuth config JSON: %w", err)
+	}
+	return data, nil
 }

@@ -141,7 +141,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 		},
@@ -194,6 +194,7 @@ func (ts *SensitiveInputCleanupTestSuite) SetupSuite() {
 	sensitiveCleanupTestApp.AuthFlowID = flowID
 
 	// Create test application
+	sensitiveCleanupTestApp.OUID = ts.ouID
 	appID, err := testutils.CreateApplication(sensitiveCleanupTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

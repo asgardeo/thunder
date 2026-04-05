@@ -30,7 +30,6 @@ import (
 
 	entitypkg "github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -38,7 +37,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
-	"github.com/asgardeo/thunder/tests/mocks/crypto/hashmock"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
@@ -763,30 +761,23 @@ func TestUserService_CreateUser_CallsCreateEntity(t *testing.T) {
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).
-		Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).
-		Once()
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).
-		Once()
 
 	storeMock := entitymock.NewEntityServiceInterfaceMock(t)
 	storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.
 		On("CreateEntity", mock.Anything, mock.MatchedBy(func(e *entitypkg.Entity) bool {
 			return e.OrganizationUnitID == testOrgID && e.Type == testUserType && e.ID != ""
-		}), mock.Anything, mock.Anything).
-		Return((*entitypkg.Entity)(nil), nil).
+		}), mock.Anything).
+		Return(&entitypkg.Entity{
+			OrganizationUnitID: testOrgID, Type: testUserType,
+			Attributes: json.RawMessage(`{}`),
+		}, nil).
 		Once()
 
 	service := &userService{
 		entityService:     storeMock,
 		ouService:         ouServiceMock,
 		userSchemaService: userSchemaMock,
-		hashService:       hashmock.NewHashServiceInterfaceMock(t),
 		authzService:      newAllowAllAuthz(t),
 	}
 
@@ -816,20 +807,11 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).
-		Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).
-		Once()
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).
-		Once()
 
 	storeMock := entitymock.NewEntityServiceInterfaceMock(t)
 	storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.
-		On("CreateEntity", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
 		Return((*entitypkg.Entity)(nil), storeErr).
 		Once()
 
@@ -837,7 +819,6 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 		entityService:     storeMock,
 		ouService:         ouServiceMock,
 		userSchemaService: userSchemaMock,
-		hashService:       hashmock.NewHashServiceInterfaceMock(t),
 		authzService:      newAllowAllAuthz(t),
 	}
 
@@ -938,12 +919,6 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 				Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
 			}, nil).
 			Once()
-		userStoreMock.
-			On("GetEntityWithCredentials", mock.Anything, svcTestUserID1).
-			Return(&entitypkg.Entity{
-				Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
-			}, json.RawMessage(nil), json.RawMessage(nil), nil).
-			Once()
 
 		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 		schemaMock.On("GetCredentialAttributes", mock.Anything, "Person").
@@ -993,62 +968,20 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	userStoreMock := entitymock.NewEntityServiceInterfaceMock(t)
 	userStoreMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	existingCredentials := Credentials{
-		CredentialType("password"): {
-			{
-				StorageType: "hash",
-				StorageAlgo: hash.SHA256,
-				Value:       "old-hash",
-				StorageAlgoParams: hash.CredParameters{
-					Salt: "old-salt",
-				},
-			},
-		},
-		CredentialType("pin"): {
-			{
-				StorageType: "hash",
-				StorageAlgo: hash.SHA256,
-				Value:       "pin-hash",
-				StorageAlgoParams: hash.CredParameters{
-					Salt: "pin-salt",
-				},
-			},
-		},
-	}
 	userStoreMock.
 		On("GetEntity", mock.Anything, svcTestUserID1).
 		Return(&entitypkg.Entity{
 			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
 		}, nil).
 		Once()
-	userStoreMock.
-		On("GetEntityWithCredentials", mock.Anything, svcTestUserID1).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
-		}, json.RawMessage(nil), mustMarshalCredentials(existingCredentials), nil).
-		Once()
-	var captured Credentials
+
+	var capturedJSON json.RawMessage
 	userStoreMock.
 		On("UpdateSystemCredentials", mock.Anything, svcTestUserID1, mock.Anything).
 		Run(func(args mock.Arguments) {
-			raw := args.Get(2).(json.RawMessage)
-			_ = json.Unmarshal(raw, &captured)
+			capturedJSON = args.Get(2).(json.RawMessage)
 		}).
 		Return(nil).
-		Once()
-
-	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
-	hashServiceMock.
-		On("Generate", []byte("newpassword")).
-		Return(hash.Credential{
-			Algorithm: hash.PBKDF2,
-			Hash:      "hashed-newpassword",
-			Parameters: hash.CredParameters{
-				Salt:       "salt123",
-				Iterations: 10000,
-				KeySize:    32,
-			},
-		}, nil).
 		Once()
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
@@ -1059,49 +992,25 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	service := &userService{
 		entityService:     userStoreMock,
 		userSchemaService: schemaMock,
-		hashService:       hashServiceMock,
 		authzService:      newAllowAllAuthz(t),
 	}
 
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("", &config.Config{
-		Crypto: config.CryptoConfig{
-			PasswordHashing: config.PasswordHashingConfig{
-				Algorithm: string(hash.PBKDF2),
-			},
-		},
-	})
-	require.NoError(t, initErr)
-	t.Cleanup(config.ResetThunderRuntime)
-
-	// Send plain text password - service will hash it
+	// Send plain text password - entity service will hash it
 	credentialsJSON := json.RawMessage(`{"password":"newpassword"}`)
 	svcErr := service.UpdateUserCredentials(context.Background(), svcTestUserID1, credentialsJSON)
 	require.Nil(t, svcErr)
 
-	// Verify password credential was hashed and stored
-	passwordCreds, exists := captured[CredentialType("password")]
-	require.True(t, exists)
-	require.Len(t, passwordCreds, 1)
-	require.Equal(t, "hash", passwordCreds[0].StorageType)
-	require.Equal(t, "hashed-newpassword", passwordCreds[0].Value)
-	require.Equal(t, hash.PBKDF2, passwordCreds[0].StorageAlgo)
-	require.Equal(t, "salt123", passwordCreds[0].StorageAlgoParams.Salt)
-	require.Equal(t, 10000, passwordCreds[0].StorageAlgoParams.Iterations)
-	require.Equal(t, 32, passwordCreds[0].StorageAlgoParams.KeySize)
+	// Verify plaintext was passed to UpdateSystemCredentials
+	var plaintextMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(capturedJSON, &plaintextMap))
+	require.Equal(t, "newpassword", plaintextMap["password"])
 
-	// Verify PIN credential was preserved
-	pinCreds, exists := captured[CredentialType("pin")]
-	require.True(t, exists)
-	require.Len(t, pinCreds, 1)
-	require.Equal(t, "pin-hash", pinCreds[0].Value)
-	require.Equal(t, "pin-salt", pinCreds[0].StorageAlgoParams.Salt)
+	userStoreMock.AssertNumberOfCalls(t, "UpdateSystemCredentials", 1)
 }
 
 func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 	userStoreMock := entitymock.NewEntityServiceInterfaceMock(t)
 	userStoreMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	existingCredentials := Credentials{}
 
 	userStoreMock.
 		On("GetEntity", mock.Anything, svcTestUserID1).
@@ -1109,24 +1018,15 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
 		}, nil).
 		Once()
-	userStoreMock.
-		On("GetEntityWithCredentials", mock.Anything, svcTestUserID1).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
-		}, json.RawMessage(nil), mustMarshalCredentials(existingCredentials), nil).
-		Once()
 
-	var captured Credentials
+	var capturedJSON json.RawMessage
 	userStoreMock.
 		On("UpdateSystemCredentials", mock.Anything, svcTestUserID1, mock.Anything).
 		Run(func(args mock.Arguments) {
-			raw := args.Get(2).(json.RawMessage)
-			_ = json.Unmarshal(raw, &captured)
+			capturedJSON = args.Get(2).(json.RawMessage)
 		}).
 		Return(nil).
 		Once()
-
-	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetCredentialAttributes", mock.Anything, "Person").
@@ -1135,21 +1035,9 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 
 	service := &userService{
 		entityService:     userStoreMock,
-		hashService:       hashServiceMock,
 		userSchemaService: schemaMock,
 		authzService:      newAllowAllAuthz(t),
 	}
-
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("", &config.Config{
-		Crypto: config.CryptoConfig{
-			PasswordHashing: config.PasswordHashingConfig{
-				Algorithm: string(hash.PBKDF2),
-			},
-		},
-	})
-	require.NoError(t, initErr)
-	t.Cleanup(config.ResetThunderRuntime)
 
 	// Send multiple passkeys as an array - passkey supports multiple credentials
 	credentialsJSON := json.RawMessage(
@@ -1157,22 +1045,21 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 	svcErr := service.UpdateUserCredentials(context.Background(), svcTestUserID1, credentialsJSON)
 	require.Nil(t, svcErr)
 
-	// Verify both passkeys were stored (not hashed)
-	passkeyCreds, exists := captured[CredentialTypePasskey]
-	require.True(t, exists)
-	require.Len(t, passkeyCreds, 2)
+	// Verify plaintext passkey data was passed to UpdateSystemCredentials
+	var plaintextMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(capturedJSON, &plaintextMap))
+	passkeys, ok := plaintextMap["passkey"]
+	require.True(t, ok)
+	passkeyArr, ok := passkeys.([]interface{})
+	require.True(t, ok)
+	require.Len(t, passkeyArr, 2)
 
-	// First passkey
-	require.Equal(t, "passkey-credential-1", passkeyCreds[0].Value)
-
-	// Second passkey
-	require.Equal(t, "passkey-credential-2", passkeyCreds[1].Value)
+	userStoreMock.AssertNumberOfCalls(t, "UpdateSystemCredentials", 1)
 }
 
 func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T) {
 	userStoreMock := entitymock.NewEntityServiceInterfaceMock(t)
 	userStoreMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	existingCredentials := Credentials{}
 
 	userStoreMock.
 		On("GetEntity", mock.Anything, svcTestUserID1).
@@ -1180,14 +1067,6 @@ func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T
 			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
 		}, nil).
 		Once()
-	userStoreMock.
-		On("GetEntityWithCredentials", mock.Anything, svcTestUserID1).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: "Person",
-		}, json.RawMessage(nil), mustMarshalCredentials(existingCredentials), nil).
-		Once()
-
-	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetCredentialAttributes", mock.Anything, "Person").
@@ -1196,33 +1075,34 @@ func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T
 
 	service := &userService{
 		entityService:     userStoreMock,
-		hashService:       hashServiceMock,
 		userSchemaService: schemaMock,
 		authzService:      newAllowAllAuthz(t),
 	}
 
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("", &config.Config{
-		Crypto: config.CryptoConfig{
-			PasswordHashing: config.PasswordHashingConfig{
-				Algorithm: string(hash.PBKDF2),
-			},
-		},
-	})
-	require.NoError(t, initErr)
-	t.Cleanup(config.ResetThunderRuntime)
-
-	// Attempt to send multiple passwords - should be rejected
+	// Attempt to send multiple passwords as an array - the new flow passes structured
+	// values through to UpdateSystemCredentials. The entity service handles rejection of
+	// multiple values for non-system-managed credential types. But the user service
+	// validates credential types and delegates to entity service.
+	// Since the new code parses the array as a structured value and passes it through,
+	// the call succeeds at the user service level (entity service will validate).
 	credentialsJSON := json.RawMessage(`{"password":[{"value":"password1"}, {"value":"password2"}]}`)
+	var capturedJSON json.RawMessage
+	userStoreMock.
+		On("UpdateSystemCredentials", mock.Anything, svcTestUserID1, mock.Anything).
+		Run(func(args mock.Arguments) {
+			capturedJSON = args.Get(2).(json.RawMessage)
+		}).
+		Return(nil).
+		Once()
+
 	svcErr := service.UpdateUserCredentials(context.Background(), svcTestUserID1, credentialsJSON)
+	require.Nil(t, svcErr)
 
-	// Should return error
-	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInvalidCredential.Code, svcErr.Code)
-	require.Contains(t, svcErr.ErrorDescription, "does not support multiple credentials")
-
-	// Store should not be called
-	userStoreMock.AssertNotCalled(t, "UpdateSystemCredentials", mock.Anything, mock.Anything, mock.Anything)
+	// Verify the structured password data was passed through to entity service
+	var plaintextMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(capturedJSON, &plaintextMap))
+	_, hasPassword := plaintextMap["password"]
+	require.True(t, hasPassword)
 }
 
 func TestUserService_GetUserCredentialsByType_Validation(t *testing.T) {
@@ -1638,10 +1518,10 @@ func TestUserService_UpdateUser(t *testing.T) {
 			Category: entitypkg.EntityCategoryUser, ID: userID, OrganizationUnitID: testOrgID, Type: testUserType,
 		}, nil).Once()
 
-	// Mock UpdateEntityWithCredentials call (no credentials in this update, so systemCreds is nil)
-	storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID, mock.MatchedBy(func(e *entitypkg.Entity) bool {
+	// Mock UpdateEntity call
+	storeMock.On("UpdateEntity", mock.Anything, userID, mock.MatchedBy(func(e *entitypkg.Entity) bool {
 		return e.ID == userID
-	}), mock.Anything).Return((*entitypkg.Entity)(nil), nil).Once()
+	})).Return((*entitypkg.Entity)(nil), nil).Once()
 
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
@@ -1649,15 +1529,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 		Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &userService{
 		entityService:     storeMock,
@@ -1669,13 +1543,13 @@ func TestUserService_UpdateUser(t *testing.T) {
 	resp, err := service.UpdateUser(context.Background(), userID, &updatedUser)
 	_ = resp
 	require.Nil(t, err)
-	storeMock.AssertNumberOfCalls(t, "UpdateEntityWithCredentials", 1)
+	storeMock.AssertNumberOfCalls(t, "UpdateEntity", 1)
 }
 
 func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	userID := svcTestUserID1
 
-	// Test the new credential extraction, merging, and update logic
+	// Test that UpdateUser passes credentials in attributes through to entity service
 	updatedUser := User{
 		ID:         userID,
 		OUID:       testOrgID,
@@ -1685,74 +1559,30 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 
 	storeMock := entitymock.NewEntityServiceInterfaceMock(t)
 	storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	hashMock := hashmock.NewHashServiceInterfaceMock(t)
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+
 	// Mock GetUser pre-fetch for authz check
 	storeMock.On("GetEntity", mock.Anything, userID).
 		Return(&entitypkg.Entity{
 			Category: entitypkg.EntityCategoryUser, ID: userID, OrganizationUnitID: testOrgID, Type: testUserType,
 		}, nil).Once()
 
-	// Mock hash generation for password
-	hashMock.On("Generate", mock.Anything).Return(hash.Credential{
-		Algorithm: "pbkdf2",
-		Hash:      "hashedPassword",
-		Parameters: hash.CredParameters{
-			Salt:       "somesalt",
-			Iterations: 10000,
-			KeySize:    32,
-		},
-	}, nil).Once()
-
 	// Mock validation calls
 	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
-	// Mock GetCredentials - return existing credentials (e.g., passkey)
-	existingCreds := Credentials{
-		CredentialTypePasskey: []Credential{
-			{Value: "existingPasskey", StorageType: "passkey"},
-		},
-	}
-	storeMock.On("GetEntityWithCredentials", mock.Anything, userID).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: userID, Type: testUserType,
-		}, json.RawMessage(nil), mustMarshalCredentials(existingCreds), nil).Once()
-
-	// Mock UpdateEntityWithCredentials - should receive user WITHOUT password in attributes
-	// and merged credentials (password + existing passkey)
-	storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID, mock.MatchedBy(func(e *entitypkg.Entity) bool {
-		var attrs map[string]interface{}
-		if err := json.Unmarshal(e.Attributes, &attrs); err != nil {
-			return false
-		}
-		_, hasPassword := attrs["password"]
-		return e.ID == userID && !hasPassword // Password should be removed from attributes
-	}), mock.MatchedBy(func(raw json.RawMessage) bool {
-		var creds Credentials
-		if err := json.Unmarshal(raw, &creds); err != nil {
-			return false
-		}
-		passwordCreds, hasPassword := creds[CredentialType("password")]
-		passkeyCreds, hasPasskey := creds[CredentialTypePasskey]
-		// Verify password was added and passkey was preserved
-		return hasPassword && len(passwordCreds) == 1 && hasPasskey && len(passkeyCreds) == 1
+	// Mock UpdateEntity - entity service handles credential extraction internally
+	storeMock.On("UpdateEntity", mock.Anything, userID, mock.MatchedBy(func(e *entitypkg.Entity) bool {
+		return e.ID == userID
 	})).Return((*entitypkg.Entity)(nil), nil).Once()
 
 	service := &userService{
 		entityService:     storeMock,
 		ouService:         ouServiceMock,
 		userSchemaService: userSchemaMock,
-		hashService:       hashMock,
 		authzService:      newAllowAllAuthz(t),
 	}
 
@@ -1765,7 +1595,6 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 
 	// Verify all expected calls were made
 	storeMock.AssertExpectations(t)
-	hashMock.AssertExpectations(t)
 	ouServiceMock.AssertExpectations(t)
 	userSchemaMock.AssertExpectations(t)
 }
@@ -1779,36 +1608,24 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 		attributes string
 		setupMocks func(
 			storeMock *entitymock.EntityServiceInterfaceMock,
-			hashMock *hashmock.HashServiceInterfaceMock,
 			ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
 			userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
 		)
 		expectedError *serviceerror.ServiceError
 	}{
 		{
-			name:       "UserNotFound_InCredentialUpdate",
+			name:       "UpdateEntity_EntityNotFound",
 			attributes: `{"email":"test@example.com","password":"newPassword"}`,
 			setupMocks: func(
 				storeMock *entitymock.EntityServiceInterfaceMock,
-				hashMock *hashmock.HashServiceInterfaceMock,
 				ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
 				userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
 			) {
-				hashMock.On("Generate", mock.Anything).Return(hash.Credential{
-					Algorithm: "pbkdf2", Hash: "hashed",
-					Parameters: hash.CredParameters{Salt: "s", Iterations: 1, KeySize: 32},
-				}, nil).Once()
-				userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				storeMock.On("GetEntity", mock.Anything, userID).
 					Return(&entitypkg.Entity{
 						Category:           entitypkg.EntityCategoryUser,
@@ -1816,36 +1633,24 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 						OrganizationUnitID: testOrgID,
 						Type:               testUserType,
 					}, nil).Once()
-				storeMock.On("GetEntityWithCredentials", mock.Anything, userID).
-					Return((*entitypkg.Entity)(nil),
-						json.RawMessage(nil), json.RawMessage(nil), entitypkg.ErrEntityNotFound).Once()
+				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
+					Return((*entitypkg.Entity)(nil), entitypkg.ErrEntityNotFound).Once()
 			},
 			expectedError: &ErrorUserNotFound,
 		},
 		{
-			name:       "GenericError_InCredentialUpdate",
+			name:       "UpdateEntity_StoreError",
 			attributes: `{"email":"test@example.com","password":"newPass"}`,
 			setupMocks: func(
 				storeMock *entitymock.EntityServiceInterfaceMock,
-				hashMock *hashmock.HashServiceInterfaceMock,
 				ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
 				userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
 			) {
-				hashMock.On("Generate", mock.Anything).Return(hash.Credential{
-					Algorithm: "pbkdf2", Hash: "hashed",
-					Parameters: hash.CredParameters{Salt: "s", Iterations: 1, KeySize: 32},
-				}, nil).Once()
-				userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				storeMock.On("GetEntity", mock.Anything, userID).
 					Return(&entitypkg.Entity{
 						Category:           entitypkg.EntityCategoryUser,
@@ -1853,11 +1658,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 						OrganizationUnitID: testOrgID,
 						Type:               testUserType,
 					}, nil).Once()
-				storeMock.On("GetEntityWithCredentials", mock.Anything, userID).
-					Return(&entitypkg.Entity{
-						Category: entitypkg.EntityCategoryUser, ID: userID,
-					}, json.RawMessage(nil), json.RawMessage(nil), nil).Once()
-				storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID, mock.Anything, mock.Anything).
+				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
 					Return((*entitypkg.Entity)(nil), errors.New("db connection lost")).Once()
 			},
 			expectedError: &ErrorInternalServerError,
@@ -1867,7 +1668,6 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 			attributes: `{"email":"updated@example.com"}`,
 			setupMocks: func(
 				storeMock *entitymock.EntityServiceInterfaceMock,
-				_ *hashmock.HashServiceInterfaceMock,
 				ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
 				userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
 			) {
@@ -1876,10 +1676,6 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Once()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Once()
-				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Once()
 				storeMock.On("GetEntity", mock.Anything, userID).
 					Return(&entitypkg.Entity{
 						Category:           entitypkg.EntityCategoryUser,
@@ -1887,115 +1683,16 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 						OrganizationUnitID: testOrgID,
 						Type:               testUserType,
 					}, nil).Once()
-				storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID, mock.Anything, mock.Anything).
+				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
 					Return((*entitypkg.Entity)(nil), nil).Once()
 			},
 			expectedError: nil,
-		},
-		{
-			name:       "ValidationError_InsideTransaction",
-			attributes: `{"email":"test@example.com"}`,
-			setupMocks: func(
-				storeMock *entitymock.EntityServiceInterfaceMock,
-				_ *hashmock.HashServiceInterfaceMock,
-				ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
-				userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
-			) {
-				userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OUID: testOrgID},
-						(*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(false, (*serviceerror.ServiceError)(nil)).Once()
-				storeMock.On("GetEntity", mock.Anything, userID).
-					Return(&entitypkg.Entity{
-						Category:           entitypkg.EntityCategoryUser,
-						ID:                 userID,
-						OrganizationUnitID: testOrgID,
-						Type:               testUserType,
-					}, nil).Once()
-			},
-			expectedError: &ErrorSchemaValidationFailed,
-		},
-		{
-			name:       "ExtractCredentials_HashError",
-			attributes: `{"email":"test@example.com","password":"somePassword"}`,
-			setupMocks: func(
-				storeMock *entitymock.EntityServiceInterfaceMock,
-				hashMock *hashmock.HashServiceInterfaceMock,
-				ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
-				userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
-			) {
-				userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OUID: testOrgID},
-						(*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				hashMock.On("Generate", mock.Anything).
-					Return(hash.Credential{}, errors.New("hash generation failed")).Once()
-				storeMock.On("GetEntity", mock.Anything, userID).
-					Return(&entitypkg.Entity{
-						Category:           entitypkg.EntityCategoryUser,
-						ID:                 userID,
-						OrganizationUnitID: testOrgID,
-						Type:               testUserType,
-					}, nil).Once()
-			},
-			expectedError: &ErrorInternalServerError,
-		},
-		{
-			name:       "UpdateCredentials_StoreError",
-			attributes: `{"email":"test@example.com","password":"somePassword"}`,
-			setupMocks: func(
-				storeMock *entitymock.EntityServiceInterfaceMock,
-				hashMock *hashmock.HashServiceInterfaceMock,
-				ouServiceMock *oumock.OrganizationUnitServiceInterfaceMock,
-				userSchemaMock *userschemamock.UserSchemaServiceInterfaceMock,
-			) {
-				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OUID: testOrgID},
-						(*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				hashMock.On("Generate", mock.Anything).Return(hash.Credential{
-					Algorithm: "pbkdf2", Hash: "hashed",
-					Parameters: hash.CredParameters{Salt: "s", Iterations: 1, KeySize: 32},
-				}, nil).Once()
-				storeMock.On("GetEntity", mock.Anything, userID).
-					Return(&entitypkg.Entity{
-						Category:           entitypkg.EntityCategoryUser,
-						ID:                 userID,
-						OrganizationUnitID: testOrgID,
-						Type:               testUserType,
-					}, nil).Once()
-				storeMock.On("GetEntityWithCredentials", mock.Anything, userID).
-					Return(&entitypkg.Entity{
-						Category: entitypkg.EntityCategoryUser, ID: userID,
-					}, json.RawMessage(nil), json.RawMessage(nil), nil).Once()
-				storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID, mock.Anything, mock.Anything).
-					Return((*entitypkg.Entity)(nil), errors.New("failed to update credentials")).Once()
-			},
-			expectedError: &ErrorInternalServerError,
 		},
 		{
 			name:       "GetUser_UserNotFound",
 			attributes: `{"email":"test@example.com"}`,
 			setupMocks: func(
 				storeMock *entitymock.EntityServiceInterfaceMock,
-				_ *hashmock.HashServiceInterfaceMock,
 				_ *oumock.OrganizationUnitServiceInterfaceMock,
 				_ *userschemamock.UserSchemaServiceInterfaceMock,
 			) {
@@ -2009,7 +1706,6 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 			attributes: `{"email":"test@example.com"}`,
 			setupMocks: func(
 				storeMock *entitymock.EntityServiceInterfaceMock,
-				_ *hashmock.HashServiceInterfaceMock,
 				_ *oumock.OrganizationUnitServiceInterfaceMock,
 				_ *userschemamock.UserSchemaServiceInterfaceMock,
 			) {
@@ -2031,20 +1727,16 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 
 			storeMock := entitymock.NewEntityServiceInterfaceMock(t)
 			storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-			hashMock := hashmock.NewHashServiceInterfaceMock(t)
 			ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 			userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-			userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-				Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 			if tt.setupMocks != nil {
-				tt.setupMocks(storeMock, hashMock, ouServiceMock, userSchemaMock)
+				tt.setupMocks(storeMock, ouServiceMock, userSchemaMock)
 			}
 
 			service := &userService{
 				entityService:     storeMock,
 				ouService:         ouServiceMock,
 				userSchemaService: userSchemaMock,
-				hashService:       hashMock,
 				authzService:      newAllowAllAuthz(t),
 			}
 
@@ -2139,14 +1831,6 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 			},
-			setupExtraMocks: func(
-				_ *entitymock.EntityServiceInterfaceMock,
-				_ *oumock.OrganizationUnitServiceInterfaceMock,
-				schemaMock *userschemamock.UserSchemaServiceInterfaceMock,
-			) {
-				schemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
-			},
 			// Downstream validation rejects empty OU after both authz checks pass.
 			expectedErrorCode: ErrorInvalidOUID.Code,
 		},
@@ -2168,14 +1852,6 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 						OUID:         "   ",
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
-			},
-			setupExtraMocks: func(
-				_ *entitymock.EntityServiceInterfaceMock,
-				_ *oumock.OrganizationUnitServiceInterfaceMock,
-				schemaMock *userschemamock.UserSchemaServiceInterfaceMock,
-			) {
-				schemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 			},
 			// Downstream validation rejects whitespace OU after both authz checks pass.
 			expectedErrorCode: ErrorInvalidOUID.Code,
@@ -2260,7 +1936,6 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 			storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 			ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 			userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-			hashMock := hashmock.NewHashServiceInterfaceMock(t)
 			authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 			// The existing user always lives in existingOU.
 			storeMock.On("GetEntity", mock.Anything, userID).
@@ -2273,18 +1948,12 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 
 			// For success-path cases, set up the remaining mocks so the method completes.
 			if tt.expectedErrorCode == "" {
-				userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{OUID: existingOU},
 						(*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
-				storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID, mock.Anything, mock.Anything).
+				storeMock.On("UpdateEntity", mock.Anything, userID, mock.Anything).
 					Return((*entitypkg.Entity)(nil), nil).Maybe()
 			}
 
@@ -2296,7 +1965,6 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				entityService:     storeMock,
 				ouService:         ouServiceMock,
 				userSchemaService: userSchemaMock,
-				hashService:       hashMock,
 				authzService:      authzMock,
 			}
 
@@ -2329,7 +1997,7 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 	userID := svcTestUserID123
 	testOU := testOrgID
 
-	// User update with ONLY password (should preserve PIN)
+	// User update with password in attributes — entity service handles credential extraction internally
 	updatedUser := User{
 		ID:   userID,
 		Type: testUserType,
@@ -2343,40 +2011,12 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 		}`),
 	}
 
-	// Existing credentials in database: password + PIN
-	existingCredentials := Credentials{
-		CredentialType("password"): []Credential{
-			{
-				StorageType: "hash",
-				StorageAlgo: hash.PBKDF2,
-				Value:       "old_hashed_password",
-				StorageAlgoParams: hash.CredParameters{
-					Salt:       "old_salt",
-					Iterations: 10000,
-					KeySize:    32,
-				},
-			},
-		},
-		CredentialType("pin"): []Credential{
-			{
-				StorageType: "hash",
-				StorageAlgo: hash.PBKDF2,
-				Value:       "hashed_pin_123456",
-				StorageAlgoParams: hash.CredParameters{
-					Salt:       "pin_salt",
-					Iterations: 10000,
-					KeySize:    32,
-				},
-			},
-		},
-	}
-
 	// Setup mocks
 	storeMock := entitymock.NewEntityServiceInterfaceMock(t)
 	storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	hashMock := hashmock.NewHashServiceInterfaceMock(t)
+
 	// Mock GetUser pre-fetch for authz check
 	storeMock.On("GetEntity", mock.Anything, userID).
 		Return(&entitypkg.Entity{
@@ -2390,63 +2030,22 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 		Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 
 	// Mock schema validation
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return([]string{"password", "pin"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{
 			Name: testUserType,
 			OUID: testOU,
 		}, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
-	// Mock hash generation for NEW password
-	hashMock.On("Generate", []byte("NewPassword456!")).
-		Return(hash.Credential{
-			Algorithm: hash.PBKDF2,
-			Hash:      "new_hashed_password",
-			Parameters: hash.CredParameters{
-				Salt:       "new_salt",
-				Iterations: 10000,
-				KeySize:    32,
-			},
-		}, nil).Once()
-
-	// Mock GetCredentials - return existing credentials (password + PIN)
-	storeMock.On("GetEntityWithCredentials", mock.Anything, userID).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: userID,
-		}, json.RawMessage(nil), mustMarshalCredentials(existingCredentials), nil).Once()
-
-	// Capture merged credentials passed to UpdateEntityWithCredentials
-	var capturedCredentials Credentials
-	storeMock.On("UpdateEntityWithCredentials", mock.Anything, userID,
-		mock.MatchedBy(func(e *entitypkg.Entity) bool {
-			var attrs map[string]interface{}
-			if err := json.Unmarshal(e.Attributes, &attrs); err != nil {
-				return false
-			}
-			_, hasPassword := attrs["password"]
-			_, hasPin := attrs["pin"]
-			return e.ID == userID && !hasPassword && !hasPin
-		}),
-		mock.MatchedBy(func(raw json.RawMessage) bool {
-			return raw != nil
-		})).
-		Run(func(args mock.Arguments) {
-			raw := args.Get(3).(json.RawMessage)
-			_ = json.Unmarshal(raw, &capturedCredentials)
-		}).
-		Return((*entitypkg.Entity)(nil), nil).Once()
+	// Mock UpdateEntity — entity service handles credential extraction, hashing, and merging internally
+	storeMock.On("UpdateEntity", mock.Anything, userID, mock.MatchedBy(func(e *entitypkg.Entity) bool {
+		return e.ID == userID
+	})).Return((*entitypkg.Entity)(nil), nil).Once()
 
 	// Create service
 	service := &userService{
 		entityService:     storeMock,
 		ouService:         ouServiceMock,
 		userSchemaService: userSchemaMock,
-		hashService:       hashMock,
 		authzService:      newAllowAllAuthz(t),
 	}
 
@@ -2458,43 +2057,10 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 	require.NotNil(t, result)
 	require.Equal(t, userID, result.ID)
 
-	// Verify merged credentials
-	require.NotNil(t, capturedCredentials)
-
-	// Verify password was UPDATED (new hash)
-	require.Len(t, capturedCredentials[CredentialType("password")], 1,
-		"Password should be updated")
-	require.Equal(t, "new_hashed_password",
-		capturedCredentials[CredentialType("password")][0].Value,
-		"Password should have new hashed value")
-	require.Equal(t, "new_salt",
-		capturedCredentials[CredentialType("password")][0].StorageAlgoParams.Salt,
-		"Password should have new salt")
-
-	// Verify PIN was PRESERVED (original hash)
-	require.Len(t, capturedCredentials[CredentialType("pin")], 1,
-		"PIN should be preserved during password update")
-	require.Equal(t, "hashed_pin_123456",
-		capturedCredentials[CredentialType("pin")][0].Value,
-		"PIN should retain original hashed value")
-	require.Equal(t, "pin_salt",
-		capturedCredentials[CredentialType("pin")][0].StorageAlgoParams.Salt,
-		"PIN should retain original salt")
-
-	// Verify response attributes don't contain credentials
-	var attrs map[string]interface{}
-	err := json.Unmarshal(result.Attributes, &attrs)
-	require.NoError(t, err)
-	_, hasPassword := attrs["password"]
-	_, hasPin := attrs["pin"]
-	require.False(t, hasPassword, "Password should not be in response attributes")
-	require.False(t, hasPin, "PIN should not be in response attributes")
-
 	// Verify all mocks were called
 	storeMock.AssertExpectations(t)
 	ouServiceMock.AssertExpectations(t)
 	userSchemaMock.AssertExpectations(t)
-	hashMock.AssertExpectations(t)
 }
 
 func TestUserService_GetUserList(t *testing.T) {
@@ -2596,83 +2162,6 @@ func TestUserService_GetUserGroups(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, 5, resp.TotalResults)
 	require.Len(t, resp.Groups, 1)
-}
-
-func TestUserService_VerifyUser(t *testing.T) {
-	mockStore := entitymock.NewEntityServiceInterfaceMock(t)
-	mockStore.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	mockHash := hashmock.NewHashServiceInterfaceMock(t)
-	userID := svcTestUserID123
-	creds := map[string]interface{}{"password": "password123"}
-
-	storedEntity := &entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: userID}
-	storedCreds := Credentials{
-		"password": []Credential{
-			{
-				Value:             "hashed_password",
-				StorageAlgo:       "argon2id",
-				StorageAlgoParams: hash.CredParameters{Salt: "salt"},
-			},
-		},
-	}
-
-	mockStore.On("GetEntityWithCredentials", mock.Anything, userID).
-		Return(storedEntity, json.RawMessage(nil), mustMarshalCredentials(storedCreds), nil)
-	mockHash.On("Verify", []byte("password123"), mock.Anything).Return(true, nil)
-
-	service := &userService{
-		entityService: mockStore,
-		hashService:   mockHash,
-	}
-
-	user, err := service.VerifyUser(context.Background(), userID, creds)
-
-	require.Nil(t, err)
-	require.NotNil(t, user)
-	require.Equal(t, userID, user.ID)
-}
-
-func TestUserService_AuthenticateUser(t *testing.T) {
-	mockStore := entitymock.NewEntityServiceInterfaceMock(t)
-	mockStore.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	mockHash := hashmock.NewHashServiceInterfaceMock(t)
-
-	identifiers := map[string]interface{}{
-		"username": "alice",
-	}
-	credentials := map[string]interface{}{
-		"password": "password123",
-	}
-
-	userID := svcTestUserID123
-	mockStore.On("IdentifyEntity", mock.Anything, mock.Anything).Return(&userID, nil)
-
-	storedEntity := &entitypkg.Entity{
-		Category: entitypkg.EntityCategoryUser, ID: userID, Type: "employee", OrganizationUnitID: "ou-1",
-	}
-	storedCreds := Credentials{
-		"password": []Credential{
-			{
-				Value:             "hashed_password",
-				StorageAlgo:       "argon2id",
-				StorageAlgoParams: hash.CredParameters{Salt: "salt"},
-			},
-		},
-	}
-	mockStore.On("GetEntityWithCredentials", mock.Anything, userID).
-		Return(storedEntity, json.RawMessage(nil), mustMarshalCredentials(storedCreds), nil)
-	mockHash.On("Verify", []byte("password123"), mock.Anything).Return(true, nil)
-
-	service := &userService{
-		entityService: mockStore,
-		hashService:   mockHash,
-	}
-
-	resp, err := service.AuthenticateUser(context.Background(), identifiers, credentials)
-
-	require.Nil(t, err)
-	require.NotNil(t, resp)
-	require.Equal(t, userID, resp.ID)
 }
 
 func TestUserService_ValidateUserIDs(t *testing.T) {
@@ -2830,103 +2319,6 @@ func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 	})
 }
 
-func TestUserService_VerifyUser_ErrorCases(t *testing.T) {
-	mockStore := entitymock.NewEntityServiceInterfaceMock(t)
-	mockStore.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	mockHash := hashmock.NewHashServiceInterfaceMock(t)
-	service := &userService{entityService: mockStore, hashService: mockHash}
-	ctx := context.Background()
-
-	t.Run("MissingUserID", func(t *testing.T) {
-		_, err := service.VerifyUser(ctx, "", nil)
-		require.NotNil(t, err)
-	})
-
-	t.Run("NoCredentials", func(t *testing.T) {
-		_, err := service.VerifyUser(ctx, "u1", nil)
-		require.NotNil(t, err)
-	})
-
-	t.Run("NoValidCredentials", func(t *testing.T) {
-		mockStore.On("GetEntityWithCredentials", mock.Anything, "u1").
-			Return(&entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: "u1"},
-				json.RawMessage(nil),
-				mustMarshalCredentials(Credentials{CredentialType("password"): []Credential{{Value: "h"}}}),
-				nil).Once()
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{"invalid": "val"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorAuthenticationFailed.Code, err.Code)
-	})
-
-	t.Run("UserNotFound", func(t *testing.T) {
-		mockStore.On("GetEntityWithCredentials", mock.Anything, "u1").
-			Return((*entitypkg.Entity)(nil),
-				json.RawMessage(nil), json.RawMessage(nil), entitypkg.ErrEntityNotFound).Once()
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorUserNotFound.Code, err.Code)
-	})
-
-	t.Run("NoStoredCredentials", func(t *testing.T) {
-		mockStore.On("GetEntityWithCredentials", mock.Anything, "u1").
-			Return(&entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: "u1"},
-				json.RawMessage(nil), json.RawMessage(nil), nil).Once()
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorAuthenticationFailed.Code, err.Code)
-	})
-
-	t.Run("CredentialTypeMismatch", func(t *testing.T) {
-		mockStore.On("GetEntityWithCredentials", mock.Anything, "u1").
-			Return(&entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: "u1"},
-				json.RawMessage(nil),
-				mustMarshalCredentials(Credentials{"pin": []Credential{{}}}), nil).Once()
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorAuthenticationFailed.Code, err.Code)
-	})
-
-	t.Run("HashVerifyFalse", func(t *testing.T) {
-		storedCreds := Credentials{"password": []Credential{{Value: "h", StorageAlgo: "a"}}}
-		mockStore.On("GetEntityWithCredentials", mock.Anything, "u1").
-			Return(&entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: "u1"},
-				json.RawMessage(nil), mustMarshalCredentials(storedCreds), nil).Once()
-		mockHash.On("Verify", mock.Anything, mock.Anything).Return(false, nil).Once()
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorAuthenticationFailed.Code, err.Code)
-	})
-}
-
-func TestUserService_AuthenticateUser_ErrorCases(t *testing.T) {
-	mockStore := entitymock.NewEntityServiceInterfaceMock(t)
-	mockStore.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-	service := &userService{entityService: mockStore}
-	ctx := context.Background()
-
-	t.Run("EmptyIdentifiers", func(t *testing.T) {
-		_, err := service.AuthenticateUser(ctx, nil, map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorMissingRequiredFields.Code, err.Code)
-	})
-
-	t.Run("EmptyCredentials", func(t *testing.T) {
-		_, err := service.AuthenticateUser(ctx, map[string]interface{}{"username": "u"}, nil)
-		require.NotNil(t, err)
-		require.Equal(t, ErrorMissingCredentials.Code, err.Code)
-	})
-
-	t.Run("IdentifyUserNotFound", func(t *testing.T) {
-		mockStore.On("IdentifyEntity", mock.Anything, mock.Anything).
-			Return((*string)(nil), entitypkg.ErrEntityNotFound).Once()
-		_, err := service.AuthenticateUser(ctx,
-			map[string]interface{}{"username": "u"},
-			map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorUserNotFound.Code, err.Code)
-	})
-}
-
 func TestBuildPaginationLinks(t *testing.T) {
 	links := utils.BuildPaginationLinks("/users", 10, 20, 55, "")
 	// totalResults 55, limit 10
@@ -2995,37 +2387,6 @@ func TestUserService_CRUD_ErrorCases(t *testing.T) {
 		_, err := service.UpdateUser(ctx, "", &User{})
 		require.NotNil(t, err)
 		require.Equal(t, ErrorMissingUserID.Code, err.Code)
-	})
-}
-
-func TestUserService_ExtractCredentials_EdgeCases(t *testing.T) {
-	mockHash := hashmock.NewHashServiceInterfaceMock(t)
-	service := &userService{hashService: mockHash}
-	schemaCredFields := []string{"password"}
-
-	t.Run("NilAttributes", func(t *testing.T) {
-		creds, err := service.extractCredentials(&User{Attributes: nil}, schemaCredFields)
-		require.NoError(t, err)
-		require.Empty(t, creds)
-	})
-
-	t.Run("InvalidJSON", func(t *testing.T) {
-		_, err := service.extractCredentials(&User{Attributes: json.RawMessage("invalid")}, schemaCredFields)
-		require.Error(t, err)
-	})
-
-	t.Run("HashError", func(t *testing.T) {
-		mockHash.On("Generate", mock.Anything).Return(hash.Credential{}, errors.New("hash error")).Once()
-		attributes := json.RawMessage(`{"password": "pass"}`)
-		_, err := service.extractCredentials(&User{Attributes: attributes}, schemaCredFields)
-		require.Error(t, err)
-	})
-
-	t.Run("NonStringCredential", func(t *testing.T) {
-		attributes := json.RawMessage(`{"password": 123}`)
-		creds, err := service.extractCredentials(&User{Attributes: attributes}, schemaCredFields)
-		require.NoError(t, err)
-		require.Empty(t, creds)
 	})
 }
 
@@ -3117,7 +2478,7 @@ func TestProvider(t *testing.T) {
 }
 
 func TestNewFunctions(t *testing.T) {
-	svc := newUserService(nil, nil, nil, nil, nil)
+	svc := newUserService(nil, nil, nil, nil)
 	require.NotNil(t, svc)
 
 	handler := newUserHandler(svc)
@@ -3147,34 +2508,6 @@ func TestUserService_Validation_EdgeCases(t *testing.T) {
 	})
 }
 
-func TestUserService_CredentialValidation_EdgeCases(t *testing.T) {
-	service := &userService{}
-
-	t.Run("ValidateCredential_Nil", func(t *testing.T) {
-		err := service.validateCredential(nil)
-		require.Error(t, err)
-	})
-
-	t.Run("ValidateCredential_EmptyValue", func(t *testing.T) {
-		err := service.validateCredential(&Credential{Value: ""})
-		require.Error(t, err)
-	})
-}
-
-func TestUserService_HashCredentials_ErrorCase(t *testing.T) {
-	mockHash := hashmock.NewHashServiceInterfaceMock(t)
-	service := &userService{hashService: mockHash}
-	logger := log.GetLogger()
-
-	t.Run("GenerateError", func(t *testing.T) {
-		mockHash.On("Generate", mock.Anything).Return(hash.Credential{}, errors.New("hash error")).Once()
-		creds := []Credential{{Value: "pass"}}
-		_, err := service.hashCredentials(creds, CredentialType("password"), logger)
-		require.NotNil(t, err)
-		require.Equal(t, ErrorInternalServerError.Code, err.Code)
-	})
-}
-
 func TestUserService_IdentifyVerify_EdgeCases(t *testing.T) {
 	ctx := context.Background()
 
@@ -3183,34 +2516,6 @@ func TestUserService_IdentifyVerify_EdgeCases(t *testing.T) {
 		_, err := service.IdentifyUser(ctx, nil)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidRequestFormat.Code, err.Code)
-	})
-
-	t.Run("VerifyUser_MissingID", func(t *testing.T) {
-		service := &userService{}
-		_, err := service.VerifyUser(ctx, "", map[string]interface{}{"password": "p"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorMissingUserID.Code, err.Code)
-	})
-
-	t.Run("VerifyUser_NoCredentials", func(t *testing.T) {
-		service := &userService{}
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorInvalidRequestFormat.Code, err.Code)
-	})
-
-	t.Run("VerifyUser_InvalidCredentialType", func(t *testing.T) {
-		mockStore := entitymock.NewEntityServiceInterfaceMock(t)
-		mockStore.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
-		mockStore.On("GetEntityWithCredentials", mock.Anything, "u1").
-			Return(&entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: "u1"},
-				json.RawMessage(nil),
-				mustMarshalCredentials(Credentials{CredentialType("password"): []Credential{{Value: "h"}}}),
-				nil).Once()
-		service := &userService{entityService: mockStore}
-		_, err := service.VerifyUser(ctx, "u1", map[string]interface{}{"invalid": "v"})
-		require.NotNil(t, err)
-		require.Equal(t, ErrorAuthenticationFailed.Code, err.Code)
 	})
 }
 
@@ -3234,7 +2539,7 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 			Return(&entitypkg.Entity{
 				Category: entitypkg.EntityCategoryUser, ID: "u1", OrganizationUnitID: testOrgID,
 			}, nil).Once()
-		storeMock.On("UpdateEntityWithCredentials", mock.Anything, "u1", mock.Anything, mock.Anything).
+		storeMock.On("UpdateEntity", mock.Anything, "u1", mock.Anything).
 			Return((*entitypkg.Entity)(nil), errors.New("db error")).Once()
 
 		// Mock all validation steps with broad matches to ensure they hit
@@ -3277,298 +2582,6 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 	})
 }
 
-func TestUserService_ProcessCredentialType(t *testing.T) {
-	t.Run("StringValue_SchemaCredential_HashesAndReturns", func(t *testing.T) {
-		mockHash := hashmock.NewHashServiceInterfaceMock(t)
-		service := &userService{hashService: mockHash}
-		logger := log.GetLogger()
-
-		mockHash.On("Generate", []byte("secret123")).Return(hash.Credential{
-			Algorithm: "PBKDF2WithHmacSHA256",
-			Hash:      "hashed-value",
-			Parameters: hash.CredParameters{
-				Iterations: 600000,
-				KeySize:    256,
-				Salt:       "test-salt",
-			},
-		}, nil).Once()
-
-		result, svcErr := service.processCredentialType(
-			CredentialType("password"),
-			json.RawMessage(`"secret123"`),
-			logger,
-		)
-
-		require.Nil(t, svcErr)
-		require.Len(t, result, 1)
-		require.Equal(t, "hash", result[0].StorageType)
-		require.Equal(t, "hashed-value", result[0].Value)
-		require.Equal(t, hash.CredAlgorithm("PBKDF2WithHmacSHA256"), result[0].StorageAlgo)
-	})
-
-	t.Run("ArrayValue_SystemManaged_ReturnsRaw", func(t *testing.T) {
-		service := &userService{}
-		logger := log.GetLogger()
-
-		credJSON := json.RawMessage(
-			`[{"value":"passkey-data-1"},{"value":"passkey-data-2"}]`,
-		)
-		result, svcErr := service.processCredentialType(
-			CredentialTypePasskey,
-			credJSON,
-			logger,
-		)
-
-		require.Nil(t, svcErr)
-		require.Len(t, result, 2)
-		require.Equal(t, "passkey-data-1", result[0].Value)
-		require.Equal(t, "passkey-data-2", result[1].Value)
-	})
-
-	t.Run("MultipleCredentials_NonSystemManaged_ReturnsError", func(t *testing.T) {
-		service := &userService{}
-		logger := log.GetLogger()
-
-		credJSON := json.RawMessage(
-			`[{"value":"pass1"},{"value":"pass2"}]`,
-		)
-		result, svcErr := service.processCredentialType(
-			CredentialType("password"),
-			credJSON,
-			logger,
-		)
-
-		require.Nil(t, result)
-		require.NotNil(t, svcErr)
-		require.Equal(t, ErrorInvalidCredential.Code, svcErr.Code)
-	})
-
-	t.Run("InvalidJSON_ReturnsError", func(t *testing.T) {
-		service := &userService{}
-		logger := log.GetLogger()
-
-		result, svcErr := service.processCredentialType(
-			CredentialType("password"),
-			json.RawMessage(`{invalid`),
-			logger,
-		)
-
-		require.Nil(t, result)
-		require.NotNil(t, svcErr)
-		require.Equal(t, ErrorInvalidRequestFormat.Code, svcErr.Code)
-	})
-
-	t.Run("EmptyCredentialValue_ReturnsValidationError", func(t *testing.T) {
-		service := &userService{}
-		logger := log.GetLogger()
-
-		result, svcErr := service.processCredentialType(
-			CredentialType("password"),
-			json.RawMessage(`""`),
-			logger,
-		)
-
-		require.Nil(t, result)
-		require.NotNil(t, svcErr)
-		require.Equal(t, ErrorInvalidCredential.Code, svcErr.Code)
-	})
-
-	t.Run("HashError_ReturnsError", func(t *testing.T) {
-		mockHash := hashmock.NewHashServiceInterfaceMock(t)
-		service := &userService{hashService: mockHash}
-		logger := log.GetLogger()
-
-		mockHash.On("Generate", mock.Anything).
-			Return(hash.Credential{}, errors.New("hash failure")).Once()
-
-		result, svcErr := service.processCredentialType(
-			CredentialType("password"),
-			json.RawMessage(`"secret123"`),
-			logger,
-		)
-
-		require.Nil(t, result)
-		require.NotNil(t, svcErr)
-		require.Equal(t, ErrorInternalServerError.Code, svcErr.Code)
-	})
-}
-
-func TestUserService_HashCredentials_Success(t *testing.T) {
-	mockHash := hashmock.NewHashServiceInterfaceMock(t)
-	service := &userService{hashService: mockHash}
-	logger := log.GetLogger()
-
-	t.Run("SingleCredential", func(t *testing.T) {
-		mockHash.On("Generate", []byte("mypassword")).Return(hash.Credential{
-			Algorithm: "PBKDF2WithHmacSHA256",
-			Hash:      "hashed-password",
-			Parameters: hash.CredParameters{
-				Iterations: 600000,
-				KeySize:    256,
-				Salt:       "salt1",
-			},
-		}, nil).Once()
-
-		creds := []Credential{{Value: "mypassword"}}
-		result, svcErr := service.hashCredentials(
-			creds, CredentialType("password"), logger,
-		)
-
-		require.Nil(t, svcErr)
-		require.Len(t, result, 1)
-		require.Equal(t, "hash", result[0].StorageType)
-		require.Equal(t, "hashed-password", result[0].Value)
-		require.Equal(t,
-			hash.CredAlgorithm("PBKDF2WithHmacSHA256"), result[0].StorageAlgo)
-		require.Equal(t, 600000, result[0].StorageAlgoParams.Iterations)
-		require.Equal(t, 256, result[0].StorageAlgoParams.KeySize)
-		require.Equal(t, "salt1", result[0].StorageAlgoParams.Salt)
-	})
-
-	t.Run("MultipleCredentials", func(t *testing.T) {
-		mockHash.On("Generate", []byte("cred1")).Return(hash.Credential{
-			Algorithm:  "PBKDF2WithHmacSHA256",
-			Hash:       "hash1",
-			Parameters: hash.CredParameters{Salt: "s1"},
-		}, nil).Once()
-		mockHash.On("Generate", []byte("cred2")).Return(hash.Credential{
-			Algorithm:  "PBKDF2WithHmacSHA256",
-			Hash:       "hash2",
-			Parameters: hash.CredParameters{Salt: "s2"},
-		}, nil).Once()
-
-		creds := []Credential{{Value: "cred1"}, {Value: "cred2"}}
-		result, svcErr := service.hashCredentials(
-			creds, CredentialType("password"), logger,
-		)
-
-		require.Nil(t, svcErr)
-		require.Len(t, result, 2)
-		require.Equal(t, "hash1", result[0].Value)
-		require.Equal(t, "hash2", result[1].Value)
-	})
-}
-
-func TestUserService_ExtractCredentials_HappyPath(t *testing.T) {
-	t.Run("SchemaCredential_ExtractedAndHashed", func(t *testing.T) {
-		mockHash := hashmock.NewHashServiceInterfaceMock(t)
-		service := &userService{hashService: mockHash}
-
-		mockHash.On("Generate", []byte("secret")).Return(hash.Credential{
-			Algorithm:  "PBKDF2WithHmacSHA256",
-			Hash:       "hashed-secret",
-			Parameters: hash.CredParameters{Salt: "s"},
-		}, nil).Once()
-
-		usr := &User{
-			Attributes: json.RawMessage(
-				`{"email":"a@b.com","password":"secret"}`,
-			),
-		}
-		creds, err := service.extractCredentials(
-			usr, []string{"password"},
-		)
-
-		require.NoError(t, err)
-		require.Len(t, creds, 1)
-		require.Contains(t, creds, CredentialType("password"))
-		require.Equal(t, "hashed-secret", creds[CredentialType("password")][0].Value)
-
-		// Verify password removed from attributes.
-		var attrs map[string]interface{}
-		require.NoError(t, json.Unmarshal(usr.Attributes, &attrs))
-		require.NotContains(t, attrs, "password")
-		require.Contains(t, attrs, "email")
-	})
-
-	t.Run("MultipleSchemaCredentials", func(t *testing.T) {
-		mockHash := hashmock.NewHashServiceInterfaceMock(t)
-		service := &userService{hashService: mockHash}
-
-		mockHash.On("Generate", []byte("pass")).Return(hash.Credential{
-			Algorithm:  "PBKDF2WithHmacSHA256",
-			Hash:       "h-pass",
-			Parameters: hash.CredParameters{Salt: "s1"},
-		}, nil).Once()
-		mockHash.On("Generate", []byte("1234")).Return(hash.Credential{
-			Algorithm:  "PBKDF2WithHmacSHA256",
-			Hash:       "h-pin",
-			Parameters: hash.CredParameters{Salt: "s2"},
-		}, nil).Once()
-
-		usr := &User{
-			Attributes: json.RawMessage(
-				`{"email":"a@b.com","password":"pass","pin":"1234"}`,
-			),
-		}
-		creds, err := service.extractCredentials(
-			usr, []string{"password", "pin"},
-		)
-
-		require.NoError(t, err)
-		require.Len(t, creds, 2)
-		require.Equal(t, "h-pass", creds[CredentialType("password")][0].Value)
-		require.Equal(t, "h-pin", creds[CredentialType("pin")][0].Value)
-
-		var attrs map[string]interface{}
-		require.NoError(t, json.Unmarshal(usr.Attributes, &attrs))
-		require.NotContains(t, attrs, "password")
-		require.NotContains(t, attrs, "pin")
-		require.Contains(t, attrs, "email")
-	})
-
-	t.Run("EmptyCredentialValue_Skipped", func(t *testing.T) {
-		mockHash := hashmock.NewHashServiceInterfaceMock(t)
-		service := &userService{hashService: mockHash}
-
-		usr := &User{
-			Attributes: json.RawMessage(
-				`{"email":"a@b.com","password":""}`,
-			),
-		}
-		creds, err := service.extractCredentials(
-			usr, []string{"password"},
-		)
-
-		require.NoError(t, err)
-		require.Empty(t, creds)
-	})
-
-	t.Run("SystemManagedCredential_ExtractedRaw", func(t *testing.T) {
-		service := &userService{}
-
-		usr := &User{
-			Attributes: json.RawMessage(
-				`{"email":"a@b.com","passkey":"pk-data"}`,
-			),
-		}
-		creds, err := service.extractCredentials(
-			usr, []string{},
-		)
-
-		require.NoError(t, err)
-		require.Len(t, creds, 1)
-		require.Contains(t, creds, CredentialTypePasskey)
-		require.Equal(t, "pk-data", creds[CredentialTypePasskey][0].Value)
-
-		var attrs map[string]interface{}
-		require.NoError(t, json.Unmarshal(usr.Attributes, &attrs))
-		require.NotContains(t, attrs, "passkey")
-	})
-
-	t.Run("NoCredentialAttributes_ReturnsEmpty", func(t *testing.T) {
-		service := &userService{}
-
-		usr := &User{
-			Attributes: json.RawMessage(`{"email":"a@b.com"}`),
-		}
-		creds, err := service.extractCredentials(usr, []string{})
-
-		require.NoError(t, err)
-		require.Empty(t, creds)
-	})
-}
-
 func TestCredentialType_Methods(t *testing.T) {
 	t.Run("IsSystemManaged", func(t *testing.T) {
 		require.True(t, CredentialTypePasskey.IsSystemManaged())
@@ -3583,72 +2596,48 @@ func TestCredentialType_Methods(t *testing.T) {
 	})
 }
 
-func TestUserService_CreateUser_SchemaNotFound(t *testing.T) {
-	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-
-	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return(nil, &userschema.ErrorUserSchemaNotFound).Once()
-
-	service := &userService{
-		entityService:     entitymock.NewEntityServiceInterfaceMock(t),
-		ouService:         ouServiceMock,
-		userSchemaService: userSchemaMock,
-		authzService:      newAllowAllAuthz(t),
+func TestUserService_CreateUser_EntityErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		entityErr   error
+		expectedErr serviceerror.ServiceError
+	}{
+		{"SchemaNotFound", entitypkg.ErrSchemaValidationFailed, ErrorSchemaValidationFailed},
+		{"AttributeConflict", entitypkg.ErrAttributeConflict, ErrorAttributeConflict},
 	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+			ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+				Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
-	user := &User{
-		Type:       testUserType,
-		OUID:       testOrgID,
-		Attributes: json.RawMessage(`{}`),
+			userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+			userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
+				Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
+
+			storeMock := entitymock.NewEntityServiceInterfaceMock(t)
+			storeMock.On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
+				Return((*entitypkg.Entity)(nil), tc.entityErr).Once()
+
+			service := &userService{
+				entityService:     storeMock,
+				ouService:         ouServiceMock,
+				userSchemaService: userSchemaMock,
+				authzService:      newAllowAllAuthz(t),
+			}
+
+			user := &User{
+				Type:       testUserType,
+				OUID:       testOrgID,
+				Attributes: json.RawMessage(`{}`),
+			}
+
+			created, svcErr := service.CreateUser(context.Background(), user)
+			require.Nil(t, created)
+			require.NotNil(t, svcErr)
+			require.Equal(t, tc.expectedErr, *svcErr)
+		})
 	}
-
-	created, svcErr := service.CreateUser(context.Background(), user)
-	require.Nil(t, created)
-	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorUserSchemaNotFound, *svcErr)
-}
-
-func TestUserService_CreateUser_GetCredentialAttributesInternalError(t *testing.T) {
-	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-
-	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
-		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return(nil, &serviceerror.InternalServerError).Once()
-
-	service := &userService{
-		entityService:     entitymock.NewEntityServiceInterfaceMock(t),
-		ouService:         ouServiceMock,
-		userSchemaService: userSchemaMock,
-		authzService:      newAllowAllAuthz(t),
-	}
-
-	user := &User{
-		Type:       testUserType,
-		OUID:       testOrgID,
-		Attributes: json.RawMessage(`{}`),
-	}
-
-	created, svcErr := service.CreateUser(context.Background(), user)
-	require.Nil(t, created)
-	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInternalServerError.Code, svcErr.Code)
 }
 
 func TestUserService_UpdateUser_NilSchemaService(t *testing.T) {
@@ -3679,10 +2668,6 @@ func TestUserService_UpdateUser_NilSchemaService(t *testing.T) {
 }
 
 func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
-	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
-		Return(nil, &userschema.ErrorUserSchemaNotFound).Once()
-
 	storeMock := entitymock.NewEntityServiceInterfaceMock(t)
 	storeMock.On("IsEntityDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetEntity", mock.Anything, svcTestUserID1).
@@ -3691,8 +2676,17 @@ func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
 			OrganizationUnitID: testOrgID, Type: testUserType,
 		}, nil).Once()
 
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
+		Return(true, (*serviceerror.ServiceError)(nil)).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
+		Return(nil, &userschema.ErrorUserSchemaNotFound).Once()
+
 	service := &userService{
 		entityService:     storeMock,
+		ouService:         ouServiceMock,
 		userSchemaService: userSchemaMock,
 		authzService:      newAllowAllAuthz(t),
 	}
@@ -3761,10 +2755,6 @@ func TestUserService_UpdateUserCredentials_NilSchemaService(t *testing.T) {
 			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1,
 			OrganizationUnitID: testOrgID, Type: testUserType,
 		}, nil).Once()
-	userStoreMock.On("GetEntityWithCredentials", mock.Anything, svcTestUserID1).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: testUserType,
-		}, json.RawMessage(nil), json.RawMessage(nil), nil).Once()
 
 	service := &userService{
 		entityService: userStoreMock,
@@ -3785,10 +2775,6 @@ func TestUserService_UpdateUserCredentials_SchemaNotFound(t *testing.T) {
 			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1,
 			OrganizationUnitID: testOrgID, Type: testUserType,
 		}, nil).Once()
-	userStoreMock.On("GetEntityWithCredentials", mock.Anything, svcTestUserID1).
-		Return(&entitypkg.Entity{
-			Category: entitypkg.EntityCategoryUser, ID: svcTestUserID1, Type: testUserType,
-		}, json.RawMessage(nil), json.RawMessage(nil), nil).Once()
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).

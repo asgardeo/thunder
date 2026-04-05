@@ -21,10 +21,12 @@ package group
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -33,7 +35,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -63,7 +64,7 @@ type GroupServiceInterface interface {
 type groupService struct {
 	groupStore        groupStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
-	userService       user.UserServiceInterface
+	entityService     entity.EntityServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 	transactioner     transaction.Transactioner
 	authzService      sysauthz.SystemAuthorizationServiceInterface
@@ -73,7 +74,7 @@ type groupService struct {
 func newGroupServiceWithStore(
 	store groupStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	userService user.UserServiceInterface,
+	entityService entity.EntityServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	transactioner transaction.Transactioner,
@@ -81,7 +82,7 @@ func newGroupServiceWithStore(
 	return &groupService{
 		groupStore:        store,
 		ouService:         ouService,
-		userService:       userService,
+		entityService:     entityService,
 		userSchemaService: userSchemaService,
 		authzService:      authzService,
 		transactioner:     transactioner,
@@ -284,16 +285,23 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 
 	var userIDs []string
 	var groupIDs []string
+	var appIDs []string
 	for _, member := range request.Members {
 		switch member.Type {
 		case MemberTypeUser:
 			userIDs = append(userIDs, member.ID)
 		case MemberTypeGroup:
 			groupIDs = append(groupIDs, member.ID)
+		case MemberTypeApp:
+			appIDs = append(appIDs, member.ID)
 		}
 	}
 
 	if err := gs.validateUserIDsWithAccess(ctx, userIDs); err != nil {
+		return nil, err
+	}
+
+	if err := gs.validateAppIDs(ctx, appIDs); err != nil {
 		return nil, err
 	}
 
@@ -647,31 +655,34 @@ func (gs *groupService) populateMemberDisplayNames(ctx context.Context, members 
 		return
 	}
 
-	// Separate user and group member IDs.
-	var userIDs, groupIDs []string
+	// Separate user, group, and app member IDs.
+	var userIDs, groupIDs, appIDs []string
 	for _, m := range members {
 		switch m.Type {
 		case MemberTypeUser:
 			userIDs = append(userIDs, m.ID)
 		case MemberTypeGroup:
 			groupIDs = append(groupIDs, m.ID)
+		case MemberTypeApp:
+			appIDs = append(appIDs, m.ID)
 		}
 	}
 
 	// Batch-fetch users and resolve display attribute paths.
-	var usersMap map[string]*user.User
+	var entityMap map[string]*entity.Entity
 	var displayAttrPaths map[string]string
 	if len(userIDs) > 0 {
-		var svcErr *serviceerror.ServiceError
-		usersMap, svcErr = gs.userService.GetUsersByIDs(ctx, userIDs)
-		if svcErr != nil {
-			logger.Warn("Failed to batch-fetch users for display resolution", log.Any("error", svcErr))
+		entities, err := gs.entityService.GetEntitiesByIDs(ctx, userIDs)
+		if err != nil {
+			logger.Warn("Failed to batch-fetch users for display resolution", log.Error(err))
 		} else {
+			entityMap = make(map[string]*entity.Entity, len(entities))
 			var userTypes []string
-			for _, u := range usersMap {
-				userTypes = append(userTypes, u.Type)
+			for i := range entities {
+				entityMap[entities[i].ID] = &entities[i]
+				userTypes = append(userTypes, entities[i].Type)
 			}
-			displayAttrPaths = user.ResolveDisplayAttributePaths(ctx, userTypes, gs.userSchemaService, logger)
+			displayAttrPaths = resolveDisplayAttributePaths(ctx, userTypes, gs.userSchemaService, logger)
 		}
 	}
 
@@ -685,13 +696,26 @@ func (gs *groupService) populateMemberDisplayNames(ctx context.Context, members 
 		}
 	}
 
+	// Batch-fetch app entities for app member display names.
+	appNamesMap := make(map[string]string)
+	if len(appIDs) > 0 && gs.entityService != nil {
+		entities, err := gs.entityService.GetEntitiesByIDs(ctx, appIDs)
+		if err != nil {
+			logger.Warn("Failed to batch-fetch app entities for display resolution", log.Any("error", err))
+		} else {
+			for _, e := range entities {
+				appNamesMap[e.ID] = resolveEntityDisplayName(e)
+			}
+		}
+	}
+
 	// Set display on each member.
 	for i := range members {
 		switch members[i].Type {
 		case MemberTypeUser:
-			if usersMap != nil {
-				if u, ok := usersMap[members[i].ID]; ok {
-					members[i].Display = utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths)
+			if entityMap != nil {
+				if e, ok := entityMap[members[i].ID]; ok {
+					members[i].Display = utils.ResolveDisplay(e.ID, e.Type, e.Attributes, displayAttrPaths)
 					continue
 				}
 			}
@@ -702,6 +726,12 @@ func (gs *groupService) populateMemberDisplayNames(ctx context.Context, members 
 					members[i].Display = g.Name
 					continue
 				}
+			}
+			members[i].Display = members[i].ID
+		case MemberTypeApp:
+			if name, ok := appNamesMap[members[i].ID]; ok && name != "" {
+				members[i].Display = name
+				continue
 			}
 			members[i].Display = members[i].ID
 		}
@@ -752,18 +782,26 @@ func (gs *groupService) AddGroupMembers(
 
 		var userIDs []string
 		var groupIDs []string
+		var appIDs []string
 		for _, member := range members {
 			switch member.Type {
 			case MemberTypeUser:
 				userIDs = append(userIDs, member.ID)
 			case MemberTypeGroup:
 				groupIDs = append(groupIDs, member.ID)
+			case MemberTypeApp:
+				appIDs = append(appIDs, member.ID)
 			}
 		}
 
 		if svcErr := gs.validateUserIDsWithAccess(txCtx, userIDs); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for invalid user IDs")
+		}
+
+		if svcErr := gs.validateAppIDs(txCtx, appIDs); svcErr != nil {
+			capturedSvcErr = svcErr
+			return errors.New("rollback for invalid app IDs")
 		}
 
 		if svcErr := gs.ValidateGroupIDs(txCtx, groupIDs); svcErr != nil {
@@ -941,9 +979,9 @@ func (gs *groupService) validateOU(ctx context.Context, ouID string) *serviceerr
 func (gs *groupService) validateUserIDs(ctx context.Context, userIDs []string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	invalidUserIDs, svcErr := gs.userService.ValidateUserIDs(ctx, userIDs)
-	if svcErr != nil {
-		logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error), log.String("code", svcErr.Code))
+	invalidUserIDs, err := gs.entityService.ValidateEntityIDs(ctx, userIDs)
+	if err != nil {
+		logger.Error("Failed to validate user IDs", log.Error(err))
 		return &ErrorInternalServerError
 	}
 
@@ -983,9 +1021,9 @@ func (gs *groupService) validateUserIDsWithAccess(
 		return nil
 	}
 
-	outOfScopeIDs, svcErr := gs.userService.ValidateUserIDsInOUs(ctx, userIDs, accessibleOUs.IDs)
-	if svcErr != nil {
-		logger.Error("Failed to validate user IDs in OUs", log.String("error", svcErr.Error))
+	outOfScopeIDs, err := gs.entityService.ValidateEntityIDsInOUs(ctx, userIDs, accessibleOUs.IDs)
+	if err != nil {
+		logger.Error("Failed to validate user IDs in OUs", log.Error(err))
 		return &ErrorInternalServerError
 	}
 
@@ -995,6 +1033,73 @@ func (gs *groupService) validateUserIDsWithAccess(
 	}
 
 	return nil
+}
+
+// validateAppIDs validates that all provided app entity IDs exist.
+func (gs *groupService) validateAppIDs(ctx context.Context, appIDs []string) *serviceerror.ServiceError {
+	if len(appIDs) == 0 {
+		return nil
+	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if gs.entityService == nil {
+		logger.Error("Entity service not configured, cannot validate app IDs")
+		return &ErrorInternalServerError
+	}
+
+	invalidIDs, err := gs.entityService.ValidateEntityIDs(ctx, appIDs)
+	if err != nil {
+		logger.Error("Failed to validate app IDs", log.String("error", err.Error()))
+		return &ErrorInternalServerError
+	}
+
+	if len(invalidIDs) > 0 {
+		logger.Debug("Invalid app IDs found", log.Any("invalidAppIDs", invalidIDs))
+		return &ErrorInvalidUserMemberID
+	}
+
+	return nil
+}
+
+// resolveDisplayAttributePaths collects unique user types and resolves their display
+// attribute paths from the user schema service.
+func resolveDisplayAttributePaths(
+	ctx context.Context, userTypes []string, schemaService userschema.UserSchemaServiceInterface,
+	logger *log.Logger,
+) map[string]string {
+	if schemaService == nil || len(userTypes) == 0 {
+		return nil
+	}
+
+	uniqueTypes := utils.UniqueNonEmptyStrings(userTypes)
+	if len(uniqueTypes) == 0 {
+		return nil
+	}
+
+	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, uniqueTypes)
+	if svcErr != nil {
+		if logger != nil {
+			logger.Warn("Failed to resolve display attribute paths, skipping display resolution",
+				log.Any("error", svcErr))
+		}
+		return nil
+	}
+
+	return displayPaths
+}
+
+// resolveEntityDisplayName extracts a display name from an entity's system attributes.
+// Falls back to the entity ID if no name is found.
+func resolveEntityDisplayName(e entity.Entity) string {
+	if len(e.SystemAttributes) > 0 {
+		var sysAttrs map[string]interface{}
+		if err := json.Unmarshal(e.SystemAttributes, &sysAttrs); err == nil {
+			if name, ok := sysAttrs["name"].(string); ok && name != "" {
+				return name
+			}
+		}
+	}
+	return e.ID
 }
 
 // ValidateGroupIDs validates that all provided group IDs exist.

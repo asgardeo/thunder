@@ -200,10 +200,11 @@ func (ts *TokenExchangeTestSuite) createTestUser() string {
 
 func (ts *TokenExchangeTestSuite) createTestApplication() string {
 	app := map[string]interface{}{
-		"name":                         tokenExchangeAppName,
-		"description":                  "Application for token exchange integration tests",
+		"name":                      tokenExchangeAppName,
+		"description":               "Application for token exchange integration tests",
+		"ouId":                      ts.oUID,
 		"isRegistrationFlowEnabled": false,
-		"allowedUserTypes":           []string{"token-test-person"},
+		"allowedUserTypes":          []string{"token-test-person"},
 		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
@@ -215,9 +216,9 @@ func (ts *TokenExchangeTestSuite) createTestApplication() string {
 						"urn:ietf:params:oauth:grant-type:token-exchange",
 						"authorization_code",
 					},
-					"responseTypes":             []string{"code"},
+					"responseTypes":           []string{"code"},
 					"tokenEndpointAuthMethod": "client_secret_basic",
-					"scopes":                     []string{"openid", "profile", "email", "read", "write"},
+					"scopes":                  []string{"openid", "profile", "email", "read", "write"},
 				},
 			},
 		},
@@ -507,19 +508,19 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_InvalidClientCredentials() {
 func (ts *TokenExchangeTestSuite) TestTokenExchange_ApplicationNotRegisteredForGrantType() {
 	// Create an application without token exchange grant type
 	app := map[string]interface{}{
-		"name":                         tokenExchangeAppName + "_no_te",
-		"description":                  "Application without token exchange",
+		"name":                      tokenExchangeAppName + "_no_te",
+		"description":               "Application without token exchange",
 		"isRegistrationFlowEnabled": false,
-		"allowedUserTypes":           []string{"token-test-person"},
+		"allowedUserTypes":          []string{"token-test-person"},
 		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"clientId":                  tokenExchangeClientID + "_no_te",
-					"clientSecret":              tokenExchangeClientSecret,
-					"redirectUris":              []string{"https://localhost:3000"},
-					"grantTypes":                []string{"authorization_code"},
-					"responseTypes":             []string{"code"},
+					"clientId":                tokenExchangeClientID + "_no_te",
+					"clientSecret":            tokenExchangeClientSecret,
+					"redirectUris":            []string{"https://localhost:3000"},
+					"grantTypes":              []string{"authorization_code"},
+					"responseTypes":           []string{"code"},
 					"tokenEndpointAuthMethod": "client_secret_basic",
 				},
 			},

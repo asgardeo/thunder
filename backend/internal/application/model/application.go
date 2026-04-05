@@ -39,6 +39,7 @@ type LoginConsentConfig struct {
 // ApplicationDTO represents the data transfer object for application service operations.
 type ApplicationDTO struct {
 	ID                        string `json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`
+	OUID                      string `json:"ouId,omitempty" jsonschema:"Organization unit ID. The OU this application belongs to."`
 	Name                      string `json:"name" jsonschema:"Application name."`
 	Description               string `json:"description,omitempty" jsonschema:"Optional description of the application's purpose or functionality."`
 	AuthFlowID                string `json:"authFlowId,omitempty" jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). Use list_flows to find available flows. If omitted, the default authentication flow is used."`
@@ -81,6 +82,7 @@ type BasicApplicationDTO struct {
 // Application represents the structure for application which returns in GetApplicationById.
 type Application struct {
 	ID                        string `yaml:"id,omitempty" json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`
+	OUID                      string `yaml:"ou_id,omitempty" json:"ouId,omitempty" jsonschema:"Organization unit ID. The OU this application belongs to."`
 	Name                      string `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"Application name."`
 	Description               string `yaml:"description,omitempty" json:"description,omitempty" jsonschema:"Optional description of the application's purpose."`
 	AuthFlowID                string `yaml:"auth_flow_id,omitempty" json:"authFlowId,omitempty" jsonschema:"Associated authentication flow ID."`
@@ -107,6 +109,7 @@ type Application struct {
 // ApplicationProcessedDTO represents the processed data transfer object for application service operations.
 type ApplicationProcessedDTO struct {
 	ID                        string `yaml:"id,omitempty"`
+	OUID                      string `yaml:"ou_id,omitempty"`
 	Name                      string `yaml:"name,omitempty"`
 	Description               string `yaml:"description,omitempty"`
 	AuthFlowID                string `yaml:"auth_flow_id,omitempty"`
@@ -154,6 +157,7 @@ type ApplicationCertificate struct {
 //
 //nolint:lll
 type ApplicationRequest struct {
+	OUID                      string                      `json:"ouId,omitempty" yaml:"ou_id,omitempty"`
 	Name                      string                      `json:"name" yaml:"name"`
 	Description               string                      `json:"description" yaml:"description"`
 	AuthFlowID                string                      `json:"authFlowId,omitempty" yaml:"auth_flow_id,omitempty"`
@@ -180,6 +184,7 @@ type ApplicationRequest struct {
 //nolint:lll
 type ApplicationRequestWithID struct {
 	ID                        string                      `json:"id" yaml:"id"`
+	OUID                      string                      `json:"ouId,omitempty" yaml:"ou_id,omitempty"`
 	Name                      string                      `json:"name" yaml:"name"`
 	Description               string                      `json:"description" yaml:"description"`
 	AuthFlowID                string                      `json:"authFlowId,omitempty" yaml:"auth_flow_id,omitempty"`
@@ -203,6 +208,7 @@ type ApplicationRequestWithID struct {
 // ApplicationCompleteResponse represents the complete response structure for an application.
 type ApplicationCompleteResponse struct {
 	ID                        string                      `json:"id,omitempty"`
+	OUID                      string                      `json:"ouId,omitempty"`
 	Name                      string                      `json:"name"`
 	Description               string                      `json:"description,omitempty"`
 	ClientID                  string                      `json:"clientId,omitempty"`
@@ -228,6 +234,7 @@ type ApplicationCompleteResponse struct {
 // ApplicationGetResponse represents the response structure for getting an application.
 type ApplicationGetResponse struct {
 	ID                        string                  `json:"id,omitempty"`
+	OUID                      string                  `json:"ouId,omitempty"`
 	Name                      string                  `json:"name"`
 	Description               string                  `json:"description,omitempty"`
 	ClientID                  string                  `json:"clientId,omitempty"`

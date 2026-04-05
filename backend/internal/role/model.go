@@ -28,6 +28,8 @@ const (
 	AssigneeTypeUser AssigneeType = "user"
 	// AssigneeTypeGroup is the type for groups.
 	AssigneeTypeGroup AssigneeType = "group"
+	// AssigneeTypeApp is the type for applications.
+	AssigneeTypeApp AssigneeType = "app"
 )
 
 // AssignmentResponse represents an assignment of a role to a user or group.

@@ -493,12 +493,14 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	smsApp.RegistrationFlowID = smsFlowID
 
 	// Create test applications with allowed user types
+	ouRegTestApp.OUID = ts.basicFlowTestOUID
 	appID, err := testutils.CreateApplication(ouRegTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
 	ts.basicFlowTestAppID = appID
 
+	smsApp.OUID = ts.smsFlowTestOUID
 	smsAppID, err := testutils.CreateApplication(smsApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create SMS test application during setup: %v", err)

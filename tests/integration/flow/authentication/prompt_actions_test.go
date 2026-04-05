@@ -205,7 +205,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -347,6 +347,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 	promptActionsTestApp.AuthFlowID = flowID
 
 	// Create test application
+	promptActionsTestApp.OUID = promptActionsTestOUID
 	appID, err := testutils.CreateApplication(promptActionsTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

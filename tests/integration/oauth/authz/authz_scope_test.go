@@ -406,6 +406,7 @@ func (ts *OAuthAuthzScopeTestSuite) createOAuthApplication(authFlowID string) (s
 	app := map[string]interface{}{
 		"name":                      scopeTestAppName,
 		"description":               "OAuth application for scope authorization testing",
+		"ouId":                      scopeTestOUID,
 		"authFlowId":                authFlowID,
 		"isRegistrationFlowEnabled": false,
 		"allowedUserTypes":          []string{"authz-test-person"},
@@ -553,6 +554,7 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	// Create OAuth app with IDToken and AccessToken configs
 	appConfig := map[string]interface{}{
 		"name":                    "RequiredAttributesTestApp",
+		"ouId":                    scopeTestOUID,
 		"clientId":                "required_attrs_test_client",
 		"redirectUris":            []string{scopeTestRedirectURI},
 		"grantTypes":              []string{"authorization_code", "refresh_token"},

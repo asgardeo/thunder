@@ -137,7 +137,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -264,6 +264,7 @@ func (ts *MultiActionInputBindingTestSuite) SetupSuite() {
 	multiActionInputBindingTestApp.AuthFlowID = flowID
 
 	// Create test application
+	multiActionInputBindingTestApp.OUID = multiActionInputBindingTestOUID
 	appID, err := testutils.CreateApplication(multiActionInputBindingTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application: %v", err)

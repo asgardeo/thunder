@@ -227,7 +227,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -345,6 +345,7 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	smsRegTestApp.RegistrationFlowID = flowID
 
 	// Create test application with allowed user types
+	smsRegTestApp.OUID = ts.testOUID
 	appID, err := testutils.CreateApplication(smsRegTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
@@ -634,8 +635,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 
 	// Step 4: Provide user attributes
 	userInputs := map[string]string{
-		"given_name":    "Test",
-		"family_name":     "User",
+		"given_name":   "Test",
+		"family_name":  "User",
 		"email":        fmt.Sprintf("%s@example.com", mobileNumber),
 		"mobileNumber": mobileNumber,
 	}

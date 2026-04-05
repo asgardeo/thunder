@@ -30,12 +30,14 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
 // DCRServiceTestSuite is the test suite for DCR service
 type DCRServiceTestSuite struct {
 	suite.Suite
 	mockAppService *applicationmock.ApplicationServiceInterfaceMock
+	mockOUService  *oumock.OrganizationUnitServiceInterfaceMock
 	service        DCRServiceInterface
 }
 
@@ -52,12 +54,13 @@ func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Co
 
 func (s *DCRServiceTestSuite) SetupTest() {
 	s.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(s.T())
-	s.service = newDCRService(s.mockAppService, &MockTransactioner{})
+	s.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+	s.service = newDCRService(s.mockAppService, s.mockOUService, &MockTransactioner{})
 }
 
 // TestNewDCRService tests the service constructor
 func (s *DCRServiceTestSuite) TestNewDCRService() {
-	service := newDCRService(s.mockAppService, &MockTransactioner{})
+	service := newDCRService(s.mockAppService, s.mockOUService, &MockTransactioner{})
 	s.NotNil(service)
 	s.Implements((*DCRServiceInterface)(nil), service)
 }
@@ -90,6 +93,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSConflict() {
 // TestRegisterClient_ClientNameProvided tests registration with provided client name
 func (s *DCRServiceTestSuite) TestRegisterClient_ClientNameProvided() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		ClientName:   "Test Client",
@@ -125,6 +129,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ClientNameProvided() {
 // TestRegisterClient_JWKSUriProvided tests registration with JWKS_URI
 func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		ClientName:   "Test Client",
@@ -164,6 +169,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 // TestRegisterClient_ApplicationServiceError tests application service error handling
 func (s *DCRServiceTestSuite) TestRegisterClient_ApplicationServiceError() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"not-a-valid-uri"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 	}
@@ -240,6 +246,7 @@ func (s *DCRServiceTestSuite) TestMapApplicationErrorToDCRError() {
 
 func (s *DCRServiceTestSuite) TestRegisterClient_ConvertDCRToApplicationError() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		JWKS:         map[string]interface{}{"keys": make(chan int)},
@@ -261,6 +268,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertDCRToApplicationError() 
 
 func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponseError() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		ClientName:   "Test Client",
@@ -298,6 +306,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 
 func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		ClientName:   "Test Client",
@@ -336,6 +345,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 
 func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		ClientName:   "Test Client",
@@ -370,6 +380,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 
 func (s *DCRServiceTestSuite) TestRegisterClient_EmptyInboundAuthConfig() {
 	request := &DCRRegistrationRequest{
+		OUID:         "test-ou-1",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 		ClientName:   "Test Client",

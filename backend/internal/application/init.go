@@ -28,7 +28,10 @@ import (
 	"github.com/asgardeo/thunder/internal/consent"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
@@ -40,6 +43,9 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	mcpServer *mcp.Server,
+	entityProvider entityprovider.EntityProviderInterface,
+	entityService entity.EntityServiceInterface,
+	ouService oupkg.OrganizationUnitServiceInterface,
 	certService cert.CertificateServiceInterface,
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
@@ -53,17 +59,25 @@ func Initialize(
 		return nil, nil, err
 	}
 
-	// Step 2: Create service with store
+	// Step 2: Create service with store and entity provider
 	appService := newApplicationService(
-		appStore, certService, flowMgtService,
+		appStore, entityProvider, ouService, certService, flowMgtService,
 		themeMgtService, layoutMgtService,
 		userSchemaService, consentService,
 		transactioner,
 	)
 
-	// Step 3: Load declarative resources into store (if applicable)
+	// Step 3: Register indexed attributes for automatic identifier syncing.
+	if err := entityService.LoadIndexedAttributes(getAppIndexedAttributes()); err != nil {
+		return nil, nil, err
+	}
+
+	// Step 4: Load declarative resources if store mode requires it.
 	storeMode := getApplicationStoreMode()
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
+		if err := entityService.LoadDeclarativeResources(makeAppDeclarativeConfig()); err != nil {
+			return nil, nil, err
+		}
 		if err := loadDeclarativeResources(appStore, appService); err != nil {
 			return nil, nil, err
 		}

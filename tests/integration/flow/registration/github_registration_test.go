@@ -402,6 +402,7 @@ func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 	githubRegTestApp.RegistrationFlowID = flowID
 
 	// Create test application
+	githubRegTestApp.OUID = githubRegTestOUID
 	appID, err := testutils.CreateApplication(githubRegTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

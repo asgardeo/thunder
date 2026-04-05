@@ -33,6 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/design/resolve"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
@@ -128,13 +129,16 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, userSchemaExporter)
 
 	// Initialize entity service
-	entityService, err := entity.Initialize()
+	entityService, err := entity.Initialize(hashService, userSchemaService)
 	if err != nil {
 		logger.Fatal("Failed to initialize EntityService", log.Error(err))
 	}
 
+	// Initialize entity provider
+	entityProvider := entityprovider.InitializeEntityProvider(entityService)
+
 	userService, ouUserResolver, userExporter, err := user.Initialize(
-		mux, entityService, ouService, userSchemaService, hashService, ouAuthzService,
+		mux, entityService, ouService, userSchemaService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
@@ -142,7 +146,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, userExporter)
 
 	groupService, ouGroupResolver, err := group.Initialize(
-		mux, ouService, userService, userSchemaService, ouAuthzService,
+		mux, ouService, entityService, userSchemaService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
@@ -158,7 +162,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, resourceExporter)
 	roleService, roleExporter, err := role.Initialize(
-		mux, userService, groupService, ouService, resourceService, userSchemaService,
+		mux, entityService, groupService, ouService, resourceService, userSchemaService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize RoleService", log.Error(err))
@@ -182,7 +186,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	mcpServer := mcp.Initialize(mux, jwtService)
 
 	// Initialize authn provider
-	authnProvider := authnprovider.InitializeAuthnProvider(userService)
+	authnProvider := authnprovider.InitializeAuthnProvider(entityService)
 
 	// Initialize user provider based on configuration
 	userProvider := userprovider.InitializeUserProvider(userService)
@@ -235,9 +239,10 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, layoutExporter)
 
+	// TODO: Remove entityService dependency after finalizing declarative resource loading pattern
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService,
-		userSchemaService, consentService)
+		mux, mcpServer, entityProvider, entityService, ouService, certservice, flowMgtService, themeMgtService,
+		layoutMgtService, userSchemaService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
@@ -259,7 +264,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 
 	// Initialize OAuth services.
-	err = oauth.Initialize(mux, applicationService, jwtService, flowExecService, observabilitySvc,
+	err = oauth.Initialize(mux, applicationService, authnProvider, jwtService, flowExecService, observabilitySvc,
 		pkiService, ouService, attributeCacheService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
