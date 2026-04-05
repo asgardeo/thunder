@@ -26,19 +26,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 )
 
 type DefaultAuthnProviderTestSuite struct {
 	suite.Suite
-	mockService *usermock.UserServiceInterfaceMock
+	mockService *entitymock.EntityServiceInterfaceMock
 	provider    AuthnProviderInterface
 }
 
 func (suite *DefaultAuthnProviderTestSuite) SetupTest() {
-	suite.mockService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockService = entitymock.NewEntityServiceInterfaceMock(suite.T())
 	suite.provider = newDefaultAuthnProvider(suite.mockService)
 }
 
@@ -50,29 +49,33 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	identifiers := map[string]interface{}{"username": "testuser"}
 	credentials := map[string]interface{}{"password": "password123"}
 
-	authResp := &user.AuthenticateUserResponse{
-		ID:   "user123",
-		Type: "customer",
-		OUID: "ou1",
+	authResult := &entity.AuthenticateResult{
+		EntityID:           "user123",
+		EntityCategory:     entity.EntityCategoryUser,
+		EntityType:         "customer",
+		OrganizationUnitID: "ou1",
 	}
 
-	userObj := &user.User{
-		ID:         "user123",
-		Type:       "customer",
-		OUID:       "ou1",
-		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+	entityObj := &entity.Entity{
+		ID:                 "user123",
+		Category:           entity.EntityCategoryUser,
+		Type:               "customer",
+		State:              entity.EntityStateActive,
+		OrganizationUnitID: "ou1",
+		Attributes:         json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
-	// Expect AuthenticateUser call
-	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
-		Return(authResp, (*serviceerror.ServiceError)(nil)).Once()
-	// Expect GetUser call
-	suite.mockService.On("GetUser", mock.Anything, "user123", false).
-		Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
+		Return(authResult, nil).Once()
+	suite.mockService.On("GetEntity", mock.Anything, "user123").
+		Return(entityObj, nil).Once()
 
 	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(err)
+	suite.Equal("user123", result.EntityID)
+	suite.Equal("user", result.EntityCategory)
+	suite.Equal("customer", result.EntityType)
 	suite.Equal("user123", result.UserID)
 	suite.Equal("user123", result.Token)
 	suite.Equal("customer", result.UserType)
@@ -82,14 +85,12 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	suite.Contains(result.AvailableAttributes.Attributes, "email")
 }
 
-func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_UserNotFound() {
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EntityNotFound() {
 	identifiers := map[string]interface{}{"username": "unknown"}
 	credentials := map[string]interface{}{"password": "password"}
 
-	userNotFoundErr := &user.ErrorUserNotFound
-
-	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
-		Return(nil, userNotFoundErr).Once()
+	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
+		Return(nil, entity.ErrEntityNotFound).Once()
 
 	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
@@ -102,9 +103,8 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 	identifiers := map[string]interface{}{"username": "testuser"}
 	credentials := map[string]interface{}{"password": "wrongpassword"}
 
-	authFailedErr := &user.ErrorAuthenticationFailed
-
-	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).Return(nil, authFailedErr).Once()
+	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
+		Return(nil, entity.ErrAuthenticationFailed).Once()
 
 	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
@@ -113,36 +113,46 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 	suite.Equal(ErrorCodeAuthenticationFailed, err.Code)
 }
 
-func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_SystemError_Prepare() {
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetEntityNotFound() {
 	identifiers := map[string]interface{}{"username": "testuser"}
-	credentials := map[string]interface{}{"password": "password"}
+	credentials := map[string]interface{}{"password": "password123"}
 
-	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Type: serviceerror.ServerErrorType, Error: "System Error"}
+	authResult := &entity.AuthenticateResult{
+		EntityID:           "user123",
+		EntityCategory:     entity.EntityCategoryUser,
+		EntityType:         "customer",
+		OrganizationUnitID: "ou1",
+	}
 
-	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).Return(nil, sysErr).Once()
+	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
+		Return(authResult, nil).Once()
+	suite.mockService.On("GetEntity", mock.Anything, "user123").
+		Return(nil, entity.ErrEntityNotFound).Once()
 
 	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(ErrorCodeSystemError, err.Code)
+	suite.Equal(ErrorCodeUserNotFound, err.Code)
 }
 
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 	token := "user123"
-	userObj := &user.User{
-		ID:         "user123",
-		Type:       "customer",
-		OUID:       "ou1",
-		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
+	entityObj := &entity.Entity{
+		ID:                 "user123",
+		Category:           entity.EntityCategoryUser,
+		Type:               "customer",
+		OrganizationUnitID: "ou1",
+		Attributes:         json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
-	suite.mockService.On("GetUser", mock.Anything, token, false).
-		Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockService.On("GetEntity", mock.Anything, token).
+		Return(entityObj, nil).Once()
 
 	result, err := suite.provider.GetAttributes(context.Background(), token, nil, nil)
 
 	suite.Nil(err)
+	suite.Equal("user123", result.EntityID)
 	suite.Equal("user123", result.UserID)
 	suite.NotNil(result.AttributesResponse)
 	suite.Equal("test@example.com", result.AttributesResponse.Attributes["email"].Value)
@@ -151,15 +161,16 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered() {
 	token := "user123"
-	userObj := &user.User{
-		ID:         "user123",
-		Type:       "customer",
-		OUID:       "ou1",
-		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
+	entityObj := &entity.Entity{
+		ID:                 "user123",
+		Category:           entity.EntityCategoryUser,
+		Type:               "customer",
+		OrganizationUnitID: "ou1",
+		Attributes:         json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
-	suite.mockService.On("GetUser", mock.Anything, token, false).
-		Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
+	suite.mockService.On("GetEntity", mock.Anything, token).
+		Return(entityObj, nil).Once()
 
 	reqAttrs := &RequestedAttributes{
 		Attributes: map[string]*AttributeMetadataRequest{
@@ -177,38 +188,13 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered()
 
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 	token := "invalid"
-	notFoundErr := &user.ErrorUserNotFound
 
-	suite.mockService.On("GetUser", mock.Anything, token, false).Return(nil, notFoundErr).Once()
+	suite.mockService.On("GetEntity", mock.Anything, token).
+		Return(nil, entity.ErrEntityNotFound).Once()
 
 	result, err := suite.provider.GetAttributes(context.Background(), token, nil, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeInvalidToken, err.Code)
-}
-
-func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
-	identifiers := map[string]interface{}{"username": "testuser"}
-	credentials := map[string]interface{}{"password": "password123"}
-
-	authResp := &user.AuthenticateUserResponse{
-		ID:   "user123",
-		Type: "customer",
-		OUID: "ou1",
-	}
-
-	// Expect AuthenticateUser call - Success
-	suite.mockService.On("AuthenticateUser", mock.Anything, identifiers, credentials).
-		Return(authResp, (*serviceerror.ServiceError)(nil)).Once()
-
-	// Expect GetUser call - Fail with UserNotFound
-	userNotFoundErr := &user.ErrorUserNotFound
-	suite.mockService.On("GetUser", mock.Anything, "user123", false).Return(nil, userNotFoundErr).Once()
-
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
-
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.Equal(ErrorCodeUserNotFound, err.Code)
 }

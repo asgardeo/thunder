@@ -21,6 +21,8 @@ package entity
 
 import (
 	"encoding/json"
+
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 )
 
 // EntityCategory represents the category of an entity (e.g., user, application, agent).
@@ -77,6 +79,21 @@ type EntityIdentifier struct {
 	Type     string `json:"type"`
 	Value    string `json:"value"`
 	Source   string `json:"source"`
+}
+
+// AuthenticateResult represents the result of an entity authentication.
+type AuthenticateResult struct {
+	EntityID           string         `json:"entityId"`
+	EntityCategory     EntityCategory `json:"entityCategory"`
+	EntityType         string         `json:"entityType"`
+	OrganizationUnitID string         `json:"ouId"`
+}
+
+// storedCredential represents a single credential entry stored.
+type storedCredential struct {
+	StorageAlgo       hash.CredAlgorithm  `json:"storageAlgo"`
+	StorageAlgoParams hash.CredParameters `json:"storageAlgoParams"`
+	Value             string              `json:"value"`
 }
 
 // DeclarativeLoaderConfig configures declarative resource loading for a specific entity category.

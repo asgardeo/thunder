@@ -38,9 +38,83 @@ func (_m *EntityServiceInterfaceMock) EXPECT() *EntityServiceInterfaceMock_Expec
 	return &EntityServiceInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// AuthenticateEntity provides a mock function for the type EntityServiceInterfaceMock
+func (_mock *EntityServiceInterfaceMock) AuthenticateEntity(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}) (*AuthenticateResult, error) {
+	ret := _mock.Called(ctx, identifiers, credentials)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthenticateEntity")
+	}
+
+	var r0 *AuthenticateResult
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}) (*AuthenticateResult, error)); ok {
+		return returnFunc(ctx, identifiers, credentials)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}) *AuthenticateResult); ok {
+		r0 = returnFunc(ctx, identifiers, credentials)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AuthenticateResult)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}) error); ok {
+		r1 = returnFunc(ctx, identifiers, credentials)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// EntityServiceInterfaceMock_AuthenticateEntity_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthenticateEntity'
+type EntityServiceInterfaceMock_AuthenticateEntity_Call struct {
+	*mock.Call
+}
+
+// AuthenticateEntity is a helper method to define mock.On call
+//   - ctx context.Context
+//   - identifiers map[string]interface{}
+//   - credentials map[string]interface{}
+func (_e *EntityServiceInterfaceMock_Expecter) AuthenticateEntity(ctx interface{}, identifiers interface{}, credentials interface{}) *EntityServiceInterfaceMock_AuthenticateEntity_Call {
+	return &EntityServiceInterfaceMock_AuthenticateEntity_Call{Call: _e.mock.On("AuthenticateEntity", ctx, identifiers, credentials)}
+}
+
+func (_c *EntityServiceInterfaceMock_AuthenticateEntity_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{})) *EntityServiceInterfaceMock_AuthenticateEntity_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 map[string]interface{}
+		if args[1] != nil {
+			arg1 = args[1].(map[string]interface{})
+		}
+		var arg2 map[string]interface{}
+		if args[2] != nil {
+			arg2 = args[2].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *EntityServiceInterfaceMock_AuthenticateEntity_Call) Return(authenticateResult *AuthenticateResult, err error) *EntityServiceInterfaceMock_AuthenticateEntity_Call {
+	_c.Call.Return(authenticateResult, err)
+	return _c
+}
+
+func (_c *EntityServiceInterfaceMock_AuthenticateEntity_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}) (*AuthenticateResult, error)) *EntityServiceInterfaceMock_AuthenticateEntity_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateEntity provides a mock function for the type EntityServiceInterfaceMock
-func (_mock *EntityServiceInterfaceMock) CreateEntity(ctx context.Context, entity *Entity, credentials json.RawMessage, systemCredentials json.RawMessage) (*Entity, error) {
-	ret := _mock.Called(ctx, entity, credentials, systemCredentials)
+func (_mock *EntityServiceInterfaceMock) CreateEntity(ctx context.Context, entity *Entity, systemCredentials json.RawMessage) (*Entity, error) {
+	ret := _mock.Called(ctx, entity, systemCredentials)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateEntity")
@@ -48,18 +122,18 @@ func (_mock *EntityServiceInterfaceMock) CreateEntity(ctx context.Context, entit
 
 	var r0 *Entity
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *Entity, json.RawMessage, json.RawMessage) (*Entity, error)); ok {
-		return returnFunc(ctx, entity, credentials, systemCredentials)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *Entity, json.RawMessage) (*Entity, error)); ok {
+		return returnFunc(ctx, entity, systemCredentials)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *Entity, json.RawMessage, json.RawMessage) *Entity); ok {
-		r0 = returnFunc(ctx, entity, credentials, systemCredentials)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *Entity, json.RawMessage) *Entity); ok {
+		r0 = returnFunc(ctx, entity, systemCredentials)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*Entity)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *Entity, json.RawMessage, json.RawMessage) error); ok {
-		r1 = returnFunc(ctx, entity, credentials, systemCredentials)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *Entity, json.RawMessage) error); ok {
+		r1 = returnFunc(ctx, entity, systemCredentials)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -74,13 +148,12 @@ type EntityServiceInterfaceMock_CreateEntity_Call struct {
 // CreateEntity is a helper method to define mock.On call
 //   - ctx context.Context
 //   - entity *Entity
-//   - credentials json.RawMessage
 //   - systemCredentials json.RawMessage
-func (_e *EntityServiceInterfaceMock_Expecter) CreateEntity(ctx interface{}, entity interface{}, credentials interface{}, systemCredentials interface{}) *EntityServiceInterfaceMock_CreateEntity_Call {
-	return &EntityServiceInterfaceMock_CreateEntity_Call{Call: _e.mock.On("CreateEntity", ctx, entity, credentials, systemCredentials)}
+func (_e *EntityServiceInterfaceMock_Expecter) CreateEntity(ctx interface{}, entity interface{}, systemCredentials interface{}) *EntityServiceInterfaceMock_CreateEntity_Call {
+	return &EntityServiceInterfaceMock_CreateEntity_Call{Call: _e.mock.On("CreateEntity", ctx, entity, systemCredentials)}
 }
 
-func (_c *EntityServiceInterfaceMock_CreateEntity_Call) Run(run func(ctx context.Context, entity *Entity, credentials json.RawMessage, systemCredentials json.RawMessage)) *EntityServiceInterfaceMock_CreateEntity_Call {
+func (_c *EntityServiceInterfaceMock_CreateEntity_Call) Run(run func(ctx context.Context, entity *Entity, systemCredentials json.RawMessage)) *EntityServiceInterfaceMock_CreateEntity_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -94,15 +167,10 @@ func (_c *EntityServiceInterfaceMock_CreateEntity_Call) Run(run func(ctx context
 		if args[2] != nil {
 			arg2 = args[2].(json.RawMessage)
 		}
-		var arg3 json.RawMessage
-		if args[3] != nil {
-			arg3 = args[3].(json.RawMessage)
-		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -113,7 +181,7 @@ func (_c *EntityServiceInterfaceMock_CreateEntity_Call) Return(entity1 *Entity, 
 	return _c
 }
 
-func (_c *EntityServiceInterfaceMock_CreateEntity_Call) RunAndReturn(run func(ctx context.Context, entity *Entity, credentials json.RawMessage, systemCredentials json.RawMessage) (*Entity, error)) *EntityServiceInterfaceMock_CreateEntity_Call {
+func (_c *EntityServiceInterfaceMock_CreateEntity_Call) RunAndReturn(run func(ctx context.Context, entity *Entity, systemCredentials json.RawMessage) (*Entity, error)) *EntityServiceInterfaceMock_CreateEntity_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1236,69 +1304,6 @@ func (_c *EntityServiceInterfaceMock_UpdateAttributes_Call) RunAndReturn(run fun
 	return _c
 }
 
-// UpdateCredentials provides a mock function for the type EntityServiceInterfaceMock
-func (_mock *EntityServiceInterfaceMock) UpdateCredentials(ctx context.Context, entityID string, creds json.RawMessage) error {
-	ret := _mock.Called(ctx, entityID, creds)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateCredentials")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage) error); ok {
-		r0 = returnFunc(ctx, entityID, creds)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// EntityServiceInterfaceMock_UpdateCredentials_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateCredentials'
-type EntityServiceInterfaceMock_UpdateCredentials_Call struct {
-	*mock.Call
-}
-
-// UpdateCredentials is a helper method to define mock.On call
-//   - ctx context.Context
-//   - entityID string
-//   - creds json.RawMessage
-func (_e *EntityServiceInterfaceMock_Expecter) UpdateCredentials(ctx interface{}, entityID interface{}, creds interface{}) *EntityServiceInterfaceMock_UpdateCredentials_Call {
-	return &EntityServiceInterfaceMock_UpdateCredentials_Call{Call: _e.mock.On("UpdateCredentials", ctx, entityID, creds)}
-}
-
-func (_c *EntityServiceInterfaceMock_UpdateCredentials_Call) Run(run func(ctx context.Context, entityID string, creds json.RawMessage)) *EntityServiceInterfaceMock_UpdateCredentials_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 json.RawMessage
-		if args[2] != nil {
-			arg2 = args[2].(json.RawMessage)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *EntityServiceInterfaceMock_UpdateCredentials_Call) Return(err error) *EntityServiceInterfaceMock_UpdateCredentials_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *EntityServiceInterfaceMock_UpdateCredentials_Call) RunAndReturn(run func(ctx context.Context, entityID string, creds json.RawMessage) error) *EntityServiceInterfaceMock_UpdateCredentials_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // UpdateEntity provides a mock function for the type EntityServiceInterfaceMock
 func (_mock *EntityServiceInterfaceMock) UpdateEntity(ctx context.Context, entityID string, entity *Entity) (*Entity, error) {
 	ret := _mock.Called(ctx, entityID, entity)
@@ -1373,86 +1378,6 @@ func (_c *EntityServiceInterfaceMock_UpdateEntity_Call) RunAndReturn(run func(ct
 	return _c
 }
 
-// UpdateEntityWithCredentials provides a mock function for the type EntityServiceInterfaceMock
-func (_mock *EntityServiceInterfaceMock) UpdateEntityWithCredentials(ctx context.Context, entityID string, entity *Entity, systemCreds json.RawMessage) (*Entity, error) {
-	ret := _mock.Called(ctx, entityID, entity, systemCreds)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateEntityWithCredentials")
-	}
-
-	var r0 *Entity
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *Entity, json.RawMessage) (*Entity, error)); ok {
-		return returnFunc(ctx, entityID, entity, systemCreds)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *Entity, json.RawMessage) *Entity); ok {
-		r0 = returnFunc(ctx, entityID, entity, systemCreds)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*Entity)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *Entity, json.RawMessage) error); ok {
-		r1 = returnFunc(ctx, entityID, entity, systemCreds)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateEntityWithCredentials'
-type EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call struct {
-	*mock.Call
-}
-
-// UpdateEntityWithCredentials is a helper method to define mock.On call
-//   - ctx context.Context
-//   - entityID string
-//   - entity *Entity
-//   - systemCreds json.RawMessage
-func (_e *EntityServiceInterfaceMock_Expecter) UpdateEntityWithCredentials(ctx interface{}, entityID interface{}, entity interface{}, systemCreds interface{}) *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call {
-	return &EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call{Call: _e.mock.On("UpdateEntityWithCredentials", ctx, entityID, entity, systemCreds)}
-}
-
-func (_c *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call) Run(run func(ctx context.Context, entityID string, entity *Entity, systemCreds json.RawMessage)) *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 *Entity
-		if args[2] != nil {
-			arg2 = args[2].(*Entity)
-		}
-		var arg3 json.RawMessage
-		if args[3] != nil {
-			arg3 = args[3].(json.RawMessage)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-		)
-	})
-	return _c
-}
-
-func (_c *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call) Return(entity1 *Entity, err error) *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call {
-	_c.Call.Return(entity1, err)
-	return _c
-}
-
-func (_c *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call) RunAndReturn(run func(ctx context.Context, entityID string, entity *Entity, systemCreds json.RawMessage) (*Entity, error)) *EntityServiceInterfaceMock_UpdateEntityWithCredentials_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // UpdateSystemAttributes provides a mock function for the type EntityServiceInterfaceMock
 func (_mock *EntityServiceInterfaceMock) UpdateSystemAttributes(ctx context.Context, entityID string, attrs json.RawMessage) error {
 	ret := _mock.Called(ctx, entityID, attrs)
@@ -1517,8 +1442,8 @@ func (_c *EntityServiceInterfaceMock_UpdateSystemAttributes_Call) RunAndReturn(r
 }
 
 // UpdateSystemCredentials provides a mock function for the type EntityServiceInterfaceMock
-func (_mock *EntityServiceInterfaceMock) UpdateSystemCredentials(ctx context.Context, entityID string, creds json.RawMessage) error {
-	ret := _mock.Called(ctx, entityID, creds)
+func (_mock *EntityServiceInterfaceMock) UpdateSystemCredentials(ctx context.Context, entityID string, plaintextUpdates json.RawMessage) error {
+	ret := _mock.Called(ctx, entityID, plaintextUpdates)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateSystemCredentials")
@@ -1526,7 +1451,7 @@ func (_mock *EntityServiceInterfaceMock) UpdateSystemCredentials(ctx context.Con
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage) error); ok {
-		r0 = returnFunc(ctx, entityID, creds)
+		r0 = returnFunc(ctx, entityID, plaintextUpdates)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1541,12 +1466,12 @@ type EntityServiceInterfaceMock_UpdateSystemCredentials_Call struct {
 // UpdateSystemCredentials is a helper method to define mock.On call
 //   - ctx context.Context
 //   - entityID string
-//   - creds json.RawMessage
-func (_e *EntityServiceInterfaceMock_Expecter) UpdateSystemCredentials(ctx interface{}, entityID interface{}, creds interface{}) *EntityServiceInterfaceMock_UpdateSystemCredentials_Call {
-	return &EntityServiceInterfaceMock_UpdateSystemCredentials_Call{Call: _e.mock.On("UpdateSystemCredentials", ctx, entityID, creds)}
+//   - plaintextUpdates json.RawMessage
+func (_e *EntityServiceInterfaceMock_Expecter) UpdateSystemCredentials(ctx interface{}, entityID interface{}, plaintextUpdates interface{}) *EntityServiceInterfaceMock_UpdateSystemCredentials_Call {
+	return &EntityServiceInterfaceMock_UpdateSystemCredentials_Call{Call: _e.mock.On("UpdateSystemCredentials", ctx, entityID, plaintextUpdates)}
 }
 
-func (_c *EntityServiceInterfaceMock_UpdateSystemCredentials_Call) Run(run func(ctx context.Context, entityID string, creds json.RawMessage)) *EntityServiceInterfaceMock_UpdateSystemCredentials_Call {
+func (_c *EntityServiceInterfaceMock_UpdateSystemCredentials_Call) Run(run func(ctx context.Context, entityID string, plaintextUpdates json.RawMessage)) *EntityServiceInterfaceMock_UpdateSystemCredentials_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1574,7 +1499,7 @@ func (_c *EntityServiceInterfaceMock_UpdateSystemCredentials_Call) Return(err er
 	return _c
 }
 
-func (_c *EntityServiceInterfaceMock_UpdateSystemCredentials_Call) RunAndReturn(run func(ctx context.Context, entityID string, creds json.RawMessage) error) *EntityServiceInterfaceMock_UpdateSystemCredentials_Call {
+func (_c *EntityServiceInterfaceMock_UpdateSystemCredentials_Call) RunAndReturn(run func(ctx context.Context, entityID string, plaintextUpdates json.RawMessage) error) *EntityServiceInterfaceMock_UpdateSystemCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }

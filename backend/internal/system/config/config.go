@@ -365,6 +365,11 @@ type UserProviderConfig struct {
 	Type string `yaml:"type" json:"type"`
 }
 
+// EntityProviderConfig holds the entity provider configuration details.
+type EntityProviderConfig struct {
+	Type string `yaml:"type" json:"type"`
+}
+
 // RestConfig holds the REST authentication provider configuration details.
 type RestConfig struct {
 	BaseURL  string             `yaml:"base_url" json:"base_url"`
@@ -424,6 +429,7 @@ type Config struct {
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
 	UserProvider         UserProviderConfig     `yaml:"user_provider" json:"user_provider"`
+	EntityProvider       EntityProviderConfig   `yaml:"entity_provider" json:"entity_provider"`
 	Role                 RoleConfig             `yaml:"role" json:"role"`
 	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`

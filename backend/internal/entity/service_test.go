@@ -27,15 +27,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/hashmock"
 )
 
 type ServiceTestSuite struct {
 	suite.Suite
-	store   *entityStoreInterfaceMock
-	svc     EntityServiceInterface
-	ctx     context.Context
-	testErr error
+	store       *entityStoreInterfaceMock
+	hashService *hashmock.HashServiceInterfaceMock
+	svc         EntityServiceInterface
+	ctx         context.Context
+	testErr     error
 }
 
 func TestServiceTestSuite(t *testing.T) {
@@ -44,7 +47,16 @@ func TestServiceTestSuite(t *testing.T) {
 
 func (s *ServiceTestSuite) SetupTest() {
 	s.store = newEntityStoreInterfaceMock(s.T())
-	s.svc = newEntityService(s.store, transaction.NewNoOpTransactioner())
+	s.hashService = hashmock.NewHashServiceInterfaceMock(s.T())
+	// Default: hashService.Generate returns a deterministic hash for any input.
+	s.hashService.On("Generate", mock.Anything).Return(hash.Credential{
+		Algorithm: "PBKDF2",
+		Hash:      "testhash",
+		Parameters: hash.CredParameters{
+			Salt: "testsalt", Iterations: 1, KeySize: 32,
+		},
+	}, nil).Maybe()
+	s.svc = newEntityService(s.store, s.hashService, nil, transaction.NewNoOpTransactioner())
 	s.ctx = context.Background()
 	s.testErr = errors.New("store error")
 }
@@ -62,7 +74,7 @@ func testEntity(id string) *Entity {
 }
 
 func (s *ServiceTestSuite) TestCreateEntity_NilEntity() {
-	_, err := s.svc.CreateEntity(s.ctx, nil, nil, nil)
+	_, err := s.svc.CreateEntity(s.ctx, nil, nil)
 	s.ErrorIs(err, ErrEntityNotFound)
 }
 
@@ -70,7 +82,7 @@ func (s *ServiceTestSuite) TestCreateEntity_StoreCreateFails() {
 	e := testEntity("e1")
 	s.store.On("CreateEntity", mock.Anything, *e, json.RawMessage(nil), json.RawMessage(nil)).
 		Return(s.testErr)
-	_, err := s.svc.CreateEntity(s.ctx, e, nil, nil)
+	_, err := s.svc.CreateEntity(s.ctx, e, nil)
 	s.Error(err)
 }
 
@@ -79,7 +91,7 @@ func (s *ServiceTestSuite) TestCreateEntity_GetAfterCreateFails() {
 	s.store.On("CreateEntity", mock.Anything, *e, json.RawMessage(nil), json.RawMessage(nil)).
 		Return(nil)
 	s.store.On("GetEntity", mock.Anything, e.ID).Return(Entity{}, s.testErr)
-	_, err := s.svc.CreateEntity(s.ctx, e, nil, nil)
+	_, err := s.svc.CreateEntity(s.ctx, e, nil)
 	s.Error(err)
 }
 
@@ -88,7 +100,7 @@ func (s *ServiceTestSuite) TestCreateEntity_Success() {
 	s.store.On("CreateEntity", mock.Anything, *e, json.RawMessage(nil), json.RawMessage(nil)).
 		Return(nil)
 	s.store.On("GetEntity", mock.Anything, e.ID).Return(*e, nil)
-	got, err := s.svc.CreateEntity(s.ctx, e, nil, nil)
+	got, err := s.svc.CreateEntity(s.ctx, e, nil)
 	s.NoError(err)
 	s.Equal(e.ID, got.ID)
 }
@@ -143,7 +155,11 @@ func (s *ServiceTestSuite) TestDeleteEntity_Delegates() {
 
 func (s *ServiceTestSuite) TestUpdateSystemCredentials_Delegates() {
 	creds := json.RawMessage(`{"token":"x"}`)
-	s.store.On("UpdateSystemCredentials", mock.Anything, "e1", creds).Return(nil)
+	// Fetch existing (empty), hash new, merge, store.
+	existingEntity := testEntity("e1")
+	s.store.On("GetEntityWithCredentials", mock.Anything, "e1").
+		Return(*existingEntity, json.RawMessage(nil), json.RawMessage(nil), nil)
+	s.store.On("UpdateSystemCredentials", mock.Anything, "e1", mock.AnythingOfType("json.RawMessage")).Return(nil)
 	s.NoError(s.svc.UpdateSystemCredentials(s.ctx, "e1", creds))
 }
 
@@ -265,51 +281,31 @@ func (s *ServiceTestSuite) TestLoadDeclarativeResources_MutableStore_NoOp() {
 	s.NoError(err)
 }
 
-func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_NilEntity() {
-	_, err := s.svc.UpdateEntityWithCredentials(s.ctx, "id", nil, nil)
+func (s *ServiceTestSuite) TestUpdateEntity_NilEntity_ViaOldPath() {
+	_, err := s.svc.UpdateEntity(s.ctx, "id", nil)
 	s.ErrorIs(err, ErrEntityNotFound)
 }
 
-func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_UpdateFails() {
+func (s *ServiceTestSuite) TestUpdateEntity_UpdateFails_ViaOldPath() {
 	e := testEntity("uc1")
 	s.store.On("UpdateEntity", mock.Anything, e).Return(s.testErr)
-	_, err := s.svc.UpdateEntityWithCredentials(s.ctx, e.ID, e, nil)
+	_, err := s.svc.UpdateEntity(s.ctx, e.ID, e)
 	s.Error(err)
 }
 
-func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_WithCredsUpdateFails() {
-	e := testEntity("uc2")
-	sysCreds := json.RawMessage(`{"tok":"t"}`)
-	s.store.On("UpdateEntity", mock.Anything, e).Return(nil)
-	s.store.On("UpdateSystemCredentials", mock.Anything, e.ID, sysCreds).Return(s.testErr)
-	_, err := s.svc.UpdateEntityWithCredentials(s.ctx, e.ID, e, sysCreds)
-	s.Error(err)
-}
-
-func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_GetAfterUpdateFails() {
+func (s *ServiceTestSuite) TestUpdateEntity_GetAfterUpdateFails_ViaOldPath() {
 	e := testEntity("uc3")
 	s.store.On("UpdateEntity", mock.Anything, e).Return(nil)
 	s.store.On("GetEntity", mock.Anything, e.ID).Return(Entity{}, s.testErr)
-	_, err := s.svc.UpdateEntityWithCredentials(s.ctx, e.ID, e, nil)
+	_, err := s.svc.UpdateEntity(s.ctx, e.ID, e)
 	s.Error(err)
 }
 
-func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_SuccessNoCreds() {
+func (s *ServiceTestSuite) TestUpdateEntity_Success_ViaOldPath() {
 	e := testEntity("uc4")
 	s.store.On("UpdateEntity", mock.Anything, e).Return(nil)
 	s.store.On("GetEntity", mock.Anything, e.ID).Return(*e, nil)
-	got, err := s.svc.UpdateEntityWithCredentials(s.ctx, e.ID, e, nil)
-	s.NoError(err)
-	s.Equal(e.ID, got.ID)
-}
-
-func (s *ServiceTestSuite) TestUpdateEntityWithCredentials_SuccessWithCreds() {
-	e := testEntity("uc5")
-	sysCreds := json.RawMessage(`{"tok":"t"}`)
-	s.store.On("UpdateEntity", mock.Anything, e).Return(nil)
-	s.store.On("UpdateSystemCredentials", mock.Anything, e.ID, sysCreds).Return(nil)
-	s.store.On("GetEntity", mock.Anything, e.ID).Return(*e, nil)
-	got, err := s.svc.UpdateEntityWithCredentials(s.ctx, e.ID, e, sysCreds)
+	got, err := s.svc.UpdateEntity(s.ctx, e.ID, e)
 	s.NoError(err)
 	s.Equal(e.ID, got.ID)
 }

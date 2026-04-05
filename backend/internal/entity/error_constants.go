@@ -25,6 +25,18 @@ var (
 	// ErrEntityNotFound is returned when the entity is not found in the system.
 	ErrEntityNotFound = errors.New("entity not found")
 
+	// ErrAuthenticationFailed is returned when entity credential verification fails.
+	ErrAuthenticationFailed = errors.New("authentication failed")
+
+	// ErrSchemaValidationFailed is returned when entity attributes fail schema validation.
+	ErrSchemaValidationFailed = errors.New("schema validation failed")
+
+	// ErrAttributeConflict is returned when entity attributes conflict with an existing entity.
+	ErrAttributeConflict = errors.New("attribute conflict")
+
+	// ErrInvalidCredential is returned when a credential value is invalid.
+	ErrInvalidCredential = errors.New("invalid credential")
+
 	// ErrBadAttributesInRequest is returned when the attributes in the request are invalid.
 	ErrBadAttributesInRequest = errors.New("failed to marshal attributes")
 

@@ -142,13 +142,6 @@ var (
 		ID:    "ASQ-ENTITY_MGT-14",
 		Query: "DELETE FROM ENTITY_IDENTIFIER WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
-	// QueryAddIdentifier is the query to add a single identifier.
-	QueryAddIdentifier = model.DBQuery{
-		ID: "ASQ-ENTITY_MGT-15",
-		Query: "INSERT INTO ENTITY_IDENTIFIER (ENTITY_ID, NAME, VALUE, SOURCE, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5) ON CONFLICT (ENTITY_ID, DEPLOYMENT_ID, NAME) " +
-			"DO UPDATE SET VALUE = $3, SOURCE = $4",
-	}
 	// QueryDeleteAttributeIdentifiersByEntity is the query to delete only attribute-sourced identifiers for an entity.
 	QueryDeleteAttributeIdentifiersByEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-27",
@@ -158,11 +151,6 @@ var (
 	QueryDeleteSystemIdentifiersByEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-28",
 		Query: "DELETE FROM ENTITY_IDENTIFIER WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2 AND SOURCE = 'system'",
-	}
-	// QueryRemoveIdentifier is the query to remove a single identifier by type.
-	QueryRemoveIdentifier = model.DBQuery{
-		ID:    "ASQ-ENTITY_MGT-16",
-		Query: "DELETE FROM ENTITY_IDENTIFIER WHERE ENTITY_ID = $1 AND NAME = $2 AND DEPLOYMENT_ID = $3",
 	}
 )
 

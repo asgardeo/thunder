@@ -22,50 +22,51 @@ package authnprovider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/entity"
 )
 
 type defaultAuthnProvider struct {
-	userSvc user.UserServiceInterface
+	entitySvc entity.EntityServiceInterface
 }
 
-// newDefaultAuthnProvider creates a new internal user authn provider.
-func newDefaultAuthnProvider(userSvc user.UserServiceInterface) AuthnProviderInterface {
+// newDefaultAuthnProvider creates a new default authn provider.
+func newDefaultAuthnProvider(entitySvc entity.EntityServiceInterface) AuthnProviderInterface {
 	return &defaultAuthnProvider{
-		userSvc: userSvc,
+		entitySvc: entitySvc,
 	}
 }
 
-// Authenticate authenticates the user using the internal user service.
+// Authenticate authenticates any entity type (user, app, agent) using the entity service.
 func (p *defaultAuthnProvider) Authenticate(
 	ctx context.Context,
 	identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata,
 ) (*AuthnResult, *AuthnProviderError) {
-	authResponse, authErr := p.userSvc.AuthenticateUser(ctx, identifiers, credentials)
-	if authErr != nil {
-		if authErr.Type == serviceerror.ClientErrorType {
-			if authErr.Code == user.ErrorUserNotFound.Code {
-				return nil, NewError(ErrorCodeUserNotFound, authErr.Error, authErr.ErrorDescription)
-			}
-			return nil, NewError(ErrorCodeAuthenticationFailed, authErr.Error, authErr.ErrorDescription)
+	authResult, err := p.entitySvc.AuthenticateEntity(ctx, identifiers, credentials)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, NewError(ErrorCodeUserNotFound, "Entity not found", err.Error())
 		}
-		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
+		if errors.Is(err, entity.ErrAuthenticationFailed) {
+			return nil, NewError(ErrorCodeAuthenticationFailed, "Authentication failed", err.Error())
+		}
+		return nil, NewError(ErrorCodeSystemError, "System error", err.Error())
 	}
 
-	userResult, getUserErr := p.userSvc.GetUser(ctx, authResponse.ID, false)
-	if getUserErr != nil {
-		if getUserErr.Code == user.ErrorUserNotFound.Code {
-			return nil, NewError(ErrorCodeUserNotFound, getUserErr.Error, getUserErr.ErrorDescription)
+	// Fetch entity to build available attributes for the result.
+	entityResult, getErr := p.entitySvc.GetEntity(ctx, authResult.EntityID)
+	if getErr != nil {
+		if errors.Is(getErr, entity.ErrEntityNotFound) {
+			return nil, NewError(ErrorCodeUserNotFound, "Entity not found", getErr.Error())
 		}
-		return nil, NewError(ErrorCodeSystemError, getUserErr.Error, getUserErr.ErrorDescription)
+		return nil, NewError(ErrorCodeSystemError, "System error", getErr.Error())
 	}
 
 	var attributes map[string]interface{}
-	if len(userResult.Attributes) > 0 {
-		if err := json.Unmarshal(userResult.Attributes, &attributes); err != nil {
+	if len(entityResult.Attributes) > 0 {
+		if err := json.Unmarshal(entityResult.Attributes, &attributes); err != nil {
 			return nil, NewError(ErrorCodeSystemError, "Failed to get allowed attributes", err.Error())
 		}
 	}
@@ -84,35 +85,39 @@ func (p *defaultAuthnProvider) Authenticate(
 	}
 
 	return &AuthnResult{
-		UserID:              authResponse.ID,
-		Token:               authResponse.ID,
-		UserType:            userResult.Type,
-		OUID:                userResult.OUID,
+		EntityID:       authResult.EntityID,
+		EntityCategory: authResult.EntityCategory.String(),
+		EntityType:     authResult.EntityType,
+		// Backward-compatible aliases.
+		UserID:              authResult.EntityID,
+		Token:               authResult.EntityID,
+		UserType:            authResult.EntityType,
+		OUID:                authResult.OrganizationUnitID,
 		AvailableAttributes: availableAttributes,
 	}, nil
 }
 
-// GetAttributes retrieves the user attributes using the internal user service.
+// GetAttributes retrieves the entity attributes using the entity service.
 func (p *defaultAuthnProvider) GetAttributes(
 	ctx context.Context,
 	token string,
 	requestedAttributes *RequestedAttributes,
 	metadata *GetAttributesMetadata,
 ) (*GetAttributesResult, *AuthnProviderError) {
-	userID := token
+	entityID := token
 
-	userResult, authErr := p.userSvc.GetUser(ctx, userID, false)
-	if authErr != nil {
-		if authErr.Type == serviceerror.ClientErrorType {
-			return nil, NewError(ErrorCodeInvalidToken, authErr.Error, authErr.ErrorDescription)
+	entityResult, err := p.entitySvc.GetEntity(ctx, entityID)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, NewError(ErrorCodeInvalidToken, "Entity not found", err.Error())
 		}
-		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
+		return nil, NewError(ErrorCodeSystemError, "System error", err.Error())
 	}
 
 	var allAttributes map[string]interface{}
-	if len(userResult.Attributes) > 0 {
-		if err := json.Unmarshal(userResult.Attributes, &allAttributes); err != nil {
-			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal user attributes")
+	if len(entityResult.Attributes) > 0 {
+		if err := json.Unmarshal(entityResult.Attributes, &allAttributes); err != nil {
+			return nil, NewError(ErrorCodeSystemError, "System Error", "Failed to unmarshal entity attributes")
 		}
 	}
 
@@ -146,9 +151,13 @@ func (p *defaultAuthnProvider) GetAttributes(
 	}
 
 	return &GetAttributesResult{
-		UserID:             userResult.ID,
-		UserType:           userResult.Type,
-		OUID:               userResult.OUID,
+		EntityID:       entityResult.ID,
+		EntityCategory: entityResult.Category.String(),
+		EntityType:     entityResult.Type,
+		// TODO: Remove after refacoring usages. Kept for backward compatibility — aliases for entity fields.
+		UserID:             entityResult.ID,
+		UserType:           entityResult.Type,
+		OUID:               entityResult.OrganizationUnitID,
 		AttributesResponse: attributesResponse,
 	}, nil
 }

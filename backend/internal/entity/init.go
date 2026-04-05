@@ -19,20 +19,25 @@
 package entity
 
 import (
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // Initialize initializes the entity service.
 // The entity store is always composite: a DB store backed by an in-memory file store.
 // Declarative resources are loaded on demand by consumer packages (e.g. user, application)
 // based on their own store mode configuration.
-func Initialize() (EntityServiceInterface, error) {
+func Initialize(
+	hashService hash.HashServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
+) (EntityServiceInterface, error) {
 	store, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, err
 	}
 
-	svc := newEntityService(store, transactioner)
+	svc := newEntityService(store, hashService, userSchemaService, transactioner)
 	return svc, nil
 }
 
