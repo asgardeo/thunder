@@ -266,6 +266,12 @@ export interface Application {
   [key: string]: unknown;
 
   /**
+   * Organization unit ID this application belongs to
+   * @example '550e8400-e29b-41d4-a716-446655440000'
+   */
+  ouId?: string;
+
+  /**
    * Assertion configuration
    * Defines how assertions are generated for this application.
    */

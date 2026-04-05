@@ -73,6 +73,7 @@ func (suite *FlowMetaAPITestSuite) SetupSuite() {
 	suite.ouID = ouID
 
 	// Create Application
+	testApp.OUID = suite.ouID
 	appID, err := testutils.CreateApplication(testApp)
 	suite.Require().NoError(err, "Failed to create application during setup")
 	suite.appID = appID

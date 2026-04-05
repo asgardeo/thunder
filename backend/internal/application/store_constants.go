@@ -21,90 +21,73 @@ package application
 import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 
 var (
-	// queryCreateApplication is the query to create a new application with basic details.
+	// queryCreateApplication creates a new application gateway config entry.
+	// Identity data (name, description, clientId, credentials) is stored in the ENTITY table.
 	queryCreateApplication = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-01",
-		Query: "INSERT INTO APPLICATION (ID, APP_NAME, DESCRIPTION, AUTH_FLOW_ID, " +
-			"REGISTRATION_FLOW_ID, IS_REGISTRATION_FLOW_ENABLED, THEME_ID, LAYOUT_ID, APP_JSON, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+		Query: "INSERT INTO APPLICATION (ID, AUTH_FLOW_ID, REGISTRATION_FLOW_ID, " +
+			"IS_REGISTRATION_FLOW_ENABLED, THEME_ID, LAYOUT_ID, " +
+			"ASSERTION, LOGIN_CONSENT, ALLOWED_ENTITY_TYPES, PROPERTIES, DEPLOYMENT_ID) " +
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
 	}
-	// queryCreateOAuthApplication is the query to create a new OAuth application.
+	// queryCreateOAuthApplication creates a new OAuth config entry keyed by entity ID.
 	queryCreateOAuthApplication = dbmodel.DBQuery{
-		ID: "ASQ-APP_MGT-02",
-		Query: "INSERT INTO APP_OAUTH_INBOUND_CONFIG (APP_ID, CLIENT_ID, CLIENT_SECRET, OAUTH_CONFIG_JSON, " +
-			"DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)",
+		ID:    "ASQ-APP_MGT-02",
+		Query: "INSERT INTO APP_OAUTH_INBOUND_CONFIG (ENTITY_ID, OAUTH_CONFIG, DEPLOYMENT_ID) VALUES ($1, $2, $3)",
 	}
-	// queryGetApplicationByAppID is the query to retrieve application details by app ID.
-	queryGetApplicationByAppID = dbmodel.DBQuery{
+	// queryGetApplicationByID retrieves application gateway config by entity ID.
+	queryGetApplicationByID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-03",
-		Query: "SELECT app.ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
-			"app.REGISTRATION_FLOW_ID, app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.APP_JSON, " +
-			"oauth.CLIENT_ID, oauth.CLIENT_SECRET, oauth.OAUTH_CONFIG_JSON " +
-			"FROM APPLICATION app LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth " +
-			"ON app.ID = oauth.APP_ID AND app.DEPLOYMENT_ID = $2 AND oauth.DEPLOYMENT_ID = $2 " +
-			"WHERE app.ID = $1 AND app.DEPLOYMENT_ID = $2",
+		Query: "SELECT app.ID, app.AUTH_FLOW_ID, app.REGISTRATION_FLOW_ID, " +
+			"app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, " +
+			"app.ASSERTION, app.LOGIN_CONSENT, app.ALLOWED_ENTITY_TYPES, app.PROPERTIES " +
+			"FROM APPLICATION app WHERE app.ID = $1 AND app.DEPLOYMENT_ID = $2",
 	}
-	// queryGetApplicationByName is the query to retrieve application details by name.
-	queryGetApplicationByName = dbmodel.DBQuery{
-		ID: "ASQ-APP_MGT-04",
-		Query: "SELECT app.ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
-			"app.REGISTRATION_FLOW_ID, app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.APP_JSON, " +
-			"oauth.CLIENT_ID, oauth.CLIENT_SECRET, oauth.OAUTH_CONFIG_JSON " +
-			"FROM APPLICATION app LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth " +
-			"ON app.ID = oauth.APP_ID AND app.DEPLOYMENT_ID = $2 AND oauth.DEPLOYMENT_ID = $2 " +
-			"WHERE app.APP_NAME = $1 AND app.DEPLOYMENT_ID = $2",
-	}
-	// queryGetOAuthApplicationByClientID is the query to retrieve oauth application details by client ID.
-	queryGetOAuthApplicationByClientID = dbmodel.DBQuery{
+	// queryGetOAuthConfigByEntityID retrieves OAuth config by entity ID.
+	queryGetOAuthConfigByEntityID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-05",
-		Query: "SELECT APP_ID, CLIENT_ID, CLIENT_SECRET, OAUTH_CONFIG_JSON FROM APP_OAUTH_INBOUND_CONFIG " +
-			"WHERE CLIENT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT ENTITY_ID, OAUTH_CONFIG FROM APP_OAUTH_INBOUND_CONFIG " +
+			"WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
-	// queryGetApplicationList is the query to list all the applications.
+	// queryGetApplicationList lists all application gateway configs.
 	queryGetApplicationList = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-06",
-		Query: "SELECT app.ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
-			"app.REGISTRATION_FLOW_ID, app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.APP_JSON, " +
-			"oauth.CLIENT_ID FROM APPLICATION app " +
-			"LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth ON app.ID = oauth.APP_ID " +
-			"AND app.DEPLOYMENT_ID = $1 AND oauth.DEPLOYMENT_ID = $1 WHERE app.DEPLOYMENT_ID = $1",
+		Query: "SELECT app.ID, app.AUTH_FLOW_ID, app.REGISTRATION_FLOW_ID, " +
+			"app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, " +
+			"app.ASSERTION, app.LOGIN_CONSENT, app.ALLOWED_ENTITY_TYPES, app.PROPERTIES " +
+			"FROM APPLICATION app WHERE app.DEPLOYMENT_ID = $1",
 	}
-	// queryUpdateApplicationByAppID is the query to update application details by app ID.
-	queryUpdateApplicationByAppID = dbmodel.DBQuery{
+	// queryUpdateApplicationByID updates application gateway config by entity ID.
+	queryUpdateApplicationByID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-07",
-		Query: "UPDATE APPLICATION SET APP_NAME=$2, DESCRIPTION=$3, AUTH_FLOW_ID=$4, " +
-			"REGISTRATION_FLOW_ID=$5, IS_REGISTRATION_FLOW_ENABLED=$6, THEME_ID=$7, LAYOUT_ID=$8, APP_JSON=$9 " +
-			"WHERE ID = $1 AND DEPLOYMENT_ID = $10",
+		Query: "UPDATE APPLICATION SET AUTH_FLOW_ID=$2, REGISTRATION_FLOW_ID=$3, " +
+			"IS_REGISTRATION_FLOW_ENABLED=$4, THEME_ID=$5, LAYOUT_ID=$6, " +
+			"ASSERTION=$7, LOGIN_CONSENT=$8, ALLOWED_ENTITY_TYPES=$9, PROPERTIES=$10 " +
+			"WHERE ID = $1 AND DEPLOYMENT_ID = $11",
 	}
-	// queryUpdateOAuthApplicationByAppID is the query to update OAuth application details by app ID.
-	queryUpdateOAuthApplicationByAppID = dbmodel.DBQuery{
-		ID: "ASQ-APP_MGT-08",
-		Query: "UPDATE APP_OAUTH_INBOUND_CONFIG SET CLIENT_ID=$2, CLIENT_SECRET=$3, OAUTH_CONFIG_JSON=$4 " +
-			"WHERE APP_ID=$1 AND DEPLOYMENT_ID=$5",
+	// queryUpdateOAuthConfigByEntityID updates OAuth config by entity ID.
+	queryUpdateOAuthConfigByEntityID = dbmodel.DBQuery{
+		ID:    "ASQ-APP_MGT-08",
+		Query: "UPDATE APP_OAUTH_INBOUND_CONFIG SET OAUTH_CONFIG=$2 WHERE ENTITY_ID=$1 AND DEPLOYMENT_ID=$3",
 	}
-	// queryDeleteApplicationByAppID is the query to delete an application by app ID.
-	queryDeleteApplicationByAppID = dbmodel.DBQuery{
+	// queryDeleteApplicationByID deletes an application by entity ID. Cascades to OAuth config.
+	queryDeleteApplicationByID = dbmodel.DBQuery{
 		ID:    "ASQ-APP_MGT-09",
 		Query: "DELETE FROM APPLICATION WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
-	// queryGetApplicationCount is the query to get the total count of applications.
+	// queryGetApplicationCount gets the total count of applications.
 	queryGetApplicationCount = dbmodel.DBQuery{
 		ID:    "ASQ-APP_MGT-10",
 		Query: "SELECT COUNT(*) as total FROM APPLICATION WHERE DEPLOYMENT_ID = $1",
 	}
-	// queryDeleteOAuthApplicationByClientID is the query to delete an OAuth application by client ID.
-	queryDeleteOAuthApplicationByClientID = dbmodel.DBQuery{
+	// queryDeleteOAuthConfigByEntityID deletes OAuth config by entity ID.
+	queryDeleteOAuthConfigByEntityID = dbmodel.DBQuery{
 		ID:    "ASQ-APP_MGT-11",
-		Query: "DELETE FROM APP_OAUTH_INBOUND_CONFIG WHERE CLIENT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "DELETE FROM APP_OAUTH_INBOUND_CONFIG WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
-	// queryCheckApplicationExistsByID is the query to check if an application exists by app ID.
+	// queryCheckApplicationExistsByID checks if an application exists by entity ID.
 	queryCheckApplicationExistsByID = dbmodel.DBQuery{
 		ID:    "ASQ-APP_MGT-12",
 		Query: "SELECT COUNT(*) as count FROM APPLICATION WHERE ID = $1 AND DEPLOYMENT_ID = $2",
-	}
-	// queryCheckApplicationExistsByName is the query to check if an application exists by name.
-	queryCheckApplicationExistsByName = dbmodel.DBQuery{
-		ID:    "ASQ-APP_MGT-13",
-		Query: "SELECT COUNT(*) as count FROM APPLICATION WHERE APP_NAME = $1 AND DEPLOYMENT_ID = $2",
 	}
 )

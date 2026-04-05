@@ -59,3 +59,9 @@ func getApplicationStoreMode() serverconst.StoreMode {
 func isDeclarativeModeEnabled() bool {
 	return getApplicationStoreMode() == serverconst.StoreModeDeclarative
 }
+
+// getAppIndexedAttributes returns the entity attribute names that applications need indexed
+// for fast lookups.
+func getAppIndexedAttributes() []string {
+	return []string{"name", "clientId"}
+}

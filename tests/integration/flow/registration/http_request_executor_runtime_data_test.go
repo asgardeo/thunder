@@ -442,6 +442,7 @@ func (ts *HTTPRequestRuntimeDataRegistrationFlowTestSuite) SetupSuite() {
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
 	httpRequestRuntimeDataApp.RegistrationFlowID = flowID
 
+	httpRequestRuntimeDataApp.OUID = httpRequestRuntimeDataOUID
 	appID, err := testutils.CreateApplication(httpRequestRuntimeDataApp)
 	ts.Require().NoError(err, "Failed to create runtime data test application")
 	httpRequestRuntimeDataAppID = appID

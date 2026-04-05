@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
@@ -37,6 +38,7 @@ func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
 	appService application.ApplicationServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
@@ -45,7 +47,7 @@ func Initialize(
 ) TokenHandlerInterface {
 	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc, transactioner)
 	tokenHandler := newTokenHandler(tokenSvc, observabilitySvc)
-	registerRoutes(mux, tokenHandler, appService, jwtService, discoveryService)
+	registerRoutes(mux, tokenHandler, appService, authnProvider, jwtService, discoveryService)
 	return tokenHandler
 }
 
@@ -54,6 +56,7 @@ func registerRoutes(
 	mux *http.ServeMux,
 	tokenHandler TokenHandlerInterface,
 	appService application.ApplicationServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) {
@@ -63,7 +66,7 @@ func registerRoutes(
 		AllowCredentials: true,
 	}
 
-	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, jwtService, discoveryService)
+	clientAuthMiddleware := clientauth.ClientAuthMiddleware(appService, authnProvider, jwtService, discoveryService)
 	handler := clientAuthMiddleware(http.HandlerFunc(tokenHandler.HandleTokenRequest))
 
 	pattern, wrappedHandler := middleware.WithCORS(

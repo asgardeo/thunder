@@ -148,6 +148,14 @@ packages:
       pkgname: discoverymock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/entity:
+    config:
+      all: true
+      dir: tests/mocks/entitymock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: entitymock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/asgardeo/thunder/internal/user:
     config:
       all: true
@@ -272,11 +280,12 @@ packages:
 
   github.com/asgardeo/thunder/internal/application:
     config:
-      all: true
       dir: tests/mocks/applicationmock
       structname: '{{.InterfaceName}}Mock'
       pkgname: applicationmock
       filename: "{{.InterfaceName}}_mock.go"
+    interfaces:
+      ApplicationServiceInterface:
   
   github.com/asgardeo/thunder/internal/ou:
     config:
@@ -428,6 +437,14 @@ packages:
       dir: tests/mocks/resourcemock
       structname: '{{.InterfaceName}}Mock'
       pkgname: resourcemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/entityprovider:
+    config:
+      all: true
+      dir: tests/mocks/entityprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: entityprovidermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/authnprovider:

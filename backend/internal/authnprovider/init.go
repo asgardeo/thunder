@@ -21,26 +21,26 @@ package authnprovider
 import (
 	"time"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/config"
 	systemhttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // InitializeAuthnProvider initializes the authentication provider.
-func InitializeAuthnProvider(userSvc user.UserServiceInterface) AuthnProviderInterface {
+func InitializeAuthnProvider(entitySvc entity.EntityServiceInterface) AuthnProviderInterface {
 	authnProviderConfig := config.GetThunderRuntime().Config.AuthnProvider
 	switch authnProviderConfig.Type {
 	case "rest":
 		return initializeRestAuthnProvider()
 	default:
-		return initializeDefaultAuthnProvider(userSvc)
+		return initializeDefaultAuthnProvider(entitySvc)
 	}
 }
 
 // initializeDefaultAuthnProvider initializes the default authentication provider.
-func initializeDefaultAuthnProvider(userSvc user.UserServiceInterface) AuthnProviderInterface {
-	return newDefaultAuthnProvider(userSvc)
+func initializeDefaultAuthnProvider(entitySvc entity.EntityServiceInterface) AuthnProviderInterface {
+	return newDefaultAuthnProvider(entitySvc)
 }
 
 // initializeRestAuthnProvider initializes the REST authentication provider.

@@ -122,7 +122,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"given_name": map[string]interface{}{
@@ -230,6 +230,7 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	attrCollectTestApp.AuthFlowID = attrFlowID
 
 	// Create test application for attribute collect tests
+	attrCollectTestApp.OUID = attrCollectTestOUID
 	appID, err := testutils.CreateApplication(attrCollectTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
@@ -257,8 +258,8 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 				"password": "testpassword",
 			},
 			providedAttrs: map[string]string{
-				"given_name":    "John",
-				"family_name":     "Doe",
+				"given_name":   "John",
+				"family_name":  "Doe",
 				"email":        "john.doe@example.com",
 				"mobileNumber": "+1987654321",
 			},
@@ -410,8 +411,8 @@ func (ts *AttributeCollectFlowTestSuite) TestSingleRequestLogin_WithAllInputs() 
 	allInputs := map[string]string{
 		"username":     "fulluser",
 		"password":     "testpassword",
-		"given_name":    "Full",
-		"family_name":     "User",
+		"given_name":   "Full",
+		"family_name":  "User",
 		"email":        "john.doe2@example.com",
 		"mobileNumber": "+1987654345",
 	}

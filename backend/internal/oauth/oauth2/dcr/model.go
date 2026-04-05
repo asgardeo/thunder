@@ -29,6 +29,7 @@ const (
 
 // DCRRegistrationRequest represents the RFC 7591 Dynamic Client Registration request.
 type DCRRegistrationRequest struct {
+	OUID                    string                              `json:"ou_id,omitempty"`
 	RedirectURIs            []string                            `json:"redirect_uris"`
 	GrantTypes              []oauth2const.GrantType             `json:"grant_types,omitempty"`
 	ResponseTypes           []oauth2const.ResponseType          `json:"response_types,omitempty"`

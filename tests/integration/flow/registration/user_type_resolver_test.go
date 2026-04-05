@@ -93,6 +93,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 
 	// Create test application with two user types (triggers user type selection)
 	testApp := testutils.Application{
+		OUID:                      ts.testOUID1,
 		Name:                      "Runtime Meta Test Application",
 		Description:               "Application for testing runtime meta generation",
 		IsRegistrationFlowEnabled: true,

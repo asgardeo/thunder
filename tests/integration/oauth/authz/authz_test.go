@@ -203,11 +203,12 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	ts.authFlowID = flowID
 
 	app := map[string]interface{}{
-		"name":                         appName,
-		"description":                  "Application for authorization integration tests",
-		"authFlowId":                 ts.authFlowID,
+		"name":                      appName,
+		"description":               "Application for authorization integration tests",
+		"ouId":                      testOUID,
+		"authFlowId":                ts.authFlowID,
 		"isRegistrationFlowEnabled": false,
-		"allowedUserTypes":           []string{"authz-test-person"},
+		"allowedUserTypes":          []string{"authz-test-person"},
 		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
@@ -416,8 +417,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 	password := "testpass123"
 
 	user := testutils.User{
-		OUID:             testOUID,
-		Type:             "authz-test-person",
+		OUID: testOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(fmt.Sprintf(`{
 			"username": "%s",
 			"password": "%s",
@@ -775,8 +776,8 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 		ts.Run(tc.Name, func() {
 			// Create test user with credentials
 			user := testutils.User{
-				OUID:             testOUID,
-				Type:             "authz-test-person",
+				OUID: testOUID,
+				Type: "authz-test-person",
 				Attributes: json.RawMessage(fmt.Sprintf(`{
 					"username": "%s",
 					"password": "%s",
@@ -905,8 +906,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 		ts.Run(tc.Name, func() {
 			// Create test user
 			user := testutils.User{
-				OUID:             testOUID,
-				Type:             "authz-test-person",
+				OUID: testOUID,
+				Type: "authz-test-person",
 				Attributes: json.RawMessage(fmt.Sprintf(`{
 					"username": "%s",
 					"password": "%s",
@@ -990,8 +991,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 
 	// Create test user
 	user := testutils.User{
-		OUID:             testOUID,
-		Type:             "authz-test-person",
+		OUID: testOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "resourcetest",
 			"password": "testpass123",
@@ -1100,8 +1101,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
 
 	// Create test user
 	user := testutils.User{
-		OUID:             testOUID,
-		Type:             "authz-test-person",
+		OUID: testOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "localestest",
 			"password": "testpass123",
@@ -1192,8 +1193,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithNonce() {
 
 	// Create test user
 	user := testutils.User{
-		OUID:             testOUID,
-		Type:             "authz-test-person",
+		OUID: testOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "noncetest",
 			"password": "testpass123",
@@ -1283,8 +1284,8 @@ func (ts *AuthzTestSuite) TestNonceIgnoredWithoutOpenIDScope() {
 
 	// Create test user
 	user := testutils.User{
-		OUID:             testOUID,
-		Type:             "authz-test-person",
+		OUID: testOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "nonopeniduser",
 			"password": "testpass123",

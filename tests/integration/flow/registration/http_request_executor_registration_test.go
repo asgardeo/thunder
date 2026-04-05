@@ -271,6 +271,7 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupSuite() {
 	httpRequestRegTestApp.RegistrationFlowID = flowID
 
 	// Create test application
+	httpRequestRegTestApp.OUID = httpRequestRegTestOUID
 	appID, err := testutils.CreateApplication(httpRequestRegTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

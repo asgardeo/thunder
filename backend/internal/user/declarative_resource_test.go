@@ -22,19 +22,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	entitypkg "github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 )
 
 // DeclarativeResourceTestSuite tests user declarative resource parsing and export.
@@ -155,10 +153,10 @@ func (suite *DeclarativeResourceTestSuite) TestParseToUser_HashesCredentials() {
 		"credentials:\n" +
 		"  password: \"secret\"\n")
 
-	resource, err := parseToUser(yamlData)
+	_, creds, err := parseToUser(yamlData)
 	suite.NoError(err)
 
-	passwordCreds := resource.Credentials["password"]
+	passwordCreds := creds["password"]
 	suite.Len(passwordCreds, 1)
 	suite.NotEqual("secret", passwordCreds[0].Value)
 }
@@ -172,10 +170,9 @@ func (suite *DeclarativeResourceTestSuite) TestParseToUserWrapper() {
 		"  username: alice\n" +
 		"  email: alice@example.com\n")
 
-	resource, err := parseToUserWrapper(yamlData)
+	user, _, err := parseToUser(yamlData)
 	suite.NoError(err)
-	_, ok := resource.(*userResource)
-	suite.True(ok)
+	suite.NotEmpty(user.ID)
 }
 
 func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
@@ -220,12 +217,8 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetAllResourceIDs() 
 	suite.Equal([]string{"user-2"}, ids)
 }
 
-func (suite *DeclarativeResourceTestSuite) TestLoadDeclarativeResources() {
-	tempDir := suite.T().TempDir()
-	usersDir := filepath.Join(tempDir, "repository", "resources", "users")
-	suite.NoError(os.MkdirAll(usersDir, 0o750))
-
-	userYAML := "" +
+func (suite *DeclarativeResourceTestSuite) TestMakeUserParser_ParsesYAMLToEntityWithCredentials() {
+	userYAML := []byte("" +
 		"id: user-1\n" +
 		"type: person\n" +
 		"ou_id: ou-1\n" +
@@ -233,34 +226,26 @@ func (suite *DeclarativeResourceTestSuite) TestLoadDeclarativeResources() {
 		"  username: alice\n" +
 		"  email: alice@example.com\n" +
 		"credentials:\n" +
-		"  password: \"secret\"\n"
+		"  password: \"secret\"\n")
 
-	filePath := filepath.Join(usersDir, "user-1.yaml")
-	suite.NoError(os.WriteFile(filePath, []byte(userYAML), 0o600))
+	parser := makeUserParser()
+	e, _, systemCreds, err := parser(userYAML)
 
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, &config.Config{
-		Crypto: config.CryptoConfig{
-			PasswordHashing: config.PasswordHashingConfig{
-				Algorithm: string(hash.SHA256),
-				SHA256: config.SHA256Config{
-					SaltSize: 16,
-				},
-			},
-		},
-	})
-	suite.Require().NoError(err)
-
-	fileStore := &userFileBasedStore{
-		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
-	}
-
-	err = loadDeclarativeResources(fileStore, nil)
 	suite.NoError(err)
+	suite.NotNil(e)
+	suite.Equal("user-1", e.ID)
+	suite.Equal("person", e.Type)
+	suite.Equal("ou-1", e.OrganizationUnitID)
+	suite.Equal(entitypkg.EntityCategoryUser, e.Category)
 
-	user, err := fileStore.GetUser(context.Background(), "user-1")
-	suite.NoError(err)
-	suite.Equal("user-1", user.ID)
+	// Verify attributes preserved
+	var attrs map[string]interface{}
+	suite.NoError(json.Unmarshal(e.Attributes, &attrs))
+	suite.Equal("alice", attrs["username"])
+
+	// Verify credentials were parsed (password should be hashed)
+	suite.NotNil(systemCreds)
+	suite.NotEmpty(systemCreds)
 }
 
 func (suite *DeclarativeResourceTestSuite) TestGetResourceRules_IncludesCredentials() {
@@ -284,54 +269,64 @@ func (suite *DeclarativeResourceTestSuite) TestValidateResource_MissingUsername(
 	suite.NotNil(err)
 }
 
-func (suite *DeclarativeResourceTestSuite) TestValidateUserWrapper_Success() {
-	fileStore := &userFileBasedStore{
-		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
-	}
-	user := User{ID: "user-1", Type: "person", OUID: "ou-1"}
+func (suite *DeclarativeResourceTestSuite) TestMakeUserValidator_Success() {
 	attrs, err := json.Marshal(map[string]interface{}{"username": "alice"})
-	suite.NoError(err)
-	user.Attributes = attrs
+	suite.Require().NoError(err)
 
-	resource := &userResource{User: user}
-	storeMock := newUserStoreInterfaceMock(suite.T())
-	storeMock.On("GetUser", context.Background(), "user-1").Return(User{}, ErrUserNotFound)
+	e := &entitypkg.Entity{
+		ID:                 "user-1",
+		Type:               "person",
+		OrganizationUnitID: "ou-1",
+		Attributes:         attrs,
+	}
 
-	err = validateUserWrapper(resource, fileStore, storeMock)
+	svcMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
+	svcMock.On("GetEntity", context.Background(), "user-1").
+		Return((*entitypkg.Entity)(nil), entitypkg.ErrEntityNotFound)
+
+	validator := makeUserValidator()
+	err = validator(e, svcMock)
 	suite.NoError(err)
 }
 
-func (suite *DeclarativeResourceTestSuite) TestValidateUserWrapper_DuplicateFileStore() {
-	fileStore := &userFileBasedStore{
-		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
-	}
-	user := User{ID: "user-1", Type: "person", OUID: "ou-1"}
+func (suite *DeclarativeResourceTestSuite) TestMakeUserValidator_DuplicateEntity() {
 	attrs, err := json.Marshal(map[string]interface{}{"username": "alice"})
-	suite.NoError(err)
-	user.Attributes = attrs
+	suite.Require().NoError(err)
 
-	resource := &userResource{User: user}
-	suite.NoError(fileStore.GenericFileBasedStore.Create("user-1", resource))
+	e := &entitypkg.Entity{
+		ID:                 "user-1",
+		Type:               "person",
+		OrganizationUnitID: "ou-1",
+		Attributes:         attrs,
+	}
 
-	err = validateUserWrapper(resource, fileStore, nil)
+	svcMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
+	svcMock.On("GetEntity", context.Background(), "user-1").
+		Return(&entitypkg.Entity{Category: entitypkg.EntityCategoryUser, ID: "user-1"}, nil)
+
+	validator := makeUserValidator()
+	err = validator(e, svcMock)
 	suite.Error(err)
 	suite.Contains(err.Error(), "duplicate user ID")
 }
 
-func (suite *DeclarativeResourceTestSuite) TestValidateUserWrapper_DBError() {
-	fileStore := &userFileBasedStore{
-		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
-	}
-	user := User{ID: "user-1", Type: "person", OUID: "ou-1"}
+func (suite *DeclarativeResourceTestSuite) TestMakeUserValidator_DBError() {
 	attrs, err := json.Marshal(map[string]interface{}{"username": "alice"})
-	suite.NoError(err)
-	user.Attributes = attrs
+	suite.Require().NoError(err)
 
-	resource := &userResource{User: user}
-	storeMock := newUserStoreInterfaceMock(suite.T())
-	storeMock.On("GetUser", context.Background(), "user-1").Return(User{}, errors.New("db error"))
+	e := &entitypkg.Entity{
+		ID:                 "user-1",
+		Type:               "person",
+		OrganizationUnitID: "ou-1",
+		Attributes:         attrs,
+	}
 
-	err = validateUserWrapper(resource, fileStore, storeMock)
+	svcMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
+	svcMock.On("GetEntity", context.Background(), "user-1").
+		Return((*entitypkg.Entity)(nil), errors.New("db error"))
+
+	validator := makeUserValidator()
+	err = validator(e, svcMock)
 	suite.Error(err)
 	suite.Contains(err.Error(), "checking user existence")
 }

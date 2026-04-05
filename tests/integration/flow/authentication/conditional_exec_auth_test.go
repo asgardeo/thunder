@@ -242,9 +242,9 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err)
 
 	existingUser := testutils.User{
-		Type:             conditionalExecUserSchema.Name,
-		OUID:             conditionalExecPreCreatedOUID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       conditionalExecUserSchema.Name,
+		OUID:       conditionalExecPreCreatedOUID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 	existingUserID, err := testutils.CreateUser(existingUser)
 	ts.Require().NoError(err, "Failed to create existing test user")
@@ -315,6 +315,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	conditionalExecTestApp.AuthFlowID = flowID
 
 	// Create test application
+	conditionalExecTestApp.OUID = conditionalExecPreCreatedOUID
 	appID, err := testutils.CreateApplication(conditionalExecTestApp)
 	ts.Require().NoError(err, "Failed to create test application")
 	conditionalExecTestAppID = appID

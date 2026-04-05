@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 )
@@ -31,9 +32,10 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	appService application.ApplicationServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 	transactioner transaction.Transactioner,
 ) DCRServiceInterface {
-	dcrService := newDCRService(appService, transactioner)
+	dcrService := newDCRService(appService, ouService, transactioner)
 	dcrHandler := newDCRHandler(dcrService)
 	registerRoutes(mux, dcrHandler)
 	return dcrService

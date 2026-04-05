@@ -62,6 +62,18 @@ export interface ApplicationCreateContextType {
   setAppName: (name: string) => void;
 
   /**
+   * The selected organization unit ID
+   * @remark Needed for step 02: Organization Unit selection.
+   */
+  ouId: string;
+
+  /**
+   * Sets the selected organization unit ID
+   * @remark Needed for step 02: Organization Unit selection.
+   */
+  setOuId: (ouId: string) => void;
+
+  /**
    * The ID of the selected theme
    * @remark Needed for step 02: Application Design.
    */

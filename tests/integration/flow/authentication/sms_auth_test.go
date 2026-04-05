@@ -233,7 +233,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -379,6 +379,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 
 	// Create test application
 	smsAuthTestApp.AuthFlowID = flowMobileID
+	smsAuthTestApp.OUID = smsAuthTestOU.ID
 	appID, err := testutils.CreateApplication(smsAuthTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

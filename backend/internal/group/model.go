@@ -28,6 +28,8 @@ const (
 	MemberTypeUser MemberType = "user"
 	// MemberTypeGroup is the type for groups.
 	MemberTypeGroup MemberType = "group"
+	// MemberTypeApp is the type for applications.
+	MemberTypeApp MemberType = "app"
 )
 
 // Member represents a member of a group (either user or another group).

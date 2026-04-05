@@ -278,7 +278,7 @@ describe('useApplicationCreate', () => {
     errorSpy.mockRestore();
   });
 
-  it('has exactly 38 properties in the context interface', () => {
+  it('has exactly 40 properties in the context interface', () => {
     function TestContextProperties() {
       const context = useApplicationCreate();
 
@@ -297,6 +297,6 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('property-count')).toHaveTextContent('38');
+    expect(screen.getByTestId('property-count')).toHaveTextContent('40');
   });
 });

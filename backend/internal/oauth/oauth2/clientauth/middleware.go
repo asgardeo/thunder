@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -29,13 +30,15 @@ import (
 )
 
 // ClientAuthMiddleware authenticates OAuth2 clients and attaches client info to request context.
-func ClientAuthMiddleware(appService application.ApplicationServiceInterface, jwtService jwt.JWTServiceInterface,
+func ClientAuthMiddleware(appService application.ApplicationServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
+	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// Authenticate client
-			clientInfo, authErr := authenticate(ctx, r, appService, jwtService, discoveryService)
+			clientInfo, authErr := authenticate(ctx, r, appService, authnProvider, jwtService, discoveryService)
 			if authErr != nil {
 				// If the client attempted to authenticate via the Authorization
 				// header, include WWW-Authenticate in 401 responses.

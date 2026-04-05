@@ -259,6 +259,7 @@ func (ts *ClaimsParameterTestSuite) createTestApplication(authFlowID string) str
 	app := map[string]interface{}{
 		"name":                      appName,
 		"description":               "Application for Claims Parameter integration tests",
+		"ouId":                      ts.ouID,
 		"authFlowId":                authFlowID,
 		"isRegistrationFlowEnabled": false,
 		"allowedUserTypes":          []string{"claims-test-person"},

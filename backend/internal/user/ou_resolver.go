@@ -21,30 +21,31 @@ package user
 import (
 	"context"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
-// ouUserResolverAdapter implements oupkg.OUUserResolver using the user store.
+// ouUserResolverAdapter implements oupkg.OUUserResolver using the entity service.
 // This adapter allows the OU package to query user data without directly
-// accessing the USER table, breaking the cross-DB access boundary.
+// accessing the entity layer, maintaining proper package boundaries.
 type ouUserResolverAdapter struct {
-	store             userStoreInterface
+	entityService     entity.EntityServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 }
 
-// newOUUserResolver creates a new OUUserResolver backed by the given user store.
+// newOUUserResolver creates a new OUUserResolver backed by the given entity service.
 func newOUUserResolver(
-	store userStoreInterface, userSchemaService userschema.UserSchemaServiceInterface,
+	entityService entity.EntityServiceInterface, userSchemaService userschema.UserSchemaServiceInterface,
 ) oupkg.OUUserResolver {
-	return &ouUserResolverAdapter{store: store, userSchemaService: userSchemaService}
+	return &ouUserResolverAdapter{entityService: entityService, userSchemaService: userSchemaService}
 }
 
 // GetUserCountByOUID returns the count of users belonging to the given organization unit.
 func (a *ouUserResolverAdapter) GetUserCountByOUID(ctx context.Context, ouID string) (int, error) {
-	return a.store.GetUserListCountByOUIDs(ctx, []string{ouID}, nil)
+	return a.entityService.GetEntityListCountByOUIDs(ctx, entity.EntityCategoryUser, []string{ouID}, nil)
 }
 
 // GetUserListByOUID returns a paginated list of users belonging to the given organization unit.
@@ -52,10 +53,12 @@ func (a *ouUserResolverAdapter) GetUserCountByOUID(ctx context.Context, ouID str
 func (a *ouUserResolverAdapter) GetUserListByOUID(
 	ctx context.Context, ouID string, limit, offset int, includeDisplay bool,
 ) ([]oupkg.User, error) {
-	users, err := a.store.GetUserListByOUIDs(ctx, []string{ouID}, limit, offset, nil)
+	entities, err := a.entityService.GetEntityListByOUIDs(
+		ctx, entity.EntityCategoryUser, []string{ouID}, limit, offset, nil)
 	if err != nil {
 		return nil, err
 	}
+	users := entitiesToUsers(entities)
 
 	var displayAttrPaths map[string]string
 	if includeDisplay {

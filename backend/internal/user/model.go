@@ -21,6 +21,7 @@ package user
 import (
 	"encoding/json"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -67,11 +68,11 @@ type UserGroup struct {
 
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
 type UserGroupListResponse struct {
-	TotalResults int          `json:"totalResults"`
-	StartIndex   int          `json:"startIndex"`
-	Count        int          `json:"count"`
-	Groups       []UserGroup  `json:"groups"`
-	Links        []utils.Link `json:"links"`
+	TotalResults int                  `json:"totalResults"`
+	StartIndex   int                  `json:"startIndex"`
+	Count        int                  `json:"count"`
+	Groups       []entity.EntityGroup `json:"groups"`
+	Links        []utils.Link         `json:"links"`
 }
 
 // CreateUserRequest represents the request body for creating a user.
@@ -102,9 +103,58 @@ type CreateUserByPathRequest struct {
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
-// AuthenticateUserResponse represents the response body for authenticating a user.
-type AuthenticateUserResponse struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
-	OUID string `json:"ouId"`
+// entityToUser converts an Entity to a User.
+func entityToUser(e *entity.Entity) User {
+	return User{
+		ID:         e.ID,
+		OUID:       e.OrganizationUnitID,
+		Type:       e.Type,
+		Attributes: e.Attributes,
+		IsReadOnly: e.IsReadOnly,
+	}
+}
+
+// entitiesToUsers converts a slice of Entity to a slice of User.
+func entitiesToUsers(entities []entity.Entity) []User {
+	users := make([]User, len(entities))
+	for i := range entities {
+		users[i] = entityToUser(&entities[i])
+	}
+	return users
+}
+
+// userToEntity converts a User to an Entity for storage.
+func userToEntity(u *User) *entity.Entity {
+	return &entity.Entity{
+		ID:                 u.ID,
+		Category:           entity.EntityCategoryUser,
+		Type:               u.Type,
+		OrganizationUnitID: u.OUID,
+		State:              entity.EntityStateActive,
+		Attributes:         u.Attributes,
+	}
+}
+
+// credentialsToJSON marshals user Credentials to JSON for entity storage.
+func credentialsToJSON(creds Credentials) (json.RawMessage, error) {
+	if len(creds) == 0 {
+		return nil, nil
+	}
+	data, err := json.Marshal(creds)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// jsonToCredentials unmarshals entity system credentials JSON to user Credentials.
+func jsonToCredentials(data json.RawMessage) (Credentials, error) {
+	if len(data) == 0 {
+		return Credentials{}, nil
+	}
+	var creds Credentials
+	if err := json.Unmarshal(data, &creds); err != nil {
+		return nil, err
+	}
+	return creds, nil
 }

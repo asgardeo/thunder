@@ -250,6 +250,7 @@ func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 	app := map[string]interface{}{
 		"name":                      appName,
 		"description":               "Application for UserInfo integration tests",
+		"ouId":                      ts.ouID,
 		"authFlowId":                authFlowID,
 		"isRegistrationFlowEnabled": false,
 		"allowedUserTypes":          []string{"userinfo-person"},
@@ -906,6 +907,7 @@ func (ts *UserInfoTestSuite) createApplicationWithConfig(name string, oauthConfi
 	app := map[string]interface{}{
 		"name":                      name,
 		"description":               "Application for UserInfo integration tests",
+		"ouId":                      ts.ouID,
 		"authFlowId":                ts.flowID,
 		"isRegistrationFlowEnabled": false,
 		"allowedUserTypes":          []string{"userinfo-person"},

@@ -6,8 +6,8 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 
-	"github.com/asgardeo/thunder/internal/application/model"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,7 +39,7 @@ func (_m *applicationStoreInterfaceMock) EXPECT() *applicationStoreInterfaceMock
 }
 
 // CreateApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
+func (_mock *applicationStoreInterfaceMock) CreateApplication(ctx context.Context, app applicationConfigDAO) error {
 	ret := _mock.Called(ctx, app)
 
 	if len(ret) == 0 {
@@ -47,7 +47,7 @@ func (_mock *applicationStoreInterfaceMock) CreateApplication(ctx context.Contex
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, model.ApplicationProcessedDTO) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, applicationConfigDAO) error); ok {
 		r0 = returnFunc(ctx, app)
 	} else {
 		r0 = ret.Error(0)
@@ -62,20 +62,20 @@ type applicationStoreInterfaceMock_CreateApplication_Call struct {
 
 // CreateApplication is a helper method to define mock.On call
 //   - ctx context.Context
-//   - app model.ApplicationProcessedDTO
+//   - app applicationConfigDAO
 func (_e *applicationStoreInterfaceMock_Expecter) CreateApplication(ctx interface{}, app interface{}) *applicationStoreInterfaceMock_CreateApplication_Call {
 	return &applicationStoreInterfaceMock_CreateApplication_Call{Call: _e.mock.On("CreateApplication", ctx, app)}
 }
 
-func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Run(run func(ctx context.Context, app model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_CreateApplication_Call {
+func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Run(run func(ctx context.Context, app applicationConfigDAO)) *applicationStoreInterfaceMock_CreateApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 model.ApplicationProcessedDTO
+		var arg1 applicationConfigDAO
 		if args[1] != nil {
-			arg1 = args[1].(model.ApplicationProcessedDTO)
+			arg1 = args[1].(applicationConfigDAO)
 		}
 		run(
 			arg0,
@@ -90,7 +90,70 @@ func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Return(err error
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_CreateApplication_Call) RunAndReturn(run func(ctx context.Context, app model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_CreateApplication_Call {
+func (_c *applicationStoreInterfaceMock_CreateApplication_Call) RunAndReturn(run func(ctx context.Context, app applicationConfigDAO) error) *applicationStoreInterfaceMock_CreateApplication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateOAuthConfig provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) CreateOAuthConfig(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage) error {
+	ret := _mock.Called(ctx, entityID, oauthConfigJSON)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateOAuthConfig")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage) error); ok {
+		r0 = returnFunc(ctx, entityID, oauthConfigJSON)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// applicationStoreInterfaceMock_CreateOAuthConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOAuthConfig'
+type applicationStoreInterfaceMock_CreateOAuthConfig_Call struct {
+	*mock.Call
+}
+
+// CreateOAuthConfig is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityID string
+//   - oauthConfigJSON json.RawMessage
+func (_e *applicationStoreInterfaceMock_Expecter) CreateOAuthConfig(ctx interface{}, entityID interface{}, oauthConfigJSON interface{}) *applicationStoreInterfaceMock_CreateOAuthConfig_Call {
+	return &applicationStoreInterfaceMock_CreateOAuthConfig_Call{Call: _e.mock.On("CreateOAuthConfig", ctx, entityID, oauthConfigJSON)}
+}
+
+func (_c *applicationStoreInterfaceMock_CreateOAuthConfig_Call) Run(run func(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage)) *applicationStoreInterfaceMock_CreateOAuthConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 json.RawMessage
+		if args[2] != nil {
+			arg2 = args[2].(json.RawMessage)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_CreateOAuthConfig_Call) Return(err error) *applicationStoreInterfaceMock_CreateOAuthConfig_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_CreateOAuthConfig_Call) RunAndReturn(run func(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage) error) *applicationStoreInterfaceMock_CreateOAuthConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -152,24 +215,81 @@ func (_c *applicationStoreInterfaceMock_DeleteApplication_Call) RunAndReturn(run
 	return _c
 }
 
+// DeleteOAuthConfig provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) DeleteOAuthConfig(ctx context.Context, entityID string) error {
+	ret := _mock.Called(ctx, entityID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteOAuthConfig")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, entityID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// applicationStoreInterfaceMock_DeleteOAuthConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteOAuthConfig'
+type applicationStoreInterfaceMock_DeleteOAuthConfig_Call struct {
+	*mock.Call
+}
+
+// DeleteOAuthConfig is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityID string
+func (_e *applicationStoreInterfaceMock_Expecter) DeleteOAuthConfig(ctx interface{}, entityID interface{}) *applicationStoreInterfaceMock_DeleteOAuthConfig_Call {
+	return &applicationStoreInterfaceMock_DeleteOAuthConfig_Call{Call: _e.mock.On("DeleteOAuthConfig", ctx, entityID)}
+}
+
+func (_c *applicationStoreInterfaceMock_DeleteOAuthConfig_Call) Run(run func(ctx context.Context, entityID string)) *applicationStoreInterfaceMock_DeleteOAuthConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_DeleteOAuthConfig_Call) Return(err error) *applicationStoreInterfaceMock_DeleteOAuthConfig_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_DeleteOAuthConfig_Call) RunAndReturn(run func(ctx context.Context, entityID string) error) *applicationStoreInterfaceMock_DeleteOAuthConfig_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetApplicationByID provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
+func (_mock *applicationStoreInterfaceMock) GetApplicationByID(ctx context.Context, id string) (*applicationConfigDAO, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetApplicationByID")
 	}
 
-	var r0 *model.ApplicationProcessedDTO
+	var r0 *applicationConfigDAO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.ApplicationProcessedDTO, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*applicationConfigDAO, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.ApplicationProcessedDTO); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *applicationConfigDAO); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.ApplicationProcessedDTO)
+			r0 = ret.Get(0).(*applicationConfigDAO)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -210,102 +330,34 @@ func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) Run(run func(ct
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) Return(applicationProcessedDTO *model.ApplicationProcessedDTO, err error) *applicationStoreInterfaceMock_GetApplicationByID_Call {
-	_c.Call.Return(applicationProcessedDTO, err)
+func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) Return(applicationConfigDAOMoqParam *applicationConfigDAO, err error) *applicationStoreInterfaceMock_GetApplicationByID_Call {
+	_c.Call.Return(applicationConfigDAOMoqParam, err)
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error)) *applicationStoreInterfaceMock_GetApplicationByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetApplicationByName provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetApplicationByName(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
-	ret := _mock.Called(ctx, name)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetApplicationByName")
-	}
-
-	var r0 *model.ApplicationProcessedDTO
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.ApplicationProcessedDTO, error)); ok {
-		return returnFunc(ctx, name)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.ApplicationProcessedDTO); ok {
-		r0 = returnFunc(ctx, name)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.ApplicationProcessedDTO)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, name)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// applicationStoreInterfaceMock_GetApplicationByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetApplicationByName'
-type applicationStoreInterfaceMock_GetApplicationByName_Call struct {
-	*mock.Call
-}
-
-// GetApplicationByName is a helper method to define mock.On call
-//   - ctx context.Context
-//   - name string
-func (_e *applicationStoreInterfaceMock_Expecter) GetApplicationByName(ctx interface{}, name interface{}) *applicationStoreInterfaceMock_GetApplicationByName_Call {
-	return &applicationStoreInterfaceMock_GetApplicationByName_Call{Call: _e.mock.On("GetApplicationByName", ctx, name)}
-}
-
-func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) Run(run func(ctx context.Context, name string)) *applicationStoreInterfaceMock_GetApplicationByName_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) Return(applicationProcessedDTO *model.ApplicationProcessedDTO, err error) *applicationStoreInterfaceMock_GetApplicationByName_Call {
-	_c.Call.Return(applicationProcessedDTO, err)
-	return _c
-}
-
-func (_c *applicationStoreInterfaceMock_GetApplicationByName_Call) RunAndReturn(run func(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error)) *applicationStoreInterfaceMock_GetApplicationByName_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*applicationConfigDAO, error)) *applicationStoreInterfaceMock_GetApplicationByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetApplicationList provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
+func (_mock *applicationStoreInterfaceMock) GetApplicationList(ctx context.Context) ([]applicationConfigDAO, error) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetApplicationList")
 	}
 
-	var r0 []model.BasicApplicationDTO
+	var r0 []applicationConfigDAO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]model.BasicApplicationDTO, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]applicationConfigDAO, error)); ok {
 		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []model.BasicApplicationDTO); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []applicationConfigDAO); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.BasicApplicationDTO)
+			r0 = ret.Get(0).([]applicationConfigDAO)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
@@ -340,57 +392,57 @@ func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) Run(run func(ct
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) Return(basicApplicationDTOs []model.BasicApplicationDTO, err error) *applicationStoreInterfaceMock_GetApplicationList_Call {
-	_c.Call.Return(basicApplicationDTOs, err)
+func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) Return(applicationConfigDAOMoqParams []applicationConfigDAO, err error) *applicationStoreInterfaceMock_GetApplicationList_Call {
+	_c.Call.Return(applicationConfigDAOMoqParams, err)
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) RunAndReturn(run func(ctx context.Context) ([]model.BasicApplicationDTO, error)) *applicationStoreInterfaceMock_GetApplicationList_Call {
+func (_c *applicationStoreInterfaceMock_GetApplicationList_Call) RunAndReturn(run func(ctx context.Context) ([]applicationConfigDAO, error)) *applicationStoreInterfaceMock_GetApplicationList_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetOAuthApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) GetOAuthApplication(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
-	ret := _mock.Called(ctx, clientID)
+// GetOAuthConfigByEntityID provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) GetOAuthConfigByEntityID(ctx context.Context, entityID string) (*oauthConfigDAO, error) {
+	ret := _mock.Called(ctx, entityID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetOAuthApplication")
+		panic("no return value specified for GetOAuthConfigByEntityID")
 	}
 
-	var r0 *model.OAuthAppConfigProcessedDTO
+	var r0 *oauthConfigDAO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*model.OAuthAppConfigProcessedDTO, error)); ok {
-		return returnFunc(ctx, clientID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*oauthConfigDAO, error)); ok {
+		return returnFunc(ctx, entityID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *model.OAuthAppConfigProcessedDTO); ok {
-		r0 = returnFunc(ctx, clientID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *oauthConfigDAO); ok {
+		r0 = returnFunc(ctx, entityID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthAppConfigProcessedDTO)
+			r0 = ret.Get(0).(*oauthConfigDAO)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, clientID)
+		r1 = returnFunc(ctx, entityID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// applicationStoreInterfaceMock_GetOAuthApplication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOAuthApplication'
-type applicationStoreInterfaceMock_GetOAuthApplication_Call struct {
+// applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOAuthConfigByEntityID'
+type applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call struct {
 	*mock.Call
 }
 
-// GetOAuthApplication is a helper method to define mock.On call
+// GetOAuthConfigByEntityID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - clientID string
-func (_e *applicationStoreInterfaceMock_Expecter) GetOAuthApplication(ctx interface{}, clientID interface{}) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
-	return &applicationStoreInterfaceMock_GetOAuthApplication_Call{Call: _e.mock.On("GetOAuthApplication", ctx, clientID)}
+//   - entityID string
+func (_e *applicationStoreInterfaceMock_Expecter) GetOAuthConfigByEntityID(ctx interface{}, entityID interface{}) *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call {
+	return &applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call{Call: _e.mock.On("GetOAuthConfigByEntityID", ctx, entityID)}
 }
 
-func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) Run(run func(ctx context.Context, clientID string)) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
+func (_c *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call) Run(run func(ctx context.Context, entityID string)) *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -408,12 +460,12 @@ func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) Run(run func(c
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) Return(oAuthAppConfigProcessedDTO *model.OAuthAppConfigProcessedDTO, err error) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
-	_c.Call.Return(oAuthAppConfigProcessedDTO, err)
+func (_c *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call) Return(oauthConfigDAOMoqParam *oauthConfigDAO, err error) *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call {
+	_c.Call.Return(oauthConfigDAOMoqParam, err)
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_GetOAuthApplication_Call) RunAndReturn(run func(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error)) *applicationStoreInterfaceMock_GetOAuthApplication_Call {
+func (_c *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call) RunAndReturn(run func(ctx context.Context, entityID string) (*oauthConfigDAO, error)) *applicationStoreInterfaceMock_GetOAuthConfigByEntityID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -601,83 +653,17 @@ func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) RunAndReturn(r
 	return _c
 }
 
-// IsApplicationExistsByName provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
-	ret := _mock.Called(ctx, name)
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsApplicationExistsByName")
-	}
-
-	var r0 bool
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
-		return returnFunc(ctx, name)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
-		r0 = returnFunc(ctx, name)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, name)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// applicationStoreInterfaceMock_IsApplicationExistsByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsApplicationExistsByName'
-type applicationStoreInterfaceMock_IsApplicationExistsByName_Call struct {
-	*mock.Call
-}
-
-// IsApplicationExistsByName is a helper method to define mock.On call
-//   - ctx context.Context
-//   - name string
-func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExistsByName(ctx interface{}, name interface{}) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
-	return &applicationStoreInterfaceMock_IsApplicationExistsByName_Call{Call: _e.mock.On("IsApplicationExistsByName", ctx, name)}
-}
-
-func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Run(run func(ctx context.Context, name string)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Return(b bool, err error) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
-	_c.Call.Return(b, err)
-	return _c
-}
-
-func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // UpdateApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) UpdateApplication(ctx context.Context, existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error {
-	ret := _mock.Called(ctx, existingApp, updatedApp)
+func (_mock *applicationStoreInterfaceMock) UpdateApplication(ctx context.Context, app applicationConfigDAO) error {
+	ret := _mock.Called(ctx, app)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateApplication")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *model.ApplicationProcessedDTO, *model.ApplicationProcessedDTO) error); ok {
-		r0 = returnFunc(ctx, existingApp, updatedApp)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, applicationConfigDAO) error); ok {
+		r0 = returnFunc(ctx, app)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -691,30 +677,24 @@ type applicationStoreInterfaceMock_UpdateApplication_Call struct {
 
 // UpdateApplication is a helper method to define mock.On call
 //   - ctx context.Context
-//   - existingApp *model.ApplicationProcessedDTO
-//   - updatedApp *model.ApplicationProcessedDTO
-func (_e *applicationStoreInterfaceMock_Expecter) UpdateApplication(ctx interface{}, existingApp interface{}, updatedApp interface{}) *applicationStoreInterfaceMock_UpdateApplication_Call {
-	return &applicationStoreInterfaceMock_UpdateApplication_Call{Call: _e.mock.On("UpdateApplication", ctx, existingApp, updatedApp)}
+//   - app applicationConfigDAO
+func (_e *applicationStoreInterfaceMock_Expecter) UpdateApplication(ctx interface{}, app interface{}) *applicationStoreInterfaceMock_UpdateApplication_Call {
+	return &applicationStoreInterfaceMock_UpdateApplication_Call{Call: _e.mock.On("UpdateApplication", ctx, app)}
 }
 
-func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) Run(run func(ctx context.Context, existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_UpdateApplication_Call {
+func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) Run(run func(ctx context.Context, app applicationConfigDAO)) *applicationStoreInterfaceMock_UpdateApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *model.ApplicationProcessedDTO
+		var arg1 applicationConfigDAO
 		if args[1] != nil {
-			arg1 = args[1].(*model.ApplicationProcessedDTO)
-		}
-		var arg2 *model.ApplicationProcessedDTO
-		if args[2] != nil {
-			arg2 = args[2].(*model.ApplicationProcessedDTO)
+			arg1 = args[1].(applicationConfigDAO)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -725,7 +705,70 @@ func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) Return(err error
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) RunAndReturn(run func(ctx context.Context, existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_UpdateApplication_Call {
+func (_c *applicationStoreInterfaceMock_UpdateApplication_Call) RunAndReturn(run func(ctx context.Context, app applicationConfigDAO) error) *applicationStoreInterfaceMock_UpdateApplication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateOAuthConfig provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) UpdateOAuthConfig(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage) error {
+	ret := _mock.Called(ctx, entityID, oauthConfigJSON)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateOAuthConfig")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage) error); ok {
+		r0 = returnFunc(ctx, entityID, oauthConfigJSON)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// applicationStoreInterfaceMock_UpdateOAuthConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateOAuthConfig'
+type applicationStoreInterfaceMock_UpdateOAuthConfig_Call struct {
+	*mock.Call
+}
+
+// UpdateOAuthConfig is a helper method to define mock.On call
+//   - ctx context.Context
+//   - entityID string
+//   - oauthConfigJSON json.RawMessage
+func (_e *applicationStoreInterfaceMock_Expecter) UpdateOAuthConfig(ctx interface{}, entityID interface{}, oauthConfigJSON interface{}) *applicationStoreInterfaceMock_UpdateOAuthConfig_Call {
+	return &applicationStoreInterfaceMock_UpdateOAuthConfig_Call{Call: _e.mock.On("UpdateOAuthConfig", ctx, entityID, oauthConfigJSON)}
+}
+
+func (_c *applicationStoreInterfaceMock_UpdateOAuthConfig_Call) Run(run func(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage)) *applicationStoreInterfaceMock_UpdateOAuthConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 json.RawMessage
+		if args[2] != nil {
+			arg2 = args[2].(json.RawMessage)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_UpdateOAuthConfig_Call) Return(err error) *applicationStoreInterfaceMock_UpdateOAuthConfig_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_UpdateOAuthConfig_Call) RunAndReturn(run func(ctx context.Context, entityID string, oauthConfigJSON json.RawMessage) error) *applicationStoreInterfaceMock_UpdateOAuthConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }

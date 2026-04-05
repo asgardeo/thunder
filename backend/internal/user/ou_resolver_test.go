@@ -27,18 +27,21 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	entitypkg "github.com/asgardeo/thunder/internal/entity"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListCountByOUIDs", context.Background(), []string{"ou-1"}, (map[string]interface{})(nil)).
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListCountByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, (map[string]interface{})(nil)).
 			Return(5, nil).Once()
 
-		resolver := newOUUserResolver(store, nil)
+		resolver := newOUUserResolver(svc, nil)
 		count, err := resolver.GetUserCountByOUID(context.Background(), "ou-1")
 
 		require.NoError(t, err)
@@ -46,11 +49,12 @@ func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
 	})
 
 	t.Run("store error", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListCountByOUIDs", context.Background(), []string{"ou-1"}, (map[string]interface{})(nil)).
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListCountByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, (map[string]interface{})(nil)).
 			Return(0, errors.New("db error")).Once()
 
-		resolver := newOUUserResolver(store, nil)
+		resolver := newOUUserResolver(svc, nil)
 		count, err := resolver.GetUserCountByOUID(context.Background(), "ou-1")
 
 		require.Error(t, err)
@@ -60,11 +64,15 @@ func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
 
 func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
-			Return([]User{{ID: "user-1"}, {ID: "user-2"}}, nil).Once()
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]entitypkg.Entity{
+				{ID: "user-1"},
+				{ID: "user-2"},
+			}, nil).Once()
 
-		resolver := newOUUserResolver(store, nil)
+		resolver := newOUUserResolver(svc, nil)
 		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, false)
 
 		require.NoError(t, err)
@@ -74,11 +82,12 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 	})
 
 	t.Run("store error", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
-			Return([]User(nil), errors.New("db error")).Once()
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]entitypkg.Entity(nil), errors.New("db error")).Once()
 
-		resolver := newOUUserResolver(store, nil)
+		resolver := newOUUserResolver(svc, nil)
 		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, false)
 
 		require.Error(t, err)
@@ -86,11 +95,12 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 	})
 
 	t.Run("empty results", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
-			Return([]User{}, nil).Once()
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]entitypkg.Entity{}, nil).Once()
 
-		resolver := newOUUserResolver(store, nil)
+		resolver := newOUUserResolver(svc, nil)
 		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, false)
 
 		require.NoError(t, err)
@@ -98,9 +108,10 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 	})
 
 	t.Run("with display resolution", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
-			Return([]User{
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]entitypkg.Entity{
 				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"email":"alice@example.com"}`)},
 				{ID: "user-2", Type: "contractor", Attributes: json.RawMessage(`{"profile":{"fullName":"Bob Smith"}}`)},
 			}, nil).Once()
@@ -118,7 +129,7 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 			"contractor": "profile.fullName",
 		}, (*serviceerror.ServiceError)(nil)).Once()
 
-		resolver := newOUUserResolver(store, schemaMock)
+		resolver := newOUUserResolver(svc, schemaMock)
 		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, true)
 
 		require.NoError(t, err)
@@ -130,9 +141,10 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 	})
 
 	t.Run("display fallback to ID on schema error", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
-			Return([]User{
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]entitypkg.Entity{
 				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"email":"alice@example.com"}`)},
 			}, nil).Once()
 
@@ -141,7 +153,7 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 			Return((map[string]string)(nil), schemaErr).Once()
 
-		resolver := newOUUserResolver(store, schemaMock)
+		resolver := newOUUserResolver(svc, schemaMock)
 		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, true)
 
 		require.NoError(t, err)
@@ -152,9 +164,10 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 	})
 
 	t.Run("display fallback to ID on attribute mismatch", func(t *testing.T) {
-		store := newUserStoreInterfaceMock(t)
-		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
-			Return([]User{
+		svc := entitymock.NewEntityServiceInterfaceMock(t)
+		svc.On("GetEntityListByOUIDs", context.Background(),
+			entitypkg.EntityCategoryUser, []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]entitypkg.Entity{
 				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
 			}, nil).Once()
 
@@ -162,7 +175,7 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 			Return(map[string]string{"employee": "email"}, (*serviceerror.ServiceError)(nil)).Once()
 
-		resolver := newOUUserResolver(store, schemaMock)
+		resolver := newOUUserResolver(svc, schemaMock)
 		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, true)
 
 		require.NoError(t, err)

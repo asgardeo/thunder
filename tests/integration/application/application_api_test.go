@@ -152,6 +152,9 @@ func (ts *ApplicationAPITestSuite) SetupSuite() {
 	ouID, err := testutils.CreateOrganizationUnit(testOU)
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	testOUID = ouID
+	testApp.OUID = testOUID
+	appToCreate.OUID = testOUID
+	appToUpdate.OUID = testOUID
 
 	// Get Flow IDs
 	defaultAuthFlowID, err = testutils.GetFlowIDByHandle("default-basic-flow", "AUTHENTICATION")
@@ -264,6 +267,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListing() {
 func (ts *ApplicationAPITestSuite) TestApplicationListingWithLogoURL() {
 	// Create two applications: one with logo_url and one without
 	appWithLogo := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Logo",
 		Description:               "Application with logo URL",
 		AuthFlowID:                defaultAuthFlowID,
@@ -293,6 +297,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListingWithLogoURL() {
 	}
 
 	appWithoutLogo := Application{
+		OUID:                      testOUID,
 		Name:                      "App Without Logo",
 		Description:               "Application without logo URL",
 		AuthFlowID:                defaultAuthFlowID,
@@ -645,6 +650,7 @@ func deleteApplication(appID string) error {
 // TestApplicationCreationWithDefaults tests that applications created without grant_types, response_types, or token_endpoint_auth_method get proper defaults
 func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 	appWithDefaults := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Defaults",
 		Description:               "Application to test default values",
 		URL:                       "https://defaults.example.com",
@@ -718,6 +724,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 // TestApplicationCreationWithInvalidTokenEndpointAuthMethod tests validation of invalid token_endpoint_auth_method values
 func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpointAuthMethod() {
 	appWithInvalidAuthMethod := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Invalid Auth Method",
 		Description:               "Application to test invalid token endpoint auth method",
 		URL:                       "https://invalid.example.com",
@@ -752,6 +759,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 	}
 
 	appWithEmptyAuthMethod := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Empty Auth Method",
 		Description:               "Application to test empty token endpoint auth method",
 		URL:                       "https://empty.example.com",
@@ -823,6 +831,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithInvalidTokenEndpoi
 // TestApplicationCreationWithPartialDefaults tests applications with some fields missing (partial defaults)
 func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPartialDefaults() {
 	appWithPartialDefaults := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Partial Defaults",
 		Description:               "Application to test partial default values",
 		URL:                       "https://partial.example.com",
@@ -909,6 +918,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 		{
 			name: "successful creation with JWKS_URI certificate",
 			app: Application{
+				OUID:                      testOUID,
 				Name:                      "Private Key JWT JWKS URI App",
 				Description:               "Application with private_key_jwt and JWKS_URI certificate",
 				URL:                       "https://pkjwt-jwksuri.example.com",
@@ -940,6 +950,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 		{
 			name: "successful creation with inline JWKS certificate",
 			app: Application{
+				OUID:                      testOUID,
 				Name:                      "Private Key JWT JWKS App",
 				Description:               "Application with private_key_jwt and inline JWKS certificate",
 				URL:                       "https://pkjwt-jwks.example.com",
@@ -971,6 +982,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 		{
 			name: "failure - private_key_jwt without certificate (NONE type)",
 			app: Application{
+				OUID:                      testOUID,
 				Name:                      "Private Key JWT No Cert App",
 				Description:               "Application with private_key_jwt but no certificate",
 				URL:                       "https://pkjwt-nocert.example.com",
@@ -1000,6 +1012,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 		{
 			name: "failure - private_key_jwt with client secret",
 			app: Application{
+				OUID:                      testOUID,
 				Name:                      "Private Key JWT With Secret App",
 				Description:               "Application with private_key_jwt and client secret",
 				URL:                       "https://pkjwt-secret.example.com",
@@ -1064,6 +1077,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
 // TestApplicationWithJWKSURICertificate tests creating application with JWKS_URI certificate.
 func (ts *ApplicationAPITestSuite) TestApplicationWithJWKSURICertificate() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "JWKS URI Certificate Test App",
 		Description: "Test application with JWKS_URI certificate",
 		URL:         "https://jwksuri.example.com",
@@ -1106,6 +1120,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithJWKSCertificate() {
 	jwksJSON := `{"keys":[{"kty":"RSA","use":"sig","kid":"test-key","n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e":"AQAB"}]}`
 
 	app := Application{
+		OUID:        testOUID,
 		Name:        "JWKS Inline Certificate Test App",
 		Description: "Test application with inline JWKS certificate",
 		URL:         "https://jwks.example.com",
@@ -1152,6 +1167,7 @@ func (ts *ApplicationAPITestSuite) TestCreateApplicationCertLifecycle() {
 	const jwksURI = "https://cert-lifecycle.example.com/.well-known/jwks.json"
 
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "Cert Lifecycle Test App",
 		Description:               "Test cert lifecycle atomicity with app lifecycle",
 		URL:                       "https://cert-lifecycle.example.com",
@@ -1235,6 +1251,7 @@ func (ts *ApplicationAPITestSuite) TestConcurrentApplicationCreationCertAtomicit
 
 	makeApp := func(name string) Application {
 		return Application{
+			OUID:                      testOUID,
 			Name:                      name,
 			Description:               "Concurrent cert atomicity test",
 			URL:                       "https://cert-concurrent.example.com",
@@ -1332,6 +1349,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationScopesAsArray() {
 	expectedScopes := []string{"openid", "profile", "email", "address", "phone"}
 
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Scopes Array Test App",
 		Description: "Test application with scopes as array",
 		URL:         "https://scopes.example.com",
@@ -1363,6 +1381,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationScopesAsArray() {
 // TestApplicationWithMultipleScopesAndCertificate tests creating application with both scopes and certificate.
 func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleScopesAndCertificate() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Multi Feature Test App",
 		Description: "Test application with certificate and scopes",
 		URL:         "https://multi.example.com",
@@ -1393,6 +1412,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleScopesAndCertifica
 // TestApplicationRedirectURIFragmentValidation tests that redirect URIs with fragments are rejected.
 func (ts *ApplicationAPITestSuite) TestApplicationRedirectURIFragmentValidation() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Invalid Redirect URI Test",
 		Description: "Test redirect URI validation",
 		URL:         "https://invalid.example.com",
@@ -1416,6 +1436,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationRedirectURIFragmentValidation(
 // TestApplicationEmptyScopesArray tests that empty scopes array is accepted.
 func (ts *ApplicationAPITestSuite) TestApplicationEmptyScopesArray() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Empty Scopes Test App",
 		Description: "Test application with empty scopes",
 		URL:         "https://emptyscopes.example.com",
@@ -1446,6 +1467,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationEmptyScopesArray() {
 // TestApplicationCertificateUpdate tests updating application certificate.
 func (ts *ApplicationAPITestSuite) TestApplicationCertificateUpdate() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Certificate Update Test App",
 		Description: "Test certificate updates",
 		URL:         "https://certupdate.example.com",
@@ -1502,6 +1524,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCertificateUpdate() {
 // TestOAuthAppCertificateUpdate tests updating OAuth app certificate.
 func (ts *ApplicationAPITestSuite) TestOAuthAppCertificateUpdate() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "OAuth Cert Update Test",
 		Description: "Test OAuth certificate updates",
 		URL:         "https://oauthcertupdate.example.com",
@@ -1545,6 +1568,7 @@ func (ts *ApplicationAPITestSuite) TestOAuthAppCertificateUpdate() {
 // TestApplicationInvalidCertificateType tests invalid certificate type rejection.
 func (ts *ApplicationAPITestSuite) TestApplicationInvalidCertificateType() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Invalid Cert Type Test",
 		Description: "Test invalid certificate type",
 		URL:         "https://invalidcert.example.com",
@@ -1570,6 +1594,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationInvalidCertificateType() {
 // TestApplicationInvalidJWKSURI tests invalid JWKS_URI rejection.
 func (ts *ApplicationAPITestSuite) TestApplicationInvalidJWKSURI() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Invalid JWKS URI Test",
 		Description: "Test invalid JWKS URI",
 		URL:         "https://invalidjwksuri.example.com",
@@ -1595,6 +1620,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationInvalidJWKSURI() {
 // TestApplicationEmptyJWKS tests empty JWKS value rejection.
 func (ts *ApplicationAPITestSuite) TestApplicationEmptyJWKS() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Empty JWKS Test",
 		Description: "Test empty JWKS",
 		URL:         "https://emptyjwks.example.com",
@@ -1621,6 +1647,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationEmptyJWKS() {
 func (ts *ApplicationAPITestSuite) TestApplicationPublicClientValidations() {
 	// Public client with wrong auth method
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Public Client Invalid Auth",
 		Description: "Test public client validations",
 		URL:         "https://publicclienttest.example.com",
@@ -1656,6 +1683,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationPublicClientValidations() {
 func (ts *ApplicationAPITestSuite) TestApplicationOAuthConfigValidations() {
 	// authorization_code without redirect_uris
 	app := Application{
+		OUID:        testOUID,
 		Name:        "OAuth Config No RedirectURIs",
 		Description: "Test OAuth config validations",
 		URL:         "https://oauthconfigtest.example.com",
@@ -1696,6 +1724,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationOAuthConfigValidations() {
 // TestApplicationWithTokenConfiguration tests creating and updating applications with token config.
 func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Token Config Test App",
 		Description: "Test application with token configuration",
 		URL:         "https://tokenconfig.example.com",
@@ -1744,6 +1773,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 // TestApplicationWithIDTokenScopeClaims tests ID token scope claims configuration.
 func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "ID Token Scope Claims Test",
 		Description: "Test ID token scope claims",
 		URL:         "https://idtokenclaims.example.com",
@@ -1790,6 +1820,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges() {
 	// Create app with basic token config
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Token Config Update Test",
 		Description: "Test token config updates",
 		URL:         "https://tokenconfigupdate.example.com",
@@ -1853,6 +1884,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 // TestApplicationWithPKCERequired tests creating application with PKCE requirement.
 func (ts *ApplicationAPITestSuite) TestApplicationWithPKCERequired() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "PKCE Required Test",
 		Description: "Test PKCE required configuration",
 		URL:         "https://pkce.example.com",
@@ -1891,6 +1923,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListRetrievesMultiple() {
 
 	for i := 0; i < 3; i++ {
 		app := Application{
+			OUID:        testOUID,
 			Name:        fmt.Sprintf("List Test App %d", i),
 			Description: fmt.Sprintf("Test application %d", i),
 			URL:         fmt.Sprintf("https://listtest%d.example.com", i),
@@ -1939,6 +1972,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListRetrievesMultiple() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateCompleteOAuthConfig() {
 	// Create with minimal config
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Complete OAuth Update Test",
 		Description: "Test complete OAuth config update",
 		URL:         "https://completeoauth.example.com",
@@ -2029,6 +2063,7 @@ func getApplicationByID(appID string) (*Application, error) {
 // TestApplicationWithOnlyAccessToken tests creating application with only AccessToken config.
 func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Only Access Token Test",
 		Description: "Test with only access token config",
 		URL:         "https://accesstokenonly.example.com",
@@ -2070,6 +2105,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 // TestApplicationWithOnlyIDToken tests creating application with only IDToken config.
 func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Only ID Token Test",
 		Description: "Test with only ID token config",
 		URL:         "https://idtokenonly.example.com",
@@ -2115,6 +2151,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 // TestApplicationWithBothTokenTypes tests creating application with both AccessToken and IDToken.
 func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Both Token Types Test",
 		Description: "Test with both access and ID tokens",
 		URL:         "https://bothtokens.example.com",
@@ -2165,6 +2202,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveOAuthConfig() {
 	// Create app with OAuth config
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Remove OAuth Config Test",
 		Description: "Test removing OAuth config",
 		URL:         "https://removeoauth.example.com",
@@ -2209,6 +2247,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveOAuthConfig() {
 // TestApplicationWithMultipleGrantAndResponseTypes tests multiple grant/response types conversion.
 func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleGrantAndResponseTypes() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Multiple Grant Types Test",
 		Description: "Test with multiple grant and response types",
 		URL:         "https://multiplegrants.example.com",
@@ -2252,6 +2291,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleGrantAndResponseTy
 // TestApplicationWithMinimalTokenConfig tests minimal token configuration.
 func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Minimal Token Config Test",
 		Description: "Test with minimal token config",
 		URL:         "https://minimaltoken.example.com",
@@ -2286,6 +2326,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 // TestApplicationWithComplexScopeClaims tests complex scope claims mapping.
 func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Complex Scope Claims Test",
 		Description: "Test with complex scope claims",
 		URL:         "https://complexscopes.example.com",
@@ -2343,6 +2384,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 func (ts *ApplicationAPITestSuite) TestApplicationCertificateRollbackOnOAuthFail() {
 	// Try to create app with invalid OAuth config (should trigger rollback)
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Certificate Rollback Test",
 		Description: "Test certificate rollback on OAuth failure",
 		URL:         "https://rollback.example.com",
@@ -2372,6 +2414,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCertificateRollbackOnOAuthFail
 func (ts *ApplicationAPITestSuite) TestApplicationGetByName() {
 	uniqueName := fmt.Sprintf("Get By Name Test %d", time.Now().UnixNano())
 	app := Application{
+		OUID:        testOUID,
 		Name:        uniqueName,
 		Description: "Test get by name",
 		URL:         "https://getbyname.example.com",
@@ -2407,6 +2450,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationGetByName() {
 // TestApplicationWithOAuthCertificateEmptyJWKSURI tests OAuth cert with empty JWKS_URI.
 func (ts *ApplicationAPITestSuite) TestApplicationWithOAuthCertificateEmptyJWKSURI() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "OAuth Empty JWKS URI Test",
 		Description: "Test OAuth certificate with empty JWKS_URI",
 		URL:         "https://oauthemptyjwksuri.example.com",
@@ -2436,6 +2480,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOAuthCertificateEmptyJWKSU
 func (ts *ApplicationAPITestSuite) TestApplicationValidationGrantTypeResponseTypeIncompat() {
 	// authorization_code without 'code' in response_types
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Grant Response Incompat Test",
 		Description: "Test incompatible grant and response types",
 		URL:         "https://grantresponseincompat.example.com",
@@ -2461,6 +2506,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationValidationGrantTypeResponseTyp
 // TestApplicationMultipleRedirectURIValidation tests multiple redirect URI validation.
 func (ts *ApplicationAPITestSuite) TestApplicationMultipleRedirectURIValidation() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Multiple Redirect URI Validation Test",
 		Description: "Test validation of multiple redirect URIs",
 		URL:         "https://multiredirect.example.com",
@@ -2491,6 +2537,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationMultipleRedirectURIValidation(
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateAddOAuthConfig() {
 	// Create app without OAuth config
 	app := Application{
+		OUID:              testOUID,
 		Name:              "Add OAuth Config Test",
 		Description:       "Test adding OAuth config via update",
 		URL:               "https://addoauth.example.com",
@@ -2540,6 +2587,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationTotalCountRetrieval() {
 	appIDs := make([]string, 0)
 	for i := 0; i < 2; i++ {
 		app := Application{
+			OUID:        testOUID,
 			Name:        fmt.Sprintf("Count Test App %d", i),
 			Description: "Test count",
 			URL:         fmt.Sprintf("https://counttest%d.example.com", i),
@@ -2585,6 +2633,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationTotalCountRetrieval() {
 // TestApplicationWithCompleteMetadata tests creating an application with all metadata fields.
 func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Complete Metadata App",
 		Description: "App with all metadata",
 		URL:         "https://completemeta.example.com",
@@ -2676,6 +2725,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 // TestApplicationWithOnlyRootToken tests app with only root token config.
 func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Root Token Only App",
 		Description: "App with only root token",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2698,6 +2748,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateMetadataFields() {
 	// Create initial app
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Update Metadata App",
 		Description: "Initial description",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2750,6 +2801,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateMetadataFields() {
 // TestApplicationPublicClientWithoutSecret tests public client creation without client secret.
 func (ts *ApplicationAPITestSuite) TestApplicationPublicClientWithoutSecret() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Public Client No Secret",
 		Description: "Public client without secret",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2783,6 +2835,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationPublicClientWithoutSecret() {
 // TestApplicationPublicClientPKCEValidation tests that public clients must have PKCE required.
 func (ts *ApplicationAPITestSuite) TestApplicationPublicClientPKCEValidation() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Public Client PKCE Validation",
 		Description: "Public client with PKCE explicitly set to false should fail",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2812,6 +2865,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationPublicClientPKCEValidation() {
 // TestApplicationWithRefreshTokenGrant tests app with refresh_token grant.
 func (ts *ApplicationAPITestSuite) TestApplicationWithRefreshTokenGrant() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Refresh Token App",
 		Description: "App with refresh token grant",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2843,6 +2897,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithRefreshTokenGrant() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	// Create app with initial token config
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Update Token Config App",
 		Description: "App to update token config",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2893,6 +2948,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 // TestApplicationWithEmptyContacts tests app with empty contacts array.
 func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyContacts() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Empty Contacts App",
 		Description: "App with empty contacts",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2911,6 +2967,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyContacts() {
 // TestApplicationClientCredentialsGrant tests app with client_credentials grant.
 func (ts *ApplicationAPITestSuite) TestApplicationClientCredentialsGrant() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Client Credentials App",
 		Description: "App with client credentials grant",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2940,6 +2997,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationClientCredentialsGrant() {
 // TestApplicationWithIDTokenScopeClaimsOnly tests app with only ID token scope claims.
 func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "ID Token Scope Claims App",
 		Description: "App with ID token scope claims only",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -2988,6 +3046,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationGetByNonExistentID() {
 // TestApplicationWithMultipleRedirectURIsAndScopes tests app with multiple redirect URIs and scopes.
 func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleRedirectURIsAndScopes() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Multiple URIs and Scopes App",
 		Description: "App with multiple redirect URIs and scopes",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3026,6 +3085,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateNonExistent() {
 	nonExistentID := "00000000-0000-0000-0000-000000000000"
 
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Non-Existent App Update",
 		Description: "Attempting to update non-existent app",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3070,6 +3130,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationDeleteNonExistent() {
 // TestApplicationWithInvalidAuthFlowID tests creating app with invalid auth flow ID.
 func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAuthFlowID() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Invalid Auth Flow App",
 		Description: "App with invalid auth flow ID",
 		AuthFlowID:  "edc013d0-e893-4dc0-990c-3e1d203e005b",
@@ -3083,6 +3144,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAuthFlowID() {
 // TestApplicationWithInvalidRegistrationFlowID tests creating app with invalid registration flow ID.
 func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidRegistrationFlowID() {
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "Invalid Registration Flow App",
 		Description:               "App with invalid registration flow ID",
 		RegistrationFlowID:        "80024fb3-29ed-4c33-aa48-8aee5e96d522",
@@ -3097,6 +3159,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidRegistrationFlowID(
 // TestApplicationWithDuplicateName tests creating app with duplicate name.
 func (ts *ApplicationAPITestSuite) TestApplicationWithDuplicateName() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Name Test App",
 		Description: "First app with this name",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3108,6 +3171,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithDuplicateName() {
 
 	// Try to create another app with the same name
 	app2 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Name Test App", // Same name
 		Description: "Second app with duplicate name",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3120,6 +3184,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithDuplicateName() {
 // TestApplicationWithEmptyName tests creating app with empty name.
 func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyName() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "", // Empty name
 		Description: "App with empty name",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3138,6 +3203,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithVeryLongName() {
 	}
 
 	app := Application{
+		OUID:        testOUID,
 		Name:        longName,
 		Description: "App with very long name",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3157,6 +3223,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithVeryLongName() {
 // TestApplicationWithSpecialCharactersInName tests creating app with special characters in name.
 func (ts *ApplicationAPITestSuite) TestApplicationWithSpecialCharactersInName() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Test App with 特殊文字 and émojis 🚀",
 		Description: "App with unicode and special characters",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3175,6 +3242,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithSpecialCharactersInName() 
 // Note: Empty grant types array gets default value (authorization_code) applied automatically.
 func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyOAuthGrantTypes() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Empty Grant Types App",
 		Description: "App with empty OAuth grant types",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3206,6 +3274,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyOAuthGrantTypes() {
 // TestApplicationUpdateInvalidAuthFlow tests updating app with invalid auth flow.
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateInvalidAuthFlow() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Update Auth Flow Test App",
 		Description: "App to test auth flow update",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3217,6 +3286,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateInvalidAuthFlow() {
 
 	// Try to update with invalid auth flow ID
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Updated with Invalid Auth Flow",
 		Description: "Updated description",
 		AuthFlowID:  "edc013d0-e893-4dc0-990c-3e1d203e005b",
@@ -3267,6 +3337,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationListWhenEmpty() {
 // TestApplicationWithNullOptionalFields tests creating app with null optional fields.
 func (ts *ApplicationAPITestSuite) TestApplicationWithNullOptionalFields() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Null Optional Fields App",
 		Description: "", // Empty description (optional)
 		URL:         "", // Empty URL (optional)
@@ -3287,6 +3358,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithNullOptionalFields() {
 // TestApplicationUpdateWithEmptyAppID tests updating application with empty app ID
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyAppID() {
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Update Test",
 		Description: "Test update with empty app ID",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3318,6 +3390,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyName() {
 	defer deleteApplication(appID)
 
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "", // Empty name
 		Description: "Updated description",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3345,6 +3418,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyName() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
 	// Create first application
 	app1 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Name Update Test App 1",
 		Description: "First app",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3355,6 +3429,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
 
 	// Create second application
 	app2 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Name Update Test App 2",
 		Description: "Second app",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3365,6 +3440,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
 
 	// Try to update app2 with app1's name
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Name Update Test App 1", // Same as app1
 		Description: "Updated description",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3396,6 +3472,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidURL() {
 	defer deleteApplication(appID)
 
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Update Invalid URL",
 		Description: "Test update with invalid URL",
 		URL:         "://invalid-url", // Invalid URL
@@ -3428,6 +3505,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidLogoURL() {
 	defer deleteApplication(appID)
 
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Update Invalid LogoURL",
 		Description: "Test update with invalid LogoURL",
 		LogoURL:     "://invalid-logo-url", // Invalid URL
@@ -3456,6 +3534,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidLogoURL() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDGeneration() {
 	// Create app without OAuth config
 	app := Application{
+		OUID:              testOUID,
 		Name:              "Client ID Generation Test",
 		Description:       "Test client ID generation during update",
 		URL:               "https://clientidgen.example.com",
@@ -3511,6 +3590,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDGeneration()
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDChange() {
 	// Create app with OAuth config
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Client ID Change Test",
 		Description: "Test client ID change during update",
 		URL:         "https://clientidchange.example.com",
@@ -3566,6 +3646,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDChange() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateClientID() {
 	// Create first app with OAuth config
 	app1 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Client ID Test App 1",
 		Description: "First app",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3588,6 +3669,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateClientID() 
 
 	// Create second app with different client ID
 	app2 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Client ID Test App 2",
 		Description: "Second app",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3632,6 +3714,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateClientID() 
 // TestApplicationCreateWithDefaultAuthFlowID tests creating application without auth flow ID (should use default)
 func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDefaultAuthFlowID() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Default Auth Flow Test",
 		Description: "Test default auth flow ID",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3653,6 +3736,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDefaultAuthFlowID() 
 // flow inferred from auth flow
 func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInferredRegistrationFlowID() {
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "Inferred Registration Flow Test",
 		Description:               "Test registration flow inference",
 		IsRegistrationFlowEnabled: true,
@@ -3677,6 +3761,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInferredRegistration
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveCertificate() {
 	// Create app with certificate
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Remove Certificate Test",
 		Description: "Test removing certificate during update",
 		URL:         "https://removecert.example.com",
@@ -3692,6 +3777,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveCertificate() {
 
 	// Update to remove certificate
 	updateApp := Application{
+		OUID:        testOUID,
 		Name:        "Remove Certificate Test",
 		Description: "Updated description",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""}, // Remove certificate
@@ -3727,6 +3813,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveCertificate() {
 func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDuplicateClientID() {
 	// Create first app with OAuth config
 	app1 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Client ID Create Test App 1",
 		Description: "First app",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3749,6 +3836,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDuplicateClientID() 
 
 	// Try to create second app with same client ID
 	app2 := Application{
+		OUID:        testOUID,
 		Name:        "Duplicate Client ID Create Test App 2",
 		Description: "Second app with duplicate client ID",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -3773,6 +3861,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDuplicateClientID() 
 // TestApplicationCreateWithInvalidURL tests creating application with invalid URL
 func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidURL() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Invalid URL Create Test",
 		Description: "Test create with invalid URL",
 		URL:         "://invalid-url", // Invalid URL
@@ -3800,6 +3889,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidURL() {
 // TestApplicationCreateWithInvalidLogoURL tests creating application with invalid LogoURL
 func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidLogoURL() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "Invalid LogoURL Create Test",
 		Description: "Test create with invalid LogoURL",
 		LogoURL:     "://invalid-logo-url", // Invalid URL
@@ -4013,6 +4103,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithThemeAndLayoutID() {
 
 	// Create application with theme and layout IDs
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App With Theme and Layout",
 		Description: "Application with theme and layout configuration",
 		ThemeID:     themeID,
@@ -4045,6 +4136,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithThemeAndLayoutID() {
 // TestApplicationWithInvalidThemeAndLayoutID tests creating an application with invalid theme/layout IDs
 func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidThemeAndLayoutID() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App With Invalid Theme",
 		Description: "Application with invalid theme ID",
 		ThemeID:     "00000000-0000-0000-0000-000000000000",
@@ -4119,6 +4211,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithThemeAndLayout() {
 
 	// Create application without theme/layout
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App To Update Design",
 		Description: "Application to update with theme and layout",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -4168,6 +4261,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithThemeAndLayout() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidThemeAndLayoutID() {
 	// Create application without theme/layout
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App To Update Invalid Design",
 		Description: "Application to update with invalid theme/layout",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
@@ -4237,6 +4331,7 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 
 	// Create application with theme ID
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App Preventing Theme Delete",
 		Description: "Application that prevents theme deletion",
 		ThemeID:     themeID,
@@ -4294,8 +4389,8 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 	// Create test user schemas first
 	employeeSchema := testutils.UserSchema{
-		Name:               "employee",
-		OUID:               testOUID,
+		Name: "employee",
+		OUID: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4306,8 +4401,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 		},
 	}
 	customerSchema := testutils.UserSchema{
-		Name:               "customer",
-		OUID:               testOUID,
+		Name: "customer",
+		OUID: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4333,6 +4428,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 
 	// Create application with allowed_user_types
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Allowed User Types",
 		Description:               "Application with allowed user types",
 		IsRegistrationFlowEnabled: false,
@@ -4376,6 +4472,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() {
 	// Create application with non-existent user types
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Invalid User Types",
 		Description:               "Application with invalid user types",
 		IsRegistrationFlowEnabled: false,
@@ -4434,8 +4531,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() 
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 	// Create test user schemas
 	employeeSchema := testutils.UserSchema{
-		Name:               "employee_update",
-		OUID:               testOUID,
+		Name: "employee_update",
+		OUID: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4443,8 +4540,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 		},
 	}
 	partnerSchema := testutils.UserSchema{
-		Name:               "partner",
-		OUID:               testOUID,
+		Name: "partner",
+		OUID: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4470,6 +4567,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 
 	// Create application without allowed_user_types
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App To Update With User Types",
 		Description:               "Application to update",
 		IsRegistrationFlowEnabled: false,
@@ -4533,6 +4631,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidAllowedUserTypes() {
 	// Create application first
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App To Update With Invalid Types",
 		Description:               "Application to update",
 		IsRegistrationFlowEnabled: false,
@@ -4601,6 +4700,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidAllowedUserTy
 // TestApplicationWithEmptyAllowedUserTypes tests creating an application with empty allowed_user_types array
 func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyAllowedUserTypes() {
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Empty Allowed User Types",
 		Description:               "Application with empty allowed user types",
 		IsRegistrationFlowEnabled: false,
@@ -4647,8 +4747,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyAllowedUserTypes() {
 func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserTypes() {
 	// Create one valid user schema
 	validSchema := testutils.UserSchema{
-		Name:               "valid_user_type",
-		OUID:               testOUID,
+		Name: "valid_user_type",
+		OUID: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4666,6 +4766,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 
 	// Create application with mix of valid and invalid user types
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App With Partial Invalid User Types",
 		Description:               "Application with mix of valid and invalid user types",
 		IsRegistrationFlowEnabled: false,
@@ -4721,6 +4822,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 
 func (ts *ApplicationAPITestSuite) TestApplicationWithUserInfoConfig() {
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App With UserInfo Config",
 		Description:               "Testing UserInfo and ScopeClaims persistence",
 		IsRegistrationFlowEnabled: false,
@@ -4787,6 +4889,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithUserInfoConfig() {
 
 func (ts *ApplicationAPITestSuite) TestApplicationUserInfoWithFallback() {
 	app := Application{
+		OUID:                      testOUID,
 		Name:                      "App UserInfo Fallback",
 		Description:               "Testing UserInfo fallback logic",
 		IsRegistrationFlowEnabled: false,
@@ -4839,6 +4942,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUserInfoWithFallback() {
 
 func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeJWS() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App UserInfo JWS",
 		Description: "Testing JWS response type",
 		InboundAuthConfig: []InboundAuthConfig{
@@ -4877,6 +4981,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeJWS() {
 
 func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeInvalidFallback() {
 	app := Application{
+		OUID:        testOUID,
 		Name:        "App UserInfo Invalid Fallback",
 		Description: "Testing invalid response type fallback",
 		InboundAuthConfig: []InboundAuthConfig{

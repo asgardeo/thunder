@@ -21,6 +21,7 @@ package application
 // Application represents the structure for application request and response in tests.
 type Application struct {
 	ID                        string              `json:"id,omitempty"`
+	OUID                      string              `json:"ouId,omitempty"`
 	Name                      string              `json:"name"`
 	Description               string              `json:"description,omitempty"`
 	ClientID                  string              `json:"clientId,omitempty"`

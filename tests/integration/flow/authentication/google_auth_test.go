@@ -201,9 +201,9 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
-		Type:             googleUserSchema.Name,
-		OUID:             googleUserSchema.OUID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       googleUserSchema.Name,
+		OUID:       googleUserSchema.OUID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -275,6 +275,7 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 	googleAuthTestApp.AuthFlowID = flowID
 
 	// Create test application for Google auth tests
+	googleAuthTestApp.OUID = googleAuthTestOU.ID
 	appID, err := testutils.CreateApplication(googleAuthTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

@@ -43,7 +43,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -224,6 +224,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 	authzTestApp.AuthFlowID = flowID
 
 	// Create test application
+	authzTestApp.OUID = authzTestOUID
 	authzTestAppID, err = testutils.CreateApplication(authzTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
@@ -247,10 +248,10 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create resource server with actions for permissions
 	resourceServer := testutils.ResourceServer{
-		Name:               "Document Management System",
-		Description:        "System for managing documents",
-		Identifier:         "document-mgmt",
-		OUID:               authzTestOUID,
+		Name:        "Document Management System",
+		Description: "System for managing documents",
+		Identifier:  "document-mgmt",
+		OUID:        authzTestOUID,
 	}
 	actions := []testutils.Action{
 		{

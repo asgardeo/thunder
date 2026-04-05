@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -29,11 +30,15 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
+	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -57,6 +62,48 @@ func newTestDBConfig() config.DatabaseConfig {
 		Config:  newInMemoryDataSource(),
 		Runtime: newInMemoryDataSource(),
 		User:    newInMemoryDataSource(),
+	}
+}
+
+// createTestApplicationTables creates the APPLICATION and APP_OAUTH_INBOUND_CONFIG tables
+// in the in-memory SQLite config database so that newApplicationStore can verify the table.
+func createTestApplicationTables(t testing.TB) {
+	t.Helper()
+	dbProvider := provider.GetDBProvider()
+	client, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		t.Fatalf("failed to get config db client: %v", err)
+	}
+	createAppTable := dbmodel.DBQuery{
+		ID: "TEST-CREATE-APP-TABLE",
+		Query: `CREATE TABLE IF NOT EXISTS APPLICATION (
+			DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+			ID VARCHAR(36) PRIMARY KEY,
+			AUTH_FLOW_ID VARCHAR(100) NOT NULL,
+			REGISTRATION_FLOW_ID VARCHAR(100) NOT NULL,
+			IS_REGISTRATION_FLOW_ENABLED CHAR(1) DEFAULT '1',
+			THEME_ID VARCHAR(36),
+			LAYOUT_ID VARCHAR(36),
+			ASSERTION TEXT,
+			LOGIN_CONSENT TEXT,
+			ALLOWED_ENTITY_TYPES TEXT,
+			PROPERTIES TEXT
+		)`,
+	}
+	createOAuthTable := dbmodel.DBQuery{
+		ID: "TEST-CREATE-OAUTH-TABLE",
+		Query: `CREATE TABLE IF NOT EXISTS APP_OAUTH_INBOUND_CONFIG (
+			DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+			ENTITY_ID VARCHAR(36) NOT NULL,
+			OAUTH_CONFIG TEXT,
+			PRIMARY KEY (ENTITY_ID, DEPLOYMENT_ID)
+		)`,
+	}
+	if _, err := client.ExecuteContext(context.Background(), createAppTable); err != nil {
+		t.Fatalf("failed to create APPLICATION table: %v", err)
+	}
+	if _, err := client.ExecuteContext(context.Background(), createOAuthTable); err != nil {
+		t.Fatalf("failed to create APP_OAUTH_INBOUND_CONFIG table: %v", err)
 	}
 }
 
@@ -100,13 +147,20 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
+	createTestApplicationTables(suite.T())
 
 	mux := http.NewServeMux()
+
+	mockEntityService := entitymock.NewEntityServiceInterfaceMock(suite.T())
+	mockEntityService.On("LoadIndexedAttributes", mock.Anything).Return(nil)
 
 	// Execute
 	service, _, err := Initialize(
 		mux,
 		nil,
+		nil, // entityProvider - not needed for this test
+		mockEntityService,
+		nil, // ouService - not needed for this test
 		suite.mockCertService,
 		suite.mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
@@ -133,6 +187,7 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
+	createTestApplicationTables(suite.T())
 
 	mux := http.NewServeMux()
 
@@ -142,10 +197,16 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		Version: "1.0.0",
 	}, nil)
 
+	mockEntityService := entitymock.NewEntityServiceInterfaceMock(suite.T())
+	mockEntityService.On("LoadIndexedAttributes", mock.Anything).Return(nil)
+
 	// Execute
 	service, _, err := Initialize(
 		mux,
 		mcpServer,
+		nil, // entityProvider - not needed for this test
+		mockEntityService,
+		nil, // ouService - not needed for this test
 		suite.mockCertService,
 		suite.mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
@@ -531,6 +592,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	config.ResetThunderRuntime()
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
+	createTestApplicationTables(t)
 
 	defer config.ResetThunderRuntime() // Clean up after test
 
@@ -538,11 +600,16 @@ func TestInitialize_Standalone(t *testing.T) {
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockEntityService := entitymock.NewEntityServiceInterfaceMock(t)
+	mockEntityService.On("LoadIndexedAttributes", mock.Anything).Return(nil)
 
 	// Execute
 	service, _, err := Initialize(
 		mux,
 		nil,
+		nil, // entityProvider - not needed for this test
+		mockEntityService,
+		nil, // ouService - not needed for this test
 		mockCertService,
 		mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
@@ -587,11 +654,17 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockEntityService := entitymock.NewEntityServiceInterfaceMock(t)
+	mockEntityService.On("LoadIndexedAttributes", mock.Anything).Return(nil)
+	mockEntityService.On("LoadDeclarativeResources", mock.Anything).Return(nil)
 
 	// Execute
 	service, _, err := Initialize(
 		mux,
 		nil,
+		nil, // entityProvider - not needed for this test
+		mockEntityService,
+		nil, // ouService - not needed for this test
 		mockCertService,
 		mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test

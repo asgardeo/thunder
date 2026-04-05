@@ -20,6 +20,7 @@ package dcr
 
 // DCRRegistrationRequest represents the RFC 7591 Dynamic Client Registration request.
 type DCRRegistrationRequest struct {
+	OUID                    string                 `json:"ou_id,omitempty"`
 	RedirectURIs            []string               `json:"redirect_uris"`
 	GrantTypes              []string               `json:"grant_types,omitempty"`
 	ResponseTypes           []string               `json:"response_types,omitempty"`

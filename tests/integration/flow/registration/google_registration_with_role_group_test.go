@@ -259,9 +259,9 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 
 	// Create test group
 	testGroup := testutils.Group{
-		Name:               "Provisioned Users Group",
-		Description:        "Group for testing user provisioning with group assignment",
-		OUID:               googleRegGroupRoleTestOUID,
+		Name:        "Provisioned Users Group",
+		Description: "Group for testing user provisioning with group assignment",
+		OUID:        googleRegGroupRoleTestOUID,
 	}
 	groupID, err := testutils.CreateGroup(testGroup)
 	ts.Require().NoError(err, "Failed to create test group")
@@ -270,10 +270,10 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 
 	// Create test role
 	testRole := testutils.Role{
-		Name:               "Provisioned Users Role",
-		Description:        "Role for testing user provisioning with role assignment",
-		OUID:               googleRegGroupRoleTestOUID,
-		Permissions:        []testutils.ResourcePermissions{},
+		Name:        "Provisioned Users Role",
+		Description: "Role for testing user provisioning with role assignment",
+		OUID:        googleRegGroupRoleTestOUID,
+		Permissions: []testutils.ResourcePermissions{},
 	}
 	roleID, err := testutils.CreateRole(testRole)
 	ts.Require().NoError(err, "Failed to create test role")
@@ -348,6 +348,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 	googleRegGroupRoleTestApp.RegistrationFlowID = flowID
 
 	// Create test application
+	googleRegGroupRoleTestApp.OUID = googleRegGroupRoleTestOUID
 	appID, err := testutils.CreateApplication(googleRegGroupRoleTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

@@ -43,6 +43,7 @@ type User struct {
 // Application represents an application in the system
 type Application struct {
 	ID                        string                   `json:"id,omitempty"`
+	OUID                      string                   `json:"ouId,omitempty"`
 	Name                      string                   `json:"name"`
 	Description               string                   `json:"description"`
 	IsRegistrationFlowEnabled bool                     `json:"isRegistrationFlowEnabled"`

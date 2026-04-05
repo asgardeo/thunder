@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
@@ -44,16 +45,19 @@ type DCRServiceInterface interface {
 // dcrService is the default implementation of DCRServiceInterface.
 type dcrService struct {
 	appService    application.ApplicationServiceInterface
+	ouService     ou.OrganizationUnitServiceInterface
 	transactioner transaction.Transactioner
 }
 
 // newDCRService creates a new instance of dcrService.
 func newDCRService(
 	appService application.ApplicationServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 	transactioner transaction.Transactioner,
 ) DCRServiceInterface {
 	return &dcrService{
 		appService:    appService,
+		ouService:     ouService,
 		transactioner: transactioner,
 	}
 }
@@ -69,6 +73,20 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 	if request.JWKSUri != "" && len(request.JWKS) > 0 {
 		return nil, &ErrorJWKSConfigurationConflict
+	}
+
+	// TODO: Revisit OU for DCR apps
+	if request.OUID == "" {
+		rootOUs, svcErr := ds.ouService.GetOrganizationUnitList(ctx, 1, 0)
+		if svcErr != nil {
+			logger.Error("Failed to retrieve root organization units for DCR", log.String("error", svcErr.Error))
+			return nil, &ErrorServerError
+		}
+		if rootOUs == nil || rootOUs.TotalResults == 0 || len(rootOUs.OrganizationUnits) == 0 {
+			logger.Error("No root organization unit available for DCR registration")
+			return nil, &ErrorServerError
+		}
+		request.OUID = rootOUs.OrganizationUnits[0].ID
 	}
 
 	appDTO, svcErr := ds.convertDCRToApplication(request)
@@ -174,6 +192,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	}
 
 	appDTO := &model.ApplicationDTO{
+		OUID:              request.OUID,
 		Name:              appName,
 		URL:               request.ClientURI,
 		LogoURL:           request.LogoURI,

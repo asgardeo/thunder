@@ -38,6 +38,7 @@ const (
 // ExportAPITestSuite is a test suite for export API tests.
 type ExportAPITestSuite struct {
 	suite.Suite
+	ouID string
 }
 
 // TestExportAPITestSuite runs the export API test suite.
@@ -47,18 +48,32 @@ func TestExportAPITestSuite(t *testing.T) {
 
 // SetupSuite sets up the test suite.
 func (ts *ExportAPITestSuite) SetupSuite() {
-	// Initialize any setup if needed
+	ouID, err := testutils.CreateOrganizationUnit(testutils.OrganizationUnit{
+		Handle:      "export-test-ou",
+		Name:        "Export Test OU",
+		Description: "Organization unit for export integration tests",
+		Parent:      nil,
+	})
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit: %v", err)
+	}
+	ts.ouID = ouID
 }
 
 // TearDownSuite tears down the test suite.
 func (ts *ExportAPITestSuite) TearDownSuite() {
-	// Clean up any resources if needed
+	if ts.ouID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.ouID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit: %v", err)
+		}
+	}
 }
 
 // TestApplicationExportYAML tests the application export functionality returning YAML.
 func (ts *ExportAPITestSuite) TestApplicationExportYAML() {
 	// Create a test application first
 	app := Application{
+		OUID:                      ts.ouID,
 		Name:                      "Export Test App",
 		Description:               "Test application for export functionality",
 		URL:                       "https://exporttest.example.com",
@@ -311,6 +326,7 @@ func (ts *ExportAPITestSuite) TestMultipleIdentityProvidersExportYAML() {
 func (ts *ExportAPITestSuite) TestMixedResourcesExportYAML() {
 	// Create a test application
 	app := Application{
+		OUID:                      ts.ouID,
 		Name:                      "Mixed Export App",
 		Description:               "Test application for mixed export",
 		URL:                       "https://mixedexport.example.com",

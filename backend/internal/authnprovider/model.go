@@ -25,9 +25,16 @@ type AuthnMetadata struct {
 
 // AuthnResult represents the result of an authentication attempt.
 type AuthnResult struct {
-	UserID              string               `json:"userId"`
-	UserType            string               `json:"userType"`
-	OUID                string               `json:"ouId"`
+	// Entity-generic fields.
+	EntityID       string `json:"entityId"`
+	EntityCategory string `json:"entityCategory"`
+	EntityType     string `json:"entityType"`
+	OUID           string `json:"ouId"`
+
+	// TODO: Remove after refacoring usages
+	UserID   string `json:"userId"`
+	UserType string `json:"userType"`
+
 	Token               string               `json:"token"`
 	AvailableAttributes *AvailableAttributes `json:"availableAttributes"`
 }
@@ -40,9 +47,16 @@ type GetAttributesMetadata struct {
 
 // GetAttributesResult represents the result of fetching attributes.
 type GetAttributesResult struct {
-	UserID             string              `json:"userId"`
-	UserType           string              `json:"userType"`
-	OUID               string              `json:"ouId"`
+	// Entity-generic fields.
+	EntityID       string `json:"entityId"`
+	EntityCategory string `json:"entityCategory"`
+	EntityType     string `json:"entityType"`
+	OUID           string `json:"ouId"`
+
+	// TODO: Remove after refacoring usages
+	UserID   string `json:"userId"`
+	UserType string `json:"userType"`
+
 	AttributesResponse *AttributesResponse `json:"attributeResponse,omitempty"`
 }
 

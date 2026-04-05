@@ -20,260 +20,160 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 
-	"errors"
-
-	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
-// CachedBackedApplicationStore is the implementation of ApplicationStoreInterface that uses caching.
+// cachedBackedApplicationStore wraps an applicationStoreInterface with caching.
 type cachedBackedApplicationStore struct {
-	AppByIDCache   cache.CacheInterface[*model.ApplicationProcessedDTO]
-	AppByNameCache cache.CacheInterface[*model.ApplicationProcessedDTO]
-	OAuthAppCache  cache.CacheInterface[*model.OAuthAppConfigProcessedDTO]
-	Store          applicationStoreInterface
+	AppByIDCache  cache.CacheInterface[*applicationConfigDAO]
+	OAuthAppCache cache.CacheInterface[*oauthConfigDAO]
+	Store         applicationStoreInterface
 }
 
-// newCachedBackedApplicationStore creates a new instance of CachedBackedApplicationStore.
+// newCachedBackedApplicationStore creates a new cache-backed application store.
 func newCachedBackedApplicationStore(store applicationStoreInterface) applicationStoreInterface {
 	return &cachedBackedApplicationStore{
-		AppByIDCache:   cache.GetCache[*model.ApplicationProcessedDTO]("ApplicationByIDCache"),
-		AppByNameCache: cache.GetCache[*model.ApplicationProcessedDTO]("ApplicationByNameCache"),
-		OAuthAppCache:  cache.GetCache[*model.OAuthAppConfigProcessedDTO]("OAuthAppCache"),
-		Store:          store,
+		AppByIDCache:  cache.GetCache[*applicationConfigDAO]("ApplicationByIDCache"),
+		OAuthAppCache: cache.GetCache[*oauthConfigDAO]("OAuthAppByEntityIDCache"),
+		Store:         store,
 	}
 }
 
-// CreateApplication creates a new application and caches it.
-func (as *cachedBackedApplicationStore) CreateApplication(
-	ctx context.Context, app model.ApplicationProcessedDTO) error {
+func (as *cachedBackedApplicationStore) CreateApplication(ctx context.Context, app applicationConfigDAO) error {
 	if err := as.Store.CreateApplication(ctx, app); err != nil {
 		return err
 	}
-	as.cacheApplication(ctx, &app)
+	as.cacheAppConfig(ctx, &app)
 	return nil
 }
 
-// GetTotalApplicationCount returns the total count of applications.
-func (as *cachedBackedApplicationStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
-	return as.Store.GetTotalApplicationCount(ctx)
+func (as *cachedBackedApplicationStore) CreateOAuthConfig(ctx context.Context, entityID string,
+	oauthConfigJSON json.RawMessage) error {
+	return as.Store.CreateOAuthConfig(ctx, entityID, oauthConfigJSON)
 }
 
-// GetApplicationList returns a list of basic application DTOs.
-func (as *cachedBackedApplicationStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
-	return as.Store.GetApplicationList(ctx)
-}
-
-// GetOAuthApplication retrieves an OAuth application by client ID, using cache if available.
-func (as *cachedBackedApplicationStore) GetOAuthApplication(ctx context.Context, clientID string) (
-	*model.OAuthAppConfigProcessedDTO, error) {
-	cacheKey := cache.CacheKey{
-		Key: clientID,
-	}
-	cachedApp, ok := as.OAuthAppCache.Get(ctx, cacheKey)
-	if ok {
-		return cachedApp, nil
-	}
-
-	oauthApp, err := as.Store.GetOAuthApplication(ctx, clientID)
-	if err != nil || oauthApp == nil {
-		return oauthApp, err
-	}
-	as.cacheOAuthApplication(ctx, oauthApp)
-
-	return oauthApp, nil
-}
-
-// GetApplicationByID retrieves an application by ID, using cache if available.
-func (as *cachedBackedApplicationStore) GetApplicationByID(
-	ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
-	cacheKey := cache.CacheKey{
-		Key: id,
-	}
-	cachedApp, ok := as.AppByIDCache.Get(ctx, cacheKey)
-	if ok {
-		return cachedApp, nil
+func (as *cachedBackedApplicationStore) GetApplicationByID(ctx context.Context,
+	id string) (*applicationConfigDAO, error) {
+	cacheKey := cache.CacheKey{Key: id}
+	if cached, ok := as.AppByIDCache.Get(ctx, cacheKey); ok {
+		return cached, nil
 	}
 
 	app, err := as.Store.GetApplicationByID(ctx, id)
 	if err != nil || app == nil {
 		return app, err
 	}
-	as.cacheApplication(ctx, app)
-
+	as.cacheAppConfig(ctx, app)
 	return app, nil
 }
 
-// GetApplicationByName retrieves an application by name, using cache if available.
-func (as *cachedBackedApplicationStore) GetApplicationByName(
-	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
-	cacheKey := cache.CacheKey{
-		Key: name,
-	}
-	cachedApp, ok := as.AppByNameCache.Get(ctx, cacheKey)
-	if ok {
-		return cachedApp, nil
+func (as *cachedBackedApplicationStore) GetOAuthConfigByEntityID(ctx context.Context,
+	entityID string) (*oauthConfigDAO, error) {
+	cacheKey := cache.CacheKey{Key: entityID}
+	if cached, ok := as.OAuthAppCache.Get(ctx, cacheKey); ok {
+		return cached, nil
 	}
 
-	app, err := as.Store.GetApplicationByName(ctx, name)
-	if err != nil || app == nil {
-		return app, err
+	cfg, err := as.Store.GetOAuthConfigByEntityID(ctx, entityID)
+	if err != nil || cfg == nil {
+		return cfg, err
 	}
-	as.cacheApplication(ctx, app)
-
-	return app, nil
+	as.cacheOAuthConfig(ctx, cfg)
+	return cfg, nil
 }
 
-// UpdateApplication updates an existing application and caches the updated version.
-func (as *cachedBackedApplicationStore) UpdateApplication(ctx context.Context, existingApp,
-	updatedApp *model.ApplicationProcessedDTO) error {
-	if err := as.Store.UpdateApplication(ctx, existingApp, updatedApp); err != nil {
+func (as *cachedBackedApplicationStore) GetApplicationList(ctx context.Context) ([]applicationConfigDAO, error) {
+	return as.Store.GetApplicationList(ctx)
+}
+
+func (as *cachedBackedApplicationStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
+	return as.Store.GetTotalApplicationCount(ctx)
+}
+
+func (as *cachedBackedApplicationStore) UpdateApplication(ctx context.Context, app applicationConfigDAO) error {
+	if err := as.Store.UpdateApplication(ctx, app); err != nil {
 		return err
 	}
-
-	existingAppClientID := ""
-	if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
-		existingAppClientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
-	}
-	as.invalidateApplicationCache(ctx, existingApp.ID, existingApp.Name, existingAppClientID)
-
-	as.cacheApplication(ctx, updatedApp)
-
-	if len(updatedApp.InboundAuthConfig) > 0 && updatedApp.InboundAuthConfig[0].OAuthAppConfig != nil {
-		as.cacheOAuthApplication(ctx, updatedApp.InboundAuthConfig[0].OAuthAppConfig)
-	}
-
+	as.invalidateAppCache(ctx, app.ID)
+	as.cacheAppConfig(ctx, &app)
 	return nil
 }
 
-// DeleteApplication deletes an application by ID and invalidates the caches.
-func (as *cachedBackedApplicationStore) DeleteApplication(ctx context.Context, id string) error {
-	cacheKey := cache.CacheKey{
-		Key: id,
+func (as *cachedBackedApplicationStore) UpdateOAuthConfig(ctx context.Context, entityID string,
+	oauthConfigJSON json.RawMessage) error {
+	if err := as.Store.UpdateOAuthConfig(ctx, entityID, oauthConfigJSON); err != nil {
+		return err
 	}
-	existingApp, ok := as.AppByIDCache.Get(ctx, cacheKey)
-	if !ok {
-		var err error
-		existingApp, err = as.Store.GetApplicationByID(ctx, id)
-		if err != nil {
-			if errors.Is(err, model.ApplicationNotFoundError) {
-				return nil
-			}
-			return err
-		}
-	}
-	if existingApp == nil {
-		return nil
-	}
+	as.invalidateOAuthCache(ctx, entityID)
+	return nil
+}
 
+func (as *cachedBackedApplicationStore) DeleteApplication(ctx context.Context, id string) error {
 	if err := as.Store.DeleteApplication(ctx, id); err != nil {
 		return err
 	}
-
-	existingAppClientID := ""
-	if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
-		existingAppClientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
-	}
-	as.invalidateApplicationCache(ctx, existingApp.ID, existingApp.Name, existingAppClientID)
-
+	as.invalidateAppCache(ctx, id)
+	as.invalidateOAuthCache(ctx, id)
 	return nil
 }
 
-// IsApplicationExists implements applicationStoreInterface.
+func (as *cachedBackedApplicationStore) DeleteOAuthConfig(ctx context.Context, entityID string) error {
+	if err := as.Store.DeleteOAuthConfig(ctx, entityID); err != nil {
+		return err
+	}
+	as.invalidateOAuthCache(ctx, entityID)
+	return nil
+}
+
 func (as *cachedBackedApplicationStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
 	return as.Store.IsApplicationExists(ctx, id)
 }
 
-// IsApplicationExistsByName implements applicationStoreInterface.
-func (as *cachedBackedApplicationStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
-	return as.Store.IsApplicationExistsByName(ctx, name)
-}
-
-// IsApplicationDeclarative implements applicationStoreInterface.
 func (as *cachedBackedApplicationStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
 	return as.Store.IsApplicationDeclarative(ctx, id)
 }
 
-// cacheApplication caches the application and OAuth application configuration if it exists.
-func (as *cachedBackedApplicationStore) cacheApplication(ctx context.Context, app *model.ApplicationProcessedDTO) {
-	if app == nil {
+// --- Cache helpers ---
+
+func (as *cachedBackedApplicationStore) cacheAppConfig(ctx context.Context, app *applicationConfigDAO) {
+	if app == nil || app.ID == "" {
 		return
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CachedBackedApplicationStore"))
-
-	if app.ID != "" {
-		appByIDCacheKey := cache.CacheKey{
-			Key: app.ID,
-		}
-		if err := as.AppByIDCache.Set(ctx, appByIDCacheKey, app); err != nil {
-			logger.Error("Failed to cache application by ID", log.String("appID", app.ID), log.Error(err))
-		}
-	}
-	if app.Name != "" {
-		appByNameCacheKey := cache.CacheKey{
-			Key: app.Name,
-		}
-		if err := as.AppByNameCache.Set(ctx, appByNameCacheKey, app); err != nil {
-			logger.Error("Failed to cache application by name", log.String("appName", app.Name),
-				log.Error(err))
-		}
-	}
-
-	// Cache the OAuth application configuration if it exists.
-	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil {
-		as.cacheOAuthApplication(ctx, app.InboundAuthConfig[0].OAuthAppConfig)
+	if err := as.AppByIDCache.Set(ctx, cache.CacheKey{Key: app.ID}, app); err != nil {
+		logger.Error("Failed to cache app config", log.String("appID", app.ID), log.Error(err))
 	}
 }
 
-// cacheOAuthApplication caches the OAuth application configuration if it exists.
-func (as *cachedBackedApplicationStore) cacheOAuthApplication(
-	ctx context.Context, oAuthAppConfig *model.OAuthAppConfigProcessedDTO) {
-	if oAuthAppConfig == nil || oAuthAppConfig.ClientID == "" {
+func (as *cachedBackedApplicationStore) cacheOAuthConfig(ctx context.Context, cfg *oauthConfigDAO) {
+	if cfg == nil || cfg.EntityID == "" {
 		return
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CachedBackedApplicationStore"))
-
-	oauthCacheKey := cache.CacheKey{
-		Key: oAuthAppConfig.ClientID,
-	}
-	if err := as.OAuthAppCache.Set(ctx, oauthCacheKey, oAuthAppConfig); err != nil {
-		logger.Error("Failed to cache OAuth application", log.String("clientID", oAuthAppConfig.ClientID),
-			log.Error(err))
+	if err := as.OAuthAppCache.Set(ctx, cache.CacheKey{Key: cfg.EntityID}, cfg); err != nil {
+		logger.Error("Failed to cache OAuth config", log.String("entityID", cfg.EntityID), log.Error(err))
 	}
 }
 
-// InvalidateApplicationCache invalidates all application caches.
-func (as *cachedBackedApplicationStore) invalidateApplicationCache(
-	ctx context.Context, appID, appName, clientID string) {
+func (as *cachedBackedApplicationStore) invalidateAppCache(ctx context.Context, appID string) {
+	if appID == "" {
+		return
+	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CachedBackedApplicationStore"))
+	if err := as.AppByIDCache.Delete(ctx, cache.CacheKey{Key: appID}); err != nil {
+		logger.Error("Failed to invalidate app cache", log.String("appID", appID), log.Error(err))
+	}
+}
 
-	if appID != "" {
-		cacheKey := cache.CacheKey{
-			Key: appID,
-		}
-		err := as.AppByIDCache.Delete(ctx, cacheKey)
-		if err != nil {
-			logger.Error("Failed to delete application cache by ID", log.String("appID", appID), log.Error(err))
-		}
+func (as *cachedBackedApplicationStore) invalidateOAuthCache(ctx context.Context, entityID string) {
+	if entityID == "" {
+		return
 	}
-	if appName != "" {
-		cacheKey := cache.CacheKey{
-			Key: appName,
-		}
-		err := as.AppByNameCache.Delete(ctx, cacheKey)
-		if err != nil {
-			logger.Error("Failed to delete application cache by name", log.String("appName", appName), log.Error(err))
-		}
-	}
-	if clientID != "" {
-		oauthCacheKey := cache.CacheKey{
-			Key: clientID,
-		}
-		err := as.OAuthAppCache.Delete(ctx, oauthCacheKey)
-		if err != nil {
-			logger.Error("Failed to delete OAuth application cache", log.String("clientID", clientID), log.Error(err))
-		}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CachedBackedApplicationStore"))
+	if err := as.OAuthAppCache.Delete(ctx, cache.CacheKey{Key: entityID}); err != nil {
+		logger.Error("Failed to invalidate OAuth cache", log.String("entityID", entityID), log.Error(err))
 	}
 }

@@ -85,7 +85,6 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
 		AppID:                   "app123",
 		ClientID:                testClientID,
-		HashedClientSecret:      "hashedsecret123",
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeTokenExchange},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},

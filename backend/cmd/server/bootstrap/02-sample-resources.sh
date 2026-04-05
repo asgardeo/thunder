@@ -159,6 +159,7 @@ read -r -d '' SAMPLE_APP_PAYLOAD <<JSON || true
 {
   "name": "Sample App",
   "description": "Sample application for testing",
+  "ouId": "${CUSTOMER_OU_ID}",
   "url": "https://localhost:3000",
   "logoUrl": "emoji:🎁",
   "tosUri": "https://localhost:3000/terms",
@@ -233,6 +234,7 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
 {
   "name": "React SDK Sample",
   "description": "Sample React application using Thunder React SDK",
+  "ouId": "${CUSTOMER_OU_ID}",
   "clientId": "REACT_SDK_SAMPLE",
   "url": "https://localhost:3000",
   "logoUrl": "emoji:🛍️",

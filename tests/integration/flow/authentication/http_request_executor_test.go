@@ -296,6 +296,7 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 	httpRequestExecutorTestApp.AuthFlowID = flowID
 
 	// Create test application
+	httpRequestExecutorTestApp.OUID = ts.ouID
 	appID, err := testutils.CreateApplication(httpRequestExecutorTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

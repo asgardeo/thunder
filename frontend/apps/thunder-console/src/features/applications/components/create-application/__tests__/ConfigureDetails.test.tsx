@@ -64,6 +64,8 @@ const renderWithContext = (
     setCurrentStep: vi.fn(),
     appName: 'Test App',
     setAppName: vi.fn(),
+    ouId: '',
+    setOuId: vi.fn(),
     themeId: null,
     setThemeId: vi.fn(),
     selectedTheme: null,

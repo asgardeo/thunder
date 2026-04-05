@@ -42,7 +42,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -99,6 +99,7 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 	// Application relies on the default flow set by the server. Hence no need
 	// to set the flow IDs here.
 	testApp := testutils.Application{
+		OUID:                      ts.testOUID,
 		Name:                      "Registration Flow Test Application",
 		Description:               "Application for testing registration flows",
 		IsRegistrationFlowEnabled: true,
@@ -188,9 +189,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 		"Email, first name, and last name should be required inputs after first step")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
@@ -230,8 +231,8 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser() {
 	// Create a test user first
 	testUser := testutils.User{
-		OUID:             ts.testOUID,
-		Type:             testUserSchema.Name,
+		OUID: ts.testOUID,
+		Type: testUserSchema.Name,
 		Attributes: json.RawMessage(`{
 			"username": "duplicateuser",
 			"password": "testpassword",
@@ -315,9 +316,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 		"Email, first name, and last name should be required inputs after first step")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
@@ -360,11 +361,11 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 
 	// Step 1: Initialize the registration flow with credentials in one request
 	inputs := map[string]string{
-		"username":  username,
-		"password":  "testpassword123",
-		"email":     username + "@example.com",
-		"given_name": "Single",
-		"family_name":  "Request",
+		"username":    username,
+		"password":    "testpassword123",
+		"email":       username + "@example.com",
+		"given_name":  "Single",
+		"family_name": "Request",
 	}
 
 	flowStep, err := common.InitiateRegistrationFlow(ts.testAppID, false, inputs, "")
@@ -408,6 +409,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithoutToken
 	// Create a new application without TokenConfig
 	appWithoutTokenConfig := testutils.Application{
 		Name:                      "Registration Flow Test Application Without Token Config",
+		OUID:                      ts.testOUID,
 		Description:               "Application for testing default behavior without token config",
 		IsRegistrationFlowEnabled: true,
 		ClientID:                  "reg_flow_test_client_no_token_config",
@@ -440,9 +442,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithoutToken
 	ts.Require().NoError(err, "Failed to complete registration flow")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	ts.Require().NoError(err, "Failed to complete registration flow with additional attributes")
@@ -472,6 +474,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 	// Create a new application with empty user_attributes
 	appWithEmptyAttrs := testutils.Application{
 		Name:                      "Registration Flow Test Application With Empty User Attributes",
+		OUID:                      ts.testOUID,
 		Description:               "Application for testing behavior with empty user_attributes",
 		IsRegistrationFlowEnabled: true,
 		ClientID:                  "reg_flow_test_client_empty_attrs",
@@ -506,9 +509,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 	ts.Require().NoError(err, "Failed to complete registration flow")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	ts.Require().NoError(err, "Failed to complete registration flow with additional attributes")

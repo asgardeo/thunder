@@ -30,6 +30,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
@@ -47,6 +48,7 @@ func authenticate(
 	ctx context.Context,
 	r *http.Request,
 	appService application.ApplicationServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) (*OAuthClientInfo, *authError) {
@@ -139,6 +141,7 @@ func authenticate(
 
 	// Validate credentials based on method
 	switch detectedMethod {
+	// TODO: Move this to authnProvider.Authenticate
 	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
 		if err := validateClientAssertion(ctx, oauthApp, jwtService, discoveryService, clientID,
 			clientAssertion); err != nil {
@@ -147,7 +150,13 @@ func authenticate(
 		}
 	case constants.TokenEndpointAuthMethodClientSecretBasic,
 		constants.TokenEndpointAuthMethodClientSecretPost:
-		if !oauthApp.ValidateCredentials(clientID, clientSecret) {
+		_, authnErr := authnProvider.Authenticate(ctx,
+			map[string]interface{}{"clientId": clientID},
+			map[string]interface{}{"clientSecret": clientSecret},
+			nil)
+		if authnErr != nil {
+			logger.Debug("Client secret authentication failed",
+				log.String("clientID", log.MaskString(clientID)))
 			return nil, errInvalidClientCredentials
 		}
 	}

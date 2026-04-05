@@ -39,6 +39,7 @@ import generateFlowGraph from '../../flows/utils/generateFlowGraph';
 import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
+import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
 import useGetUserTypes from '../../user-types/api/useGetUserTypes';
 import useCreateApplication from '../api/useCreateApplication';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
@@ -46,6 +47,7 @@ import ConfigureDesign from '../components/create-application/ConfigureDesign';
 import ConfigureDetails from '../components/create-application/ConfigureDetails';
 import ConfigureExperience from '../components/create-application/ConfigureExperience';
 import ConfigureName from '../components/create-application/ConfigureName';
+import ConfigureOrganizationUnit from '../components/create-application/ConfigureOrganizationUnit';
 import ConfigureStack from '../components/create-application/ConfigureStack';
 import ShowClientSecret from '../components/create-application/ShowClientSecret';
 import TemplateConstants from '../constants/template-constants';
@@ -70,6 +72,8 @@ export default function ApplicationCreatePage(): JSX.Element {
     setCurrentStep,
     appName,
     setAppName,
+    ouId,
+    setOuId,
     themeId,
     setThemeId,
     selectedTheme,
@@ -97,12 +101,13 @@ export default function ApplicationCreatePage(): JSX.Element {
   const steps: Record<ApplicationCreateFlowStep, {label: string; order: number}> = useMemo(
     () => ({
       NAME: {label: t('applications:onboarding.steps.name'), order: 1},
-      DESIGN: {label: t('applications:onboarding.steps.design'), order: 2},
-      OPTIONS: {label: t('applications:onboarding.steps.options'), order: 3},
-      EXPERIENCE: {label: t('applications:onboarding.steps.experience'), order: 4},
-      STACK: {label: t('applications:onboarding.steps.stack'), order: 5},
-      CONFIGURE: {label: t('applications:onboarding.steps.configure'), order: 6},
-      COMPLETE: {label: t('applications:onboarding.steps.complete'), order: 7},
+      ORGANIZATION_UNIT: {label: t('applications:onboarding.steps.organizationUnit'), order: 2},
+      DESIGN: {label: t('applications:onboarding.steps.design'), order: 3},
+      OPTIONS: {label: t('applications:onboarding.steps.options'), order: 4},
+      EXPERIENCE: {label: t('applications:onboarding.steps.experience'), order: 5},
+      STACK: {label: t('applications:onboarding.steps.stack'), order: 6},
+      CONFIGURE: {label: t('applications:onboarding.steps.configure'), order: 7},
+      COMPLETE: {label: t('applications:onboarding.steps.complete'), order: 8},
     }),
     [t],
   );
@@ -110,6 +115,9 @@ export default function ApplicationCreatePage(): JSX.Element {
   const logger = useLogger('ApplicationCreatePage');
   const createApplication = useCreateApplication();
   const {data: userTypesData} = useGetUserTypes();
+  const {data: ouData, isLoading: isOuLoading} = useGetOrganizationUnits({limit: 2, offset: 0});
+  const ouList = ouData?.organizationUnits ?? [];
+  const hasMultipleOUs = (ouData?.totalResults ?? 0) > 1;
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
   const [createdApplication, setCreatedApplication] = useState<Application | null>(null);
@@ -119,6 +127,7 @@ export default function ApplicationCreatePage(): JSX.Element {
 
   const [stepReady, setStepReady] = useState<Record<ApplicationCreateFlowStep, boolean>>({
     NAME: false,
+    ORGANIZATION_UNIT: false,
     DESIGN: true,
     OPTIONS: true,
     EXPERIENCE: true,
@@ -180,6 +189,8 @@ export default function ApplicationCreatePage(): JSX.Element {
       return undefined;
     })();
 
+    const effectiveOuId = hasMultipleOUs ? ouId : ouList[0]?.id;
+
     const applicationData: CreateApplicationRequest = {
       name: appName,
       logoUrl: appLogo ?? undefined,
@@ -188,6 +199,7 @@ export default function ApplicationCreatePage(): JSX.Element {
       ...(themeId && {themeId}),
       isRegistrationFlowEnabled: true,
       ...(allowedUserTypes && {allowedUserTypes}),
+      ...(effectiveOuId && {ouId: effectiveOuId}),
       // Include template if available, append '-embedded' suffix for CUSTOM approach
       ...(selectedTemplateConfig?.id && {
         template:
@@ -277,6 +289,14 @@ export default function ApplicationCreatePage(): JSX.Element {
   const handleNextStep = (): void => {
     switch (currentStep) {
       case ApplicationCreateFlowStep.NAME:
+        if (isOuLoading) return;
+        if (hasMultipleOUs) {
+          setCurrentStep(ApplicationCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          setCurrentStep(ApplicationCreateFlowStep.DESIGN);
+        }
+        break;
+      case ApplicationCreateFlowStep.ORGANIZATION_UNIT:
         setCurrentStep(ApplicationCreateFlowStep.DESIGN);
         break;
       case ApplicationCreateFlowStep.DESIGN:
@@ -346,8 +366,15 @@ export default function ApplicationCreatePage(): JSX.Element {
 
   const handlePrevStep = (): void => {
     switch (currentStep) {
-      case ApplicationCreateFlowStep.DESIGN:
+      case ApplicationCreateFlowStep.ORGANIZATION_UNIT:
         setCurrentStep(ApplicationCreateFlowStep.NAME);
+        break;
+      case ApplicationCreateFlowStep.DESIGN:
+        if (hasMultipleOUs) {
+          setCurrentStep(ApplicationCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          setCurrentStep(ApplicationCreateFlowStep.NAME);
+        }
         break;
       case ApplicationCreateFlowStep.OPTIONS:
         setCurrentStep(ApplicationCreateFlowStep.DESIGN);
@@ -376,6 +403,13 @@ export default function ApplicationCreatePage(): JSX.Element {
   const handleNameStepReadyChange = useCallback(
     (isReady: boolean): void => {
       handleStepReadyChange(ApplicationCreateFlowStep.NAME, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
+  const handleOuStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(ApplicationCreateFlowStep.ORGANIZATION_UNIT, isReady);
     },
     [handleStepReadyChange],
   );
@@ -420,6 +454,15 @@ export default function ApplicationCreatePage(): JSX.Element {
       case ApplicationCreateFlowStep.NAME:
         return (
           <ConfigureName appName={appName} onAppNameChange={setAppName} onReadyChange={handleNameStepReadyChange} />
+        );
+
+      case ApplicationCreateFlowStep.ORGANIZATION_UNIT:
+        return (
+          <ConfigureOrganizationUnit
+            selectedOuId={ouId}
+            onOuIdChange={setOuId}
+            onReadyChange={handleOuStepReadyChange}
+          />
         );
 
       case ApplicationCreateFlowStep.DESIGN:
@@ -505,12 +548,17 @@ export default function ApplicationCreatePage(): JSX.Element {
   };
 
   const getBreadcrumbSteps = (): ApplicationCreateFlowStep[] => {
-    const allSteps: ApplicationCreateFlowStep[] = [
-      ApplicationCreateFlowStep.NAME,
+    const allSteps: ApplicationCreateFlowStep[] = [ApplicationCreateFlowStep.NAME];
+
+    if (hasMultipleOUs) {
+      allSteps.push(ApplicationCreateFlowStep.ORGANIZATION_UNIT);
+    }
+
+    allSteps.push(
       ApplicationCreateFlowStep.DESIGN,
       ApplicationCreateFlowStep.OPTIONS,
       ApplicationCreateFlowStep.EXPERIENCE,
-    ];
+    );
 
     // Only show technology and configure steps for inbuilt approach
     if (signInApproach === ApplicationCreateFlowSignInApproach.INBUILT) {
@@ -538,7 +586,9 @@ export default function ApplicationCreatePage(): JSX.Element {
         <Box
           sx={{
             flex:
-              currentStep === ApplicationCreateFlowStep.NAME || currentStep === ApplicationCreateFlowStep.COMPLETE
+              currentStep === ApplicationCreateFlowStep.NAME ||
+              currentStep === ApplicationCreateFlowStep.ORGANIZATION_UNIT ||
+              currentStep === ApplicationCreateFlowStep.COMPLETE
                 ? 1
                 : '0 0 50%',
             display: 'flex',
@@ -587,7 +637,11 @@ export default function ApplicationCreatePage(): JSX.Element {
                 flexDirection: 'column',
                 py: 8,
                 px: 20,
-                mx: currentStep === ApplicationCreateFlowStep.NAME ? 'auto' : 0,
+                mx:
+                  currentStep === ApplicationCreateFlowStep.NAME ||
+                  currentStep === ApplicationCreateFlowStep.ORGANIZATION_UNIT
+                    ? 'auto'
+                    : 0,
                 alignItems: currentStep === ApplicationCreateFlowStep.COMPLETE ? 'center' : 'flex-start',
               }}
             >
@@ -634,7 +688,11 @@ export default function ApplicationCreatePage(): JSX.Element {
                       {createFlow.isPending && <CircularProgress size={20} />}
                       <Button
                         variant="contained"
-                        disabled={!stepReady[currentStep] || createFlow.isPending}
+                        disabled={
+                          !stepReady[currentStep] ||
+                          createFlow.isPending ||
+                          (currentStep === ApplicationCreateFlowStep.NAME && isOuLoading)
+                        }
                         sx={{minWidth: 100}}
                         onClick={handleNextStep}
                       >
@@ -648,19 +706,21 @@ export default function ApplicationCreatePage(): JSX.Element {
           </Box>
         </Box>
         {/* Right side - Preview (show from design step onwards, but hide on complete step) */}
-        {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.COMPLETE && (
-          <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
-            <GatePreview
-              theme={selectedTheme}
-              mock={buildPreviewMock(integrations, idpData ?? [], {
-                application: {
-                  logoUrl: appLogo!,
-                },
-              })}
-              displayName={appName ?? undefined}
-            />
-          </Box>
-        )}
+        {currentStep !== ApplicationCreateFlowStep.NAME &&
+          currentStep !== ApplicationCreateFlowStep.ORGANIZATION_UNIT &&
+          currentStep !== ApplicationCreateFlowStep.COMPLETE && (
+            <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
+              <GatePreview
+                theme={selectedTheme}
+                mock={buildPreviewMock(integrations, idpData ?? [], {
+                  application: {
+                    logoUrl: appLogo!,
+                  },
+                })}
+                displayName={appName ?? undefined}
+              />
+            </Box>
+          )}
       </Box>
     </Box>
   );

@@ -44,7 +44,6 @@ func (suite *AuthorizationValidatorTestSuite) SetupTest() {
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -111,8 +110,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzRequest_CodeGrantNotAllowed() {
 	// Create an app that doesn't allow authorization code grant type
 	restrictedApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeClientCredentials}, // no auth code
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -154,8 +153,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_UnsupportedResponseType() {
 	// Create an app that doesn't support "code" response type
 	restrictedApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{}, // no response types allowed
@@ -363,8 +362,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_MissingCodeChallenge() {
 	// Create an app that requires PKCE
 	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -392,8 +391,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_InvalidCodeChallenge() {
 	// Create an app that requires PKCE
 	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -422,8 +421,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCERequired_ValidPKCE() {
 	// Create an app that requires PKCE
 	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -454,8 +453,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_MissingCodeChallengeMethod() {
 	// Create an app that requires PKCE
 	pkceApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -484,8 +483,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCENotRequired() {
 	// Create an app that doesn't require PKCE
 	nonPKCEApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
@@ -513,8 +512,8 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCENotRequired_InvalidPKCEParams() {
 	// Create an app that doesn't require PKCE
 	nonPKCEApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "test-client-id",
-		HashedClientSecret:      "hashed-secret",
+		ClientID: "test-client-id",
+
 		RedirectURIs:            []string{"https://client.example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},

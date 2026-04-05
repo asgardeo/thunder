@@ -35,12 +35,13 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
+	"github.com/asgardeo/thunder/tests/mocks/authnprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/discoverymock"
 )
@@ -53,6 +54,7 @@ const (
 type ClientAuthTestSuite struct {
 	suite.Suite
 	mockAppService       *applicationmock.ApplicationServiceInterfaceMock
+	mockAuthnProvider    *authnprovidermock.AuthnProviderInterfaceMock
 	mockJwtService       *jwtmock.JWTServiceInterfaceMock
 	mockDiscoveryService *discoverymock.DiscoveryServiceInterfaceMock
 }
@@ -63,16 +65,20 @@ func TestClientAuthTestSuite(t *testing.T) {
 
 func (suite *ClientAuthTestSuite) SetupTest() {
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	suite.mockAuthnProvider = authnprovidermock.NewAuthnProviderInterfaceMock(suite.T())
 	suite.mockJwtService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockDiscoveryService = discoverymock.NewDiscoveryServiceInterfaceMock(suite.T())
+
+	// Default authn mock: return success for client secret authentication.
+	// Tests that need failure override this with a fresh mock.
+	suite.mockAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(&authnprovider.AuthnResult{EntityID: testClientID}, (*authnprovider.AuthnProviderError)(nil)).Maybe()
 }
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretPost() {
 	clientSecret := testClientSecret
-	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                testClientID,
-		HashedClientSecret:      hashedSecret,
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
@@ -89,7 +95,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretPost() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -103,10 +110,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretPost() {
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic() {
 	clientSecret := testClientSecret
-	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                testClientID,
-		HashedClientSecret:      hashedSecret,
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
@@ -118,7 +123,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic() {
 	req.SetBasicAuth(testClientID, clientSecret)
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -133,10 +139,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic_URL
 	rawClientSecret := "secret with spaces"
 	encodedClientID := url.QueryEscape(rawClientID)
 	encodedClientSecret := url.QueryEscape(rawClientSecret)
-	hashedSecret := hash.GenerateThumbprintFromString(rawClientSecret)
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                rawClientID,
-		HashedClientSecret:      hashedSecret,
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
@@ -150,7 +154,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_ClientSecretBasic_URL
 	req.Header.Set("Authorization", "Basic "+basicValue)
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -167,7 +172,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEn
 	req.Header.Set("Authorization", "Basic "+basicValue)
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -181,7 +187,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEn
 	req.Header.Set("Authorization", "Basic "+basicValue)
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -191,7 +198,6 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth_BadPercentEn
 func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PublicClient() {
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                "public-client-id",
-		HashedClientSecret:      "",
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodNone,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		PublicClient:            true,
@@ -208,7 +214,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PublicClient() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -223,7 +230,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientID() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -238,7 +246,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_EmptyClientIDInBasicAuth() {
 	req.SetBasicAuth("", testClientSecret)
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -252,7 +261,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_EmptyClientIDAndSecretInBasic
 	req.SetBasicAuth("", "")
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -274,7 +284,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_MissingClientSecret() {
 		Return(nil, nil).Once()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -286,7 +297,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidBasicAuth() {
 	req.Header.Set("Authorization", "Basic invalid_base64")
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -298,7 +310,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidAuthorizationHeader() 
 	req.Header.Set("Authorization", "Bearer token")
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -316,7 +329,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_BothHeaderAndBody() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -337,7 +351,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ClientNotFound() {
 		Return(nil, nil).Once()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -345,18 +360,21 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ClientNotFound() {
 }
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
-	clientSecret := testClientSecret
 	wrongSecret := "wrong-secret"
-	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                testClientID,
-		HashedClientSecret:      hashedSecret,
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
+
+	// Create a fresh authn mock that fails for wrong secret.
+	failAuthnProvider := authnprovidermock.NewAuthnProviderInterfaceMock(suite.T())
+	failAuthnProvider.On("Authenticate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, authnprovider.NewError(
+			authnprovider.ErrorCodeAuthenticationFailed, "auth failed", "wrong secret")).Maybe()
 
 	formData := url.Values{}
 	formData.Set("client_id", testClientID)
@@ -367,7 +385,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, failAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -376,10 +395,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidClientSecret() {
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_WrongAuthMethod() {
 	clientSecret := testClientSecret
-	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                testClientID,
-		HashedClientSecret:      hashedSecret,
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
@@ -392,7 +409,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_WrongAuthMethod() {
 	req.SetBasicAuth(testClientID, clientSecret)
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -403,7 +421,6 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_WrongAuthMethod() {
 func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientWithSecret() {
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                "public-client-id",
-		HashedClientSecret:      "",
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodNone,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		PublicClient:            true,
@@ -422,7 +439,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientWithSecret() {
 
 	// Try to use client_secret_post with public client
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -432,7 +450,6 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientWithSecret() {
 func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientMissingSecret() {
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                "public-client-id",
-		HashedClientSecret:      "",
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodNone,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 		PublicClient:            true,
@@ -450,39 +467,39 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PublicClientMissingSecret() {
 
 	// Public client with authMethod = none should succeed
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
 }
 
-func (suite *ClientAuthTestSuite) TestAuthenticate_ClientIDMismatch() {
-	clientSecret := testClientSecret
-	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
+func (suite *ClientAuthTestSuite) TestAuthenticate_ClientIDMismatch_HeaderVsBody() {
+	// Test that client_id in body mismatches client_id extracted from auth header.
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
-		ClientID:                "different-client-id",
-		HashedClientSecret:      hashedSecret,
-		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+		ClientID:                testClientID,
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
 	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
-		Return(mockApp, nil).Once()
+		Return(mockApp, nil).Maybe()
 
 	formData := url.Values{}
-	formData.Set("client_id", testClientID)
-	formData.Set("client_secret", clientSecret)
+	formData.Set("client_id", "different-client-id") // Mismatch with basic auth clientID.
 
 	req, _ := http.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(testClientID, testClientSecret)
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
-	assert.Equal(suite.T(), errInvalidClientCredentials, authErr)
+	assert.Equal(suite.T(), errClientIDMismatch, authErr)
 }
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_ServiceError() {
@@ -505,7 +522,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_ServiceError() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -586,7 +604,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PrivateKeyJWT() {
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -628,7 +647,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_Success_PrivateKeyJWT_WithCli
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), clientInfo)
@@ -647,7 +667,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_UnsupportedAsse
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -665,7 +686,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_OnlyAssertionTy
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -688,7 +710,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_OnlyAssertionPr
 	// but the code detects it as private_key_jwt since client_assertion is present.
 	// Then it checks assertion_type != SupportedClientAssertionType, which fails.
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -697,89 +720,37 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_OnlyAssertionPr
 	assert.Equal(suite.T(), "Invalid client assertion", authErr.ErrorDescription)
 }
 
-func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidJWTFormat() {
-	formData := url.Values{}
-	formData.Set("client_assertion_type", constants.SupportedClientAssertionType)
-	formData.Set("client_assertion", "not-a-valid-jwt")
+func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidAssertionFormat() {
+	tests := []struct {
+		name      string
+		assertion string
+	}{
+		{"invalid JWT format", "not-a-valid-jwt"},
+		{"missing sub claim", buildFakeJWTWithPayload(`{"aud":"https://token","iss":"some-issuer"}`)},
+		{"empty sub claim", buildFakeJWTWithPayload(`{"sub":"","aud":"https://token"}`)},
+		{"non-string sub claim", buildFakeJWTWithPayload(`{"sub":12345,"aud":"https://token"}`)},
+	}
+	for _, tc := range tests {
+		suite.Run(tc.name, func() {
+			formData := url.Values{}
+			formData.Set("client_assertion_type", constants.SupportedClientAssertionType)
+			formData.Set("client_assertion", tc.assertion)
 
-	req, _ := http.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_ = req.ParseForm()
+			req, _ := http.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			_ = req.ParseForm()
 
-	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+			clientInfo, authErr := authenticate(
+				req.Context(), req,
+				suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
-	assert.NotNil(suite.T(), authErr)
-	assert.Nil(suite.T(), clientInfo)
-	assert.Equal(suite.T(), errInvalidClientAssertion, authErr)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
-	assert.Equal(suite.T(), "Invalid client assertion", authErr.ErrorDescription)
-}
-
-func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_MissingSubClaim() {
-	// Build a JWT with no sub claim
-	assertion := buildFakeJWTWithPayload(`{"aud":"https://token","iss":"some-issuer"}`)
-
-	formData := url.Values{}
-	formData.Set("client_assertion_type", constants.SupportedClientAssertionType)
-	formData.Set("client_assertion", assertion)
-
-	req, _ := http.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_ = req.ParseForm()
-
-	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
-
-	assert.NotNil(suite.T(), authErr)
-	assert.Nil(suite.T(), clientInfo)
-	assert.Equal(suite.T(), errInvalidClientAssertion, authErr)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
-	assert.Equal(suite.T(), "Invalid client assertion", authErr.ErrorDescription)
-}
-
-func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_EmptySubClaim() {
-	// Build a JWT with empty sub claim
-	assertion := buildFakeJWTWithPayload(`{"sub":"","aud":"https://token"}`)
-
-	formData := url.Values{}
-	formData.Set("client_assertion_type", constants.SupportedClientAssertionType)
-	formData.Set("client_assertion", assertion)
-
-	req, _ := http.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_ = req.ParseForm()
-
-	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
-
-	assert.NotNil(suite.T(), authErr)
-	assert.Nil(suite.T(), clientInfo)
-	assert.Equal(suite.T(), errInvalidClientAssertion, authErr)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
-	assert.Equal(suite.T(), "Invalid client assertion", authErr.ErrorDescription)
-}
-
-func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_NonStringSubClaim() {
-	// Build a JWT with non-string sub claim
-	assertion := buildFakeJWTWithPayload(`{"sub":12345,"aud":"https://token"}`)
-
-	formData := url.Values{}
-	formData.Set("client_assertion_type", constants.SupportedClientAssertionType)
-	formData.Set("client_assertion", assertion)
-
-	req, _ := http.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_ = req.ParseForm()
-
-	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
-
-	assert.NotNil(suite.T(), authErr)
-	assert.Nil(suite.T(), clientInfo)
-	assert.Equal(suite.T(), errInvalidClientAssertion, authErr)
-	assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
-	assert.Equal(suite.T(), "Invalid client assertion", authErr.ErrorDescription)
+			assert.NotNil(suite.T(), authErr)
+			assert.Nil(suite.T(), clientInfo)
+			assert.Equal(suite.T(), errInvalidClientAssertion, authErr)
+			assert.Equal(suite.T(), constants.ErrorInvalidClient, authErr.ErrorCode)
+			assert.Equal(suite.T(), "Invalid client assertion", authErr.ErrorDescription)
+		})
+	}
 }
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ClientNotFound() {
@@ -797,7 +768,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ClientNotFound(
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -809,7 +781,6 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_AuthMethodNotAl
 	// App only allows client_secret_post, not private_key_jwt
 	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID:                testClientID,
-		HashedClientSecret:      hash.GenerateThumbprintFromString(testClientSecret),
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
@@ -826,7 +797,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_AuthMethodNotAl
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -855,7 +827,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_AssertionValida
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -877,7 +850,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ClientIDMismatc
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -898,7 +872,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_WithBasicAuth_M
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -920,7 +895,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_WithClientSecre
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -950,7 +926,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_ServiceError() 
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -972,7 +949,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidBase64Pa
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
@@ -997,7 +975,8 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_PrivateKeyJWT_InvalidJSONPayl
 	_ = req.ParseForm()
 
 	clientInfo, authErr := authenticate(
-		req.Context(), req, suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+		req.Context(), req,
+		suite.mockAppService, suite.mockAuthnProvider, suite.mockJwtService, suite.mockDiscoveryService)
 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)

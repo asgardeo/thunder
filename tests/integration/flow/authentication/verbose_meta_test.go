@@ -185,7 +185,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -262,6 +262,7 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	verboseBasicFlowID = basicFlowID
 
 	// Create test application with the flow with prompt
+	verboseTestApp.OUID = ts.ouID
 	appID, err := testutils.CreateApplication(verboseTestApp)
 	ts.Require().NoError(err, "Failed to create test application")
 	verboseTestAppID = appID
@@ -377,6 +378,7 @@ func (ts *VerboseMetaTestSuite) TestVerboseModeWithGraphWithoutMeta() {
 	// Create a new app with a graph that doesn't have meta defined
 	appWithoutMeta := testutils.Application{
 		Name:                      "No Meta Test Application",
+		OUID:                      ts.ouID,
 		Description:               "Application for testing verbose mode without meta",
 		IsRegistrationFlowEnabled: false,
 		AuthFlowID:                verboseBasicFlowID,

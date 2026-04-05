@@ -20,8 +20,9 @@ package application
 
 import (
 	"context"
-
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -33,29 +34,33 @@ type fileBasedStore struct {
 	*declarativeresource.GenericFileBasedStore
 }
 
-// Create implements declarativeresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader.
 func (f *fileBasedStore) Create(id string, data interface{}) error {
-	app := data.(*model.ApplicationProcessedDTO)
-	return f.CreateApplication(context.Background(), *app)
+	dto, ok := data.(*model.ApplicationProcessedDTO)
+	if !ok {
+		return fmt.Errorf("unexpected data type: %T", data)
+	}
+	dao := toConfigDAO(dto)
+	return f.CreateApplication(context.Background(), dao)
 }
 
 // CreateApplication implements applicationStoreInterface.
-func (f *fileBasedStore) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
+func (f *fileBasedStore) CreateApplication(_ context.Context, app applicationConfigDAO) error {
 	return f.GenericFileBasedStore.Create(app.ID, &app)
 }
 
-// DeleteApplication implements applicationStoreInterface.
-func (f *fileBasedStore) DeleteApplication(ctx context.Context, id string) error {
-	return errors.New("DeleteApplication is not supported in file-based store")
+// CreateOAuthConfig is not supported in file-based store — OAuth config is embedded in the app config.
+func (f *fileBasedStore) CreateOAuthConfig(_ context.Context, _ string, _ json.RawMessage) error {
+	return errors.New("CreateOAuthConfig is not supported in file-based store")
 }
 
 // GetApplicationByID implements applicationStoreInterface.
-func (f *fileBasedStore) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
+func (f *fileBasedStore) GetApplicationByID(_ context.Context, id string) (*applicationConfigDAO, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return nil, model.ApplicationNotFoundError
 	}
-	app, ok := data.(*model.ApplicationProcessedDTO)
+	app, ok := data.(*applicationConfigDAO)
 	if !ok {
 		declarativeresource.LogTypeAssertionError("application", id)
 		return nil, model.ApplicationDataCorruptedError
@@ -63,107 +68,66 @@ func (f *fileBasedStore) GetApplicationByID(ctx context.Context, id string) (*mo
 	return app, nil
 }
 
-// GetApplicationByName implements applicationStoreInterface.
-func (f *fileBasedStore) GetApplicationByName(
-	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
-	data, err := f.GenericFileBasedStore.GetByField(name, func(d interface{}) string {
-		return d.(*model.ApplicationProcessedDTO).Name
-	})
-	if err != nil {
-		return nil, model.ApplicationNotFoundError
-	}
-	return data.(*model.ApplicationProcessedDTO), nil
+// GetOAuthConfigByEntityID implements applicationStoreInterface.
+func (f *fileBasedStore) GetOAuthConfigByEntityID(_ context.Context, _ string) (*oauthConfigDAO, error) {
+	return nil, model.ApplicationNotFoundError
 }
 
 // GetApplicationList implements applicationStoreInterface.
-func (f *fileBasedStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
+func (f *fileBasedStore) GetApplicationList(_ context.Context) ([]applicationConfigDAO, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
 	}
 
-	var appList []model.BasicApplicationDTO
+	var appList []applicationConfigDAO
 	for _, item := range list {
-		if app, ok := item.Data.(*model.ApplicationProcessedDTO); ok {
-			basicApp := model.BasicApplicationDTO{
-				ID:                        app.ID,
-				Name:                      app.Name,
-				Description:               app.Description,
-				AuthFlowID:                app.AuthFlowID,
-				RegistrationFlowID:        app.RegistrationFlowID,
-				IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
-			}
-			appList = append(appList, basicApp)
+		if app, ok := item.Data.(*applicationConfigDAO); ok {
+			app.IsReadOnly = true
+			appList = append(appList, *app)
 		}
 	}
 	return appList, nil
 }
 
-// GetOAuthApplication implements applicationStoreInterface.
-func (f *fileBasedStore) GetOAuthApplication(
-	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
-	list, err := f.GenericFileBasedStore.List()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range list {
-		if app, ok := item.Data.(*model.ApplicationProcessedDTO); ok {
-			for _, inbound := range app.InboundAuthConfig {
-				if inbound.Type == model.OAuthInboundAuthType {
-					if inbound.OAuthAppConfig != nil {
-						if inbound.OAuthAppConfig.ClientID == clientID {
-							return inbound.OAuthAppConfig, nil
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return nil, model.ApplicationNotFoundError
-}
-
 // GetTotalApplicationCount implements applicationStoreInterface.
-func (f *fileBasedStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
+func (f *fileBasedStore) GetTotalApplicationCount(_ context.Context) (int, error) {
 	return f.GenericFileBasedStore.Count()
 }
 
-// UpdateApplication implements applicationStoreInterface.
-func (f *fileBasedStore) UpdateApplication(ctx context.Context, existingApp *model.ApplicationProcessedDTO,
-	updatedApp *model.ApplicationProcessedDTO) error {
+// UpdateApplication is not supported in file-based store.
+func (f *fileBasedStore) UpdateApplication(_ context.Context, _ applicationConfigDAO) error {
 	return errors.New("UpdateApplication is not supported in file-based store")
 }
 
+// UpdateOAuthConfig is not supported in file-based store.
+func (f *fileBasedStore) UpdateOAuthConfig(_ context.Context, _ string, _ json.RawMessage) error {
+	return errors.New("UpdateOAuthConfig is not supported in file-based store")
+}
+
+// DeleteApplication is not supported in file-based store.
+func (f *fileBasedStore) DeleteApplication(_ context.Context, _ string) error {
+	return errors.New("DeleteApplication is not supported in file-based store")
+}
+
+// DeleteOAuthConfig is not supported in file-based store.
+func (f *fileBasedStore) DeleteOAuthConfig(_ context.Context, _ string) error {
+	return errors.New("DeleteOAuthConfig is not supported in file-based store")
+}
+
 // IsApplicationExists implements applicationStoreInterface.
-func (f *fileBasedStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
-	_, err := f.GetApplicationByID(ctx, id)
+func (f *fileBasedStore) IsApplicationExists(_ context.Context, id string) (bool, error) {
+	_, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
-		if errors.Is(err, model.ApplicationNotFoundError) {
-			return false, nil
-		}
-		return false, err
+		return false, nil
 	}
 	return true, nil
 }
 
-// IsApplicationExistsByName implements applicationStoreInterface.
-func (f *fileBasedStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
-	_, err := f.GetApplicationByName(ctx, name)
-	if err != nil {
-		if errors.Is(err, model.ApplicationNotFoundError) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-// IsApplicationDeclarative checks if an application is immutable.
-// For file-based store, all applications are declarative/immutable.
-func (f *fileBasedStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
-	exists, err := f.IsApplicationExists(ctx, id)
-	return err == nil && exists
+// IsApplicationDeclarative returns true for file-based store (all are declarative/immutable).
+func (f *fileBasedStore) IsApplicationDeclarative(_ context.Context, id string) bool {
+	_, err := f.GenericFileBasedStore.Get(id)
+	return err == nil
 }
 
 // newFileBasedStore creates a new instance of a file-based store.

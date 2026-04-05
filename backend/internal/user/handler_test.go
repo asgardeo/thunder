@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -507,7 +508,7 @@ func TestHandleUserGroupsGetRequest_Success(t *testing.T) {
 	userID := testUserID123
 	expectedResp := &UserGroupListResponse{
 		TotalResults: 2,
-		Groups:       []UserGroup{{ID: "group-1", Name: "Admin"}},
+		Groups:       []entity.EntityGroup{{ID: "group-1", Name: "Admin"}},
 	}
 	mockSvc.On("GetUserGroups", mock.Anything, userID, 10, 0).Return(expectedResp, nil)
 
