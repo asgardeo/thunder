@@ -1,0 +1,67 @@
+---
+title: Choose Your Deployment
+sidebar_position: 0
+persona: iam
+description: Compare Thunder deployment options — Docker, Kubernetes, and OpenChoreo — and choose the right path for your environment.
+---
+
+# Choose Your Deployment
+
+Thunder supports multiple deployment environments. Use this guide to pick the option that fits your goals.
+
+## Deployment Options at a Glance
+
+| | [Docker](./docker) | [Kubernetes](./kubernetes) | [OpenChoreo](./openchoreo) |
+|---|---|---|---|
+| **Best for** | Local development, quick evaluation | Production-grade, self-managed clusters | Managed platform with built-in environments |
+| **Setup time** | Under 5 minutes | Under 10 minutes | Under 15 minutes |
+| **Database** | SQLite (default) or PostgreSQL | SQLite or PostgreSQL | PostgreSQL (required) |
+| **Scaling** | Single container | Horizontal (configurable replicas) | Managed by OpenChoreo |
+| **Environment promotion** | Manual | Manual | Built-in (development → staging → production) |
+| **TLS / Ingress** | Host-level | NGINX Ingress Controller | Managed by OpenChoreo gateway |
+| **Managed infra** | No | No | Yes |
+
+---
+
+## Docker
+
+**Choose Docker if you want to run Thunder locally or try it out quickly.**
+
+Docker is the fastest way to get Thunder running. It requires no Kubernetes cluster and works on any machine with Docker installed. By default, Thunder uses an embedded SQLite database — no separate database setup required.
+
+When to use Docker:
+- You are exploring Thunder for the first time.
+- You are developing or testing a flow locally.
+- You want a minimal setup without cluster management.
+
+[Get started with Docker →](./docker)
+
+---
+
+## Kubernetes
+
+**Choose Kubernetes if you are deploying Thunder to a self-managed cluster.**
+
+The Thunder Helm chart gives you full control over replicas, resource limits, ingress configuration, and database connections. You bring the cluster — EKS, GKE, AKS, or a local setup with minikube or kind — and Helm handles the deployment.
+
+When to use Kubernetes:
+- You operate your own Kubernetes cluster.
+- You need horizontal scaling and fine-grained resource control.
+- You want to integrate Thunder into an existing Helm-based infrastructure.
+
+[Get started with Kubernetes →](./kubernetes)
+
+---
+
+## OpenChoreo
+
+**Choose OpenChoreo if you want a managed platform with built-in multi-environment support.**
+
+OpenChoreo wraps Kubernetes with higher-level abstractions for components, services, and deployment pipelines. Thunder ships with an OpenChoreo Helm chart that provisions the full platform stack, including development, staging, and production environments, out of the box.
+
+When to use OpenChoreo:
+- You want environment promotion workflows (development → staging → production) without manual configuration.
+- You are deploying Thunder as part of a larger OpenChoreo-managed platform.
+- You prefer platform-level abstractions over raw Kubernetes resources.
+
+[Get started with OpenChoreo →](./openchoreo)

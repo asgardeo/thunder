@@ -1,7 +1,136 @@
 ---
 title: Docker
 sidebar_position: 1
+persona: iam
+description: Deploy Thunder using Docker or Docker Compose, from a quick single-container run to a production setup with an external PostgreSQL database.
 ---
 
-# 🚧 WIP
-## This page is under construction. Please check back later.
+# Deploy Thunder with Docker
+
+This guide walks you through deploying Thunder using Docker. You can run Thunder as a single container for development or pair it with an external PostgreSQL database for production use.
+
+## Prerequisites
+
+Before you begin, ensure the following tools are installed:
+
+| Tool | Minimum Version | Installation Guide | Version Check |
+|------|----------------|--------------------|---------------|
+| Docker | 20.10 | [Install Docker](https://docs.docker.com/engine/install/) | `docker --version` |
+| Docker Compose | 2.0 | [Install Docker Compose](https://docs.docker.com/compose/install/) | `docker compose version` |
+
+Verify your installation:
+
+```bash
+docker --version
+docker compose version
+docker run hello-world
+```
+
+Thunder listens on port `8090` by default. Ensure that port is available on your host.
+
+## Run Thunder with Docker
+
+### Step 1: Pull the Image
+
+```bash
+docker pull ghcr.io/asgardeo/thunder:latest
+```
+
+### Step 2: Set Up the Server
+
+Run the one-time setup script before starting Thunder for the first time. The setup initializes the configuration and database:
+
+```bash
+docker run -it --rm \
+  ghcr.io/asgardeo/thunder:latest \
+  ./setup.sh
+```
+
+The container exits after setup completes. If you are using SQLite as the database, mount a volume to persist the database file so the setup data is available when you start the server.
+
+### Step 3: Start the Server
+
+```bash
+docker run --rm \
+  -p 8090:8090 \
+  ghcr.io/asgardeo/thunder:latest
+```
+
+Thunder is now running at `https://localhost:8090`.
+
+### Customize the Configuration
+
+To override the default server configuration, mount a custom `deployment.yaml` file. Create a `deployment.yaml` based on the [default configuration](https://github.com/asgardeo/thunder/blob/main/backend/cmd/server/repository/conf/deployment.yaml) and pass it to the container:
+
+```bash
+docker run --rm \
+  -p 8090:8090 \
+  -v $(pwd)/deployment.yaml:/opt/thunder/repository/conf/deployment.yaml \
+  ghcr.io/asgardeo/thunder:latest
+```
+
+To also use custom TLS certificates, mount them alongside the configuration:
+
+```bash
+docker run --rm \
+  -p 8090:8090 \
+  -v $(pwd)/deployment.yaml:/opt/thunder/repository/conf/deployment.yaml \
+  -v $(pwd)/certs/server.cert:/opt/thunder/repository/resources/security/server.cert \
+  -v $(pwd)/certs/server.key:/opt/thunder/repository/resources/security/server.key \
+  ghcr.io/asgardeo/thunder:latest
+```
+
+## Access Thunder
+
+Once the container is running, access Thunder at the following endpoints:
+
+| Endpoint | URL |
+|----------|-----|
+| Application | `https://localhost:8090` |
+| Sign-in / Register | `https://localhost:8090/signin` |
+| Thunder Console | `https://localhost:8090/console` |
+
+## Database Setup
+
+### Embedded SQLite (Default)
+
+Thunder uses SQLite by default. No additional setup is required for development or local testing.
+
+### External PostgreSQL
+
+For production deployments, use an external PostgreSQL database. Thunder ships with a Docker Compose file for running a local PostgreSQL instance.
+
+1. Navigate to the `install/local-development` directory:
+
+    ```bash
+    cd install/local-development
+    ```
+
+2. Start PostgreSQL in the background:
+
+    ```bash
+    docker compose up -d
+    ```
+
+3. View PostgreSQL logs:
+
+    ```bash
+    docker compose logs -f
+    ```
+
+4. Stop PostgreSQL:
+
+    ```bash
+    docker compose down
+    ```
+
+    To stop PostgreSQL and delete all data:
+
+    ```bash
+    docker compose down -v
+    ```
+
+## Next Steps
+
+- [Deploy Thunder on Kubernetes](./kubernetes) — Deploy Thunder to a Kubernetes cluster using Helm.
+- [Deploy Thunder on OpenChoreo](./openchoreo) — Deploy Thunder on the OpenChoreo platform.

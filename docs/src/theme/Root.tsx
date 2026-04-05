@@ -20,6 +20,9 @@ import React, {PropsWithChildren, useEffect} from 'react';
 import {OxygenUIThemeProvider, AcrylicOrangeTheme} from '@wso2/oxygen-ui';
 import {LoggerProvider, LogLevel} from '@thunder/logger/react';
 import { useLocation } from '@docusaurus/router';
+import {applyPersona, type Persona} from './NavbarItem/PersonaDropdown';
+
+const PERSONA_STORAGE_KEY = 'thunder-docs-persona';
 
 export default function Root({children = null}: PropsWithChildren<Record<string, unknown>>) {
   const location = useLocation();
@@ -34,6 +37,14 @@ export default function Root({children = null}: PropsWithChildren<Record<string,
       html.removeAttribute('data-page');
     };
   }, [location.pathname]);
+
+  // Restore persona selection from localStorage before first paint.
+  useEffect(() => {
+    const saved = localStorage.getItem(PERSONA_STORAGE_KEY) as Persona | null;
+    if (saved && (saved === 'app' || saved === 'iam')) {
+      applyPersona(saved);
+    }
+  }, []);
 
   return (
     <OxygenUIThemeProvider theme={AcrylicOrangeTheme}>

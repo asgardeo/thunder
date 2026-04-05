@@ -1,0 +1,96 @@
+---
+title: Flow Concepts
+sidebar_position: 1
+persona: iam
+description: Learn the building blocks of the Thunder Console Flow Builder — the canvas, node types, and the left panel sections.
+---
+
+# Flow Concepts
+
+This page explains the core building blocks of the Flow Builder in the Thunder Console. Understanding these concepts will help you design and configure flows confidently.
+
+## Flow Builder Layout
+
+The Flow Builder opens when you create or edit a flow. It presents two areas:
+
+- **Canvas** - the main workspace where the flow graph lives. You place nodes here and draw connections between them.
+- **Left panel** - a library organized into five sections: **Starter Templates**, **Widgets**, **Steps**, **Components**, and **Executors**.
+
+## Node Types
+
+Every flow graph on the canvas contains four types of nodes:
+
+### START
+
+The **START** node marks the entry point of every flow. Each flow has exactly one START node. It appears automatically when you open a new flow and cannot be deleted.
+
+### View
+
+A **View** node renders a screen to the user. It displays form fields, labels, buttons, and other UI elements. The user interacts with a View node by filling in fields and clicking a button to advance the flow.
+
+### Executor
+
+An **Executor** node runs a backend operation without showing any UI. Examples include verifying a username and password, sending an SMS one-time password (OTP), or provisioning a new user account.
+
+After an Executor node runs, it can take one of three paths:
+
+- The **green dot** (success path) leads to the next node when the operation succeeds.
+- The **red dot** (failure path) leads to a fallback node, typically a View showing an error message, when the operation fails.
+- The **yellow dot** (incomplete path) leads back to a View node when the executor needs more input from the user before it can complete. For example, if a user's profile is missing required attributes, the Attribute Collector executor returns an incomplete status and routes the user back to a prompt screen to collect the missing data.
+
+### END
+
+The **END** node marks a successful completion of the flow. When the flow reaches an END node, Thunder issues an assertion confirming the user authenticated or registered successfully. A flow can have multiple END nodes if different paths each lead to a valid completion.
+
+## Left Panel Sections
+
+The following are the building blocks you can add to the canvas from the left panel to construct your flow.
+
+### Starter Templates
+
+Starter Templates are complete, ready-to-use flow blueprints. Apply a template to populate the canvas with a working flow that you can then customize.
+
+See the [flow reference](./flow-reference#starter-templates) for the complete list of available templates.
+
+### Widgets
+
+Widgets are pre-built, reusable flow segments that combine a View node and one or more Executor nodes. Instead of adding and wiring individual nodes, you add a Widget and get a complete block that covers an entire authentication step.
+
+See the [flow reference](./flow-reference#widgets) for the complete list of available widgets.
+
+### Steps
+
+Steps are individual View nodes. Unlike Widgets, a Step is only the UI screen. You wire it to Executor nodes yourself. Use Steps when you need a custom combination not covered by a Widget.
+
+See the [flow reference](./flow-reference#steps) for the complete list of available steps.
+
+### Components
+
+Components are the individual UI elements inside a View node. Add them to a Blank View to design a custom screen, or add them to an existing Step to extend it.
+
+See the [flow reference](./flow-reference#components) for the complete list of available components.
+
+### Executors
+
+Executors are the backend operation nodes. Add an Executor to the canvas and connect it after a View node. Each Executor performs one specific operation.
+
+See the [flow reference](./flow-reference#executors) for the complete list of available executors.
+
+## Node Connections
+
+Connections between nodes control how the flow progresses:
+
+- **View to Executor** - the user clicks a button in the View, which triggers the connected Executor.
+- **Executor success (green dot)** - connects to the next node when the operation succeeds.
+- **Executor failure (red dot)** - connects to a fallback View (error screen or retry step) when the operation fails.
+- **Executor incomplete (yellow dot)** - connects back to a View node when the executor needs more input from the user. The target must be a View node. Not all executors expose this path. Only those that can request additional input, such as Attribute Collector, Provisioning, and OU Creation.
+- **Final Executor to END** - connect the success path of the last Executor to an END node to complete the flow.
+
+## Flow Versioning
+
+Every time you save a flow, Thunder creates a new version. The version number appears in the **Version** column on the Flows list page. You can view version history and restore any earlier version from the flow settings.
+
+## Related Guides
+
+- [Flow Reference](./flow-reference) - Complete list of all Starter Templates, Widgets, Steps, Components, and Executors.
+- [Build a Flow](./build-a-flow) - Step-by-step guide to creating a flow in the Thunder Console.

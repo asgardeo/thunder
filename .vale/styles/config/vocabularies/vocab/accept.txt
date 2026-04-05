@@ -5,6 +5,7 @@ OAuth
 OAuth2
 OpenID
 IAM
+[Ii][Aa][Mm]
 IdP
 PKCE
 Thunder
@@ -45,8 +46,6 @@ DTOs
 [Mm]iddleware
 [Vv]itest
 ESLint
-<<<<<<< HEAD
 templated
-=======
-JWTs
->>>>>>> 5337c408 (Add initial quickstarts and guides to Thunder)
+[Ii][Aa][Mm]
+OTPs

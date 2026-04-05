@@ -1,6 +1,7 @@
 ---
 title: Users
 sidebar_position: 2
+persona: iam
 description: Create and manage users in Thunder, including profile attributes and group membership.
 ---
 
@@ -15,6 +16,18 @@ A user in Thunder represents an account that can authenticate with your applicat
 - A [user type](./user-types) (for example, `customer` or `employee`) that determines the profile attributes, validation rules, and registration settings for that user.
 - A set of attributes that match the schema defined by their user type.
 - An [organization unit](../organization-units) that defines the user's place in the organizational hierarchy.
+
+## Users and Organization Units
+
+Every user belongs to an **Organization Unit (OU)** and has a **user type**. These two work together:
+
+- The **user type** defines what the user looks like. Their attributes, constraints, and registration rules.
+- The **organization unit** defines where the user belongs in the organizational hierarchy.
+
+Each user type belongs to a specific OU. A user of that type can only be created under that OU or one of its descendants. 
+This means, for example, you cannot place a Customer-type user under the Default OU, or a Person-type user under the Customers OU.
+
+See [Organization Units](../organization-units/) for more information on how OUs structure your users and [User Types](./user-types) for how user types define user schemas and registration settings.
 
 ## Onboard a User
 
@@ -71,6 +84,6 @@ Deleting a user is permanent. The user's account, attributes, and group membersh
 
 ## Related Guides
 
-- [User Types](/guides/guides/users/user-types) - Define schemas and attribute rules for each user type
-- [Organization Units](/guides/guides/organization-units) - Manage the organizational hierarchy that contains users
-- [Flows](/guides/guides/flows) - Configure registration flows for self-service sign-up
+- [User Types](./user-types) - Define schemas and attribute rules for each user type
+- [Organization Units](../organization-units) - Manage the organizational hierarchy that contains users
+- [Flows](../flows/what-is-flows) - Configure registration flows for self-service sign-up

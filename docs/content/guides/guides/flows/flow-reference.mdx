@@ -1,0 +1,130 @@
+---
+title: Flow Reference
+sidebar_position: 5
+persona: iam
+description: Complete reference for all Starter Templates, Widgets, Steps, Components, and Executors available in the Thunder Console Flow Builder.
+---
+
+# Flow Reference
+
+This page is a complete reference for all items available in the left panel of the Flow Builder.
+
+## Starter Templates
+
+Starter Templates are complete, ready-to-use flow blueprints. Apply a template to populate the canvas with a working flow that you can then customize.
+
+| Template | Description |
+|----------|-------------|
+| **Blank** | An empty canvas with only a START node. Build the flow from scratch. |
+| **Password Login** | A basic username and password login flow. |
+| **Password Login or Google** | Username and password login with Google as an alternative. |
+| **Password + SMS OTP** | Two-factor authentication using password and SMS OTP. |
+| **SMS OTP** | Passwordless login using SMS OTP verification. |
+| **Passkey Login** | Passwordless login using passkeys, with a registration fallback. |
+
+## Widgets
+
+Widgets are pre-built, reusable flow segments that combine a View node and one or more Executor nodes. Adding a Widget gives you a complete, pre-wired block covering an entire authentication step.
+
+| Widget | Description |
+|--------|-------------|
+| **Username + Password** | A login form wired to the Identifier + Password executor. |
+| **Continue with Google** | Social login using Google. |
+| **Continue with GitHub** | Social login using GitHub. |
+| **Continue with SMS OTP** | An OTP input view wired to the Verify SMS OTP executor. |
+| **Sign In with Passkey** | A passkey prompt wired to the passkey verification executors. |
+| **Self Sign Up Link** | A rich text link that redirects the user to the self-registration flow. |
+
+## Steps
+
+Steps are individual View nodes, UI screen only, with no pre-wired executors. Use a Step when you need a custom combination not covered by a Widget.
+
+| Step | Description |
+|------|-------------|
+| **Blank View** | An empty View node. Add Components from the left panel to design the screen. |
+| **SMS OTP View** | A pre-designed OTP input screen for SMS verification. |
+| **Passkey View** | A pre-designed screen for passkey authentication. |
+| **Username + Password** | A pre-designed login form with username and password fields. |
+| **Consent View** | A screen for capturing user consent. |
+
+## Components
+
+Components are the individual UI elements inside a View node. Add them to a Blank View to design a custom screen, or extend an existing Step with additional elements.
+
+| Component | Description |
+|-----------|-------------|
+| **Form** | A container that groups input fields and a submit button. |
+| **Text Input** | A single-line text field. |
+| **Password Input** | A password field with masked input. |
+| **Email Input** | An email address field. |
+| **Phone Input** | A phone number field. |
+| **Number Input** | A numeric field. |
+| **Date Input** | A date picker field. |
+| **OTP Input** | A one-time password input field. |
+| **Checkbox** | A checkbox for consent or toggling an option. |
+| **Button** | A clickable button that triggers a transition to the next node. |
+| **Resend** | A control that lets the user request a new OTP or code. |
+| **Text** | A read-only label or paragraph. |
+| **Rich Text** | A styled text block that supports links and formatting. |
+| **Divider** | A horizontal rule that visually separates sections of a screen. |
+| **Image** | An image element such as a logo or illustration. |
+| **Stack** | A layout container that groups other components. |
+| **Icon** | A small icon element. |
+| **Timer** | A countdown timer, typically used on OTP screens. |
+
+## Executors
+
+Executors are backend operation nodes. Each Executor performs one specific operation and exposes up to three outcome paths: success (green dot), failure (red dot), and incomplete (yellow dot).
+
+| Executor | Description |
+|----------|-------------|
+| **Identifier + Password** | Verifies a username (or email) and password against the user store. |
+| **Send SMS OTP** | Sends an OTP to the user's registered mobile number. |
+| **Verify SMS OTP** | Verifies the OTP code the user entered. |
+| **Google** | Authenticates the user via Google sign-in. |
+| **GitHub** | Authenticates the user via GitHub sign-in. |
+| **Request Passkey** | Initiates a passkey authentication challenge. |
+| **Verify Passkey** | Verifies the user's passkey response. |
+| **Start Passkey Registration** | Begins the passkey registration ceremony. |
+| **Finish Passkey Registration** | Completes the passkey registration ceremony. |
+| **Auth Assertion Generator** | Generates the final authentication assertion when login succeeds. |
+| **Provisioning** | Creates or updates the user record in the store. |
+| **Attribute Collector** | Collects additional user attributes defined in the user schema. |
+| **Authorization** | Evaluates authorization policies for the current user. |
+| **OU Creation** | Creates an organizational unit for the user. |
+| **User Type Resolver** | Resolves the user type based on configured rules. |
+| **Identity Resolver** | Looks up and resolves a user identity across providers. |
+| **User Consent** | Records explicit user consent for defined scopes or terms. |
+
+## View and Executor Pairings
+
+Each View node (Step or Widget) collects user input that must be read by a specific Executor. If you place a View on the canvas without connecting its required Executor, the flow will stall at the yellow incomplete dot. The table below shows which Executor is required or recommended for each View, and any prerequisites that must be satisfied first.
+
+| View (Step or Widget) | Required Executor(s) | Prerequisites | Notes |
+|---|---|---|---|
+| **Username + Password** (Step or Widget) | Identifier + Password | — | The executor reads the username and password fields submitted by the View. |
+| **SMS OTP View** (Step or Widget) | Send SMS OTP → Verify SMS OTP | User's mobile number must be on record | Place **Send SMS OTP** before the View (no user input needed); place **Verify SMS OTP** after to validate the code the user enters. |
+| **Passkey View** (Step or Widget) | Request Passkey → Verify Passkey | — | Both executors are required as a pair. **Request Passkey** issues the challenge; **Verify Passkey** validates the response. |
+| **Consent View** (Step) | User Consent | User must be authenticated | The executor reads the consent decisions submitted by the View. The user's ID must already be in the flow context. |
+| **Continue with Google** (Widget) | Google | — | Redirect-based. The executor handles the OAuth redirect and reads the authorization code returned by Google. |
+| **Continue with GitHub** (Widget) | GitHub | — | Redirect-based. The executor handles the OAuth redirect and reads the authorization code returned by GitHub. |
+| **Blank View** (with attribute fields) | Attribute Collector | User must be authenticated | Use when collecting profile attributes required by the user schema. The executor checks the user's existing attributes and prompts only for what is missing. |
+
+### Executors That Do Not Require a View
+
+Some Executors run entirely in the background and do not need a preceding View to gather user input.
+
+| Executor | Placement | Prerequisites |
+|---|---|---|
+| **Auth Assertion Generator** | Last Executor before the END node in every authentication flow | User must be authenticated by prior Executors |
+| **Authorization** | After authentication Executors, before Auth Assertion Generator | User must be authenticated |
+| **Send SMS OTP** | Before the SMS OTP View | User's mobile number must be on record |
+| **Provisioning** | After identity collection in registration flows | — |
+| **Identity Resolver** | Early in the flow, after the user submits an identifier | — |
+| **User Type Resolver** | After Identity Resolver | — |
+| **OU Creation** | After Provisioning in registration flows | OU name and handle inputs must be present in the flow context |
+
+## Related Guides
+
+- [Flow Concepts](./flow-concepts) - Understand how nodes, connections, and the canvas work together.
+- [Build a Flow](./build-a-flow) - Step-by-step guide to creating a flow in the Thunder Console.

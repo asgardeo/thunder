@@ -86,7 +86,7 @@ Always use predefined keys from `event.DataKey` for consistency:
 | `Error` | Error message for failures |
 | `LatencyUs` | Operation latency in microseconds |
 
-See [`event/datakeys.go`](../../../backend/internal/observability/event/datakeys.go) for the complete list.
+See [`event/datakeys.go`](https://github.com/asgardeo/thunder/blob/main/backend/internal/observability/event/datakeys.go) for the complete list.
 
 ## Distributed Tracing
 
@@ -151,4 +151,4 @@ To add a new subscriber (e.g., to send logs to a webhook):
 4.  **Add Configuration**: Update `backend/internal/system/config/config.go`.
 
 ## Further Reading
-- [Observability Configuration Guide](../../../guides/observability/configuration.md)
+- [Observability source code](https://github.com/asgardeo/thunder/tree/main/backend/internal/observability)

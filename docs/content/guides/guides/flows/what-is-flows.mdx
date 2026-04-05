@@ -1,0 +1,33 @@
+---
+title: What are Flows?
+sidebar_position: 15
+persona: iam
+description: Design and customize key user journeys in Thunder — from sign-in to self-registration — using the visual Flow Builder in the Thunder Console.
+---
+
+# What are Flows?
+
+A flow in Thunder defines the step-by-step journey a user takes during a specific interaction with your application, such as signing in or self-registering. You build flows visually using the **Flow Builder** in the Thunder Console, a canvas-based editor where you drag, connect, and configure nodes to design the exact experience you want.
+
+Thunder supports two flow types:
+
+| Flow Type | Purpose |
+|-----------|---------|
+| **Authentication** | Controls how users sign in to an application, including multi-step and multi-factor scenarios. |
+| **Registration** | Controls how new users self-register, including profile collection, identity verification, and account activation. |
+
+Each flow is a versioned, named definition. You assign a flow to one or more applications. When a user interacts with an application, Thunder executes the assigned flow step by step.
+
+## Flow Builder
+
+The Flow Builder consists of two main areas:
+
+- **Canvas** -  the main workspace where you place and connect nodes to shape the flow.
+- **Left panel** - a library of building blocks organized into Starter Templates, Widgets, Steps, Components, and Executors.
+
+A flow on the canvas always starts with a **START** node and ends with one or more **END** nodes. Between them, you add **View** nodes (which render screens to the user) and **Executor** nodes (which run backend operations such as verifying credentials or sending one-time passwords).
+
+## Start Building Flows
+
+- To learn about the building blocks of the Flow Builder, read [Flow Concepts](./flow-concepts).
+- To create and configure your first flow step by step, see [Build a Flow](./build-a-flow).

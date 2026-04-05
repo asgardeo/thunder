@@ -1,0 +1,91 @@
+---
+title: Build a Flow
+sidebar_position: 2
+persona: iam
+description: Create, configure, and manage flows using the Thunder Console Flow Builder.
+---
+
+# Build a Flow
+
+This guide walks you through creating a flow from scratch using the Thunder Console Flow Builder.
+
+## Prerequisites
+
+- You have access to the Thunder Console with administrator permissions.
+- You have at least one application configured.
+
+<Stepper>
+
+## Create a Flow
+
+1. Sign in to the Thunder Console and go to **Configure** → **Flows**.
+2. Click **+ Create New Flow** in the top-right corner.
+3. Enter a name for the flow in the left panel.
+
+The Flow Builder opens with a default starter flow on the canvas. A **Sign In** View node wired through an **Identifier + Password** executor and an **Auth Assertion Generator** executor to an **END** node.
+
+## Choose a Starting Point
+
+**Use a Starter Template** to replace the canvas with a complete, pre-wired flow:
+
+1. In the left panel, expand **Starter Templates**.
+2. Click **+** next to the template that matches your use case.
+
+Save immediately or continue customizing. Select the **Blank** template to clear the canvas down to just a START node and build from scratch.
+
+## Build the Canvas
+
+Add nodes from the left panel and wire them together.
+
+### Add Nodes
+
+- **Widgets** - expand **Widgets** and click **+** to drop a pre-wired View + Executor pair onto the canvas.
+- **Steps** - expand **Steps** and click **+** to add a View node on its own, then wire it manually.
+- **Components** - select a View node on the canvas, and click **+** to add components (inputs, buttons, OTP fields) inside it.
+- **Executors** - expand **Executors** and click **+** to add a backend operation node.
+
+### Connect Nodes
+
+Drag from the output port of one node to the input port of another:
+
+- **View → Executor** - triggers the Executor when the user submits the form.
+- **Green dot → next node** - the Executor's success path.
+- **Red dot → fallback node** - the Executor's failure path; connect to an error View or retry step.
+- **Final Executor → END** - marks the flow as complete.
+
+:::tip
+Every Executor should have both a success and a failure connection. An unconnected failure path causes the flow to stop with an error.
+:::
+
+### Configure Node Settings
+
+Click the settings icon on any node:
+
+- **View nodes** - field labels, placeholder text, and input validation.
+- **Executor nodes** - executor-specific options such as OTP length, social login credentials, or attribute mappings.
+- **END nodes** - for registration flows, post-registration behavior such as account activation and auto-login.
+
+:::tip
+ Refer to the [Flow Reference](./flow-reference#view-and-executor-pairings) for details on what each executor does and its required inputs.
+:::
+
+## Save and Manage Versions
+
+Click **Save** in the top-right corner. Thunder saves the flow and increments the version number.
+
+To restore a previous version, open the version history from the flow settings menu, select a version to preview, and click **Restore**.
+
+## Assign to an Application
+
+1. From the Thunder Console, go to **Applications** and open the application you want to configure.
+2. Select the **Flows** tab.
+3. Under **Authentication Flow** or **Registration Flow**, choose the flow you created from the dropdown.
+4. Click **Save**.
+
+Thunder executes the assigned flow whenever a user starts a session for that application.
+
+</Stepper>
+
+## Related Guides
+
+- [Flow Concepts](./flow-concepts) - Reference for node types, left panel sections, and canvas connections.

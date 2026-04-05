@@ -220,7 +220,7 @@ export default function HeroSection(): JSX.Element {
           >
             <Button
               component={Link}
-              href="/docs/guides/introduction"
+              href="/docs/next/guides/getting-started/what-is-thunder"
               variant="contained"
               color="primary"
               size="large"
