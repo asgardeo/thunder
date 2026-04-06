@@ -5243,3 +5243,133 @@ func (suite *ServiceGetTransitiveUserGroupsTestSuite) TestStoreError() {
 func TestServiceGetTransitiveUserGroupsTestSuite(t *testing.T) {
 	suite.Run(t, new(ServiceGetTransitiveUserGroupsTestSuite))
 }
+
+func TestUserService_SearchUsers(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("EmptyFilters", func(t *testing.T) {
+		service := &userService{}
+		_, err := service.SearchUsers(ctx, nil)
+		require.NotNil(t, err)
+		require.Equal(t, ErrorInvalidRequestFormat.Code, err.Code)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mockStore := newUserStoreInterfaceMock(t)
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		ouServiceMock.On("GetOrganizationUnitHandlesByIDs", mock.Anything, []string{"ou-1"}).
+			Return(map[string]string{"ou-1": "/org1"}, nil).Once()
+		service := &userService{userStore: mockStore, ouService: ouServiceMock}
+		expectedUsers := []User{
+			{ID: "user-1", OUID: "ou-1", Type: "default"},
+			{ID: "user-2", OUID: "ou-1", Type: "default"},
+		}
+		mockStore.On("SearchUsers", mock.Anything, mock.Anything).Return(expectedUsers, nil).Once()
+
+		users, err := service.SearchUsers(ctx, map[string]interface{}{"username": "john"})
+		require.Nil(t, err)
+		require.Len(t, users, 2)
+		require.Equal(t, "user-1", users[0].ID)
+		require.Equal(t, "user-2", users[1].ID)
+		require.Equal(t, "/org1", users[0].OUHandle)
+	})
+
+	t.Run("UserNotFound", func(t *testing.T) {
+		mockStore := newUserStoreInterfaceMock(t)
+		service := &userService{userStore: mockStore}
+		mockStore.On("SearchUsers", mock.Anything, mock.Anything).Return(nil, ErrUserNotFound).Once()
+
+		_, err := service.SearchUsers(ctx, map[string]interface{}{"username": "missing"})
+		require.NotNil(t, err)
+		require.Equal(t, ErrorUserNotFound.Code, err.Code)
+	})
+
+	t.Run("StoreError", func(t *testing.T) {
+		mockStore := newUserStoreInterfaceMock(t)
+		service := &userService{userStore: mockStore}
+		mockStore.On("SearchUsers", mock.Anything, mock.Anything).
+			Return(nil, errors.New("db error")).Once()
+
+		_, err := service.SearchUsers(ctx, map[string]interface{}{"username": "john"})
+		require.NotNil(t, err)
+		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	})
+
+	t.Run("FilterByUserType", func(t *testing.T) {
+		mockStore := newUserStoreInterfaceMock(t)
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		ouServiceMock.On("GetOrganizationUnitHandlesByIDs", mock.Anything, mock.Anything).
+			Return(map[string]string{"ou-1": "/org1"}, nil).Once()
+		service := &userService{userStore: mockStore, ouService: ouServiceMock}
+		mockStore.On("SearchUsers", mock.Anything, map[string]interface{}{"username": "john"}).
+			Return([]User{
+				{ID: "user-1", OUID: "ou-1", Type: "default"},
+				{ID: "user-2", OUID: "ou-1", Type: "admin"},
+			}, nil).Once()
+
+		users, err := service.SearchUsers(ctx, map[string]interface{}{
+			"username": "john",
+			"userType": "default",
+		})
+		require.Nil(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "user-1", users[0].ID)
+	})
+
+	t.Run("FilterByOUHandle", func(t *testing.T) {
+		mockStore := newUserStoreInterfaceMock(t)
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "/engineering").
+			Return(oupkg.OrganizationUnit{ID: "ou-eng"}, (*serviceerror.ServiceError)(nil)).Once()
+		ouServiceMock.On("GetOrganizationUnitHandlesByIDs", mock.Anything, mock.Anything).
+			Return(map[string]string{"ou-eng": "/engineering", "ou-sales": "/sales"}, nil).Once()
+		service := &userService{userStore: mockStore, ouService: ouServiceMock}
+		mockStore.On("SearchUsers", mock.Anything, map[string]interface{}{"username": "john"}).
+			Return([]User{
+				{ID: "user-1", OUID: "ou-eng", Type: "default"},
+				{ID: "user-2", OUID: "ou-sales", Type: "default"},
+			}, nil).Once()
+
+		users, err := service.SearchUsers(ctx, map[string]interface{}{
+			"username": "john",
+			"ouHandle": "/engineering",
+		})
+		require.Nil(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "user-1", users[0].ID)
+	})
+
+	t.Run("FilterEliminatesAll", func(t *testing.T) {
+		mockStore := newUserStoreInterfaceMock(t)
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{userStore: mockStore, ouService: ouServiceMock}
+		mockStore.On("SearchUsers", mock.Anything, map[string]interface{}{"username": "john"}).
+			Return([]User{
+				{ID: "user-1", OUID: "ou-1", Type: "admin"},
+			}, nil).Once()
+
+		_, err := service.SearchUsers(ctx, map[string]interface{}{
+			"username": "john",
+			"userType": "default",
+		})
+		require.NotNil(t, err)
+		require.Equal(t, ErrorUserNotFound.Code, err.Code)
+	})
+
+	t.Run("OUHandleResolutionFailure", func(t *testing.T) {
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		ouServiceMock.On("GetOrganizationUnitByPath", mock.Anything, "/invalid").
+			Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
+				Type: serviceerror.ClientErrorType,
+				Code: oupkg.ErrorInvalidHandlePath.Code,
+			}).Once()
+		service := &userService{ouService: ouServiceMock}
+
+		_, err := service.SearchUsers(ctx, map[string]interface{}{
+			"username": "john",
+			"ouHandle": "/invalid",
+		})
+		require.NotNil(t, err)
+		require.Equal(t, ErrorOrganizationUnitNotFound.Code, err.Code)
+	})
+}

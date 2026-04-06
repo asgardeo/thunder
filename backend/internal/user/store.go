@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -48,6 +49,7 @@ type userStoreInterface interface {
 	UpdateUserCredentials(ctx context.Context, userID string, credentials Credentials) error
 	DeleteUser(ctx context.Context, id string) error
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
+	SearchUsers(ctx context.Context, filters map[string]interface{}) ([]User, error)
 	GetCredentials(ctx context.Context, id string) (User, Credentials, error)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
 	GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error)
@@ -455,7 +457,7 @@ func (us *userStore) IdentifyUser(ctx context.Context, filters map[string]interf
 				log.Int("result_count", len(results)),
 			)
 		}
-		return nil, fmt.Errorf("unexpected number of results: %d", len(results))
+		return nil, ErrAmbiguousUser
 	}
 
 	row := results[0]
@@ -465,6 +467,40 @@ func (us *userStore) IdentifyUser(ctx context.Context, filters map[string]interf
 	}
 
 	return &userID, nil
+}
+
+// SearchUsers searches for users matching the given attribute filters and returns all matching users.
+// Column-level filters (userType, ouId) should be handled at the service layer.
+func (us *userStore) SearchUsers(ctx context.Context, filters map[string]interface{}) ([]User, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	searchQuery, args, err := buildUserListQuery(filters, serverconst.MaxPageSize, 0, us.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build search query: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, searchQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	if len(results) == 0 {
+		return nil, ErrUserNotFound
+	}
+
+	users := make([]User, 0, len(results))
+	for _, row := range results {
+		user, err := buildUserFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build user from result row: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
 }
 
 // GetCredentials retrieves the credentials for a user.

@@ -1014,6 +1014,76 @@ func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) RunAndReturn(run func
 	return _c
 }
 
+// SearchUsers provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) SearchUsers(ctx context.Context, filters map[string]interface{}) ([]User, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SearchUsers")
+	}
+
+	var r0 []User
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) ([]User, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) []User); ok {
+		r0 = returnFunc(ctx, filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, filters)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_SearchUsers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SearchUsers'
+type UserServiceInterfaceMock_SearchUsers_Call struct {
+	*mock.Call
+}
+
+// SearchUsers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filters map[string]interface{}
+func (_e *UserServiceInterfaceMock_Expecter) SearchUsers(ctx interface{}, filters interface{}) *UserServiceInterfaceMock_SearchUsers_Call {
+	return &UserServiceInterfaceMock_SearchUsers_Call{Call: _e.mock.On("SearchUsers", ctx, filters)}
+}
+
+func (_c *UserServiceInterfaceMock_SearchUsers_Call) Run(run func(ctx context.Context, filters map[string]interface{})) *UserServiceInterfaceMock_SearchUsers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 map[string]interface{}
+		if args[1] != nil {
+			arg1 = args[1].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_SearchUsers_Call) Return(users []User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_SearchUsers_Call {
+	_c.Call.Return(users, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_SearchUsers_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}) ([]User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_SearchUsers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUser provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) UpdateUser(ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, user)

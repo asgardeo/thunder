@@ -42,6 +42,7 @@ const (
 	ErrorCodeMissingRequiredFields    ErrorCode = "UP-0006"
 	ErrorCodeMissingCredentials       ErrorCode = "UP-0007"
 	ErrorCodeNotImplemented           ErrorCode = "UP-0008"
+	ErrorCodeAmbiguousUser            ErrorCode = "UP-0009"
 )
 
 // NewUserProviderError creates a new user provider error.

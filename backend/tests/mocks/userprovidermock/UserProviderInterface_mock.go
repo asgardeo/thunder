@@ -423,6 +423,70 @@ func (_c *UserProviderInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(fil
 	return _c
 }
 
+// SearchUsers provides a mock function for the type UserProviderInterfaceMock
+func (_mock *UserProviderInterfaceMock) SearchUsers(filters map[string]interface{}) ([]*userprovider.User, *userprovider.UserProviderError) {
+	ret := _mock.Called(filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SearchUsers")
+	}
+
+	var r0 []*userprovider.User
+	var r1 *userprovider.UserProviderError
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) ([]*userprovider.User, *userprovider.UserProviderError)); ok {
+		return returnFunc(filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) []*userprovider.User); ok {
+		r0 = returnFunc(filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*userprovider.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}) *userprovider.UserProviderError); ok {
+		r1 = returnFunc(filters)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*userprovider.UserProviderError)
+		}
+	}
+	return r0, r1
+}
+
+// UserProviderInterfaceMock_SearchUsers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SearchUsers'
+type UserProviderInterfaceMock_SearchUsers_Call struct {
+	*mock.Call
+}
+
+// SearchUsers is a helper method to define mock.On call
+//   - filters map[string]interface{}
+func (_e *UserProviderInterfaceMock_Expecter) SearchUsers(filters interface{}) *UserProviderInterfaceMock_SearchUsers_Call {
+	return &UserProviderInterfaceMock_SearchUsers_Call{Call: _e.mock.On("SearchUsers", filters)}
+}
+
+func (_c *UserProviderInterfaceMock_SearchUsers_Call) Run(run func(filters map[string]interface{})) *UserProviderInterfaceMock_SearchUsers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 map[string]interface{}
+		if args[0] != nil {
+			arg0 = args[0].(map[string]interface{})
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *UserProviderInterfaceMock_SearchUsers_Call) Return(users []*userprovider.User, userProviderError *userprovider.UserProviderError) *UserProviderInterfaceMock_SearchUsers_Call {
+	_c.Call.Return(users, userProviderError)
+	return _c
+}
+
+func (_c *UserProviderInterfaceMock_SearchUsers_Call) RunAndReturn(run func(filters map[string]interface{}) ([]*userprovider.User, *userprovider.UserProviderError)) *UserProviderInterfaceMock_SearchUsers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateUser provides a mock function for the type UserProviderInterfaceMock
 func (_mock *UserProviderInterfaceMock) UpdateUser(userID string, user *userprovider.User) (*userprovider.User, *userprovider.UserProviderError) {
 	ret := _mock.Called(userID, user)

@@ -23,6 +23,7 @@ import "encoding/json"
 // UserProviderInterface defines the interface for user providers.
 type UserProviderInterface interface {
 	IdentifyUser(filters map[string]interface{}) (*string, *UserProviderError)
+	SearchUsers(filters map[string]interface{}) ([]*User, *UserProviderError)
 	GetUser(userID string) (*User, *UserProviderError)
 	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *UserProviderError)
 	GetTransitiveUserGroups(userID string) ([]UserGroup, *UserProviderError)

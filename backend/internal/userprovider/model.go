@@ -25,6 +25,7 @@ type User struct {
 	UserID     string          `json:"userId"`
 	UserType   string          `json:"userType"`
 	OUID       string          `json:"ouId"`
+	OUHandle   string          `json:"ouHandle,omitempty"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 

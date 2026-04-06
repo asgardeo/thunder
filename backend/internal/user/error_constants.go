@@ -173,6 +173,13 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The user is declarative and cannot be modified or deleted",
 	}
+	// ErrorAmbiguousUser is the error returned when multiple users match the provided filters.
+	ErrorAmbiguousUser = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USR-1026",
+		Error:            "Ambiguous user",
+		ErrorDescription: "Multiple users match the provided identifying attributes",
+	}
 )
 
 // Server errors for user management operations.
@@ -193,6 +200,9 @@ var (
 
 	// ErrBadAttributesInRequest is returned when the attributes in the request are invalid.
 	ErrBadAttributesInRequest = errors.New("failed to marshal attributes")
+
+	// ErrAmbiguousUser is returned when multiple users match the provided filters.
+	ErrAmbiguousUser = errors.New("ambiguous user: multiple users match the provided filters")
 
 	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
 	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")

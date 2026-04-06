@@ -187,11 +187,42 @@ func (suite *FileBasedStoreTestSuite) TestIdentifyUser() {
 
 	_, err = suite.store.IdentifyUser(context.Background(), map[string]interface{}{"email": "dup@example.com"})
 	suite.Error(err)
-	suite.Contains(err.Error(), "unexpected number of results")
+	suite.ErrorIs(err, ErrAmbiguousUser)
 
 	_, err = suite.store.IdentifyUser(context.Background(), map[string]interface{}{"email": "missing@example.com"})
 	suite.Error(err)
 	suite.Equal(ErrUserNotFound, err)
+}
+
+// TestSearchUsers verifies SearchUsers behavior for zero, one, and multiple matches.
+func (suite *FileBasedStoreTestSuite) TestSearchUsers() {
+	user1 := suite.buildUser("user-1", "ou-1", map[string]interface{}{
+		"username": "alice",
+		"email":    "dup@example.com",
+	})
+	user2 := suite.buildUser("user-2", "ou-1", map[string]interface{}{
+		"username": "bob",
+		"email":    "dup@example.com",
+	})
+
+	suite.NoError(suite.store.CreateUser(context.Background(), user1, nil))
+	suite.NoError(suite.store.CreateUser(context.Background(), user2, nil))
+
+	// Single match
+	users, err := suite.store.SearchUsers(context.Background(), map[string]interface{}{"username": "alice"})
+	suite.NoError(err)
+	suite.Len(users, 1)
+	suite.Equal("user-1", users[0].ID)
+
+	// Multiple matches
+	users, err = suite.store.SearchUsers(context.Background(), map[string]interface{}{"email": "dup@example.com"})
+	suite.NoError(err)
+	suite.Len(users, 2)
+
+	// No matches
+	_, err = suite.store.SearchUsers(context.Background(), map[string]interface{}{"email": "missing@example.com"})
+	suite.Error(err)
+	suite.ErrorIs(err, ErrUserNotFound)
 }
 
 // TestGetCredentials verifies credentials can be retrieved for a stored user.

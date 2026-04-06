@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -223,10 +222,33 @@ func (f *userFileBasedStore) IdentifyUser(
 		return nil, ErrUserNotFound
 	}
 	if len(matches) > 1 {
-		return nil, fmt.Errorf("unexpected number of results: %d", len(matches))
+		return nil, ErrAmbiguousUser
 	}
 
 	return &matches[0], nil
+}
+
+// SearchUsers searches for users matching the given filters and returns all matching users.
+func (f *userFileBasedStore) SearchUsers(
+	ctx context.Context, filters map[string]interface{},
+) ([]User, error) {
+	resources, err := f.listUserResources()
+	if err != nil {
+		return nil, err
+	}
+
+	var users []User
+	for _, resource := range resources {
+		if matchesFilters(resource.User.Attributes, filters) {
+			users = append(users, resource.User)
+		}
+	}
+
+	if len(users) == 0 {
+		return nil, ErrUserNotFound
+	}
+
+	return users, nil
 }
 
 // GetCredentials retrieves the credentials for a user.

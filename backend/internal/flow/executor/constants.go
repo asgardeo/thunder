@@ -52,6 +52,8 @@ const (
 	ExecutorModeSend     = "send"
 	ExecutorModeGenerate = "generate"
 	ExecutorModeVerify   = "verify"
+	ExecutorModeIdentify = "identify"
+	ExecutorModeResolve  = "resolve"
 )
 
 // User attribute and input constants
@@ -114,4 +116,10 @@ const (
 	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
 	failureReasonFailedToIdentifyUser = "Failed to identify user"
 	failureReasonInvalidOTP           = "invalid OTP provided"
+	failureReasonAmbiguousUser        = "Multiple users match the provided attributes"
+)
+
+// RuntimeData keys for identifying executor
+const (
+	runtimeKeyCandidateUsers = "candidateUsers"
 )

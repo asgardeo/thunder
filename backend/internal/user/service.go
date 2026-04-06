@@ -61,6 +61,7 @@ type UserServiceInterface interface {
 		credentials json.RawMessage) *serviceerror.ServiceError
 	DeleteUser(ctx context.Context, userID string) *serviceerror.ServiceError
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError)
+	SearchUsers(ctx context.Context, filters map[string]interface{}) ([]User, *serviceerror.ServiceError)
 	VerifyUser(ctx context.Context, userID string,
 		credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(ctx context.Context,
@@ -1183,10 +1184,89 @@ func (us *userService) IdentifyUser(ctx context.Context,
 			logger.Debug("User not found with provided filters")
 			return nil, &ErrorUserNotFound
 		}
+		if errors.Is(err, ErrAmbiguousUser) {
+			logger.Debug("Multiple users found with provided filters")
+			return nil, &ErrorAmbiguousUser
+		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to identify user", err)
 	}
 
 	return userID, nil
+}
+
+// SearchUsers searches for users matching the given filters and returns all matching users.
+// Supports attribute filters as well as userType and ouHandle as column-level filters.
+func (us *userService) SearchUsers(ctx context.Context,
+	filters map[string]interface{}) ([]User, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(filters) == 0 {
+		return nil, &ErrorInvalidRequestFormat
+	}
+
+	// Extract column-level filters before passing to store
+	attributeFilters := make(map[string]interface{})
+	var filterUserType string
+	var filterOUHandle string
+	for key, value := range filters {
+		switch key {
+		case "userType":
+			if v, ok := value.(string); ok {
+				filterUserType = v
+			}
+		case "ouHandle":
+			if v, ok := value.(string); ok {
+				filterOUHandle = v
+			}
+		default:
+			attributeFilters[key] = value
+		}
+	}
+
+	// Resolve ouHandle to ouId if provided
+	var filterOUID string
+	if filterOUHandle != "" {
+		ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, filterOUHandle)
+		if svcErr != nil {
+			logger.Debug("Failed to resolve OU handle", log.String("ouHandle", filterOUHandle))
+			return nil, &ErrorOrganizationUnitNotFound
+		}
+		filterOUID = ou.ID
+	}
+
+	// Query store with attribute filters only (column-level filters applied in-memory below)
+	users, err := us.userStore.SearchUsers(ctx, attributeFilters)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("No users found with provided filters")
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to search users", err)
+	}
+
+	// Apply column-level filters in-memory
+	if filterUserType != "" || filterOUID != "" {
+		filtered := make([]User, 0, len(users))
+		for _, u := range users {
+			if filterUserType != "" && u.Type != filterUserType {
+				continue
+			}
+			if filterOUID != "" && u.OUID != filterOUID {
+				continue
+			}
+			filtered = append(filtered, u)
+		}
+		users = filtered
+	}
+
+	if len(users) == 0 {
+		return nil, &ErrorUserNotFound
+	}
+
+	// Populate OU handles on returned users
+	us.populateOUHandles(ctx, users, logger)
+
+	return users, nil
 }
 
 // VerifyUser validate the specified user with the given credentials.
@@ -1291,12 +1371,20 @@ func (us *userService) AuthenticateUser(
 		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := us.IdentifyUser(ctx, identifiers)
-	if svcErr != nil {
-		if svcErr.Code == ErrorUserNotFound.Code {
-			return nil, &ErrorUserNotFound
+	// If a pre-resolved userID is provided (e.g., from a prior disambiguation step),
+	// skip user identification and verify credentials directly.
+	var userID *string
+	if preResolvedID, ok := identifiers["userID"].(string); ok && preResolvedID != "" {
+		userID = &preResolvedID
+	} else {
+		var svcErr *serviceerror.ServiceError
+		userID, svcErr = us.IdentifyUser(ctx, identifiers)
+		if svcErr != nil {
+			if svcErr.Code == ErrorUserNotFound.Code {
+				return nil, &ErrorUserNotFound
+			}
+			return nil, svcErr
 		}
-		return nil, svcErr
 	}
 
 	user, svcErr := us.VerifyUser(ctx, *userID, credentials)

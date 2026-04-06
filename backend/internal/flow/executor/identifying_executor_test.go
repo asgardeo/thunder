@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -564,4 +565,325 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputsPriorityOverRun
 			suite.mockUserProvider.AssertExpectations(suite.T())
 		})
 	}
+}
+
+// Resolve mode tests
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_UniqueUser() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"username": "testuser"},
+		RuntimeData:  make(map[string]string),
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserProvider.On("SearchUsers", map[string]interface{}{
+		"username": "testuser",
+	}).Return([]*userprovider.User{
+		{UserID: "user-1", Attributes: json.RawMessage(`{"username":"testuser"}`)},
+	}, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), "user-1", resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_AmbiguousUser() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"username": "john"},
+		RuntimeData:  make(map[string]string),
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserProvider.On("SearchUsers", map[string]interface{}{
+		"username": "john",
+	}).Return([]*userprovider.User{
+		{UserID: "user-1", Attributes: json.RawMessage(`{"username":"john","firstName":"John"}`)},
+		{UserID: "user-2", Attributes: json.RawMessage(`{"username":"john","firstName":"Jane"}`)},
+		{UserID: "user-3", Attributes: json.RawMessage(`{"username":"john","firstName":"John"}`)},
+	}, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.NotEmpty(suite.T(), resp.RuntimeData[runtimeKeyCandidateUsers])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToOne() {
+	candidates := []*userprovider.User{
+		{UserID: "user-1", Attributes: json.RawMessage(`{"username":"john","firstName":"John"}`)},
+		{UserID: "user-2", Attributes: json.RawMessage(`{"username":"john","firstName":"Jane"}`)},
+	}
+	candidatesJSON, _ := json.Marshal(candidates)
+
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"username": "john", "firstName": "Jane"},
+		RuntimeData:  map[string]string{runtimeKeyCandidateUsers: string(candidatesJSON)},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+		{Identifier: "firstName", Type: "string", Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), "user-2", resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_StillAmbiguous() {
+	candidates := []*userprovider.User{
+		{UserID: "user-1", Attributes: json.RawMessage(`{"username":"john","firstName":"John"}`)},
+		{UserID: "user-2", Attributes: json.RawMessage(`{"username":"john","firstName":"John"}`)},
+		{UserID: "user-3", Attributes: json.RawMessage(`{"username":"john","firstName":"Jane"}`)},
+	}
+	candidatesJSON, _ := json.Marshal(candidates)
+
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"username": "john", "firstName": "John"},
+		RuntimeData:  map[string]string{runtimeKeyCandidateUsers: string(candidatesJSON)},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+		{Identifier: "firstName", Type: "string", Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	var storedCandidates []*userprovider.User
+	err = json.Unmarshal([]byte(resp.RuntimeData[runtimeKeyCandidateUsers]), &storedCandidates)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), storedCandidates, 2)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToNone() {
+	candidates := []*userprovider.User{
+		{UserID: "user-1", Attributes: json.RawMessage(`{"username":"john","firstName":"John"}`)},
+		{UserID: "user-2", Attributes: json.RawMessage(`{"username":"john","firstName":"Jane"}`)},
+	}
+	candidatesJSON, _ := json.Marshal(candidates)
+
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"username": "john", "firstName": "Nobody"},
+		RuntimeData:  map[string]string{runtimeKeyCandidateUsers: string(candidatesJSON)},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+		{Identifier: "firstName", Type: "string", Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_SearchUsersNotFound() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"username": "missing"},
+		RuntimeData:  make(map[string]string),
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserProvider.On("SearchUsers", map[string]interface{}{
+		"username": "missing",
+	}).Return(nil, userprovider.NewUserProviderError(
+		userprovider.ErrorCodeUserNotFound, "User not found", "No users match"))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_IdentifyMode_AmbiguousUser() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeIdentify,
+		UserInputs:   map[string]string{"username": "john"},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
+		"username": "john",
+	}).Return((*string)(nil), userprovider.NewUserProviderError(
+		userprovider.ErrorCodeAmbiguousUser, "Ambiguous user", "Multiple users match"))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonAmbiguousUser, resp.FailureReason)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_DefaultMode_AmbiguousUser() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		UserInputs: map[string]string{"username": "john"},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
+		"username": "john",
+	}).Return((*string)(nil), userprovider.NewUserProviderError(
+		userprovider.ErrorCodeAmbiguousUser, "Ambiguous user", "Multiple users match"))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonAmbiguousUser, resp.FailureReason)
+}
+
+func TestFilterUsersByAttributes(t *testing.T) {
+	users := []*userprovider.User{
+		{UserID: "u1", Attributes: json.RawMessage(`{"firstName":"John","lastName":"Doe"}`)},
+		{UserID: "u2", Attributes: json.RawMessage(`{"firstName":"Jane","lastName":"Doe"}`)},
+		{UserID: "u3", Attributes: json.RawMessage(`{"firstName":"John","lastName":"Smith"}`)},
+	}
+
+	t.Run("FilterByFirstName", func(t *testing.T) {
+		result := filterUsersByAttributes(users, map[string]interface{}{"firstName": "John"})
+		assert.Len(t, result, 2)
+	})
+
+	t.Run("FilterByLastName", func(t *testing.T) {
+		result := filterUsersByAttributes(users, map[string]interface{}{"lastName": "Doe"})
+		assert.Len(t, result, 2)
+	})
+
+	t.Run("FilterByBoth", func(t *testing.T) {
+		result := filterUsersByAttributes(users, map[string]interface{}{
+			"firstName": "John",
+			"lastName":  "Doe",
+		})
+		assert.Len(t, result, 1)
+		assert.Equal(t, "u1", result[0].UserID)
+	})
+
+	t.Run("NoMatch", func(t *testing.T) {
+		result := filterUsersByAttributes(users, map[string]interface{}{"firstName": "Nobody"})
+		assert.Len(t, result, 0)
+	})
+
+	t.Run("NonSearchableInputsSkipped", func(t *testing.T) {
+		result := filterUsersByAttributes(users, map[string]interface{}{
+			"firstName": "John",
+			"password":  "secret",
+		})
+		assert.Len(t, result, 2)
+	})
+
+	t.Run("EmptyAttributes", func(t *testing.T) {
+		emptyUsers := []*userprovider.User{
+			{UserID: "u1", Attributes: json.RawMessage(`{}`)},
+		}
+		result := filterUsersByAttributes(emptyUsers, map[string]interface{}{"firstName": "John"})
+		assert.Len(t, result, 0)
+	})
+
+	t.Run("FilterByUserType", func(t *testing.T) {
+		typedUsers := []*userprovider.User{
+			{UserID: "u1", UserType: "DEFAULT", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+			{UserID: "u2", UserType: "ADMIN", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+			{UserID: "u3", UserType: "DEFAULT", Attributes: json.RawMessage(`{"firstName":"Jane"}`)},
+		}
+		result := filterUsersByAttributes(typedUsers, map[string]interface{}{
+			"firstName": "John",
+			"userType":  "DEFAULT",
+		})
+		assert.Len(t, result, 1)
+		assert.Equal(t, "u1", result[0].UserID)
+	})
+
+	t.Run("FilterByOUHandle", func(t *testing.T) {
+		ouUsers := []*userprovider.User{
+			{UserID: "u1", OUHandle: "/org1", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+			{UserID: "u2", OUHandle: "/org2", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+		}
+		result := filterUsersByAttributes(ouUsers, map[string]interface{}{
+			"firstName": "John",
+			"ouHandle":  "/org1",
+		})
+		assert.Len(t, result, 1)
+		assert.Equal(t, "u1", result[0].UserID)
+	})
+
+	t.Run("FilterByUserTypeAndOUHandle", func(t *testing.T) {
+		mixedUsers := []*userprovider.User{
+			{UserID: "u1", UserType: "DEFAULT", OUHandle: "/org1", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+			{UserID: "u2", UserType: "DEFAULT", OUHandle: "/org2", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+			{UserID: "u3", UserType: "ADMIN", OUHandle: "/org1", Attributes: json.RawMessage(`{"firstName":"John"}`)},
+		}
+		result := filterUsersByAttributes(mixedUsers, map[string]interface{}{
+			"firstName": "John",
+			"userType":  "DEFAULT",
+			"ouHandle":  "/org1",
+		})
+		assert.Len(t, result, 1)
+		assert.Equal(t, "u1", result[0].UserID)
+	})
+
+	t.Run("NilAttributesWithTopLevelFilter", func(t *testing.T) {
+		nilAttrUsers := []*userprovider.User{
+			{UserID: "u1", UserType: "DEFAULT"},
+			{UserID: "u2", UserType: "ADMIN"},
+		}
+		result := filterUsersByAttributes(nilAttrUsers, map[string]interface{}{"userType": "DEFAULT"})
+		assert.Len(t, result, 1)
+		assert.Equal(t, "u1", result[0].UserID)
+	})
 }

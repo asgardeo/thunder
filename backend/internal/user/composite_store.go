@@ -239,6 +239,35 @@ func (c *compositeUserStore) IdentifyUser(
 	return c.fileStore.IdentifyUser(ctx, filters)
 }
 
+// SearchUsers searches for users matching the given filters from both stores.
+func (c *compositeUserStore) SearchUsers(
+	ctx context.Context, filters map[string]interface{},
+) ([]User, error) {
+	var allUsers []User
+
+	dbUsers, err := c.dbStore.SearchUsers(ctx, filters)
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
+		return nil, err
+	}
+	if len(dbUsers) > 0 {
+		allUsers = append(allUsers, dbUsers...)
+	}
+
+	fileUsers, err := c.fileStore.SearchUsers(ctx, filters)
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
+		return nil, err
+	}
+	if len(fileUsers) > 0 {
+		allUsers = append(allUsers, fileUsers...)
+	}
+
+	if len(allUsers) == 0 {
+		return nil, ErrUserNotFound
+	}
+
+	return mergeAndDeduplicateUsers(dbUsers, fileUsers), nil
+}
+
 // GetCredentials retrieves user credentials from either store.
 // Checks database store first, then falls back to file store.
 func (c *compositeUserStore) GetCredentials(
