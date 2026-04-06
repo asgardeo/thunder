@@ -1,0 +1,132 @@
+name: 🔍 Dependency Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/go.mod'
+      - '**/go.sum'
+
+permissions:
+  pull-requests: write
+  contents: read
+  statuses: write
+
+jobs:
+  validate-go-dependencies:
+    name: Validate Go Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Thunder repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect modified go.mod files
+        id: detect-changes
+        run: |
+          # Get the base branch SHA
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Comparing $BASE_SHA...$HEAD_SHA"
+
+          # Find all go.mod files that were modified
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep 'go.mod$' || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No go.mod files were modified"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Modified go.mod files:"
+            echo "$CHANGED_FILES"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            # Save the list for later use
+            echo "$CHANGED_FILES" > /tmp/changed_go_mods.txt
+          fi
+
+      - name: 📥 Checkout engineering-governance repository
+        if: steps.detect-changes.outputs.has_changes == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: wso2/engineering-governance
+          path: engineering-governance
+          ref: main
+
+      - name: 🔧 Setup Go
+        if: steps.detect-changes.outputs.has_changes == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: 📊 Extract and validate dependencies
+        if: steps.detect-changes.outputs.has_changes == 'true'
+        id: validate
+        run: |
+          chmod +x .github/scripts/validate-go-dependencies.sh
+          .github/scripts/validate-go-dependencies.sh \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            "engineering-governance/dependency-registry/go.yaml"
+
+      - name: 💬 Comment on PR - Validation Failed
+        if: steps.validate.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let comment = '## ❌ Dependency Validation Failed\n\n';
+            comment += 'The following dependencies are **not approved** or do not meet version requirements:\n\n';
+
+            if (fs.existsSync('/tmp/unapproved_deps.txt')) {
+              const unapproved = fs.readFileSync('/tmp/unapproved_deps.txt', 'utf8');
+              comment += '### Unapproved Dependencies\n\n';
+              comment += '```\n' + unapproved + '\n```\n\n';
+            }
+
+            comment += '### Next Steps\n\n';
+            comment += '1. Review the unapproved dependencies listed above\n';
+            comment += '2. Check if they are available in the [approved dependency list](https://github.com/wso2/engineering-governance/blob/main/dependency-registry/go.yaml)\n';
+            comment += '3. If needed, submit a PR to add these dependencies to the approved list\n';
+            comment += '4. Once approved, update this PR and re-run the validation\n\n';
+            comment += '**This PR is blocked until all dependencies are approved.**\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: 💬 Comment on PR - Validation Passed
+        if: steps.validate.outcome == 'success' && steps.detect-changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let comment = '## ✅ Dependency Validation Passed\n\n';
+            comment += 'All dependencies have been validated against the approved list.\n\n';
+
+            if (fs.existsSync('/tmp/validated_deps.txt')) {
+              const validated = fs.readFileSync('/tmp/validated_deps.txt', 'utf8');
+              if (validated.trim()) {
+                comment += '### Validated Dependencies\n\n';
+                comment += '```\n' + validated + '\n```\n\n';
+              }
+            }
+
+            comment += '✨ **All dependencies are approved!**\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: ✅ Mark validation as passed
+        if: steps.detect-changes.outputs.has_changes == 'false'
+        run: |
+          echo "No dependency changes detected - validation passed"
