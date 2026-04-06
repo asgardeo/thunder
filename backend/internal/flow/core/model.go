@@ -32,6 +32,7 @@ type NodeContext struct {
 
 	FlowID        string
 	FlowType      common.FlowType
+	StepID        string
 	AppID         string
 	Verbose       bool
 	CurrentAction string

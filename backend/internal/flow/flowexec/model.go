@@ -38,6 +38,7 @@ type EngineContext struct {
 
 	FlowID         string
 	FlowType       common.FlowType
+	StepID         string
 	AppID          string
 	Verbose        bool
 	UserInputs     map[string]string

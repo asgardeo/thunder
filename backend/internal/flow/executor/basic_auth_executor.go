@@ -88,7 +88,7 @@ func newBasicAuthExecutor(
 
 // Execute executes the basic authentication logic.
 func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing basic authentication executor")
 
 	execResp := &common.ExecutorResponse{

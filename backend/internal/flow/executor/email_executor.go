@@ -72,7 +72,7 @@ func (e *emailExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse
 // executeSend resolves the email template, constructs the email, and sends it.
 // If the email client is not configured, it completes without sending (no-op).
 func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing email executor in send mode")
 
 	execResp := &common.ExecutorResponse{

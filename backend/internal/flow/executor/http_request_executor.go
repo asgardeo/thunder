@@ -98,7 +98,7 @@ func newHTTPRequestExecutor(
 
 // Execute executes the HTTP request logic.
 func (h *httpRequestExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing HTTP request executor")
 
 	execResp := &common.ExecutorResponse{

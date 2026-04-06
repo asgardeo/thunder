@@ -27,6 +27,8 @@ const (
 	LoggerKeyFlowID = "flowId"
 	// LoggerKeyNodeID is the key used to identify the node ID in the logger.
 	LoggerKeyNodeID = "nodeId"
+	// LoggerKeyStepID is the key used to identify the step ID in the logger.
+	LoggerKeyStepID = "stepID"
 	// LoggerKeyTraceID is the key used to identify the trace ID (correlation ID) in the logger.
 	LoggerKeyTraceID = "trace_id"
 )

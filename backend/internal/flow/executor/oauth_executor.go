@@ -118,7 +118,7 @@ func newOAuthExecutor(
 
 // Execute executes the OAuth authentication flow.
 func (o *oAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing OAuth authentication executor")
 
 	execResp := &common.ExecutorResponse{

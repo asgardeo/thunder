@@ -62,7 +62,7 @@ func newPromptNode(id string, properties map[string]interface{},
 
 // Execute executes the prompt node logic based on the current context.
 func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
-	logger := n.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := n.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing prompt node")
 
 	nodeResp := &common.NodeResponse{
@@ -166,7 +166,7 @@ func (n *promptNode) resolvePromptInputs(ctx *NodeContext, nodeResp *common.Node
 // hasRequiredInputs checks if all required inputs are available in the context. Adds missing
 // inputs to the node response. Returns true if all required inputs are available, otherwise false.
 func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
-	logger := n.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := n.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 
 	if nodeResp.Inputs == nil {
 		nodeResp.Inputs = make([]common.Input, 0)
@@ -194,7 +194,8 @@ func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeRe
 // Returns true if any required data is found missing, otherwise false.
 func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.NodeResponse,
 	requiredInputs []common.Input) bool {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := log.GetLogger().With(log.String(log.LoggerKeyFlowID, ctx.FlowID),
+		log.String(log.LoggerKeyStepID, ctx.StepID))
 
 	requireInputs := false
 	for _, input := range requiredInputs {
@@ -227,7 +228,8 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 	// Type assert to []common.Input
 	forwardedInputs, ok := forwardedInputsData.([]common.Input)
 	if !ok {
-		n.logger.Debug("ForwardedData contains 'inputs' key but value is not []common.Input, skipping enrichment")
+		n.logger.With(log.String(log.LoggerKeyStepID, ctx.StepID)).
+			Debug("ForwardedData contains 'inputs' key but value is not []common.Input, skipping enrichment")
 		return
 	}
 
@@ -243,9 +245,10 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 			// Only enrich Options - do not overwrite other fields like Ref, Type, Required
 			if len(fwdInput.Options) > 0 {
 				nodeResp.Inputs[i].Options = fwdInput.Options
-				n.logger.Debug("Enriched input with options from ForwardedData",
-					log.String("identifier", nodeResp.Inputs[i].Identifier),
-					log.Int("optionsCount", len(fwdInput.Options)))
+				n.logger.With(log.String(log.LoggerKeyStepID, ctx.StepID)).
+					Debug("Enriched input with options from ForwardedData",
+						log.String("identifier", nodeResp.Inputs[i].Identifier),
+						log.Int("optionsCount", len(fwdInput.Options)))
 			}
 		}
 	}
@@ -288,7 +291,7 @@ func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
 	if len(actions) == 1 && ctx.CurrentAction == "" && len(allInputs) > 0 {
 		ctx.CurrentAction = actions[0].Ref
 		n.logger.Debug("Auto-selected single action", log.String(log.LoggerKeyFlowID, ctx.FlowID),
-			log.String("actionRef", actions[0].Ref))
+			log.String(log.LoggerKeyStepID, ctx.StepID), log.String("actionRef", actions[0].Ref))
 		return true
 	}
 	return false

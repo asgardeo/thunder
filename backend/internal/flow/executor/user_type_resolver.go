@@ -82,7 +82,7 @@ func newUserTypeResolver(
 
 // Execute resolves the user type from inputs or prompts the user to select one.
 func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing user type resolver")
 
 	execResp := &common.ExecutorResponse{

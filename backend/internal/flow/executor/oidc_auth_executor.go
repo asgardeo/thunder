@@ -88,7 +88,7 @@ func newOIDCAuthExecutor(
 
 // Execute executes the OIDC authentication logic.
 func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing OIDC authentication executor")
 
 	execResp := &common.ExecutorResponse{

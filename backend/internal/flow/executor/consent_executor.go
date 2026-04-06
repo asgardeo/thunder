@@ -89,7 +89,7 @@ func newConsentExecutor(
 
 // Execute runs the consent enforcement logic.
 func (e *consentExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing consent executor")
 
 	execResp := &common.ExecutorResponse{

@@ -74,7 +74,7 @@ func newOUExecutor(
 
 // Execute executes the ou creation logic.
 func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing OU creation executor")
 
 	execResp := &common.ExecutorResponse{

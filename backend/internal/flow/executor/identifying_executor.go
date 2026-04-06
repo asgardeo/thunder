@@ -110,7 +110,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 // Execute executes the identifying executor logic.
 func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing identifying executor")
 
 	execResp := &common.ExecutorResponse{

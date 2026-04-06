@@ -72,7 +72,7 @@ func newAttributeCollector(
 
 // Execute executes the attribute collection logic.
 func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing attribute collect executor")
 
 	execResp := &common.ExecutorResponse{

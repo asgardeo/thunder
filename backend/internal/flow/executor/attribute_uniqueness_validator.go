@@ -69,7 +69,7 @@ func newAttributeUniquenessValidator(
 // Returns ExecUserInputRequired (triggering onIncomplete routing) with the specific attribute
 // named in FailureReason when a conflict is detected, or ExecComplete when all values are free.
 func (e *attributeUniquenessValidator) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing uniqueness checker executor")
 
 	execResp := &common.ExecutorResponse{

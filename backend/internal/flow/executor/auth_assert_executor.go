@@ -95,7 +95,7 @@ func newAuthAssertExecutor(
 
 // Execute executes the authentication assertion logic.
 func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing authentication assertion executor")
 
 	execResp := &common.ExecutorResponse{

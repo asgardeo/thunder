@@ -74,7 +74,7 @@ func newProvisioningExecutor(
 
 // Execute executes the user provisioning logic based on the inputs provided.
 func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing user provisioning executor")
 
 	execResp := &common.ExecutorResponse{

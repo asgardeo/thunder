@@ -143,7 +143,7 @@ func newPasskeyAuthExecutor(
 
 // Execute executes the passkey authentication logic.
 func (p *passkeyAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing passkey authentication executor")
 
 	execResp := &common.ExecutorResponse{

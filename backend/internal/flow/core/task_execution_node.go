@@ -83,7 +83,8 @@ func newTaskExecutionNode(id string, properties map[string]interface{}, isStartN
 
 // Execute executes the node's executor.
 func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := log.GetLogger().With(log.String(log.LoggerKeyFlowID, ctx.FlowID),
+		log.String(log.LoggerKeyStepID, ctx.StepID))
 	logger.Debug("Executing task execution node")
 
 	if n.executor == nil {
