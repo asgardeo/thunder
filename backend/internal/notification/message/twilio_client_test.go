@@ -117,12 +117,12 @@ func (suite *TwilioClientTestSuite) TestSendSMS_Success() {
 	twilioClient := client.(*TwilioClient)
 	twilioClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.NoError(err)
 }
@@ -144,15 +144,15 @@ func (suite *TwilioClientTestSuite) TestSendSMS_Error() {
 	twilioClient := client.(*TwilioClient)
 	twilioClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "status code: 401")
+	suite.Contains(err.Error(), "status: 401")
 }
 
 func (suite *TwilioClientTestSuite) TestSendSMS_NetworkError() {
@@ -163,12 +163,12 @@ func (suite *TwilioClientTestSuite) TestSendSMS_NetworkError() {
 	twilioClient := client.(*TwilioClient)
 	twilioClient.url = "http://invalid-twilio-url.local:99999"
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
 }

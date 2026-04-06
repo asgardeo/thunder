@@ -62,7 +62,7 @@ func (suite *ClientProviderTestSuite) TestNewNotificationClientProvider() {
 	suite.Implements((*notificationClientProviderInterface)(nil), provider)
 }
 
-func (suite *ClientProviderTestSuite) TestGetMessageClient() {
+func (suite *ClientProviderTestSuite) TestGetClient() {
 	cases := []struct {
 		name     string
 		sender   common.NotificationSenderDTO
@@ -111,7 +111,7 @@ func (suite *ClientProviderTestSuite) TestGetMessageClient() {
 
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			client, err := suite.provider.GetMessageClient(tc.sender)
+			client, err := suite.provider.GetClient(tc.sender)
 			suite.Nil(err)
 			suite.NotNil(client)
 			suite.Equal(tc.expected, client.GetName())
@@ -119,7 +119,7 @@ func (suite *ClientProviderTestSuite) TestGetMessageClient() {
 	}
 }
 
-func (suite *ClientProviderTestSuite) TestGetMessageClientWithError() {
+func (suite *ClientProviderTestSuite) TestGetClientWithError() {
 	makeInvalidSecretProps := func(propName string) []cmodels.Property {
 		jsonStr := `[{"name":"` + propName + `","value":"not-encrypted-value","isSecret":true}` + `]`
 		props, err := cmodels.DeserializePropertiesFromJSON(jsonStr)
@@ -165,7 +165,7 @@ func (suite *ClientProviderTestSuite) TestGetMessageClientWithError() {
 
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			client, err := suite.provider.GetMessageClient(tc.sender)
+			client, err := suite.provider.GetClient(tc.sender)
 			suite.NotNil(err)
 			if err != nil {
 				suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -175,13 +175,13 @@ func (suite *ClientProviderTestSuite) TestGetMessageClientWithError() {
 	}
 }
 
-func (suite *ClientProviderTestSuite) TestGetMessageClient_InvalidProvider() {
+func (suite *ClientProviderTestSuite) TestGetClient_InvalidProvider() {
 	sender := common.NotificationSenderDTO{
 		Name:     "Test Sender",
 		Provider: "invalid-provider",
 	}
 
-	client, err := suite.provider.GetMessageClient(sender)
+	client, err := suite.provider.GetClient(sender)
 
 	suite.Nil(client)
 	suite.NotNil(err)

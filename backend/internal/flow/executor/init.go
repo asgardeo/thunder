@@ -44,6 +44,7 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 	idpService idp.IDPServiceInterface,
 	otpService notification.OTPServiceInterface,
+	notifSenderSvc notification.NotificationSenderServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	authRegistry *authn.AuthServiceRegistry,
 	authZService authz.AuthorizationServiceInterface,
@@ -97,6 +98,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameOUResolver, newOUResolverExecutor(flowFactory, ouService))
 	reg.RegisterExecutor(ExecutorNameAttributeUniquenessValidator, newAttributeUniquenessValidator(
 		flowFactory, userSchemaService, userProvider))
+	reg.RegisterExecutor(ExecutorNameSMSExecutor, newSMSExecutor(flowFactory, notifSenderSvc))
 
 	return reg
 }

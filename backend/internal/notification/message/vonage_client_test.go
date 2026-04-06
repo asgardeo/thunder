@@ -110,12 +110,12 @@ func (suite *VonageClientTestSuite) TestSendSMS_Success() {
 	vonageClient := client.(*VonageClient)
 	vonageClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.NoError(err)
 }
@@ -139,15 +139,15 @@ func (suite *VonageClientTestSuite) TestSendSMS_Error() {
 	vonageClient := client.(*VonageClient)
 	vonageClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "status code: 401")
+	suite.Contains(err.Error(), "status: 401")
 }
 
 func (suite *VonageClientTestSuite) TestSendSMS_NetworkError() {
@@ -158,12 +158,12 @@ func (suite *VonageClientTestSuite) TestSendSMS_NetworkError() {
 	vonageClient := client.(*VonageClient)
 	vonageClient.url = "http://invalid-vonage-url.local:99999"
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
 }

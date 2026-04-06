@@ -26,7 +26,7 @@ import (
 
 // notificationClientProviderInterface defines the interface for obtaining notification clients.
 type notificationClientProviderInterface interface {
-	GetMessageClient(sender common.NotificationSenderDTO) (message.MessageClientInterface, *serviceerror.ServiceError)
+	GetClient(sender common.NotificationSenderDTO) (message.NotificationClientInterface, *serviceerror.ServiceError)
 }
 
 // notificationClientProvider is the implementation of notificationClientProviderInterface.
@@ -37,10 +37,10 @@ func newNotificationClientProvider() notificationClientProviderInterface {
 	return &notificationClientProvider{}
 }
 
-// GetMessageClient returns the message client for the given notification sender.
-func (p *notificationClientProvider) GetMessageClient(sender common.NotificationSenderDTO) (
-	message.MessageClientInterface, *serviceerror.ServiceError) {
-	var _client message.MessageClientInterface
+// GetClient returns the notification client for the given sender.
+func (p *notificationClientProvider) GetClient(sender common.NotificationSenderDTO) (
+	message.NotificationClientInterface, *serviceerror.ServiceError) {
+	var _client message.NotificationClientInterface
 	var err error
 	switch sender.Provider {
 	case common.MessageProviderTypeVonage:

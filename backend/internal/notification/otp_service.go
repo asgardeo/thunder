@@ -251,26 +251,20 @@ func (s *otpService) getOTPValidityPeriodInMillis() int64 {
 func (s *otpService) sendSMSOTP(recipient, otp string, sender common.NotificationSenderDTO,
 	logger *log.Logger) *serviceerror.ServiceError {
 	// TODO: This needs to be configured as a property
-	message := fmt.Sprintf("Your verification code is: %s. This code will expire in 2 minutes.", otp)
+	body := fmt.Sprintf("Your verification code is: %s. This code will expire in 2 minutes.", otp)
 
-	smsData := common.SMSData{
-		To:   recipient,
-		Body: message,
-	}
-
-	// Get message client using existing pattern
-	client, svcErr := s.clientProvider.GetMessageClient(sender)
+	_client, svcErr := s.clientProvider.GetClient(sender)
 	if svcErr != nil {
 		return svcErr
 	}
-	if client == nil {
-		logger.Error("Message client is nil", log.String("provider", string(sender.Provider)))
-		return &ErrorInternalServerError
+
+	if !_client.IsChannelSupported(common.ChannelTypeSMS) {
+		return &ErrorUnsupportedChannel
 	}
 
-	err := client.SendSMS(smsData)
-	if err != nil {
-		logger.Error("Failed to send SMS", log.Error(err))
+	notifData := common.NotificationData{Recipient: recipient, Body: body}
+	if err := _client.Send(common.ChannelTypeSMS, notifData); err != nil {
+		logger.Error("Failed to send SMS OTP", log.Error(err))
 		return &ErrorInternalServerError
 	}
 

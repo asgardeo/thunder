@@ -118,12 +118,12 @@ func (suite *CustomClientTestSuite) TestSendSMS_JSON_Success() {
 	customClient := client.(*CustomClient)
 	customClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: `{"message":"Test message"}`,
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      `{"message":"Test message"}`,
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.NoError(err)
 }
@@ -148,12 +148,12 @@ func (suite *CustomClientTestSuite) TestSendSMS_FORM_Success() {
 	customClient := client.(*CustomClient)
 	customClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: "to=+15559876543\nmessage=Test message",
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      "to=+15559876543\nmessage=Test message",
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.NoError(err)
 }
@@ -175,15 +175,15 @@ func (suite *CustomClientTestSuite) TestSendSMS_Error() {
 	customClient := client.(*CustomClient)
 	customClient.url = server.URL
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: `{"message":"Test"}`,
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      `{"message":"Test"}`,
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "status code: 400")
+	suite.Contains(err.Error(), "status: 400")
 }
 
 func (suite *CustomClientTestSuite) TestSendSMS_NetworkError() {
@@ -194,12 +194,12 @@ func (suite *CustomClientTestSuite) TestSendSMS_NetworkError() {
 	customClient := client.(*CustomClient)
 	customClient.url = "http://invalid-custom-url.local:99999"
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: `{"message":"Test"}`,
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      `{"message":"Test"}`,
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
 }
@@ -216,12 +216,12 @@ func (suite *CustomClientTestSuite) TestSendSMS_UnsupportedContentType() {
 	}
 	client, _ := NewCustomClient(sender)
 
-	smsData := common.SMSData{
-		To:   "+15559876543",
-		Body: `<message>Test</message>`,
+	data := common.NotificationData{
+		Recipient: "+15559876543",
+		Body:      `<message>Test</message>`,
 	}
 
-	err := client.SendSMS(smsData)
+	err := client.Send(common.ChannelTypeSMS, data)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "unsupported content type")

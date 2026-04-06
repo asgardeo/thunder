@@ -36,7 +36,7 @@ const (
 	customClientLoggerComponentName = "CustomMessageClient"
 )
 
-// CustomClient implements the MessageClientInterface for sending messages via a custom message provider.
+// CustomClient implements the NotificationClientInterface for sending messages via a custom message provider.
 type CustomClient struct {
 	name        string
 	url         string
@@ -47,7 +47,7 @@ type CustomClient struct {
 }
 
 // NewCustomClient creates a new instance of CustomClient.
-func NewCustomClient(sender common.NotificationSenderDTO) (MessageClientInterface, error) {
+func NewCustomClient(sender common.NotificationSenderDTO) (NotificationClientInterface, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, customClientLoggerComponentName))
 
 	client := &CustomClient{}
@@ -86,24 +86,38 @@ func (c *CustomClient) GetName() string {
 	return c.name
 }
 
-// SendSMS sends an SMS using the Custom client.
-func (c *CustomClient) SendSMS(sms common.SMSData) error {
+// IsChannelSupported reports whether the given channel is supported by the custom client.
+func (c *CustomClient) IsChannelSupported(channel common.ChannelType) bool {
+	return channel == common.ChannelTypeSMS
+}
+
+// Send dispatches a notification via the requested channel.
+func (c *CustomClient) Send(channel common.ChannelType, data common.NotificationData) error {
+	switch channel {
+	case common.ChannelTypeSMS:
+		return c.sendSMS(data)
+	default:
+		return fmt.Errorf("unsupported channel: %s", channel)
+	}
+}
+
+// sendSMS sends an SMS via the custom webhook.
+func (c *CustomClient) sendSMS(data common.NotificationData) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, customClientLoggerComponentName))
-	logger.Debug("Sending SMS via Custom client", log.String("to", log.MaskString(sms.To)))
+	logger.Debug("Sending SMS via custom client", log.String("to", log.MaskString(data.Recipient)))
 
 	var req *http.Request
 	var err error
 
-	// Create request based on content type
 	if strings.ToUpper(c.contentType) == "JSON" {
-		req, err = http.NewRequest(c.httpMethod, c.url, bytes.NewBufferString(sms.Body))
+		req, err = http.NewRequest(c.httpMethod, c.url, bytes.NewBufferString(data.Body))
 		if err != nil {
 			return fmt.Errorf("failed to create HTTP request: %w", err)
 		}
 		req.Header.Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 	} else if strings.ToUpper(c.contentType) == "FORM" {
 		formData := url.Values{}
-		lines := strings.Split(sms.Body, "\n")
+		lines := strings.Split(data.Body, "\n")
 		for _, line := range lines {
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
@@ -119,12 +133,10 @@ func (c *CustomClient) SendSMS(sms common.SMSData) error {
 		return fmt.Errorf("unsupported content type: %s", c.contentType)
 	}
 
-	// Add custom headers
 	for key, value := range c.httpHeaders {
 		req.Header.Set(key, value)
 	}
 
-	// Send the HTTP request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
@@ -135,14 +147,13 @@ func (c *CustomClient) SendSMS(sms common.SMSData) error {
 		}
 	}()
 
-	logger.Debug("Received response from custom SMS provider", log.Int("statusCode", resp.StatusCode))
+	logger.Debug("Received response from custom provider", log.Int("statusCode", resp.StatusCode))
 
-	// Check the response status
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		logger.Error("Failed to send SMS", log.Int("statusCode", resp.StatusCode),
+		logger.Error("Failed to send SMS via custom client", log.Int("statusCode", resp.StatusCode),
 			log.String("response", string(bodyBytes)))
-		return fmt.Errorf("failed to send SMS, status code: %d, response: %s", resp.StatusCode, string(bodyBytes))
+		return fmt.Errorf("custom SMS send failed, status: %d, response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	return nil
