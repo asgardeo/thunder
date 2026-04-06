@@ -134,8 +134,12 @@ func (d *dbProvider) GetUserDBTransactioner() (transaction.Transactioner, error)
 }
 
 // GetRuntimeDBTransactioner returns a transactioner for the runtime database.
-// The transactioner manages database transactions with automatic nesting detection.
 func (d *dbProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
+	// When the runtime store is Redis, a no-op transactioner is returned since Redis does
+	// not support SQL-style transactions.
+	if config.GetThunderRuntime().Config.Database.Runtime.Type == DataSourceTypeRedis {
+		return transaction.NewNoOpTransactioner(), nil
+	}
 	return d.getTransactioner(d.GetRuntimeDBClient, dbNameRuntime)
 }
 
@@ -185,6 +189,10 @@ func (d *dbProvider) getOrInitClient(
 	// Return error if database type is not configured
 	if dataSource.Type == "" {
 		return nil, fmt.Errorf("database type is not configured")
+	}
+	// Redis runtime stores bypass the SQL client entirely
+	if dataSource.Type == DataSourceTypeRedis {
+		return nil, fmt.Errorf("runtime database is configured as Redis; use RedisProvider instead")
 	}
 
 	mutex.RLock()
@@ -277,7 +285,14 @@ func (d *dbProvider) Close() error {
 	configErr := d.closeClient(&d.configClient, &d.configMutex, "config")
 	runtimeErr := d.closeClient(&d.runtimeClient, &d.runtimeMutex, "runtime")
 	userErr := d.closeClient(&d.userClient, &d.userMutex, "user")
-	return errors.Join(configErr, runtimeErr, userErr)
+
+	// Close the Redis runtime provider if it was initialized.
+	var redisErr error
+	if redisInstance != nil {
+		redisErr = redisInstance.Close()
+	}
+
+	return errors.Join(configErr, runtimeErr, userErr, redisErr)
 }
 
 // closeClient is a helper to close a DB client with locking.
