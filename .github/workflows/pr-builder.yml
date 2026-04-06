@@ -800,6 +800,52 @@ jobs:
         if: steps.filter.outputs.powershell != 'true'
         run: echo "No PowerShell changes - skipping validation"
 
+  detect-docs-changes:
+    name: 🔍 Detect Documentation Changes
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
+          filters: |
+            docs:
+              - 'docs/**'
+      - name: ✅ Documentation changes detected
+        if: steps.filter.outputs.docs == 'true'
+        run: echo "Documentation files changed - docs build will run"
+      - name: ⏭️ No documentation changes
+        if: steps.filter.outputs.docs != 'true'
+        run: echo "No documentation changes - skipping docs build"
+
+  build-docs:
+    name: 📚 Build Documentation
+    needs: [dependency-guard, detect-docs-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && needs.detect-docs-changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: 📚 Build docs
+        run: make build_docs
+
   validate-windows:
     name: 🪟 Validate Windows PowerShell
     needs: detect-powershell-changes

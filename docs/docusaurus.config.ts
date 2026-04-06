@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
-import webpackPlugin from './plugins/webpackPlugin';
+import type {Config} from '@docusaurus/types';
+import {themes as prismThemes} from 'prism-react-renderer';
 import thunderConfig from './docusaurus.thunder.config';
+import webpackPlugin from './plugins/webpackPlugin';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -63,17 +63,6 @@ const config: Config = {
         htmlLang: 'en-US',
         calendar: 'gregory',
       },
-      // Future locales can be added here. Example:
-      // 'es-ES': {
-      //   label: 'Español',
-      //   direction: 'ltr',
-      //   htmlLang: 'es-ES',
-      // },
-      // 'ja-JP': {
-      //   label: '日本語',
-      //   direction: 'ltr',
-      //   htmlLang: 'ja-JP',
-      // },
     },
   },
 
@@ -97,19 +86,7 @@ const config: Config = {
             },
           },
         },
-        blog: {
-          showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          // Blog edit URL.
-          editUrl: thunderConfig.project.source.github.editUrls.blog,
-          // Useful options to enforce blogging best practices
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
-        },
+        blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },

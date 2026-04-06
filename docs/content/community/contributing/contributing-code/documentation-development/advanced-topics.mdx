@@ -599,12 +599,14 @@ Use optimized images:
 
 ```mdx
 import ThemedImage from '@theme/ThemedImage';
+import ExampleDocumentScreenLight from './assets/images/consent-login-screen-light.png';
+import ExampleDocumentScreenDark from './assets/images/consent-login-screen-dark.png';
 
 <ThemedImage
-  alt="Diagram"
+  alt="Example Document Screen"
   sources={{
-    light: require('./img/diagram-light.png').default,
-    dark: require('./img/diagram-dark.png').default,
+    light: ExampleDocumentScreenLight,
+    dark: ExampleDocumentScreenDark,
   }}
 />
 ```

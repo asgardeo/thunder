@@ -41,26 +41,26 @@
     "@docusaurus/core": "3.9.2",
     "@docusaurus/plugin-content-docs": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
-    "@mdx-js/react": "^3.0.0",
+    "@mdx-js/react": "3.0.0",
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/logger": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
-    "@wso2/oxygen-ui": "^0.3.0",
-    "@wso2/oxygen-ui-icons-react": "^0.3.0",
-    "@scalar/api-reference-react": "^0.9.15",
-    "clsx": "^2.0.0",
+    "@wso2/oxygen-ui": "catalog:",
+    "@wso2/oxygen-ui-icons-react": "catalog:",
+    "@scalar/api-reference-react": "0.9.15",
+    "clsx": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "prism-react-renderer": "^2.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "prism-react-renderer": "2.3.0",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.9.2",
     "@docusaurus/tsconfig": "3.9.2",
     "@docusaurus/types": "3.9.2",
-    "typescript": "~5.6.2",
-    "yaml": "^2.8.2"
+    "typescript": "catalog:",
+    "yaml": "2.8.2"
   },
   "browserslist": {
     "production": [
@@ -73,8 +73,5 @@
       "last 3 firefox version",
       "last 5 safari version"
     ]
-  },
-  "engines": {
-    "node": ">=20.0"
   }
 }

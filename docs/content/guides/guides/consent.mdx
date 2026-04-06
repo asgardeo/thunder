@@ -3,6 +3,10 @@ title: Consent
 ---
 
 import ThemedImage from '@theme/ThemedImage';
+import FlowBuilderConsentNodeLight from './assets/images/flow-builder-consent-light.png';
+import FlowBuilderConsentNodeDark from './assets/images/flow-builder-consent-dark.png';
+import ConsentLoginScreenLight from './assets/images/consent-login-screen-light.png';
+import ConsentLoginScreenDark from './assets/images/consent-login-screen-dark.png';
 
 # Consent
 
@@ -72,12 +76,12 @@ To enable the consent prompt during authentication flows, configure it within th
 6. Then connect both **Allow** and **Deny** buttons in the **Consent View** step back to the **User Consent** node to handle user responses.
 7. Save the flow configuration.
 
-<!-- Placeholder for the flow graph image -->
+{/* Placeholder for the flow graph image */}
 <ThemedImage
   alt="Flow Builder Consent Node Placeholder"
   sources={{
-    light: require('./assets/images/flow-builder-consent-light.png').default,
-    dark: require('./assets/images/flow-builder-consent-dark.png').default,
+    light: FlowBuilderConsentNodeLight,
+    dark: FlowBuilderConsentNodeDark,
   }}
 />
 
@@ -130,11 +134,11 @@ To verify the attribute consent flow using an application configured with consen
 4. Review the requested attributes and choose to either **Allow** or **Deny** consent.
 5. If you allow consent, the login process will complete successfully, and the application will receive the approved attributes. If you deny any essential attributes, the login process will be terminated.
 
-<!-- Placeholder for the consent page during login -->
+{/* Placeholder for the consent page during login */}
 <ThemedImage
   alt="Consent Page Login Placeholder"
   sources={{
-    light: require('./assets/images/consent-login-screen-light.png').default,
-    dark: require('./assets/images/consent-login-screen-dark.png').default,
+    light: ConsentLoginScreenLight,
+    dark: ConsentLoginScreenDark,
   }}
 />
