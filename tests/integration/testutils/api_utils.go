@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 const (
@@ -35,6 +36,21 @@ const (
 // GetHTTPClient returns a configured HTTP client for test requests with automatic auth injection
 func GetHTTPClient() *http.Client {
 	return NewHTTPClientWithTokenProvider(GetAccessToken)
+}
+
+// GetNoRedirectHTTPClient returns an HTTP client that does not follow redirects.
+// Use this when testing endpoints that return 302 redirects (e.g. /oauth2/authorize)
+// where the redirect destination is not running (e.g. the frontend gate).
+func GetNoRedirectHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout: 30 * time.Second,
+	}
 }
 
 // CreateUserType creates a user type via API and returns the schema ID
@@ -213,6 +229,21 @@ func CreateApplication(app Application) (string, error) {
 		redirectURIs = []string{"http://localhost:8080/callback"}
 	}
 
+	// Build inboundAuthConfig: use the caller's config when provided, otherwise construct a minimal one.
+	inboundAuthConfig := app.InboundAuthConfig
+	if len(inboundAuthConfig) == 0 {
+		inboundAuthConfig = []map[string]interface{}{
+			{
+				"type": "oauth2",
+				"config": map[string]interface{}{
+					"clientId":     app.ClientID,
+					"clientSecret": app.ClientSecret,
+					"redirectUris": redirectURIs,
+				},
+			},
+		}
+	}
+
 	// Convert Application to the format expected by the application API
 	appData := map[string]interface{}{
 		"name":                      app.Name,
@@ -224,16 +255,7 @@ func CreateApplication(app Application) (string, error) {
 			"type":  "NONE",
 			"value": "",
 		},
-		"inboundAuthConfig": []map[string]interface{}{
-			{
-				"type": "oauth2",
-				"config": map[string]interface{}{
-					"clientId":     app.ClientID,
-					"clientSecret": app.ClientSecret,
-					"redirectUris": redirectURIs,
-				},
-			},
-		},
+		"inboundAuthConfig": inboundAuthConfig,
 	}
 
 	// Add allowed_user_types if provided

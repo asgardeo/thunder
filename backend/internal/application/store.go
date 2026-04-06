@@ -48,6 +48,7 @@ type oAuthConfig struct {
 	UserInfo                *userInfoConfig               `json:"user_info,omitempty"`
 	ScopeClaims             map[string][]string           `json:"scope_claims,omitempty"`
 	Certificate             *model.ApplicationCertificate `json:"certificate,omitempty"`
+	DefaultAcrValues        []string                      `json:"default_acr_values,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
@@ -332,6 +333,7 @@ func (st *applicationStore) GetOAuthApplication(
 		UserInfo:                userInfoConfig,
 		ScopeClaims:             scopeClaims,
 		Certificate:             oAuthConfig.Certificate,
+		DefaultAcrValues:        oAuthConfig.DefaultAcrValues,
 	}, nil
 }
 
@@ -592,6 +594,9 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 
 	// Handle ScopeClaims config
 	oauthConfig.ScopeClaims = inboundAuthConfig.OAuthAppConfig.ScopeClaims
+
+	// Handle DefaultAcrValues config
+	oauthConfig.DefaultAcrValues = inboundAuthConfig.OAuthAppConfig.DefaultAcrValues
 
 	oauthConfigJSONBytes, err := json.Marshal(oauthConfig)
 	if err != nil {
@@ -1028,6 +1033,7 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			Scopes:                  oauthConfig.Scopes,
 			UserInfo:                userInfoConfig,
 			ScopeClaims:             scopeClaims,
+			DefaultAcrValues:        oauthConfig.DefaultAcrValues,
 		},
 	}
 	return inboundAuthConfig, nil

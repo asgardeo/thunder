@@ -263,6 +263,13 @@ var (
 		Error:            "Consent service not enabled",
 		ErrorDescription: "Cannot enable consent for the application as the consent service is not enabled",
 	}
+	// ErrorInvalidDefaultAcrValues is the error returned when an unrecognised ACR value is provided in defaultAcrValues.
+	ErrorInvalidDefaultAcrValues = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1033",
+		Error:            "Invalid ACR value",
+		ErrorDescription: "One or more ACR values in default_acr_values are not recognised by the system",
+	}
 )
 
 // Server errors for application operations.

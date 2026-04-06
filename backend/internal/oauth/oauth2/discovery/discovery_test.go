@@ -54,6 +54,16 @@ func (suite *DiscoveryTestSuite) SetupTest() {
 			Issuer:         "https://test.thunder.io",
 			ValidityPeriod: 3600,
 		},
+		ACRAMRMapping: config.ACRAMRMappingConfig{
+			AMR: map[string]config.AMRFactor{
+				"Password": {Type: "PWD"},
+				"OTP":      {Type: "OTP"},
+			},
+			AcrAMR: map[string][]string{
+				"mosip:idp:acr:password":       {"Password"},
+				"mosip:idp:acr:generated-code": {"OTP"},
+			},
+		},
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
@@ -125,6 +135,10 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
 
 	// Verify claims parameter support
 	assert.True(suite.T(), metadata.ClaimsParameterSupported, "claims_parameter_supported should be true")
+
+	// Verify ACR values are published
+	assert.Contains(suite.T(), metadata.AcrValuesSupported, "mosip:idp:acr:password")
+	assert.Contains(suite.T(), metadata.AcrValuesSupported, "mosip:idp:acr:generated-code")
 }
 
 // TestGrantTypeIsValid tests the GrantType.IsValid() method

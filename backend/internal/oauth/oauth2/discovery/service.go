@@ -75,6 +75,7 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMe
 		IDTokenSigningAlgValuesSupported:  ds.getSupportedIDTokenSigningAlgorithms(),
 		ClaimsSupported:                   ds.getSupportedClaims(),
 		ClaimsParameterSupported:          true,
+		AcrValuesSupported:                ds.getSupportedAcrValues(),
 	}
 }
 
@@ -136,6 +137,15 @@ func (ds *discoveryService) getSupportedSubjectTypes() []string {
 
 func (ds *discoveryService) getSupportedIDTokenSigningAlgorithms() []string {
 	return constants.GetSupportedIDTokenSigningAlgorithms()
+}
+
+func (ds *discoveryService) getSupportedAcrValues() []string {
+	acrAMR := config.GetThunderRuntime().Config.ACRAMRMapping.AcrAMR
+	acrs := make([]string, 0, len(acrAMR))
+	for acr := range acrAMR {
+		acrs = append(acrs, acr)
+	}
+	return acrs
 }
 
 func (ds *discoveryService) getSupportedClaims() []string {

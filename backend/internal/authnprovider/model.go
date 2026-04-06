@@ -20,7 +20,9 @@ package authnprovider
 
 // AuthnMetadata contains metadata for authentication.
 type AuthnMetadata struct {
-	AppMetadata map[string]interface{} `json:"appMetadata,omitempty"`
+	AppMetadata          map[string]interface{} `json:"appMetadata,omitempty"`
+	SelectedAuthClass    string                 `json:"selectedAuthClass,omitempty"`
+	CompletedAuthMethods []string               `json:"completedAuthMethods,omitempty"`
 }
 
 // AuthnResult represents the result of an authentication attempt.
@@ -34,8 +36,10 @@ type AuthnResult struct {
 
 // GetAttributesMetadata contains metadata for fetching attributes.
 type GetAttributesMetadata struct {
-	AppMetadata map[string]interface{} `json:"appMetadata,omitempty"`
-	Locale      string                 `json:"locale"`
+	AppMetadata          map[string]interface{} `json:"appMetadata,omitempty"`
+	Locale               string                 `json:"locale"`
+	SelectedAuthClass    string                 `json:"selectedAuthClass,omitempty"`
+	CompletedAuthMethods []string               `json:"completedAuthMethods,omitempty"`
 }
 
 // GetAttributesResult represents the result of fetching attributes.

@@ -57,12 +57,14 @@ type OIDCProviderMetadata struct {
 	SubjectTypesSupported            []string `json:"subject_types_supported"`
 	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 	ClaimsSupported                  []string `json:"claims_supported"`
+	AcrValuesSupported               []string `json:"acr_values_supported,omitempty"`
 	EndSessionEndpoint               string   `json:"end_session_endpoint,omitempty"`
 }
 
 type DiscoveryTestSuite struct {
 	suite.Suite
-	client *http.Client
+	client                *http.Client
+	previousAcrAmrMapping interface{}
 }
 
 func TestDiscoveryTestSuite(t *testing.T) {
@@ -70,7 +72,36 @@ func TestDiscoveryTestSuite(t *testing.T) {
 }
 
 func (ts *DiscoveryTestSuite) SetupSuite() {
+	prev, err := testutils.ReadDeploymentConfigKey("acr_amr_mapping")
+	ts.Require().NoError(err, "failed to read existing acr_amr_mapping from deployment config")
+	ts.previousAcrAmrMapping = prev
+
+	err = testutils.PatchDeploymentConfig(map[string]interface{}{
+		"acr_amr_mapping": map[string]interface{}{
+			"amr": map[string]interface{}{
+				"Password": map[string]interface{}{"type": "PWD"},
+				"OTP":      map[string]interface{}{"type": "OTP"},
+			},
+			"acr_amr": map[string]interface{}{
+				"mosip:idp:acr:password":       []string{"Password"},
+				"mosip:idp:acr:generated-code": []string{"OTP"},
+			},
+		},
+	})
+	ts.Require().NoError(err, "failed to patch deployment config with ACR-AMR mapping")
+	ts.Require().NoError(testutils.RestartServer(), "failed to restart server after config patch")
 	ts.client = testutils.GetHTTPClient()
+}
+
+func (ts *DiscoveryTestSuite) TearDownSuite() {
+	if err := testutils.PatchDeploymentConfig(map[string]interface{}{
+		"acr_amr_mapping": ts.previousAcrAmrMapping,
+	}); err != nil {
+		ts.T().Logf("failed to restore ACR-AMR mapping in deployment config: %v", err)
+	}
+	if err := testutils.RestartServer(); err != nil {
+		ts.T().Logf("failed to restart server after config restore: %v", err)
+	}
 }
 
 // TestOAuth2AuthorizationServerMetadata_GET_Success tests successful retrieval of OAuth2 Authorization Server Metadata
@@ -197,6 +228,30 @@ func (ts *DiscoveryTestSuite) TestOIDCDiscovery_GET_Success() {
 
 	// Verify not implemented endpoints are empty
 	ts.Empty(metadata.EndSessionEndpoint, "EndSessionEndpoint should be empty (not implemented)")
+}
+
+// TestOIDCDiscovery_AcrValuesSupported verifies that the OIDC discovery response includes
+// the acr_values_supported field populated from the server's ACR-AMR configuration (AC-18/AC-19).
+func (ts *DiscoveryTestSuite) TestOIDCDiscovery_AcrValuesSupported() {
+	req, err := http.NewRequest("GET", testServerURL+oidcDiscoveryEndpoint, nil)
+	ts.Require().NoError(err)
+
+	resp, err := ts.client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	ts.Equal(http.StatusOK, resp.StatusCode)
+
+	var metadata OIDCProviderMetadata
+	err = json.NewDecoder(resp.Body).Decode(&metadata)
+	ts.Require().NoError(err)
+
+	// acr_values_supported must contain exactly the ACR values defined in the server's
+	// ACR-AMR configuration. When no mapping is configured, the field is absent.
+	expectedACRs, err := testutils.GetConfiguredAcrValues()
+	ts.Require().NoError(err, "failed to read configured ACR values from deployment config")
+	ts.ElementsMatch(expectedACRs, metadata.AcrValuesSupported,
+		"acr_values_supported must contain exactly the ACR values from the ACR-AMR config")
 }
 
 // TestOIDCDiscovery_OPTIONS_Success tests OPTIONS request for CORS

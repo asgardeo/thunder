@@ -179,6 +179,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 			OAuthApp:       oauthApp,
 			ClaimsRequest:  authCode.ClaimsRequest,
 			Nonce:          authCode.Nonce,
+			CompletedACR:   authCode.CompletedACR,
 		})
 		if err != nil {
 			logger.Error("Failed to generate ID token", log.Error(err))

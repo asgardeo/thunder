@@ -237,6 +237,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				UserInfo:                config.OAuthAppConfig.UserInfo,
 				ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
 				Certificate:             config.OAuthAppConfig.Certificate,
+				DefaultAcrValues:        config.OAuthAppConfig.DefaultAcrValues,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfig{
 				Type:           config.Type,
@@ -416,6 +417,7 @@ func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDT
 				UserInfo:                config.OAuthAppConfig.UserInfo,
 				ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
 				Certificate:             config.OAuthAppConfig.Certificate,
+				DefaultAcrValues:        config.OAuthAppConfig.DefaultAcrValues,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfigComplete{
 				Type:           config.Type,
@@ -490,6 +492,7 @@ func (ah *applicationHandler) processInboundAuthConfigFromRequest(
 				UserInfo:                config.OAuthAppConfig.UserInfo,
 				ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
 				Certificate:             config.OAuthAppConfig.Certificate,
+				DefaultAcrValues:        config.OAuthAppConfig.DefaultAcrValues,
 			},
 		}
 		inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
