@@ -23,12 +23,14 @@ package executor
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/observability"
@@ -102,6 +104,15 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 		return execResp, nil
 	}
 
+	// Validate that the current executor's AMR satisfies the selected ACR, if one was chosen.
+	if failureReason := b.validateAMRForSelectedACR(ctx); failureReason != "" {
+		logger.Debug("AMR validation failed for selected ACR",
+			log.String("selectedAcr", ctx.RuntimeData[common.RuntimeKeySelectedAuthClass]))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = failureReason
+		return execResp, nil
+	}
+
 	// TODO: Should handle client errors here. Service should return a ServiceError and
 	//  client errors should be appended as a failure.
 	//  For the moment handling returned error as a authentication failure.
@@ -128,6 +139,15 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 
 	execResp.AuthenticatedUser = *authenticatedUser
 	execResp.Status = common.ExecComplete
+
+	// Track completed authentication methods after successful authentication
+	if authenticatedUser.IsAuthenticated {
+		if completedAMRType := getCompletedAuthMethodType(b.GetRequiredInputs(ctx)); completedAMRType != "" {
+			existing := strings.Fields(ctx.RuntimeData[common.RuntimeKeyCompletedAuthMethods])
+			all := append(existing, completedAMRType)
+			execResp.RuntimeData[common.RuntimeKeyCompletedAuthMethods] = strings.Join(all, " ")
+		}
+	}
 
 	logger.Debug("Basic authentication executor execution completed",
 		log.String("status", string(execResp.Status)),
@@ -259,5 +279,87 @@ func (b *basicAuthExecutor) buildAuthnMetadata(ctx *core.NodeContext) *authnprov
 		metadata.AppMetadata["client_ids"] = clientIDs
 	}
 
+	// Pass the selected auth class if set in runtime data
+	if selectedAuthClass, exists := ctx.RuntimeData[common.RuntimeKeySelectedAuthClass]; exists && selectedAuthClass != "" {
+		metadata.SelectedAuthClass = selectedAuthClass
+	}
+
+	// Pass already-completed auth methods if present
+	if completedMethods, exists := ctx.RuntimeData[common.RuntimeKeyCompletedAuthMethods]; exists && completedMethods != "" {
+		metadata.CompletedAuthMethods = strings.Fields(completedMethods)
+	}
+
 	return metadata
+}
+
+// validateAMRForSelectedACR checks if the current executor's AMR satisfies the selected ACR stored in RuntimeData.
+// When a selected ACR is present, this verifies two conditions:
+//  1. The executor's AMR type is listed in the selected ACR's AMR set.
+//  2. All AMR types that precede it in the ACR's ordered list are already present
+//     in the completed authentication methods.
+//
+// Returns an empty string on success, or a non-empty failure reason when validation fails.
+func (b *basicAuthExecutor) validateAMRForSelectedACR(ctx *core.NodeContext) string {
+	selectedAcr, exists := ctx.RuntimeData[common.RuntimeKeySelectedAuthClass]
+	if !exists || selectedAcr == "" {
+		return ""
+	}
+
+	acrAMRMapping := config.GetThunderRuntime().Config.ACRAMRMapping
+
+	acrAMRKeys, exists := acrAMRMapping.AcrAMR[selectedAcr]
+	if !exists || len(acrAMRKeys) == 0 {
+		return ""
+	}
+
+	// Build ordered list of AMR keys for the selected ACR.
+	orderedAMRTypes := make([]string, 0, len(acrAMRKeys))
+	for _, amrKey := range acrAMRKeys {
+		if _, ok := acrAMRMapping.AMR[amrKey]; ok {
+			orderedAMRTypes = append(orderedAMRTypes, amrKey)
+		}
+	}
+
+	currentType := getCompletedAuthMethodType(b.GetRequiredInputs(ctx))
+	if currentType == "" {
+		return ""
+	}
+
+	completedMethods := strings.Fields(ctx.RuntimeData[common.RuntimeKeyCompletedAuthMethods])
+	completedSet := make(map[string]bool)
+	for _, m := range completedMethods {
+		completedSet[strings.ToLower(m)] = true
+	}
+
+	for i, orderedType := range orderedAMRTypes {
+		if strings.EqualFold(orderedType, currentType) {
+			for j := 0; j < i; j++ {
+				if !completedSet[strings.ToLower(orderedAMRTypes[j])] {
+					return "Authentication method order violation: a preceding authentication step has not been completed."
+				}
+			}
+			return ""
+		}
+	}
+
+	return "Authentication method does not satisfy the selected authentication class."
+}
+
+// getCompletedAuthMethodType returns the first AMR type name that matches a sensitive input of the executor.
+// Only sensitive inputs (e.g. PASSWORD_INPUT, OTP_INPUT) are matched against the Type field of AMRFactor
+// entries in the deployment ACR-AMR mapping. Matching is case-insensitive.
+func getCompletedAuthMethodType(inputs []common.Input) string {
+	acrAMRMapping := config.GetThunderRuntime().Config.ACRAMRMapping
+
+	for _, input := range inputs {
+		if !input.IsSensitive() {
+			continue
+		}
+		for amrName := range acrAMRMapping.AMR {
+			if strings.EqualFold(amrName, input.Identifier) {
+				return amrName
+			}
+		}
+	}
+	return ""
 }

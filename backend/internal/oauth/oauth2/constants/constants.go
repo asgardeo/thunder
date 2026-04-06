@@ -58,6 +58,7 @@ const (
 	RequestParamClaimsLocales       string = "claims_locales"
 	RequestParamNonce               string = "nonce"
 	RequestParamPrompt              string = "prompt"
+	RequestParamAcrValues           string = "acr_values"
 )
 
 // OIDC prompt parameter values.

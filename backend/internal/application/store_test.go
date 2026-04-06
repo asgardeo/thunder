@@ -3305,3 +3305,181 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 	suite.Equal(model.ApplicationProcessedDTO{}, result)
 	suite.Contains(err.Error(), "failed to parse allowed_user_types from app JSON")
 }
+
+// ---------------------------------------------------------------------------
+// getOAuthConfigJSONBytes — DefaultAcrValues serialisation
+// ---------------------------------------------------------------------------
+
+func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithDefaultAcrValues() {
+	inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
+		Type: model.OAuthInboundAuthType,
+		OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+			ClientID:                "client-acr",
+			RedirectURIs:            []string{"https://example.com/callback"},
+			GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+			ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			DefaultAcrValues:        []string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"},
+		},
+	}
+
+	jsonBytes, err := getOAuthConfigJSONBytes(inboundAuthConfig)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	suite.NoError(json.Unmarshal(jsonBytes, &result))
+
+	acrRaw, ok := result["default_acr_values"].([]interface{})
+	suite.True(ok, "default_acr_values should be present in JSON")
+	suite.Len(acrRaw, 2)
+	suite.Equal("mosip:idp:acr:password", acrRaw[0])
+	suite.Equal("mosip:idp:acr:generated-code", acrRaw[1])
+}
+
+func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithEmptyDefaultAcrValues() {
+	inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
+		Type: model.OAuthInboundAuthType,
+		OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+			ClientID:         "client-no-acr",
+			RedirectURIs:     []string{"https://example.com/callback"},
+			GrantTypes:       []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+			DefaultAcrValues: []string{},
+		},
+	}
+
+	jsonBytes, err := getOAuthConfigJSONBytes(inboundAuthConfig)
+
+	suite.NoError(err)
+	var result map[string]interface{}
+	suite.NoError(json.Unmarshal(jsonBytes, &result))
+
+	// omitempty: an empty slice should not appear in the JSON output
+	suite.Nil(result["default_acr_values"])
+}
+
+func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithNilDefaultAcrValues() {
+	inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
+		Type: model.OAuthInboundAuthType,
+		OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+			ClientID:         "client-nil-acr",
+			RedirectURIs:     []string{"https://example.com/callback"},
+			DefaultAcrValues: nil,
+		},
+	}
+
+	jsonBytes, err := getOAuthConfigJSONBytes(inboundAuthConfig)
+
+	suite.NoError(err)
+	var result map[string]interface{}
+	suite.NoError(json.Unmarshal(jsonBytes, &result))
+
+	suite.Nil(result["default_acr_values"])
+}
+
+// ---------------------------------------------------------------------------
+// buildOAuthInboundAuthConfig — DefaultAcrValues deserialisation
+// ---------------------------------------------------------------------------
+
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithDefaultAcrValues() {
+	oauthJSON := map[string]interface{}{
+		"redirect_uris":              []interface{}{"https://example.com/callback"},
+		"grant_types":                []interface{}{"authorization_code"},
+		"response_types":             []interface{}{"code"},
+		"token_endpoint_auth_method": "client_secret_basic",
+		"pkce_required":              false,
+		"public_client":              false,
+		"default_acr_values":         []interface{}{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"},
+	}
+	oauthJSONBytes, _ := json.Marshal(oauthJSON)
+
+	row := map[string]interface{}{
+		"client_secret":     "hashed-secret",
+		"oauth_config_json": string(oauthJSONBytes),
+	}
+	basicApp := model.BasicApplicationDTO{ID: "app1", ClientID: "client1"}
+
+	result, err := buildOAuthInboundAuthConfig(row, basicApp)
+
+	suite.NoError(err)
+	suite.Require().NotNil(result.OAuthAppConfig)
+	suite.Equal(
+		[]string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"},
+		result.OAuthAppConfig.DefaultAcrValues,
+	)
+}
+
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithSingleDefaultAcrValue() {
+	oauthJSON := map[string]interface{}{
+		"redirect_uris":      []interface{}{"https://example.com/callback"},
+		"grant_types":        []interface{}{"authorization_code"},
+		"default_acr_values": []interface{}{"mosip:idp:acr:password"},
+	}
+	oauthJSONBytes, _ := json.Marshal(oauthJSON)
+
+	row := map[string]interface{}{
+		"client_secret":     "hashed-secret",
+		"oauth_config_json": string(oauthJSONBytes),
+	}
+	basicApp := model.BasicApplicationDTO{ID: "app1", ClientID: "client1"}
+
+	result, err := buildOAuthInboundAuthConfig(row, basicApp)
+
+	suite.NoError(err)
+	suite.Require().NotNil(result.OAuthAppConfig)
+	suite.Equal([]string{"mosip:idp:acr:password"}, result.OAuthAppConfig.DefaultAcrValues)
+}
+
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithoutDefaultAcrValues() {
+	oauthJSON := map[string]interface{}{
+		"redirect_uris": []interface{}{"https://example.com/callback"},
+		"grant_types":   []interface{}{"authorization_code"},
+	}
+	oauthJSONBytes, _ := json.Marshal(oauthJSON)
+
+	row := map[string]interface{}{
+		"client_secret":     "hashed-secret",
+		"oauth_config_json": string(oauthJSONBytes),
+	}
+	basicApp := model.BasicApplicationDTO{ID: "app1", ClientID: "client1"}
+
+	result, err := buildOAuthInboundAuthConfig(row, basicApp)
+
+	suite.NoError(err)
+	suite.Require().NotNil(result.OAuthAppConfig)
+	suite.Nil(result.OAuthAppConfig.DefaultAcrValues)
+}
+
+// ---------------------------------------------------------------------------
+// Round-trip: serialize then deserialize, DefaultAcrValues must survive
+// ---------------------------------------------------------------------------
+
+func (suite *ApplicationStoreTestSuite) TestDefaultAcrValues_RoundTrip() {
+	acrs := []string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"}
+
+	inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
+		Type: model.OAuthInboundAuthType,
+		OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+			ClientID:                "client-rt",
+			RedirectURIs:            []string{"https://example.com/callback"},
+			GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+			ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			DefaultAcrValues:        acrs,
+		},
+	}
+
+	jsonBytes, err := getOAuthConfigJSONBytes(inboundAuthConfig)
+	suite.NoError(err)
+
+	row := map[string]interface{}{
+		"client_secret":     "hashed-secret",
+		"oauth_config_json": string(jsonBytes),
+	}
+	basicApp := model.BasicApplicationDTO{ID: "app-rt", ClientID: "client-rt"}
+
+	result, err := buildOAuthInboundAuthConfig(row, basicApp)
+	suite.NoError(err)
+	suite.Equal(acrs, result.OAuthAppConfig.DefaultAcrValues)
+}

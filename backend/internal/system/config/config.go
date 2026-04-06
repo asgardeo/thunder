@@ -401,6 +401,40 @@ type ConsentConfig struct {
 	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
 }
 
+// AMRFactor represents a single authentication method reference factor entry.
+type AMRFactor struct {
+	Type  string `yaml:"type" json:"type"`
+	Count int    `yaml:"count,omitempty" json:"count,omitempty"`
+}
+
+// ACRAMRMappingConfig holds the ACR-AMR mapping configuration.
+type ACRAMRMappingConfig struct {
+	AMR    map[string]AMRFactor `yaml:"amr" json:"amr"`
+	AcrAMR map[string][]string  `yaml:"acr_amr" json:"acr_amr"`
+}
+
+// Validate checks the ACR-AMR mapping for configuration errors.
+// It returns an error if any acr_amr entry has an empty AMR list or references
+// an AMR key not defined in the amr section.
+func (c *ACRAMRMappingConfig) Validate() error {
+	if len(c.AcrAMR) == 0 {
+		return nil
+	}
+
+	for acr, amrKeys := range c.AcrAMR {
+		if len(amrKeys) == 0 {
+			return fmt.Errorf("acr_amr_mapping: ACR %q has an empty AMR list", acr)
+		}
+		for _, amrKey := range amrKeys {
+			if _, ok := c.AMR[amrKey]; !ok {
+				return fmt.Errorf("acr_amr_mapping: ACR %q references unknown AMR key %q", acr, amrKey)
+			}
+		}
+	}
+
+	return nil
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               ServerConfig           `yaml:"server" json:"server"`
@@ -429,6 +463,7 @@ type Config struct {
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
 	Email                EmailConfig            `yaml:"email" json:"email"`
 	Consent              ConsentConfig          `yaml:"consent" json:"consent"`
+	ACRAMRMapping        ACRAMRMappingConfig    `yaml:"acr_amr_mapping" json:"acr_amr_mapping"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
@@ -466,6 +501,11 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 	// Derive JWT issuer from server config if not set
 	if cfg.JWT.Issuer == "" {
 		cfg.JWT.Issuer = GetServerURL(&cfg.Server)
+	}
+
+	// Validate ACR-AMR mapping.
+	if err := cfg.ACRAMRMapping.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil

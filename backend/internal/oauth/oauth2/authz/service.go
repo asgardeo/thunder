@@ -151,6 +151,9 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 
 	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
 
+	// Extract acr_values parameter (space-separated, order-preserving per OIDC spec).
+	acrValues := msg.RequestQueryParams[oauth2const.RequestParamAcrValues]
+
 	if clientID == "" {
 		return nil, &AuthorizationError{
 			Code:    oauth2const.ErrorInvalidRequest,
@@ -210,6 +213,31 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		return nil, authErr
 	}
 
+	// Resolve the effective ACR values.
+	// When acr_values is present and the app has a non-empty default_acr_values list, filter the
+	// requested ACRs to only those included in the app's default list. Requested ACRs not in the
+	// default list are silently ignored. If filtering removes all ACRs, fall back to the full
+	// default_acr_values list.
+	effectiveAcrValues := ""
+	if acrValues != "" {
+		if len(app.DefaultAcrValues) > 0 {
+			requestedACRs := parseACRValues(acrValues)
+			filtered := make([]string, 0, len(requestedACRs))
+			for _, acr := range requestedACRs {
+				if slices.Contains(app.DefaultAcrValues, acr) {
+					filtered = append(filtered, acr)
+				}
+			}
+			if len(filtered) == 0 {
+				effectiveAcrValues = strings.Join(app.DefaultAcrValues, " ")
+			} else {
+				effectiveAcrValues = strings.Join(filtered, " ")
+			}
+		} else {
+			effectiveAcrValues = acrValues
+		}
+	}
+
 	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope, app.ScopeClaims)
 
 	// Construct authorization request context.
@@ -252,6 +280,10 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
 		flowcm.RuntimeKeyRequiredLocales:               claimsLocales,
 		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", resolveUserAttributesCacheTTL(app)),
+	}
+	// Store the effective acr_values string in runtime data for use by the flow engine.
+	if effectiveAcrValues != "" {
+		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.AppID,
@@ -561,6 +593,13 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 			claims.attributeCacheID = strValue
 			continue
 		}
+
+		if key == flowcm.ClaimCompletedAuthClass {
+			if strValue, ok := value.(string); ok {
+				claims.completedACR = strValue
+			}
+			continue
+		}
 	}
 
 	return claims, authTime, nil
@@ -625,6 +664,7 @@ func createAuthorizationCode(
 		ClaimsRequest:       authRequestCtx.OAuthParameters.ClaimsRequest,
 		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 		Nonce:               authRequestCtx.OAuthParameters.Nonce,
+		CompletedACR:        claims.completedACR,
 	}, nil
 }
 
@@ -822,6 +862,20 @@ func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actual
 	}
 
 	return nil
+}
+
+// parseACRValues splits a space-separated acr_values string into a deduplicated, order-preserving slice.
+func parseACRValues(acrValues string) []string {
+	parts := strings.Fields(acrValues)
+	seen := make(map[string]bool, len(parts))
+	result := make([]string, 0, len(parts))
+	for _, acr := range parts {
+		if !seen[acr] {
+			seen[acr] = true
+			result = append(result, acr)
+		}
+	}
+	return result
 }
 
 // resolveUserAttributesCacheTTL determines the TTL for caching user attributes based on the

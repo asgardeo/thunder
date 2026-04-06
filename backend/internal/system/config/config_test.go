@@ -749,3 +749,79 @@ func (suite *ConfigTestSuite) createTempFile(dir, pattern, content string) strin
 
 	return tempFile.Name()
 }
+
+// ---------------------------------------------------------------------------
+// ACRAMRMappingConfig.Validate
+// ---------------------------------------------------------------------------
+
+func TestACRAMRMappingValidate_EmptyConfig(t *testing.T) {
+	cfg := ACRAMRMappingConfig{}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestACRAMRMappingValidate_ValidMapping(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+			"OTP":      {Type: "OTP"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password":       {"Password"},
+			"mosip:idp:acr:generated-code": {"OTP"},
+			"mosip:idp:acr:multi":          {"Password", "OTP"},
+		},
+	}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestACRAMRMappingValidate_EmptyAMRList(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password"},
+			"mosip:idp:acr:empty":    {},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mosip:idp:acr:empty")
+	assert.Contains(t, err.Error(), "empty AMR list")
+}
+
+func TestACRAMRMappingValidate_UnknownAMRKey(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password"},
+			"mosip:idp:acr:otp":     {"NonExistentAMR"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "NonExistentAMR")
+	assert.Contains(t, err.Error(), "unknown AMR key")
+}
+
+func TestACRAMRMappingValidate_NoAMRSection(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown AMR key")
+}
+
+func TestACRAMRMappingValidate_AcrAMREmptyButAMRPresent(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+	}
+	assert.NoError(t, cfg.Validate())
+}

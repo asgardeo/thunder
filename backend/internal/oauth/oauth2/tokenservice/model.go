@@ -80,6 +80,7 @@ type IDTokenBuildContext struct {
 	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
 	ClaimsRequest  *oauth2model.ClaimsRequest
 	Nonce          string
+	CompletedACR   string
 }
 
 // RefreshTokenClaims represents the validated claims from a refresh token.
