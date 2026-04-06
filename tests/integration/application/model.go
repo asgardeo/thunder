@@ -70,6 +70,7 @@ type OAuthAppConfig struct {
 	ScopeClaims             map[string][]string `json:"scopeClaims,omitempty"`
 	UserInfo                *UserInfoConfig     `json:"userInfo,omitempty"`
 	Certificate             *ApplicationCert    `json:"certificate,omitempty"`
+	DefaultAcrValues        []string            `json:"defaultAcrValues,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.

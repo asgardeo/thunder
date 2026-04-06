@@ -1705,3 +1705,209 @@ func determineClaimsForTokens(oidcScopes []string, claimsRequest *oauth2model.Cl
 
 	return accessTokenClaims, idTokenClaims, userInfoClaims
 }
+
+// ---------------------------------------------------------------------------
+// parseACRValues — unit tests
+// ---------------------------------------------------------------------------
+
+func TestParseACRValues_SingleACR(t *testing.T) {
+	result := parseACRValues("mosip:idp:acr:password")
+	assert.Equal(t, []string{"mosip:idp:acr:password"}, result)
+}
+
+func TestParseACRValues_MultipleACRs(t *testing.T) {
+	result := parseACRValues("mosip:idp:acr:password mosip:idp:acr:generated-code")
+	assert.Equal(t, []string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"}, result)
+}
+
+func TestParseACRValues_DeduplicatesPreservingFirstOccurrence(t *testing.T) {
+	result := parseACRValues("mosip:idp:acr:generated-code mosip:idp:acr:generated-code mosip:idp:acr:password")
+	assert.Equal(t, []string{"mosip:idp:acr:generated-code", "mosip:idp:acr:password"}, result)
+}
+
+func TestParseACRValues_EmptyString(t *testing.T) {
+	result := parseACRValues("")
+	assert.Empty(t, result)
+}
+
+func TestParseACRValues_OnlyWhitespace(t *testing.T) {
+	result := parseACRValues("   ")
+	assert.Empty(t, result)
+}
+
+func TestParseACRValues_ExtraSpacesBetweenACRs(t *testing.T) {
+	result := parseACRValues("mosip:idp:acr:password   mosip:idp:acr:generated-code")
+	assert.Equal(t, []string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"}, result)
+}
+
+func TestParseACRValues_PreservesOrder(t *testing.T) {
+	result := parseACRValues("mosip:idp:acr:biometrics mosip:idp:acr:password mosip:idp:acr:generated-code")
+	assert.Equal(t, []string{
+		"mosip:idp:acr:biometrics",
+		"mosip:idp:acr:password",
+		"mosip:idp:acr:generated-code",
+	}, result)
+}
+
+// ---------------------------------------------------------------------------
+// HandleInitialAuthorizationRequest — effective ACR resolution
+// ---------------------------------------------------------------------------
+
+func (suite *AuthorizeServiceTestSuite) acrTestMsg(acrValues string) *OAuthMessage {
+	msg := suite.testMsg()
+	if acrValues != "" {
+		msg.RequestQueryParams[oauth2const.RequestParamAcrValues] = acrValues
+	}
+	return msg
+}
+
+func (suite *AuthorizeServiceTestSuite) appWithDefaultACRs(defaults []string) *appmodel.OAuthAppConfigProcessedDTO {
+	app := suite.testApp()
+	app.DefaultAcrValues = defaults
+	return app
+}
+
+func captureFlowInitCtx(captured **flowexec.FlowInitContext) interface{} {
+	return mock.MatchedBy(func(ctx *flowexec.FlowInitContext) bool {
+		*captured = ctx
+		return true
+	})
+}
+
+func (suite *AuthorizeServiceTestSuite) setupSuccessfulACRFlow(
+	app *appmodel.OAuthAppConfigProcessedDTO,
+	captured **flowexec.FlowInitContext,
+) {
+	suite.mockAppService.EXPECT().
+		GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
+	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
+		Return(false, "", "")
+	suite.mockFlowExecService.EXPECT().
+		InitiateFlow(mock.Anything, captureFlowInitCtx(captured)).Return("flow-id", nil)
+	suite.mockAuthReqStore.EXPECT().
+		AddRequest(mock.Anything, mock.Anything).Return("auth-id", nil)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_NoAcrValues_NoDefaults() {
+	app := suite.testApp()
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), suite.testMsg())
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.NotContains(suite.T(), captured.RuntimeData, flowcm.RuntimeKeyRequestedAuthClasses)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_AcrValues_NoDefaults() {
+	app := suite.testApp()
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	msg := suite.acrTestMsg("mosip:idp:acr:password mosip:idp:acr:generated-code")
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(),
+		"mosip:idp:acr:password mosip:idp:acr:generated-code",
+		captured.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses],
+	)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_AcrValues_AllInDefaults() {
+	app := suite.appWithDefaultACRs([]string{
+		"mosip:idp:acr:password",
+		"mosip:idp:acr:generated-code",
+		"mosip:idp:acr:biometrics",
+	})
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	msg := suite.acrTestMsg("mosip:idp:acr:generated-code mosip:idp:acr:password")
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(),
+		[]string{"mosip:idp:acr:generated-code", "mosip:idp:acr:password"},
+		strings.Fields(captured.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses]),
+	)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_AcrValues_SomeNotInDefaults() {
+	app := suite.appWithDefaultACRs([]string{
+		"mosip:idp:acr:password",
+		"mosip:idp:acr:generated-code",
+	})
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	msg := suite.acrTestMsg("mosip:idp:acr:password mosip:idp:acr:biometrics")
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	effective := captured.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses]
+	assert.Equal(suite.T(), []string{"mosip:idp:acr:password"}, strings.Fields(effective))
+	assert.NotContains(suite.T(), effective, "mosip:idp:acr:biometrics")
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_AcrValues_NoneInDefaults() {
+	defaults := []string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"}
+	app := suite.appWithDefaultACRs(defaults)
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	msg := suite.acrTestMsg("mosip:idp:acr:biometrics mosip:idp:acr:linked-wallet")
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.ElementsMatch(suite.T(), defaults,
+		strings.Fields(captured.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses]),
+	)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_AcrValues_DuplicatesDeduped() {
+	app := suite.appWithDefaultACRs([]string{
+		"mosip:idp:acr:password",
+		"mosip:idp:acr:generated-code",
+	})
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	msg := suite.acrTestMsg("mosip:idp:acr:password mosip:idp:acr:password mosip:idp:acr:generated-code")
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(),
+		[]string{"mosip:idp:acr:password", "mosip:idp:acr:generated-code"},
+		strings.Fields(captured.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses]),
+	)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_AcrValues_SingleDefault() {
+	app := suite.appWithDefaultACRs([]string{"mosip:idp:acr:password"})
+	var captured *flowexec.FlowInitContext
+	suite.setupSuccessfulACRFlow(app, &captured)
+
+	msg := suite.acrTestMsg("mosip:idp:acr:password")
+	svc := suite.newService()
+	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), msg)
+
+	assert.Nil(suite.T(), authErr)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(),
+		"mosip:idp:acr:password",
+		captured.RuntimeData[flowcm.RuntimeKeyRequestedAuthClasses],
+	)
+}

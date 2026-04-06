@@ -793,7 +793,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetAllInputs() {
 	})
 
 	// Test getAllInputs
-	allInputs := promptNode.getAllInputs()
+	allInputs := getAllInputsFrom(promptNode.prompts)
 	s.Len(allInputs, 3, "Should return all inputs from all prompts")
 	s.Equal("username", allInputs[0].Identifier)
 	s.Equal("password", allInputs[1].Identifier)
@@ -805,7 +805,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetAllInputsEmpty() {
 	promptNode := node.(*promptNode)
 
 	// No prompts set
-	allInputs := promptNode.getAllInputs()
+	allInputs := getAllInputsFrom(promptNode.prompts)
 	s.NotNil(allInputs)
 	s.Len(allInputs, 0, "Should return empty slice when no prompts")
 }
@@ -834,7 +834,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetAllActions() {
 	})
 
 	// Test getAllActions
-	allActions := promptNode.getAllActions()
+	allActions := getAllActionsFrom(promptNode.prompts)
 	s.Len(allActions, 3, "Should return all actions from all prompts")
 	s.Equal("login", allActions[0].Ref)
 	s.Equal("signup", allActions[1].Ref)
@@ -865,7 +865,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetAllActionsWithNilAction() {
 	})
 
 	// Test getAllActions - should only return non-nil actions
-	allActions := promptNode.getAllActions()
+	allActions := getAllActionsFrom(promptNode.prompts)
 	s.Len(allActions, 2, "Should only return non-nil actions")
 	s.Equal("login", allActions[0].Ref)
 	s.Equal("signup", allActions[1].Ref)
@@ -876,7 +876,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetAllActionsEmpty() {
 	promptNode := node.(*promptNode)
 
 	// No prompts set
-	allActions := promptNode.getAllActions()
+	allActions := getAllActionsFrom(promptNode.prompts)
 	s.NotNil(allActions)
 	s.Len(allActions, 0, "Should return empty slice when no prompts")
 }
@@ -899,13 +899,13 @@ func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRef() {
 	})
 
 	// Test finding existing actions
-	nextNode := promptNode.getNextNodeForActionRef("login", promptNode.logger)
+	nextNode := getNextNodeForActionRef(promptNode.prompts, "login", promptNode.logger)
 	s.Equal("auth_node", nextNode)
 
-	nextNode = promptNode.getNextNodeForActionRef("signup", promptNode.logger)
+	nextNode = getNextNodeForActionRef(promptNode.prompts, "signup", promptNode.logger)
 	s.Equal("register_node", nextNode)
 
-	nextNode = promptNode.getNextNodeForActionRef("cancel", promptNode.logger)
+	nextNode = getNextNodeForActionRef(promptNode.prompts, "cancel", promptNode.logger)
 	s.Equal("exit_node", nextNode)
 }
 
@@ -924,7 +924,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRefNotFound() {
 	})
 
 	// Test finding non-existent action
-	nextNode := promptNode.getNextNodeForActionRef("nonexistent", promptNode.logger)
+	nextNode := getNextNodeForActionRef(promptNode.prompts, "nonexistent", promptNode.logger)
 	s.Equal("", nextNode, "Should return empty string when action not found")
 }
 
@@ -940,7 +940,7 @@ func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRefEmptyRef() {
 	})
 
 	// Test with empty action ref
-	nextNode := promptNode.getNextNodeForActionRef("", promptNode.logger)
+	nextNode := getNextNodeForActionRef(promptNode.prompts, "", promptNode.logger)
 	s.Equal("", nextNode, "Should return empty string for empty action ref")
 }
 
@@ -1307,4 +1307,345 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataEmptyOptions() {
 	s.Equal("userType", promptInput.Identifier)
 	s.ElementsMatch([]string{"default"}, promptInput.Options,
 		"Options should not be overwritten with empty options from ForwardedData")
+}
+
+// --- ACR / login_options variant tests ---
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_GetSetVariant() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+
+	s.Equal("", pn.GetVariant())
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	s.Equal(common.NodeVariantLoginOptions, pn.GetVariant())
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_NoACRFilter_AllActionsReturned() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+
+	// No requested_acr_values in RuntimeData → all actions returned
+	ctx := &NodeContext{
+		FlowID:      "test-flow",
+		UserInputs:  map[string]string{},
+		RuntimeData: map[string]string{},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Len(resp.Actions, 2)
+	refs := []string{resp.Actions[0].Ref, resp.Actions[1].Ref}
+	s.ElementsMatch([]string{"pwd", "otp"}, refs)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_SingleACRFilter() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+		{ACR: "mosip:idp:acr:linked-wallet", Action: &common.Action{Ref: "wallet", NextNode: "wallet-node"}},
+	})
+
+	// Only OTP requested — single remaining option must be auto-selected (AC-13)
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Equal(common.NodeStatusComplete, resp.Status,
+		"login_options node must auto-select when only one ACR option remains after filtering (AC-13)")
+	s.Equal("otp-node", resp.NextNodeID, "must forward to the next node for the auto-selected action")
+	s.Empty(resp.Actions, "chooser actions must not be returned after auto-selection")
+	s.Equal("otp", ctx.CurrentAction, "context must have the auto-selected action")
+	s.Equal("mosip:idp:acr:generated-code", resp.RuntimeData[common.RuntimeKeySelectedAuthClass],
+		"selected_auth_class must be recorded for the auto-selected ACR")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_PreferenceOrder() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	// Graph order: password first, then OTP
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+
+	// Preference order: OTP first, then password
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code mosip:idp:acr:password",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Require().Len(resp.Actions, 2)
+	s.Equal("otp", resp.Actions[0].Ref, "OTP should be first per preference order")
+	s.Equal("pwd", resp.Actions[1].Ref, "password should be second per preference order")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_UntaggedPromptsAlwaysIncluded() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		// No ACR tag — should always be included
+		{Action: &common.Action{Ref: "other", NextNode: "other-node"}},
+	})
+
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			// Only password requested; untagged prompt should still appear
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:password",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Require().Len(resp.Actions, 2)
+	refs := []string{resp.Actions[0].Ref, resp.Actions[1].Ref}
+	s.Contains(refs, "pwd")
+	s.Contains(refs, "other")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_GracefulFallback_NoMatchingACR() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+
+	// Requested ACR not present in any prompt → graceful fallback returns all
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:biometrics",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Require().Len(resp.Actions, 2, "all prompts should be returned as fallback")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_CompletedACRWritten() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		UserInputs:    map[string]string{},
+		CurrentAction: "pwd",
+		RuntimeData:   map[string]string{},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Equal(common.NodeStatusComplete, resp.Status)
+	s.Equal("pwd-node", resp.NextNodeID)
+	s.Equal("mosip:idp:acr:password", resp.RuntimeData[common.RuntimeKeySelectedAuthClass])
+}
+
+func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_CompletedACRWritten_WithACRFilter() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+
+	// Only OTP requested; user picks otp
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		UserInputs:    map[string]string{},
+		CurrentAction: "otp",
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Equal(common.NodeStatusComplete, resp.Status)
+	s.Equal("otp-node", resp.NextNodeID)
+	s.Equal("mosip:idp:acr:generated-code", resp.RuntimeData[common.RuntimeKeySelectedAuthClass])
+}
+
+func (s *PromptOnlyNodeTestSuite) TestNonLoginOptionsVariant_UnaffectedByACRValues() {
+	node := newPromptNode("standard-prompt", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	// No variant set
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	// Both actions must be returned — no filtering for non-login_options nodes
+	s.Nil(err)
+	s.Require().Len(resp.Actions, 2)
+}
+
+// --- filteredMeta reordering tests ---
+
+func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_ActionComponentsReorderedByACR() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(*promptNode)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	// Graph order: password, otp, wallet
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+		{ACR: "mosip:idp:acr:linked-wallet", Action: &common.Action{Ref: "wallet", NextNode: "wallet-node"}},
+	})
+	pn.SetMeta(map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{"type": "ACTION", "id": "pwd"},
+			map[string]interface{}{"type": "ACTION", "id": "otp"},
+			map[string]interface{}{"type": "ACTION", "id": "wallet"},
+		},
+	})
+
+	// ACR preference: otp first, then wallet, then password
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		Verbose:    true,
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code mosip:idp:acr:linked-wallet mosip:idp:acr:password",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Require().NotNil(resp.Meta)
+
+	metaMap, ok := resp.Meta.(map[string]interface{})
+	s.Require().True(ok)
+	components, ok := metaMap["components"].([]interface{})
+	s.Require().True(ok)
+	s.Require().Len(components, 3)
+
+	ids := make([]string, 3)
+	for i, c := range components {
+		ids[i], _ = c.(map[string]interface{})["id"].(string)
+	}
+	s.Equal([]string{"otp", "wallet", "pwd"}, ids, "ACTION components should follow ACR preference order")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_NonActionComponentsRetainPosition() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(*promptNode)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+	})
+	pn.SetMeta(map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{"type": "TEXT", "id": "heading"},
+			map[string]interface{}{"type": "ACTION", "id": "pwd"},
+			map[string]interface{}{"type": "DIVIDER", "id": "div1"},
+			map[string]interface{}{"type": "ACTION", "id": "otp"},
+			map[string]interface{}{"type": "TEXT", "id": "footer"},
+		},
+	})
+
+	// Preference: otp first, then password
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		Verbose:    true,
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code mosip:idp:acr:password",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Require().NotNil(resp.Meta)
+
+	metaMap := resp.Meta.(map[string]interface{})
+	components := metaMap["components"].([]interface{})
+	s.Require().Len(components, 5)
+
+	ids := make([]string, 5)
+	for i, c := range components {
+		ids[i], _ = c.(map[string]interface{})["id"].(string)
+	}
+	// Non-ACTION components stay; ACTION slots are filled in ACR preference order
+	s.Equal([]string{"heading", "otp", "div1", "pwd", "footer"}, ids)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestFilteredMeta_FilteredOutActionsDropped() {
+	node := newPromptNode("login-chooser", map[string]interface{}{}, false, false)
+	pn := node.(*promptNode)
+	pn.SetVariant(common.NodeVariantLoginOptions)
+	pn.SetPrompts([]common.Prompt{
+		{ACR: "mosip:idp:acr:password", Action: &common.Action{Ref: "pwd", NextNode: "pwd-node"}},
+		{ACR: "mosip:idp:acr:generated-code", Action: &common.Action{Ref: "otp", NextNode: "otp-node"}},
+		{ACR: "mosip:idp:acr:linked-wallet", Action: &common.Action{Ref: "wallet", NextNode: "wallet-node"}},
+	})
+	pn.SetMeta(map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{"type": "ACTION", "id": "pwd"},
+			map[string]interface{}{"type": "ACTION", "id": "otp"},
+			map[string]interface{}{"type": "ACTION", "id": "wallet"},
+		},
+	})
+
+	// Only OTP requested — single remaining option is auto-selected (AC-13), so the node
+	// completes immediately and does not return an INCOMPLETE view with filtered meta.
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		Verbose:    true,
+		RuntimeData: map[string]string{
+			common.RuntimeKeyRequestedAuthClasses: "mosip:idp:acr:generated-code",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.Equal(common.NodeStatusComplete, resp.Status,
+		"single ACR filter must trigger auto-selection and complete the node (AC-13)")
+	s.Equal("otp-node", resp.NextNodeID)
+	s.Nil(resp.Meta, "meta is not returned for a completed (auto-selected) chooser node")
 }

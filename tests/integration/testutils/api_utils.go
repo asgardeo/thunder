@@ -37,6 +37,20 @@ func GetHTTPClient() *http.Client {
 	return NewHTTPClientWithTokenProvider(GetAccessToken)
 }
 
+// GetNoRedirectHTTPClient returns an HTTP client that does not follow redirects.
+// Use this when testing endpoints that return 302 redirects (e.g. /oauth2/authorize)
+// where the redirect destination is not running (e.g. the frontend gate).
+func GetNoRedirectHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
 // CreateUserType creates a user type via API and returns the schema ID
 func CreateUserType(schema UserSchema) (string, error) {
 	if !schema.AllowSelfRegistration {

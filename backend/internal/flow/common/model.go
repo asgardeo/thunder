@@ -46,6 +46,7 @@ type Action struct {
 
 // Prompt groups inputs with an action for prompt nodes.
 type Prompt struct {
+	ACR    string  `json:"acr,omitempty"`
 	Inputs []Input `json:"inputs,omitempty"`
 	Action *Action `json:"action,omitempty"`
 }

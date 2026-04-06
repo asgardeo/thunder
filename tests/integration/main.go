@@ -123,7 +123,7 @@ func initTests() {
 	// Read database type from environment variable
 	dbType := os.Getenv("DB_TYPE")
 	if dbType == "" {
-		dbType = "sqlite" // Default to SQLite
+		dbType = "postgres" // Default to SQLite
 	}
 	fmt.Printf("Database type: %s\n", dbType)
 

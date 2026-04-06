@@ -146,6 +146,7 @@ func (b *graphBuilder) processNode(nodeDef *NodeDefinition, allNodes []NodeDefin
 
 	b.configureNodeInputs(nodeDef, node)
 	b.configureNodeMeta(nodeDef, node)
+	b.configureNodeVariant(nodeDef, node)
 	b.configureNodeCondition(nodeDef, node)
 
 	if err := b.configureNodePrompts(nodeDef, node, edges); err != nil {
@@ -269,6 +270,17 @@ func (b *graphBuilder) configureNodeInputs(nodeDef *NodeDefinition, node core.No
 	executorNode.SetInputs(inputs)
 }
 
+// configureNodeVariant configures the variant for a prompt node.
+// A node whose Properties contain authMethodMapping is implicitly a login_options variant.
+func (b *graphBuilder) configureNodeVariant(nodeDef *NodeDefinition, node core.NodeInterface) {
+	if _, ok := nodeDef.Properties[common.NodePropertyAuthMethodMapping]; !ok {
+		return
+	}
+	if promptNode, ok := node.(core.PromptNodeInterface); ok {
+		promptNode.SetVariant(common.NodeVariantLoginOptions)
+	}
+}
+
 // configureNodeMeta configures the meta object for a prompt node.
 func (b *graphBuilder) configureNodeMeta(nodeDef *NodeDefinition, node core.NodeInterface) {
 	if nodeDef.Meta == nil {
@@ -308,6 +320,8 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 		return nil
 	}
 
+	actionToACR := buildActionToACRMap(nodeDef.Properties)
+
 	prompts := make([]common.Prompt, len(nodeDef.Prompts))
 	for i, promptDef := range nodeDef.Prompts {
 		// Convert inputs
@@ -319,6 +333,9 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 				Type:       inputDef.Type,
 				Required:   inputDef.Required,
 			}
+		}
+		if promptDef.Action != nil && promptDef.Action.Ref != "" {
+			prompts[i].ACR = actionToACR[promptDef.Action.Ref]
 		}
 		prompts[i].Inputs = inputs
 
@@ -340,6 +357,26 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 	promptNode.SetPrompts(prompts)
 
 	return nil
+}
+
+// buildActionToACRMap reads the authMethodMapping property (ACR → actionRef) and returns the
+// reversed map (actionRef → ACR) for use during prompt configuration.
+func buildActionToACRMap(properties map[string]interface{}) map[string]string {
+	result := make(map[string]string)
+	raw, ok := properties[common.NodePropertyAuthMethodMapping]
+	if !ok {
+		return result
+	}
+	mapping, ok := raw.(map[string]interface{})
+	if !ok {
+		return result
+	}
+	for acr, actionRefVal := range mapping {
+		if actionRef, ok := actionRefVal.(string); ok {
+			result[actionRef] = acr
+		}
+	}
+	return result
 }
 
 // configureNodeExecutor configures the executor for a node.

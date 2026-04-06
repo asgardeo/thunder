@@ -168,6 +168,12 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		jwtClaims["authorized_permissions"] = permissions
 	}
 
+	// Include the completed auth class in the JWT so the OAuth2 callback service can
+	// populate the acr claim in the issued ID token.
+	if completedACR, exists := ctx.RuntimeData[common.RuntimeKeySelectedAuthClass]; exists && completedACR != "" {
+		jwtClaims[common.ClaimCompletedAuthClass] = completedACR
+	}
+
 	requiredAttributes := a.getRequiredUserAttributes(ctx)
 
 	resolvedAttributes, attrErr := a.resolveUserAttributes(ctx, requiredAttributes)
@@ -604,6 +610,16 @@ func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *
 	// Set locale from runtime data if present
 	if locale, exists := ctx.RuntimeData["required_locales"]; exists && locale != "" {
 		metadata.Locale = locale
+	}
+
+	// Pass the selected auth class if set in runtime data
+	if selectedAuthClass, exists := ctx.RuntimeData[common.RuntimeKeySelectedAuthClass]; exists && selectedAuthClass != "" {
+		metadata.SelectedAuthClass = selectedAuthClass
+	}
+
+	// Pass completed auth methods if present
+	if completedMethods, exists := ctx.RuntimeData[common.RuntimeKeyCompletedAuthMethods]; exists && completedMethods != "" {
+		metadata.CompletedAuthMethods = strings.Fields(completedMethods)
 	}
 
 	return metadata

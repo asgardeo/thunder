@@ -118,7 +118,7 @@ func ensureInitialized() {
 		zipFilePattern = os.Getenv("THUNDER_ZIP_PATTERN")
 		dbType = os.Getenv("DB_TYPE")
 		if dbType == "" {
-			dbType = "sqlite"
+			dbType = "postgres"
 		}
 		if pidStr := os.Getenv("THUNDER_SERVER_PID"); pidStr != "" {
 			if pid, err := strconv.Atoi(pidStr); err == nil {
@@ -790,6 +790,34 @@ func PatchDeploymentConfig(patch map[string]interface{}) error {
 	return nil
 }
 
+// GetConfiguredAcrValues reads the running server's deployment.yaml and returns the ACR values
+// defined in the acr_amr_mapping section. Returns an empty slice when no mapping is configured.
+func GetConfiguredAcrValues() ([]string, error) {
+	ensureInitialized()
+
+	configPath := filepath.Join(extractedProductHome, "repository", "conf", "deployment.yaml")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read deployment.yaml: %w", err)
+	}
+
+	var cfg struct {
+		AcrAMRMapping struct {
+			AcrAMR map[string]interface{} `yaml:"acr_amr"`
+		} `yaml:"acr_amr_mapping"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse deployment.yaml: %w", err)
+	}
+
+	acrs := make([]string, 0, len(cfg.AcrAMRMapping.AcrAMR))
+	for acr := range cfg.AcrAMRMapping.AcrAMR {
+		acrs = append(acrs, acr)
+	}
+	return acrs, nil
+}
+
 // RunSetupScript runs the setup script from the extracted product directory.
 // This script starts the server without security, runs bootstrap scripts, and stops the server.
 func RunSetupScript() error {
@@ -815,7 +843,7 @@ func RunSetupScript() error {
 	cmd.Dir = absProductHome // Run from product directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = os.Environ()
+	cmd.Env = append(os.Environ(), "WITH_CONSENT=false")
 
 	log.Println("Setup script will start server, run bootstrap, and stop server automatically")
 
