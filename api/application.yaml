@@ -1148,6 +1148,17 @@ components:
           example:
             profile: ["name", "family_name", "given_name", "picture"]
             employee: ["emp_id", "department"]
+        defaultAcrValues:
+          type: array
+          items:
+            type: string
+          description: |
+            Default ACR (Authentication Context Class Reference) values for the application.
+            Defines the allowed set of ACR values for authorization requests. When acr_values is
+            provided in an authorization request, only values present in this list are accepted;
+            unrecognised values are silently ignored. If filtering removes all requested ACRs,
+            the full default list is used as a fallback.
+          example: ["urn:okta:loa:1fa:pwd", "urn:okta:loa:2fa:any"]
 
     OAuthAppConfigComplete:
       type: object
@@ -1221,6 +1232,17 @@ components:
           example:
             profile: ["name", "family_name", "given_name", "picture"]
             employee: ["emp_id", "department"]
+        defaultAcrValues:
+          type: array
+          items:
+            type: string
+          description: |
+            Default ACR (Authentication Context Class Reference) values for the application.
+            Defines the allowed set of ACR values for authorization requests. When acr_values is
+            provided in an authorization request, only values present in this list are accepted;
+            unrecognised values are silently ignored. If filtering removes all requested ACRs,
+            the full default list is used as a fallback.
+          example: ["urn:okta:loa:1fa:pwd", "urn:okta:loa:2fa:any"]
 
     Error:
       type: object

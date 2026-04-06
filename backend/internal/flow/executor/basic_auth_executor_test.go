@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
@@ -931,4 +932,152 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInbound
 	assert.Len(suite.T(), clientIDs, 2)
 	assert.Contains(suite.T(), clientIDs, "valid-client")
 	assert.Contains(suite.T(), clientIDs, "another-valid-client")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestValidateAMRForSelectedACR_NoSelectedACR() {
+	ctx := &core.NodeContext{
+		RuntimeData: make(map[string]string),
+	}
+	assert.Empty(suite.T(), suite.executor.validateAMRForSelectedACR(ctx))
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestValidateAMRForSelectedACR_ValidAMR_FirstStep() {
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		ACRAMRMapping: config.ACRAMRMappingConfig{
+			AMR: map[string]config.AMRFactor{
+				"password": {Type: "PWD"},
+				"otp":      {Type: "OTP"},
+			},
+			AcrAMR: map[string][]string{"loa2": {"password", "otp"}},
+		},
+	})
+	defer func() {
+		config.ResetThunderRuntime()
+		_ = initializeTestRuntime()
+	}()
+
+	ctx := &core.NodeContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeySelectedAuthClass: "loa2",
+		},
+	}
+	assert.Empty(suite.T(), suite.executor.validateAMRForSelectedACR(ctx))
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestValidateAMRForSelectedACR_AMRNotInACR() {
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		ACRAMRMapping: config.ACRAMRMappingConfig{
+			AMR: map[string]config.AMRFactor{
+				"password": {Type: "PWD"},
+				"otp":      {Type: "OTP"},
+			},
+			AcrAMR: map[string][]string{"otp_only": {"otp"}},
+		},
+	})
+	defer func() {
+		config.ResetThunderRuntime()
+		_ = initializeTestRuntime()
+	}()
+
+	ctx := &core.NodeContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeySelectedAuthClass: "otp_only",
+		},
+	}
+	// basic_auth_executor handles "password", which is not in the "otp_only" ACR
+	result := suite.executor.validateAMRForSelectedACR(ctx)
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "does not satisfy")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestValidateAMRForSelectedACR_PrecedingAMRNotCompleted() {
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		ACRAMRMapping: config.ACRAMRMappingConfig{
+			AMR: map[string]config.AMRFactor{
+				"password": {Type: "PWD"},
+				"otp":      {Type: "OTP"},
+			},
+			AcrAMR: map[string][]string{"loa2": {"otp", "password"}},
+		},
+	})
+	defer func() {
+		config.ResetThunderRuntime()
+		_ = initializeTestRuntime()
+	}()
+
+	// "password" is at position 1 in loa2 (after "otp"), but "otp" is not yet completed
+	ctx := &core.NodeContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeySelectedAuthClass:    "loa2",
+			common.RuntimeKeyCompletedAuthMethods: "",
+		},
+	}
+	result := suite.executor.validateAMRForSelectedACR(ctx)
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "order violation")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestValidateAMRForSelectedACR_PrecedingAMRCompleted() {
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		ACRAMRMapping: config.ACRAMRMappingConfig{
+			AMR: map[string]config.AMRFactor{
+				"password": {Type: "PWD"},
+				"otp":      {Type: "OTP"},
+			},
+			AcrAMR: map[string][]string{"loa2": {"otp", "password"}},
+		},
+	})
+	defer func() {
+		config.ResetThunderRuntime()
+		_ = initializeTestRuntime()
+	}()
+
+	// "password" is at position 1 in loa2, and "otp" is already completed
+	ctx := &core.NodeContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeySelectedAuthClass:    "loa2",
+			common.RuntimeKeyCompletedAuthMethods: "otp",
+		},
+	}
+	assert.Empty(suite.T(), suite.executor.validateAMRForSelectedACR(ctx))
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_FailsWhenAMRDoesNotSatisfySelectedACR() {
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", &config.Config{
+		ACRAMRMapping: config.ACRAMRMappingConfig{
+			AMR: map[string]config.AMRFactor{
+				"password": {Type: "PWD"},
+				"otp":      {Type: "OTP"},
+			},
+			AcrAMR: map[string][]string{"otp_only": {"otp"}},
+		},
+	})
+	defer func() {
+		config.ResetThunderRuntime()
+		_ = initializeTestRuntime()
+	}()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributeUsername: "testuser",
+			userAttributePassword: "password123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeySelectedAuthClass: "otp_only",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Contains(suite.T(), resp.FailureReason, "does not satisfy")
 }

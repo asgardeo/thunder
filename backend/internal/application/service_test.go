@@ -6856,3 +6856,57 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorLayoutNotFound, svcErr)
 }
+
+// ---------------------------------------------------------------------------
+// validateDefaultAcrValues
+// ---------------------------------------------------------------------------
+
+func TestValidateDefaultAcrValues_EmptyList(t *testing.T) {
+	err := validateDefaultAcrValues(nil)
+	assert.Nil(t, err)
+
+	err = validateDefaultAcrValues([]string{})
+	assert.Nil(t, err)
+}
+
+func TestValidateDefaultAcrValues_AllValid(t *testing.T) {
+	initAcrRegistry(t, validAcrMapping)
+
+	err := validateDefaultAcrValues([]string{
+		"mosip:idp:acr:password",
+		"mosip:idp:acr:generated-code",
+	})
+
+	assert.Nil(t, err)
+}
+
+func TestValidateDefaultAcrValues_SingleValid(t *testing.T) {
+	initAcrRegistry(t, validAcrMapping)
+
+	err := validateDefaultAcrValues([]string{"mosip:idp:acr:password"})
+
+	assert.Nil(t, err)
+}
+
+func TestValidateDefaultAcrValues_UnknownACR(t *testing.T) {
+	initAcrRegistry(t, validAcrMapping)
+
+	svcErr := validateDefaultAcrValues([]string{
+		"mosip:idp:acr:password",
+		"mosip:idp:acr:unknown-method",
+	})
+
+	assert.NotNil(t, svcErr)
+	assert.Equal(t, "APP-1033", svcErr.Code)
+	assert.Contains(t, svcErr.ErrorDescription, "mosip:idp:acr:unknown-method")
+}
+
+func TestValidateDefaultAcrValues_FirstEntryInvalid(t *testing.T) {
+	initAcrRegistry(t, validAcrMapping)
+
+	svcErr := validateDefaultAcrValues([]string{"totally-invalid-acr"})
+
+	assert.NotNil(t, svcErr)
+	assert.Equal(t, "APP-1033", svcErr.Code)
+	assert.Contains(t, svcErr.ErrorDescription, "totally-invalid-acr")
+}

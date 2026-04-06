@@ -139,6 +139,13 @@ func InitiateAuthFlowWithError(appID string, inputs map[string]string) (*ErrorRe
 	return &errorResponse, nil
 }
 
+// ResumeFlow resumes a flow without providing new inputs or selecting an action.
+// This is used to retrieve the current flow state after an external event (e.g.
+// an OAuth authorize redirect) has already initiated the flow.
+func ResumeFlow(flowID string) (*FlowStep, error) {
+	return CompleteFlow(flowID, map[string]string{}, "")
+}
+
 // CompleteFlow completes the flow with given inputs and action
 func CompleteFlow(flowID string, inputs map[string]string, action string) (
 	*FlowStep, error) {

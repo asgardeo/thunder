@@ -42,5 +42,6 @@ type OIDCProviderMetadata struct {
 	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 	ClaimsSupported                  []string `json:"claims_supported"`
 	ClaimsParameterSupported         bool     `json:"claims_parameter_supported"`
+	AcrValuesSupported               []string `json:"acr_values_supported,omitempty"`
 	EndSessionEndpoint               string   `json:"end_session_endpoint,omitempty"`
 }

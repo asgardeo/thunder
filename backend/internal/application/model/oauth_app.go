@@ -71,6 +71,7 @@ type OAuthAppConfig struct {
 	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty"`
 	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty"`
 	Certificate             *ApplicationCertificate             `json:"certificate,omitempty"`
+	DefaultAcrValues        []string                            `json:"defaultAcrValues,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
@@ -90,6 +91,7 @@ type OAuthAppConfigComplete struct {
 	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty" yaml:"user_info,omitempty"`
 	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty" yaml:"scope_claims,omitempty"`
 	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	DefaultAcrValues        []string                            `json:"defaultAcrValues,omitempty" yaml:"default_acr_values,omitempty"`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
@@ -108,6 +110,7 @@ type OAuthAppConfigDTO struct {
 	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
 	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
 	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
+	DefaultAcrValues        []string                            `json:"defaultAcrValues,omitempty" jsonschema:"Default ACR values. Optional. Defines the default set of ACR values for authorization requests. Requested ACRs not in this list are silently ignored; if none match, all default ACR values are used."`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -146,6 +149,7 @@ type OAuthAppConfigProcessedDTO struct {
 	UserInfo                *UserInfoConfig                     `yaml:"user_info,omitempty"`
 	ScopeClaims             map[string][]string                 `yaml:"scope_claims,omitempty"`
 	Certificate             *ApplicationCertificate             `yaml:"certificate,omitempty"`
+	DefaultAcrValues        []string                            `yaml:"default_acr_values,omitempty"`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.

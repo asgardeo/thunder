@@ -145,6 +145,13 @@ const (
 const DefaultHTTPTimeout = 5 * time.Second
 
 const (
+	// NodeVariantLoginOptions identifies a PROMPT node that presents login method choices to the user.
+	// Each prompt on such a node should carry an ACR tag; the engine filters and reorders the
+	// available actions based on the requested_acr_values in RuntimeData.
+	NodeVariantLoginOptions = "login_options"
+)
+
+const (
 	// NodePropertyAllowAuthenticationWithoutLocalUser indicates whether authentication is allowed without a local user
 	NodePropertyAllowAuthenticationWithoutLocalUser = "allowAuthenticationWithoutLocalUser"
 	// NodePropertyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
@@ -152,6 +159,9 @@ const (
 	// NodePropertyOUResolveFrom specifies the strategy for resolving the organization unit.
 	// Supported values: "caller" (use the caller's OU).
 	NodePropertyOUResolveFrom = "resolveFrom"
+	// NodePropertyAuthMethodMapping maps ACR values to action refs on login_options PROMPT nodes.
+	// Presence of this property implicitly marks the node as a login_options variant.
+	NodePropertyAuthMethodMapping = "authMethodMapping"
 )
 
 const (
@@ -185,6 +195,19 @@ const (
 	RuntimeKeyUserAttributesCacheTTLSeconds = "user_attributes_cache_ttl_seconds"
 	// RuntimeKeyInviteLink holds the generated invite link for downstream executors (e.g., EmailExecutor).
 	RuntimeKeyInviteLink = "inviteLink"
+	// RuntimeKeyRequestedAuthClasses holds the space-separated, ordered list of ACR values requested
+	// by the client in the acr_values authorization parameter.
+	RuntimeKeyRequestedAuthClasses = "requested_auth_classes"
+	// RuntimeKeySelectedAuthClass holds the ACR value of the authentication method actually used by the user.
+	// Set by the flow engine when a login_options prompt node resolves the chosen action.
+	RuntimeKeySelectedAuthClass = "selected_auth_class"
+	// RuntimeKeyCompletedAuthMethods holds the space-separated list of completed AMR type names.
+	// Accumulated across authentication steps; each authentication executor appends the AMR types it satisfies.
+	RuntimeKeyCompletedAuthMethods = "completed_auth_methods"
+	// ClaimCompletedAuthClass is the JWT claim key used in auth assertion tokens to record
+	// the ACR value that the user satisfied. The OAuth2 callback service reads this claim
+	// to populate the acr claim in the issued ID token.
+	ClaimCompletedAuthClass = "completed_auth_class"
 )
 
 // TODO: Define a go type for InputType when formalizing input types

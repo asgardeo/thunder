@@ -820,7 +820,25 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 		}
 	}
 
+	// Validate default_acr_values entries against the global ACR registry.
+	if err := validateDefaultAcrValues(oauthAppConfig.DefaultAcrValues); err != nil {
+		return nil, err
+	}
+
 	return inboundAuthConfig, nil
+}
+
+// validateDefaultAcrValues validates that every ACR value in the provided list is recognised by the global ACR registry.
+func validateDefaultAcrValues(defaultAcrValues []string) *serviceerror.ServiceError {
+	for _, acr := range defaultAcrValues {
+		valid := isValidACR(acr)
+		if !valid {
+			svcErr := ErrorInvalidDefaultAcrValues
+			svcErr.ErrorDescription = fmt.Sprintf("ACR value %q is not recognised by the system", acr)
+			return &svcErr
+		}
+	}
+	return nil
 }
 
 // validateRedirectURIs validates redirect URIs format and requirements.
@@ -1576,6 +1594,7 @@ func buildApplicationFromProcessedDTO(dto *model.ApplicationProcessedDTO) *model
 					Scopes:                  oauthAppConfig.Scopes,
 					UserInfo:                oauthAppConfig.UserInfo,
 					ScopeClaims:             oauthAppConfig.ScopeClaims,
+					DefaultAcrValues:        oauthAppConfig.DefaultAcrValues,
 				},
 			})
 		}
@@ -1678,6 +1697,7 @@ func buildOAuthInboundAuthConfigProcessedDTO(
 			UserInfo:                userInfo,
 			ScopeClaims:             scopeClaims,
 			Certificate:             certificate,
+			DefaultAcrValues:        inboundAuthConfig.OAuthAppConfig.DefaultAcrValues,
 		},
 	}
 }
@@ -1728,6 +1748,7 @@ func buildReturnApplicationDTO(
 				UserInfo:                userInfo,
 				ScopeClaims:             scopeClaims,
 				Certificate:             returnOAuthCert,
+				DefaultAcrValues:        inboundAuthConfig.OAuthAppConfig.DefaultAcrValues,
 			},
 		}
 		returnApp.InboundAuthConfig = []model.InboundAuthConfigDTO{returnInboundAuthConfig}

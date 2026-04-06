@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -748,4 +749,119 @@ func (suite *ConfigTestSuite) createTempFile(dir, pattern, content string) strin
 	suite.Require().NoError(err, "failed to close temp file")
 
 	return tempFile.Name()
+}
+
+// ---------------------------------------------------------------------------
+// ACRAMRMappingConfig.Validate
+// ---------------------------------------------------------------------------
+
+func TestACRAMRMappingValidate_EmptyConfig(t *testing.T) {
+	cfg := ACRAMRMappingConfig{}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestACRAMRMappingValidate_ValidMapping(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+			"OTP":      {Type: "OTP"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password":       {"Password"},
+			"mosip:idp:acr:generated-code": {"OTP"},
+			"mosip:idp:acr:multi":          {"Password", "OTP"},
+		},
+	}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestACRAMRMappingValidate_EmptyAMRList(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password"},
+			"mosip:idp:acr:empty":    {},
+		},
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mosip:idp:acr:empty")
+	assert.Contains(t, err.Error(), "empty AMR list")
+}
+
+func TestACRAMRMappingValidate_UnknownAMRKey(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password"},
+			"mosip:idp:acr:otp":      {"NonExistentAMR"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "NonExistentAMR")
+	assert.Contains(t, err.Error(), "unknown AMR key")
+}
+
+func TestACRAMRMappingValidate_NoAMRSection(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown AMR key")
+}
+
+func TestACRAMRMappingValidate_AcrAMREmptyButAMRPresent(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+	}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestACRAMRMappingValidate_EmptyACRKey(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+		AcrAMR: map[string][]string{
+			"": {"Password"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ACR value must not be empty")
+}
+
+func TestACRAMRMappingValidate_EmptyAMRKey(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"": {Type: "PWD"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "AMR key must not be empty")
+}
+
+func TestACRAMRMappingValidate_EmptyAMRReference(t *testing.T) {
+	cfg := ACRAMRMappingConfig{
+		AMR: map[string]AMRFactor{
+			"Password": {Type: "PWD"},
+		},
+		AcrAMR: map[string][]string{
+			"mosip:idp:acr:password": {"Password", ""},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "references an empty AMR key")
 }
