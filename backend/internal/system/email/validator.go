@@ -24,8 +24,6 @@ import (
 )
 
 // IsValidEmail returns true for syntactically valid email addresses.
-// This consolidates validation logic so other packages can reuse a single
-// source of truth for what the system considers a valid address.
 func IsValidEmail(emailAddr string) bool {
 	// Reject CR/LF early (do not trim them away first) to prevent header injection.
 	if strings.ContainsAny(emailAddr, "\r\n") {
