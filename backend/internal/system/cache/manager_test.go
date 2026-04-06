@@ -415,6 +415,62 @@ func (suite *CacheManagerTestSuite) TestGetCleanupInterval() {
 	interval := getCleanupInterval(config)
 	assert.Equal(t, time.Duration(120)*time.Second, interval, "Should use configured cleanup interval")
 }
+func (suite *CacheManagerTestSuite) TestBuildRedisKeyPrefix() {
+	t := suite.T()
+
+	// Preserve runtime config because this test mutates the global runtime singleton.
+	originalConfig := config.GetThunderRuntime().Config
+	defer func() {
+		config.ResetThunderRuntime()
+		err := config.InitializeThunderRuntime("/test/thunder/home", &originalConfig)
+		assert.NoError(t, err)
+	}()
+
+	testCases := []struct {
+		name         string
+		basePrefix   string
+		deploymentID string
+		expected     string
+	}{
+		{
+			name:         "both basePrefix and deploymentID",
+			basePrefix:   "thunder",
+			deploymentID: "deployment-1",
+			expected:     "thunder:deployment-1",
+		},
+		{
+			name:         "only deploymentID",
+			basePrefix:   "",
+			deploymentID: "deployment-1",
+			expected:     "deployment-1",
+		},
+		{
+			name:         "only basePrefix",
+			basePrefix:   "thunder",
+			deploymentID: "",
+			expected:     "thunder",
+		},
+		{
+			name:         "both empty",
+			basePrefix:   "",
+			deploymentID: "",
+			expected:     "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := originalConfig
+			cfg.Server.Identifier = tc.deploymentID
+			config.ResetThunderRuntime()
+			err := config.InitializeThunderRuntime("/test/thunder/home", &cfg)
+			assert.NoError(t, err)
+
+			result := buildRedisKeyPrefix(tc.basePrefix)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
 
 func (suite *CacheManagerTestSuite) TestStartCleanupRoutine() {
 	t := suite.T()
