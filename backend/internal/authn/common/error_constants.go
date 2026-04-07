@@ -21,6 +21,7 @@ package common
 import (
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
 )
 
 // API errors
@@ -84,11 +85,25 @@ var (
 		ErrorDescription: "The 'sub' claim is not found in the ID token claims",
 	}
 	// ErrorUserNotFound is the error when no user is found with the provided attributes.
+	// Deprecated: Use I18nServiceError instead for new services or when migrating existing services to i18n.
 	ErrorUserNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "AUTHN-1008",
 		Error:            "User not found",
 		ErrorDescription: "No user found with the provided attributes",
+	}
+	// ErrorUserNotFoundWithI18n is the i18n version of ErrorUserNotFound.
+	ErrorUserNotFoundWithI18n = serviceerror.I18nServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTHN-1008",
+		Error: core.I18nMessage{
+			Key:          "error.authn.user_not_found",
+			DefaultValue: "User not found",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.authn.user_not_found_description",
+			DefaultValue: "No user found with the provided attributes",
+		},
 	}
 	// ErrorInvalidAssertion is the error returned when the provided assertion token is invalid.
 	ErrorInvalidAssertion = serviceerror.ServiceError{

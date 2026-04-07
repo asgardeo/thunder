@@ -31,7 +31,6 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/userprovider"
 
@@ -39,29 +38,23 @@ import (
 )
 
 // Initialize registers available executors and returns the executor registry.
-func Initialize(
-	flowFactory core.FlowFactoryInterface,
-	ouService ou.OrganizationUnitServiceInterface,
-	idpService idp.IDPServiceInterface,
-	otpService notification.OTPServiceInterface,
-	notifSenderSvc notification.NotificationSenderServiceInterface,
-	jwtService jwt.JWTServiceInterface,
-	authRegistry *authn.AuthServiceRegistry,
-	authZService authz.AuthorizationServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
-	groupService group.GroupServiceInterface,
-	roleService role.RoleServiceInterface,
-	userProvider userprovider.UserProviderInterface,
-	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
-	emailClient email.EmailClientInterface,
-	templateService template.TemplateServiceInterface,
-) ExecutorRegistryInterface {
+func Initialize(flowFactory core.FlowFactoryInterface, ouService ou.OrganizationUnitServiceInterface,
+	idpService idp.IDPServiceInterface, otpService notification.OTPServiceInterface,
+	notifSenderSvc notification.NotificationSenderServiceInterface, jwtService jwt.JWTServiceInterface,
+	authRegistry *authn.AuthServiceRegistry, authZService authz.AuthorizationServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface, groupService group.GroupServiceInterface,
+	roleService role.RoleServiceInterface, userProvider userprovider.UserProviderInterface,
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface, emailClient email.EmailClientInterface,
+	templateService template.TemplateServiceInterface) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
 		flowFactory, userProvider, authRegistry.CredentialsAuthnService))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
 		flowFactory, otpService, userProvider))
+	if authRegistry.MagicLinkAuthnService != nil {
+		reg.RegisterExecutor(ExecutorNameMagicLinkAuth, newMagicLinkAuthExecutor(
+			flowFactory, authRegistry.MagicLinkAuthnService, userProvider))
+	}
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
 		flowFactory, authRegistry.PasskeyService, userProvider))
 

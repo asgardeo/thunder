@@ -211,6 +211,8 @@ const (
 	InputTypePhone = "PHONE_INPUT"
 	// InputTypeConsent represents a consent decisions input type.
 	InputTypeConsent = "CONSENT_INPUT"
+	// InputTypeHidden represents a hidden input type.
+	InputTypeHidden = "HIDDEN_INPUT"
 
 	// TODO: Add support for other sensitive input types:
 	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)

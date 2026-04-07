@@ -97,12 +97,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 	identifiers := map[string]interface{}{
 		"username": "testuser",
 	}
-	credentials := map[string]interface{}{
+	credentialsPayload := map[string]interface{}{
 		"password": "testpass",
 	}
 	authRequest := map[string]interface{}{
 		"identifiers": identifiers,
-		"credentials": credentials,
+		"credentials": credentialsPayload,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:        "user123",
@@ -111,7 +111,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 		Assertion: "jwt-token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentialsPayload,
 		false, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -132,12 +132,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 	identifiers := map[string]interface{}{
 		"username": "testuser",
 	}
-	credentials := map[string]interface{}{
+	credentialsPayload := map[string]interface{}{
 		"password": "testpass",
 	}
 	authRequest := map[string]interface{}{
 		"identifiers":   identifiers,
-		"credentials":   credentials,
+		"credentials":   credentialsPayload,
 		"skipAssertion": true,
 	}
 	authResponse := &common.AuthenticationResponse{
@@ -146,7 +146,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		OUID: "test-ou",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentialsPayload,
 		true, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -168,12 +168,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 	identifiers := map[string]interface{}{
 		"username": "testuser",
 	}
-	credentials := map[string]interface{}{
+	credentialsPayload := map[string]interface{}{
 		"password": "testpass",
 	}
 	authRequest := map[string]interface{}{
 		"identifiers": identifiers,
-		"credentials": credentials,
+		"credentials": credentialsPayload,
 		"assertion":   existingAssertion,
 	}
 	authResponse := &common.AuthenticationResponse{
@@ -183,7 +183,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		Assertion: "updated.jwt.token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentialsPayload,
 		false, existingAssertion).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)

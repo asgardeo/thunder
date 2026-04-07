@@ -22,8 +22,9 @@ import "github.com/asgardeo/thunder/internal/flow/common"
 
 // Executor name constants
 const (
-	ExecutorNameBasicAuth = "BasicAuthExecutor"
-	ExecutorNameSMSAuth   = "SMSOTPAuthExecutor"
+	ExecutorNameBasicAuth     = "BasicAuthExecutor"
+	ExecutorNameSMSAuth       = "SMSOTPAuthExecutor"
+	ExecutorNameMagicLinkAuth = "MagicLinkAuthExecutor"
 	// nolint:gosec // G101: This is an executor name, not a credential
 	ExecutorNamePasskeyAuth                  = "PasskeyAuthExecutor"
 	ExecutorNameOAuth                        = "OAuthExecutor"
@@ -74,6 +75,7 @@ const (
 	userInputOuDesc           = "ouDescription"
 	userInputInviteToken      = "inviteToken"
 	userInputOTP              = "otp"
+	userInputMagicLinkToken   = "token"
 	userInputConsentDecisions = "consent_decisions"
 
 	ouIDKey        = "ouId"
@@ -89,17 +91,20 @@ const (
 
 // Executor property keys
 const (
-	propertyKeyAssignGroup          = "assignGroup"
-	propertyKeyAssignRole           = "assignRole"
-	propertyKeyRequiredScopes       = "requiredScopes"
-	propertyKeyEmailTemplate        = "emailTemplate"
+	propertyKeyAssignGroup    = "assignGroup"
+	propertyKeyAssignRole     = "assignRole"
+	propertyKeyRequiredScopes = "requiredScopes"
+	propertyKeyEmailTemplate  = "emailTemplate"
+	// TODO: Revisit propertyKeyTokenExpiry and propertyKeyMagicLinkURL — these should not be node properties.
+	propertyKeyTokenExpiry          = "tokenExpiry"
+	propertyKeyMagicLinkURL         = "magicLinkURL"
 	propertyKeySMSTemplate          = "smsTemplate"
 	propertyKeyAllowedUserTypes     = "allowedUserTypes"
 	propertyKeyNotificationSenderID = "senderId"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
-var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
+var nonSearchableInputs = []string{"password", "code", "nonce", "otp", "token", "userInputMagicLinkToken"}
 
 // nonUserAttributes contains the list of user attributes that do not belong to user entity.
 var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
@@ -115,6 +120,7 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId",
 	common.RuntimeKeyCandidateUsers, common.RuntimeKeyClientID, common.RuntimeKeyUserAttributesCacheTTLSeconds,
+	common.RuntimeKeyUserAmbiguous, "userInputMagicLinkToken",
 	common.RuntimeKeyUserAmbiguous, runtimeKeySMSOTPMobileNumber, runtimeKeySMSOTPPhoneAttr}
 
 // Failure reason constants
