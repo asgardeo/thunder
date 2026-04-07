@@ -332,12 +332,6 @@ export default function ApplicationEditPage() {
                 </Box>
               ) : null;
             })()}
-
-          {/* Application ID */}
-          <CopyableId
-            value={application.id}
-            copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')}
-          />
         </PageTitle.SubHeader>
       </PageTitle>
 

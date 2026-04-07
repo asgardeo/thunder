@@ -18,6 +18,8 @@
 
 import type {Base} from './base';
 import type {Step} from './steps';
+import type {FlowType} from './flows';
+import type {FlowNode} from './responses';
 
 /**
  * Template placeholder replacer.
@@ -67,6 +69,10 @@ export type Template = Base<TemplateConfig>;
 
 export const TemplateCategories = {
   Starter: 'STARTER',
+  Password: 'PASSWORD',
+  SocialLogin: 'SOCIAL_LOGIN',
+  Mfa: 'MFA',
+  Passwordless: 'PASSWORDLESS',
 } as const;
 
 export type TemplateCategories = (typeof TemplateCategories)[keyof typeof TemplateCategories];
@@ -78,6 +84,47 @@ export const TemplateTypes = {
   GeneratedWithAI: 'GENERATE_WITH_AI',
   PasskeyLogin: 'PASSKEY_LOGIN',
   Default: 'DEFAULT',
+  BasicAuth: 'BASIC_AUTH',
+  Google: 'GOOGLE',
+  Github: 'GITHUB',
+  GoogleGithub: 'GOOGLE_GITHUB',
+  BasicGoogle: 'BASIC_GOOGLE',
+  BasicGithub: 'BASIC_GITHUB',
+  BasicGoogleGithub: 'BASIC_GOOGLE_GITHUB',
+  BasicGoogleGithubSms: 'BASIC_GOOGLE_GITHUB_SMS',
+  SmsOtp: 'SMS_OTP',
+  Passkey: 'PASSKEY',
+  BasicPasskey: 'BASIC_PASSKEY',
+  BasicWithPrompt: 'BASIC_WITH_PROMPT',
+  SelfInvite: 'SELF_INVITE',
 } as const;
 
 export type TemplateTypes = (typeof TemplateTypes)[keyof typeof TemplateTypes];
+
+/**
+ * Config shape for flow-level templates (used in the Create Flow wizard).
+ * Holds the full flow graph that will be submitted when creating a new flow.
+ */
+export interface FlowTemplateConfig {
+  name: string;
+  handle: string;
+  nodes: FlowNode[];
+}
+
+/**
+ * A flow-level template entry from templates.json.
+ * Distinct from the step-level Template used inside the flow builder.
+ */
+export interface FlowTemplate {
+  resourceType: 'TEMPLATE';
+  category: string;
+  type: string;
+  flowType: FlowType;
+  display: {
+    label: string;
+    description?: string;
+    image: string;
+    showOnResourcePanel: boolean;
+  };
+  config: FlowTemplateConfig;
+}

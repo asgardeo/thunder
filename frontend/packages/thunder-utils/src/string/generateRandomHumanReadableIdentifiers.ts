@@ -19,12 +19,12 @@
 import humanId from 'human-id';
 
 /**
- * Generates a list of human-readable theme name suggestions.
+ * Generates random human-readable identifiers using the `human-id` library
  *
- * @param length - The number of theme name suggestions to generate.
- * @returns An array of generated theme name suggestions.
+ * @param length - The number of identifiers to generate (default: 5)
+ * @returns An array of human-readable identifiers
  */
-export default function generateThemeNameSuggestions(length = 5): string[] {
+export default function generateRandomHumanReadableIdentifiers(length = 5): string[] {
   return Array.from({length}, () => {
     const id: string = humanId({
       separator: ' ',

@@ -27,13 +27,6 @@ import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetFlows from '../api/useGetFlows';
 import type {BasicFlowDefinition} from '../models/responses';
 
-/**
- * When true, only flows that support editing (AUTHENTICATION type) are shown in the list.
- * Set to false to show all flow types.
- */
-// TODO: Remove the boolean and Re-enable when the other flow types are available to edit
-const HIDE_NON_EDITABLE_FLOWS = true;
-
 export default function FlowsList(): JSX.Element {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -57,7 +50,6 @@ export default function FlowsList(): JSX.Element {
 
   const handleEditClick = useCallback(
     (flow: BasicFlowDefinition): void => {
-      if (flow.flowType !== 'AUTHENTICATION') return;
       (async (): Promise<void> => {
         await navigate(`/flows/signin/${flow.id}`);
       })().catch((_error: unknown) => {
@@ -132,7 +124,6 @@ export default function FlowsList(): JSX.Element {
         filterable: false,
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element | null => {
-          if (params.row.flowType !== 'AUTHENTICATION') return null;
           return (
             <ListingTable.RowActions visibility="hover">
               <Tooltip title={t('common:actions.edit')}>
@@ -184,7 +175,7 @@ export default function FlowsList(): JSX.Element {
       <ListingTable.Provider variant="data-grid-card" loading={isLoading}>
         <ListingTable.Container disablePaper>
           <ListingTable.DataGrid
-            rows={(data?.flows ?? []).filter((flow) => !HIDE_NON_EDITABLE_FLOWS || flow.flowType === 'AUTHENTICATION')}
+            rows={data?.flows ?? []}
             columns={columns}
             getRowId={(row): string => (row as BasicFlowDefinition).id}
             onRowClick={(params) => {
@@ -198,9 +189,6 @@ export default function FlowsList(): JSX.Element {
             pageSizeOptions={[5, 10, 25, 50]}
             disableRowSelectionOnClick
             localeText={dataGridLocaleText}
-            getRowClassName={(params) =>
-              (params.row as BasicFlowDefinition).flowType === 'AUTHENTICATION' ? 'row-clickable' : 'row-not-clickable'
-            }
             sx={{
               height: 'auto',
               '& .MuiDataGrid-row.row-clickable': {

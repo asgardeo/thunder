@@ -41,7 +41,7 @@ export default function FlowsListPage(): JSX.Element {
             startIcon={<Plus size={18} />}
             onClick={() => {
               const handler = async () => {
-                await navigate('/flows/signin');
+                await navigate('/flows/create');
               };
 
               handler().catch((error: unknown) => {

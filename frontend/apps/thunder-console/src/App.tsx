@@ -30,6 +30,7 @@ import DesignPage from './features/design/pages/DesignPage';
 import LayoutBuilderPage from './features/design/pages/LayoutBuilderPage';
 import ThemeBuilderPage from './features/design/pages/ThemeBuilderPage';
 import ThemeCreatePage from './features/design/pages/ThemeCreatePage';
+import FlowCreatePage from './features/flows/pages/FlowCreatePage';
 import FlowsListPage from './features/flows/pages/FlowsListPage';
 import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCreateProvider';
 import CreateGroupPage from './features/groups/pages/CreateGroupPage';
@@ -158,6 +159,16 @@ export default function App(): JSX.Element {
             }
           >
             <Route index element={<ApplicationCreatePage />} />
+          </Route>
+          <Route
+            path="/flows/create"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<FlowCreatePage />} />
           </Route>
           <Route
             path="/flows/signin"

@@ -45,6 +45,11 @@ export const FlowType = {
    * Registration flows handle user signup and account creation processes
    */
   REGISTRATION: 'REGISTRATION',
+
+  /**
+   * User onboarding flows handle invited user provisioning within an organization
+   */
+  USER_ONBOARDING: 'USER_ONBOARDING',
 } as const;
 
 /**
