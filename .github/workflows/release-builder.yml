@@ -11,10 +11,15 @@ on:
     - cron: '30 6 * * 5'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (e.g., X for v0.X.0, X.Y for v0.X.Y, or X.Y.Z for v0.Y.Z). Leave empty to use version.txt'
+      bump_type:
+        description: 'Version bump type to apply to version.txt (major, minor, or patch)'
         required: false
-        type: string
+        type: choice
+        options:
+          - minor
+          - patch
+          - major
+        default: minor
       prerelease:
         description: 'Set as a pre-release'
         required: false
@@ -30,10 +35,10 @@ on:
 permissions:
   contents: write
   packages: write
+  issues: write
 
 env:
   GOFLAGS: "-mod=readonly"
-  RELEASE_MAJOR_VERSION: 0
 
 jobs:
   build-thunder:
@@ -48,56 +53,60 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.THUNDER_AUTOMATION_BOT }}
 
       - name: 📝 Determine Release Version
         id: get_version
         run: |
+          # Read current version from version.txt
+          if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
+            echo "❌ Error: version.txt not found or empty"
+            exit 1
+          fi
+          CURRENT_VERSION=$(tr -d '[:space:]' < version.txt)
+          # Strip leading 'v' for semver parsing
+          SEMVER="${CURRENT_VERSION#v}"
+
+          if [[ $SEMVER =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            CUR_MAJOR="${BASH_REMATCH[1]}"
+            CUR_MINOR="${BASH_REMATCH[2]}"
+            CUR_PATCH="${BASH_REMATCH[3]}"
+          else
+            echo "❌ Error: Could not parse version '$CURRENT_VERSION' from version.txt"
+            exit 1
+          fi
+
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # Manual trigger - always use input values for flags
             PRERELEASE="${{ github.event.inputs.prerelease }}"
             RUN_PERF_TEST="${{ github.event.inputs.run_performance_test }}"
-            INPUT_VERSION="${{ github.event.inputs.version }}"
-            MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
-
-            if [ -n "$INPUT_VERSION" ]; then
-              # Handle manually provided version
-              if [[ $INPUT_VERSION =~ ^v?[0-9]+\.([0-9]+)\.([0-9]+) ]]; then
-                # Full format (vX.Y.Z) -> Parse and use MAJOR
-                MINOR="${BASH_REMATCH[1]}"
-                PATCH="${BASH_REMATCH[2]}"
-                VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-              elif [[ $INPUT_VERSION =~ ^[0-9]+\.[0-9]+$ ]]; then
-                # minor.patch format (X.Y) -> v0.X.Y
-                VERSION="v${MAJOR}.${INPUT_VERSION}"
-              elif [[ $INPUT_VERSION =~ ^[0-9]+$ ]]; then
-                # minor format (X) -> v0.X.0
-                VERSION="v${MAJOR}.${INPUT_VERSION}.0"
-              else
-                echo "❌ Error: Invalid version format '$INPUT_VERSION'. Use 'X', 'X.Y', or 'vX.Y.Z'"
-                exit 1
-              fi
-            else
-              # Manual run without version - read from version.txt
-              if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
-                echo "❌ Error: version.txt not found or empty"
-                exit 1
-              fi
-              VERSION=$(tr -d '[:space:]' < version.txt)
-            fi
+            BUMP_TYPE="${{ github.event.inputs.bump_type }}"
           else
-            # Scheduled run or manual run without version - read from version.txt
-            if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
-              echo "❌ Error: version.txt not found or empty"
-              exit 1
-            fi
-            VERSION=$(tr -d '[:space:]' < version.txt)
-            PRERELEASE="true"
+            # Scheduled run — default to minor bump
+            PRERELEASE="false"
             RUN_PERF_TEST="true"
+            BUMP_TYPE="minor"
           fi
+
+          case "$BUMP_TYPE" in
+            major)
+              VERSION="v$((CUR_MAJOR + 1)).0.0"
+              ;;
+            minor)
+              VERSION="v${CUR_MAJOR}.$((CUR_MINOR + 1)).0"
+              ;;
+            patch)
+              VERSION="v${CUR_MAJOR}.${CUR_MINOR}.$((CUR_PATCH + 1))"
+              ;;
+            *)
+              echo "❌ Error: Invalid bump_type '$BUMP_TYPE'. Must be major, minor, or patch."
+              exit 1
+              ;;
+          esac
+
+          echo "✅ Bumping $CURRENT_VERSION → $VERSION (bump: $BUMP_TYPE, Prerelease: $PRERELEASE, Perf Test: $RUN_PERF_TEST)"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
           echo "run_performance_test=$RUN_PERF_TEST" >> $GITHUB_OUTPUT
-          echo "✅ Using version: $VERSION (Prerelease: $PRERELEASE, Perf Test: $RUN_PERF_TEST)"
 
       - name: ✅ Validate Release Version
         run: |
@@ -122,7 +131,37 @@ jobs:
       - name: 🏷️ Update Product Version
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          echo "$VERSION" > version.txt  
+          echo "$VERSION" > version.txt
+          echo "✅ Updated version.txt to $VERSION"
+
+      - name: 📝 Update README Version References
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          echo "📝 Updating README.md docker-compose curl URL to $VERSION"
+
+          # Update the docker-compose.yml curl URL in README.md
+          sed -i -E "s|(https://raw\.githubusercontent\.com/asgardeo/thunder/)v[0-9]+\.[0-9]+\.[0-9]+(/.+docker-compose\.yml)|\1${VERSION}\2|g" README.md
+
+          echo "✅ Updated README.md curl URL to $VERSION"
+          grep 'docker-compose.yml' README.md
+
+      - name: 📤 Commit and Push Version Bump
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          git config --local user.name "thunder-automation-bot"
+          git config --local user.email "thunder-bot@wso2.com"
+
+          git add version.txt README.md
+
+          if git diff --cached --quiet; then
+            echo "✅ No changes to commit (files already at $VERSION)"
+          else
+            git commit -m "[Release] Bump version to ${VERSION}"
+            git push origin HEAD:main
+            echo "✅ Pushed version bump commit to main"
+          fi
 
       - name: ⚙️ Set up Go Environment  
         uses: ./.github/actions/setup-go  
@@ -436,10 +475,12 @@ jobs:
           # Parse version components (handle both X.Y and X.Y.Z formats)
           if [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             # X.Y.Z format
+            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
           elif [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+) ]]; then
             # X.Y format
+            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="0"
           else
@@ -447,10 +488,7 @@ jobs:
             exit 1
           fi
           
-          # Use fixed major version
-          MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
-          
-          # Bump minor version
+          # Bump minor version for next development cycle
           NEXT_MINOR=$((MINOR + 1))
           NEXT_VERSION="${MAJOR}.${NEXT_MINOR}.0"
           
@@ -503,23 +541,6 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           echo "✅ Updated sample apps version to $NEXT_VERSION"
 
-      # - name: 📈 Commit and Push Version Update
-      #   run: |
-      #     git config --local user.email "action@github.com"
-      #     git config --local user.name "GitHub Action"
-          
-      #     NEXT_VERSION="${{ steps.next_version.outputs.next_version }}"
-          
-      #     # Add and commit the version changes
-      #     git add version.txt samples/apps/react-vanilla-sample/package.json samples/apps/react-vanilla-sample/server/package.json
-
-      #     if ! git diff --cached --quiet; then
-      #         git commit -m "[Release] Update version to ${NEXT_VERSION} for the next development iteration"
-      #         git push origin HEAD:main
-      #         echo "✅ Pushed version update to main branch"
-      #     else
-      #       echo "✅ No changes to commit"
-      #     fi
 
   package-samples-linux:
     name: 📦 Package Linux & Windows Samples
