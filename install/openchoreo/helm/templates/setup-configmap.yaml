@@ -34,25 +34,28 @@ data:
     database:
       config:
         type: "postgres"
-        hostname: {{ .Values.database.host | quote }}
-        port: {{ .Values.database.port }}
-        name: {{ .Values.database.config.database | quote }}
-        username: {{ .Values.database.config.username | quote }}
-        password: {{ .Values.database.config.password | quote }}
-        sslmode: {{ .Values.database.config.sslmode | quote }}
+        postgres:
+          hostname: {{ .Values.database.host | quote }}
+          port: {{ .Values.database.port }}
+          name: {{ .Values.database.config.database | quote }}
+          username: {{ .Values.database.config.username | quote }}
+          password: {{ .Values.database.config.password | quote }}
+          sslmode: {{ .Values.database.config.sslmode | quote }}
       runtime:
         type: "postgres"
-        hostname: {{ .Values.database.host | quote }}
-        port: {{ .Values.database.port }}
-        name: {{ .Values.database.runtime.database | quote }}
-        username: {{ .Values.database.runtime.username | quote }}
-        password: {{ .Values.database.runtime.password | quote }}
-        sslmode: {{ .Values.database.runtime.sslmode | quote }}
+        postgres:
+          hostname: {{ .Values.database.host | quote }}
+          port: {{ .Values.database.port }}
+          name: {{ .Values.database.runtime.database | quote }}
+          username: {{ .Values.database.runtime.username | quote }}
+          password: {{ .Values.database.runtime.password | quote }}
+          sslmode: {{ .Values.database.runtime.sslmode | quote }}
       user:
         type: "postgres"
-        hostname: {{ .Values.database.host | quote }}
-        port: {{ .Values.database.port }}
-        name: {{ .Values.database.user.database | quote }}
-        username: {{ .Values.database.user.username | quote }}
-        password: {{ .Values.database.user.password | quote }}
-        sslmode: {{ .Values.database.user.sslmode | quote }}
+        postgres:
+          hostname: {{ .Values.database.host | quote }}
+          port: {{ .Values.database.port }}
+          name: {{ .Values.database.user.database | quote }}
+          username: {{ .Values.database.user.username | quote }}
+          password: {{ .Values.database.user.password | quote }}
+          sslmode: {{ .Values.database.user.sslmode | quote }}

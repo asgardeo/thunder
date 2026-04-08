@@ -48,10 +48,8 @@ import (
 // process share the same SQLite instance instead of creating separate databases.
 func newInMemoryDataSource() config.DataSource {
 	return config.DataSource{
-		Type:         "sqlite",
-		Path:         "file::memory:?cache=shared",
-		MaxOpenConns: 1,
-		MaxIdleConns: 1,
+		Type:   "sqlite",
+		SQLite: config.SQLiteDataSource{Path: "file::memory:?cache=shared", MaxOpenConns: 1, MaxIdleConns: 1},
 	}
 }
 

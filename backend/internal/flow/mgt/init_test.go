@@ -63,12 +63,12 @@ func (s *InitTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -726,12 +726,12 @@ func (s *InitTestSuite) TestInitializeStore_MutableMode() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -763,12 +763,12 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -802,12 +802,12 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -846,12 +846,12 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode_ResourceLoadingError
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -887,12 +887,12 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode_ResourceLoadingError()
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -931,12 +931,12 @@ func (s *InitTestSuite) TestInitializeStore_DefaultMode() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -971,12 +971,12 @@ func (s *InitTestSuite) TestInitializeStore_ModeNormalization() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{

@@ -47,9 +47,9 @@ func (suite *InitTestSuite) SetupTest() {
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Config:  config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
-			Runtime: config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
-			User:    config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "thunder_test.db"}},
+			Runtime: config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "thunder_test.db"}},
+			User:    config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: "thunder_test.db"}},
 		},
 	}
 	_ = config.InitializeThunderRuntime("", testConfig)

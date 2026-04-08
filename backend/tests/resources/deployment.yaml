@@ -9,25 +9,19 @@ tls:
 database:
   config:
     type: postgres
-    hostname: localhost
-    port: 5432
-    name: configdb
-    username: postgres
-    password: postgres
-    sslmode: disable
-    path: ""
-    options: ""
+    postgres:
+      hostname: localhost
+      port: 5432
+      name: configdb
+      username: postgres
+      password: postgres
+      sslmode: disable
 
   runtime:
     type: sqlite
-    hostname: ""
-    port: 0
-    name: ""
-    username: ""
-    password: ""
-    sslmode: ""
-    path: "/data/runtime.db"
-    options: "cache=shared"
+    sqlite:
+      path: "/data/runtime.db"
+      options: "cache=shared"
 
 oauth:
   jwt:

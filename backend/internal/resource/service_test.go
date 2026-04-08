@@ -99,12 +99,12 @@ func (suite *ResourceServiceTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -135,12 +135,12 @@ func (suite *ResourceServiceTestSuite) TestNewResourceService_InvalidDelimiter()
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{
@@ -4165,12 +4165,12 @@ func (suite *ResourceServiceTestSuite) TestValidatePermissions() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Server: config.ServerConfig{

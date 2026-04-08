@@ -62,12 +62,12 @@ func (suite *AuthorizeHandlerTestSuite) BeforeTest(suiteName, testName string) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		OAuth: config.OAuthConfig{

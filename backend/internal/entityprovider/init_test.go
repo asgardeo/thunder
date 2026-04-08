@@ -38,12 +38,12 @@ func (suite *InitEntityProviderTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}

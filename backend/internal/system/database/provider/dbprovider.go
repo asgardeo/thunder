@@ -228,10 +228,21 @@ func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource c
 		return fmt.Errorf("failed to connect to database %s: %w", dbName, err)
 	}
 
-	// Configure connection pool using values from configuration
-	db.SetMaxOpenConns(dataSource.MaxOpenConns)
-	db.SetMaxIdleConns(dataSource.MaxIdleConns)
-	db.SetConnMaxLifetime(time.Duration(dataSource.ConnMaxLifetime) * time.Second)
+	// Configure connection pool using values from the type-specific sub-config.
+	var maxOpenConns, maxIdleConns, connMaxLifetime int
+	switch dataSource.Type {
+	case dataSourceTypePostgres:
+		maxOpenConns = dataSource.Postgres.MaxOpenConns
+		maxIdleConns = dataSource.Postgres.MaxIdleConns
+		connMaxLifetime = dataSource.Postgres.ConnMaxLifetime
+	case dataSourceTypeSQLite:
+		maxOpenConns = dataSource.SQLite.MaxOpenConns
+		maxIdleConns = dataSource.SQLite.MaxIdleConns
+		connMaxLifetime = dataSource.SQLite.ConnMaxLifetime
+	}
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
 
 	// Test the database connection.
 	if err := db.Ping(); err != nil {
@@ -263,17 +274,18 @@ func (d *dbProvider) getDBConfig(dataSource config.DataSource) dbConfig {
 
 	switch dataSource.Type {
 	case dataSourceTypePostgres:
+		pg := dataSource.Postgres
 		dbConfig.driverName = dataSourceTypePostgres
 		dbConfig.dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-			dataSource.Hostname, dataSource.Port, dataSource.Username, dataSource.Password,
-			dataSource.Name, dataSource.SSLMode)
+			pg.Hostname, pg.Port, pg.Username, pg.Password, pg.Name, pg.SSLMode)
 	case dataSourceTypeSQLite:
+		sl := dataSource.SQLite
 		dbConfig.driverName = dataSourceTypeSQLite
-		options := dataSource.Options
+		options := sl.Options
 		if options != "" && options[0] != '?' {
 			options = "?" + options
 		}
-		dbConfig.dsn = fmt.Sprintf("%s%s", path.Join(config.GetThunderRuntime().ThunderHome, dataSource.Path), options)
+		dbConfig.dsn = fmt.Sprintf("%s%s", path.Join(config.GetThunderRuntime().ThunderHome, sl.Path), options)
 	}
 
 	return dbConfig

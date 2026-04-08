@@ -61,21 +61,42 @@ type TLSConfig struct {
 }
 
 // DataSource holds the individual database connection details.
+// Type is the only common field; connection parameters live under the
+// matching sub-struct (Postgres, SQLite, or Redis).
 type DataSource struct {
-	Type            string `yaml:"type" json:"type"`
+	Type     string             `yaml:"type" json:"type"`
+	Postgres PostgresDataSource `yaml:"postgres" json:"postgres"`
+	SQLite   SQLiteDataSource   `yaml:"sqlite" json:"sqlite"`
+	Redis    RedisDataSource    `yaml:"redis" json:"redis"`
+}
+
+// PostgresDataSource holds PostgreSQL-specific connection details.
+type PostgresDataSource struct {
 	Hostname        string `yaml:"hostname" json:"hostname"`
 	Port            int    `yaml:"port" json:"port"`
 	Name            string `yaml:"name" json:"name"`
 	Username        string `yaml:"username" json:"username"`
 	Password        string `yaml:"password" json:"password"`
 	SSLMode         string `yaml:"sslmode" json:"sslmode"`
+	MaxOpenConns    int    `yaml:"max_open_conns" json:"max_open_conns"`
+	MaxIdleConns    int    `yaml:"max_idle_conns" json:"max_idle_conns"`
+	ConnMaxLifetime int    `yaml:"conn_max_lifetime" json:"conn_max_lifetime"`
+}
+
+// SQLiteDataSource holds SQLite-specific connection details.
+type SQLiteDataSource struct {
 	Path            string `yaml:"path" json:"path"`
 	Options         string `yaml:"options" json:"options"`
 	MaxOpenConns    int    `yaml:"max_open_conns" json:"max_open_conns"`
 	MaxIdleConns    int    `yaml:"max_idle_conns" json:"max_idle_conns"`
 	ConnMaxLifetime int    `yaml:"conn_max_lifetime" json:"conn_max_lifetime"`
-	// Redis-specific fields (used when Type = "redis").
+}
+
+// RedisDataSource holds Redis-specific connection details.
+type RedisDataSource struct {
 	Address   string `yaml:"address" json:"address"`
+	Username  string `yaml:"username" json:"username"`
+	Password  string `yaml:"password" json:"password"`
 	DB        int    `yaml:"db" json:"db"`
 	KeyPrefix string `yaml:"key_prefix" json:"key_prefix"`
 }

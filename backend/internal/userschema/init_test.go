@@ -78,8 +78,8 @@ func (suite *InitTestSuite) TestInitialize() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -101,8 +101,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -128,8 +128,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -162,8 +162,8 @@ func (suite *InitTestSuite) TestInitialize_DBTransactionerError() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "invalid-db-type",
-				Path: ":memory:",
+				Type:   "invalid-db-type",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -186,8 +186,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -213,8 +213,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -240,8 +240,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -267,8 +267,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -294,8 +294,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -495,8 +495,8 @@ func TestInitialize_Standalone(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -527,8 +527,8 @@ func TestInitializeStore_MutableMode(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -560,8 +560,8 @@ func TestInitializeStore_DeclarativeMode(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -591,8 +591,8 @@ func TestInitializeStore_CompositeMode(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -624,8 +624,8 @@ func TestInitializeStore_DefaultFallbackToMutable(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -657,8 +657,8 @@ func TestInitializeStore_GlobalDeclarativeEnabled(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -688,8 +688,8 @@ func TestInitialize_MutableMode(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -727,8 +727,8 @@ func TestInitialize_StoreModes(t *testing.T) {
 				UserSchema:           config.UserSchemaConfig{Store: m.store},
 				Database: config.DatabaseConfig{
 					Config: config.DataSource{
-						Type: "sqlite",
-						Path: ":memory:",
+						Type:   "sqlite",
+						SQLite: config.SQLiteDataSource{Path: ":memory:"},
 					},
 				},
 			}
@@ -1103,8 +1103,8 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Crypto: config.CryptoConfig{
@@ -1163,8 +1163,8 @@ schema: |
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Crypto: config.CryptoConfig{
@@ -1222,8 +1222,8 @@ schema: |
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Crypto: config.CryptoConfig{
@@ -1291,8 +1291,8 @@ schema: |
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 		Crypto: config.CryptoConfig{

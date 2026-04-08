@@ -66,11 +66,12 @@ func initRedisProvider() {
 
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RedisProvider"))
 
+		r := cfg.Redis
 		client := redis.NewClient(&redis.Options{
-			Addr:     cfg.Address,
-			Username: cfg.Username,
-			Password: cfg.Password,
-			DB:       cfg.DB,
+			Addr:     r.Address,
+			Username: r.Username,
+			Password: r.Password,
+			DB:       r.DB,
 		})
 
 		if err := client.Ping(context.Background()).Err(); err != nil {
@@ -81,10 +82,10 @@ func initRedisProvider() {
 			logger.Fatal("Failed to connect to Redis runtime store", log.Error(err))
 		}
 
-		logger.Info("Connected to Redis runtime store", log.String("address", cfg.Address))
+		logger.Info("Connected to Redis runtime store", log.String("address", r.Address))
 		redisInstance = &redisProvider{
 			client:    client,
-			keyPrefix: cfg.KeyPrefix,
+			keyPrefix: r.KeyPrefix,
 		}
 	})
 }

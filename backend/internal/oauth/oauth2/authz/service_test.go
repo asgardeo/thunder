@@ -82,8 +82,8 @@ func (suite *AuthorizeServiceTestSuite) BeforeTest(suiteName, testName string) {
 			ErrorPath: "/error",
 		},
 		Database: config.DatabaseConfig{
-			Config:  config.DataSource{Type: "sqlite", Path: ":memory:"},
-			Runtime: config.DataSource{Type: "sqlite", Path: ":memory:"},
+			Config:  config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
+			Runtime: config.DataSource{Type: "sqlite", SQLite: config.SQLiteDataSource{Path: ":memory:"}},
 		},
 		OAuth: config.OAuthConfig{
 			AuthorizationCode: config.AuthorizationCodeConfig{ValidityPeriod: 600},
