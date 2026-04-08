@@ -140,7 +140,8 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 
 	if err := e.emailClient.Send(emailData); err != nil {
-		if isEmailClientError(err) {
+		if isEmailError(err) {
+			logger.Error("Error sending mail : ", log.Error(err))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Failed to send email"
 			return execResp, nil
@@ -167,13 +168,16 @@ func resolveRecipientEmail(ctx *core.NodeContext) string {
 	return ""
 }
 
-// isEmailClientError returns true if the error is a client-side validation error
-// (e.g., invalid recipient, invalid sender) rather than a server-side transport error.
-func isEmailClientError(err error) bool {
+// isEmailError returns true if the error originated from the email subsystem,
+// covering both client-side validation errors and server-side SMTP transport errors.
+func isEmailError(err error) bool {
 	return errors.Is(err, email.ErrorInvalidRecipient) ||
 		errors.Is(err, email.ErrorInvalidSender) ||
 		errors.Is(err, email.ErrorInvalidSubject) ||
 		errors.Is(err, email.ErrorInvalidHost) ||
 		errors.Is(err, email.ErrorInvalidPort) ||
-		errors.Is(err, email.ErrorInvalidCredentials)
+		errors.Is(err, email.ErrorInvalidCredentials) ||
+		errors.Is(err, email.ErrorSMTPConnection) ||
+		errors.Is(err, email.ErrorSMTPAuth) ||
+		errors.Is(err, email.ErrorEmailSendFailed)
 }
