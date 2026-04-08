@@ -1,14 +1,12 @@
 name: Run Integration Tests
-description: Runs integration tests against a specific database type
+description: Runs integration tests against a specific database type (sqlite, postgres, or redis)
 inputs:
   database-type:
-    description: 'Database type to test against (sqlite or postgres)'
+    description: 'Database type to test against (sqlite, postgres, or redis)'
     required: true
-    type: string
   coverage-enabled:
     description: 'Whether to enable coverage collection'
     required: false
-    type: boolean
     default: false
 
 runs:

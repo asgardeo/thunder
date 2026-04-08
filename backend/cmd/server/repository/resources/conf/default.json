@@ -43,7 +43,10 @@
       "options": "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)",
       "max_open_conns": 500,
       "max_idle_conns": 100,
-      "conn_max_lifetime": 3600
+      "conn_max_lifetime": 3600,
+      "address": "",
+      "db": 0,
+      "key_prefix": ""
     },
     "user": {
       "type": "sqlite",

@@ -83,22 +83,34 @@ Stores identity provider configurations, applications, and authentication flows.
 
 ### Runtime Database
 
-Stores runtime data like sessions, tokens, and temporary data.
+Stores runtime data like sessions, tokens, and temporary data. The runtime database supports three backend types: `sqlite`, `postgres`, and `redis`.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.runtime.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
-| `database.runtime.hostname` | `""` | Database server hostname (for PostgreSQL) |
-| `database.runtime.port` | `0` | Database server port (for PostgreSQL) |
-| `database.runtime.name` | `""` | Database name (for PostgreSQL) |
-| `database.runtime.username` | `""` | Database username (for PostgreSQL) |
-| `database.runtime.password` | `""` | Database password (for PostgreSQL) |
-| `database.runtime.sslmode` | `""` | SSL mode for PostgreSQL |
-| `database.runtime.path` | `repository/database/runtimedb.db` | SQLite database file path |
-| `database.runtime.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
-| `database.runtime.max_open_conns` | `500` | Maximum number of open connections |
-| `database.runtime.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.runtime.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.runtime.type` | `sqlite` | Database type (`sqlite`, `postgres`, or `redis`) |
+| `database.runtime.hostname` | `""` | Database server hostname (PostgreSQL only) |
+| `database.runtime.port` | `0` | Database server port (PostgreSQL only) |
+| `database.runtime.name` | `""` | Database name (PostgreSQL only) |
+| `database.runtime.username` | `""` | Database username (PostgreSQL only); Redis ACL username — leave empty if ACLs are not configured (Redis only) |
+| `database.runtime.password` | `""` | Database password (PostgreSQL only); Redis password or ACL user password (Redis only) |
+| `database.runtime.sslmode` | `""` | SSL mode for PostgreSQL (PostgreSQL only) |
+| `database.runtime.path` | `repository/database/runtimedb.db` | SQLite database file path (SQLite only) |
+| `database.runtime.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options (SQLite/PostgreSQL only) |
+| `database.runtime.max_open_conns` | `500` | Maximum number of open connections (SQLite/PostgreSQL only) |
+| `database.runtime.max_idle_conns` | `100` | Maximum number of idle connections (SQLite/PostgreSQL only) |
+| `database.runtime.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds (SQLite/PostgreSQL only) |
+| `database.runtime.address` | `""` | Redis server address in `host:port` format, for example `localhost:6379` (Redis only) |
+| `database.runtime.db` | `0` | Redis logical database index (0–15) (Redis only) |
+| `database.runtime.key_prefix` | `""` | Prefix applied to all Redis keys written by Thunder, for example `thunder:` (Redis only) |
+
+#### Redis Connection Requirements
+
+- Thunder requires Redis 6.0 or later.
+- Thunder connects to a single Redis node. Cluster mode and Sentinel mode are not currently supported.
+- The default Redis port is `6379`. Ensure the port is reachable from the Thunder server.
+- Thunder does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime.address` at the proxy endpoint.
+- If your Redis deployment uses Access Control Lists (ACLs), create a dedicated user and grant the following commands: `GET`, `SET`, `DEL`, `EXPIRE`, `EVAL`, `EVALSHA`. Set `database.runtime.username` and `database.runtime.password` accordingly.
+- Thunder calls `PING` at startup to verify connectivity. The process terminates if the Redis server is unreachable.
 
 ### User Database
 
