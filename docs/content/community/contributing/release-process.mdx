@@ -1,0 +1,87 @@
+---
+title: Release Process
+description: Learn the weekly release rhythm, validation model, and release execution process for Thunder.
+sidebar_position: 4
+hide_table_of_contents: false
+---
+
+# Release Process
+
+This page explains how Thunder moves changes from development to a weekly release.
+
+---
+
+## 📅 Release Cadence
+
+Thunder follows a weekly release cycle. Work is planned, developed, and validated within a fixed weekly window.
+
+| Day | Activity |
+| --- | --- |
+| Monday | Weekly sync to plan the milestone, assign work, and confirm scope |
+| Monday to Thursday | Development, pull requests, reviews, and iteration |
+| Thursday night | Code freeze and release branch sync |
+| Friday | Validate milestone changes, fix or revert issues, then release |
+
+---
+
+## Branch Model
+
+```text
+main ──●──●──●──●──┬──●──●──●──── (development continues)
+                    │
+                    └── release ──○──○──◆ tag vX.Y.Z
+                                  │  │       │
+                                fixes     merge back to main
+                              validated     and delete branch
+```
+
+Development happens continuously on `main`. On Thursday night, a `release` branch is cut from `main`. Any fixes identified during release validation are applied directly to the release branch. Once everything is validated and the release is confirmed good, it is tagged and the branch is merged back into `main` and deleted.
+
+---
+
+## 🧪 Release Validation
+
+Every change included in the milestone must be validated by someone other than the author before release.
+
+In addition to milestone-specific changes, **core IAM flows** — including authentication, authorization, and token management — are tested every release, regardless of what changed. This ensures baseline functionality is never silently broken between releases.
+
+---
+
+## 🔖 Release Manager Responsibilities
+
+The Release Manager coordinates release readiness and final release execution.
+
+1. **Lead the weekly sync** — confirm milestone scope and identify at-risk work.
+2. **Review readiness on Thursday** — check milestone issues and pull requests for blockers.
+3. **Create a draft release** — publish a draft GitHub release to verify release artifacts before going live.
+4. **Coordinate release validation** — confirm all milestone changes are validated against the draft release.
+5. **Trigger the Release Builder** — run the workflow manually once everything is confirmed good to release, or allow the scheduled release run.
+6. **Confirm post-release sync** — verify the release branch is synchronized back to main, ensure the milestone is closed and release notes are generated properly, and update stakeholders.
+
+---
+
+## 🚨 When Issues Arise
+
+> **Default stance: revert and release on time.**
+
+| Situation | Action |
+| --- | --- |
+| Milestone change fails and quick fix is clear | Author fixes on release branch and re-validates |
+| Milestone change fails and fix is complex | Revert from release branch, release without it, carry to next week |
+| Release validation fails and cause is clear | Revert causing change and release without it |
+| Release validation fails and cause is unclear | Revert suspected change and investigate on main next week |
+
+A predictable release train matters more than any single feature.
+
+---
+
+## ⚙️ Automation Workflows
+
+The weekly release process uses these GitHub Actions workflows:
+
+| Workflow | Trigger | What It Does |
+| --- | --- | --- |
+| [Pre-Release Sync](https://github.com/asgardeo/thunder/blob/main/.github/workflows/pre-release-sync.yml) | Scheduled on Thursday night (UTC) and manual dispatch | Creates the release branch and syncs the latest changes from main |
+| [Release Milestone Reminder](https://github.com/asgardeo/thunder/blob/main/.github/workflows/release-milestone-reminder.yaml) | Scheduled every Thursday and manual dispatch | Sends release-readiness reminder based on open milestone items |
+| [Release Builder](https://github.com/asgardeo/thunder/blob/main/.github/workflows/release-builder.yml) | Scheduled on Friday and manual dispatch | Builds, tags, packages, and publishes the release |
+| [Post-Release Sync](https://github.com/asgardeo/thunder/blob/main/.github/workflows/post-release-sync.yml) | After successful release workflow run and manual dispatch | Syncs release back into main, deletes release branch, or opens a conflict-resolution pull request |
