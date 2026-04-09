@@ -19,15 +19,14 @@
 package application
 
 import (
-	"github.com/stretchr/testify/mock"
-
+	"encoding/json"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 // ValidateApplicationWrapperTestSuite tests the validateApplicationWrapper function.
@@ -562,4 +561,68 @@ metadata:
 	assert.NotNil(s.T(), dto.Metadata)
 	assert.Equal(s.T(), "production", dto.Metadata["env"])
 	assert.Equal(s.T(), "platform", dto.Metadata["team"])
+}
+
+type AppEntityParserTestSuite struct {
+	suite.Suite
+}
+
+func TestAppEntityParserTestSuite(t *testing.T) {
+	suite.Run(t, new(AppEntityParserTestSuite))
+}
+
+func (s *AppEntityParserTestSuite) TestMakeAppEntityParser_PublicOAuthClientStoresClientIDInSystemAttributes() {
+	yamlData := []byte(`
+id: public-oauth-app
+name: Public OAuth App
+description: Public client app
+inbound_auth_config:
+  - type: oauth2
+    config:
+      client_id: public-client-id
+      public_client: true
+      pkce_required: true
+`)
+
+	parser := makeAppEntityParser()
+	entity, _, sysCreds, err := parser(yamlData)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), entity)
+	assert.Nil(s.T(), sysCreds)
+
+	sysAttrs := map[string]interface{}{}
+	err = json.Unmarshal(entity.SystemAttributes, &sysAttrs)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "Public OAuth App", sysAttrs[fieldName])
+	assert.Equal(s.T(), "Public client app", sysAttrs[fieldDescription])
+	assert.Equal(s.T(), "public-client-id", sysAttrs[fieldClientID])
+}
+
+func (s *AppEntityParserTestSuite) TestMakeAppEntityParser_UsesOAuthConfigEvenWhenFirstInboundConfigIsNotOAuth() {
+	yamlData := []byte(`
+id: mixed-inbound-app
+name: Mixed Inbound App
+inbound_auth_config:
+  - type: saml
+  - type: oauth2
+    config:
+      client_id: oauth-client-id
+      client_secret: oauth-client-secret
+`)
+
+	parser := makeAppEntityParser()
+	entity, _, sysCreds, err := parser(yamlData)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), entity)
+	assert.NotNil(s.T(), sysCreds)
+
+	sysAttrs := map[string]interface{}{}
+	err = json.Unmarshal(entity.SystemAttributes, &sysAttrs)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "oauth-client-id", sysAttrs[fieldClientID])
+
+	creds := map[string]interface{}{}
+	err = json.Unmarshal(sysCreds, &creds)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "oauth-client-secret", creds[fieldClientSecret])
 }

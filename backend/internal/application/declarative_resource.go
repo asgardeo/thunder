@@ -325,20 +325,29 @@ func makeAppEntityParser() func(data []byte) (*entity.Entity, json.RawMessage, j
 			return nil, nil, nil, fmt.Errorf("failed to marshal system attributes: %w", err)
 		}
 
-		// Build system credentials if OAuth config with client secret exists.
+		// Extract OAuth client metadata and optional system credentials.
 		var sysCredsJSON json.RawMessage
-		if len(appRequest.InboundAuthConfig) > 0 && appRequest.InboundAuthConfig[0].OAuthAppConfig != nil {
-			clientSecret := appRequest.InboundAuthConfig[0].OAuthAppConfig.ClientSecret
-			if clientSecret != "" {
-				sysAttrs[fieldClientID] = appRequest.InboundAuthConfig[0].OAuthAppConfig.ClientID
+		for _, inboundAuthConfig := range appRequest.InboundAuthConfig {
+			if inboundAuthConfig.Type != model.OAuthInboundAuthType || inboundAuthConfig.OAuthAppConfig == nil {
+				continue
+			}
+
+			clientID := inboundAuthConfig.OAuthAppConfig.ClientID
+			if clientID != "" {
+				sysAttrs[fieldClientID] = clientID
 				// Re-marshal with clientId added.
 				sysAttrsJSON, _ = json.Marshal(sysAttrs)
+			}
 
+			clientSecret := inboundAuthConfig.OAuthAppConfig.ClientSecret
+			if clientSecret != "" {
 				creds := map[string]interface{}{
 					fieldClientSecret: clientSecret,
 				}
 				sysCredsJSON, _ = json.Marshal(creds)
 			}
+
+			break
 		}
 
 		e := &entity.Entity{
