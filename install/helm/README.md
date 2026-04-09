@@ -279,24 +279,30 @@ Provide passwords directly in the `password` field. Helm automatically creates a
 configuration:
   database:
     config:
-      password: "my-secret-password-1"  # Auto-converted to Secret!
+      postgres:
+        password: "my-secret-password-1"  # Auto-converted to Secret!
     runtime:
-      password: "my-secret-password-2"
+      postgres:
+        password: "my-secret-password-2"
+      redis:
+        password: "my-runtime-redis-password"
     user:
-      password: "my-secret-password-3"
+      postgres:
+        password: "my-secret-password-3"
 ```
 
 **Best Practice:** Use `--set` flags to avoid committing passwords:
 ```bash
 helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
-  --set configuration.database.config.password=mypass1 \
-  --set configuration.database.runtime.password=mypass2 \
-  --set configuration.database.user.password=mypass3
+  --set configuration.database.config.postgres.password=mypass1 \
+  --set configuration.database.runtime.postgres.password=mypass2 \
+  --set configuration.database.runtime.redis.password=myredispass \
+  --set configuration.database.user.postgres.password=mypass3
 ```
 
 Helm automatically:
 - Creates `<release-name>-db-credentials` Secret as a pre-install/pre-upgrade hook
-- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_USER_PASSWORD`) into pods
+- Injects environment variables (`DB_CONFIG_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_RUNTIME_REDIS_PASSWORD`, `DB_USER_PASSWORD`) into pods
 - Updates pods when passwords change (via checksum annotations)
 
 #### Pattern 2: External Secret (For Production - Recommended)
@@ -316,17 +322,24 @@ kubectl create secret generic my-db-secrets \
 configuration:
   database:
     config:
-      passwordRef:
-        name: "my-db-secrets"      # Your Secret name
-        key: "config-password"      # Key within Secret
+      postgres:
+        passwordRef:
+          name: "my-db-secrets"      # Your Secret name
+          key: "config-password"      # Key within Secret
     runtime:
-      passwordRef:
-        name: "my-db-secrets"
-        key: "runtime-password"
+      postgres:
+        passwordRef:
+          name: "my-db-secrets"
+          key: "runtime-password"
+      redis:
+        passwordRef:
+          name: "my-db-secrets"
+          key: "runtime-redis-password"
     user:
-      passwordRef:
-        name: "my-db-secrets"
-        key: "user-password"
+      postgres:
+        passwordRef:
+          name: "my-db-secrets"
+          key: "user-password"
 ```
 
 When `passwordRef.key` is set, the `password` field is ignored and Helm uses your external Secret.
@@ -341,7 +354,7 @@ Thunder reads configuration directly via its application config loader (e.g., fr
 value is first converted into a Kubernetes Secret by this chart.
 
 #### Password Field Options
-Each database section (`config`, `runtime`, `user`) supports these fields:
+Password fields are available in `configuration.database.config.postgres`, `configuration.database.runtime.postgres`, `configuration.database.runtime.redis`, and `configuration.database.user.postgres`:
 
 | Field                  | Description                                                                                                                                    | Example                      |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
@@ -381,47 +394,63 @@ Each database section (`config`, `runtime`, `user`) supports these fields:
 | `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                                                                           | `repository/resources/security/signing.cert` |
 | `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                                                                   | `repository/resources/security/signing.key`  |
 | `configuration.database.config.type`            | Config database type (postgres or sqlite)                                                                                                               | `postgres`                   |
-| `configuration.database.config.sqlitePath`      | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/configdb.db` |
-| `configuration.database.config.sqliteOptions`   | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.config.name`            | Postgres database name (for postgres only)                                                                                                              | `configdb`                  |
-| `configuration.database.config.host`            | Postgres host (for postgres only)                                                                                                                       | `localhost` |
-| `configuration.database.config.port`            | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
-| `configuration.database.config.username`        | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
-| `configuration.database.config.password`        | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                  | `asgthunder`    |
-| `configuration.database.config.passwordRef.name` | Kubernetes Secret name for config database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set  | `""`    |
-| `configuration.database.config.passwordRef.key`  | Kubernetes Secret key for config database password. When set, overrides `password` field and uses external Secret                                       | `""`    |
-| `configuration.database.config.sslmode`         | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
-| `configuration.database.config.max_open_conns`  | Maximum number of open connections to the database                                                                                                      | `500`                        |
-| `configuration.database.config.max_idle_conns`  | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
-| `configuration.database.config.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
-| `configuration.database.runtime.type`             | Runtime database type (postgres or sqlite)                                                                                                              | `postgres`                   |
-| `configuration.database.runtime.sqlitePath`       | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/runtimedb.db` |
-| `configuration.database.runtime.sqliteOptions`    | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.runtime.name`             | Postgres database name (for postgres only)                                                                                                              | `runtimedb`                  |
-| `configuration.database.runtime.host`             | Postgres host (for postgres only)                                                                                                                       | `localhost` |
-| `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                                                                       | `5432`                      |
-| `configuration.database.runtime.username`         | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
-| `configuration.database.runtime.password`         | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                  | `asgthunder`     |
-| `configuration.database.runtime.passwordRef.name`  | Kubernetes Secret name for runtime database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
-| `configuration.database.runtime.passwordRef.key`   | Kubernetes Secret key for runtime database password. When set, overrides `password` field and uses external Secret                                      | `""`    |
-| `configuration.database.runtime.sslmode`          | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
-| `configuration.database.runtime.max_open_conns`   | Maximum number of open connections to the database                                                                                                      | `500`                        |
-| `configuration.database.runtime.max_idle_conns`   | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
-| `configuration.database.runtime.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.config.sqlite.path`      | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/configdb.db` |
+| `configuration.database.config.sqlite.options`   | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.config.sqlite.max_open_conns` | Maximum number of open connections for SQLite                                                                                                      | `500`                        |
+| `configuration.database.config.sqlite.max_idle_conns` | Maximum number of idle SQLite connections                                                                                                          | `100`                        |
+| `configuration.database.config.sqlite.conn_max_lifetime` | Maximum SQLite connection lifetime in seconds                                                                                                    | `3600`                       |
+| `configuration.database.config.postgres.name`            | Postgres database name (for postgres only)                                                                                                              | `configdb`                  |
+| `configuration.database.config.postgres.hostname`        | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
+| `configuration.database.config.postgres.port`            | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
+| `configuration.database.config.postgres.username`        | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.config.postgres.password`        | Config Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.           | `asgthunder`    |
+| `configuration.database.config.postgres.passwordRef.name` | Kubernetes Secret name for config Postgres password                                                                                                     | `""`    |
+| `configuration.database.config.postgres.passwordRef.key`  | Kubernetes Secret key for config Postgres password                                                                                                      | `""`    |
+| `configuration.database.config.postgres.sslmode`         | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.config.postgres.max_open_conns`  | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.config.postgres.max_idle_conns`  | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.config.postgres.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.runtime.type`             | Runtime database type (`postgres`, `sqlite`, or `redis`)                                                                                               | `postgres`                   |
+| `configuration.database.runtime.sqlite.path`       | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/runtimedb.db` |
+| `configuration.database.runtime.sqlite.options`    | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.runtime.sqlite.max_open_conns` | Maximum number of open connections for SQLite                                                                                                      | `500`                        |
+| `configuration.database.runtime.sqlite.max_idle_conns` | Maximum number of idle SQLite connections                                                                                                          | `100`                        |
+| `configuration.database.runtime.sqlite.conn_max_lifetime` | Maximum SQLite connection lifetime in seconds                                                                                                    | `3600`                       |
+| `configuration.database.runtime.postgres.name`             | Postgres database name (for postgres only)                                                                                                              | `runtimedb`                  |
+| `configuration.database.runtime.postgres.hostname`         | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
+| `configuration.database.runtime.postgres.port`             | Postgres port (for postgres only)                                                                                                                       | `5432`                      |
+| `configuration.database.runtime.postgres.username`         | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.runtime.postgres.password`         | Runtime Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.          | `asgthunder`     |
+| `configuration.database.runtime.postgres.passwordRef.name`  | Kubernetes Secret name for runtime Postgres password                                                                                                    | `""`    |
+| `configuration.database.runtime.postgres.passwordRef.key`   | Kubernetes Secret key for runtime Postgres password                                                                                                     | `""`    |
+| `configuration.database.runtime.postgres.sslmode`          | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.runtime.postgres.max_open_conns`   | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.runtime.postgres.max_idle_conns`   | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.runtime.postgres.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.runtime.redis.address`     | Redis server address in `host:port` format (for Redis only)                                                                                             | `""`                         |
+| `configuration.database.runtime.redis.username`    | Redis username (for Redis only)                                                                                                                          | `""`                         |
+| `configuration.database.runtime.redis.password`    | Runtime Redis password. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                                  | `""`                         |
+| `configuration.database.runtime.redis.passwordRef.name` | Kubernetes Secret name for runtime Redis password                                                                                                      | `""`                         |
+| `configuration.database.runtime.redis.passwordRef.key` | Kubernetes Secret key for runtime Redis password                                                                                                      | `""`                         |
+| `configuration.database.runtime.redis.db`          | Redis logical database index (0–15) (for Redis only)                                                                                                   | `0`                          |
+| `configuration.database.runtime.redis.key_prefix`   | Prefix applied to all Redis keys written by Thunder (for Redis only)                                                                                   | `""`                         |
 | `configuration.database.user.type`                | User database type (postgres or sqlite)                                                                                                                 | `postgres`                   |
-| `configuration.database.user.sqlitePath`          | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/userdb.db` |
-| `configuration.database.user.sqliteOptions`       | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
-| `configuration.database.user.name`                | Postgres database name (for postgres only)                                                                                                              | `userdb`                     |
-| `configuration.database.user.host`                | Postgres host (for postgres only)                                                                                                                       | `localhost` |
-| `configuration.database.user.port`                | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
-| `configuration.database.user.username`            | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
-| `configuration.database.user.password`            | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.                   | `asgthunder`        |
-| `configuration.database.user.passwordRef.name`     | Kubernetes Secret name for user database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set    | `""`    |
-| `configuration.database.user.passwordRef.key`      | Kubernetes Secret key for user database password. When set, overrides `password` field and uses external Secret                                         | `""`    |
-| `configuration.database.user.sslmode`             | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
-| `configuration.database.user.max_open_conns`      | Maximum number of open connections to the database                                                                                                      | `500`                        |
-| `configuration.database.user.max_idle_conns`      | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
-| `configuration.database.user.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
+| `configuration.database.user.sqlite.path`          | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/userdb.db` |
+| `configuration.database.user.sqlite.options`       | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
+| `configuration.database.user.sqlite.max_open_conns` | Maximum number of open connections for SQLite                                                                                                        | `500`                        |
+| `configuration.database.user.sqlite.max_idle_conns` | Maximum number of idle SQLite connections                                                                                                            | `100`                        |
+| `configuration.database.user.sqlite.conn_max_lifetime` | Maximum SQLite connection lifetime in seconds                                                                                                      | `3600`                       |
+| `configuration.database.user.postgres.name`                | Postgres database name (for postgres only)                                                                                                              | `userdb`                     |
+| `configuration.database.user.postgres.hostname`            | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
+| `configuration.database.user.postgres.port`                | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
+| `configuration.database.user.postgres.username`            | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.user.postgres.password`            | User Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.              | `asgthunder`        |
+| `configuration.database.user.postgres.passwordRef.name`     | Kubernetes Secret name for user Postgres password                                                                                                       | `""`    |
+| `configuration.database.user.postgres.passwordRef.key`      | Kubernetes Secret key for user Postgres password                                                                                                        | `""`    |
+| `configuration.database.user.postgres.sslmode`             | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
+| `configuration.database.user.postgres.max_open_conns`      | Maximum number of open connections to the database                                                                                                      | `500`                        |
+| `configuration.database.user.postgres.max_idle_conns`      | Maximum number of idle connections in the pool                                                                                                          | `100`                        |
+| `configuration.database.user.postgres.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                                                                             | `3600`                       |
 | `configuration.cache.disabled`                    | Disable cache                                                                                                                                           | `true`                       |
 | `configuration.cache.type`                        | Cache type                                                                                                                                              | `inmemory`                   |
 | `configuration.cache.size`                        | Cache size                                                                                                                                              | `1000`                       |

@@ -191,28 +191,31 @@ resources:
           database:
             config:
               type: "postgres"
-              hostname: "${environmentConfigs.configDbHostname}"
-              port: ${parameters.initial.database.config.port}
-              name: "${environmentConfigs.configDbName}"
-              username: "${environmentConfigs.configDbUsername}"
-              password: "${environmentConfigs.configDbPassword}"
-              sslmode: "${parameters.initial.database.config.sslmode}"
+              postgres:
+                hostname: "${environmentConfigs.configDbHostname}"
+                port: ${parameters.initial.database.config.port}
+                name: "${environmentConfigs.configDbName}"
+                username: "${environmentConfigs.configDbUsername}"
+                password: "${environmentConfigs.configDbPassword}"
+                sslmode: "${parameters.initial.database.config.sslmode}"
             runtime:
               type: "postgres"
-              hostname: "${environmentConfigs.runtimeDbHostname}"
-              port: ${parameters.initial.database.runtime.port}
-              name: "${environmentConfigs.runtimeDbName}"
-              username: "${environmentConfigs.runtimeDbUsername}"
-              password: "${environmentConfigs.runtimeDbPassword}"
-              sslmode: "${parameters.initial.database.runtime.sslmode}"
+              postgres:
+                hostname: "${environmentConfigs.runtimeDbHostname}"
+                port: ${parameters.initial.database.runtime.port}
+                name: "${environmentConfigs.runtimeDbName}"
+                username: "${environmentConfigs.runtimeDbUsername}"
+                password: "${environmentConfigs.runtimeDbPassword}"
+                sslmode: "${parameters.initial.database.runtime.sslmode}"
             user:
               type: "postgres"
-              hostname: "${environmentConfigs.userDbHostname}"
-              port: ${parameters.initial.database.user.port}
-              name: "${environmentConfigs.userDbName}"
-              username: "${environmentConfigs.userDbUsername}"
-              password: "${environmentConfigs.userDbPassword}"
-              sslmode: "${parameters.initial.database.user.sslmode}"
+              postgres:
+                hostname: "${environmentConfigs.userDbHostname}"
+                port: ${parameters.initial.database.user.port}
+                name: "${environmentConfigs.userDbName}"
+                username: "${environmentConfigs.userDbUsername}"
+                password: "${environmentConfigs.userDbPassword}"
+                sslmode: "${parameters.initial.database.user.sslmode}"
 
           cache:
             disabled: false

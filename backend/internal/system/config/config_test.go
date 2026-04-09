@@ -143,7 +143,9 @@ server:
   port: 8090
 database:
   config:
-    password: "{{.TestVar}}"
+    type: "sqlite"
+    sqlite:
+      path: "{{.TestVar}}"
 `
 
 	tempDir := suite.T().TempDir()
@@ -160,7 +162,7 @@ database:
 	assert.Equal(suite.T(), "user-host", config.Server.Hostname)
 	assert.Equal(suite.T(), 8090, config.Server.Port)
 	assert.Equal(suite.T(), false, config.Server.HTTPOnly) // Zero value for bool
-	assert.Equal(suite.T(), "mysql", config.Database.Config.Password)
+	assert.Equal(suite.T(), "mysql", config.Database.Config.SQLite.Path)
 }
 
 func (suite *ConfigTestSuite) TestLoadConfigWithDefaults_ErrorCases() {
@@ -217,14 +219,18 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 		},
 		Database: DatabaseConfig{
 			Config: DataSource{
-				Type:     "postgres",
-				Hostname: "base-config-host",
-				Port:     5432,
+				Type: "postgres",
+				Postgres: PostgresDataSource{
+					Hostname: "base-config-host",
+					Port:     5432,
+				},
 			},
 			Runtime: DataSource{
-				Type:     "postgres",
-				Hostname: "base-runtime-host",
-				Port:     5432,
+				Type: "postgres",
+				Postgres: PostgresDataSource{
+					Hostname: "base-runtime-host",
+					Port:     5432,
+				},
 			},
 		},
 	}
@@ -256,7 +262,9 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 		},
 		Database: DatabaseConfig{
 			Config: DataSource{
-				Username: "user-config-username", // Override
+				Postgres: PostgresDataSource{
+					Username: "user-config-username", // Override
+				},
 				// Other fields are zero values, should not override
 			},
 		},
@@ -286,9 +294,9 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 	assert.Equal(suite.T(), 600, base.Cache.Properties[0].TTL)
 
 	// Test nested struct field override
-	assert.Equal(suite.T(), "user-config-username", base.Database.Config.Username)
-	assert.Equal(suite.T(), "postgres", base.Database.Config.Type)             // Not overridden (zero value)
-	assert.Equal(suite.T(), "base-config-host", base.Database.Config.Hostname) // Not overridden (zero value)
+	assert.Equal(suite.T(), "user-config-username", base.Database.Config.Postgres.Username)
+	assert.Equal(suite.T(), "postgres", base.Database.Config.Type)                      // Not overridden (zero value)
+	assert.Equal(suite.T(), "base-config-host", base.Database.Config.Postgres.Hostname) // Not overridden (zero value)
 }
 
 func (suite *ConfigTestSuite) TestMergeStructs_EdgeCases() {

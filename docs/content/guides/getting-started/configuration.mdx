@@ -62,6 +62,8 @@ Thunder ships with a self-signed certificate for local development at `repositor
 
 Thunder uses three separate databases for different purposes. Each database can be configured independently.
 
+Connection parameters are grouped under a type-specific sub-key (`postgres`, `sqlite`, or `redis`). Only `type` is a top-level field; all other settings belong under the matching sub-key.
+
 ### Config Database
 
 Stores identity provider configurations, applications, and authentication flows.
@@ -69,36 +71,81 @@ Stores identity provider configurations, applications, and authentication flows.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `database.config.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
-| `database.config.hostname` | `""` | Database server hostname (for PostgreSQL) |
-| `database.config.port` | `0` | Database server port (for PostgreSQL) |
-| `database.config.name` | `""` | Database name (for PostgreSQL) |
-| `database.config.username` | `""` | Database username (for PostgreSQL) |
-| `database.config.password` | `""` | Database password (for PostgreSQL) |
-| `database.config.sslmode` | `""` | SSL mode for PostgreSQL (`disable`, `require`, `verify-ca`, `verify-full`) |
-| `database.config.path` | `repository/database/configdb.db` | SQLite database file path |
-| `database.config.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
-| `database.config.max_open_conns` | `500` | Maximum number of open connections |
-| `database.config.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.config.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
 
-### Runtime Database
-
-Stores runtime data like sessions, tokens, and temporary data.
+**`database.config.postgres.*`** — only read when `database.config.type: postgres`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.runtime.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
-| `database.runtime.hostname` | `""` | Database server hostname (for PostgreSQL) |
-| `database.runtime.port` | `0` | Database server port (for PostgreSQL) |
-| `database.runtime.name` | `""` | Database name (for PostgreSQL) |
-| `database.runtime.username` | `""` | Database username (for PostgreSQL) |
-| `database.runtime.password` | `""` | Database password (for PostgreSQL) |
-| `database.runtime.sslmode` | `""` | SSL mode for PostgreSQL |
-| `database.runtime.path` | `repository/database/runtimedb.db` | SQLite database file path |
-| `database.runtime.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
-| `database.runtime.max_open_conns` | `500` | Maximum number of open connections |
-| `database.runtime.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.runtime.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.config.postgres.hostname` | `""` | Database server hostname |
+| `database.config.postgres.port` | `0` | Database server port |
+| `database.config.postgres.name` | `""` | Database name |
+| `database.config.postgres.username` | `""` | Database username |
+| `database.config.postgres.password` | `""` | Database password |
+| `database.config.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.config.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.config.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.config.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+**`database.config.sqlite.*`** — only read when `database.config.type: sqlite`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.config.sqlite.path` | `repository/database/configdb.db` | SQLite database file path |
+| `database.config.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.config.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.config.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.config.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+### Runtime Database
+
+Stores runtime data like sessions, tokens, and temporary data. The runtime database supports three backend types: `sqlite`, `postgres`, and `redis`.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime.type` | `sqlite` | Database type (`sqlite`, `postgres`, or `redis`) |
+
+**`database.runtime.postgres.*`** — only read when `database.runtime.type: postgres`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime.postgres.hostname` | `""` | Database server hostname |
+| `database.runtime.postgres.port` | `0` | Database server port |
+| `database.runtime.postgres.name` | `""` | Database name |
+| `database.runtime.postgres.username` | `""` | Database username |
+| `database.runtime.postgres.password` | `""` | Database password |
+| `database.runtime.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.runtime.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+**`database.runtime.sqlite.*`** — only read when `database.runtime.type: sqlite`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime.sqlite.path` | `repository/database/runtimedb.db` | SQLite database file path |
+| `database.runtime.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.runtime.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.runtime.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.runtime.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+**`database.runtime.redis.*`** — only read when `database.runtime.type: redis`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.runtime.redis.address` | `""` | Redis server address in `host:port` format, for example `localhost:6379` |
+| `database.runtime.redis.username` | `""` | Redis ACL username — leave empty if ACLs are not configured |
+| `database.runtime.redis.password` | `""` | Redis password or ACL user password |
+| `database.runtime.redis.db` | `0` | Redis logical database index (0–15) |
+| `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by Thunder, for example `thunder:` |
+
+#### Redis Connection Requirements
+
+- Thunder requires Redis 6.0 or later.
+- Thunder connects to a single Redis node. Cluster mode and Sentinel mode are not currently supported.
+- The default Redis port is `6379`. Ensure the port is reachable from the Thunder server.
+- Thunder does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime.redis.address` at the proxy endpoint.
+- If your Redis deployment uses Access Control Lists (ACLs), create a dedicated user and grant the following commands: `GET`, `SET`, `DEL`, `EXPIRE`, `EVAL`, `EVALSHA`. Set `database.runtime.redis.username` and `database.runtime.redis.password` accordingly.
+- Thunder calls `PING` at startup to verify connectivity. The process terminates if the Redis server is unreachable.
 
 ### User Database
 
@@ -107,17 +154,30 @@ Stores user profiles and credentials.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `database.user.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
-| `database.user.hostname` | `""` | Database server hostname (for PostgreSQL) |
-| `database.user.port` | `0` | Database server port (for PostgreSQL) |
-| `database.user.name` | `""` | Database name (for PostgreSQL) |
-| `database.user.username` | `""` | Database username (for PostgreSQL) |
-| `database.user.password` | `""` | Database password (for PostgreSQL) |
-| `database.user.sslmode` | `""` | SSL mode for PostgreSQL |
-| `database.user.path` | `repository/database/userdb.db` | SQLite database file path |
-| `database.user.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
-| `database.user.max_open_conns` | `500` | Maximum number of open connections |
-| `database.user.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.user.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+**`database.user.postgres.*`** — only read when `database.user.type: postgres`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.user.postgres.hostname` | `""` | Database server hostname |
+| `database.user.postgres.port` | `0` | Database server port |
+| `database.user.postgres.name` | `""` | Database name |
+| `database.user.postgres.username` | `""` | Database username |
+| `database.user.postgres.password` | `""` | Database password |
+| `database.user.postgres.sslmode` | `""` | SSL mode (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.user.postgres.max_open_conns` | `500` | Maximum number of open connections |
+| `database.user.postgres.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.user.postgres.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+
+**`database.user.sqlite.*`** — only read when `database.user.type: sqlite`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `database.user.sqlite.path` | `repository/database/userdb.db` | SQLite database file path |
+| `database.user.sqlite.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | SQLite connection options |
+| `database.user.sqlite.max_open_conns` | `500` | Maximum number of open connections |
+| `database.user.sqlite.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.user.sqlite.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
 
 ## Cache Configuration
 

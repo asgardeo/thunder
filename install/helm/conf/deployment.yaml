@@ -60,42 +60,73 @@ database:
   config:
     type: {{ .Values.configuration.database.config.type | quote }}
     {{- if eq .Values.configuration.database.config.type "sqlite" }}
-    path: {{ .Values.configuration.database.config.sqlitePath | quote }}
-    options: {{ .Values.configuration.database.config.sqliteOptions | quote }}
+    sqlite:
+      path: {{ .Values.configuration.database.config.sqlite.path | quote }}
+      options: {{ .Values.configuration.database.config.sqlite.options | quote }}
+      max_open_conns: {{ .Values.configuration.database.config.sqlite.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.config.sqlite.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.config.sqlite.conn_max_lifetime }}
     {{- else }}
-    hostname: {{ .Values.configuration.database.config.host | quote }}
-    port: {{ .Values.configuration.database.config.port }}
-    name: {{ .Values.configuration.database.config.name | quote }}
-    username: {{ .Values.configuration.database.config.username | quote }}
-    password: {{ "{{.DB_CONFIG_PASSWORD}}" | quote }}
-    sslmode: {{ .Values.configuration.database.config.sslmode | quote }}
+    postgres:
+      hostname: {{ .Values.configuration.database.config.postgres.hostname | quote }}
+      port: {{ .Values.configuration.database.config.postgres.port }}
+      name: {{ .Values.configuration.database.config.postgres.name | quote }}
+      username: {{ .Values.configuration.database.config.postgres.username | quote }}
+      password: {{ "{{.DB_CONFIG_PASSWORD}}" | quote }}
+      sslmode: {{ .Values.configuration.database.config.postgres.sslmode | quote }}
+      max_open_conns: {{ .Values.configuration.database.config.postgres.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.config.postgres.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.config.postgres.conn_max_lifetime }}
     {{- end }}
   runtime:
     type: {{ .Values.configuration.database.runtime.type | quote }}
     {{- if eq .Values.configuration.database.runtime.type "sqlite" }}
-    path: {{ .Values.configuration.database.runtime.sqlitePath | quote }}
-    options: {{ .Values.configuration.database.runtime.sqliteOptions | quote }}
+    sqlite:
+      path: {{ .Values.configuration.database.runtime.sqlite.path | quote }}
+      options: {{ .Values.configuration.database.runtime.sqlite.options | quote }}
+      max_open_conns: {{ .Values.configuration.database.runtime.sqlite.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.runtime.sqlite.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.runtime.sqlite.conn_max_lifetime }}
+    {{- else if eq .Values.configuration.database.runtime.type "redis" }}
+    redis:
+      address: {{ .Values.configuration.database.runtime.redis.address | quote }}
+      username: {{ .Values.configuration.database.runtime.redis.username | quote }}
+      password: {{ "{{.DB_RUNTIME_REDIS_PASSWORD}}" | quote }}
+      db: {{ .Values.configuration.database.runtime.redis.db }}
+      key_prefix: {{ .Values.configuration.database.runtime.redis.key_prefix | quote }}
     {{- else }}
-    hostname: {{ .Values.configuration.database.runtime.host | quote }}
-    port: {{ .Values.configuration.database.runtime.port }}
-    name: {{ .Values.configuration.database.runtime.name | quote }}
-    username: {{ .Values.configuration.database.runtime.username | quote }}
-    password: {{ "{{.DB_RUNTIME_PASSWORD}}" | quote }}
-    sslmode: {{ .Values.configuration.database.runtime.sslmode | quote }}
+    postgres:
+      hostname: {{ .Values.configuration.database.runtime.postgres.hostname | quote }}
+      port: {{ .Values.configuration.database.runtime.postgres.port }}
+      name: {{ .Values.configuration.database.runtime.postgres.name | quote }}
+      username: {{ .Values.configuration.database.runtime.postgres.username | quote }}
+      password: {{ "{{.DB_RUNTIME_PASSWORD}}" | quote }}
+      sslmode: {{ .Values.configuration.database.runtime.postgres.sslmode | quote }}
+      max_open_conns: {{ .Values.configuration.database.runtime.postgres.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.runtime.postgres.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.runtime.postgres.conn_max_lifetime }}
     {{- end }}
   user:
     type: {{ .Values.configuration.database.user.type | quote }}
     {{- if eq .Values.configuration.database.user.type "sqlite" }}
-    path: {{ .Values.configuration.database.user.sqlitePath | quote }}
-    options: {{ .Values.configuration.database.user.sqliteOptions | quote }}
+    sqlite:
+      path: {{ .Values.configuration.database.user.sqlite.path | quote }}
+      options: {{ .Values.configuration.database.user.sqlite.options | quote }}
+      max_open_conns: {{ .Values.configuration.database.user.sqlite.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.user.sqlite.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.user.sqlite.conn_max_lifetime }}
     {{- else }}
-    hostname: {{ .Values.configuration.database.user.host | quote }}
-    port: {{ .Values.configuration.database.user.port }}
-    name: {{ .Values.configuration.database.user.name | quote }}
-    username: {{ .Values.configuration.database.user.username | quote }}
-    password: {{ "{{.DB_USER_PASSWORD}}" | quote }}
-    sslmode: {{ .Values.configuration.database.user.sslmode | quote }}
-    {{- end }}    
+    postgres:
+      hostname: {{ .Values.configuration.database.user.postgres.hostname | quote }}
+      port: {{ .Values.configuration.database.user.postgres.port }}
+      name: {{ .Values.configuration.database.user.postgres.name | quote }}
+      username: {{ .Values.configuration.database.user.postgres.username | quote }}
+      password: {{ "{{.DB_USER_PASSWORD}}" | quote }}
+      sslmode: {{ .Values.configuration.database.user.postgres.sslmode | quote }}
+      max_open_conns: {{ .Values.configuration.database.user.postgres.max_open_conns }}
+      max_idle_conns: {{ .Values.configuration.database.user.postgres.max_idle_conns }}
+      conn_max_lifetime: {{ .Values.configuration.database.user.postgres.conn_max_lifetime }}
+    {{- end }}
 
 cache:
   disabled: {{ .Values.configuration.cache.disabled }}

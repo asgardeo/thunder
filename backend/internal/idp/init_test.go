@@ -69,16 +69,16 @@ func (s *IDPInitTestSuite) TestInitialize() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -297,16 +297,16 @@ func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled()
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: ":memory:",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: ":memory:"},
 			},
 		},
 	}
@@ -334,16 +334,16 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
 	}
@@ -396,16 +396,16 @@ func TestInitialize_WithDeclarativeResourcesEnabled_ValidConfigs(t *testing.T) {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
 		DeclarativeResources: config.DeclarativeResources{
@@ -534,16 +534,16 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
 	}
@@ -595,16 +595,16 @@ properties:
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
 	}
@@ -656,16 +656,16 @@ properties:
 		},
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			Runtime: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			User: config.DataSource{
-				Type: "sqlite",
-				Path: "test.db",
+				Type:   "sqlite",
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
 	}

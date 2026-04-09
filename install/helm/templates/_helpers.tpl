@@ -91,11 +91,15 @@ This is used to trigger pod restarts when auto-generated Secrets change.
 {{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
+{{- $configPostgres := default dict $config.postgres -}}
+{{- $runtimePostgres := default dict $runtime.postgres -}}
+{{- $runtimeRedis := default dict $runtime.redis -}}
+{{- $userPostgres := default dict $user.postgres -}}
 {{- $consent := default dict $configuration.consent -}}
 {{- $consentDb := default dict $consent.database -}}
 {{- $cache := default dict $configuration.cache -}}
 {{- $redis := default dict $cache.redis -}}
-{{- if or (and $config.password (not (default dict $config.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) (and $consent.enabled $consentDb.password (not (default dict $consentDb.passwordRef).key)) (and $redis.password (eq $cache.type "redis") (not (default dict $redis.passwordRef).key)) }}true{{- end }}
+{{- if or (and $configPostgres.password (not (default dict $configPostgres.passwordRef).key)) (and $runtimePostgres.password (not (default dict $runtimePostgres.passwordRef).key)) (and $runtimeRedis.password (not (default dict $runtimeRedis.passwordRef).key)) (and $userPostgres.password (not (default dict $userPostgres.passwordRef).key)) (and $consent.enabled $consentDb.password (not (default dict $consentDb.passwordRef).key)) (and $redis.password (eq $cache.type "redis") (not (default dict $redis.passwordRef).key)) }}true{{- end }}
 {{- end }}
 
 {{/*
@@ -109,27 +113,39 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
 {{- $config := default dict $database.config -}}
 {{- $runtime := default dict $database.runtime -}}
 {{- $user := default dict $database.user -}}
+{{- $configPostgres := default dict $config.postgres -}}
+{{- $runtimePostgres := default dict $runtime.postgres -}}
+{{- $runtimeRedis := default dict $runtime.redis -}}
+{{- $userPostgres := default dict $user.postgres -}}
 {{- $consent := default dict $configuration.consent -}}
 {{- $consentDb := default dict $consent.database -}}
-{{- $configPasswordRef := default dict $config.passwordRef -}}
-{{- $runtimePasswordRef := default dict $runtime.passwordRef -}}
-{{- $userPasswordRef := default dict $user.passwordRef -}}
+{{- $configPasswordRef := default dict $configPostgres.passwordRef -}}
+{{- $runtimePasswordRef := default dict $runtimePostgres.passwordRef -}}
+{{- $runtimeRedisPasswordRef := default dict $runtimeRedis.passwordRef -}}
+{{- $userPasswordRef := default dict $userPostgres.passwordRef -}}
 {{- $consentPasswordRef := default dict $consentDb.passwordRef -}}
-{{- if or $config.password $configPasswordRef.key }}
+{{- if or $configPostgres.password $configPasswordRef.key }}
 - name: DB_CONFIG_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ if $configPasswordRef.key }}{{ $configPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
       key: {{ $configPasswordRef.key | default "config-db-password" }}
 {{- end }}
-{{- if or $runtime.password $runtimePasswordRef.key }}
+{{- if or $runtimePostgres.password $runtimePasswordRef.key }}
 - name: DB_RUNTIME_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ if $runtimePasswordRef.key }}{{ $runtimePasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
       key: {{ $runtimePasswordRef.key | default "runtime-db-password" }}
 {{- end }}
-{{- if or $user.password $userPasswordRef.key }}
+{{- if or $runtimeRedis.password $runtimeRedisPasswordRef.key }}
+- name: DB_RUNTIME_REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ if $runtimeRedisPasswordRef.key }}{{ $runtimeRedisPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
+      key: {{ $runtimeRedisPasswordRef.key | default "runtime-redis-password" }}
+{{- end }}
+{{- if or $userPostgres.password $userPasswordRef.key }}
 - name: DB_USER_PASSWORD
   valueFrom:
     secretKeyRef:
