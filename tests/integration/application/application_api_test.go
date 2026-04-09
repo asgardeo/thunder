@@ -647,6 +647,128 @@ func deleteApplication(appID string) error {
 	return nil
 }
 
+// createApplicationRaw creates an application with a raw map body (to support #-keyed fields like "name#fr").
+// Returns the application ID, the full decoded response map, and any error.
+func createApplicationRaw(body map[string]interface{}) (string, map[string]interface{}, error) {
+	appJSON, err := json.Marshal(body)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to marshal application: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", testServerURL+"/applications", bytes.NewReader(appJSON))
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", nil, fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return "", nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	id, _ := result["id"].(string)
+	if id == "" {
+		return "", nil, fmt.Errorf("response does not contain id")
+	}
+	return id, result, nil
+}
+
+// updateApplicationRaw updates an application with a raw map body (to support #-keyed fields).
+// Returns the decoded response map and any error.
+func updateApplicationRaw(appID string, body map[string]interface{}) (map[string]interface{}, error) {
+	appJSON, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal application: %w", err)
+	}
+
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, bytes.NewReader(appJSON))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+	return result, nil
+}
+
+// getApplicationRaw retrieves an application as a raw map (preserving #-keyed fields).
+func getApplicationRaw(appID string) (map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", testServerURL+"/applications/"+appID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := testutils.GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+	return result, nil
+}
+
+// createApplicationRawExpectError creates an application with a raw map body and returns the HTTP status code.
+func createApplicationRawExpectError(body map[string]interface{}) (int, error) {
+	appJSON, err := json.Marshal(body)
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal application: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", testServerURL+"/applications", bytes.NewReader(appJSON))
+	if err != nil {
+		return 0, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
 // TestApplicationCreationWithDefaults tests that applications created without grant_types, response_types, or token_endpoint_auth_method get proper defaults
 func (ts *ApplicationAPITestSuite) TestApplicationCreationWithDefaults() {
 	appWithDefaults := Application{
@@ -5016,4 +5138,228 @@ func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeInvalidFal
 	oauth := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
 	ts.Require().NotNil(oauth.UserInfo)
 	ts.Assert().Equal("JSON", oauth.UserInfo.ResponseType)
+}
+
+// ─── Localised Client Metadata Tests (AC-01, AC-02, AC-05–AC-09, AC-12–AC-14, AC-23, AC-25) ────
+
+// localisedTestAppBody returns a base map[string]interface{} suitable for creating a test application
+// via the raw app helpers, with the given client ID and name.
+func localisedTestAppBody(clientID, name string) map[string]interface{} {
+	return map[string]interface{}{
+		"name":                      name,
+		"description":               "Localised test app",
+		"isRegistrationFlowEnabled": false,
+		"certificate": map[string]interface{}{
+			"type":  "NONE",
+			"value": "",
+		},
+		"inboundAuthConfig": []interface{}{
+			map[string]interface{}{
+				"type": "oauth2",
+				"config": map[string]interface{}{
+					"clientId":                clientID,
+					"clientSecret":            clientID + "_secret",
+					"redirectUris":            []string{"https://locale-app.example.com/callback"},
+					"grantTypes":              []string{"authorization_code"},
+					"responseTypes":           []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
+				},
+			},
+		},
+	}
+}
+
+// TestApplicationLocalisedClientName_CreateAndGet verifies that name#fr and name#de are stored and
+// echoed by GET after creation (AC-01).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedClientName_CreateAndGet() {
+	body := localisedTestAppBody("locale_cn_client", "My App")
+	body["name#fr"] = "Mon Application"
+	body["name#de"] = "Meine Anwendung"
+
+	appID, createResp, err := createApplicationRaw(body)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	ts.Assert().Equal("My App", createResp["name"])
+	ts.Assert().Equal("Mon Application", createResp["name#fr"])
+	ts.Assert().Equal("Meine Anwendung", createResp["name#de"])
+
+	getResp, err := getApplicationRaw(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("My App", getResp["name"])
+	ts.Assert().Equal("Mon Application", getResp["name#fr"])
+	ts.Assert().Equal("Meine Anwendung", getResp["name#de"])
+}
+
+// TestApplicationLocalisedAllFourFields_CreateAndGet verifies all four localisable fields with
+// tagged variants round-trip through the application API (AC-01).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedAllFourFields_CreateAndGet() {
+	body := localisedTestAppBody("locale_4fields_client", "App")
+	body["name#fr"] = "App FR"
+	body["logoUrl"] = "https://example.com/logo.png"
+	body["logoUrl#fr"] = "https://example.com/logo-fr.png"
+	body["tosUri"] = "https://example.com/tos"
+	body["tosUri#fr"] = "https://example.com/tos-fr"
+	body["policyUri"] = "https://example.com/policy"
+	body["policyUri#fr"] = "https://example.com/policy-fr"
+
+	appID, createResp, err := createApplicationRaw(body)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	ts.Assert().Equal("App FR", createResp["name#fr"])
+	ts.Assert().Equal("https://example.com/logo-fr.png", createResp["logoUrl#fr"])
+	ts.Assert().Equal("https://example.com/tos-fr", createResp["tosUri#fr"])
+	ts.Assert().Equal("https://example.com/policy-fr", createResp["policyUri#fr"])
+
+	getResp, err := getApplicationRaw(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("App FR", getResp["name#fr"])
+	ts.Assert().Equal("https://example.com/logo-fr.png", getResp["logoUrl#fr"])
+	ts.Assert().Equal("https://example.com/tos-fr", getResp["tosUri#fr"])
+	ts.Assert().Equal("https://example.com/policy-fr", getResp["policyUri#fr"])
+}
+
+// TestApplicationLocalisedClientName_UpdateAddsVariant verifies that a PUT that adds a new variant
+// (name#de) alongside the existing name#fr results in both variants being present (AC-02).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedClientName_UpdateAddsVariant() {
+	body := localisedTestAppBody("locale_update_add_client", "App")
+	body["name#fr"] = "App FR"
+
+	appID, _, err := createApplicationRaw(body)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	updateBody := localisedTestAppBody("locale_update_add_client", "App")
+	updateBody["name#fr"] = "App FR"
+	updateBody["name#de"] = "App DE"
+
+	updateResp, err := updateApplicationRaw(appID, updateBody)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("App FR", updateResp["name#fr"])
+	ts.Assert().Equal("App DE", updateResp["name#de"])
+
+	getResp, err := getApplicationRaw(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("App FR", getResp["name#fr"])
+	ts.Assert().Equal("App DE", getResp["name#de"])
+}
+
+// TestApplicationLocalisedUpdate_VariantsCompletelyReplaced verifies that a PUT that omits name#fr
+// results in name#fr being removed from subsequent GET (AC-02).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedUpdate_VariantsCompletelyReplaced() {
+	body := localisedTestAppBody("locale_update_replace_client", "App")
+	body["name#fr"] = "App FR"
+
+	appID, _, err := createApplicationRaw(body)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Update: only name#de, no name#fr
+	updateBody := localisedTestAppBody("locale_update_replace_client", "App")
+	updateBody["name#de"] = "App DE"
+
+	_, err = updateApplicationRaw(appID, updateBody)
+	ts.Require().NoError(err)
+
+	getResp, err := getApplicationRaw(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("App DE", getResp["name#de"])
+	ts.Assert().Nil(getResp["name#fr"], "name#fr should be removed after PUT that omits it")
+}
+
+// TestApplicationLocalisedBCP47_EmptyTag_Rejected verifies that name# (empty tag) is rejected (AC-06).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedBCP47_EmptyTag_Rejected() {
+	body := localisedTestAppBody("locale_empty_tag_client", "App")
+	body["name#"] = "value"
+
+	statusCode, err := createApplicationRawExpectError(body)
+	ts.Require().NoError(err)
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+}
+
+// TestApplicationLocalisedBCP47_IllegalCharTag_Rejected verifies that name#en! is rejected (AC-07).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedBCP47_IllegalCharTag_Rejected() {
+	body := localisedTestAppBody("locale_illegalchar_client", "App")
+	body["name#en!"] = "value"
+
+	statusCode, err := createApplicationRawExpectError(body)
+	ts.Require().NoError(err)
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+}
+
+// TestApplicationLocalisedBCP47_MultipleHash_Rejected verifies that name#fr#extra is rejected (AC-08).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedBCP47_MultipleHash_Rejected() {
+	body := localisedTestAppBody("locale_multihash_client", "App")
+	body["name#fr#extra"] = "value"
+
+	statusCode, err := createApplicationRawExpectError(body)
+	ts.Require().NoError(err)
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+}
+
+// TestApplicationLocalisedUnsupportedField_SilentlyIgnored verifies that description#fr is silently
+// dropped and creation succeeds (AC-12).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedUnsupportedField_SilentlyIgnored() {
+	body := localisedTestAppBody("locale_unsupported_field_client", "App")
+	body["description#fr"] = "Un app"
+
+	appID, createResp, err := createApplicationRaw(body)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	ts.Assert().Nil(createResp["description#fr"], "non-localisable tagged field should be silently dropped")
+}
+
+// TestApplicationLocalisedURIValidation_InvalidTosURIVariant verifies that tosUri#fr with a malformed
+// URI (no valid host) is rejected with the same validation rules as the base tosUri (AC-13).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedURIValidation_InvalidTosURIVariant() {
+	body := localisedTestAppBody("locale_uri_validation_client", "App")
+	body["tosUri#fr"] = "javascript:alert(1)"
+
+	statusCode, err := createApplicationRawExpectError(body)
+	ts.Require().NoError(err)
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+}
+
+// TestApplicationLocalisedStorageCap_ExceedsMaxVariants verifies that 21 name#<tag> variants
+// exceed the cap of 20 and are rejected (AC-14).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedStorageCap_ExceedsMaxVariants() {
+	langs := []string{"en", "fr", "de", "es", "it", "pt", "zh", "ja", "ko", "ar",
+		"ru", "nl", "sv", "pl", "tr", "cs", "da", "fi", "hu", "ro", "sk"}
+	body := localisedTestAppBody("locale_storagecap_client", "App")
+	for _, lang := range langs {
+		body["name#"+lang] = "App " + lang
+	}
+
+	statusCode, err := createApplicationRawExpectError(body)
+	ts.Require().NoError(err)
+	ts.Assert().Equal(http.StatusBadRequest, statusCode)
+}
+
+// TestApplicationLocalisedTagNormalisation_UppercaseStored_Lowercase verifies that name#EN-US is
+// stored and returned as name#en-us (AC-05, AC-11).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedTagNormalisation_UppercaseStored_Lowercase() {
+	body := localisedTestAppBody("locale_normalise_upper_client", "App")
+	body["name#EN-US"] = "English"
+
+	appID, createResp, err := createApplicationRaw(body)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	ts.Assert().Equal("English", createResp["name#en-us"], "EN-US should be normalised to en-us")
+	ts.Assert().Nil(createResp["name#EN-US"], "uppercase key should not appear in response")
+}
+
+// TestApplicationLocalisedBackwardsCompatibility_ExistingApp_NoTaggedVariants verifies that the
+// test application created in SetupSuite (with no localized variants) has no #-keyed fields in its
+// GET response (AC-23, AC-25).
+func (ts *ApplicationAPITestSuite) TestApplicationLocalisedBackwardsCompatibility_ExistingApp_NoTaggedVariants() {
+	getResp, err := getApplicationRaw(testAppID)
+	ts.Require().NoError(err)
+
+	for key := range getResp {
+		ts.Assert().NotContains(key, "#",
+			"existing app with no localized variants should have no #-keyed fields in response")
+	}
 }

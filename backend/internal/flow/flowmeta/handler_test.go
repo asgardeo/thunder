@@ -41,10 +41,11 @@ func (m *mockFlowMetaService) GetFlowMetadata(
 	ctx context.Context,
 	metaType MetaType,
 	id string,
+	flowID *string,
 	language *string,
 	namespace *string,
 ) (*FlowMetadataResponse, *serviceerror.ServiceError) {
-	args := m.Called(ctx, metaType, id, language, namespace)
+	args := m.Called(ctx, metaType, id, flowID, language, namespace)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(*serviceerror.ServiceError)
 	}
@@ -112,7 +113,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_Success_AppType
 		},
 	}
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, &language, &namespace).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, (*string)(nil), &language, &namespace).
 		Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP&id="+appID+"&language=en&namespace=auth", nil)
@@ -160,7 +161,8 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_Success_OUType(
 		},
 	}
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, ouID, (*string)(nil), (*string)(nil)).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, ouID,
+		(*string)(nil), (*string)(nil), (*string)(nil)).
 		Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=OU&id="+ouID, nil)
@@ -198,7 +200,8 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_SystemFlow_NoPa
 		},
 	}
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, MetaType(""), "", (*string)(nil), (*string)(nil)).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, MetaType(""), "",
+		(*string)(nil), (*string)(nil), (*string)(nil)).
 		Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta", nil)
@@ -250,7 +253,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_MissingType_Whe
 func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_InvalidType() {
 	// Arrange
 	suite.mockService.On("GetFlowMetadata", mock.Anything,
-		MetaType("INVALID"), "some-id", (*string)(nil), (*string)(nil)).
+		MetaType("INVALID"), "some-id", (*string)(nil), (*string)(nil), (*string)(nil)).
 		Return(nil, &ErrorInvalidType)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=INVALID&id=some-id", nil)
@@ -268,7 +271,8 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_ServiceError_No
 	appID := "non-existent-id"
 	metaType := MetaTypeAPP
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, (*string)(nil), (*string)(nil)).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID,
+		(*string)(nil), (*string)(nil), (*string)(nil)).
 		Return(nil, &ErrorApplicationNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP&id="+appID, nil)
@@ -286,7 +290,8 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_ServiceError_In
 	appID := "some-id"
 	metaType := MetaTypeAPP
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, (*string)(nil), (*string)(nil)).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID,
+		(*string)(nil), (*string)(nil), (*string)(nil)).
 		Return(nil, &serviceerror.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP&id="+appID, nil)
@@ -328,7 +333,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_WithLanguagePar
 		},
 	}
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, &language, (*string)(nil)).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, (*string)(nil), &language, (*string)(nil)).
 		Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP&id="+appID+"&language=es", nil)
@@ -379,7 +384,7 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_WithNamespacePa
 		},
 	}
 
-	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, (*string)(nil), &namespace).
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, (*string)(nil), (*string)(nil), &namespace).
 		Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP&id="+appID+"&namespace=errors", nil)
@@ -395,4 +400,41 @@ func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_WithNamespacePa
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Contains(suite.T(), response.I18n.Translations, "errors")
+}
+
+func (suite *FlowMetaHandlerTestSuite) TestHandleGetFlowMetadata_WithFlowID_UILocaleInResponse() {
+	// Arrange
+	appID := "app-123"
+	flowID := "flow-456"
+	metaType := MetaTypeAPP
+
+	expectedResponse := &FlowMetadataResponse{
+		IsRegistrationFlowEnabled: false,
+		Application: &ApplicationMetadata{
+			ID:   appID,
+			Name: "Mon Application",
+		},
+		Design:   DesignMetadata{},
+		I18n:     I18nMetadata{Languages: []string{"en"}},
+		UILocale: "fr",
+	}
+
+	fid := flowID
+	suite.mockService.On("GetFlowMetadata", mock.Anything, metaType, appID, &fid, (*string)(nil), (*string)(nil)).
+		Return(expectedResponse, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/flow/meta?type=APP&id="+appID+"&flowId="+flowID, nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	suite.handler.HandleGetFlowMetadata(w, req)
+
+	// Assert
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var result map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &result)
+	assert.NoError(suite.T(), err)
+	// AC-22: uiLocale must appear in the JSON response
+	assert.Equal(suite.T(), "fr", result["uiLocale"])
 }

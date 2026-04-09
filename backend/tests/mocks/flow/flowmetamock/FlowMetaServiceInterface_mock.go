@@ -40,8 +40,8 @@ func (_m *FlowMetaServiceInterfaceMock) EXPECT() *FlowMetaServiceInterfaceMock_E
 }
 
 // GetFlowMetadata provides a mock function for the type FlowMetaServiceInterfaceMock
-func (_mock *FlowMetaServiceInterfaceMock) GetFlowMetadata(ctx context.Context, metaType flowmeta.MetaType, id string, language *string, namespace *string) (*flowmeta.FlowMetadataResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, metaType, id, language, namespace)
+func (_mock *FlowMetaServiceInterfaceMock) GetFlowMetadata(ctx context.Context, metaType flowmeta.MetaType, id string, flowID *string, language *string, namespace *string) (*flowmeta.FlowMetadataResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, metaType, id, flowID, language, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFlowMetadata")
@@ -49,18 +49,18 @@ func (_mock *FlowMetaServiceInterfaceMock) GetFlowMetadata(ctx context.Context, 
 
 	var r0 *flowmeta.FlowMetadataResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, flowmeta.MetaType, string, *string, *string) (*flowmeta.FlowMetadataResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, metaType, id, language, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, flowmeta.MetaType, string, *string, *string, *string) (*flowmeta.FlowMetadataResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, metaType, id, flowID, language, namespace)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, flowmeta.MetaType, string, *string, *string) *flowmeta.FlowMetadataResponse); ok {
-		r0 = returnFunc(ctx, metaType, id, language, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, flowmeta.MetaType, string, *string, *string, *string) *flowmeta.FlowMetadataResponse); ok {
+		r0 = returnFunc(ctx, metaType, id, flowID, language, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*flowmeta.FlowMetadataResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, flowmeta.MetaType, string, *string, *string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, metaType, id, language, namespace)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, flowmeta.MetaType, string, *string, *string, *string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, metaType, id, flowID, language, namespace)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -78,13 +78,14 @@ type FlowMetaServiceInterfaceMock_GetFlowMetadata_Call struct {
 //   - ctx context.Context
 //   - metaType flowmeta.MetaType
 //   - id string
+//   - flowID *string
 //   - language *string
 //   - namespace *string
-func (_e *FlowMetaServiceInterfaceMock_Expecter) GetFlowMetadata(ctx interface{}, metaType interface{}, id interface{}, language interface{}, namespace interface{}) *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call {
-	return &FlowMetaServiceInterfaceMock_GetFlowMetadata_Call{Call: _e.mock.On("GetFlowMetadata", ctx, metaType, id, language, namespace)}
+func (_e *FlowMetaServiceInterfaceMock_Expecter) GetFlowMetadata(ctx interface{}, metaType interface{}, id interface{}, flowID interface{}, language interface{}, namespace interface{}) *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call {
+	return &FlowMetaServiceInterfaceMock_GetFlowMetadata_Call{Call: _e.mock.On("GetFlowMetadata", ctx, metaType, id, flowID, language, namespace)}
 }
 
-func (_c *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call) Run(run func(ctx context.Context, metaType flowmeta.MetaType, id string, language *string, namespace *string)) *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call {
+func (_c *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call) Run(run func(ctx context.Context, metaType flowmeta.MetaType, id string, flowID *string, language *string, namespace *string)) *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -106,12 +107,17 @@ func (_c *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call) Run(run func(ctx co
 		if args[4] != nil {
 			arg4 = args[4].(*string)
 		}
+		var arg5 *string
+		if args[5] != nil {
+			arg5 = args[5].(*string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
 			arg4,
+			arg5,
 		)
 	})
 	return _c
@@ -122,7 +128,7 @@ func (_c *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call) Return(flowMetadata
 	return _c
 }
 
-func (_c *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call) RunAndReturn(run func(ctx context.Context, metaType flowmeta.MetaType, id string, language *string, namespace *string) (*flowmeta.FlowMetadataResponse, *serviceerror.ServiceError)) *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call {
+func (_c *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call) RunAndReturn(run func(ctx context.Context, metaType flowmeta.MetaType, id string, flowID *string, language *string, namespace *string) (*flowmeta.FlowMetadataResponse, *serviceerror.ServiceError)) *FlowMetaServiceInterfaceMock_GetFlowMetadata_Call {
 	_c.Call.Return(run)
 	return _c
 }

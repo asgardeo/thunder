@@ -7005,3 +7005,93 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorLayoutNotFound, svcErr)
 }
+
+// ---- validateLocalisedMetadata tests ----
+
+func TestValidateLocalisedMetadata(t *testing.T) {
+	t.Run("nil maps pass", func(t *testing.T) {
+		app := &model.ApplicationDTO{}
+		assert.Nil(t, validateLocalisedMetadata(app))
+	})
+
+	t.Run("valid tags and values pass", func(t *testing.T) {
+		app := &model.ApplicationDTO{
+			LocalisedClientName: map[string]string{"fr": "Mon App", "de": "Meine App"},
+			LocalisedLogoURL:    map[string]string{"fr": "https://example.com/logo-fr.png"},
+			LocalisedTosURI:     map[string]string{"en-gb": "https://example.com/tos-en-gb"},
+			LocalisedPolicyURI:  map[string]string{"de": "https://example.com/policy-de"},
+		}
+		assert.Nil(t, validateLocalisedMetadata(app))
+	})
+
+	t.Run("too many variants in client name", func(t *testing.T) {
+		langs := []string{
+			"aa", "ab", "ae", "af", "ak", "am", "an", "ar", "as", "av",
+			"ay", "az", "ba", "be", "bg", "bh", "bi", "bm", "bn", "bo", "br",
+		}
+		m := make(map[string]string, len(langs))
+		for _, l := range langs {
+			m[l] = "value"
+		}
+		app := &model.ApplicationDTO{LocalisedClientName: m}
+		svcErr := validateLocalisedMetadata(app)
+		assert.NotNil(t, svcErr)
+		assert.Equal(t, ErrorTooManyLocaleVariants.Code, svcErr.Code)
+	})
+
+	t.Run("exactly 20 variants is allowed", func(t *testing.T) {
+		langs := []string{
+			"aa", "ab", "ae", "af", "ak", "am", "an", "ar", "as", "av",
+			"ay", "az", "ba", "be", "bg", "bh", "bi", "bm", "bn", "bo",
+		}
+		m := make(map[string]string, len(langs))
+		for _, l := range langs {
+			m[l] = "v"
+		}
+		app := &model.ApplicationDTO{LocalisedClientName: m}
+		assert.Nil(t, validateLocalisedMetadata(app))
+	})
+
+	t.Run("invalid BCP 47 tag rejected", func(t *testing.T) {
+		app := &model.ApplicationDTO{
+			LocalisedClientName: map[string]string{"not valid!": "value"},
+		}
+		svcErr := validateLocalisedMetadata(app)
+		assert.NotNil(t, svcErr)
+		assert.Equal(t, ErrorInvalidLocaleTag.Code, svcErr.Code)
+	})
+
+	t.Run("invalid logo URI rejected", func(t *testing.T) {
+		app := &model.ApplicationDTO{
+			LocalisedLogoURL: map[string]string{"fr": "not-a-uri"},
+		}
+		svcErr := validateLocalisedMetadata(app)
+		assert.NotNil(t, svcErr)
+		assert.Equal(t, ErrorInvalidLocalisedURIValue.Code, svcErr.Code)
+	})
+
+	t.Run("invalid tos URI rejected", func(t *testing.T) {
+		app := &model.ApplicationDTO{
+			LocalisedTosURI: map[string]string{"fr": "not-a-uri"},
+		}
+		svcErr := validateLocalisedMetadata(app)
+		assert.NotNil(t, svcErr)
+		assert.Equal(t, ErrorInvalidLocalisedURIValue.Code, svcErr.Code)
+	})
+
+	t.Run("invalid policy URI rejected", func(t *testing.T) {
+		app := &model.ApplicationDTO{
+			LocalisedPolicyURI: map[string]string{"fr": "not-a-uri"},
+		}
+		svcErr := validateLocalisedMetadata(app)
+		assert.NotNil(t, svcErr)
+		assert.Equal(t, ErrorInvalidLocalisedURIValue.Code, svcErr.Code)
+	})
+
+	t.Run("empty string URI value is allowed (no-op)", func(t *testing.T) {
+		app := &model.ApplicationDTO{
+			LocalisedLogoURL: map[string]string{"fr": ""},
+		}
+		assert.Nil(t, validateLocalisedMetadata(app))
+	})
+}

@@ -76,6 +76,10 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
 		LoginConsent:              appRequest.LoginConsent,
 		Metadata:                  appRequest.Metadata,
+		LocalisedClientName:       appRequest.LocalisedClientName,
+		LocalisedLogoURL:          appRequest.LocalisedLogoURL,
+		LocalisedTosURI:           appRequest.LocalisedTosURI,
+		LocalisedPolicyURI:        appRequest.LocalisedPolicyURI,
 	}
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -107,6 +111,10 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
 		LoginConsent:              createdAppDTO.LoginConsent,
 		Metadata:                  createdAppDTO.Metadata,
+		LocalisedClientName:       createdAppDTO.LocalisedClientName,
+		LocalisedLogoURL:          createdAppDTO.LocalisedLogoURL,
+		LocalisedTosURI:           createdAppDTO.LocalisedTosURI,
+		LocalisedPolicyURI:        createdAppDTO.LocalisedPolicyURI,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -181,6 +189,10 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		AllowedUserTypes:          appDTO.AllowedUserTypes,
 		LoginConsent:              appDTO.LoginConsent,
 		Metadata:                  appDTO.Metadata,
+		LocalisedClientName:       appDTO.LocalisedClientName,
+		LocalisedLogoURL:          appDTO.LocalisedLogoURL,
+		LocalisedTosURI:           appDTO.LocalisedTosURI,
+		LocalisedPolicyURI:        appDTO.LocalisedPolicyURI,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -301,6 +313,10 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
 		LoginConsent:              appRequest.LoginConsent,
 		Metadata:                  appRequest.Metadata,
+		LocalisedClientName:       appRequest.LocalisedClientName,
+		LocalisedLogoURL:          appRequest.LocalisedLogoURL,
+		LocalisedTosURI:           appRequest.LocalisedTosURI,
+		LocalisedPolicyURI:        appRequest.LocalisedPolicyURI,
 	}
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -332,6 +348,10 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
 		LoginConsent:              updatedAppDTO.LoginConsent,
 		Metadata:                  updatedAppDTO.Metadata,
+		LocalisedClientName:       updatedAppDTO.LocalisedClientName,
+		LocalisedLogoURL:          updatedAppDTO.LocalisedLogoURL,
+		LocalisedTosURI:           updatedAppDTO.LocalisedTosURI,
+		LocalisedPolicyURI:        updatedAppDTO.LocalisedPolicyURI,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.

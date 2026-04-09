@@ -195,6 +195,8 @@ const (
 	RuntimeKeyInviteLink = "inviteLink"
 	// RuntimeKeyCandidateUsers holds serialized candidate users during disambiguation in resolve mode.
 	RuntimeKeyCandidateUsers = "candidateUsers"
+	// RuntimeKeyUILocale holds the ui_locale value from the OAuth authorization request.
+	RuntimeKeyUILocale = "ui_locale"
 )
 
 // TODO: Define a go type for InputType when formalizing input types
