@@ -37,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -44,7 +45,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const svcLoggerComponentName = "AuthenticationService"
@@ -181,9 +181,9 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 			return nil, &serviceerror.InternalServerError
 		}
 
-		authenticatedUser := &userprovider.User{
-			UserID:     authUser.UserID,
-			UserType:   authUser.UserType,
+		authenticatedUser := &entityprovider.Entity{
+			ID:         authUser.UserID,
+			Type:       authUser.UserType,
 			OUID:       authUser.OUID,
 			Attributes: authUserAttributesJSON,
 		}
@@ -215,8 +215,8 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   user.UserID,
-		Type: user.UserType,
+		ID:   user.ID,
+		Type: user.Type,
 		OUID: user.OUID,
 	}
 
@@ -310,7 +310,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 	}
 
 	// Route to appropriate service based on IDP type from session
-	var user *userprovider.User
+	var user *entityprovider.Entity
 	switch sessionData.IDPType {
 	case idp.IDPTypeOAuth:
 		_, user, svcErr = as.finishOAuthAuthentication(ctx, sessionData.IDPID, code, logger)
@@ -331,8 +331,8 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   user.UserID,
-		Type: user.UserType,
+		ID:   user.ID,
+		Type: user.Type,
 		OUID: user.OUID,
 	}
 
@@ -357,9 +357,9 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 
 // validateAndAppendAuthAssertion validates and appends a generated auth assertion to the authentication response.
 func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *common.AuthenticationResponse,
-	user *userprovider.User, authenticator string, existingAssertion string,
+	user *entityprovider.Entity, authenticator string, existingAssertion string,
 	logger *log.Logger) *serviceerror.ServiceError {
-	logger.Debug("Generating auth assertion", log.String("userId", user.UserID))
+	logger.Debug("Generating auth assertion", log.String("userId", user.ID))
 
 	authenticatorRef := &common.AuthenticatorReference{
 		Authenticator: authenticator,
@@ -377,9 +377,9 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 		}
 
 		// Validate that the assertion subject matches the current user
-		if assertionSub != user.UserID {
+		if assertionSub != user.ID {
 			logger.Debug("Assertion subject mismatch", log.String("assertionSub", assertionSub),
-				log.String("userId", user.UserID))
+				log.String("userId", user.ID))
 			return &common.ErrorAssertionSubjectMismatch
 		}
 
@@ -394,8 +394,8 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 
 	// Prepare JWT claims
 	jwtClaims := make(map[string]interface{})
-	if user.UserType != "" {
-		jwtClaims["userType"] = user.UserType
+	if user.Type != "" {
+		jwtClaims["userType"] = user.Type
 	}
 	if user.OUID != "" {
 		jwtClaims["ouId"] = user.OUID
@@ -413,7 +413,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 
 	// Generate auth assertion JWT
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	token, _, err := as.jwtService.GenerateJWT(user.UserID, jwtConfig.Audience, jwtConfig.Issuer,
+	token, _, err := as.jwtService.GenerateJWT(user.ID, jwtConfig.Audience, jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
 		logger.Error("Failed to generate auth assertion", log.String("error", err.Error))
@@ -496,7 +496,7 @@ func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 
 // finishOAuthAuthentication handles OAuth authentication completion.
 func (as *authenticationService) finishOAuthAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.oauthService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -522,7 +522,7 @@ func (as *authenticationService) finishOAuthAuthentication(ctx context.Context, 
 
 // finishOIDCAuthentication handles OIDC authentication completion.
 func (as *authenticationService) finishOIDCAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.oidcService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -551,7 +551,7 @@ func (as *authenticationService) finishOIDCAuthentication(ctx context.Context, i
 
 // finishGoogleAuthentication handles Google authentication completion.
 func (as *authenticationService) finishGoogleAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.googleService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -580,7 +580,7 @@ func (as *authenticationService) finishGoogleAuthentication(ctx context.Context,
 
 // finishGithubAuthentication handles GitHub authentication completion.
 func (as *authenticationService) finishGithubAuthentication(ctx context.Context, idpID, code string,
-	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	logger *log.Logger) (string, *entityprovider.Entity, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.githubService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -803,12 +803,11 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		// Create user object from authResponse for assertion generation
-		userForAssertion := &userprovider.User{
-			UserID:     authResponse.ID,
-			UserType:   authResponse.Type,
-			OUID:       authResponse.OUID,
-			Attributes: nil, // Attributes not needed for assertion generation from passkey finish
+		// Create entity object from authResponse for assertion generation
+		userForAssertion := &entityprovider.Entity{
+			ID:   authResponse.ID,
+			Type: authResponse.Type,
+			OUID: authResponse.OUID,
 		}
 
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,

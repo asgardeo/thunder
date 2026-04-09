@@ -102,7 +102,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		UserID:              authResult.EntityID,
 		Token:               authResult.EntityID,
 		UserType:            authResult.EntityType,
-		OUID:                authResult.OrganizationUnitID,
+		OUID:                authResult.OUID,
 		AvailableAttributes: availableAttributes,
 	}, nil
 }
@@ -167,7 +167,7 @@ func (p *defaultAuthnProvider) GetAttributes(
 		// TODO: Remove after refacoring usages. Kept for backward compatibility — aliases for entity fields.
 		UserID:             entityResult.ID,
 		UserType:           entityResult.Type,
-		OUID:               entityResult.OrganizationUnitID,
+		OUID:               entityResult.OUID,
 		AttributesResponse: attributesResponse,
 	}, nil
 }

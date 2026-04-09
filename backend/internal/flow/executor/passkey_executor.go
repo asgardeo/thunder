@@ -25,11 +25,11 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -71,7 +71,7 @@ type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	passkeyService passkey.PasskeyServiceInterface
-	userProvider   userprovider.UserProviderInterface
+	entityProvider entityprovider.EntityProviderInterface
 	logger         *log.Logger
 }
 
@@ -82,7 +82,7 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	passkeyService passkey.PasskeyServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -124,7 +124,7 @@ func newPasskeyAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNamePasskeyAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNamePasskeyAuth, defaultInputs, prerequisites,
-		flowFactory, userProvider)
+		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNamePasskeyAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
@@ -132,7 +132,7 @@ func newPasskeyAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		passkeyService:               passkeyService,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		logger:                       logger,
 	}
 }
@@ -339,7 +339,7 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// Get user details from user provider
-	user, providerErr := p.userProvider.GetUser(userID)
+	user, providerErr := p.entityProvider.GetEntity(userID)
 	if providerErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
@@ -352,9 +352,9 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated: true,
-		UserID:          user.UserID,
+		UserID:          user.ID,
 		OUID:            user.OUID,
-		UserType:        user.UserType,
+		UserType:        user.Type,
 		Attributes:      attrs,
 	}
 

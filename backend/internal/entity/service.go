@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
+	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -37,13 +38,16 @@ type EntityServiceInterface interface {
 	CreateEntity(ctx context.Context, entity *Entity,
 		systemCredentials json.RawMessage) (*Entity, error)
 	GetEntity(ctx context.Context, entityID string) (*Entity, error)
-	GetEntityWithCredentials(ctx context.Context, entityID string) (*EntityWithCredentials, error)
+	GetCredentialsByType(ctx context.Context, entityID string,
+		credType string) ([]StoredCredential, error)
 	UpdateEntity(ctx context.Context, entityID string, entity *Entity) (*Entity, error)
 	DeleteEntity(ctx context.Context, entityID string) error
 
 	// Partial updates
 	UpdateAttributes(ctx context.Context, entityID string, attributes json.RawMessage) error
 	UpdateSystemAttributes(ctx context.Context, entityID string, attrs json.RawMessage) error
+	UpdateCredentials(ctx context.Context, entityID string,
+		plaintextUpdates json.RawMessage) error
 	UpdateSystemCredentials(ctx context.Context, entityID string,
 		plaintextUpdates json.RawMessage) error
 
@@ -117,6 +121,14 @@ func (s *entityService) CreateEntity(ctx context.Context, entity *Entity,
 	if entity == nil {
 		return nil, ErrEntityNotFound
 	}
+
+	if entity.ID == "" {
+		id, err := sysutils.GenerateUUIDv7()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate entity ID: %w", err)
+		}
+		entity.ID = id
+	}
 	s.logger.Debug("Creating entity", log.String("id", entity.ID))
 
 	// Validate entity attributes and uniqueness via schema.
@@ -165,14 +177,35 @@ func (s *entityService) GetEntity(ctx context.Context, entityID string) (*Entity
 	return &entity, nil
 }
 
-// GetEntityWithCredentials retrieves an entity with all credential columns.
-func (s *entityService) GetEntityWithCredentials(ctx context.Context, entityID string) (
-	*EntityWithCredentials, error) {
+// GetCredentialsByType retrieves the slice of credentials matching the given credential type.
+func (s *entityService) GetCredentialsByType(
+	ctx context.Context, entityID string, credType string,
+) ([]StoredCredential, error) {
 	result, err := s.store.GetEntityWithCredentials(ctx, entityID)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+
+	var creds []StoredCredential
+	if len(result.SchemaCredentials) > 0 {
+		var schemaMap map[string][]StoredCredential
+		if err := json.Unmarshal(result.SchemaCredentials, &schemaMap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal schema credentials: %w", err)
+		}
+		if v, ok := schemaMap[credType]; ok {
+			creds = v
+		}
+	}
+	if len(result.SystemCredentials) > 0 {
+		var systemMap map[string][]StoredCredential
+		if err := json.Unmarshal(result.SystemCredentials, &systemMap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal system credentials: %w", err)
+		}
+		if v, ok := systemMap[credType]; ok {
+			creds = v
+		}
+	}
+	return creds, nil
 }
 
 // UpdateEntity updates an entity.
@@ -365,7 +398,7 @@ func (s *entityService) AuthenticateEntityByID(
 		return nil, ErrAuthenticationFailed
 	}
 
-	result, err := s.GetEntityWithCredentials(ctx, entityID)
+	result, err := s.store.GetEntityWithCredentials(ctx, entityID)
 	if err != nil {
 		return nil, err
 	}
@@ -379,10 +412,10 @@ func (s *entityService) AuthenticateEntityByID(
 	}
 
 	return &AuthenticateResult{
-		EntityID:           result.Entity.ID,
-		EntityCategory:     result.Entity.Category,
-		EntityType:         result.Entity.Type,
-		OrganizationUnitID: result.Entity.OrganizationUnitID,
+		EntityID:       result.Entity.ID,
+		EntityCategory: result.Entity.Category,
+		EntityType:     result.Entity.Type,
+		OUID:           result.Entity.OUID,
 	}, nil
 }
 
@@ -390,9 +423,9 @@ func (s *entityService) AuthenticateEntityByID(
 func (s *entityService) verifyCredentials(credentials map[string]interface{},
 	schemaCredsJSON, systemCredsJSON json.RawMessage) error {
 	// Merge both credential columns for verification.
-	storedCreds := make(map[string][]storedCredential)
+	storedCreds := make(map[string][]StoredCredential)
 	if len(schemaCredsJSON) > 0 {
-		var schemaCreds map[string][]storedCredential
+		var schemaCreds map[string][]StoredCredential
 		if err := json.Unmarshal(schemaCredsJSON, &schemaCreds); err != nil {
 			return fmt.Errorf("failed to unmarshal schema credentials: %w", err)
 		}
@@ -401,7 +434,7 @@ func (s *entityService) verifyCredentials(credentials map[string]interface{},
 		}
 	}
 	if len(systemCredsJSON) > 0 {
-		var sysCreds map[string][]storedCredential
+		var sysCreds map[string][]StoredCredential
 		if err := json.Unmarshal(systemCredsJSON, &sysCreds); err != nil {
 			return fmt.Errorf("failed to unmarshal system credentials: %w", err)
 		}
@@ -457,6 +490,72 @@ func (s *entityService) verifyCredentials(credentials map[string]interface{},
 	}
 
 	return nil
+}
+
+// UpdateCredentials updates schema-defined credentials (e.g., password) by hashing new
+// plaintext values and merging with existing stored credentials.
+func (s *entityService) UpdateCredentials(ctx context.Context, entityID string,
+	plaintextUpdates json.RawMessage) error {
+	if len(plaintextUpdates) == 0 {
+		return nil
+	}
+
+	// Parse and validate new credential updates.
+	var updates map[string]interface{}
+	if err := json.Unmarshal(plaintextUpdates, &updates); err != nil {
+		return fmt.Errorf("%w: failed to parse credentials", ErrInvalidCredential)
+	}
+
+	for credType, credValue := range updates {
+		switch v := credValue.(type) {
+		case string:
+			if strings.TrimSpace(v) == "" {
+				return fmt.Errorf("%w: empty value for credential type %q", ErrInvalidCredential, credType)
+			}
+		case nil:
+			return fmt.Errorf("%w: nil value for credential type %q", ErrInvalidCredential, credType)
+		default:
+			_ = v
+		}
+	}
+
+	// Hash new plaintext values.
+	hashedUpdates, err := s.hashPlaintextCredentials(plaintextUpdates)
+	if err != nil {
+		return fmt.Errorf("failed to hash credential updates: %w", err)
+	}
+
+	var hashedMap map[string]interface{}
+	if err := json.Unmarshal(hashedUpdates, &hashedMap); err != nil {
+		return fmt.Errorf("failed to unmarshal hashed updates: %w", err)
+	}
+
+	// Fetch existing, merge, and store.
+	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		existing, err := s.store.GetEntityWithCredentials(txCtx, entityID)
+		if err != nil {
+			return err
+		}
+
+		existingCreds := make(map[string]interface{})
+		if len(existing.SchemaCredentials) > 0 {
+			if err := json.Unmarshal(existing.SchemaCredentials, &existingCreds); err != nil {
+				return fmt.Errorf("failed to unmarshal existing credentials: %w", err)
+			}
+		}
+
+		// Merge: existing preserved, new/updated types replaced.
+		for k, v := range hashedMap {
+			existingCreds[k] = v
+		}
+
+		mergedJSON, err := json.Marshal(existingCreds)
+		if err != nil {
+			return fmt.Errorf("failed to marshal merged credentials: %w", err)
+		}
+
+		return s.store.UpdateCredentials(txCtx, entityID, mergedJSON)
+	})
 }
 
 // UpdateSystemCredentials updates system credentials by hashing new plaintext values and
@@ -696,7 +795,7 @@ func (s *entityService) hashPlaintextCredentials(creds json.RawMessage) (json.Ra
 			if err != nil {
 				return nil, fmt.Errorf("failed to hash credential %q: %w", credType, err)
 			}
-			result[credType] = []storedCredential{
+			result[credType] = []StoredCredential{
 				{
 					StorageAlgo: credHash.Algorithm,
 					StorageAlgoParams: hash.CredParameters{

@@ -21,7 +21,7 @@ package passkey
 import (
 	"github.com/go-webauthn/webauthn/webauthn"
 
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/entity"
 )
 
 // webAuthnUser adapts generic model to implement the webauthn.User interface.
@@ -54,18 +54,19 @@ func (u *webAuthnUser) WebAuthnCredentials() []webauthnCredential {
 	return u.credentials
 }
 
-// newWebAuthnUser creates a new WebAuthn user.
-func newWebAuthnUser(userID string, userName, displayName string, credentials []webauthnCredential) *webAuthnUser {
+// newWebAuthnUser creates a new WebAuthn user from raw identity fields.
+func newWebAuthnUser(entityID string, name, displayName string, credentials []webauthnCredential) *webAuthnUser {
 	return &webAuthnUser{
-		id:          []byte(userID),
-		name:        userName,
+		id:          []byte(entityID),
+		name:        name,
 		displayName: displayName,
 		credentials: credentials,
 	}
 }
 
-// newWebAuthnUserFromCoreUser creates a WebAuthn user from core user
-func newWebAuthnUserFromCoreUser(user *user.User, credentials []webauthnCredential) *webAuthnUser {
-	displayName, userName := extractCoreUser(user)
-	return newWebAuthnUser(user.ID, userName, displayName, credentials)
+// newWebAuthnUserFromEntity creates a WebAuthn user from any entity, using its attributes
+// to derive the display name and username when available.
+func newWebAuthnUserFromEntity(e *entity.Entity, credentials []webauthnCredential) *webAuthnUser {
+	displayName, name := extractWebAuthnIdentity(e)
+	return newWebAuthnUser(e.ID, name, displayName, credentials)
 }

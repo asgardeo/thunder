@@ -23,11 +23,11 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -43,8 +43,8 @@ type identifyingExecutorInterface interface {
 // identifyingExecutor implements the ExecutorInterface for identifying users based on provided attributes.
 type identifyingExecutor struct {
 	core.ExecutorInterface
-	userProvider userprovider.UserProviderInterface
-	logger       *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*identifyingExecutor)(nil)
@@ -55,7 +55,7 @@ func newIdentifyingExecutor(
 	name string,
 	defaultInputs, prerequisites []common.Input,
 	flowFactory core.FlowFactoryInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *identifyingExecutor {
 	if name == "" {
 		name = ExecutorNameIdentifying
@@ -67,7 +67,7 @@ func newIdentifyingExecutor(
 		defaultInputs, prerequisites)
 	return &identifyingExecutor{
 		ExecutorInterface: base,
-		userProvider:      userProvider,
+		entityProvider:    entityProvider,
 		logger:            logger,
 	}
 }
@@ -86,14 +86,14 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 		}
 	}
 
-	userID, err := i.userProvider.IdentifyUser(searchableFilter)
+	userID, err := i.entityProvider.IdentifyEntity(searchableFilter)
 	if err != nil {
-		if err.Code == userprovider.ErrorCodeUserNotFound {
+		if err.Code == entityprovider.ErrorCodeEntityNotFound {
 			logger.Debug("User not found for the provided filters")
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonUserNotFound
 			return nil, nil
-		} else if err.Code == userprovider.ErrorCodeAmbiguousUser {
+		} else if err.Code == entityprovider.ErrorCodeAmbiguousEntity {
 			logger.Debug("Multiple users found for the provided filters")
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonFailedToIdentifyUser
@@ -212,10 +212,10 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 		execResp.FailureReason = failureReasonUserNotFound
 		return execResp, nil
 	case 1:
-		execResp.RuntimeData[userAttributeUserID] = candidates[0].UserID
+		execResp.RuntimeData[userAttributeUserID] = candidates[0].ID
 		execResp.Status = common.ExecComplete
 		logger.Debug("User resolved successfully",
-			log.String("userID", log.MaskString(candidates[0].UserID)))
+			log.String("userID", log.MaskString(candidates[0].ID)))
 		return execResp, nil
 	default:
 		return i.handleAmbiguousCandidates(candidates, execResp, logger)
@@ -238,7 +238,7 @@ func (i *identifyingExecutor) buildSearchAttributes(ctx *core.NodeContext) map[s
 // getCandidates retrieves candidate users either from the store (first call) or from
 // stored candidates in RuntimeData (subsequent calls), filtering in-memory.
 func (i *identifyingExecutor) getCandidates(ctx *core.NodeContext,
-	searchAttrs map[string]interface{}, logger *log.Logger) ([]*userprovider.User, error) {
+	searchAttrs map[string]interface{}, logger *log.Logger) ([]*entityprovider.Entity, error) {
 	storedCandidates, hasCandidates := ctx.RuntimeData[common.RuntimeKeyCandidateUsers]
 	if hasCandidates {
 		return i.getFilteredCandidates(storedCandidates, searchAttrs, logger)
@@ -248,7 +248,7 @@ func (i *identifyingExecutor) getCandidates(ctx *core.NodeContext,
 
 // searchCandidates performs the initial database search for matching users.
 func (i *identifyingExecutor) searchCandidates(
-	searchAttrs map[string]interface{}, logger *log.Logger) ([]*userprovider.User, error) {
+	searchAttrs map[string]interface{}, logger *log.Logger) ([]*entityprovider.Entity, error) {
 	searchableFilters := make(map[string]interface{})
 	for key, value := range searchAttrs {
 		if !slices.Contains(nonSearchableInputs, key) {
@@ -256,11 +256,11 @@ func (i *identifyingExecutor) searchCandidates(
 		}
 	}
 
-	users, err := i.userProvider.SearchUsers(searchableFilters)
+	users, err := i.entityProvider.SearchEntities(searchableFilters)
 	if err != nil {
-		if err.Code == userprovider.ErrorCodeUserNotFound {
+		if err.Code == entityprovider.ErrorCodeEntityNotFound {
 			logger.Debug("No users found for the provided filters")
-			return []*userprovider.User{}, nil
+			return []*entityprovider.Entity{}, nil
 		}
 		logger.Debug("Failed to search users: " + err.Error())
 		return nil, errors.New(failureReasonFailedToIdentifyUser)
@@ -272,8 +272,8 @@ func (i *identifyingExecutor) searchCandidates(
 // getFilteredCandidates deserializes stored candidates and filters them in-memory.
 func (i *identifyingExecutor) getFilteredCandidates(
 	storedCandidates string, searchAttrs map[string]interface{},
-	logger *log.Logger) ([]*userprovider.User, error) {
-	var candidates []*userprovider.User
+	logger *log.Logger) ([]*entityprovider.Entity, error) {
+	var candidates []*entityprovider.Entity
 	if err := json.Unmarshal([]byte(storedCandidates), &candidates); err != nil {
 		logger.Debug("Failed to deserialize candidate users")
 		return nil, errors.New(failureReasonFailedToIdentifyUser)
@@ -286,7 +286,7 @@ func (i *identifyingExecutor) getFilteredCandidates(
 // It extracts disambiguation options and either requests more input or fails if
 // candidates are indistinguishable.
 func (i *identifyingExecutor) handleAmbiguousCandidates(
-	candidates []*userprovider.User, execResp *common.ExecutorResponse,
+	candidates []*entityprovider.Entity, execResp *common.ExecutorResponse,
 	logger *log.Logger) (*common.ExecutorResponse, error) {
 	options := extractDisambiguationOptions(candidates)
 	if len(options) == 0 {
@@ -317,8 +317,8 @@ func (i *identifyingExecutor) handleAmbiguousCandidates(
 }
 
 // filterUsersByAttributes filters users by matching their attributes against the provided filters.
-func filterUsersByAttributes(users []*userprovider.User, filters map[string]interface{}) []*userprovider.User {
-	var matched []*userprovider.User
+func filterUsersByAttributes(users []*entityprovider.Entity, filters map[string]interface{}) []*entityprovider.Entity {
+	var matched []*entityprovider.Entity
 	for _, u := range users {
 		var attrs map[string]interface{}
 		if len(u.Attributes) > 0 {
@@ -341,7 +341,7 @@ func filterUsersByAttributes(users []*userprovider.User, filters map[string]inte
 			// Check top-level User fields first
 			switch key {
 			case "userType":
-				if u.UserType != expectedStr {
+				if u.Type != expectedStr {
 					allMatch = false
 				}
 			case "ouHandle":
@@ -374,17 +374,17 @@ func filterUsersByAttributes(users []*userprovider.User, filters map[string]inte
 // extractDisambiguationOptions extracts distinct attribute values from candidate users
 // and returns them as []common.Input with Options populated. This allows downstream prompt
 // nodes to render dropdowns when enriched via ForwardedData.
-func extractDisambiguationOptions(candidates []*userprovider.User) []common.Input {
+func extractDisambiguationOptions(candidates []*entityprovider.Entity) []common.Input {
 	// Collect distinct values per attribute key (including top-level fields)
 	optionsMap := make(map[string]map[string]struct{})
 
 	for _, u := range candidates {
 		// Top-level fields
-		if u.UserType != "" {
+		if u.Type != "" {
 			if optionsMap["userType"] == nil {
 				optionsMap["userType"] = make(map[string]struct{})
 			}
-			optionsMap["userType"][u.UserType] = struct{}{}
+			optionsMap["userType"][u.Type] = struct{}{}
 		}
 		if u.OUHandle != "" {
 			if optionsMap["ouHandle"] == nil {

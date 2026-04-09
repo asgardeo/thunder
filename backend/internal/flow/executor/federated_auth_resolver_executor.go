@@ -24,10 +24,10 @@ import (
 	"fmt"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 var _ core.ExecutorInterface = (*federatedAuthResolverExecutor)(nil)
@@ -88,7 +88,7 @@ func (f *federatedAuthResolverExecutor) Execute(ctx *core.NodeContext) (*common.
 		return nil, errors.New("no stored candidates found in runtime data")
 	}
 
-	var candidates []*userprovider.User
+	var candidates []*entityprovider.Entity
 	if err := json.Unmarshal([]byte(storedCandidates), &candidates); err != nil {
 		return nil, fmt.Errorf("failed to deserialize candidate users: %w", err)
 	}
@@ -160,13 +160,13 @@ func (f *federatedAuthResolverExecutor) Execute(ctx *core.NodeContext) (*common.
 	execResp.RuntimeData[userAttributeSub] = sub
 	execResp.AuthenticatedUser = authncm.AuthenticatedUser{
 		IsAuthenticated: true,
-		UserID:          resolvedUser.UserID,
+		UserID:          resolvedUser.ID,
 		OUID:            resolvedUser.OUID,
-		UserType:        resolvedUser.UserType,
+		UserType:        resolvedUser.Type,
 	}
 
 	logger.Debug("Federated auth resolver completed successfully",
-		log.String("userID", log.MaskString(resolvedUser.UserID)))
+		log.String("userID", log.MaskString(resolvedUser.ID)))
 
 	return execResp, nil
 }

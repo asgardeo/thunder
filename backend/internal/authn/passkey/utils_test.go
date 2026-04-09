@@ -27,9 +27,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/entity"
 )
 
 type UtilsTestSuite struct {
@@ -58,7 +56,7 @@ func (suite *UtilsTestSuite) TestGetConfiguredOrigins() {
 func (suite *UtilsTestSuite) TestParseUserAttributes_ValidJSON() {
 	attrs := json.RawMessage(`{"name":"John Doe","email":"john@example.com"}`)
 
-	result := parseUserAttributes(attrs)
+	result := parseEntityAttributes(attrs)
 
 	suite.NotNil(result)
 	suite.Equal("John Doe", result["name"])
@@ -68,7 +66,7 @@ func (suite *UtilsTestSuite) TestParseUserAttributes_ValidJSON() {
 func (suite *UtilsTestSuite) TestParseUserAttributes_EmptyJSON() {
 	attrs := json.RawMessage(`{}`)
 
-	result := parseUserAttributes(attrs)
+	result := parseEntityAttributes(attrs)
 
 	suite.NotNil(result)
 	suite.Empty(result)
@@ -77,7 +75,7 @@ func (suite *UtilsTestSuite) TestParseUserAttributes_EmptyJSON() {
 func (suite *UtilsTestSuite) TestParseUserAttributes_NilInput() {
 	var attrs json.RawMessage
 
-	result := parseUserAttributes(attrs)
+	result := parseEntityAttributes(attrs)
 
 	suite.Nil(result)
 }
@@ -85,7 +83,7 @@ func (suite *UtilsTestSuite) TestParseUserAttributes_NilInput() {
 func (suite *UtilsTestSuite) TestParseUserAttributes_InvalidJSON() {
 	attrs := json.RawMessage(`{invalid json}`)
 
-	result := parseUserAttributes(attrs)
+	result := parseEntityAttributes(attrs)
 
 	suite.Nil(result)
 }
@@ -96,7 +94,7 @@ func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithName() {
 		"family_name": "Doe",
 	}
 
-	result := buildUserDisplayName(testUserID, attrs)
+	result := buildWebAuthnDisplayName(testUserID, attrs)
 
 	suite.Equal("John Doe", result)
 }
@@ -106,23 +104,23 @@ func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithFirstNameOnly() {
 		"given_name": "John",
 	}
 
-	result := buildUserDisplayName(testUserID, attrs)
+	result := buildWebAuthnDisplayName(testUserID, attrs)
 
 	suite.Equal("John", result)
 }
 
 func (suite *UtilsTestSuite) TestBuildUserDisplayName_Fallback() {
 	attrs := map[string]interface{}{
-		"email": "john@example.com", // email is not used by buildUserDisplayName
+		"email": "john@example.com", // email is not used by buildWebAuthnDisplayName
 	}
 
-	result := buildUserDisplayName(testUserID, attrs)
+	result := buildWebAuthnDisplayName(testUserID, attrs)
 
 	suite.Equal(testUserID, result)
 }
 
 func (suite *UtilsTestSuite) TestBuildUserDisplayName_NilAttributes() {
-	result := buildUserDisplayName(testUserID, nil)
+	result := buildWebAuthnDisplayName(testUserID, nil)
 
 	suite.Equal(testUserID, result)
 }
@@ -132,7 +130,7 @@ func (suite *UtilsTestSuite) TestResolveUserName_WithUsername() {
 		"username": "johndoe",
 	}
 
-	result := resolveUserName(testUserID, attrs)
+	result := resolveWebAuthnName(testUserID, attrs)
 
 	suite.Equal("johndoe", result)
 }
@@ -142,7 +140,7 @@ func (suite *UtilsTestSuite) TestResolveUserName_WithEmail() {
 		"email": "john@example.com",
 	}
 
-	result := resolveUserName(testUserID, attrs)
+	result := resolveWebAuthnName(testUserID, attrs)
 
 	suite.Equal("john@example.com", result)
 }
@@ -150,13 +148,13 @@ func (suite *UtilsTestSuite) TestResolveUserName_WithEmail() {
 func (suite *UtilsTestSuite) TestResolveUserName_Fallback() {
 	attrs := map[string]interface{}{}
 
-	result := resolveUserName(testUserID, attrs)
+	result := resolveWebAuthnName(testUserID, attrs)
 
 	suite.Equal(testUserID, result)
 }
 
 func (suite *UtilsTestSuite) TestResolveUserName_NilAttributes() {
-	result := resolveUserName(testUserID, nil)
+	result := resolveWebAuthnName(testUserID, nil)
 
 	suite.Equal(testUserID, result)
 }
@@ -203,32 +201,6 @@ func (suite *UtilsTestSuite) TestValidateAuthenticationStartRequest_NilRequest()
 	suite.Equal(ErrorInvalidFinishData.Code, err.Code)
 }
 
-func (suite *UtilsTestSuite) TestHandleUserRetrievalError_ClientError() {
-	svcErr := &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
-		Code: "USER_NOT_FOUND",
-	}
-	logger := log.GetLogger()
-
-	result := handleUserRetrievalError(svcErr, testUserID, logger)
-
-	suite.NotNil(result)
-	suite.Equal(ErrorUserNotFound.Code, result.Code)
-}
-
-func (suite *UtilsTestSuite) TestHandleUserRetrievalError_ServerError() {
-	svcErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-		Code: "DB_ERROR",
-	}
-	logger := log.GetLogger()
-
-	result := handleUserRetrievalError(svcErr, testUserID, logger)
-
-	suite.NotNil(result)
-	suite.Equal(serviceerror.InternalServerError.Code, result.Code)
-}
-
 func (suite *UtilsTestSuite) TestDecodeBase64_RawURLEncoding() {
 	// Test with RawURLEncoding (no padding)
 	input := "SGVsbG8gV29ybGQ"
@@ -270,14 +242,15 @@ func (suite *UtilsTestSuite) TestDecodeBase64_InvalidInput() {
 
 func (suite *UtilsTestSuite) TestExtractCoreUser_WithFullAttributes() {
 	attrs := json.RawMessage(`{"given_name":"John","family_name":"Doe","username":"johndoe"}`)
-	testUser := &user.User{
+	testEntity := &entity.Entity{
 		ID:         testUserID,
+		Category:   entity.EntityCategoryUser,
 		Type:       "person",
 		OUID:       "org123",
 		Attributes: attrs,
 	}
 
-	displayName, userName := extractCoreUser(testUser)
+	displayName, userName := extractWebAuthnIdentity(testEntity)
 
 	suite.Equal("John Doe", displayName)
 	suite.Equal("johndoe", userName)
@@ -285,23 +258,25 @@ func (suite *UtilsTestSuite) TestExtractCoreUser_WithFullAttributes() {
 
 func (suite *UtilsTestSuite) TestExtractCoreUser_WithEmailOnly() {
 	attrs := json.RawMessage(`{"email":"john@example.com"}`)
-	testUser := &user.User{
+	testEntity := &entity.Entity{
 		ID:         testUserID,
+		Category:   entity.EntityCategoryUser,
 		Attributes: attrs,
 	}
 
-	displayName, userName := extractCoreUser(testUser)
+	displayName, userName := extractWebAuthnIdentity(testEntity)
 
 	suite.Equal(testUserID, displayName) // Falls back to ID
 	suite.Equal("john@example.com", userName)
 }
 
 func (suite *UtilsTestSuite) TestExtractCoreUser_EmptyAttributes() {
-	testUser := &user.User{
-		ID: testUserID,
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
 	}
 
-	displayName, userName := extractCoreUser(testUser)
+	displayName, userName := extractWebAuthnIdentity(testEntity)
 	suite.Equal(testUserID, displayName)
 	suite.Equal(testUserID, userName)
 }

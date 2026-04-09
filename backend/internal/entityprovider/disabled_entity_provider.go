@@ -42,6 +42,11 @@ func (p *disabledEntityProvider) IdentifyEntity(
 	return nil, errNotImplemented
 }
 
+func (p *disabledEntityProvider) SearchEntities(
+	_ map[string]interface{}) ([]*Entity, *EntityProviderError) {
+	return nil, errNotImplemented
+}
+
 func (p *disabledEntityProvider) GetEntity(
 	_ string) (*Entity, *EntityProviderError) {
 	return nil, errNotImplemented
@@ -61,6 +66,16 @@ func (p *disabledEntityProvider) DeleteEntity(_ string) *EntityProviderError {
 	return errNotImplemented
 }
 
+func (p *disabledEntityProvider) UpdateCredentials(_ string,
+	_ json.RawMessage) *EntityProviderError {
+	return errNotImplemented
+}
+
+func (p *disabledEntityProvider) UpdateAttributes(_ string,
+	_ json.RawMessage) *EntityProviderError {
+	return errNotImplemented
+}
+
 func (p *disabledEntityProvider) UpdateSystemAttributes(_ string,
 	_ json.RawMessage) *EntityProviderError {
 	return errNotImplemented
@@ -69,11 +84,6 @@ func (p *disabledEntityProvider) UpdateSystemAttributes(_ string,
 func (p *disabledEntityProvider) UpdateSystemCredentials(_ string,
 	_ json.RawMessage) *EntityProviderError {
 	return errNotImplemented
-}
-
-func (p *disabledEntityProvider) GetEntityGroups(_ string,
-	_, _ int) (*EntityGroupListResponse, *EntityProviderError) {
-	return nil, errNotImplemented
 }
 
 func (p *disabledEntityProvider) GetTransitiveEntityGroups(

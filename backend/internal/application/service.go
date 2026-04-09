@@ -396,7 +396,7 @@ func (as *applicationService) GetOAuthApplication(
 	// Resolve the application's organization unit
 	var ouID string
 	if entity, getErr := as.entityProvider.GetEntity(*entityID); getErr == nil && entity != nil {
-		ouID = entity.OrganizationUnitID
+		ouID = entity.OUID
 	} else if getErr != nil {
 		as.logger.Error("Failed to fetch entity for OAuth app",
 			log.String("appId", *entityID), log.String("error", getErr.Error()))
@@ -767,7 +767,7 @@ func toProcessedDTO(
 
 	// Extract identity fields from entity system attributes.
 	if e != nil {
-		dto.OUID = e.OrganizationUnitID
+		dto.OUID = e.OUID
 		var sysAttrs map[string]interface{}
 		if len(e.SystemAttributes) > 0 {
 			_ = json.Unmarshal(e.SystemAttributes, &sysAttrs)
@@ -828,7 +828,7 @@ func toProcessedDTO(
 
 		var ouID string
 		if e != nil {
-			ouID = e.OrganizationUnitID
+			ouID = e.OUID
 		}
 		oauthProcessed := toOAuthProcessedDTO(dao.ID, clientID, ouID, oauthDAO)
 		dto.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{
@@ -933,12 +933,12 @@ func buildAppEntity(appID string, app *model.ApplicationDTO, clientID string, pl
 	}
 
 	e := &entityprovider.Entity{
-		ID:                 appID,
-		Category:           entityprovider.EntityCategoryApp,
-		Type:               "application",
-		State:              entityprovider.EntityStateActive,
-		OrganizationUnitID: app.OUID,
-		SystemAttributes:   sysAttrsJSON,
+		ID:               appID,
+		Category:         entityprovider.EntityCategoryApp,
+		Type:             "application",
+		State:            entityprovider.EntityStateActive,
+		OUID:             app.OUID,
+		SystemAttributes: sysAttrsJSON,
 	}
 	return e, sysCredsJSON, nil
 }
@@ -2120,6 +2120,7 @@ func buildReturnApplicationDTO(
 	returnOAuthCert *model.ApplicationCertificate) *model.ApplicationDTO {
 	returnApp := &model.ApplicationDTO{
 		ID:                        appID,
+		OUID:                      app.OUID,
 		Name:                      app.Name,
 		Description:               app.Description,
 		AuthFlowID:                app.AuthFlowID,

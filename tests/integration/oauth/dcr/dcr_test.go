@@ -57,6 +57,7 @@ func (ts *DCRTestSuite) TearDownSuite() {
 // TestDCRRegistrationWithAllFields verifies successful registration with all RFC 7591 metadata fields populated.
 func (ts *DCRTestSuite) TestDCRRegistrationWithAllFields() {
 	request := DCRRegistrationRequest{
+		OUID:                    "decl-ou-1",
 		RedirectURIs:            []string{"https://client.example.com/callback", "https://client.example.com/callback2"},
 		GrantTypes:              []string{"authorization_code", "refresh_token"},
 		ResponseTypes:           []string{"code"},

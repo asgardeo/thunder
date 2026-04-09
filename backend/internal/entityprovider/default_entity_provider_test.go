@@ -38,7 +38,7 @@ type DefaultEntityProviderTestSuite struct {
 
 func (suite *DefaultEntityProviderTestSuite) SetupTest() {
 	suite.mockService = entitymock.NewEntityServiceInterfaceMock(suite.T())
-	suite.provider = newDefaultEntityProvider(suite.mockService)
+	suite.provider = newDefaultEntityProvider(suite.mockService, nil)
 }
 
 func TestDefaultEntityProviderTestSuite(t *testing.T) {
@@ -128,6 +128,42 @@ func (suite *DefaultEntityProviderTestSuite) TestCreateEntity() {
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
 
+	// Test Attribute Conflict
+	suite.mockService.On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, entity.ErrAttributeConflict).Once()
+
+	e, err = suite.provider.CreateEntity(providerEntity, nil)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeAttributeConflict, err.Code)
+
+	// Test Schema Validation Failed
+	suite.mockService.On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, entity.ErrSchemaValidationFailed).Once()
+
+	e, err = suite.provider.CreateEntity(providerEntity, nil)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeMissingRequiredFields, err.Code)
+
+	// Test Bad Attributes In Request
+	suite.mockService.On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, entity.ErrBadAttributesInRequest).Once()
+
+	e, err = suite.provider.CreateEntity(providerEntity, nil)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
+
+	// Test Invalid Credential
+	suite.mockService.On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, entity.ErrInvalidCredential).Once()
+
+	e, err = suite.provider.CreateEntity(providerEntity, nil)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeMissingCredentials, err.Code)
+
 	// Test System Error
 	suite.mockService.On("CreateEntity", mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("db error")).Once()
@@ -170,6 +206,60 @@ func (suite *DefaultEntityProviderTestSuite) TestUpdateEntity() {
 	suite.Nil(e)
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeEntityNotFound, err.Code)
+
+	// Test Attribute Conflict
+	suite.mockService.On("UpdateEntity", mock.Anything, testEntityID, mock.Anything).
+		Return(nil, entity.ErrAttributeConflict).Once()
+
+	e, err = suite.provider.UpdateEntity(testEntityID, providerEntity)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeAttributeConflict, err.Code)
+
+	// Test Schema Validation Failed
+	suite.mockService.On("UpdateEntity", mock.Anything, testEntityID, mock.Anything).
+		Return(nil, entity.ErrSchemaValidationFailed).Once()
+
+	e, err = suite.provider.UpdateEntity(testEntityID, providerEntity)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeMissingRequiredFields, err.Code)
+
+	// Test Bad Attributes In Request
+	suite.mockService.On("UpdateEntity", mock.Anything, testEntityID, mock.Anything).
+		Return(nil, entity.ErrBadAttributesInRequest).Once()
+
+	e, err = suite.provider.UpdateEntity(testEntityID, providerEntity)
+	suite.Nil(e)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
+}
+
+func (suite *DefaultEntityProviderTestSuite) TestUpdateCredentials() {
+	creds := json.RawMessage(`{"password":"newpassword"}`)
+
+	// Test Success
+	suite.mockService.On("UpdateCredentials", mock.Anything, testEntityID, creds).
+		Return(nil).Once()
+
+	err := suite.provider.UpdateCredentials(testEntityID, creds)
+	suite.Nil(err)
+
+	// Test Not Found
+	suite.mockService.On("UpdateCredentials", mock.Anything, testEntityID, creds).
+		Return(entity.ErrEntityNotFound).Once()
+
+	err = suite.provider.UpdateCredentials(testEntityID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeEntityNotFound, err.Code)
+
+	// Test Invalid Credential
+	suite.mockService.On("UpdateCredentials", mock.Anything, testEntityID, creds).
+		Return(entity.ErrInvalidCredential).Once()
+
+	err = suite.provider.UpdateCredentials(testEntityID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeMissingCredentials, err.Code)
 }
 
 func (suite *DefaultEntityProviderTestSuite) TestDeleteEntity() {
@@ -212,6 +302,22 @@ func (suite *DefaultEntityProviderTestSuite) TestUpdateSystemAttributes() {
 	err = suite.provider.UpdateSystemAttributes(testEntityID, attrs)
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeEntityNotFound, err.Code)
+
+	// Test Attribute Conflict
+	suite.mockService.On("UpdateSystemAttributes", mock.Anything, testEntityID, attrs).
+		Return(entity.ErrAttributeConflict).Once()
+
+	err = suite.provider.UpdateSystemAttributes(testEntityID, attrs)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeAttributeConflict, err.Code)
+
+	// Test Bad Attributes In Request
+	suite.mockService.On("UpdateSystemAttributes", mock.Anything, testEntityID, attrs).
+		Return(entity.ErrBadAttributesInRequest).Once()
+
+	err = suite.provider.UpdateSystemAttributes(testEntityID, attrs)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeInvalidRequestFormat, err.Code)
 }
 
 func (suite *DefaultEntityProviderTestSuite) TestUpdateSystemCredentials() {
@@ -231,31 +337,37 @@ func (suite *DefaultEntityProviderTestSuite) TestUpdateSystemCredentials() {
 	err = suite.provider.UpdateSystemCredentials(testEntityID, creds)
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeEntityNotFound, err.Code)
+
+	// Test Invalid Credential
+	suite.mockService.On("UpdateSystemCredentials", mock.Anything, testEntityID, creds).
+		Return(entity.ErrInvalidCredential).Once()
+
+	err = suite.provider.UpdateSystemCredentials(testEntityID, creds)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeMissingCredentials, err.Code)
 }
 
-func (suite *DefaultEntityProviderTestSuite) TestGetEntityGroups() {
-	groups := []entity.EntityGroup{
-		{ID: "g1", Name: "Group 1", OUID: "ou1"},
+func (suite *DefaultEntityProviderTestSuite) TestMapEntityError() {
+	// Verifies the centralized error mapping helper.
+	cases := []struct {
+		name     string
+		err      error
+		expected ErrorCode
+	}{
+		{"EntityNotFound", entity.ErrEntityNotFound, ErrorCodeEntityNotFound},
+		{"AttributeConflict", entity.ErrAttributeConflict, ErrorCodeAttributeConflict},
+		{"SchemaValidationFailed", entity.ErrSchemaValidationFailed, ErrorCodeMissingRequiredFields},
+		{"InvalidCredential", entity.ErrInvalidCredential, ErrorCodeMissingCredentials},
+		{"BadAttributesInRequest", entity.ErrBadAttributesInRequest, ErrorCodeInvalidRequestFormat},
+		{"Unknown", errors.New("unexpected"), ErrorCodeSystemError},
 	}
-
-	// Test Success
-	suite.mockService.On("GetGroupCountForEntity", mock.Anything, testEntityID).Return(1, nil).Once()
-	suite.mockService.On("GetEntityGroups", mock.Anything, testEntityID, 10, 0).Return(groups, nil).Once()
-
-	resp, err := suite.provider.GetEntityGroups(testEntityID, 10, 0)
-	suite.Nil(err)
-	suite.Equal(1, resp.TotalResults)
-	suite.Len(resp.Groups, 1)
-	suite.Equal("g1", resp.Groups[0].ID)
-
-	// Test Count Error
-	suite.mockService.On("GetGroupCountForEntity", mock.Anything, testEntityID).
-		Return(0, errors.New("db error")).Once()
-
-	resp, err = suite.provider.GetEntityGroups(testEntityID, 10, 0)
-	suite.Nil(resp)
-	suite.NotNil(err)
-	suite.Equal(ErrorCodeSystemError, err.Code)
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			result := mapEntityError(tc.err)
+			suite.NotNil(result)
+			suite.Equal(tc.expected, result.Code)
+		})
+	}
 }
 
 func (suite *DefaultEntityProviderTestSuite) TestGetTransitiveEntityGroups() {
@@ -272,6 +384,15 @@ func (suite *DefaultEntityProviderTestSuite) TestGetTransitiveEntityGroups() {
 	suite.Nil(err)
 	suite.Len(result, 2)
 	suite.Equal("g1", result[0].ID)
+
+	// Test Not Found
+	suite.mockService.On("GetTransitiveEntityGroups", mock.Anything, testEntityID).
+		Return(nil, entity.ErrEntityNotFound).Once()
+
+	result, err = suite.provider.GetTransitiveEntityGroups(testEntityID)
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeEntityNotFound, err.Code)
 
 	// Test System Error
 	suite.mockService.On("GetTransitiveEntityGroups", mock.Anything, testEntityID).
@@ -325,6 +446,15 @@ func (suite *DefaultEntityProviderTestSuite) TestGetEntitiesByIDs() {
 	suite.Nil(err)
 	suite.Len(result, 1)
 	suite.Equal("id1", result[0].ID)
+
+	// Test Not Found
+	suite.mockService.On("GetEntitiesByIDs", mock.Anything, ids).
+		Return(nil, entity.ErrEntityNotFound).Once()
+
+	result, err = suite.provider.GetEntitiesByIDs(ids)
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeEntityNotFound, err.Code)
 
 	// Test System Error
 	suite.mockService.On("GetEntitiesByIDs", mock.Anything, ids).

@@ -52,7 +52,7 @@ func (s *CompositeStoreTestSuite) SetupTest() {
 }
 
 func compEntity(id, ouID string) Entity {
-	return Entity{ID: id, Category: EntityCategoryUser, OrganizationUnitID: ouID}
+	return Entity{ID: id, Category: EntityCategoryUser, OUID: ouID}
 }
 
 func (s *CompositeStoreTestSuite) TestCreateEntity_DelegatesToDB() {
@@ -97,7 +97,7 @@ func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_DBFound() {
 	e := compEntity("c1", "ou1")
 	creds := json.RawMessage(`{"p":"h"}`)
 	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c1").
-		Return(&EntityWithCredentials{Entity: &e, SchemaCredentials: creds, SystemCredentials: nil}, nil)
+		Return(&entityWithCredentials{Entity: &e, SchemaCredentials: creds, SystemCredentials: nil}, nil)
 	result, err := s.store.GetEntityWithCredentials(s.ctx, "c1")
 	s.NoError(err)
 	s.Equal("c1", result.Entity.ID)
@@ -109,7 +109,7 @@ func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_DBNotFound_FileFo
 	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c2").
 		Return(nil, ErrEntityNotFound)
 	s.fileStore.On("GetEntityWithCredentials", mock.Anything, "c2").
-		Return(&EntityWithCredentials{Entity: &e, SchemaCredentials: nil, SystemCredentials: nil}, nil)
+		Return(&entityWithCredentials{Entity: &e, SchemaCredentials: nil, SystemCredentials: nil}, nil)
 	result, err := s.store.GetEntityWithCredentials(s.ctx, "c2")
 	s.NoError(err)
 	s.True(result.Entity.IsReadOnly)

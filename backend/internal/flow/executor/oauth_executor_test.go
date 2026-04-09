@@ -28,11 +28,11 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -125,10 +125,10 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 		"name":  "Test User",
 	}
 
-	existingUser := &userprovider.User{
-		UserID:   "user-123",
-		OUID:     "ou-123",
-		UserType: "INTERNAL",
+	existingUser := &entityprovider.Entity{
+		ID:   "user-123",
+		OUID: "ou-123",
+		Type: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -594,9 +594,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 		"email": "existing@example.com",
 	}
 
-	existingUser := &userprovider.User{
-		UserID: "user-456",
-		OUID:   "ou-456",
+	existingUser := &entityprovider.Entity{
+		ID:   "user-456",
+		OUID: "ou-456",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -1042,10 +1042,10 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 		"name":  "Existing User",
 	}
 
-	existingUser := &userprovider.User{
-		UserID:   "user-123",
-		OUID:     "ou-123",
-		UserType: "INTERNAL",
+	existingUser := &entityprovider.Entity{
+		ID:   "user-123",
+		OUID: "ou-123",
+		Type: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -1095,10 +1095,10 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 		"email": "existing@example.com",
 	}
 
-	existingUser := &userprovider.User{
-		UserID:   "user-123",
-		OUID:     "ou-123",
-		UserType: "INTERNAL",
+	existingUser := &entityprovider.Entity{
+		ID:   "user-123",
+		OUID: "ou-123",
+		Type: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -1328,10 +1328,10 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Success() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	existingUser := &userprovider.User{
-		UserID:   "user-123",
-		OUID:     "ou-123",
-		UserType: "INTERNAL",
+	existingUser := &entityprovider.Entity{
+		ID:   "user-123",
+		OUID: "ou-123",
+		Type: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("GetInternalUser", "user-sub-123").
@@ -1341,7 +1341,7 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "user-123", result.UserID)
+	assert.Equal(suite.T(), "user-123", result.ID)
 	suite.mockOAuthService.AssertExpectations(suite.T())
 }
 
@@ -1362,10 +1362,10 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_WithExist
 		RuntimeData:    make(map[string]string),
 	}
 
-	existingUser := &userprovider.User{
-		UserID:   "user-456",
-		OUID:     "ou-456",
-		UserType: "INTERNAL",
+	existingUser := &entityprovider.Entity{
+		ID:   "user-456",
+		OUID: "ou-456",
+		Type: "INTERNAL",
 	}
 
 	contextUser, err := suite.executor.(*oAuthExecutor).getContextUserForRegistration(

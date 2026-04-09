@@ -27,13 +27,13 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -53,10 +53,10 @@ type googleOIDCAuthnService struct {
 }
 
 // newGoogleOIDCAuthnService creates a new instance of Google OIDC authenticator service.
-func newGoogleOIDCAuthnService(idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
+func newGoogleOIDCAuthnService(idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) GoogleOIDCAuthnServiceInterface {
 	httpClient := syshttp.NewHTTPClient()
-	internal := authnoidc.NewOIDCAuthnService(httpClient, idpSvc, userProvider, jwtSvc)
+	internal := authnoidc.NewOIDCAuthnService(httpClient, idpSvc, entityProvider, jwtSvc)
 
 	service := &googleOIDCAuthnService{
 		internal:   internal,
@@ -220,7 +220,7 @@ func (g *googleOIDCAuthnService) FetchUserInfo(ctx context.Context, idpID, acces
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *googleOIDCAuthnService) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
+func (g *googleOIDCAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
 	return g.internal.GetInternalUser(sub)
 }
 

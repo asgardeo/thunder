@@ -33,15 +33,15 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
+	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/httpmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 const (
@@ -343,16 +343,16 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestFetchUserInfoWithEmailFetchFa
 
 func (suite *GithubOAuthAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	sub := "user123"
-	user := &userprovider.User{
-		UserID:   "user123",
-		UserType: "person",
+	user := &entityprovider.Entity{
+		ID:   "user123",
+		Type: "person",
 	}
 	suite.mockOAuthService.On("GetInternalUser", sub).Return(user, nil)
 
 	result, err := suite.service.GetInternalUser(sub)
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(user.UserID, result.UserID)
+	suite.Equal(user.ID, result.ID)
 }
 
 func (suite *GithubOAuthAuthnServiceTestSuite) TestGetInternalUserError() {
@@ -443,7 +443,7 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestFetchPrimaryEmailEdgeCases() 
 func (suite *GithubOAuthAuthnServiceTestSuite) TestConstructorAndInjectInternal() {
 	// create mocks for idp and user to pass into constructor (avoid global init)
 	mockIdp := idpmock.NewIDPServiceInterfaceMock(suite.T())
-	mockUser := userprovidermock.NewUserProviderInterfaceMock(suite.T())
+	mockUser := entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 
 	// call constructor which builds default http client and internal service
 	svcInterface := newGithubOAuthAuthnService(mockIdp, mockUser)

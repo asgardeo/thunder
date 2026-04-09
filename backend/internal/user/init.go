@@ -56,8 +56,6 @@ func Initialize(
 		}
 	}
 
-	setUserService(userService) // Set the provider for backward compatibility
-
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)
 
@@ -65,7 +63,7 @@ func Initialize(
 	ouUserResolver := newOUUserResolver(entityService, userSchemaService)
 
 	// Create and return exporter
-	exporter := newUserExporter(userService)
+	exporter := newUserExporter(userService, entityService)
 	return userService, ouUserResolver, exporter, nil
 }
 

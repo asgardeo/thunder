@@ -48,12 +48,12 @@ func (s *FileBasedStoreTestSuite) SetupTest() {
 func makeTestEntity(id, category, ouID string) Entity {
 	attrs, _ := json.Marshal(map[string]interface{}{"username": id + "-user", "email": id + "@test.com"})
 	return Entity{
-		ID:                 id,
-		Category:           EntityCategory(category),
-		Type:               "employee",
-		State:              EntityStateActive,
-		OrganizationUnitID: ouID,
-		Attributes:         json.RawMessage(attrs),
+		ID:         id,
+		Category:   EntityCategory(category),
+		Type:       "employee",
+		State:      EntityStateActive,
+		OUID:       ouID,
+		Attributes: json.RawMessage(attrs),
 	}
 }
 

@@ -693,7 +693,7 @@ func (s *StoreHelpersTestSuite) TestBuildEntityFromResultRow_Success() {
 	s.Equal(EntityCategoryUser, e.Category)
 	s.Equal("employee", e.Type)
 	s.Equal(EntityStateActive, e.State)
-	s.Equal("ou-1", e.OrganizationUnitID)
+	s.Equal("ou-1", e.OUID)
 	s.NotNil(e.Attributes)
 	s.NotNil(e.SystemAttributes)
 }

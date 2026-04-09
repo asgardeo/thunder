@@ -26,22 +26,22 @@ import (
 	"slices"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // provisioningExecutor implements the ExecutorInterface for user provisioning in a flow.
 type provisioningExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider userprovider.UserProviderInterface
-	groupService group.GroupServiceInterface
-	roleService  role.RoleServiceInterface
-	logger       *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	groupService   group.GroupServiceInterface
+	roleService    role.RoleServiceInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*provisioningExecutor)(nil)
@@ -52,7 +52,7 @@ func newProvisioningExecutor(
 	flowFactory core.FlowFactoryInterface,
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *provisioningExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameProvisioning),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameProvisioning))
@@ -61,12 +61,12 @@ func newProvisioningExecutor(
 		[]common.Input{}, []common.Input{})
 
 	identifyingExec := newIdentifyingExecutor(ExecutorNameProvisioning,
-		[]common.Input{}, []common.Input{}, flowFactory, userProvider)
+		[]common.Input{}, []common.Input{}, flowFactory, entityProvider)
 
 	return &provisioningExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyingExec,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		groupService:                 groupService,
 		roleService:                  roleService,
 		logger:                       logger,
@@ -157,7 +157,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 			return execResp, nil
 		}
 
-		existingUser, getUserErr := p.userProvider.GetUser(*userID)
+		existingUser, getUserErr := p.entityProvider.GetEntity(*userID)
 		if getUserErr != nil {
 			return nil, errors.New("failed to retrieve existing user")
 		}
@@ -175,50 +175,52 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 
 	// Create the user in the store.
 	p.appendNonIdentifyingAttributes(ctx, &userAttributes)
-	createdUser, err := p.createUserInStore(ctx, userAttributes)
+	createdEntity, err := p.createUserInStore(ctx, userAttributes)
 	if err != nil {
 		logger.Error("Failed to create user in the store", log.Error(err))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to create user"
 		return execResp, nil
 	}
-	if createdUser == nil || createdUser.UserID == "" {
+	if createdEntity == nil || createdEntity.ID == "" {
 		logger.Error("Created user is nil or has no ID")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Something went wrong while creating the user"
 		return execResp, nil
 	}
 
-	logger.Debug("User created successfully", log.String("userID", createdUser.UserID))
+	logger.Debug("User created successfully", log.String("userID", createdEntity.ID))
 
 	// Assign user to groups and roles
-	if err := p.assignGroupsAndRoles(ctx, createdUser.UserID); err != nil {
+	if err := p.assignGroupsAndRoles(ctx, createdEntity.ID); err != nil {
 		logger.Error("Failed to assign groups and roles to provisioned user",
-			log.String("userID", createdUser.UserID),
+			log.String("userID", createdEntity.ID),
 			log.Error(err))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to assign groups and roles"
 		return execResp, nil
 	}
 
-	var retAttributes map[string]interface{}
-	if err := json.Unmarshal(createdUser.Attributes, &retAttributes); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.Error(err))
-		return nil, err
+	retAttributes := make(map[string]interface{})
+	if len(createdEntity.Attributes) > 0 {
+		if err := json.Unmarshal(createdEntity.Attributes, &retAttributes); err != nil {
+			logger.Error("Failed to unmarshal user attributes", log.Error(err))
+			return nil, err
+		}
 	}
 
 	authenticatedUser := authncm.AuthenticatedUser{
 		IsAuthenticated: true,
-		UserID:          createdUser.UserID,
-		OUID:            createdUser.OUID,
-		UserType:        createdUser.UserType,
+		UserID:          createdEntity.ID,
+		OUID:            createdEntity.OUID,
+		UserType:        createdEntity.Type,
 		Attributes:      retAttributes,
 	}
 	execResp.AuthenticatedUser = authenticatedUser
 	execResp.Status = common.ExecComplete
 
 	// Set user id in runtime data
-	execResp.RuntimeData[userAttributeUserID] = createdUser.UserID
+	execResp.RuntimeData[userAttributeUserID] = createdEntity.ID
 
 	// Set the auto-provisioned flag if it's a user auto provisioning scenario
 	if ctx.FlowType == common.FlowTypeAuthentication {
@@ -336,7 +338,7 @@ func (p *provisioningExecutor) appendNonIdentifyingAttributes(ctx *core.NodeCont
 
 // createUserInStore creates a new user in the user store with the provided attributes.
 func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
-	userAttributes map[string]interface{}) (*userprovider.User, error) {
+	userAttributes map[string]interface{}) (*entityprovider.Entity, error) {
 	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, nodeCtx.ExecutionID))
 	logger.Debug("Creating the user account")
 
@@ -349,9 +351,11 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 		return nil, fmt.Errorf("user type not found")
 	}
 
-	newUser := userprovider.User{
+	newEntity := entityprovider.Entity{
+		Category: entityprovider.EntityCategoryUser,
+		State:    entityprovider.EntityStateActive,
 		OUID:     ouID,
-		UserType: userType,
+		Type:     userType,
 	}
 
 	// Convert the user attributes to JSON.
@@ -359,17 +363,17 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal user attributes: %w", err)
 	}
-	newUser.Attributes = attributesJSON
+	newEntity.Attributes = attributesJSON
 
-	retUser, svcErr := p.userProvider.CreateUser(&newUser)
+	retEntity, svcErr := p.entityProvider.CreateEntity(&newEntity, nil)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Message)
 	}
-	if retUser != nil && retUser.UserID != "" {
-		logger.Debug("User account created successfully", log.String("userID", retUser.UserID))
+	if retEntity != nil && retEntity.ID != "" {
+		logger.Debug("User account created successfully", log.String("userID", retEntity.ID))
 	}
 
-	return retUser, nil
+	return retEntity, nil
 }
 
 // getOUID retrieves the organization unit ID from runtime data.

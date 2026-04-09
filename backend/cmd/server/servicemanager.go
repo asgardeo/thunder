@@ -61,7 +61,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -135,9 +134,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 
 	// Initialize entity provider
-	entityProvider := entityprovider.InitializeEntityProvider(entityService)
+	entityProvider := entityprovider.InitializeEntityProvider(entityService, ouService)
 
-	userService, ouUserResolver, userExporter, err := user.Initialize(
+	_, ouUserResolver, userExporter, err := user.Initialize(
 		mux, entityService, ouService, userSchemaService, ouAuthzService,
 	)
 	if err != nil {
@@ -194,13 +193,10 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize authn provider
 	authnProvider := authnprovider.InitializeAuthnProvider(entityService)
 
-	// Initialize user provider based on configuration
-	userProvider := userprovider.InitializeUserProvider(userService)
-
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(
-		mux, mcpServer, idpService, jwtService, userService,
-		userProvider, otpService, authnProvider, consentService,
+		mux, mcpServer, idpService, jwtService, entityService,
+		entityProvider, otpService, authnProvider, consentService,
 	)
 
 	attributeCacheService := attributecache.Initialize()
@@ -215,8 +211,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		emailClient = nil
 	}
 	execRegistry := executor.Initialize(flowFactory, ouService,
-		idpService, otpService, notifSenderSvc, jwtService, authSvcRegistry, authZService, userSchemaService,
-		observabilitySvc, groupService, roleService, userProvider, attributeCacheService, emailClient, templateService)
+		idpService, otpService, notifSenderSvc, jwtService, authSvcRegistry, authZService,
+		userSchemaService, observabilitySvc, groupService, roleService, entityProvider,
+		attributeCacheService, emailClient, templateService)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

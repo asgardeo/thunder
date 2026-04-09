@@ -23,14 +23,14 @@ type ErrorCode string
 
 // Error codes for entity provider operations.
 const (
-	ErrorCodeSystemError              ErrorCode = "EP-0001"
-	ErrorCodeEntityNotFound           ErrorCode = "EP-0002"
-	ErrorCodeInvalidRequestFormat     ErrorCode = "EP-0003"
-	ErrorCodeAttributeConflict        ErrorCode = "EP-0004"
-	ErrorCodeMissingRequiredField     ErrorCode = "EP-0005"
-	ErrorCodeNotImplemented           ErrorCode = "EP-0006"
-	ErrorCodeOrganizationUnitMismatch ErrorCode = "EP-0007"
-	ErrorCodeMissingCredentials       ErrorCode = "EP-0008"
+	ErrorCodeSystemError           ErrorCode = "EP-0001"
+	ErrorCodeEntityNotFound        ErrorCode = "EP-0002"
+	ErrorCodeInvalidRequestFormat  ErrorCode = "EP-0003"
+	ErrorCodeAttributeConflict     ErrorCode = "EP-0004"
+	ErrorCodeMissingRequiredFields ErrorCode = "EP-0005"
+	ErrorCodeMissingCredentials    ErrorCode = "EP-0006"
+	ErrorCodeNotImplemented        ErrorCode = "EP-0007"
+	ErrorCodeAmbiguousEntity       ErrorCode = "EP-0008"
 )
 
 // EntityProviderError represents an error returned by the entity provider.

@@ -54,20 +54,19 @@ func (es EntityState) String() string {
 }
 
 // Entity represents a unified identity principal in the system.
-// Credentials are never returned via GetEntity — use GetEntityWithCredentials for credential access.
 type Entity struct {
-	ID                 string          `json:"id,omitempty"`
-	Category           EntityCategory  `json:"category,omitempty"`
-	Type               string          `json:"type,omitempty"`
-	State              EntityState     `json:"state,omitempty"`
-	OrganizationUnitID string          `json:"ouId,omitempty"`
-	Attributes         json.RawMessage `json:"attributes,omitempty"`
-	SystemAttributes   json.RawMessage `json:"systemAttributes,omitempty"`
-	IsReadOnly         bool            `json:"isReadOnly"`
+	ID               string          `json:"id,omitempty"`
+	Category         EntityCategory  `json:"category,omitempty"`
+	Type             string          `json:"type,omitempty"`
+	State            EntityState     `json:"state,omitempty"`
+	OUID             string          `json:"ouId,omitempty"`
+	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	SystemAttributes json.RawMessage `json:"systemAttributes,omitempty"`
+	IsReadOnly       bool            `json:"isReadOnly"`
 }
 
-// EntityWithCredentials wraps an Entity with its credential data.
-type EntityWithCredentials struct {
+// entityWithCredentials wraps an Entity with its credential data.
+type entityWithCredentials struct {
 	Entity            *Entity
 	SchemaCredentials json.RawMessage
 	SystemCredentials json.RawMessage
@@ -90,14 +89,15 @@ type EntityIdentifier struct {
 
 // AuthenticateResult represents the result of an entity authentication.
 type AuthenticateResult struct {
-	EntityID           string         `json:"entityId"`
-	EntityCategory     EntityCategory `json:"entityCategory"`
-	EntityType         string         `json:"entityType"`
-	OrganizationUnitID string         `json:"ouId"`
+	EntityID       string         `json:"entityId"`
+	EntityCategory EntityCategory `json:"entityCategory"`
+	EntityType     string         `json:"entityType"`
+	OUID           string         `json:"ouId"`
 }
 
-// storedCredential represents a single credential entry stored.
-type storedCredential struct {
+// StoredCredential represents a single credential entry stored in the entity's schema or
+// system credentials column.
+type StoredCredential struct {
 	StorageAlgo       hash.CredAlgorithm  `json:"storageAlgo"`
 	StorageAlgoParams hash.CredParameters `json:"storageAlgoParams"`
 	Value             string              `json:"value"`

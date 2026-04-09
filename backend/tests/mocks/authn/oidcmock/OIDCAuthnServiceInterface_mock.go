@@ -8,8 +8,8 @@ import (
 	"context"
 
 	"github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -331,23 +331,23 @@ func (_c *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call) RunAndReturn(run 
 }
 
 // GetInternalUser provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
+func (_mock *OIDCAuthnServiceInterfaceMock) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
 	ret := _mock.Called(sub)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
 	}
 
-	var r0 *userprovider.User
+	var r0 *entityprovider.Entity
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*userprovider.User, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*entityprovider.Entity, *serviceerror.ServiceError)); ok {
 		return returnFunc(sub)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *userprovider.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *entityprovider.Entity); ok {
 		r0 = returnFunc(sub)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*userprovider.User)
+			r0 = ret.Get(0).(*entityprovider.Entity)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
@@ -384,12 +384,12 @@ func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) Run(run func(sub s
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) Return(user *userprovider.User, serviceError *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
-	_c.Call.Return(user, serviceError)
+func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) Return(entity *entityprovider.Entity, serviceError *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
+	_c.Call.Return(entity, serviceError)
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string) (*userprovider.User, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string) (*entityprovider.Entity, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

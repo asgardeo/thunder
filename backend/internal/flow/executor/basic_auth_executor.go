@@ -27,20 +27,20 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // basicAuthExecutor implements the ExecutorInterface for basic authentication.
 type basicAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider userprovider.UserProviderInterface
-	credsAuthSvc authncreds.CredentialsAuthnServiceInterface
-	logger       *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	credsAuthSvc   authncreds.CredentialsAuthnServiceInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*basicAuthExecutor)(nil)
@@ -49,7 +49,7 @@ var _ identifyingExecutorInterface = (*basicAuthExecutor)(nil)
 // newBasicAuthExecutor creates a new instance of BasicAuthExecutor.
 func newBasicAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
 ) *basicAuthExecutor {
 	defaultInputs := []common.Input{
@@ -69,14 +69,14 @@ func newBasicAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNameBasicAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameBasicAuth, defaultInputs, []common.Input{},
-		flowFactory, userProvider)
+		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{})
 
 	return &basicAuthExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		credsAuthSvc:                 credsAuthSvc,
 		logger:                       logger,
 	}
@@ -238,10 +238,10 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// Try to retrieve the user and get the attributes
 	userAttributes := map[string]interface{}{}
-	user, err := b.userProvider.GetUser(authnResult.UserID)
+	user, err := b.entityProvider.GetEntity(authnResult.UserID)
 
 	if err != nil {
-		if err.Code != userprovider.ErrorCodeNotImplemented {
+		if err.Code != entityprovider.ErrorCodeNotImplemented {
 			logger.Error("Failed to get user attributes", log.Error(err))
 			return nil, errors.New("failed to get user attributes")
 		}

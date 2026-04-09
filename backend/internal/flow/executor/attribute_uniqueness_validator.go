@@ -22,11 +22,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -37,7 +37,7 @@ import (
 type attributeUniquenessValidator struct {
 	core.ExecutorInterface
 	userSchemaService userschema.UserSchemaServiceInterface
-	userProvider      userprovider.UserProviderInterface
+	entityProvider    entityprovider.EntityProviderInterface
 	logger            *log.Logger
 }
 
@@ -45,7 +45,7 @@ type attributeUniquenessValidator struct {
 func newAttributeUniquenessValidator(
 	flowFactory core.FlowFactoryInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *attributeUniquenessValidator {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameAttributeUniquenessValidator))
 	prerequisites := []common.Input{
@@ -59,7 +59,7 @@ func newAttributeUniquenessValidator(
 	return &attributeUniquenessValidator{
 		ExecutorInterface: base,
 		userSchemaService: userSchemaService,
-		userProvider:      userProvider,
+		entityProvider:    entityProvider,
 		logger:            logger,
 	}
 }
@@ -96,9 +96,9 @@ func (e *attributeUniquenessValidator) Execute(ctx *core.NodeContext) (*common.E
 			continue
 		}
 
-		userID, svcErr := e.userProvider.IdentifyUser(map[string]interface{}{attr: value})
+		userID, svcErr := e.entityProvider.IdentifyEntity(map[string]interface{}{attr: value})
 		if svcErr != nil {
-			if svcErr.Code == userprovider.ErrorCodeUserNotFound {
+			if svcErr.Code == entityprovider.ErrorCodeEntityNotFound {
 				continue
 			}
 			return nil, fmt.Errorf("failed to check uniqueness for attribute %s: %s", attr, svcErr.Message)

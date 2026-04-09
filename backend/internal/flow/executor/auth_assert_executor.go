@@ -32,6 +32,7 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -41,7 +42,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -55,7 +55,7 @@ type authAssertExecutor struct {
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
 	credsAuthSvc        authncreds.CredentialsAuthnServiceInterface
-	userProvider        userprovider.UserProviderInterface
+	entityProvider      entityprovider.EntityProviderInterface
 	attributeCacheSvc   attributecache.AttributeCacheServiceInterface
 	roleService         role.RoleServiceInterface
 	logger              *log.Logger
@@ -70,7 +70,7 @@ func newAuthAssertExecutor(
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	roleService role.RoleServiceInterface,
 ) *authAssertExecutor {
@@ -86,7 +86,7 @@ func newAuthAssertExecutor(
 		ouService:           ouService,
 		authAssertGenerator: assertGenerator,
 		credsAuthSvc:        credsAuthSvc,
-		userProvider:        userProvider,
+		entityProvider:      entityProvider,
 		attributeCacheSvc:   attributeCacheSvc,
 		roleService:         roleService,
 		logger:              logger,
@@ -466,7 +466,7 @@ func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
 	logger := a.logger.With(log.String("userID", userID))
 
 	var jsonAttrs json.RawMessage
-	res, err := a.userProvider.GetUser(userID)
+	res, err := a.entityProvider.GetEntity(userID)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes",
 			log.String("userID", userID), log.Any("error", err))
@@ -522,12 +522,12 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 
 // fetchAllUserGroups retrieves all groups a user belongs to, including groups inherited through
 // nested group membership.
-func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]userprovider.UserGroup, error) {
-	if a.userProvider == nil || userID == "" {
+func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]entityprovider.EntityGroup, error) {
+	if a.entityProvider == nil || userID == "" {
 		return nil, nil
 	}
 
-	groups, err := a.userProvider.GetTransitiveUserGroups(userID)
+	groups, err := a.entityProvider.GetTransitiveEntityGroups(userID)
 	if err != nil {
 		a.logger.Error("Failed to fetch transitive user groups",
 			log.String("userID", userID), log.Any("error", err))
@@ -539,7 +539,7 @@ func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]userprovider.U
 
 // appendGroupsToClaims appends pre-fetched user groups to the JWT claims.
 func (a *authAssertExecutor) appendGroupsToClaims(
-	groups []userprovider.UserGroup, jwtClaims map[string]interface{}) {
+	groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}) {
 	userGroups := make([]string, 0, len(groups))
 	for _, group := range groups {
 		userGroups = append(userGroups, group.Name)
@@ -552,7 +552,7 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 
 // appendRolesToClaims appends user roles to the JWT claims using pre-fetched groups for role resolution.
 func (a *authAssertExecutor) appendRolesToClaims(
-	ctx *core.NodeContext, groups []userprovider.UserGroup, jwtClaims map[string]interface{}) error {
+	ctx *core.NodeContext, groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}) error {
 	logger := a.logger.With(log.String("userID", ctx.AuthenticatedUser.UserID))
 
 	groupIDs := make([]string, 0, len(groups))

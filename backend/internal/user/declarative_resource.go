@@ -41,12 +41,13 @@ const (
 
 // userExporter implements declarativeresource.ResourceExporter for users.
 type userExporter struct {
-	service UserServiceInterface
+	service       UserServiceInterface
+	entityService entity.EntityServiceInterface
 }
 
 // newUserExporter creates a new user exporter.
-func newUserExporter(service UserServiceInterface) *userExporter {
-	return &userExporter{service: service}
+func newUserExporter(service UserServiceInterface, entityService entity.EntityServiceInterface) *userExporter {
+	return &userExporter{service: service, entityService: entityService}
 }
 
 // GetResourceType returns the resource type for users.
@@ -73,9 +74,12 @@ func (e *userExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servic
 		}
 
 		for _, user := range users.Users {
-			isDeclarative, svcErr := e.service.IsUserDeclarative(ctx, user.ID)
-			if svcErr != nil {
-				return nil, svcErr
+			isDeclarative, declErr := e.entityService.IsEntityDeclarative(ctx, user.ID)
+			if declErr != nil {
+				if errors.Is(declErr, entity.ErrEntityNotFound) {
+					continue
+				}
+				return nil, &ErrorInternalServerError
 			}
 			if !isDeclarative {
 				ids = append(ids, user.ID)
@@ -211,7 +215,7 @@ func makeUserValidator() func(e *entity.Entity, svc entity.EntityServiceInterfac
 		if e.Type == "" {
 			return fmt.Errorf("user type is required")
 		}
-		if e.OrganizationUnitID == "" {
+		if e.OUID == "" {
 			return fmt.Errorf("organization unit ID is required")
 		}
 		if len(e.Attributes) == 0 {

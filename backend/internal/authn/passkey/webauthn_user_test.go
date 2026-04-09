@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/entity"
 )
 
 type WebAuthnUserTestSuite struct {
@@ -76,15 +76,16 @@ func (suite *WebAuthnUserTestSuite) TestWebAuthnUser_Methods() {
 
 func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithFullAttributes() {
 	attrs := json.RawMessage(`{"given_name":"John","family_name":"Doe","username":"johndoe"}`)
-	coreUser := &user.User{
+	coreUser := &entity.Entity{
 		ID:         "user123",
+		Category:   entity.EntityCategoryUser,
 		Type:       "person",
 		OUID:       "org123",
 		Attributes: attrs,
 	}
 	credentials := []webauthnCredential{}
 
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+	webAuthnUser := newWebAuthnUserFromEntity(coreUser, credentials)
 
 	suite.NotNil(webAuthnUser)
 	suite.Equal([]byte("user123"), webAuthnUser.WebAuthnID())
@@ -95,13 +96,14 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithFullAttr
 
 func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithEmailOnly() {
 	attrs := json.RawMessage(`{"email":"john@example.com"}`)
-	coreUser := &user.User{
+	coreUser := &entity.Entity{
 		ID:         "user123",
+		Category:   entity.EntityCategoryUser,
 		Attributes: attrs,
 	}
 	credentials := []webauthnCredential{}
 
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+	webAuthnUser := newWebAuthnUserFromEntity(coreUser, credentials)
 
 	suite.NotNil(webAuthnUser)
 	suite.Equal([]byte("user123"), webAuthnUser.WebAuthnID())
@@ -110,12 +112,13 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithEmailOnl
 }
 
 func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_NoAttributes() {
-	coreUser := &user.User{
-		ID: "user123",
+	coreUser := &entity.Entity{
+		ID:       "user123",
+		Category: entity.EntityCategoryUser,
 	}
 	credentials := []webauthnCredential{}
 
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+	webAuthnUser := newWebAuthnUserFromEntity(coreUser, credentials)
 
 	suite.NotNil(webAuthnUser)
 	suite.Equal([]byte("user123"), webAuthnUser.WebAuthnID())

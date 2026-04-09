@@ -23,11 +23,11 @@ import (
 	"errors"
 
 	authzsvc "github.com/asgardeo/thunder/internal/authz"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -40,9 +40,9 @@ const (
 // during flow execution. It enriches the flow context with authorized permissions.
 type authorizationExecutor struct {
 	core.ExecutorInterface
-	authzService authzsvc.AuthorizationServiceInterface
-	userProvider userprovider.UserProviderInterface
-	logger       *log.Logger
+	authzService   authzsvc.AuthorizationServiceInterface
+	entityProvider entityprovider.EntityProviderInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*authorizationExecutor)(nil)
@@ -51,7 +51,7 @@ var _ core.ExecutorInterface = (*authorizationExecutor)(nil)
 func newAuthorizationExecutor(
 	flowFactory core.FlowFactoryInterface,
 	authZService authzsvc.AuthorizationServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *authorizationExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authzLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthorization))
@@ -62,7 +62,7 @@ func newAuthorizationExecutor(
 	return &authorizationExecutor{
 		ExecutorInterface: base,
 		authzService:      authZService,
-		userProvider:      userProvider,
+		entityProvider:    entityProvider,
 		logger:            logger,
 	}
 }
@@ -182,11 +182,11 @@ func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) ([]string
 	}
 
 	// If no groups found in context, fetch transitive groups from user service
-	if a.userProvider != nil && ctx.AuthenticatedUser.UserID != "" {
+	if a.entityProvider != nil && ctx.AuthenticatedUser.UserID != "" {
 		a.logger.Debug("Groups not found in context, fetching transitive groups from user service",
 			log.String("userID", ctx.AuthenticatedUser.UserID))
 
-		groups, err := a.userProvider.GetTransitiveUserGroups(ctx.AuthenticatedUser.UserID)
+		groups, err := a.entityProvider.GetTransitiveEntityGroups(ctx.AuthenticatedUser.UserID)
 		if err != nil {
 			return nil, err
 		}

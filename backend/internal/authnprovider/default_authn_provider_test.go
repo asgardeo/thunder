@@ -50,19 +50,19 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	credentials := map[string]interface{}{"password": "password123"}
 
 	authResult := &entity.AuthenticateResult{
-		EntityID:           "user123",
-		EntityCategory:     entity.EntityCategoryUser,
-		EntityType:         "customer",
-		OrganizationUnitID: "ou1",
+		EntityID:       "user123",
+		EntityCategory: entity.EntityCategoryUser,
+		EntityType:     "customer",
+		OUID:           "ou1",
 	}
 
 	entityObj := &entity.Entity{
-		ID:                 "user123",
-		Category:           entity.EntityCategoryUser,
-		Type:               "customer",
-		State:              entity.EntityStateActive,
-		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"email":"test@example.com"}`),
+		ID:         "user123",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		State:      entity.EntityStateActive,
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
 	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
@@ -118,10 +118,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetEntityNotFound()
 	credentials := map[string]interface{}{"password": "password123"}
 
 	authResult := &entity.AuthenticateResult{
-		EntityID:           "user123",
-		EntityCategory:     entity.EntityCategoryUser,
-		EntityType:         "customer",
-		OrganizationUnitID: "ou1",
+		EntityID:       "user123",
+		EntityCategory: entity.EntityCategoryUser,
+		EntityType:     "customer",
+		OUID:           "ou1",
 	}
 
 	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
@@ -141,19 +141,19 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID
 	credentials := map[string]interface{}{"password": "password123"}
 
 	authResult := &entity.AuthenticateResult{
-		EntityID:           "resolved-user-123",
-		EntityCategory:     entity.EntityCategoryUser,
-		EntityType:         "customer",
-		OrganizationUnitID: "ou1",
+		EntityID:       "resolved-user-123",
+		EntityCategory: entity.EntityCategoryUser,
+		EntityType:     "customer",
+		OUID:           "ou1",
 	}
 
 	entityObj := &entity.Entity{
-		ID:                 "resolved-user-123",
-		Category:           entity.EntityCategoryUser,
-		Type:               "customer",
-		State:              entity.EntityStateActive,
-		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"email":"test@example.com"}`),
+		ID:         "resolved-user-123",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		State:      entity.EntityStateActive,
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
 	suite.mockService.On("AuthenticateEntityByID", mock.Anything, "resolved-user-123", credentials).
@@ -202,19 +202,19 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EmptyUserID_FallsBa
 	credentials := map[string]interface{}{"password": "password123"}
 
 	authResult := &entity.AuthenticateResult{
-		EntityID:           "user123",
-		EntityCategory:     entity.EntityCategoryUser,
-		EntityType:         "customer",
-		OrganizationUnitID: "ou1",
+		EntityID:       "user123",
+		EntityCategory: entity.EntityCategoryUser,
+		EntityType:     "customer",
+		OUID:           "ou1",
 	}
 
 	entityObj := &entity.Entity{
-		ID:                 "user123",
-		Category:           entity.EntityCategoryUser,
-		Type:               "customer",
-		State:              entity.EntityStateActive,
-		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"email":"test@example.com"}`),
+		ID:         "user123",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		State:      entity.EntityStateActive,
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
 	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
@@ -231,11 +231,11 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EmptyUserID_FallsBa
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 	token := "user123"
 	entityObj := &entity.Entity{
-		ID:                 "user123",
-		Category:           entity.EntityCategoryUser,
-		Type:               "customer",
-		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"email":"test@example.com", "age": 30}`),
+		ID:         "user123",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
 	suite.mockService.On("GetEntity", mock.Anything, token).
@@ -254,11 +254,11 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered() {
 	token := "user123"
 	entityObj := &entity.Entity{
-		ID:                 "user123",
-		Category:           entity.EntityCategoryUser,
-		Type:               "customer",
-		OrganizationUnitID: "ou1",
-		Attributes:         json.RawMessage(`{"email":"test@example.com", "age": 30}`),
+		ID:         "user123",
+		Category:   entity.EntityCategoryUser,
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
 	suite.mockService.On("GetEntity", mock.Anything, token).

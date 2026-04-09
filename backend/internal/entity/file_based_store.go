@@ -78,7 +78,7 @@ func (f *entityFileBasedStore) GetEntity(ctx context.Context, id string) (Entity
 
 // GetEntityWithCredentials retrieves an entity with credentials from the file store.
 func (f *entityFileBasedStore) GetEntityWithCredentials(ctx context.Context, id string) (
-	*EntityWithCredentials, error) {
+	*entityWithCredentials, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return nil, ErrEntityNotFound
@@ -88,7 +88,7 @@ func (f *entityFileBasedStore) GetEntityWithCredentials(ctx context.Context, id 
 		declarativeresource.LogTypeAssertionError("entity", id)
 		return nil, errors.New("entity data corrupted")
 	}
-	return &EntityWithCredentials{
+	return &entityWithCredentials{
 		Entity:            &resource.Entity,
 		SchemaCredentials: resource.Credentials,
 		SystemCredentials: resource.SystemCredentials,
@@ -239,7 +239,7 @@ func (f *entityFileBasedStore) GetEntityListCountByOUIDs(ctx context.Context, ca
 		if string(resource.Entity.Category) != category {
 			continue
 		}
-		if _, ok := ouIDSet[resource.Entity.OrganizationUnitID]; !ok {
+		if _, ok := ouIDSet[resource.Entity.OUID]; !ok {
 			continue
 		}
 		combined := mergeJSONObjects(resource.Entity.Attributes, resource.Entity.SystemAttributes)
@@ -268,7 +268,7 @@ func (f *entityFileBasedStore) GetEntityListByOUIDs(ctx context.Context, categor
 		if string(resource.Entity.Category) != category {
 			continue
 		}
-		if _, ok := ouIDSet[resource.Entity.OrganizationUnitID]; !ok {
+		if _, ok := ouIDSet[resource.Entity.OUID]; !ok {
 			continue
 		}
 		combined := mergeJSONObjects(resource.Entity.Attributes, resource.Entity.SystemAttributes)
@@ -359,7 +359,7 @@ func (f *entityFileBasedStore) ValidateEntityIDsInOUs(
 			}
 			return nil, err
 		}
-		if !ouSet[e.OrganizationUnitID] {
+		if !ouSet[e.OUID] {
 			outOfScope = append(outOfScope, id)
 		}
 	}

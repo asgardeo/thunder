@@ -707,23 +707,23 @@ func (_c *entityStoreInterfaceMock_GetEntityListCountByOUIDs_Call) RunAndReturn(
 }
 
 // GetEntityWithCredentials provides a mock function for the type entityStoreInterfaceMock
-func (_mock *entityStoreInterfaceMock) GetEntityWithCredentials(ctx context.Context, id string) (*EntityWithCredentials, error) {
+func (_mock *entityStoreInterfaceMock) GetEntityWithCredentials(ctx context.Context, id string) (*entityWithCredentials, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetEntityWithCredentials")
 	}
 
-	var r0 *EntityWithCredentials
+	var r0 *entityWithCredentials
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*EntityWithCredentials, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*entityWithCredentials, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *EntityWithCredentials); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *entityWithCredentials); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*EntityWithCredentials)
+			r0 = ret.Get(0).(*entityWithCredentials)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -764,12 +764,12 @@ func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) Run(run func(c
 	return _c
 }
 
-func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) Return(entityWithCredentials *EntityWithCredentials, err error) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
-	_c.Call.Return(entityWithCredentials, err)
+func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) Return(entityWithCredentialsMoqParam *entityWithCredentials, err error) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
+	_c.Call.Return(entityWithCredentialsMoqParam, err)
 	return _c
 }
 
-func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) RunAndReturn(run func(ctx context.Context, id string) (*EntityWithCredentials, error)) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
+func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) RunAndReturn(run func(ctx context.Context, id string) (*entityWithCredentials, error)) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -30,21 +30,21 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
+	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type BasicAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserProvider *userprovidermock.UserProviderInterfaceMock
-	mockCredsService *credentialsmock.CredentialsAuthnServiceInterfaceMock
-	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
-	executor         *basicAuthExecutor
+	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
+	mockCredsService   *credentialsmock.CredentialsAuthnServiceInterfaceMock
+	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
+	executor           *basicAuthExecutor
 }
 
 func TestBasicAuthExecutorSuite(t *testing.T) {
@@ -52,7 +52,7 @@ func TestBasicAuthExecutorSuite(t *testing.T) {
 }
 
 func (suite *BasicAuthExecutorTestSuite) SetupTest() {
-	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockCredsService = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
@@ -70,7 +70,7 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{}).Return(mockExec)
 
-	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserProvider, suite.mockCredsService)
+	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockEntityProvider, suite.mockCredsService)
 }
 
 func createMockIdentifyingExecutor(t *testing.T) core.ExecutorInterface {
@@ -140,7 +140,7 @@ func createMockBasicAuthExecutor(t *testing.T) core.ExecutorInterface {
 func (suite *BasicAuthExecutorTestSuite) TestNewBasicAuthExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.credsAuthSvc)
-	assert.NotNil(suite.T(), suite.executor.userProvider)
+	assert.NotNil(suite.T(), suite.executor.entityProvider)
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow() {
@@ -172,8 +172,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 		userAttributePassword: "password123",
 	}, mock.Anything).Return(authenticateResult, nil)
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeNotImplemented, "", ""))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -222,8 +222,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		"password": "password123",
 	}, mock.Anything).Return(authenticatedUser, nil)
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeNotImplemented, "", ""))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -246,9 +246,9 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
+	suite.mockEntityProvider.On("IdentifyEntity", map[string]interface{}{
 		userAttributeUsername: "newuser",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -257,7 +257,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.False(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), "newuser", resp.AuthenticatedUser.Attributes[userAttributeUsername])
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
@@ -301,8 +301,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		"password": "password123",
 	}, mock.Anything).Return(authenticatedUser, nil)
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeNotImplemented, "", ""))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -404,7 +404,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Registrat
 	}
 
 	userID := testUserID
-	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
+	suite.mockEntityProvider.On("IdentifyEntity", map[string]interface{}{
 		userAttributeUsername: "existinguser",
 	}).Return(&userID, nil)
 
@@ -414,7 +414,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Registrat
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "User already exists")
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
@@ -505,8 +505,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 		userAttributePassword: "password123",
 	}, mock.Anything).Return(authenticatedUser, nil)
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeNotImplemented, "", ""))
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -558,11 +558,11 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 	// Mock UserProvider response
 	attrs := map[string]interface{}{"username": "testuser", "email": "fetched@example.com", "role": "admin"}
 	attrsJSON, _ := json.Marshal(attrs)
-	user := &userprovider.User{
-		UserID:     testUserID,
+	user := &entityprovider.Entity{
+		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
-	suite.mockUserProvider.On("GetUser", testUserID).Return(user, nil)
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(user, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -574,7 +574,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 	assert.Equal(suite.T(), "fetched@example.com", result.Attributes["email"])
 	assert.Equal(suite.T(), "admin", result.Attributes["role"])
 	suite.mockCredsService.AssertExpectations(suite.T())
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_AuthenticationFlow_NoRedundantIdentifyUser() {
@@ -610,8 +610,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 		userAttributePassword: "password123",
 	}, mock.Anything).Return(authenticatedUser, nil)
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeNotImplemented, "", ""))
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -639,9 +639,9 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFl
 	}
 
 	// For registration flows, IdentifyUser should be called to check if user exists
-	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
+	suite.mockEntityProvider.On("IdentifyEntity", map[string]interface{}{
 		userAttributeUsername: "newuser",
-	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
+	}).Return(nil, entityprovider.NewEntityProviderError(entityprovider.ErrorCodeEntityNotFound, "", ""))
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -650,7 +650,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFl
 	assert.False(suite.T(), result.IsAuthenticated)
 	assert.Equal(suite.T(), "newuser", result.Attributes[userAttributeUsername])
 	// Verify IdentifyUser was called for registration flow
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 	// Verify Authenticate was NOT called for registration flow
 	suite.mockCredsService.AssertNotCalled(suite.T(), "Authenticate")
 }
@@ -968,8 +968,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPasswor
 		map[string]interface{}{userAttributePassword: "password123"},
 		mock.Anything).Return(authenticateResult, nil)
 
-	suite.mockUserProvider.On("GetUser", "pre-resolved-user-123").Return(nil,
-		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+	suite.mockEntityProvider.On("GetEntity", "pre-resolved-user-123").Return(nil,
+		entityprovider.NewEntityProviderError(entityprovider.ErrorCodeNotImplemented, "", ""))
 
 	resp, err := suite.executor.Execute(ctx)
 
