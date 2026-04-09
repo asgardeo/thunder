@@ -96,6 +96,38 @@ describe('AuthPageLayout', () => {
     });
   });
 
+  describe('isLoading prop', () => {
+    it('shows a spinner instead of children when isLoading is true', () => {
+      renderWithProviders(
+        <AuthPageLayout isLoading={true}>
+          <span>Page content</span>
+        </AuthPageLayout>,
+      );
+      expect(screen.queryByText('Page content')).toBeNull();
+      expect(screen.getByRole('progressbar')).toBeTruthy();
+    });
+
+    it('shows children when isLoading is false (default)', () => {
+      renderWithProviders(
+        <AuthPageLayout>
+          <span>Page content</span>
+        </AuthPageLayout>,
+      );
+      expect(screen.getByText('Page content')).toBeTruthy();
+      expect(screen.queryByRole('progressbar')).toBeNull();
+    });
+
+    it('shows children when isLoading is explicitly false', () => {
+      renderWithProviders(
+        <AuthPageLayout isLoading={false}>
+          <span>Page content</span>
+        </AuthPageLayout>,
+      );
+      expect(screen.getByText('Page content')).toBeTruthy();
+      expect(screen.queryByRole('progressbar')).toBeNull();
+    });
+  });
+
   describe('combined props', () => {
     it('renders with both variant and background', () => {
       renderWithProviders(

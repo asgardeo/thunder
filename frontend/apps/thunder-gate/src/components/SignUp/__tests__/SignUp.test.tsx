@@ -17,7 +17,7 @@
  */
 
 import {render, screen} from '@thunder/test-utils';
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import SignUp from '../SignUp';
 
 // Mock child component
@@ -25,7 +25,25 @@ vi.mock('../SignUpBox', () => ({
   default: () => <div data-testid="signup-box">SignUpBox</div>,
 }));
 
+// Mock useDesign hook
+const mockUseDesign = vi.fn();
+vi.mock('@thunder/design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/design')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    useDesign: () => mockUseDesign(),
+  };
+});
+
 describe('SignUp', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseDesign.mockReturnValue({
+      isLoading: false,
+    });
+  });
+
   it('renders without crashing', () => {
     const {container} = render(<SignUp />);
     expect(container).toBeInTheDocument();
@@ -40,5 +58,13 @@ describe('SignUp', () => {
     render(<SignUp />);
     const main = screen.getByRole('main');
     expect(main).toBeInTheDocument();
+  });
+
+  it('shows a spinner and hides content when isLoading is true', () => {
+    mockUseDesign.mockReturnValue({
+      isLoading: true,
+    });
+    render(<SignUp />);
+    expect(screen.queryByTestId('signup-box')).not.toBeInTheDocument();
   });
 });

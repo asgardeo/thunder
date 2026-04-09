@@ -17,15 +17,16 @@
  */
 
 import {cn} from '@thunder/utils';
-import {Stack} from '@wso2/oxygen-ui';
-import type {JSX, ReactNode} from 'react';
+import {CircularProgress, Stack} from '@wso2/oxygen-ui';
+import type {JSX, PropsWithChildren} from 'react';
 
-export interface AuthPageLayoutProps {
+export interface AuthPageLayoutProps extends PropsWithChildren {
   /** Class name prefix for Thunder CSS (e.g. 'SignIn' → 'ThunderSignIn--root'). */
   variant?: string;
   /** Optional background CSS value (color, gradient, image). Falls back to the theme's background.default. */
   background?: string;
-  children: ReactNode;
+  /** Indicates whether the design is still loading. When true, the layout will show a spinner. */
+  isLoading?: boolean;
 }
 
 /**
@@ -38,6 +39,7 @@ export default function AuthPageLayout({
   variant = undefined,
   background = undefined,
   children,
+  isLoading = false,
 }: AuthPageLayoutProps): JSX.Element {
   return (
     <Stack
@@ -71,7 +73,7 @@ export default function AuthPageLayout({
             m: 'auto',
           }}
         >
-          {children}
+          {isLoading ? <CircularProgress /> : children}
         </Stack>
       </Stack>
     </Stack>

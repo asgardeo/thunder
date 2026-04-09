@@ -16,13 +16,15 @@
  * under the License.
  */
 
-import {AuthPageLayout} from '@thunder/design';
+import {AuthPageLayout, useDesign} from '@thunder/design';
 import type {JSX} from 'react';
 import SignUpBox from './SignUpBox';
 
 export default function SignUp(): JSX.Element {
+  const {isLoading} = useDesign();
+
   return (
-    <AuthPageLayout variant="SignUp">
+    <AuthPageLayout variant="SignUp" isLoading={isLoading}>
       <SignUpBox />
     </AuthPageLayout>
   );
