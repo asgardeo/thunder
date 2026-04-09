@@ -1283,6 +1283,16 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 // validateRedirectURIs validates redirect URIs format and requirements.
 func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
 	for _, redirectURI := range oauthConfig.RedirectURIs {
+		// Reject wildcards in scheme before parsing (url.Parse may error or misplace them).
+		if idx := strings.Index(redirectURI, "://"); idx != -1 {
+			if strings.ContainsRune(redirectURI[:idx], '*') {
+				return serviceerror.CustomServiceError(
+					ErrorInvalidRedirectURI,
+					"Redirect URIs must not contain wildcards in the scheme",
+				)
+			}
+		}
+
 		parsedURI, err := sysutils.ParseURL(redirectURI)
 		if err != nil {
 			return &ErrorInvalidRedirectURI
@@ -1292,10 +1302,31 @@ func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.Se
 			return &ErrorInvalidRedirectURI
 		}
 
+		if strings.ContainsRune(parsedURI.Host, '*') {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				"Redirect URIs must not contain wildcards in the host",
+			)
+		}
+
+		if strings.ContainsRune(parsedURI.RawQuery, '*') {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				"Redirect URIs must not contain wildcards in the query string",
+			)
+		}
+
 		if parsedURI.Fragment != "" {
 			return serviceerror.CustomServiceError(
 				ErrorInvalidRedirectURI,
 				"Redirect URIs must not contain a fragment component",
+			)
+		}
+
+		if containsRegexMetacharacter(parsedURI.Path) {
+			return serviceerror.CustomServiceError(
+				ErrorInvalidRedirectURI,
+				"Redirect URIs must not contain regex syntax; only * and ** wildcards are allowed in the path",
 			)
 		}
 	}
@@ -1309,6 +1340,12 @@ func validateRedirectURIs(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.Se
 	}
 
 	return nil
+}
+
+// containsRegexMetacharacter returns true if s contains any regex metacharacter other than *
+// (which is the permitted wildcard character in redirect URI paths).
+func containsRegexMetacharacter(s string) bool {
+	return strings.ContainsAny(s, `[](){}+?.^$|\`)
 }
 
 // validateGrantTypesAndResponseTypes validates grant types, response types, and their compatibility.

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strings"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -198,6 +199,10 @@ func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 		if len(redirectURIs) != 1 {
 			return fmt.Errorf("redirect URI is required in the authorization request")
 		}
+		// AC-12: A wildcard pattern cannot serve as a concrete redirect target.
+		if strings.Contains(redirectURIs[0], "*") {
+			return fmt.Errorf("redirect URI is required in the authorization request")
+		}
 		// Check if only a part of the redirect uri is registered.
 		parsed, err := url.Parse(redirectURIs[0])
 		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
@@ -208,8 +213,13 @@ func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 		return nil
 	}
 
-	// Check if the redirect URI is registered.
-	if !slices.Contains(redirectURIs, redirectURI) {
+	// Check if the redirect URI matches any registered URI or pattern.
+	matched, err := matchAnyRedirectURIPattern(redirectURIs, redirectURI)
+	if err != nil {
+		logger.Error("Failed to validate redirect URI pattern", log.Error(err))
+		return fmt.Errorf("invalid redirect URI: %s", err.Error())
+	}
+	if !matched {
 		return fmt.Errorf("your application's redirect URL does not match with the registered redirect URLs")
 	}
 
@@ -225,4 +235,26 @@ func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 	}
 
 	return nil
+}
+
+// matchAnyRedirectURIPattern checks incoming against each registered URI or pattern.
+// Exact URIs are compared directly; patterns containing * use wildcard path matching.
+// First match wins (AC-11).
+func matchAnyRedirectURIPattern(patterns []string, redirectURI string) (bool, error) {
+	for _, pattern := range patterns {
+		if !strings.Contains(pattern, "*") {
+			if pattern == redirectURI {
+				return true, nil
+			}
+			continue
+		}
+		matched, err := utils.MatchRedirectURIPattern(pattern, redirectURI)
+		if err != nil {
+			continue
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
 }
