@@ -244,7 +244,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// TODO: Remove entityService dependency after finalizing declarative resource loading pattern
 	applicationService, applicationExporter, err := application.Initialize(
 		mux, mcpServer, entityProvider, entityService, ouService, certservice, flowMgtService, themeMgtService,
-		layoutMgtService, userSchemaService, consentService)
+		layoutMgtService, userSchemaService, consentService, i18nService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
@@ -267,7 +267,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, authnProvider, jwtService, flowExecService, observabilitySvc,
-		pkiService, ouService, attributeCacheService, authZService, entityProvider)
+		pkiService, ouService, attributeCacheService, authZService, entityProvider, i18nService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}

@@ -170,6 +170,16 @@ func (f *fileBasedStore) DeleteTranslation(language string, key string, namespac
 	return errors.New("DeleteTranslation is not supported in file-based store")
 }
 
+// DeleteTranslationsByNamespace is not supported in file-based store.
+func (f *fileBasedStore) DeleteTranslationsByNamespace(namespace string) error {
+	return errors.New("DeleteTranslationsByNamespace is not supported in file-based store")
+}
+
+// DeleteTranslationsByNamespaceAndKey is not supported in file-based store.
+func (f *fileBasedStore) DeleteTranslationsByNamespaceAndKey(namespace string, key string) error {
+	return errors.New("DeleteTranslationsByNamespaceAndKey is not supported in file-based store")
+}
+
 // IsTranslationDeclarative checks if a translation is immutable (exists in file store).
 // Helper method for composite store.
 func (f *fileBasedStore) IsTranslationDeclarative(id string) bool {

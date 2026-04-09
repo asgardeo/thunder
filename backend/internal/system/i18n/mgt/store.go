@@ -36,6 +36,8 @@ type i18nStoreInterface interface {
 	UpsertTranslation(trans Translation) error
 	DeleteTranslationsByLanguage(language string) error
 	DeleteTranslation(language string, key string, namespace string) error
+	DeleteTranslationsByNamespace(namespace string) error
+	DeleteTranslationsByNamespaceAndKey(namespace string, key string) error
 }
 
 // i18nStore is the default implementation of i18nStoreInterface.
@@ -211,6 +213,34 @@ func (s *i18nStore) DeleteTranslationsByLanguage(language string) error {
 	_, err = dbClient.Execute(queryDeleteTranslationsByLanguage, language, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete translation: %w", err)
+	}
+	return nil
+}
+
+// DeleteTranslationsByNamespaceAndKey deletes all translations for the given namespace and key.
+func (s *i18nStore) DeleteTranslationsByNamespaceAndKey(namespace string, key string) error {
+	dbClient, err := s.getDBClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = dbClient.Execute(queryDeleteTranslationsByNamespaceAndKey, namespace, key, s.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete translations by namespace and key: %w", err)
+	}
+	return nil
+}
+
+// DeleteTranslationsByNamespace deletes all translations for the given namespace.
+func (s *i18nStore) DeleteTranslationsByNamespace(namespace string) error {
+	dbClient, err := s.getDBClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = dbClient.Execute(queryDeleteTranslationsByNamespace, namespace, s.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete translations by namespace: %w", err)
 	}
 	return nil
 }

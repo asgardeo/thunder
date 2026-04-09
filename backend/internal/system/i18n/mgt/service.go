@@ -21,6 +21,7 @@ package mgt
 
 import (
 	"slices"
+	"strings"
 
 	goi18n "golang.org/x/text/language"
 
@@ -45,6 +46,11 @@ type I18nServiceInterface interface {
 	SetTranslationOverrideForKey(language string, namespace string, key string, value string) (
 		*TranslationResponse, *serviceerror.I18nServiceError)
 	ClearTranslationOverrideForKey(language string, namespace string, key string) *serviceerror.I18nServiceError
+	DeleteTranslationsByNamespace(namespace string) *serviceerror.I18nServiceError
+	DeleteTranslationsByNamespaceAndKey(namespace string, key string) *serviceerror.I18nServiceError
+	// GetTranslationsByNamespace returns all raw translations for a namespace as
+	// map[key]map[language]value without locale resolution or best-match logic.
+	GetTranslationsByNamespace(namespace string) (map[string]map[string]string, *serviceerror.I18nServiceError)
 }
 
 // i18nService is the default implementation of I18nServiceInterface.
@@ -331,6 +337,68 @@ func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.I
 	}
 
 	return nil
+}
+
+// DeleteTranslationsByNamespaceAndKey removes all translations for a specific namespace+key pair.
+// Used during application update to fully replace a field's locale variants.
+func (s *i18nService) DeleteTranslationsByNamespaceAndKey(
+	namespace string, key string) *serviceerror.I18nServiceError {
+	if !ValidateNamespace(namespace) {
+		return &ErrorInvalidNamespace
+	}
+	if !ValidateKey(key) {
+		return &ErrorInvalidKey
+	}
+	if err := s.store.DeleteTranslationsByNamespaceAndKey(namespace, key); err != nil {
+		s.logger.Error("Failed to delete translations by namespace and key", log.Error(err))
+		return &ErrorInternalServerError
+	}
+	return nil
+}
+
+// DeleteTranslationsByNamespace removes all translations under the given namespace.
+// This is used for lifecycle cleanup (e.g., on application deletion) and intentionally
+// does not check declarative mode since app deletion is guarded at the application layer.
+func (s *i18nService) DeleteTranslationsByNamespace(namespace string) *serviceerror.I18nServiceError {
+	if !ValidateNamespace(namespace) {
+		return &ErrorInvalidNamespace
+	}
+	if err := s.store.DeleteTranslationsByNamespace(namespace); err != nil {
+		s.logger.Error("Failed to delete translations by namespace", log.Error(err))
+		return &ErrorInternalServerError
+	}
+	return nil
+}
+
+// GetTranslationsByNamespace returns all raw translations for a namespace as
+// map[key]map[language]value without locale resolution. Used to load all locale
+// variants for a resource in a single query.
+func (s *i18nService) GetTranslationsByNamespace(
+	namespace string) (map[string]map[string]string, *serviceerror.I18nServiceError) {
+	if !ValidateNamespace(namespace) {
+		return nil, &ErrorInvalidNamespace
+	}
+	byNs, err := s.store.GetTranslationsByNamespace(namespace)
+	if err != nil {
+		s.logger.Error("Failed to get translations by namespace", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+	result := make(map[string]map[string]string, len(byNs))
+	for compositeKey, langs := range byNs {
+		// compositeKey is "namespace|key" — drop the namespace prefix.
+		idx := strings.Index(compositeKey, "|")
+		if idx < 0 {
+			continue
+		}
+		fieldKey := compositeKey[idx+1:]
+		for lang, trans := range langs {
+			if result[fieldKey] == nil {
+				result[fieldKey] = make(map[string]string)
+			}
+			result[fieldKey][lang] = trans.Value
+		}
+	}
+	return result, nil
 }
 
 func (s *i18nService) clearAllOverrides(language string) error {

@@ -83,4 +83,16 @@ var (
 		ID:    "I18N-08",
 		Query: `DELETE FROM TRANSLATION WHERE LANGUAGE_CODE = $1 AND DEPLOYMENT_ID = $2`,
 	}
+
+	// queryDeleteTranslationsByNamespace deletes all translations for a given namespace.
+	queryDeleteTranslationsByNamespace = dbmodel.DBQuery{
+		ID:    "I18N-09",
+		Query: `DELETE FROM TRANSLATION WHERE NAMESPACE = $1 AND DEPLOYMENT_ID = $2`,
+	}
+
+	// queryDeleteTranslationsByNamespaceAndKey deletes all translations for a given namespace and key.
+	queryDeleteTranslationsByNamespaceAndKey = dbmodel.DBQuery{
+		ID:    "I18N-11",
+		Query: `DELETE FROM TRANSLATION WHERE NAMESPACE = $1 AND MESSAGE_KEY = $2 AND DEPLOYMENT_ID = $3`,
+	}
 )

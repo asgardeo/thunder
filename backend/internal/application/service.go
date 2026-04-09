@@ -41,6 +41,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/transaction"
@@ -76,6 +77,7 @@ type applicationService struct {
 	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 	consentService    consent.ConsentServiceInterface
+	i18nService       i18nmgt.I18nServiceInterface
 	transactioner     transaction.Transactioner
 }
 
@@ -90,6 +92,7 @@ func newApplicationService(
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	consentService consent.ConsentServiceInterface,
+	i18nService i18nmgt.I18nServiceInterface,
 	transactioner transaction.Transactioner,
 ) ApplicationServiceInterface {
 	return &applicationService{
@@ -103,7 +106,24 @@ func newApplicationService(
 		layoutMgtService:  layoutMgtService,
 		userSchemaService: userSchemaService,
 		consentService:    consentService,
+		i18nService:       i18nService,
 		transactioner:     transactioner,
+	}
+}
+
+// appI18nNamespace returns the i18n namespace for an application.
+func appI18nNamespace(appID string) string {
+	return "app." + appID
+}
+
+// deleteLocalizedVariants removes all i18n translations for the application namespace.
+func (as *applicationService) deleteLocalizedVariants(appID string) {
+	if as.i18nService == nil {
+		return
+	}
+	if svcErr := as.i18nService.DeleteTranslationsByNamespace(appI18nNamespace(appID)); svcErr != nil {
+		as.logger.Error("Failed to delete localized variants on app deletion",
+			log.String("appID", appID), log.String("error", svcErr.Error.String()))
 	}
 }
 
@@ -115,6 +135,8 @@ func (as *applicationService) deleteEntityCompensation(appID string) {
 }
 
 // CreateApplication creates the application.
+//
+//nolint:gocyclo // orchestration function — branching is inherent to multi-step create flow
 func (as *applicationService) CreateApplication(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	if app == nil {
@@ -431,6 +453,8 @@ func (as *applicationService) GetApplication(ctx context.Context, appID string) 
 }
 
 // UpdateApplication update the application for given app id.
+//
+//nolint:gocyclo // orchestration function — branching is inherent to multi-step update flow
 func (as *applicationService) UpdateApplication(ctx context.Context, appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	existingApp, inboundAuthConfig, svcErr := as.validateApplicationForUpdate(ctx, appID, app)
@@ -628,6 +652,9 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 		as.logger.Error("Failed to delete application", log.Error(err), log.String("appID", appID))
 		return &ErrorInternalServerError
 	}
+
+	// Delete all localized variants from the i18n table (AC-19).
+	as.deleteLocalizedVariants(appID)
 
 	// Delete entity.
 	if epErr := as.entityProvider.DeleteEntity(appID); epErr != nil {

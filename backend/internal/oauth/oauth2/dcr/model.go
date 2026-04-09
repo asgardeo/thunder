@@ -19,7 +19,11 @@
 package dcr
 
 import (
+	"encoding/json"
+	"strings"
+
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 )
 
 // Default values for DCR
@@ -43,6 +47,70 @@ type DCRRegistrationRequest struct {
 	Contacts                []string                            `json:"contacts,omitempty"`
 	TosURI                  string                              `json:"tos_uri,omitempty"`
 	PolicyURI               string                              `json:"policy_uri,omitempty"`
+
+	// Localized variant maps — populated from #-keyed JSON fields (e.g. "client_name#fr").
+	LocalizedClientName map[string]string `json:"-"`
+	LocalizedLogoURI    map[string]string `json:"-"`
+	LocalizedTosURI     map[string]string `json:"-"`
+	LocalizedPolicyURI  map[string]string `json:"-"`
+}
+
+// UnmarshalJSON decodes DCRRegistrationRequest from JSON, extracting OIDC language-tagged fields
+// (e.g. "client_name#fr") into the localized variant maps.
+func (r *DCRRegistrationRequest) UnmarshalJSON(data []byte) error {
+	type Alias DCRRegistrationRequest
+	if err := json.Unmarshal(data, (*Alias)(r)); err != nil {
+		return err
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	for key, val := range raw {
+		field, tag, ok := strings.Cut(key, "#")
+		if !ok {
+			continue
+		}
+		// Validate the tag eagerly so callers get an error on bad input.
+		canonical, valid := i18nmgt.NormaliseBCP47Tag(tag)
+		if !valid {
+			return &errInvalidBCP47Tag{key: key}
+		}
+		var s string
+		if err := json.Unmarshal(val, &s); err != nil {
+			continue
+		}
+		switch field {
+		case "client_name":
+			if r.LocalizedClientName == nil {
+				r.LocalizedClientName = make(map[string]string)
+			}
+			r.LocalizedClientName[canonical] = s
+		case "logo_uri":
+			if r.LocalizedLogoURI == nil {
+				r.LocalizedLogoURI = make(map[string]string)
+			}
+			r.LocalizedLogoURI[canonical] = s
+		case "tos_uri":
+			if r.LocalizedTosURI == nil {
+				r.LocalizedTosURI = make(map[string]string)
+			}
+			r.LocalizedTosURI[canonical] = s
+		case "policy_uri":
+			if r.LocalizedPolicyURI == nil {
+				r.LocalizedPolicyURI = make(map[string]string)
+			}
+			r.LocalizedPolicyURI[canonical] = s
+		}
+	}
+	return nil
+}
+
+// errInvalidBCP47Tag is returned when a language tag in a DCR request field is not valid BCP 47.
+type errInvalidBCP47Tag struct{ key string }
+
+func (e *errInvalidBCP47Tag) Error() string {
+	return "invalid BCP 47 language tag in field \"" + e.key + "\""
 }
 
 // DCRRegistrationResponse represents the RFC 7591 Dynamic Client Registration response.
@@ -64,6 +132,39 @@ type DCRRegistrationResponse struct {
 	TosURI                  string                              `json:"tos_uri,omitempty"`
 	PolicyURI               string                              `json:"policy_uri,omitempty"`
 	AppID                   string                              `json:"app_id,omitempty"`
+
+	// Localized variant maps — injected as #-keyed top-level fields during serialization.
+	LocalizedClientName map[string]string `json:"-"`
+	LocalizedLogoURI    map[string]string `json:"-"`
+	LocalizedTosURI     map[string]string `json:"-"`
+	LocalizedPolicyURI  map[string]string `json:"-"`
+}
+
+// MarshalJSON serializes DCRRegistrationResponse to JSON, injecting OIDC language-tagged
+// fields (e.g. "client_name#fr") as top-level keys.
+func (r DCRRegistrationResponse) MarshalJSON() ([]byte, error) {
+	type Alias DCRRegistrationResponse
+	base, err := json.Marshal(Alias(r))
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal(base, &m); err != nil {
+		return nil, err
+	}
+	for tag, val := range r.LocalizedClientName {
+		m["client_name#"+tag] = val
+	}
+	for tag, val := range r.LocalizedLogoURI {
+		m["logo_uri#"+tag] = val
+	}
+	for tag, val := range r.LocalizedTosURI {
+		m["tos_uri#"+tag] = val
+	}
+	for tag, val := range r.LocalizedPolicyURI {
+		m["policy_uri#"+tag] = val
+	}
+	return json.Marshal(m)
 }
 
 // DCRErrorResponse represents the RFC 7591 Dynamic Client Registration error response.

@@ -167,6 +167,7 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		nil, // layoutMgtService - not needed for this test
 		suite.mockUserSchemaService,
 		nil, // consentService - not needed for this test
+		nil, // i18nService - not needed for this test
 	)
 
 	// Assert
@@ -213,6 +214,7 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		nil, // layoutMgtService - not needed for this test
 		suite.mockUserSchemaService,
 		nil, // consentService - not needed for this test
+		nil, // i18nService - not needed for this test
 	)
 
 	// Assert
@@ -616,6 +618,7 @@ func TestInitialize_Standalone(t *testing.T) {
 		nil, // layoutMgtService - not needed for this test
 		mockUserSchemaService,
 		nil, // consentService - not needed for this test
+		nil, // i18nService - not needed for this test
 	)
 
 	// Assert
@@ -671,6 +674,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 		nil, // layoutMgtService - not needed for this test
 		mockUserSchemaService,
 		nil, // consentService - not needed for this test
+		nil, // i18nService - not needed for this test
 	)
 
 	// Assert

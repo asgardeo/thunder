@@ -38,6 +38,76 @@ func (_m *DCRServiceInterfaceMock) EXPECT() *DCRServiceInterfaceMock_Expecter {
 	return &DCRServiceInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// GetClient provides a mock function for the type DCRServiceInterfaceMock
+func (_mock *DCRServiceInterfaceMock) GetClient(ctx context.Context, appID string) (*DCRRegistrationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, appID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetClient")
+	}
+
+	var r0 *DCRRegistrationResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*DCRRegistrationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, appID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *DCRRegistrationResponse); ok {
+		r0 = returnFunc(ctx, appID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*DCRRegistrationResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, appID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// DCRServiceInterfaceMock_GetClient_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetClient'
+type DCRServiceInterfaceMock_GetClient_Call struct {
+	*mock.Call
+}
+
+// GetClient is a helper method to define mock.On call
+//   - ctx context.Context
+//   - appID string
+func (_e *DCRServiceInterfaceMock_Expecter) GetClient(ctx interface{}, appID interface{}) *DCRServiceInterfaceMock_GetClient_Call {
+	return &DCRServiceInterfaceMock_GetClient_Call{Call: _e.mock.On("GetClient", ctx, appID)}
+}
+
+func (_c *DCRServiceInterfaceMock_GetClient_Call) Run(run func(ctx context.Context, appID string)) *DCRServiceInterfaceMock_GetClient_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *DCRServiceInterfaceMock_GetClient_Call) Return(dCRRegistrationResponse *DCRRegistrationResponse, serviceError *serviceerror.ServiceError) *DCRServiceInterfaceMock_GetClient_Call {
+	_c.Call.Return(dCRRegistrationResponse, serviceError)
+	return _c
+}
+
+func (_c *DCRServiceInterfaceMock_GetClient_Call) RunAndReturn(run func(ctx context.Context, appID string) (*DCRRegistrationResponse, *serviceerror.ServiceError)) *DCRServiceInterfaceMock_GetClient_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RegisterClient provides a mock function for the type DCRServiceInterfaceMock
 func (_mock *DCRServiceInterfaceMock) RegisterClient(ctx context.Context, request *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, request)
