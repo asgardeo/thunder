@@ -56,8 +56,11 @@ Use this when you want the user to complete their own registration. Thunder gene
 1. Navigate to **Users** and click **Invite User**.
 2. Select the **User Type** for the invited user.
 3. Enter the user's **Email** address.
-4. Click **Next**. Thunder generates an **Invite Link**.
-5. Copy the link and share it with the user. The link takes them to a registration flow where they complete their profile.
+4. Click **Next**.
+5. Select an invite method:
+    - **Send email invite**: Thunder generates the invite and sends the email.
+    - **Share invite link manually**: Thunder shows **Invite Link Ready** and a copyable invite link.
+6. If the email service is unavailable, Thunder shows **Email service unavailable** and still provides a copyable invite link so you can share it manually.
 
 :::tip
 The attributes available on the registration form depend on the selected user type. See [User Schema Reference](./user-schema-reference) to understand the default user types. See [User Types](./user-types) to create your own user type.

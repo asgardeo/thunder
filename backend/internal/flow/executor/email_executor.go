@@ -30,7 +30,7 @@ import (
 )
 
 // emailExecutor sends emails based on the configured email template and runtime context data.
-// When email is not configured (emailClient is nil), it completes as a no-op with emailSent=false.
+// When email is not configured (emailClient is nil), it returns a failure status.
 type emailExecutor struct {
 	core.ExecutorInterface
 	logger          *log.Logger
@@ -39,7 +39,6 @@ type emailExecutor struct {
 }
 
 // newEmailExecutor creates a new instance of the email executor.
-// emailClient may be nil if SMTP is not configured; the executor completes as a no-op in that case.
 func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.EmailClientInterface,
 	templateService template.TemplateServiceInterface) *emailExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EmailExecutor"))
@@ -70,7 +69,7 @@ func (e *emailExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse
 }
 
 // executeSend resolves the email template, constructs the email, and sends it.
-// If the email client is not configured, it completes without sending (no-op).
+// If the email client is not configured, it returns a failure status.
 func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing email executor in send mode")
@@ -80,11 +79,11 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		RuntimeData:    make(map[string]string),
 	}
 
-	// If email client is not configured, complete as a no-op.
 	if e.emailClient == nil {
 		execResp.AdditionalData[common.DataEmailSent] = dataValueFalse
-		logger.Debug("Email client not configured, skipping email send")
-		execResp.Status = common.ExecComplete
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Email service is not configured"
+		logger.Debug("Email client not configured")
 		return execResp, nil
 	}
 

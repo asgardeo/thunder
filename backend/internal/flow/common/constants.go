@@ -132,7 +132,7 @@ const (
 	// DataStepTimeout is the key used for the step expiry timestamp in the flow response.
 	DataStepTimeout = "stepTimeout"
 	// DataInviteLink is the key used for the invite link in the flow response additional data.
-	DataInviteLink = "inviteLink"
+	DataInviteLink = "generatedInviteLink"
 	// DataEmailSent is the key used to indicate that an email was sent successfully in the flow response.
 	DataEmailSent = "emailSent"
 	// DataSMSSent is the key used to indicate that an SMS was sent successfully in the flow response.
