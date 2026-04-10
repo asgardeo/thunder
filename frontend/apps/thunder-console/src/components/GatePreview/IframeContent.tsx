@@ -94,12 +94,25 @@ export default function IframeContent({
   );
 
   // Create an emotion cache that injects styles into the iframe's <head>.
-  const cache = useMemo(() => createCache({key: 'preview', container: iframeDoc.head}), [iframeDoc]);
+  // An insertion point element is prepended so that emotion styles are always
+  // positioned before any custom branding stylesheets, preventing source-order
+  // conflicts when MUI regenerates CSS variables on color-scheme toggle.
+  const cache = useMemo(() => {
+    const insertionPoint = iframeDoc.createElement('meta');
+    insertionPoint.setAttribute('name', 'emotion-insertion-point');
+    iframeDoc.head.prepend(insertionPoint);
+    return createCache({key: 'preview', container: iframeDoc.head, insertionPoint});
+  }, [iframeDoc]);
 
   const themeTypography = theme?.typography as {fontFamily?: string} | undefined;
   const fontFamily = themeTypography?.fontFamily;
 
   // Inject custom stylesheets into the iframe document (not the parent).
+  // The effect also depends on `colorScheme` so that stylesheets are
+  // re-appended after MUI/emotion re-injects its Global CSS-variable styles
+  // on color-scheme toggle. Emotion's Global component uses useInsertionEffect
+  // (which fires before useEffect), so by the time this runs the emotion styles
+  // are already in place and our custom sheets land after them in source order.
   const serializedSheets = JSON.stringify(stylesheets);
   useEffect(() => {
     const parsed: Stylesheet[] = JSON.parse(serializedSheets) as Stylesheet[];
@@ -136,7 +149,7 @@ export default function IframeContent({
     return () => {
       injectedIds.forEach((id) => iframeDoc.getElementById(id)?.remove());
     };
-  }, [iframeDoc, serializedSheets]);
+  }, [iframeDoc, serializedSheets, colorScheme]);
 
   return (
     <CacheProvider value={cache}>
