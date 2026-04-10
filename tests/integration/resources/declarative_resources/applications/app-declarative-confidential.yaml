@@ -1,6 +1,6 @@
-id: decl-app-1
-name: Declarative Test Application
-description: A declarative test application for integration testing
+id: decl-app-confidential-1
+name: Declarative Test Confidential Application
+description: A declarative confidential test application for integration testing
 ou_id: decl-ou-1
 template: web
 auth_flow_id: decl-flow-1
@@ -11,13 +11,14 @@ contacts:
 inbound_auth_config:
   - type: "oauth2"
     config:
-      client_id: "decl-public-client-1"
+      client_id: "decl-conf-client-1"
+      client_secret: "decl-conf-secret-1"
       redirect_uris:
         - "https://localhost:3000"
       grant_types:
         - "authorization_code"
       response_types:
         - "code"
-      token_endpoint_auth_method: "none"
-      pkce_required: true
-      public_client: true
+      token_endpoint_auth_method: "client_secret_basic"
+      pkce_required: false
+      public_client: false
