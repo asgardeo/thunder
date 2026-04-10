@@ -167,6 +167,7 @@ function InviteUserStepContent({
               (String(comp.type) === String(EmbeddedFlowComponentType.TextInput) ||
                 comp.type === 'TEXT_INPUT' ||
                 comp.type === 'EMAIL_INPUT' ||
+                comp.type === 'PHONE_INPUT' ||
                 comp.type === 'SELECT' ||
                 comp.type === 'OU_SELECT') &&
               comp.ref
@@ -271,6 +272,40 @@ function InviteUserStepContent({
                 type="email"
                 placeholder={resolve(placeholderText) ?? placeholderText}
                 autoComplete="email"
+                required={required}
+                variant="outlined"
+                disabled={isFormLoading}
+                error={!!formErrors[ref]}
+                helperText={formErrors[ref]?.message as string}
+                color={formErrors[ref] ? 'error' : 'primary'}
+                onChange={(e) => {
+                  field.onChange(e);
+                  handleInputChangeFn(ref, e.target.value);
+                }}
+              />
+            )}
+          />
+        </FormControl>
+      );
+    }
+
+    if (type === 'PHONE_INPUT') {
+      return (
+        <FormControl key={component.id ?? index} required={required}>
+          <FormLabel htmlFor={ref}>{resolve(labelText) ?? labelText}</FormLabel>
+          <Controller
+            name={ref}
+            control={formControl}
+            rules={{required: required ? `${resolve(labelText) ?? labelText} is required` : false}}
+            render={({field}) => (
+              <TextField
+                {...field}
+                fullWidth
+                size="small"
+                id={ref}
+                type="tel"
+                placeholder={resolve(placeholderText) ?? placeholderText}
+                autoComplete="tel"
                 required={required}
                 variant="outlined"
                 disabled={isFormLoading}

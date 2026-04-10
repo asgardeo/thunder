@@ -164,6 +164,21 @@ const emailInput = (
     id: opts?.id ?? `email-${ref}`,
   }) as unknown as EmbeddedFlowComponent;
 
+/** Build a phone input component */
+const phoneInput = (
+  ref: string,
+  label: string,
+  opts?: {required?: boolean; placeholder?: string; id?: string},
+): EmbeddedFlowComponent =>
+  ({
+    type: 'PHONE_INPUT',
+    ref,
+    label,
+    required: opts?.required ?? false,
+    placeholder: opts?.placeholder ?? '',
+    id: opts?.id ?? `phone-${ref}`,
+  }) as unknown as EmbeddedFlowComponent;
+
 /** Build a select component */
 const selectInput = (
   ref: string,
@@ -309,6 +324,19 @@ describe('UserInvitePage', () => {
       render(<UserInvitePage />);
 
       expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+    });
+
+    it('should render a PHONE_INPUT field', () => {
+      mockInviteUserRenderProps.components = [
+        heading('Phone Step'),
+        block([phoneInput('phone', 'Phone Number', {required: true}), submitAction('Next')]),
+      ];
+
+      render(<UserInvitePage />);
+
+      const input = screen.getByLabelText(/phone number/i);
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveAttribute('type', 'tel');
     });
 
     it('should render a SELECT field with options', () => {
@@ -592,6 +620,20 @@ describe('UserInvitePage', () => {
 
       const input = screen.getByLabelText(/first name/i);
       await userEvent.type(input, 'John');
+
+      expect(mockHandleInputChange).toHaveBeenCalled();
+    });
+
+    it('should call handleInputChange when typing in a PHONE_INPUT', async () => {
+      mockInviteUserRenderProps.components = [
+        heading('Phone'),
+        block([phoneInput('phone', 'Phone Number', {required: true}), submitAction('Next')]),
+      ];
+
+      render(<UserInvitePage />);
+
+      const input = screen.getByLabelText(/phone number/i);
+      await userEvent.type(input, '+1234567890');
 
       expect(mockHandleInputChange).toHaveBeenCalled();
     });
