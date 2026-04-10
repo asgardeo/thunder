@@ -92,7 +92,7 @@ describe('useCreateOrganizationUnit', () => {
       expect.objectContaining({
         url: 'https://localhost:8090/organization-units',
         method: 'POST',
-        data: JSON.stringify(createRequest),
+        data: createRequest,
       }),
     );
   });
@@ -186,7 +186,7 @@ describe('useCreateOrganizationUnit', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: JSON.stringify(requestWithParent),
+        data: requestWithParent,
       }),
     );
   });

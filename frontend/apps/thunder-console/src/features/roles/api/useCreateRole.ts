@@ -43,7 +43,7 @@ export default function useCreateRole(): UseMutationResult<Role, Error, CreateRo
         url: `${serverUrl}/roles`,
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify(roleData),
+        data: roleData,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

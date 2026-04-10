@@ -47,7 +47,7 @@ export default function useRemoveRoleAssignments(): UseMutationResult<void, Erro
         url: `${serverUrl}/roles/${roleId}/assignments/remove`,
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify({assignments}),
+        data: {assignments},
       } as unknown as Parameters<typeof http.request>[0]);
     },
     onSuccess: (_data, {roleId}) => {

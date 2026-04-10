@@ -143,7 +143,7 @@ describe('useUpdateRole', () => {
         url: 'https://api.test.com/roles/role-1',
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify(mockUpdateRequest),
+        data: mockUpdateRequest,
       }),
     );
   });
@@ -280,7 +280,7 @@ describe('useUpdateRole', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.data).toBe(JSON.stringify(mockUpdateRequest));
+    expect(callArgs.data).toEqual(mockUpdateRequest);
   });
 
   it('should clear error state on successful retry', async () => {

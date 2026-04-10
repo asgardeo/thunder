@@ -107,7 +107,7 @@ describe('useUpdateFlow', () => {
       url: 'https://localhost:8090/flows/flow-123',
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
-      data: JSON.stringify(mockUpdateRequest),
+      data: mockUpdateRequest,
     });
   });
 

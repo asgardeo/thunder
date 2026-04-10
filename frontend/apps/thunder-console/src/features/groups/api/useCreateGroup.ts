@@ -47,7 +47,7 @@ export default function useCreateGroup(): UseMutationResult<Group, Error, Create
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(groupData),
+        data: groupData,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

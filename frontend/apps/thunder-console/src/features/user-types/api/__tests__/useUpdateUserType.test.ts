@@ -122,7 +122,7 @@ describe('useUpdateUserType', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockUpdateRequest),
+        data: mockUpdateRequest,
       }),
     );
   });

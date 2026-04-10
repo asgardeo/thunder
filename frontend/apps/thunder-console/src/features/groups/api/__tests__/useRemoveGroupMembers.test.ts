@@ -64,7 +64,7 @@ describe('useRemoveGroupMembers', () => {
       expect.objectContaining({
         url: 'https://localhost:8090/groups/g1/members/remove',
         method: 'POST',
-        data: JSON.stringify({members: [{id: 'u1', type: 'user'}]}),
+        data: {members: [{id: 'u1', type: 'user'}]},
       }),
     );
   });

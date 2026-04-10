@@ -111,7 +111,7 @@ describe('useCreateUser', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockRequest),
+        data: mockRequest,
       }),
     );
   });
@@ -327,7 +327,7 @@ describe('useCreateUser', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockRequest),
+        data: mockRequest,
       }),
     );
   });
@@ -348,7 +348,7 @@ describe('useCreateUser', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.data).toBe(JSON.stringify(mockRequest));
+    expect(callArgs.data).toEqual(mockRequest);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(callArgs.headers['Content-Type']).toBe('application/json');
   });

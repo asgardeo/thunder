@@ -46,7 +46,7 @@ export default function useCreateUserType(): UseMutationResult<ApiUserSchema, Er
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(requestData),
+        data: requestData,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

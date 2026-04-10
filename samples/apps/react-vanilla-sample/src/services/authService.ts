@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import axios from 'axios';
 import config from '../config';
 
 export const NativeAuthSubmitType = {
@@ -296,23 +295,22 @@ export const initiateNativeAuthFlow = async (flowType: 'LOGIN' | 'REGISTRATION' 
         data.flowType = 'AUTHENTICATION';
     }
 
-    try {
-        const response = await axios.post(`${flowEndpoint}/execute`, data, {
-            headers,
-        });
+    const response = await fetch(`${flowEndpoint}/execute`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+    });
 
-        return { data: response.data };
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
-            const message = error.response?.status === 400
-              ? `Error initiating native ${flowTypeName} request.`
-              : error.response?.data?.message || 'Server error occurred.';
-            throw new Error(message);
-        } else {
-            throw new Error('Unexpected error occurred.');
-        }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
+        const message = response.status === 400
+            ? `Error initiating native ${flowTypeName} request.`
+            : errorData?.message || 'Server error occurred.';
+        throw new Error(message);
     }
+
+    return { data: await response.json() };
 };
 
 /**
@@ -348,23 +346,22 @@ export const initiateNativeAuthFlowWithData = async (flowType: 'LOGIN' | 'REGIST
         data.inputs = inputs;
     }
 
-    try {
-        const response = await axios.post(`${flowEndpoint}/execute`, data, {
-            headers,
-        });
+    const response = await fetch(`${flowEndpoint}/execute`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+    });
 
-        return { data: response.data };
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
-            const message = error.response?.status === 400
-              ? `Error initiating native ${flowTypeName} request.`
-              : error.response?.data?.message || 'Server error occurred.';
-            throw new Error(message);
-        } else {
-            throw new Error('Unexpected error occurred.');
-        }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const flowTypeName = flowType === 'REGISTRATION' ? 'registration' : 'authentication';
+        const message = response.status === 400
+            ? `Error initiating native ${flowTypeName} request.`
+            : errorData?.message || 'Server error occurred.';
+        throw new Error(message);
     }
+
+    return { data: await response.json() };
 };
 
 /**
@@ -390,22 +387,21 @@ export const submitAuthDecision = async (flowId: string, actionId: string, input
         data.inputs = inputs;
     }
 
-    try {
-        const response = await axios.post(`${flowEndpoint}/execute`, data, {
-            headers,
-        });
+    const response = await fetch(`${flowEndpoint}/execute`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+    });
 
-        return { data: response.data };
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            const message = error.response?.status === 400
-              ? 'Error processing authentication option.'
-              : error.response?.data?.message || 'Server error occurred.';
-            throw new Error(message);
-        } else {
-            throw new Error('Unexpected error occurred.');
-        }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const message = response.status === 400
+            ? 'Error processing authentication option.'
+            : errorData?.message || 'Server error occurred.';
+        throw new Error(message);
     }
+
+    return { data: await response.json() };
 };
 
 /**
@@ -453,22 +449,21 @@ export const submitNativeAuth = async (
         data.inputs = payload;
     }
 
-    try {
-        const response = await axios.post(`${flowEndpoint}/execute`, data, {
-            headers,
-        });
+    const response = await fetch(`${flowEndpoint}/execute`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+    });
 
-        return { data: response.data };
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            const message = error.response?.status === 400
-              ? 'Login failed. Please check your credentials.'
-              : error.response?.data?.message || 'Server error occurred.';
-            throw new Error(message);
-        } else {
-            throw new Error('Unexpected error occurred.');
-        }
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        const message = response.status === 400
+            ? 'Login failed. Please check your credentials.'
+            : errorData?.message || 'Server error occurred.';
+        throw new Error(message);
     }
+
+    return { data: await response.json() };
 }
 
 /**
@@ -494,15 +489,19 @@ export const exchangeCodeForToken = async (code: string, codeVerifier?: string |
         data.append('code_verifier', codeVerifier);
     }
 
-    try {
-        const response = await axios.post(tokenEndpoint, data, {
-            headers,
-        });
-        return response.data; // This will contain the access token
-    } catch (error) {
+    const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers,
+        body: data,
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
         console.error('Error exchanging code for token:', error);
-        throw error;
+        throw new Error('Failed to exchange code for token.');
     }
+
+    return response.json();
 };
 
 /**

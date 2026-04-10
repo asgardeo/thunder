@@ -185,7 +185,7 @@ export default function useRegenerateClientSecret(): UseMutationResult<
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(updateRequest),
+        data: updateRequest,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return {

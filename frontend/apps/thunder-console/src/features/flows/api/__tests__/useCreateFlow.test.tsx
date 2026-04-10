@@ -107,7 +107,7 @@ describe('useCreateFlow', () => {
       url: 'https://localhost:8090/flows',
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      data: JSON.stringify(mockCreateRequest),
+      data: mockCreateRequest,
     });
   });
 
@@ -265,8 +265,8 @@ describe('useCreateFlow', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    const callArgs = mockHttpRequest.mock.calls[0][0] as {data: string; headers: Record<string, string>};
-    expect(callArgs.data).toBe(JSON.stringify(mockCreateRequest));
+    const callArgs = mockHttpRequest.mock.calls[0][0] as {data: CreateFlowRequest; headers: Record<string, string>};
+    expect(callArgs.data).toEqual(mockCreateRequest);
     expect(callArgs.headers['Content-Type']).toBe('application/json');
   });
 });

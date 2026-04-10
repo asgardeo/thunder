@@ -116,7 +116,7 @@ describe('useAddRoleAssignments', () => {
         url: 'https://api.test.com/roles/role-1/assignments/add',
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify({assignments}),
+        data: {assignments},
       }),
     );
   });
@@ -217,6 +217,6 @@ describe('useAddRoleAssignments', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.data).toBe(JSON.stringify({assignments}));
+    expect(callArgs.data).toEqual({assignments});
   });
 });

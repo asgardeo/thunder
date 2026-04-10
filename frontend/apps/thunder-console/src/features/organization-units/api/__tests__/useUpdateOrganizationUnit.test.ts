@@ -92,7 +92,7 @@ describe('useUpdateOrganizationUnit', () => {
       expect.objectContaining({
         url: 'https://localhost:8090/organization-units/ou-123',
         method: 'PUT',
-        data: JSON.stringify(updateRequest),
+        data: updateRequest,
       }),
     );
   });

@@ -189,7 +189,7 @@ describe('useUpdateApplication', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockUpdateRequest),
+        data: mockUpdateRequest,
       }),
     );
   });
@@ -373,7 +373,7 @@ describe('useUpdateApplication', () => {
     expect(result.current.data?.name).toBe('Partially Updated App');
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: JSON.stringify(partialUpdateRequest),
+        data: partialUpdateRequest,
       }),
     );
   });

@@ -79,7 +79,7 @@ export default function useCreateApplication(): UseMutationResult<Application, E
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(applicationData),
+        data: applicationData,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

@@ -113,7 +113,7 @@ describe('useRemoveRoleAssignments', () => {
         url: 'https://api.test.com/roles/role-1/assignments/remove',
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify({assignments}),
+        data: {assignments},
       }),
     );
   });

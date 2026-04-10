@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@asgardeo/react": "0.20.0",
+    "@asgardeo/react": "0.21.3",
     "@wso2/oxygen-ui": "0.0.1-alpha.10",
     "jwt-decode": "4.0.0",
     "react": "19.2.3",
@@ -38,6 +38,7 @@
     }
   },
   "overrides": {
+    "call-bind": "1.0.8",
     "flatted": ">=3.4.2",
     "picomatch": ">=4.0.4",
     "dompurify": ">=3.3.2"

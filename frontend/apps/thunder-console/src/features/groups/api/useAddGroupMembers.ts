@@ -52,7 +52,7 @@ export default function useAddGroupMembers(): UseMutationResult<void, Error, Add
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify({members}),
+        data: {members},
       } as unknown as Parameters<typeof http.request>[0]);
     },
     onSuccess: (_data, {groupId}) => {

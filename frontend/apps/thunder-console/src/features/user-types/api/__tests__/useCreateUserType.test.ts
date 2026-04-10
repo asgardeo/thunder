@@ -114,7 +114,7 @@ describe('useCreateUserType', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockRequest),
+        data: mockRequest,
       }),
     );
   });

@@ -49,7 +49,7 @@ export default function useUpdateTheme(): UseMutationResult<ThemeResponse, Error
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(data),
+        data: data,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

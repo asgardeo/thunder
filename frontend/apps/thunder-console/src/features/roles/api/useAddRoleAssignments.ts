@@ -47,7 +47,7 @@ export default function useAddRoleAssignments(): UseMutationResult<void, Error, 
         url: `${serverUrl}/roles/${roleId}/assignments/add`,
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify({assignments}),
+        data: {assignments},
       } as unknown as Parameters<typeof http.request>[0]);
     },
     onSuccess: (_data, {roleId}) => {

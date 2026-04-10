@@ -84,7 +84,7 @@ export default function useUpdateTranslation(
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify({value}),
+        data: {value},
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

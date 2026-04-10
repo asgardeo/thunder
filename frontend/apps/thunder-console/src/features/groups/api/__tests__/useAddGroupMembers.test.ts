@@ -67,12 +67,12 @@ describe('useAddGroupMembers', () => {
       expect.objectContaining({
         url: 'https://localhost:8090/groups/g1/members/add',
         method: 'POST',
-        data: JSON.stringify({
+        data: {
           members: [
             {id: 'u1', type: 'user'},
             {id: 'u2', type: 'user'},
           ],
-        }),
+        },
       }),
     );
   });

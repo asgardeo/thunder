@@ -82,7 +82,7 @@ describe('useCreateGroup', () => {
       expect.objectContaining({
         url: 'https://localhost:8090/groups',
         method: 'POST',
-        data: JSON.stringify(mockRequest),
+        data: mockRequest,
       }),
     );
   });

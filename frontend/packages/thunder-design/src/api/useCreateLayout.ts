@@ -44,7 +44,7 @@ export default function useCreateLayout(): UseMutationResult<LayoutResponse, Err
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(layoutData),
+        data: layoutData,
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

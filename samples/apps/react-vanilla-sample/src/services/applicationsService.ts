@@ -16,14 +16,13 @@
  * under the License.
  */
 
-import axios from 'axios';
 import config from '../config';
 
 const { applicationsEndpoint } = config;
 
 /**
  * Get applications list from the server.
- * 
+ *
  * @returns A promise that resolves to the list of applications.
  */
 export const getApplications = async () => {
@@ -32,13 +31,13 @@ export const getApplications = async () => {
         'Accept': 'application/json',
     };
 
-    try {
-        const response = await axios.get(applicationsEndpoint, {
-            headers,
-        });
-        return response.data;
-    } catch (error) {
+    const response = await fetch(applicationsEndpoint, { headers });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
         console.error('Error retrieving applications list:', error);
-        throw error;
+        throw new Error('Failed to retrieve applications list.');
     }
+
+    return response.json();
 };

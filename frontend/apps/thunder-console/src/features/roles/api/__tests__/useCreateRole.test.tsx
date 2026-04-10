@@ -132,7 +132,7 @@ describe('useCreateRole', () => {
         url: 'https://api.test.com/roles',
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify(mockCreateRequest),
+        data: mockCreateRequest,
       }),
     );
   });

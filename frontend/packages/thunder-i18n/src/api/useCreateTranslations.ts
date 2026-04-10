@@ -64,7 +64,7 @@ export default function useCreateTranslations(): UseMutationResult<
         url: `${serverUrl}/i18n/languages/${language}/translations`,
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        data: JSON.stringify({translations}),
+        data: {translations},
       } as unknown as Parameters<typeof http.request>[0]);
 
       return response.data;

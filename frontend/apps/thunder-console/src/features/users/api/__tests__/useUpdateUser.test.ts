@@ -130,7 +130,7 @@ describe('useUpdateUser', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockVariables.data),
+        data: mockVariables.data,
       }),
     );
   });
@@ -400,7 +400,7 @@ describe('useUpdateUser', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify(mockVariables.data),
+        data: mockVariables.data,
       }),
     );
   });
@@ -421,7 +421,7 @@ describe('useUpdateUser', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.data).toBe(JSON.stringify(mockVariables.data));
+    expect(callArgs.data).toEqual(mockVariables.data);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(callArgs.headers['Content-Type']).toBe('application/json');
   });
