@@ -36,6 +36,8 @@
       "forms.invite_mode.actions.link.label": "Get Invite Link",
       "forms.invite_email_sent.title": "Invitation Sent",
       "forms.invite_email_sent.message": "An invitation email has been sent to the user. They can complete their registration using the link in the email.",
+      "forms.invite_email_unavailable.title": "Email service unavailable",
+      "forms.invite_email_unavailable.message": "The invitation email could not be sent because the email service is not configured. Please use the link below to share the invite manually.",
       "forms.invite_link_status.title": "Invite Link Ready",
       "forms.invite_link_status.message": "Share the invite link below with the user to complete their registration.",
       "forms.invite_link_status.link_label": "Invite Link"

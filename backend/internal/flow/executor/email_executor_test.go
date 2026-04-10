@@ -530,8 +530,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	suite.Nil(resp)
 }
 
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() {
-	// Create executor with nil email client (SMTP not configured)
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_ReturnsFailure() {
 	mockBaseExecutor := coremock.NewExecutorInterfaceMock(suite.T())
 	mockFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockFactory.On("CreateExecutor",
@@ -563,34 +562,9 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 	resp, err := noEmailExecutor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal(common.ExecFailure, resp.Status)
 	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
-}
-
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_SelfRegistration_InviteLinkNotExposed() {
-	noEmailExecutor := newEmailExecutor(suite.mockFlowFactory, nil, suite.mockTemplateService)
-
-	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
-		FlowType:     common.FlowTypeRegistration,
-		ExecutorMode: ExecutorModeSend,
-		UserInputs: map[string]string{
-			"email": "user@example.com",
-		},
-		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
-		},
-		NodeProperties: map[string]interface{}{
-			"emailTemplate": "SELF_REGISTRATION",
-		},
-	}
-
-	resp, err := noEmailExecutor.Execute(ctx)
-
-	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
-	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
-	suite.Empty(resp.AdditionalData[common.DataInviteLink])
+	suite.Equal("Email service is not configured", resp.FailureReason)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_InvalidMode() {
