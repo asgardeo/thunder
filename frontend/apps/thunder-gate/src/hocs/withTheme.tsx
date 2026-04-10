@@ -17,6 +17,8 @@
  */
 
 import {LanguageSwitcher} from '@asgardeo/react';
+import createCache from '@emotion/cache';
+import {CacheProvider} from '@emotion/react';
 import {useDesign, GoogleFontLoader, StylesheetInjector, type Theme} from '@thunder/design';
 import {
   OxygenUIThemeProvider,
@@ -30,13 +32,26 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
-import {useState, type JSX, type ComponentType, type MouseEvent} from 'react';
+import {useState, useMemo, type JSX, type ComponentType, type MouseEvent} from 'react';
+
+// Create an emotion cache with an insertion point so that MUI/emotion styles
+// are always injected at a fixed position in the <head>, before any custom
+// branding stylesheets. This prevents source-order conflicts when MUI
+// regenerates CSS variables on color-scheme toggle.
+function createEmotionCacheWithInsertionPoint(): ReturnType<typeof createCache> {
+  const insertionPoint = document.createElement('meta');
+  insertionPoint.setAttribute('name', 'emotion-insertion-point');
+  document.head.prepend(insertionPoint);
+  return createCache({key: 'css', insertionPoint});
+}
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {
     const {theme, isLoading} = useDesign(AcrylicOrangeTheme as Theme);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const emotionCache = useMemo(() => createEmotionCacheWithInsertionPoint(), []);
     return (
+      <CacheProvider value={emotionCache}>
       <OxygenUIThemeProvider theme={theme}>
         <StylesheetInjector />
         <GoogleFontLoader />
@@ -111,6 +126,7 @@ export default function withTheme<P extends object>(WrappedComponent: ComponentT
           <WrappedComponent {...props} />
         )}
       </OxygenUIThemeProvider>
+      </CacheProvider>
     );
   };
 }
