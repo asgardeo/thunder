@@ -34,14 +34,14 @@ description: |
   Install only the Component (assumes ComponentType already exists):
     helm install thunder-app charts/thunder-component -f my-values.yaml
 type: application
-version: 0.32.0
-appVersion: "latest"
+version: 0.33.0
+appVersion: "0.33.0"
 dependencies:
   - name: thunder-oc-componenttype
-    version: "0.32.0"
+    version: "0.33.0"
     repository: "file://charts/thunder-oc-componenttype"
     condition: thunder-oc-componenttype.enabled
   - name: thunder-component
-    version: "0.32.0"
+    version: "0.33.0"
     repository: "file://charts/thunder-component"
     condition: thunder-component.enabled
