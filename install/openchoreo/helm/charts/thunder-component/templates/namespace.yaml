@@ -1,4 +1,4 @@
-# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -14,9 +14,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: v2
-name: thunder
-description: A Helm chart for WSO2 Thunder - Lightweight user and identity management system
-type: application
-version: 0.33.0
-appVersion: "0.33.0"
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    openchoreo.dev/control-plane: "true"
+{{- end }}

@@ -1,4 +1,4 @@
-# Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -14,96 +14,180 @@
 # specific language governing permissions and limitations
 # under the License.
 
-## Default values for thunder chart
+## Umbrella chart values — overrides sub-chart defaults.
+## Each top-level key must match the sub-chart name exactly.
+##
+## Install both sub-charts together (default):
+##   helm install thunder .
+##
+## Install only the ComponentType (platform admin, once per cluster):
+##   helm install thunder-type charts/thunder-oc-componenttype
+##
+## Install only the Component (team, assumes ComponentType already exists):
+##   helm install thunder-app charts/thunder-component -f my-values.yaml
 
-# Core component configuration
-componentName: thunder    # Base name for Component/Workload/Service resources
-pipelineName: identity-platform-pipeline  # DeploymentPipeline name (used by platform templates)
+# ─── Sub-chart toggles ────────────────────────────────────────────────────────
+# Set enabled: false to skip a sub-chart when it is already installed separately.
 
-# Container image configuration
-image:
-  repository: ghcr.io/asgardeo/thunder  # Thunder container image repository
-  tag: "latest"                         # Image tag (use specific version tags in production)
+thunder-oc-componenttype:
+  enabled: true
+  # cluster: true  → creates a ClusterComponentType (cluster-scoped, shared across all projects).
+  # cluster: false → creates a namespaced ComponentType in the Helm release namespace.
+  # When changing this, also update thunder-component.componentType.cluster below to match.
+  componentType:
+    cluster: true
 
-# Thunder server configuration
-thunder:
-  server:
-    port: 8090  # Port on which Thunder server will listen
+thunder-component:
+  enabled: true
 
-# NOTE: The following section contains placeholder values in angle brackets (e.g., <DB_HOST>, <DB_USERNAME>, <DB_PASSWORD>).
-# You MUST replace these placeholders with actual values before deploying to production.
-# For development, you can use the provided example values.
-# Example: database.host could be "postgres.default.svc.cluster.local" for in-cluster PostgreSQL
-database:
-  host: <DB_HOST>  # Required: Database hostname/FQDN (e.g., postgres.default.svc.cluster.local)
-  port: 5432       # Database port (default: 5432 for PostgreSQL)
-  config:
-    database: thunderdb        # Config database name
-    username: <DB_USERforNAME>    # Required: Database username for config DB
-    password: <DB_PASSWORD>    # Required: Database password for config DB
-    sslmode: disable           # SSL mode: disable, require, verify-ca, verify-full
-  runtime:
-    database: thunderdb       # Runtime database name
-    username: <DB_USERNAME>   # Required: Database username for runtime DB (can be same as config)
-    password: <DB_PASSWORD>   # Required: Database password for runtime DB (can be same as config)
-    sslmode: disable          # SSL mode: disable, require, verify-ca, verify-full
-  user:
-    database: thunderdb       # User database name
-    username: <DB_USERNAME>   # Required: Database username for user DB (can be same as config)
-    password: <DB_PASSWORD>   # Required: Database password for user DB (can be same as config)
-    sslmode: disable          # SSL mode: disable, require, verify-ca, verify-full
-jwt:
-  issuer: ""          # JWT token issuer identifier (derived from server URL if not set)
-  validity: 3600      # JWT token validity in seconds (default: 1 hour)
+  # ── Core ────────────────────────────────────────────────────────────────────
+  componentName: thunder              # Base name for Component, Workload, Release, and data plane resources
+  pipelineName: identity-platform-pipeline  # Must match an existing DeploymentPipeline or set pipeline.create: true
 
-oauth:
-  refresh_token_validity: 86400  # Refresh token validity in seconds (default: 24 hours)
+  image:
+    repository: ghcr.io/asgardeo/thunder  # Thunder container image repository
+    tag: "latest"                          # Use a specific version tag in production
 
-crypto:
-  encryption:
-    # WARNING: Replace the default key with a 32-byte (64 character) hex string in production deployments
-    key: "file://repository/resources/security/crypto.key"
+  thunder:
+    server:
+      port: 8090  # Port Thunder listens on inside the container
 
-cache:
-  type: "memory"      # Cache type: "memory" (in-memory cache)
-  size: 10000        # Maximum number of cache entries
-  ttl: 3600          # Time to live for cache entries in seconds (default: 1 hour)
+  # ── Database ─────────────────────────────────────────────────────────────────
+  database:
+    # Database engine.
+    #   sqlite   — default; no external DB needed, data stored on a PVC.
+    #   postgres — requires an accessible PostgreSQL instance; fill in the fields below.
+    type: sqlite
 
-cors:
-  allowed_origins:   # List of allowed CORS origins for cross-origin requests
-    - "https://thunder-gate.your-domain.com"  # Replace with your actual domain
-    - "https://localhost:3000"                # Common development URL
+    # ── SQLite (used when type: sqlite) ──────────────────────────────────────
+    # Paths are relative to the Thunder working directory inside the container.
+    storageSize: "1Gi"  # PVC size for SQLite database files
+    config:
+      path: "repository/database/configdb.db"
+    runtime:
+      path: "repository/database/runtimedb.db"
+    user:
+      path: "repository/database/userdb.db"
 
-# Thunder Gate client configuration (the frontend/gate service Thunder redirects to)
-gate:
-  hostname: <GATE_HOSTNAME>  # Required: Thunder Gate hostname (e.g. thunder-gate-development.openchoreoapis.localhost)
-  port: 19080                # OpenChoreo gateway port
-  scheme: http               # Connection scheme: http or https
-  clientBase: "/gate"        # Base path for the Gate frontend app
+    # ── PostgreSQL (used when type: postgres) — uncomment and fill in ─────────
+    # host: <DB_HOST>          # Shared hostname for all three databases
+    # port: 5432               # Rendered as an integer in the ConfigMap — do not quote
+    # config:
+    #   database: thunderdb
+    #   username: <DB_USERNAME>
+    #   password: <DB_PASSWORD>
+    #   sslmode: disable       # Use verify-full in production
+    # runtime:
+    #   database: thunderdb
+    #   username: <DB_USERNAME>
+    #   password: <DB_PASSWORD>
+    #   sslmode: disable
+    # user:
+    #   database: thunderdb
+    #   username: <DB_USERNAME>
+    #   password: <DB_PASSWORD>
+    #   sslmode: disable
 
-# Thunder Console configuration
-console:
-  clientBase: "/console"     # Base path for the Console frontend app
-  clientId: "CONSOLE"        # OAuth client ID registered for the Console app
-  scopes: '["openid", "profile", "email"]'  # OAuth scopes for the Console app
+  # ── Application config ───────────────────────────────────────────────────────
+  jwt:
+    validity: 3600           # JWT token validity in seconds (default: 1 hour)
 
-# Thunder server public URL (used in gate/console config.js for the development environment)
-# Pattern: http://<componentName>-development.openchoreoapis.localhost:19080
-serverPublicUrl: "<SERVER_PUBLIC_URL>"
-# serverPublicHostName: "<SERVER_PUBLIC_HOSTNAME>"  # Hostname part of the public URL (e.g., thunder-development.openchoreoapis.localhost)
+  oauth:
+    refresh_token_validity: 86400  # Refresh token validity in seconds (default: 24 hours)
 
-# Consent server configuration
-consent:
-  enabled: false
-  baseUrl: "http://localhost:9090/api/v1"
+  crypto:
+    encryption:
+      # WARNING: Replace with a 32-byte (64 hex character) key in production.
+      key: "file://repository/resources/security/crypto.key"
 
-organization:
-  name: identity-platform  # Organization name — used as the project name and namespace
+  cache:
+    type: "memory"
+    size: 10000   # Maximum number of cache entries
+    ttl: 3600     # Cache entry TTL in seconds
 
-# OpenChoreo data plane configuration
-# The ClusterDataPlane resource is provisioned by the OpenChoreo platform installation.
-# Use `kubectl get clusterdataplane` to list available data planes in your cluster.
-dataPlane:
-  name: default  # Name of the ClusterDataPlane resource to bind all environments to
+  cors:
+    allowed_origins:
+      - "https://thunder-gate.your-domain.com"
+      - "https://localhost:3000"
 
-replicas: 1  # Number of pod replicas per environment
+  # ── Gate and Console ─────────────────────────────────────────────────────────
+  gate:
+    hostname: <GATE_HOSTNAME>   # Hostname used in the development ReleaseBinding environmentConfigs
+    port: 19080
+    scheme: http
+    clientBase: "/gate"         # Gate frontend base path (frozen as a parameter at release time)
+
+  console:
+    clientBase: "/console"
+    clientId: "CONSOLE"
+    scopes: '["openid", "profile", "email", "system"]'
+
+  serverPublicUrl: "<SERVER_PUBLIC_URL>"  # Thunder's externally accessible URL
+
+  consent:
+    enabled: false
+    baseUrl: "http://localhost:9090/api/v1"
+
+  # ── OpenChoreo platform ──────────────────────────────────────────────────────
+  dataPlane:
+    name: default             # Name of the ClusterDataPlane to bind all environments to
+
+  replicas: 1                 # Pod replicas for the development environment
+
+  # Must match thunder-oc-componenttype.componentType.cluster above.
+  # true  → Component references ClusterComponentType
+  # false → Component references namespaced ComponentType
+  componentType:
+    cluster: false
+
+  # ── Resource requests and limits ─────────────────────────────────────────────
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  # ── On-demand platform resources ─────────────────────────────────────────────
+  # Set any flag to false when the resource is pre-created or managed externally
+  # (e.g. by GitOps, a platform team, or a shared installation).
+
+  namespace:
+    create: true   # false → skip Namespace creation; namespace must already exist
+
+  project:
+    create: true   # false → reuse an existing OpenChoreo Project
+    name: identity-platform
+    description: "Identity platform powered by WSO2 Thunder"
+    displayName: "Identity Platform"
+
+  pipeline:
+    create: true   # false → reuse an existing DeploymentPipeline (pipelineName must match)
+
+  environments:
+    development:
+      create: true
+      description: "Development environment for identity platform"
+      displayName: "Development"
+    staging:
+      create: true
+      description: "Staging environment for identity platform"
+      displayName: "Staging"
+    production:
+      create: true
+      description: "Production environment for identity platform"
+      displayName: "Production"
+
+  releaseBinding:
+    # false → skip creating the development ReleaseBinding.
+    # Use when you want to deploy via the OC UI or promote manually from another environment.
+    create: true
+
+  # ── Ingress / Gateway ─────────────────────────────────────────────────────────
+  # Used to construct the HTTPRoute hostname in the development ReleaseBinding.
+  # Hostname format: <environmentName>-<componentName>-<componentNamespace>.<domain>
+  ingress:
+    domain: "openchoreoapis.localhost"
+    port: 19080
+    scheme: "http"

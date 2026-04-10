@@ -1,4 +1,4 @@
-# Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -14,9 +14,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ .Release.Namespace }}
-  labels:
-    openchoreo.dev/control-plane: "true"
+apiVersion: v2
+name: thunder-component
+description: |
+  Thunder Identity Provider component resources for OpenChoreo.
+  Deploys the Component, Workload, ComponentRelease, ReleaseBinding,
+  and supporting platform resources. Requires the thunder-oc-componenttype
+  chart (or an equivalent ClusterComponentType) to be installed first.
+type: application
+version: 0.33.0
