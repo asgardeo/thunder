@@ -155,6 +155,182 @@ func (_c *I18nServiceInterfaceMock_ClearTranslationOverrides_Call) RunAndReturn(
 	return _c
 }
 
+// DeleteTranslationsByNamespace provides a mock function for the type I18nServiceInterfaceMock
+func (_mock *I18nServiceInterfaceMock) DeleteTranslationsByNamespace(namespace string) *serviceerror.I18nServiceError {
+	ret := _mock.Called(namespace)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteTranslationsByNamespace")
+	}
+
+	var r0 *serviceerror.I18nServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) *serviceerror.I18nServiceError); ok {
+		r0 = returnFunc(namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.I18nServiceError)
+		}
+	}
+	return r0
+}
+
+// I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteTranslationsByNamespace'
+type I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call struct {
+	*mock.Call
+}
+
+// DeleteTranslationsByNamespace is a helper method to define mock.On call
+//   - namespace string
+func (_e *I18nServiceInterfaceMock_Expecter) DeleteTranslationsByNamespace(namespace interface{}) *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call {
+	return &I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call{Call: _e.mock.On("DeleteTranslationsByNamespace", namespace)}
+}
+
+func (_c *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call) Run(run func(namespace string)) *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call) Return(i18nServiceError *serviceerror.I18nServiceError) *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call {
+	_c.Call.Return(i18nServiceError)
+	return _c
+}
+
+func (_c *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call) RunAndReturn(run func(namespace string) *serviceerror.I18nServiceError) *I18nServiceInterfaceMock_DeleteTranslationsByNamespace_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteTranslationsByNamespaceAndKey provides a mock function for the type I18nServiceInterfaceMock
+func (_mock *I18nServiceInterfaceMock) DeleteTranslationsByNamespaceAndKey(namespace string, key string) *serviceerror.I18nServiceError {
+	ret := _mock.Called(namespace, key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteTranslationsByNamespaceAndKey")
+	}
+
+	var r0 *serviceerror.I18nServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, string) *serviceerror.I18nServiceError); ok {
+		r0 = returnFunc(namespace, key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.I18nServiceError)
+		}
+	}
+	return r0
+}
+
+// I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteTranslationsByNamespaceAndKey'
+type I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call struct {
+	*mock.Call
+}
+
+// DeleteTranslationsByNamespaceAndKey is a helper method to define mock.On call
+//   - namespace string
+//   - key string
+func (_e *I18nServiceInterfaceMock_Expecter) DeleteTranslationsByNamespaceAndKey(namespace interface{}, key interface{}) *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call {
+	return &I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call{Call: _e.mock.On("DeleteTranslationsByNamespaceAndKey", namespace, key)}
+}
+
+func (_c *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call) Run(run func(namespace string, key string)) *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call) Return(i18nServiceError *serviceerror.I18nServiceError) *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call {
+	_c.Call.Return(i18nServiceError)
+	return _c
+}
+
+func (_c *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call) RunAndReturn(run func(namespace string, key string) *serviceerror.I18nServiceError) *I18nServiceInterfaceMock_DeleteTranslationsByNamespaceAndKey_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetTranslationsByNamespace provides a mock function for the type I18nServiceInterfaceMock
+func (_mock *I18nServiceInterfaceMock) GetTranslationsByNamespace(namespace string) (map[string]map[string]string, *serviceerror.I18nServiceError) {
+	ret := _mock.Called(namespace)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTranslationsByNamespace")
+	}
+
+	var r0 map[string]map[string]string
+	var r1 *serviceerror.I18nServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) (map[string]map[string]string, *serviceerror.I18nServiceError)); ok {
+		return returnFunc(namespace)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) map[string]map[string]string); ok {
+		r0 = returnFunc(namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]map[string]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.I18nServiceError); ok {
+		r1 = returnFunc(namespace)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.I18nServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// I18nServiceInterfaceMock_GetTranslationsByNamespace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTranslationsByNamespace'
+type I18nServiceInterfaceMock_GetTranslationsByNamespace_Call struct {
+	*mock.Call
+}
+
+// GetTranslationsByNamespace is a helper method to define mock.On call
+//   - namespace string
+func (_e *I18nServiceInterfaceMock_Expecter) GetTranslationsByNamespace(namespace interface{}) *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call {
+	return &I18nServiceInterfaceMock_GetTranslationsByNamespace_Call{Call: _e.mock.On("GetTranslationsByNamespace", namespace)}
+}
+
+func (_c *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call) Run(run func(namespace string)) *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call) Return(stringToStringToString map[string]map[string]string, i18nServiceError *serviceerror.I18nServiceError) *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call {
+	_c.Call.Return(stringToStringToString, i18nServiceError)
+	return _c
+}
+
+func (_c *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call) RunAndReturn(run func(namespace string) (map[string]map[string]string, *serviceerror.I18nServiceError)) *I18nServiceInterfaceMock_GetTranslationsByNamespace_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListLanguages provides a mock function for the type I18nServiceInterfaceMock
 func (_mock *I18nServiceInterfaceMock) ListLanguages() ([]string, *serviceerror.I18nServiceError) {
 	ret := _mock.Called()

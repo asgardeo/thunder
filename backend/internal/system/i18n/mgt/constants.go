@@ -37,12 +37,29 @@ var LanguagePreferenceOrder = map[string]int{
 }
 
 // namespaceRegex defines the valid format for namespace strings.
-// Namespaces can contain alphanumeric characters, underscores, and hyphens.
-var namespaceRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+// Namespaces can contain alphanumeric characters, underscores, hyphens, and dots.
+var namespaceRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 // keyRegex defines the valid format for translation keys.
 // Keys can contain alphanumeric characters, dots, underscores, and hyphens.
 var keyRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+
+// MaxBCP47TagLength is the maximum allowed length of a BCP 47 language tag (RFC 5646 practical limit).
+const MaxBCP47TagLength = 35
+
+// NormaliseBCP47Tag parses tag using golang.org/x/text/language and returns its canonical form
+// (e.g., "en-US" for "en-us", "fr" for "FR").
+// Returns ("", false) if the tag is empty, exceeds MaxBCP47TagLength, or is not a valid BCP 47 tag.
+func NormaliseBCP47Tag(tag string) (string, bool) {
+	if tag == "" || len(tag) > MaxBCP47TagLength {
+		return "", false
+	}
+	t, err := goi18n.Parse(tag)
+	if err != nil {
+		return "", false
+	}
+	return t.String(), true
+}
 
 // ValidateLanguage validates that a language tag is in the canonical form according to BCP 47 format.
 func ValidateLanguage(language string) bool {

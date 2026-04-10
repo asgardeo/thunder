@@ -73,6 +73,34 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, dcrResponse)
 }
 
+// HandleDCRGetClient handles GET /oauth2/dcr/register/{app_id} — returns the registered client
+// with all localized variants (AC-25).
+func (dh *dcrHandler) HandleDCRGetClient(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if !config.GetThunderRuntime().Config.OAuth.DCR.Insecure && !dh.checkDCRAuthorization(r, w) {
+		return
+	}
+
+	appID := r.PathValue("app_id")
+	if appID == "" {
+		sysutils.WriteJSONError(w, ErrorInvalidRequestFormat.Code,
+			ErrorInvalidRequestFormat.ErrorDescription, http.StatusBadRequest, nil)
+		return
+	}
+
+	response, svcErr := dh.dcrService.GetClient(ctx, appID)
+	if svcErr != nil {
+		if svcErr.Code == ErrorClientNotFound.Code {
+			sysutils.WriteJSONError(w, svcErr.Code, svcErr.ErrorDescription, http.StatusNotFound, nil)
+			return
+		}
+		dh.writeServiceErrorResponse(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, response)
+}
+
 // checkDCRAuthorization verifies that the caller holds required permission.
 // Returns true if authorized, false (and writes an HTTP 401) otherwise.
 func (dh *dcrHandler) checkDCRAuthorization(r *http.Request, w http.ResponseWriter) bool {

@@ -31,6 +31,7 @@ import (
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 )
@@ -40,12 +41,16 @@ type DCRServiceInterface interface {
 	RegisterClient(
 		ctx context.Context, request *DCRRegistrationRequest,
 	) (*DCRRegistrationResponse, *serviceerror.ServiceError)
+	GetClient(
+		ctx context.Context, appID string,
+	) (*DCRRegistrationResponse, *serviceerror.ServiceError)
 }
 
 // dcrService is the default implementation of DCRServiceInterface.
 type dcrService struct {
 	appService    application.ApplicationServiceInterface
 	ouService     ou.OrganizationUnitServiceInterface
+	i18nService   i18nmgt.I18nServiceInterface
 	transactioner transaction.Transactioner
 }
 
@@ -53,11 +58,13 @@ type dcrService struct {
 func newDCRService(
 	appService application.ApplicationServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
+	i18nService i18nmgt.I18nServiceInterface,
 	transactioner transaction.Transactioner,
 ) DCRServiceInterface {
 	return &dcrService{
 		appService:    appService,
 		ouService:     ouService,
+		i18nService:   i18nService,
 		transactioner: transactioner,
 	}
 }
@@ -97,9 +104,10 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 	var response *DCRRegistrationResponse
 	var capturedErr *serviceerror.ServiceError
+	var createdAppID string
 
-	err := ds.transactioner.Transact(ctx, func(ctx context.Context) error {
-		createdApp, svcErr := ds.appService.CreateApplication(ctx, appDTO)
+	err := ds.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		createdApp, svcErr := ds.appService.CreateApplication(txCtx, appDTO)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Failed to create application via Application service",
@@ -112,6 +120,8 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 			capturedErr = ds.mapApplicationErrorToDCRError(svcErr)
 			return errors.New("failed to create application")
 		}
+
+		createdAppID = createdApp.ID
 
 		var convErr *serviceerror.ServiceError
 		response, convErr = ds.convertApplicationToDCRResponse(createdApp, request.ClientName)
@@ -130,6 +140,32 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 		}
 		return nil, &ErrorServerError
 	}
+
+	// Write localized variants after the runtime-DB transaction commits.
+	// The i18n store uses a separate DB (configdb) and cannot participate in the
+	// runtime transaction. If writing fails, clean up any partial i18n rows and
+	// compensate by deleting the created app.
+	if writeErr := ds.writeLocalizedVariants(createdAppID, request); writeErr != nil {
+		logger.Error("Failed to write localized variants for DCR client; compensating by deleting app",
+			log.String("appID", createdAppID), log.String("error", writeErr.Error))
+		if ds.i18nService != nil {
+			if cleanErr := ds.i18nService.DeleteTranslationsByNamespace("app." + createdAppID); cleanErr != nil {
+				logger.Error("Failed to clean up partial i18n rows after write failure",
+					log.String("appID", createdAppID))
+			}
+		}
+		if delSvcErr := ds.appService.DeleteApplication(ctx, createdAppID); delSvcErr != nil {
+			logger.Error("Compensation delete failed after i18n write failure",
+				log.String("appID", createdAppID))
+		}
+		return nil, &ErrorServerError
+	}
+
+	// Echo registered localized variants back in the response (AC-03).
+	response.LocalizedClientName = request.LocalizedClientName
+	response.LocalizedLogoURI = request.LocalizedLogoURI
+	response.LocalizedTosURI = request.LocalizedTosURI
+	response.LocalizedPolicyURI = request.LocalizedPolicyURI
 
 	return response, nil
 }
@@ -253,6 +289,112 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		PolicyURI:               appDTO.PolicyURI,
 		Contacts:                appDTO.Contacts,
 		AppID:                   oauthConfig.AppID,
+	}
+
+	return response, nil
+}
+
+// writeLocalizedVariants persists all localized variants from a DCR request to the i18n table.
+// Called after the application record has been committed to the runtime DB.
+func (ds *dcrService) writeLocalizedVariants(
+	appID string, request *DCRRegistrationRequest) *serviceerror.ServiceError {
+	if ds.i18nService == nil {
+		return nil
+	}
+	ns := "app." + appID
+	type fieldSpec struct {
+		variants map[string]string
+		key      string
+	}
+	fields := []fieldSpec{
+		{request.LocalizedClientName, "name"},
+		{request.LocalizedLogoURI, "logo_uri"},
+		{request.LocalizedTosURI, "tos_uri"},
+		{request.LocalizedPolicyURI, "policy_uri"},
+	}
+	for _, f := range fields {
+		for tag, val := range f.variants {
+			if _, svcErr := ds.i18nService.SetTranslationOverrideForKey(tag, ns, f.key, val); svcErr != nil {
+				return &ErrorServerError
+			}
+		}
+	}
+	return nil
+}
+
+// GetClient retrieves a registered OAuth client by application ID, including all localized variants (AC-25).
+func (ds *dcrService) GetClient(ctx context.Context, appID string) (
+	*DCRRegistrationResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRService"))
+
+	app, svcErr := ds.appService.GetApplication(ctx, appID)
+	if svcErr != nil {
+		if svcErr.Code == application.ErrorApplicationNotFound.Code {
+			return nil, &ErrorClientNotFound
+		}
+		logger.Error("Failed to get application for DCR GET", log.String("appID", appID),
+			log.String("error", svcErr.Error))
+		return nil, &ErrorServerError
+	}
+
+	if len(app.InboundAuthConfig) == 0 || app.InboundAuthConfig[0].OAuthAppConfig == nil {
+		return nil, &ErrorClientNotFound
+	}
+
+	oauthCfg := app.InboundAuthConfig[0].OAuthAppConfig
+	scopeString := strings.Join(oauthCfg.Scopes, " ")
+
+	var jwksURI string
+	var jwks map[string]interface{}
+	if app.Certificate != nil {
+		switch app.Certificate.Type {
+		case cert.CertificateTypeJWKSURI:
+			jwksURI = app.Certificate.Value
+		case cert.CertificateTypeJWKS:
+			if err := json.Unmarshal([]byte(app.Certificate.Value), &jwks); err != nil {
+				return nil, &ErrorServerError
+			}
+		}
+	}
+
+	response := &DCRRegistrationResponse{
+		ClientID:                oauthCfg.ClientID,
+		ClientSecret:            oauthCfg.ClientSecret,
+		ClientSecretExpiresAt:   ClientSecretExpiresAtNever,
+		RedirectURIs:            oauthCfg.RedirectURIs,
+		GrantTypes:              oauthCfg.GrantTypes,
+		ResponseTypes:           oauthCfg.ResponseTypes,
+		ClientName:              app.Name,
+		ClientURI:               app.URL,
+		LogoURI:                 app.LogoURL,
+		TokenEndpointAuthMethod: oauthCfg.TokenEndpointAuthMethod,
+		JWKSUri:                 jwksURI,
+		JWKS:                    jwks,
+		Scope:                   scopeString,
+		TosURI:                  app.TosURI,
+		PolicyURI:               app.PolicyURI,
+		Contacts:                app.Contacts,
+		AppID:                   appID,
+	}
+
+	// Load all localized variants in a single query (AC-25).
+	if ds.i18nService != nil {
+		ns := "app." + appID
+		localized, i18nErr := ds.i18nService.GetTranslationsByNamespace(ns)
+		if i18nErr == nil && localized != nil {
+			if m := localized["name"]; len(m) > 0 {
+				response.LocalizedClientName = m
+			}
+			if m := localized["logo_uri"]; len(m) > 0 {
+				response.LocalizedLogoURI = m
+			}
+			if m := localized["tos_uri"]; len(m) > 0 {
+				response.LocalizedTosURI = m
+			}
+			if m := localized["policy_uri"]; len(m) > 0 {
+				response.LocalizedPolicyURI = m
+			}
+		}
 	}
 
 	return response, nil

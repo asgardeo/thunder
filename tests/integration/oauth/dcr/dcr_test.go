@@ -765,6 +765,154 @@ func (ts *DCRTestSuite) TestDCRRegistrationRedirectURIWithFragment2() {
 	ts.Assert().Equal(http.StatusBadRequest, statusCode)
 }
 
+// TestDCRRegistrationWithLocalizedVariants verifies that OIDC language-tagged fields
+// (e.g. "client_name#fr") are accepted and echoed back in the registration response.
+func (ts *DCRTestSuite) TestDCRRegistrationWithLocalizedVariants() {
+	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
+		RedirectURIs: []string{"https://localized.example.com/callback"},
+		ClientName:   "Localized Client",
+		TosURI:       "https://localized.example.com/tos",
+		PolicyURI:    "https://localized.example.com/policy",
+		LocalizedFields: map[string]string{
+			"client_name#fr": "Client localisé",
+			"client_name#de": "Lokalisierter Client",
+			"tos_uri#fr":     "https://localized.example.com/tos/fr",
+			"policy_uri#fr":  "https://localized.example.com/policy/fr",
+		},
+	}
+
+	response, statusCode := ts.registerClient(request)
+
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	ts.Assert().NotEmpty(response.ClientID)
+	ts.Assert().NotEmpty(response.AppID)
+	ts.Assert().Equal("Localized Client", response.ClientName)
+
+	// Echoed localized variants must appear in the response.
+	ts.Assert().Equal("Client localisé", response.LocalizedClientName["fr"])
+	ts.Assert().Equal("Lokalisierter Client", response.LocalizedClientName["de"])
+	ts.Assert().Equal("https://localized.example.com/tos/fr", response.LocalizedTosURI["fr"])
+	ts.Assert().Equal("https://localized.example.com/policy/fr", response.LocalizedPolicyURI["fr"])
+
+	ts.registeredAppIDs = append(ts.registeredAppIDs, response.AppID)
+}
+
+// TestDCRGetClientWithLocalizedVariants verifies that GET /oauth2/dcr/register/{app_id}
+// returns the localized variants that were stored during registration (AC-25).
+func (ts *DCRTestSuite) TestDCRGetClientWithLocalizedVariants() {
+	// Register a client with localized metadata.
+	request := DCRRegistrationRequest{
+		OUID:         "decl-ou-1",
+		RedirectURIs: []string{"https://get-localized.example.com/callback"},
+		ClientName:   "GET Localized Client",
+		LogoURI:      "https://get-localized.example.com/logo.png",
+		TosURI:       "https://get-localized.example.com/tos",
+		PolicyURI:    "https://get-localized.example.com/policy",
+		LocalizedFields: map[string]string{
+			"client_name#es": "Cliente localizado",
+			"logo_uri#es":    "https://get-localized.example.com/logo/es.png",
+			"tos_uri#es":     "https://get-localized.example.com/tos/es",
+			"policy_uri#es":  "https://get-localized.example.com/policy/es",
+		},
+	}
+
+	regResp, statusCode := ts.registerClient(request)
+	ts.Assert().Equal(http.StatusCreated, statusCode)
+	ts.Assert().NotEmpty(regResp.AppID)
+
+	ts.registeredAppIDs = append(ts.registeredAppIDs, regResp.AppID)
+
+	// GET the registered client and verify all localized variants are returned.
+	getResp, getStatusCode := ts.getClient(regResp.AppID)
+
+	ts.Assert().Equal(http.StatusOK, getStatusCode)
+	ts.Assert().Equal(regResp.ClientID, getResp.ClientID)
+	ts.Assert().Equal("GET Localized Client", getResp.ClientName)
+	ts.Assert().Equal(regResp.AppID, getResp.AppID)
+
+	ts.Assert().Equal("Cliente localizado", getResp.LocalizedClientName["es"])
+	ts.Assert().Equal("https://get-localized.example.com/logo/es.png", getResp.LocalizedLogoURI["es"])
+	ts.Assert().Equal("https://get-localized.example.com/tos/es", getResp.LocalizedTosURI["es"])
+	ts.Assert().Equal("https://get-localized.example.com/policy/es", getResp.LocalizedPolicyURI["es"])
+}
+
+// TestDCRGetClientNotFound verifies that GET /oauth2/dcr/register/{app_id} returns 404
+// with error "invalid_client_id" when the app does not exist.
+func (ts *DCRTestSuite) TestDCRGetClientNotFound() {
+	_, statusCode := ts.getClient("nonexistent-app-id-00000000")
+
+	ts.Assert().Equal(http.StatusNotFound, statusCode)
+}
+
+// TestDCRRegistrationInvalidBCP47Tag verifies that a malformed language tag in a
+// localized field (e.g. "client_name#bad@lang") is rejected with 400.
+func (ts *DCRTestSuite) TestDCRRegistrationInvalidBCP47Tag() {
+	// Build the request body manually so the invalid key bypasses Go struct marshaling.
+	rawBody := []byte(`{
+		"ou_id": "decl-ou-1",
+		"redirect_uris": ["https://invalid-tag.example.com/callback"],
+		"client_name": "Invalid Tag Client",
+		"client_name#bad@lang": "should be rejected"
+	}`)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+dcrEndpoint, bytes.NewReader(rawBody))
+	if err != nil {
+		ts.T().Fatalf("Failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	token, err := testutils.GetAccessToken()
+	if err != nil {
+		ts.T().Fatalf("Failed to obtain access token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		ts.T().Fatalf("Failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// getClient performs a GET /oauth2/dcr/register/{app_id} and returns the decoded response and status code.
+func (ts *DCRTestSuite) getClient(appID string) (*DCRRegistrationResponse, int) {
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("GET", testServerURL+dcrEndpoint+"/"+appID, nil)
+	if err != nil {
+		ts.T().Fatalf("Failed to create GET request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	token, err := testutils.GetAccessToken()
+	if err != nil {
+		ts.T().Fatalf("Failed to obtain access token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		ts.T().Fatalf("Failed to send GET request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.StatusCode
+	}
+
+	var response DCRRegistrationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		ts.T().Fatalf("Failed to decode GET response: %v", err)
+	}
+
+	return &response, resp.StatusCode
+}
+
 // TestDCRRegistrationClientCredentialsWithResponseTypes2 tests client_credentials cannot have response_types.
 func (ts *DCRTestSuite) TestDCRRegistrationClientCredentialsWithResponseTypes2() {
 	request := DCRRegistrationRequest{

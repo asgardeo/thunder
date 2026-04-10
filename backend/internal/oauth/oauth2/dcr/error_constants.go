@@ -70,4 +70,12 @@ var (
 		Error:            "Unauthorized",
 		ErrorDescription: "Authentication with sufficient permissions is required to register a client",
 	}
+
+	// ErrorClientNotFound is the error returned when the requested client registration does not exist.
+	ErrorClientNotFound = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "invalid_client_id",
+		Error:            "Client not found",
+		ErrorDescription: "No registered client was found for the provided identifier",
+	}
 )

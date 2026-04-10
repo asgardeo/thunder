@@ -62,7 +62,7 @@ func (suite *InitTestSuite) TearDownTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockAppService, suite.mockOUService, &MockTransactioner{})
+	service := Initialize(mux, suite.mockAppService, suite.mockOUService, nil, &MockTransactioner{})
 
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*DCRServiceInterface)(nil), service)
@@ -71,7 +71,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	Initialize(mux, suite.mockAppService, suite.mockOUService, &MockTransactioner{})
+	Initialize(mux, suite.mockAppService, suite.mockOUService, nil, &MockTransactioner{})
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

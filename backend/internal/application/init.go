@@ -34,6 +34,7 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -52,6 +53,7 @@ func Initialize(
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	consentService consent.ConsentServiceInterface,
+	i18nService i18nmgt.I18nServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Initialize store and transactioner based on store mode
 	appStore, transactioner, err := initializeStore()
@@ -64,6 +66,7 @@ func Initialize(
 		appStore, entityProvider, ouService, certService, flowMgtService,
 		themeMgtService, layoutMgtService,
 		userSchemaService, consentService,
+		i18nService,
 		transactioner,
 	)
 

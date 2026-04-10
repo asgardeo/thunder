@@ -40,6 +40,7 @@ import (
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/observability"
 )
@@ -57,6 +58,7 @@ func Initialize(
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
+	i18nService i18nmgt.I18nServiceInterface,
 ) error {
 	// Fetch runtime transactioner for OAuth services.
 	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
@@ -79,6 +81,6 @@ func Initialize(
 	introspect.Initialize(mux, jwtService, applicationService, authnProvider, discoveryService)
 	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, ouService, attributeCacheSvc,
 		transactioner)
-	dcr.Initialize(mux, applicationService, ouService, transactioner)
+	dcr.Initialize(mux, applicationService, ouService, i18nService, transactioner)
 	return nil
 }
