@@ -133,9 +133,9 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 	notifSvcErr := e.notifSenderSvc.Send(ctx.Context, notifcm.ChannelTypeSMS, senderID,
 		notifcm.NotificationData{Recipient: recipient, Body: rendered.Body})
 	if notifSvcErr != nil {
-		if notifSvcErr.Type == serviceerror.ClientErrorType {
+		if ctx.FlowType == common.FlowTypeUserOnboarding && notifSvcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = notifSvcErr.ErrorDescription
+			execResp.FailureReason = "Notification configuration is wrong or not set."
 			return execResp, nil
 		}
 		return nil, fmt.Errorf("SMS send failed: %s", notifSvcErr.ErrorDescription)

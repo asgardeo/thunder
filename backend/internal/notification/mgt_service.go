@@ -160,6 +160,10 @@ func (s *notificationSenderMgtService) GetSender(ctx context.Context, id string)
 		return nil, &ErrorInternalServerError
 	}
 
+	if sender == nil {
+		return nil, &ErrorSenderNotFound
+	}
+
 	return sender, nil
 }
 
@@ -177,6 +181,10 @@ func (s *notificationSenderMgtService) GetSenderByName(ctx context.Context, name
 	if err != nil {
 		logger.Error("Failed to retrieve notification sender", log.String("name", name), log.Error(err))
 		return nil, &ErrorInternalServerError
+	}
+
+	if sender == nil {
+		return nil, &ErrorSenderNotFound
 	}
 
 	return sender, nil

@@ -224,8 +224,9 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_NotFound() {
 	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, nil).Once()
 
 	result, err := suite.service.GetSender(context.Background(), testSenderID)
-	suite.Nil(err)
 	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorSenderNotFound.Code, err.Code)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_EmptyID() {
@@ -263,14 +264,6 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 			arg:      "Test Twilio Sender",
 			wantName: "Test Twilio Sender",
 		},
-		{
-			name: "SenderNotFound",
-			setup: func(m *notificationStoreInterfaceMock) {
-				m.EXPECT().getSenderByName(mock.Anything, "NonExistent").Return(nil, nil).Once()
-			},
-			arg:      "NonExistent",
-			wantName: "",
-		},
 	}
 
 	for _, tc := range cases {
@@ -288,15 +281,25 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 			result, err := svc.GetSenderByName(context.Background(), tc.arg)
 			require := require.New(t)
 			require.Nil(err)
-			if tc.wantName == "" {
-				require.Nil(result)
-			} else {
-				require.NotNil(result)
-				require.Equal(tc.wantName, result.Name)
-			}
+			require.NotNil(result)
+			require.Equal(tc.wantName, result.Name)
 			mockStore.AssertExpectations(t)
 		})
 	}
+}
+
+func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName_NotFound() {
+	mockStore := newNotificationStoreInterfaceMock(suite.T())
+	svc := &notificationSenderMgtService{
+		notificationStore: mockStore,
+		transactioner:     &fakeTransactioner{},
+	}
+	mockStore.EXPECT().getSenderByName(mock.Anything, "NonExistent").Return(nil, nil).Once()
+
+	result, err := svc.GetSenderByName(context.Background(), "NonExistent")
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorSenderNotFound.Code, err.Code)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName_WithFailure() {

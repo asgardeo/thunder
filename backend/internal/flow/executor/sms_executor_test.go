@@ -348,9 +348,10 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 	suite.EqualError(err, "notification sender service is not configured")
 }
 
-func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
+func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ClientError_ReturnsExecFailure() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -374,19 +375,20 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
 		Error:            "Sender not found",
 		ErrorDescription: "The requested notification sender could not be found",
 	}
-	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(clientErr)
 
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("The requested notification sender could not be found", resp.FailureReason)
+	suite.Equal("Notification configuration is wrong or not set.", resp.FailureReason)
 }
 
-func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
+func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ServerError_ReturnsError() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -409,8 +411,45 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 		Code:             "MNS-5000",
 		ErrorDescription: "internal server error",
 	}
-	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(serverErr)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.Error(err)
+	suite.Nil(resp)
+	suite.Contains(err.Error(), "SMS send failed")
+}
+
+func (suite *SMSExecutorTestSuite) TestExecute_SendMode_OtherFlow_NotificationError_ReturnsError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeRegistration,
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			common.AttributeMobileNumber: "+94714627887",
+		},
+		RuntimeData: make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
+		},
+	}
+
+	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
+	clientErr := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "MNS-1001",
+		Error:            "Sender not found",
+		ErrorDescription: "The requested notification sender could not be found",
+	}
+	suite.mockSMSSenderSvc.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(clientErr)
 
 	resp, err := suite.executor.Execute(ctx)
 
