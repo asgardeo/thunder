@@ -20,17 +20,29 @@ package group
 
 import "github.com/asgardeo/thunder/internal/system/utils"
 
-// MemberType represents the type of member entity.
+// MemberType represents the type of member principal.
 type MemberType string
 
 const (
-	// MemberTypeUser is the type for users.
+	// MemberTypeUser is the API-facing type for user members.
 	MemberTypeUser MemberType = "user"
-	// MemberTypeGroup is the type for groups.
-	MemberTypeGroup MemberType = "group"
-	// MemberTypeApp is the type for applications.
+	// MemberTypeApp is the API-facing type for application members.
 	MemberTypeApp MemberType = "app"
+	// MemberTypeGroup is the type for group members.
+	MemberTypeGroup MemberType = "group"
+	// MemberTypeEntity is the internal type for entity members (users and apps).
+	MemberTypeEntity MemberType = "entity"
 )
+
+// IsEntityType reports whether t is an entity type (user, app) that maps
+// to the internal entity storage type.
+func (t MemberType) IsEntityType() bool {
+	switch t {
+	case MemberTypeUser, MemberTypeApp:
+		return true
+	}
+	return false
+}
 
 // Member represents a member of a group (either user or another group).
 type Member struct {

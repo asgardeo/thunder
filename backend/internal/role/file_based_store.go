@@ -445,7 +445,7 @@ func isEntityNotFoundError(err error) bool {
 // matchesAssignee returns true when the entity or any of the entity's groups is assigned.
 func matchesAssignee(assignments []RoleAssignment, entityID string, groupSet map[string]bool) bool {
 	for _, assignment := range assignments {
-		if (assignment.Type == AssigneeTypeUser || assignment.Type == AssigneeTypeApp) && assignment.ID == entityID {
+		if assignment.Type == AssigneeTypeEntity && assignment.ID == entityID {
 			return true
 		}
 		if assignment.Type == AssigneeTypeGroup && groupSet[assignment.ID] {

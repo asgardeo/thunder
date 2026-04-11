@@ -201,6 +201,13 @@ func parseToRole(data []byte) (*RoleWithPermissionsAndAssignments, error) {
 		permissions = append(permissions, toResourcePermissions(perm))
 	}
 
+	// Translate legacy 'user'/'app' assignment types to internal 'entity' type.
+	for i, a := range roleResource.Assignments {
+		if a.Type == AssigneeType("user") || a.Type == AssigneeType("app") {
+			roleResource.Assignments[i].Type = AssigneeTypeEntity
+		}
+	}
+
 	role := &RoleWithPermissionsAndAssignments{
 		ID:          roleResource.ID,
 		Name:        roleResource.Name,
@@ -234,8 +241,7 @@ func validateRoleWrapper(data interface{}, fileStore *fileBasedStore, dbStore ro
 		if assignment.ID == "" {
 			return fmt.Errorf("assignment ID is required")
 		}
-		if assignment.Type != AssigneeTypeUser && assignment.Type != AssigneeTypeGroup &&
-			assignment.Type != AssigneeTypeApp {
+		if assignment.Type != AssigneeTypeEntity && assignment.Type != AssigneeTypeGroup {
 			return fmt.Errorf("invalid assignment type '%s'", assignment.Type)
 		}
 	}

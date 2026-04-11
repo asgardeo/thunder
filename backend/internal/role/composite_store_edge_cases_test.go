@@ -149,7 +149,7 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestAddAssignments_DelegatesTo
 	suite.mockDBStore.On("AddAssignments", suite.ctx, "role1", mock.Anything).Return(nil)
 
 	err := suite.store.AddAssignments(suite.ctx, "role1", []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 	})
 
 	assert.NoError(suite.T(), err)
@@ -161,7 +161,7 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestRemoveAssignments_Delegate
 	suite.mockDBStore.On("RemoveAssignments", suite.ctx, "role1", mock.Anything).Return(nil)
 
 	err := suite.store.RemoveAssignments(suite.ctx, "role1", []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 	})
 
 	assert.NoError(suite.T(), err)
@@ -332,12 +332,12 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetRoleList_OffsetBeyondRe
 // Test GetRoleAssignmentsCount merges and deduplicates
 func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetRoleAssignmentsCount_MergesAndDeduplicates() {
 	dbAssignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group1", Type: AssigneeTypeGroup},
-		{ID: "user2", Type: AssigneeTypeUser},
+		{ID: "user2", Type: AssigneeTypeEntity},
 	}
 	fileAssignments := []RoleAssignment{
-		{ID: "user2", Type: AssigneeTypeUser},
+		{ID: "user2", Type: AssigneeTypeEntity},
 		{ID: "group2", Type: AssigneeTypeGroup},
 	}
 
@@ -357,8 +357,8 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetRoleAssignmentsCount_Me
 // Test GetRoleAssignments merges and applies pagination
 func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestGetRoleAssignments_MergesAndPaginates() {
 	dbAssignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
-		{ID: "user2", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
+		{ID: "user2", Type: AssigneeTypeEntity},
 	}
 	fileAssignments := []RoleAssignment{
 		{ID: "group1", Type: AssigneeTypeGroup},

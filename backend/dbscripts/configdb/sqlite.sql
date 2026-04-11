@@ -44,11 +44,11 @@ CREATE TABLE ROLE_PERMISSION (
 -- Index for resource server queries with deployment isolation on ROLE_PERMISSION
 CREATE INDEX idx_role_permission_resource_server ON ROLE_PERMISSION (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
 
--- Table to store Role assignments (to users and groups)
+-- Table to store Role assignments (to entities and groups)
 CREATE TABLE ROLE_ASSIGNMENT (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ROLE_ID         VARCHAR(36) NOT NULL,
-    ASSIGNEE_TYPE   VARCHAR(5)  NOT NULL CHECK (ASSIGNEE_TYPE IN ('user', 'group', 'app')),
+    ASSIGNEE_TYPE   VARCHAR(6)  NOT NULL CHECK (ASSIGNEE_TYPE IN ('entity', 'group')),
     ASSIGNEE_ID     VARCHAR(36) NOT NULL,
     CREATED_AT      TEXT DEFAULT (datetime('now')),
     UPDATED_AT      TEXT DEFAULT (datetime('now')),

@@ -353,7 +353,7 @@ assignments:
 	suite.Equal("api-server", role.Permissions[0].ResourceServerID)
 	suite.Len(role.Assignments, 1)
 	suite.Equal("user1", role.Assignments[0].ID)
-	suite.Equal(AssigneeTypeUser, role.Assignments[0].Type)
+	suite.Equal(AssigneeTypeEntity, role.Assignments[0].Type)
 }
 
 // TestLoadDeclarativeResourcesValidateRoleWrapperRequiredFields tests validation of required fields.
@@ -400,7 +400,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 		Name: "Test Role",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 	}
 	err := validateRoleWrapper(roleValidUser, fileStore, nil)
@@ -437,7 +437,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 		Name: "Test Role 4",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{Type: AssigneeTypeUser},
+			{Type: AssigneeTypeEntity},
 		},
 	}
 	err = validateRoleWrapper(roleNoAssignmentID, fileStore, nil)
@@ -595,7 +595,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestIsEntityNotFoundError() {
 // TestMatchesAssignee tests the role assignment matching logic.
 func (suite *LoadDeclarativeResourcesTestSuite) TestMatchesAssigneeUserMatch() {
 	assignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group1", Type: AssigneeTypeGroup},
 	}
 	groupSet := map[string]bool{
@@ -610,7 +610,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestMatchesAssigneeUserMatch() {
 // TestMatchesAssigneeGroupMatch tests group assignment matching.
 func (suite *LoadDeclarativeResourcesTestSuite) TestMatchesAssigneeGroupMatch() {
 	assignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group1", Type: AssigneeTypeGroup},
 	}
 	groupSet := map[string]bool{
@@ -624,7 +624,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestMatchesAssigneeGroupMatch() 
 // TestMatchesAssigneeNoMatch tests when no assignments match.
 func (suite *LoadDeclarativeResourcesTestSuite) TestMatchesAssigneeNoMatch() {
 	assignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group1", Type: AssigneeTypeGroup},
 	}
 	groupSet := map[string]bool{

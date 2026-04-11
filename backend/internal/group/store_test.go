@@ -556,14 +556,14 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 				dbClientMock.
 					On("QueryContext", mock.Anything, QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
 					Return([]map[string]interface{}{
-						{"member_id": "usr-1", "member_type": "user"},
+						{"member_id": "usr-1", "member_type": "entity"},
 						{"member_id": "grp-2", "member_type": "group"},
 					}, nil).
 					Once()
 			},
 			assertList: func(members []Member) {
 				suite.Require().Len(members, 2)
-				suite.Require().Equal(MemberTypeUser, members[0].Type)
+				suite.Require().Equal(MemberTypeEntity, members[0].Type)
 				suite.Require().Equal("grp-2", members[1].ID)
 			},
 		},
@@ -1823,7 +1823,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError()
 		context.Background(),
 		dbClientMock,
 		"grp-001",
-		[]Member{{ID: "usr-1", Type: MemberTypeUser}},
+		[]Member{{ID: "usr-1", Type: MemberTypeEntity}},
 		testDeploymentID,
 	)
 

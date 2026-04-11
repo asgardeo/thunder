@@ -148,17 +148,21 @@ func (rs *roleService) CreateRole(
 		return nil, err
 	}
 
+	responseAssignments := role.Assignments
+
 	// Validate permissions exist in resource management system
 	if err := rs.validatePermissions(ctx, role.Permissions); err != nil {
 		return nil, err
 	}
 
-	// Validate assignment IDs early to avoid unnecessary database operations
+	// Validate assignment IDs (existence + category check) before normalization.
 	if len(role.Assignments) > 0 {
 		if err := rs.validateAssignmentIDs(ctx, role.Assignments); err != nil {
 			return nil, err
 		}
 	}
+
+	role.Assignments = normalizeAssignments(role.Assignments)
 
 	// Validate organization unit exists using OU service
 	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
@@ -195,7 +199,7 @@ func (rs *roleService) CreateRole(
 		Description: role.Description,
 		OUID:        role.OUID,
 		Permissions: role.Permissions,
-		Assignments: role.Assignments,
+		Assignments: responseAssignments,
 	}
 
 	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
@@ -394,6 +398,12 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 		return nil, &ErrorRoleNotFound
 	}
 
+	// user/app filters require fetching all entity assignments and post-filtering by category,
+	if assigneeType == string(entity.EntityCategoryUser) || assigneeType == string(entity.EntityCategoryApp) {
+		return rs.getAssignmentsByEntityCategory(ctx, id, limit, offset, includeDisplay, assigneeType, logger)
+	}
+
+	// For no filter or 'group' filter, use DB-level pagination directly.
 	var totalCount int
 	var assignments []RoleAssignment
 	if assigneeType != "" {
@@ -422,17 +432,11 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 		return nil, &ErrorInternalServerError
 	}
 
-	// Convert to service layer assignments
-	serviceAssignments := make([]RoleAssignmentWithDisplay, len(assignments))
-
-	if includeDisplay {
-		rs.populateDisplayNames(ctx, assignments, serviceAssignments)
-	} else {
-		for i := range assignments {
-			serviceAssignments[i].ID = assignments[i].ID
-			serviceAssignments[i].Type = assignments[i].Type
-		}
+	serviceAssignments, svcErr := rs.resolveAssignments(ctx, assignments, includeDisplay)
+	if svcErr != nil {
+		return nil, svcErr
 	}
+
 	baseURL := fmt.Sprintf("/roles/%s/assignments", id)
 	extraQuery := utils.DisplayQueryParam(includeDisplay)
 	if assigneeType != "" {
@@ -440,15 +444,96 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 	}
 	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, extraQuery)
 
-	response := &AssignmentList{
+	return &AssignmentList{
 		TotalResults: totalCount,
 		Assignments:  serviceAssignments,
 		StartIndex:   offset + 1,
 		Count:        len(serviceAssignments),
 		Links:        links,
+	}, nil
+}
+
+// getAssignmentsByEntityCategory handles ?type=user and ?type=app filter cases.
+// Since both are stored as 'entity' internally, it fetches all entity assignments,
+// resolves their category, and paginates the filtered results in memory.
+func (rs *roleService) getAssignmentsByEntityCategory(
+	ctx context.Context, id string, limit, offset int,
+	includeDisplay bool, category string, logger *log.Logger,
+) (*AssignmentList, *serviceerror.ServiceError) {
+	totalEntityCount, err := rs.roleStore.GetRoleAssignmentsCountByType(ctx, id, string(AssigneeTypeEntity))
+	if err != nil {
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ResultLimitExceededInCompositeMode
+		}
+		logger.Error("Failed to get entity assignments count", log.String("id", id), log.Error(err))
+		return nil, &ErrorInternalServerError
 	}
 
-	return response, nil
+	var allEntityAssignments []RoleAssignment
+	if totalEntityCount > 0 {
+		allEntityAssignments, err = rs.roleStore.GetRoleAssignmentsByType(
+			ctx, id, totalEntityCount, 0, string(AssigneeTypeEntity))
+		if err != nil {
+			if errors.Is(err, errResultLimitExceededInCompositeMode) {
+				return nil, &ResultLimitExceededInCompositeMode
+			}
+			logger.Error("Failed to get entity assignments", log.String("id", id), log.Error(err))
+			return nil, &ErrorInternalServerError
+		}
+	}
+
+	// Batch-resolve entity categories.
+	entityCategoryMap := make(map[string]string)
+	if len(allEntityAssignments) > 0 {
+		entityIDs := make([]string, len(allEntityAssignments))
+		for i, a := range allEntityAssignments {
+			entityIDs[i] = a.ID
+		}
+		entities, fetchErr := rs.entityService.GetEntitiesByIDs(ctx, entityIDs)
+		if fetchErr != nil {
+			logger.Error("Failed to batch fetch entities for category filter", log.Error(fetchErr))
+			return nil, &ErrorInternalServerError
+		}
+		for _, e := range entities {
+			entityCategoryMap[e.ID] = string(e.Category)
+		}
+	}
+
+	// Filter to matching category and paginate in memory.
+	var filtered []RoleAssignment
+	for _, a := range allEntityAssignments {
+		if entityCategoryMap[a.ID] == category {
+			filtered = append(filtered, a)
+		}
+	}
+
+	totalCount := len(filtered)
+	start := offset
+	if start > totalCount {
+		start = totalCount
+	}
+	end := start + limit
+	if end > totalCount {
+		end = totalCount
+	}
+	page := filtered[start:end]
+
+	serviceAssignments, svcErr := rs.resolveAssignments(ctx, page, includeDisplay)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	baseURL := fmt.Sprintf("/roles/%s/assignments", id)
+	extraQuery := utils.DisplayQueryParam(includeDisplay) + "&type=" + category
+	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, extraQuery)
+
+	return &AssignmentList{
+		TotalResults: totalCount,
+		Assignments:  serviceAssignments,
+		StartIndex:   offset + 1,
+		Count:        len(serviceAssignments),
+		Links:        links,
+	}, nil
 }
 
 // AddAssignments adds assignments to a role.
@@ -457,40 +542,14 @@ func (rs *roleService) AddAssignments(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Adding assignments to role", log.String("id", id))
 
-	if id == "" {
-		return &ErrorMissingRoleID
+	normalized, svcErr := rs.prepareAssignments(ctx, id, assignments)
+	if svcErr != nil {
+		return svcErr
 	}
 
-	if err := rs.validateAssignmentsRequest(assignments); err != nil {
-		return err
-	}
-
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
-	if err != nil {
-		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
-	}
-	if !exists {
-		logger.Debug("Role not found", log.String("id", id))
-		return &ErrorRoleNotFound
-	}
-
-	// Check if role is declarative - cannot modify assignments for declarative roles
-	if rs.isRoleDeclarative(ctx, id) {
-		logger.Debug("Cannot modify assignments for declarative role", log.String("id", id))
-		return &ErrorImmutableAssignment
-	}
-
-	// Validate assignment IDs
-	if err := rs.validateAssignmentIDs(ctx, assignments); err != nil {
-		return err
-	}
-
-	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return rs.roleStore.AddAssignments(txCtx, id, assignments)
-	})
-
-	if err != nil {
+	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return rs.roleStore.AddAssignments(txCtx, id, normalized)
+	}); err != nil {
 		logger.Error("Failed to add assignments to role", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
@@ -505,41 +564,59 @@ func (rs *roleService) RemoveAssignments(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Removing assignments from role", log.String("id", id))
 
-	if id == "" {
-		return &ErrorMissingRoleID
+	normalized, svcErr := rs.prepareAssignments(ctx, id, assignments)
+	if svcErr != nil {
+		return svcErr
 	}
 
-	if err := rs.validateAssignmentsRequest(assignments); err != nil {
-		return err
-	}
-
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
-	if err != nil {
-		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
-		return &ErrorInternalServerError
-	}
-	if !exists {
-		logger.Debug("Role not found", log.String("id", id))
-		return &ErrorRoleNotFound
-	}
-
-	// Check if role is declarative - cannot modify assignments for declarative roles
-	if rs.isRoleDeclarative(ctx, id) {
-		logger.Debug("Cannot modify assignments for declarative role", log.String("id", id))
-		return &ErrorImmutableAssignment
-	}
-
-	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return rs.roleStore.RemoveAssignments(txCtx, id, assignments)
-	})
-
-	if err != nil {
+	if err := rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return rs.roleStore.RemoveAssignments(txCtx, id, normalized)
+	}); err != nil {
 		logger.Error("Failed to remove assignments from role", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
 
 	logger.Debug("Successfully removed assignments from role", log.String("id", id))
 	return nil
+}
+
+// prepareAssignments validates, normalizes, and checks role accessibility before an assignment mutation.
+// It returns the normalized assignments ready for storage, or a service error.
+func (rs *roleService) prepareAssignments(
+	ctx context.Context, id string, assignments []RoleAssignment,
+) ([]RoleAssignment, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if id == "" {
+		return nil, &ErrorMissingRoleID
+	}
+
+	if err := rs.validateAssignmentsRequest(assignments); err != nil {
+		return nil, err
+	}
+
+	if err := rs.validateAssignmentIDs(ctx, assignments); err != nil {
+		return nil, err
+	}
+
+	normalized := normalizeAssignments(assignments)
+
+	exists, err := rs.roleStore.IsRoleExist(ctx, id)
+	if err != nil {
+		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+	if !exists {
+		logger.Debug("Role not found", log.String("id", id))
+		return nil, &ErrorRoleNotFound
+	}
+
+	if rs.isRoleDeclarative(ctx, id) {
+		logger.Debug("Cannot modify assignments for declarative role", log.String("id", id))
+		return nil, &ErrorImmutableAssignment
+	}
+
+	return normalized, nil
 }
 
 // GetAuthorizedPermissions checks which requested permissions are authorized for the entity based on roles.
@@ -651,15 +728,15 @@ func (rs *roleService) validateUpdateRoleRequest(request RoleUpdateDetail) *serv
 }
 
 // validateAssignmentsRequest validates the assignments request.
+// Accepts API-facing types 'user', 'app', 'group'.
 func (rs *roleService) validateAssignmentsRequest(assignments []RoleAssignment) *serviceerror.ServiceError {
 	if len(assignments) == 0 {
 		return &ErrorEmptyAssignments
 	}
 
 	for _, assignment := range assignments {
-		if assignment.Type != AssigneeTypeUser && assignment.Type != AssigneeTypeGroup &&
-			assignment.Type != AssigneeTypeApp {
-			return &ErrorInvalidRequestFormat
+		if !assignment.Type.IsEntityType() && assignment.Type != AssigneeTypeGroup {
+			return &ErrorInvalidAssigneeType
 		}
 		if assignment.ID == "" {
 			return &ErrorInvalidRequestFormat
@@ -669,41 +746,66 @@ func (rs *roleService) validateAssignmentsRequest(assignments []RoleAssignment) 
 	return nil
 }
 
-// validateAssignmentIDs validates that all provided assignment IDs exist.
+// normalizeAssignments converts API-facing 'user'/'app' types to the internal 'entity' type.
+func normalizeAssignments(assignments []RoleAssignment) []RoleAssignment {
+	normalized := make([]RoleAssignment, len(assignments))
+	for i, a := range assignments {
+		t := a.Type
+		if t.IsEntityType() {
+			t = AssigneeTypeEntity
+		}
+		normalized[i] = RoleAssignment{ID: a.ID, Type: t}
+	}
+	return normalized
+}
+
+// validateAssignmentIDs validates assignment IDs before normalization.
+// For user/app assignments it checks existence and verifies the claimed type matches the actual
+// entity category. For group assignments it checks existence via the group service.
 func (rs *roleService) validateAssignmentIDs(
 	ctx context.Context, assignments []RoleAssignment) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	var entityIDs []string
+	typeByID := make(map[string]AssigneeType)
 	var groupIDs []string
 
-	// Collect entity IDs and group IDs from assignments
-	for _, assignment := range assignments {
-		switch assignment.Type {
-		case AssigneeTypeUser, AssigneeTypeApp:
-			entityIDs = append(entityIDs, assignment.ID)
-		case AssigneeTypeGroup:
-			groupIDs = append(groupIDs, assignment.ID)
+	for _, a := range assignments {
+		if a.Type.IsEntityType() {
+			typeByID[a.ID] = a.Type
+		} else if a.Type == AssigneeTypeGroup {
+			groupIDs = append(groupIDs, a.ID)
 		}
 	}
 
-	entityIDs = utils.UniqueStrings(entityIDs)
 	groupIDs = utils.UniqueStrings(groupIDs)
 
-	if len(entityIDs) > 0 {
-		invalidIDs, err := rs.entityService.ValidateEntityIDs(ctx, entityIDs)
+	if len(typeByID) > 0 {
+		entityIDs := make([]string, 0, len(typeByID))
+		for id := range typeByID {
+			entityIDs = append(entityIDs, id)
+		}
+
+		entities, err := rs.entityService.GetEntitiesByIDs(ctx, entityIDs)
 		if err != nil {
-			logger.Error("Failed to validate entity IDs", log.Error(err))
+			logger.Error("Failed to fetch entities for assignment validation", log.Error(err))
 			return &ErrorInternalServerError
 		}
 
-		if len(invalidIDs) > 0 {
-			logger.Debug("Invalid entity IDs found", log.Any("invalidIDs", invalidIDs))
+		if len(entities) != len(entityIDs) {
 			return &ErrorInvalidAssignmentID
+		}
+
+		for _, e := range entities {
+			claimed := typeByID[e.ID]
+			actual := AssigneeType(e.Category)
+			if claimed != actual {
+				logger.Debug("Assignment type mismatch", log.String("id", e.ID),
+					log.String("claimed", string(claimed)), log.String("actual", string(actual)))
+				return &ErrorInvalidAssignmentID
+			}
 		}
 	}
 
-	// Validate group IDs using group service
 	if len(groupIDs) > 0 {
 		if err := rs.groupService.ValidateGroupIDs(ctx, groupIDs); err != nil {
 			if err.Code == group.ErrorInvalidGroupMemberID.Code {
@@ -729,42 +831,42 @@ func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 	return nil
 }
 
-// populateDisplayNames batch-fetches display names for all assignments using GetUsersByIDs/GetGroupsByIDs.
-func (rs *roleService) populateDisplayNames(
-	ctx context.Context, assignments []RoleAssignment,
-	serviceAssignments []RoleAssignmentWithDisplay,
-) {
+// resolveAssignments resolves the API-facing types and optionally display names for role assignments.
+// It batch-fetches entity categories to translate the internal 'entity' type into the API-facing
+// 'user' or 'app' value.
+func (rs *roleService) resolveAssignments(
+	ctx context.Context,
+	assignments []RoleAssignment,
+	includeDisplay bool,
+) ([]RoleAssignmentWithDisplay, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	// Collect IDs by type
-	var userIDs, groupIDs, appIDs []string
+
+	var entityIDs, groupIDs []string
 	for _, a := range assignments {
 		switch a.Type {
-		case AssigneeTypeUser:
-			userIDs = append(userIDs, a.ID)
+		case AssigneeTypeEntity:
+			entityIDs = append(entityIDs, a.ID)
 		case AssigneeTypeGroup:
 			groupIDs = append(groupIDs, a.ID)
-		case AssigneeTypeApp:
-			appIDs = append(appIDs, a.ID)
 		}
 	}
 
-	// Batch fetch users and groups
+	// Always batch-fetch entities to resolve their category (user vs app) for the API response type.
 	var entityMap map[string]*entity.Entity
-	var groupsMap map[string]*group.Group
-
-	if len(userIDs) > 0 {
-		entities, err := rs.entityService.GetEntitiesByIDs(ctx, userIDs)
+	if len(entityIDs) > 0 {
+		entities, err := rs.entityService.GetEntitiesByIDs(ctx, entityIDs)
 		if err != nil {
-			logger.Warn("Failed to batch fetch users for display names", log.Error(err))
-		} else {
-			entityMap = make(map[string]*entity.Entity, len(entities))
-			for i := range entities {
-				entityMap[entities[i].ID] = &entities[i]
-			}
+			logger.Error("Failed to batch fetch entities for assignments", log.Error(err))
+			return nil, &ErrorInternalServerError
+		}
+		entityMap = make(map[string]*entity.Entity, len(entities))
+		for i := range entities {
+			entityMap[entities[i].ID] = &entities[i]
 		}
 	}
 
-	if len(groupIDs) > 0 {
+	var groupsMap map[string]*group.Group
+	if includeDisplay && len(groupIDs) > 0 {
 		var svcErr *serviceerror.ServiceError
 		groupsMap, svcErr = rs.groupService.GetGroupsByIDs(ctx, groupIDs)
 		if svcErr != nil {
@@ -772,58 +874,58 @@ func (rs *roleService) populateDisplayNames(
 		}
 	}
 
-	// Batch fetch app entities for app assignee display names.
-	appNamesMap := make(map[string]string)
-	if len(appIDs) > 0 && rs.entityService != nil {
-		entities, err := rs.entityService.GetEntitiesByIDs(ctx, appIDs)
-		if err != nil {
-			logger.Warn("Failed to batch fetch app entities for display names", log.Error(err))
-		} else {
-			for _, e := range entities {
-				appNamesMap[e.ID] = resolveEntityDisplayName(e)
+	// Resolve display attribute paths for user-category entities.
+	var displayAttrPaths map[string]string
+	if includeDisplay && entityMap != nil {
+		var userTypes []string
+		for _, e := range entityMap {
+			if e.Category == entity.EntityCategoryUser {
+				userTypes = append(userTypes, e.Type)
 			}
 		}
+		displayAttrPaths = resolveDisplayAttributePaths(ctx, userTypes, rs.userSchemaService, logger)
 	}
 
-	// Resolve display attribute paths for user types
-	userTypes := make([]string, 0, len(entityMap))
-	for _, e := range entityMap {
-		userTypes = append(userTypes, e.Type)
-	}
-	displayAttrPaths := resolveDisplayAttributePaths(ctx, userTypes, rs.userSchemaService, logger)
-
-	for i := range assignments {
-		serviceAssignments[i].ID = assignments[i].ID
-		serviceAssignments[i].Type = assignments[i].Type
-
-		switch assignments[i].Type {
-		case AssigneeTypeUser:
-			if entityMap != nil {
-				if e, ok := entityMap[assignments[i].ID]; ok {
-					serviceAssignments[i].Display = utils.ResolveDisplay(
-						e.ID, e.Type, e.Attributes, displayAttrPaths)
-					continue
-				}
-			}
-			serviceAssignments[i].Display = assignments[i].ID
-		case AssigneeTypeGroup:
-			if groupsMap != nil {
-				if g, ok := groupsMap[assignments[i].ID]; ok {
-					serviceAssignments[i].Display = g.Name
-					continue
-				}
-			}
-			serviceAssignments[i].Display = assignments[i].ID
-		case AssigneeTypeApp:
-			if name, ok := appNamesMap[assignments[i].ID]; ok && name != "" {
-				serviceAssignments[i].Display = name
+	// Build the result slice, skipping orphaned entity assignments.
+	result := make([]RoleAssignmentWithDisplay, 0, len(assignments))
+	for _, a := range assignments {
+		ra := RoleAssignmentWithDisplay{ID: a.ID}
+		switch a.Type {
+		case AssigneeTypeEntity:
+			e, ok := entityMap[a.ID]
+			if !ok {
+				logger.Warn("Skipping orphaned entity assignment", log.String("id", a.ID))
 				continue
 			}
-			serviceAssignments[i].Display = assignments[i].ID
+			// Set the API-facing type from the entity category ("user" or "app").
+			ra.Type = AssigneeType(e.Category)
+			if includeDisplay {
+				if e.Category == entity.EntityCategoryUser {
+					ra.Display = utils.ResolveDisplay(e.ID, e.Type, e.Attributes, displayAttrPaths)
+				} else {
+					ra.Display = resolveAppDisplay(*e)
+				}
+			}
+		case AssigneeTypeGroup:
+			ra.Type = AssigneeTypeGroup
+			if includeDisplay {
+				if groupsMap != nil {
+					if g, ok := groupsMap[a.ID]; ok {
+						ra.Display = g.Name
+					} else {
+						ra.Display = a.ID
+					}
+				} else {
+					ra.Display = a.ID
+				}
+			}
 		default:
-			serviceAssignments[i].Display = assignments[i].ID
+			ra.Type = a.Type
+			ra.Display = a.ID
 		}
+		result = append(result, ra)
 	}
+	return result, nil
 }
 
 // resolveDisplayAttributePaths collects unique user types and resolves their display
@@ -853,8 +955,8 @@ func resolveDisplayAttributePaths(
 	return displayPaths
 }
 
-// resolveEntityDisplayName extracts a display name from an entity's system attributes.
-func resolveEntityDisplayName(e entity.Entity) string {
+// resolveAppDisplay extracts a display name for an app entity from its system attributes.
+func resolveAppDisplay(e entity.Entity) string {
 	if len(e.SystemAttributes) > 0 {
 		var sysAttrs map[string]interface{}
 		if err := json.Unmarshal(e.SystemAttributes, &sysAttrs); err == nil {
