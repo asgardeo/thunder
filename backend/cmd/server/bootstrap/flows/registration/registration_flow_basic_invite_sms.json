@@ -1,6 +1,6 @@
 {
-  "name": "Default Self-Invite Registration Flow",
-  "handle": "default-self-invite-flow",
+  "name": "Default SMS Self-Invite Registration Flow",
+  "handle": "default-self-invite-sms-flow",
   "flowType": "REGISTRATION",
   "nodes": [
     {
@@ -14,7 +14,7 @@
       "executor": {
         "name": "UserTypeResolver"
       },
-      "onSuccess": "prompt_email",
+      "onSuccess": "prompt_phone",
       "onIncomplete": "prompt_usertype"
     },
     {
@@ -81,7 +81,7 @@
       ]
     },
     {
-      "id": "prompt_email",
+      "id": "prompt_phone",
       "type": "PROMPT",
       "meta": {
         "components": [
@@ -98,26 +98,26 @@
           {
             "align": "center",
             "type": "TEXT",
-            "id": "text_header_email",
-            "label": "{{ t(signup:forms.email.title) }}",
+            "id": "text_header_phone",
+            "label": "{{ t(signup:forms.phone.title) }}",
             "variant": "HEADING_1"
           },
           {
             "type": "BLOCK",
-            "id": "block_email",
+            "id": "block_phone",
             "components": [
               {
-                "id": "input_prompt_email",
-                "ref": "email",
-                "type": "EMAIL_INPUT",
-                "label": "{{ t(signup:forms.email.fields.email.label) }}",
+                "id": "input_prompt_phone",
+                "ref": "mobileNumber",
+                "type": "PHONE_INPUT",
+                "label": "{{ t(signup:forms.phone.fields.phone.label) }}",
                 "required": true,
-                "placeholder": "{{ t(signup:forms.email.fields.email.placeholder) }}"
+                "placeholder": "{{ t(signup:forms.phone.fields.phone.placeholder) }}"
               },
               {
                 "type": "ACTION",
-                "id": "action_submit_email",
-                "label": "{{ t(signup:forms.email.actions.next.label) }}",
+                "id": "action_submit_phone",
+                "label": "{{ t(signup:forms.phone.actions.next.label) }}",
                 "variant": "PRIMARY",
                 "eventType": "SUBMIT"
               }
@@ -129,27 +129,27 @@
         {
           "inputs": [
             {
-              "ref": "input_prompt_email",
-              "identifier": "email",
-              "type": "EMAIL_INPUT",
+              "ref": "input_prompt_phone",
+              "identifier": "mobileNumber",
+              "type": "PHONE_INPUT",
               "required": true
             }
           ],
           "action": {
-            "ref": "action_submit_email",
-            "nextNode": "check_email_uniqueness"
+            "ref": "action_submit_phone",
+            "nextNode": "check_phone_uniqueness"
           }
         }
       ]
     },
     {
-      "id": "check_email_uniqueness",
+      "id": "check_phone_uniqueness",
       "type": "TASK_EXECUTION",
       "executor": {
         "name": "AttributeUniquenessValidator"
       },
       "onSuccess": "invite_generate",
-      "onIncomplete": "prompt_email"
+      "onIncomplete": "prompt_phone"
     },
     {
       "id": "invite_generate",
@@ -158,22 +158,23 @@
         "name": "InviteExecutor",
         "mode": "generate"
       },
-      "onSuccess": "send_registration_email"
+      "onSuccess": "send_registration_sms"
     },
     {
-      "id": "send_registration_email",
+      "id": "send_registration_sms",
       "type": "TASK_EXECUTION",
       "properties": {
-        "emailTemplate": "SELF_REGISTRATION"
+        "senderId": "<your-sender-id>",
+        "smsTemplate": "SELF_REGISTRATION"
       },
       "executor": {
-        "name": "EmailExecutor",
+        "name": "SMSExecutor",
         "mode": "send"
       },
-      "onSuccess": "registration_email_sent"
+      "onSuccess": "registration_sms_sent"
     },
     {
-      "id": "registration_email_sent",
+      "id": "registration_sms_sent",
       "type": "PROMPT",
       "meta": {
         "components": [
@@ -189,18 +190,18 @@
           {
             "align": "center",
             "type": "TEXT",
-            "id": "email_sent_heading",
-            "label": "{{ t(signup:forms.email_sent.title) }}",
+            "id": "sms_sent_heading",
+            "label": "{{ t(signup:forms.sms_sent.title) }}",
             "variant": "HEADING_1"
           },
           {
             "type": "TEXT",
-            "id": "email_sent_message",
-            "label": "{{ t(signup:forms.email_sent.message) }}"
+            "id": "sms_sent_message",
+            "label": "{{ t(signup:forms.sms_sent.message) }}"
           }
         ]
       },
-      "message": "Check your email for a verification link",
+      "message": "Check your phone for a verification link",
       "next": "invite_verify"
     },
     {
@@ -338,9 +339,9 @@
       "type": "TASK_EXECUTION",
       "inputs": [
         {
-          "ref": "input_email",
-          "identifier": "email",
-          "type": "EMAIL_INPUT",
+          "ref": "input_mobile_number",
+          "identifier": "mobileNumber",
+          "type": "PHONE_INPUT",
           "required": true
         },
         {
