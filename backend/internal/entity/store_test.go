@@ -432,6 +432,18 @@ func (s *DBStoreTestSuite) TestIdentifyEntity_HybridQuery_IndexedAndNonIndexed()
 	s.Equal("e1", *got)
 }
 
+func (s *DBStoreTestSuite) TestIdentifyEntity_FastPath_Empty_FallbackSearchesBothColumns() {
+	s.expectClient()
+	// Fast path (ENTITY_IDENTIFIER table) returns nothing.
+	s.onQueryAny([]map[string]interface{}{}, nil).Once()
+	// Fallback COALESCE query (searches both ATTRIBUTES and SYSTEM_ATTRIBUTES) finds the entity.
+	s.onQueryAny([]map[string]interface{}{{"id": "app-entity-1"}}, nil).Once()
+
+	got, err := s.store.IdentifyEntity(s.ctx, map[string]interface{}{"clientId": "my-client"})
+	s.NoError(err)
+	s.Equal("app-entity-1", *got)
+}
+
 func (s *DBStoreTestSuite) TestGetEntityListCount_ProviderError() {
 	s.expectClientError()
 	_, err := s.store.GetEntityListCount(s.ctx, "user", nil)

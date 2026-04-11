@@ -435,6 +435,69 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantNegativeCases() {
 	}
 }
 
+// TestClientCredentialsGrantEntityIdentificationByClientId exercises the end-to-end entity
+// identification path used during OAuth2 client authentication.
+func (ts *TokenTestSuite) TestClientCredentialsGrantEntityIdentificationByClientId() {
+	// Create a dedicated application whose clientId will be looked up via IdentifyEntity.
+	identClientID := "entity_id_test_client"
+	identApp := map[string]interface{}{
+		"name":                      "EntityIdTestApp",
+		"description":               "Application for entity identification test",
+		"ouId":                      ts.ouID,
+		"isRegistrationFlowEnabled": false,
+		"inboundAuthConfig": []map[string]interface{}{
+			{
+				"type": "oauth2",
+				"config": map[string]interface{}{
+					"clientId":                identClientID,
+					"clientSecret":            clientSecret,
+					"redirectUris":            []string{"https://localhost:3000"},
+					"grantTypes":              []string{"client_credentials"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(identApp)
+	ts.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+"/applications", bytes.NewBuffer(jsonData))
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ts.client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+	ts.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var appResp map[string]interface{}
+	ts.Require().NoError(json.NewDecoder(resp.Body).Decode(&appResp))
+	appID := appResp["id"].(string)
+
+	defer func() {
+		ts.deleteApplication(appID)
+	}()
+
+	// Use the clientId to authenticate and obtain an access token.
+	// This triggers IdentifyEntity({"clientId": identClientID}) inside the token endpoint.
+	reqBody := strings.NewReader("grant_type=client_credentials")
+	tokenReq, err := http.NewRequest("POST", testServerURL+"/oauth2/token", reqBody)
+	ts.Require().NoError(err)
+	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	tokenReq.SetBasicAuth(identClientID, clientSecret)
+
+	tokenResp, err := ts.client.Do(tokenReq)
+	ts.Require().NoError(err)
+	defer tokenResp.Body.Close()
+
+	ts.Assert().Equal(http.StatusOK, tokenResp.StatusCode, "token endpoint must resolve app by clientId")
+
+	var tokenBody map[string]interface{}
+	ts.Require().NoError(json.NewDecoder(tokenResp.Body).Decode(&tokenBody))
+	ts.Assert().NotEmpty(tokenBody["access_token"])
+}
+
 func basicAuth(username, password string) string {
 
 	return base64.StdEncoding.EncodeToString([]byte(username + ":" + password))

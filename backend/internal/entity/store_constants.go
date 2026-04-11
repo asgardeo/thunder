@@ -31,6 +31,9 @@ const (
 	// AttributesColumn represents the ATTRIBUTES column name in the database.
 	AttributesColumn = "ATTRIBUTES"
 
+	// SystemAttributesColumn represents the SYSTEM_ATTRIBUTES column name in the database.
+	SystemAttributesColumn = "SYSTEM_ATTRIBUTES"
+
 	// MaxIndexedAttributesCount is the maximum number of indexed attributes allowed.
 	MaxIndexedAttributesCount = 20
 )
@@ -274,20 +277,43 @@ func buildEntityListQueryByOUIDs(
 }
 
 // buildIdentifyQuery constructs a query to identify an entity based on the provided filters.
+// It searches both ATTRIBUTES and SYSTEM_ATTRIBUTES columns so that any entity can be found
+// regardless of which column holds the filter key.
 func buildIdentifyQuery(filters map[string]interface{}, deploymentID string) (model.DBQuery, []interface{}, error) {
 	if len(filters) == 0 {
 		return model.DBQuery{}, nil, fmt.Errorf("filters cannot be empty")
 	}
 
-	baseQuery := "SELECT ID FROM ENTITY WHERE 1=1"
-	queryID := "ASQ-ENTITY_MGT-19"
-	columnName := AttributesColumn
-	filterQuery, args, err := utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
-	if err != nil {
-		return model.DBQuery{}, nil, err
+	keys := make([]string, 0, len(filters))
+	for key := range filters {
+		if err := utils.ValidateKey(key); err != nil {
+			return model.DBQuery{}, nil, fmt.Errorf("invalid filter key: %w", err)
+		}
+		keys = append(keys, key)
 	}
-	filterQuery, args = utils.AppendDeploymentIDToFilterQuery(filterQuery, args, deploymentID)
-	return filterQuery, args, nil
+	sort.Strings(keys)
+
+	pgQuery := "SELECT ID FROM ENTITY WHERE 1=1"
+	sqQuery := "SELECT ID FROM ENTITY WHERE 1=1"
+	args := make([]interface{}, 0, len(keys)+1)
+
+	for i, key := range keys {
+		pg, sq := buildDualColumnConditions("", key, i+1)
+		pgQuery += pg
+		sqQuery += sq
+		args = append(args, filters[key])
+	}
+
+	pgQuery += fmt.Sprintf(" AND DEPLOYMENT_ID = $%d", len(keys)+1)
+	sqQuery += " AND DEPLOYMENT_ID = ?"
+	args = append(args, deploymentID)
+
+	return model.DBQuery{
+		ID:            "ASQ-ENTITY_MGT-19",
+		Query:         pgQuery,
+		PostgresQuery: pgQuery,
+		SQLiteQuery:   sqQuery,
+	}, args, nil
 }
 
 // buildEntityINClauseQuery constructs a query with an IN clause for entity IDs.
@@ -560,12 +586,9 @@ func buildIdentifyQueryHybrid(
 	sort.Strings(nonIndexedKeys)
 
 	for _, key := range nonIndexedKeys {
-		postgresCondition := utils.BuildPostgresJSONCondition("e."+AttributesColumn, key, paramIndex)
-		postgresQuery += postgresCondition
-
-		sqliteCondition := utils.BuildSQLiteJSONCondition("e."+AttributesColumn, key)
-		sqliteQuery += sqliteCondition
-
+		pg, sq := buildDualColumnConditions("e.", key, paramIndex)
+		postgresQuery += pg
+		sqliteQuery += sq
 		args = append(args, nonIndexedFilters[key])
 		paramIndex++
 	}
@@ -592,6 +615,25 @@ func buildGetEntitiesByIDsQuery(entityIDs []string, deploymentID string) (model.
 			"FROM ENTITY WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
 		entityIDs, deploymentID,
 	)
+}
+
+// buildDualColumnConditions returns AND conditions for both Postgres and SQLite that match a key
+// against both ATTRIBUTES and SYSTEM_ATTRIBUTES using COALESCE (one parameter per key).
+func buildDualColumnConditions(tablePrefix, key string, paramIndex int) (pgCond, sqCond string) {
+	attrCol := tablePrefix + AttributesColumn
+	sysCol := tablePrefix + SystemAttributesColumn
+	sqCond = fmt.Sprintf(" AND COALESCE(json_extract(%s, '$.%s'), json_extract(%s, '$.%s')) = ?",
+		sysCol, key, attrCol, key)
+	if strings.Contains(key, ".") {
+		parts := strings.Split(key, ".")
+		pathArray := "{" + strings.Join(parts, ",") + "}"
+		pgCond = fmt.Sprintf(" AND COALESCE(%s#>>'%s', %s#>>'%s') = $%d",
+			sysCol, pathArray, attrCol, pathArray, paramIndex)
+		return
+	}
+	pgCond = fmt.Sprintf(" AND COALESCE(%s->>'%s', %s->>'%s') = $%d",
+		sysCol, key, attrCol, key, paramIndex)
+	return
 }
 
 // buildPaginatedQuery constructs a paginated query string with ORDER BY, LIMIT, and OFFSET clauses.

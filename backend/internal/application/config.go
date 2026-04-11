@@ -60,6 +60,7 @@ func isDeclarativeModeEnabled() bool {
 	return getApplicationStoreMode() == serverconst.StoreModeDeclarative
 }
 
+// TODO: Move this to application config (similar to user indexed attributes)
 // getAppIndexedAttributes returns the entity attribute names that applications need indexed
 // for fast lookups.
 func getAppIndexedAttributes() []string {

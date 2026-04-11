@@ -231,3 +231,62 @@ func (s *StoreConstantsTestSuite) TestBuildFilterQueryWithOffset_NoFilters() {
 	s.NotEmpty(q.Query)
 	_ = args
 }
+
+// TestBuildIdentifyQuery_COALESCE_* verify that the JSON fallback query searches both
+// ATTRIBUTES and SYSTEM_ATTRIBUTES using COALESCE so that an entity can be found
+// regardless of which column holds the filter key (e.g. clientId in SYSTEM_ATTRIBUTES).
+func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_COALESCE_PostgresQuery() {
+	q, args, err := buildIdentifyQuery(map[string]interface{}{"clientId": "app123"}, testDeploymentID)
+	s.NoError(err)
+	s.Contains(q.PostgresQuery, "COALESCE")
+	s.Contains(q.PostgresQuery, "ATTRIBUTES->>'clientId'")
+	s.Contains(q.PostgresQuery, "SYSTEM_ATTRIBUTES->>'clientId'")
+	s.Contains(q.PostgresQuery, "$1")
+	s.Contains(q.PostgresQuery, "$2")
+	s.Len(args, 2)
+	s.Equal("app123", args[0])
+	s.Equal(testDeploymentID, args[1])
+}
+
+func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_COALESCE_SQLiteQuery() {
+	q, args, err := buildIdentifyQuery(map[string]interface{}{"clientId": "app123"}, testDeploymentID)
+	s.NoError(err)
+	s.Contains(q.SQLiteQuery, "COALESCE")
+	s.Contains(q.SQLiteQuery, "json_extract(ATTRIBUTES, '$.clientId')")
+	s.Contains(q.SQLiteQuery, "json_extract(SYSTEM_ATTRIBUTES, '$.clientId')")
+	_ = args
+}
+
+func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_MultipleFilters_CorrectParamIndexes() {
+	// keys are sorted: clientId < name, so clientId=$1, name=$2, deploymentID=$3
+	filters := map[string]interface{}{"clientId": "app123", "name": "myapp"}
+	q, args, err := buildIdentifyQuery(filters, testDeploymentID)
+	s.NoError(err)
+	s.Contains(q.PostgresQuery, "$1")
+	s.Contains(q.PostgresQuery, "$2")
+	s.Contains(q.PostgresQuery, "$3")
+	s.Len(args, 3)
+	s.Equal(testDeploymentID, args[2])
+}
+
+func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_NestedKey_UsesPathSyntax() {
+	q, _, err := buildIdentifyQuery(map[string]interface{}{"address.city": "NYC"}, testDeploymentID)
+	s.NoError(err)
+	s.Contains(q.PostgresQuery, "#>>")
+	s.Contains(q.PostgresQuery, "{address,city}")
+	s.Contains(q.SQLiteQuery, "json_extract")
+	s.Contains(q.SQLiteQuery, "$.address.city")
+}
+
+func (s *StoreConstantsTestSuite) TestBuildIdentifyQueryHybrid_NonIndexed_UsesCOALESCE() {
+	indexed := map[string]interface{}{"email": "a@b.com"}
+	nonIndexed := map[string]interface{}{"clientId": "app123"}
+	q, _, err := buildIdentifyQueryHybrid(indexed, nonIndexed, testDeploymentID)
+	s.NoError(err)
+	s.Contains(q.PostgresQuery, "COALESCE")
+	s.Contains(q.PostgresQuery, "e.ATTRIBUTES->>'clientId'")
+	s.Contains(q.PostgresQuery, "e.SYSTEM_ATTRIBUTES->>'clientId'")
+	s.Contains(q.SQLiteQuery, "COALESCE")
+	s.Contains(q.SQLiteQuery, "json_extract(e.ATTRIBUTES, '$.clientId')")
+	s.Contains(q.SQLiteQuery, "json_extract(e.SYSTEM_ATTRIBUTES, '$.clientId')")
+}
